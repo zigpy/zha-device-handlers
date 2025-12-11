@@ -606,6 +606,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
@@ -631,6 +633,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
         return self
@@ -649,6 +652,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
@@ -670,6 +675,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -695,6 +701,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
@@ -721,6 +729,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -737,6 +746,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
@@ -758,6 +769,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -781,6 +793,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
@@ -809,6 +823,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
