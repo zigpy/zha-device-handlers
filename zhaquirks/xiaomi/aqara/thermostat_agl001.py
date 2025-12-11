@@ -10,6 +10,7 @@ Original quirk: zhaquirks/xiaomi/aqara/thermostat_agl001.py
 Modification by: Andy (Carse IT Services) with Claude assistance
 Date: December 2025
 """
+
 from __future__ import annotations
 
 import struct
@@ -68,7 +69,7 @@ XIAOMI_CLUSTER_ID = 0xFCC0
 MANUFACTURER_CODE = 0x115F  # 4447
 
 # Fake sensor IEEE address (from Z2M implementation)
-FAKE_SENSOR_IEEE = bytes.fromhex('00158d00019d1b98')
+FAKE_SENSOR_IEEE = bytes.fromhex("00158d00019d1b98")
 
 # System mode mapping
 XIAOMI_SYSTEM_MODE_MAP = {
@@ -81,17 +82,18 @@ XIAOMI_SYSTEM_MODE_MAP = {
 # HELPER FUNCTIONS - Binary payload builders
 # =============================================================================
 
+
 def build_lumi_header(counter: int, params_length: int, action: int) -> bytes:
-    """
-    Build the Aqara/Lumi message header.
-    
+    """Build the Aqara/Lumi message header.
+
     Args:
         counter: Message sequence counter (0x12 or 0x13 typically)
         params_length: Length of the parameters section
         action: Action code (0x02=register, 0x04=unregister, 0x05=send temp)
-    
+
     Returns:
         9-byte header
+
     """
     header_start = bytes([0xAA, 0x71, params_length + 3, 0x44, counter])
     integrity = (512 - sum(header_start)) & 0xFF
@@ -99,111 +101,151 @@ def build_lumi_header(counter: int, params_length: int, action: int) -> bytes:
 
 
 def build_sensor_registration_payloads(device_ieee: bytes) -> tuple[bytes, bytes]:
-    """
-    Build the two registration payloads to enable external sensor mode.
-    
+    """Build the two registration payloads to enable external sensor mode.
+
     This registers a fake sensor with the TRV so it will accept external
     temperature readings.
-    
+
     Args:
         device_ieee: The TRV's IEEE address as 8 bytes
-    
+
     Returns:
         Tuple of (message1, message2) to send in sequence
+
     """
     # Current timestamp as 4-byte big-endian
-    timestamp = struct.pack('>I', int(time.time()))
-    
+    timestamp = struct.pack(">I", int(time.time()))
+
     # Message 1: Register humidity-type sensor
     # The Chinese characters in the original are sensor type descriptors
     params1 = (
-        timestamp +
-        bytes([0x3d, 0x04]) +
-        device_ieee +
-        FAKE_SENSOR_IEEE +
-        bytes([
-            0x00, 0x01, 0x00, 0x55,  # Fixed bytes
-            0x13, 0x0a, 0x02, 0x00, 0x00, 0x64, 0x04,  # Sensor config
-            0xce, 0xc2, 0xb6, 0xc8,  # Chinese chars (湿度)
-            0x00, 0x00, 0x00, 0x00, 0x00,
-            0x01, 0x3d, 0x64, 0x65
-        ])
+        timestamp
+        + bytes([0x3D, 0x04])
+        + device_ieee
+        + FAKE_SENSOR_IEEE
+        + bytes(
+            [
+                0x00,
+                0x01,
+                0x00,
+                0x55,  # Fixed bytes
+                0x13,
+                0x0A,
+                0x02,
+                0x00,
+                0x00,
+                0x64,
+                0x04,  # Sensor config
+                0xCE,
+                0xC2,
+                0xB6,
+                0xC8,  # Chinese chars (湿度)
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x3D,
+                0x64,
+                0x65,
+            ]
+        )
     )
-    
+
     # Message 2: Register temperature-type sensor
     params2 = (
-        timestamp +
-        bytes([0x3d, 0x05]) +
-        device_ieee +
-        FAKE_SENSOR_IEEE +
-        bytes([
-            0x08, 0x00, 0x07, 0xfd,  # Fixed bytes
-            0x16, 0x0a, 0x02, 0x0a,  # Sensor config
-            0xc9, 0xe8, 0xb1, 0xb8, 0xd4, 0xda, 0xcf, 0xdf, 0xc0, 0xeb,  # Chinese chars
-            0x00, 0x00, 0x00, 0x00, 0x00,
-            0x01, 0x3d, 0x04, 0x65
-        ])
+        timestamp
+        + bytes([0x3D, 0x05])
+        + device_ieee
+        + FAKE_SENSOR_IEEE
+        + bytes(
+            [
+                0x08,
+                0x00,
+                0x07,
+                0xFD,  # Fixed bytes
+                0x16,
+                0x0A,
+                0x02,
+                0x0A,  # Sensor config
+                0xC9,
+                0xE8,
+                0xB1,
+                0xB8,
+                0xD4,
+                0xDA,
+                0xCF,
+                0xDF,
+                0xC0,
+                0xEB,  # Chinese chars
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x3D,
+                0x04,
+                0x65,
+            ]
+        )
     )
-    
+
     # Build complete messages with headers
     # Action 0x02 = register sensor
     msg1 = build_lumi_header(0x12, len(params1), 0x02) + params1
     msg2 = build_lumi_header(0x13, len(params2), 0x02) + params2
-    
+
     return msg1, msg2
 
 
 def build_sensor_unregistration_payloads(device_ieee: bytes) -> tuple[bytes, bytes]:
-    """
-    Build the two payloads to disable external sensor mode (return to internal).
-    
+    """Build the two payloads to disable external sensor mode (return to internal).
+
     Args:
         device_ieee: The TRV's IEEE address as 8 bytes
-    
+
     Returns:
         Tuple of (message1, message2) to send in sequence
+
     """
-    timestamp = struct.pack('>I', int(time.time()))
-    
+    timestamp = struct.pack(">I", int(time.time()))
+
     # Messages to unregister - just device IEEE with zeros for sensor
     params1 = (
-        timestamp +
-        bytes([0x3d, 0x05]) +
-        device_ieee +
-        bytes([0x00] * 12)  # 12 zero bytes instead of sensor IEEE + extra
+        timestamp
+        + bytes([0x3D, 0x05])
+        + device_ieee
+        + bytes([0x00] * 12)  # 12 zero bytes instead of sensor IEEE + extra
     )
-    
-    params2 = (
-        timestamp +
-        bytes([0x3d, 0x04]) +
-        device_ieee +
-        bytes([0x00] * 12)
-    )
-    
+
+    params2 = timestamp + bytes([0x3D, 0x04]) + device_ieee + bytes([0x00] * 12)
+
     # Action 0x04 = unregister sensor
     msg1 = build_lumi_header(0x12, len(params1), 0x04) + params1
     msg2 = build_lumi_header(0x13, len(params2), 0x04) + params2
-    
+
     return msg1, msg2
 
 
 def build_external_temp_payload(temperature: float) -> bytes:
-    """
-    Build the payload to send an external temperature reading.
-    
+    """Build the payload to send an external temperature reading.
+
     Args:
         temperature: Temperature in Celsius
-    
+
     Returns:
         Complete binary payload for attribute 0xFFF2
+
     """
     # Convert temperature: multiply by 100, encode as big-endian float
     temp_value = round(temperature * 100)
-    temp_bytes = struct.pack('>f', temp_value)
-    
+    temp_bytes = struct.pack(">f", temp_value)
+
     # Params: sensor_id (8) + fixed bytes (4) + temperature (4) = 16 bytes
     params = FAKE_SENSOR_IEEE + bytes([0x00, 0x01, 0x00, 0x55]) + temp_bytes
-    
+
     # Action 0x05 = send temperature
     return build_lumi_header(0x12, len(params), 0x05) + params
 
@@ -211,6 +253,7 @@ def build_external_temp_payload(temperature: float) -> bytes:
 # =============================================================================
 # THERMOSTAT CLUSTER
 # =============================================================================
+
 
 class ThermostatCluster(CustomCluster, Thermostat):
     """Custom thermostat cluster that redirects system_mode to Xiaomi cluster."""
@@ -286,10 +329,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
 # AQARA-SPECIFIC CLUSTER WITH EXTERNAL SENSOR SUPPORT
 # =============================================================================
 
+
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
-    """
-    Aqara manufacturer-specific cluster with full external temperature support.
-    
+    """Aqara manufacturer-specific cluster with full external temperature support.
+
     Supports:
     - sensor_register: Write "external" or "internal" to switch modes
     - external_temperature_input: Write temperature values (0-55°C)
@@ -323,26 +366,25 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     def _update_attribute(self, attrid, value):
         """Handle attribute updates from the device."""
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
-        
+
         if attrid == SYSTEM_MODE:
             self.endpoint.thermostat.update_attribute(
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
-        
+
         super()._update_attribute(attrid, value)
 
     def _get_device_ieee_bytes(self) -> bytes:
         """Get the device's IEEE address as bytes."""
         ieee_str = str(self.endpoint.device.ieee)
         # Remove colons and convert to bytes
-        ieee_hex = ieee_str.replace(':', '')
+        ieee_hex = ieee_str.replace(":", "")
         return bytes.fromhex(ieee_hex)
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
-        """
-        Handle attribute writes with special handling for sensor registration
+        """Handle attribute writes with special handling for sensor registration
         and external temperature input.
         """
         result = []
@@ -381,84 +423,80 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         return result
 
     async def _handle_sensor_registration(self, mode) -> None:
-        """
-        Handle switching between internal and external sensor modes.
-        
+        """Handle switching between internal and external sensor modes.
+
         Args:
             mode: 1/"external" for external, 0/"internal" for internal
+
         """
         import asyncio
-        
+
         # Normalize mode value
         if isinstance(mode, str):
             mode = 1 if mode.lower() == "external" else 0
-        
+
         device_ieee = self._get_device_ieee_bytes()
-        
+
         if mode == 1:
             self.debug("Registering external sensor for device %s", device_ieee.hex())
             msg1, msg2 = build_sensor_registration_payloads(device_ieee)
         else:
             self.debug("Unregistering external sensor, returning to internal")
             msg1, msg2 = build_sensor_unregistration_payloads(device_ieee)
-        
+
         # Send both registration messages IN PARALLEL to beat sleepy device timeout
         try:
             self.debug("Sending BOTH registration messages in parallel...")
             self.debug("Message 1: %s", msg1.hex())
             self.debug("Message 2: %s", msg2.hex())
-            
+
             # Fire both writes simultaneously - don't wait for first to complete
             results = await asyncio.gather(
                 super().write_attributes(
-                    {AQARA_FFF2: msg1},
-                    manufacturer=MANUFACTURER_CODE
+                    {AQARA_FFF2: msg1}, manufacturer=MANUFACTURER_CODE
                 ),
                 super().write_attributes(
-                    {AQARA_FFF2: msg2},
-                    manufacturer=MANUFACTURER_CODE
+                    {AQARA_FFF2: msg2}, manufacturer=MANUFACTURER_CODE
                 ),
-                return_exceptions=True  # Don't fail if one times out
+                return_exceptions=True,  # Don't fail if one times out
             )
-            
+
             self.debug("Parallel registration results: %s", results)
-            
+
             # Check results
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
-                    self.warning("Registration message %d failed: %s", i+1, result)
+                    self.warning("Registration message %d failed: %s", i + 1, result)
                 else:
-                    self.debug("Registration message %d succeeded: %s", i+1, result)
-            
+                    self.debug("Registration message %d succeeded: %s", i + 1, result)
+
             self.debug("Sensor registration complete")
         except Exception as e:
             self.error("Failed to register sensor: %s", e)
             raise
 
     async def _handle_external_temperature(self, temperature: float) -> None:
-        """
-        Send an external temperature reading to the TRV.
-        
+        """Send an external temperature reading to the TRV.
+
         Args:
             temperature: Temperature in Celsius (0-55 range)
+
         """
         # Validate and clamp
         if not 0 <= temperature <= 55:
             self.warning(
-                "External temperature %s out of range (0-55), clamping",
-                temperature
+                "External temperature %s out of range (0-55), clamping", temperature
             )
             temperature = max(0, min(55, temperature))
-        
+
         self.debug("Writing external temperature: %s°C", temperature)
-        
+
         payload = build_external_temp_payload(temperature)
-        
+
         try:
             self.debug("Sending temperature payload: %s", payload.hex())
             await super().write_attributes(
-                {AQARA_FFF2: payload},
-                manufacturer=MANUFACTURER_CODE
+                {AQARA_FFF2: payload}, manufacturer=MANUFACTURER_CODE
             )
             self.debug("External temperature write completed")
         except Exception as e:
@@ -469,6 +507,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 # =============================================================================
 # DEVICE DEFINITION
 # =============================================================================
+
 
 class AGL001(XiaomiCustomDevice):
     """Aqara E1 Radiator Thermostat with external sensor support."""
