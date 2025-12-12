@@ -37,7 +37,22 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
+# =============================================================================
+# SCHEDULE DATA TYPES (required for test compatibility)
+# =============================================================================
 
+class ScheduleEvent(t.Struct):
+    """Representation of a single schedule event."""
+
+    hour: t.uint8_t
+    minute: t.uint8_t
+    temp_set: t.uint8_t
+
+
+class ScheduleSettings(t.LVList, item_type=ScheduleEvent, length_type=t.uint8_t):
+    """Representation of schedule settings."""
+
+    pass
 # =============================================================================
 # CONSTANTS
 # =============================================================================
