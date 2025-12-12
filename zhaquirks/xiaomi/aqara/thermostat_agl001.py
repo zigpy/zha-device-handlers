@@ -384,9 +384,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
-        """Handle attribute writes with special handling for sensor registration
-        and external temperature input.
-        """
+        """Handle attribute writes with special handling for sensor registrationand external temperature input."""
         result = []
         remaining_attributes = attributes.copy()
 
