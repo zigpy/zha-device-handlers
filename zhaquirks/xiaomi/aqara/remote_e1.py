@@ -66,13 +66,16 @@ BOTH_BUTTONS = "both_buttons"
     .replaces(XiaomiAqaraE1Cluster)
     .replaces(MultistateInputCluster)
     .replaces(XiaomiPowerConfiguration)
-    .device_automation_triggers({
-        (SHORT_PRESS, BUTTON):  {COMMAND: COMMAND_1_SINGLE},
-        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
-        (LONG_PRESS, BUTTON):   {COMMAND: COMMAND_1_HOLD},
-    })
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
+            (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+            (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
+        }
+    )
     .add_to_registry()
 )
+
 
 class RemoteE1SingleRocker1(XiaomiCustomDevice):
     """Aqara E1 Wireless Remote Double Rocker."""
