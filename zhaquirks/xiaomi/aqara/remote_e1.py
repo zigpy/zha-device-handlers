@@ -1,6 +1,7 @@
 """Aqara E1-series wireless remote."""
 
 from zigpy.profiles import zha
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -33,6 +34,7 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -55,6 +57,22 @@ from zhaquirks.xiaomi.aqara.remote_h1 import AqaraRemoteManuSpecificCluster
 
 BOTH_BUTTONS = "both_buttons"
 
+(
+    QuirkBuilder(LUMI, "lumi.remote.acn007")
+    .friendly_name(
+        model="Wireless Mini Switch E1",
+        manufacturer="Aqara",
+    )
+    .replaces(XiaomiAqaraE1Cluster)
+    .replaces(MultistateInputCluster)
+    .replaces(XiaomiPowerConfiguration)
+    .device_automation_triggers({
+        (SHORT_PRESS, BUTTON):  {COMMAND: COMMAND_1_SINGLE},
+        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+        (LONG_PRESS, BUTTON):   {COMMAND: COMMAND_1_HOLD},
+    })
+    .add_to_registry()
+)
 
 class RemoteE1SingleRocker1(XiaomiCustomDevice):
     """Aqara E1 Wireless Remote Double Rocker."""
