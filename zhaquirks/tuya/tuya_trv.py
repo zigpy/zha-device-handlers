@@ -937,3 +937,82 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+(
+    TuyaQuirkBuilder("_TZE284_pcdmj88b", "TS0601")  # EARU TV02 TRV
+    .applies_to("_TZE204_pcdmj88b", "TS0601")
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            TuyaThermostatSystemMode.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
+            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
+            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+    )
+    .tuya_dp(
+        dp_id=4,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=5,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_battery(dp_id=6)
+    .tuya_switch(
+        dp_id=7,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_switch(
+        dp_id=36,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_switch(
+        dp_id=37,
+        attribute_name="boost_heating",
+        translation_key="boost_heating",
+        fallback_name="Boost heating",
+    )
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="scale_protection",
+        translation_key="scale_protection",
+        fallback_name="Scale protection",
+    )
+    .tuya_number(
+        dp_id=47,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
