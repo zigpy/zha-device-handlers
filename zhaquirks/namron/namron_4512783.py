@@ -40,6 +40,13 @@ class NamronOperationMode(t.enum8):
     Regulator = 0x06
 
 
+class NamronManufacturerSpecificCluster(CustomCluster):
+    """Namron manufacturer-specific cluster (0xE002)."""
+
+    cluster_id = 0xE002
+    name = "Namron Manufacturer Specific"
+
+
 class NamronThermostatCluster(CustomCluster, Thermostat):
     """Namron manufacturer-specific thermostat cluster.
 
@@ -126,7 +133,7 @@ class NamronFloorHeating4512783(CustomDevice):
                     0x0702,  # Metering
                     ElectricalMeasurement.cluster_id,
                     0x1000,  # Touchlink
-                    0xE002,  # Manufacturer specific
+                    NamronManufacturerSpecificCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
