@@ -69,15 +69,19 @@ class SonoffCluster(CustomCluster):
 
         if attrid == self.AttributeDefs.detach_relay_mask.id:
             # Convert bitmap to individual relay states
+
             mask = value
+
             self._update_attribute(
                 self.AttributeDefs.relay_1_detached.id,
                 bool(mask & SonoffDetachedRelayMask.Relay1),
             )
+            
             self._update_attribute(
                 self.AttributeDefs.relay_2_detached.id,
                 bool(mask & SonoffDetachedRelayMask.Relay2),
             )
+
             self._update_attribute(
                 self.AttributeDefs.relay_3_detached.id,
                 bool(mask & SonoffDetachedRelayMask.Relay3),
@@ -87,7 +91,9 @@ class SonoffCluster(CustomCluster):
         """Handle writing individual relay attributes by updating the mask."""
         # Check if any individual relay attributes are being written
         mask_attr = self.AttributeDefs.detach_relay_mask.id
+
         mask = self.get(mask_attr, 0)
+        
         new_attributes = attributes.copy()
 
         relay_attr_defs = [
@@ -95,6 +101,7 @@ class SonoffCluster(CustomCluster):
             (self.AttributeDefs.relay_2_detached, SonoffDetachedRelayMask.Relay2),
             (self.AttributeDefs.relay_3_detached, SonoffDetachedRelayMask.Relay3),
         ]
+
         for attrid, value in attributes.items():
             for attr_def, bit_mask in relay_attr_defs:
                 if attrid in (attr_def.id, attr_def.name):
@@ -164,3 +171,4 @@ zbm_3c_quirk = (
     )
 )
 zbm_3c_quirk.add_to_registry()
+
