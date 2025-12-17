@@ -164,11 +164,3 @@ zbm_3c_quirk = (
     )
 )
 zbm_3c_quirk.add_to_registry()
-
-
-
-
-
-
-
-
