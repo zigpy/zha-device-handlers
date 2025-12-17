@@ -76,7 +76,7 @@ class SonoffCluster(CustomCluster):
                 self.AttributeDefs.relay_1_detached.id,
                 bool(mask & SonoffDetachedRelayMask.Relay1),
             )
-            
+
             self._update_attribute(
                 self.AttributeDefs.relay_2_detached.id,
                 bool(mask & SonoffDetachedRelayMask.Relay2),
@@ -93,7 +93,7 @@ class SonoffCluster(CustomCluster):
         mask_attr = self.AttributeDefs.detach_relay_mask.id
 
         mask = self.get(mask_attr, 0)
-        
+
         new_attributes = attributes.copy()
 
         relay_attr_defs = [
@@ -171,4 +171,3 @@ zbm_3c_quirk = (
     )
 )
 zbm_3c_quirk.add_to_registry()
-
