@@ -21,6 +21,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
 
 (
     TuyaQuirkBuilder("_TZ3210_tgvtvdoc", "TS0207")
+    .applies_to("_TZ3210_p68kms0l", "TS0207")
     .tuya_battery(
         dp_id=4, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
     )
