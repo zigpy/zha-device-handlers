@@ -192,7 +192,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_room_size_preset",
-        fallback_name="MMWave room size preset",
+        fallback_name="mmWave room size preset",
     )
     .number(
         "light_on_presence_behavior",
@@ -349,7 +349,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_z_min",
-        fallback_name="MMWave Z min boundary",
+        fallback_name="mmWave Height Minimum (Floor)",
     )
     .number(
         "mmwave_z_max",
@@ -359,7 +359,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_z_max",
-        fallback_name="MMWave Z max boundary",
+        fallback_name="mmWave Height Maximum (Ceiling)",
     )
     .number(
         "mmwave_x_min",
@@ -369,7 +369,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_x_min",
-        fallback_name="MMWave X min boundary",
+        fallback_name="mmWave Width Minimum (Left)",
     )
     .number(
         "mmwave_x_max",
@@ -379,7 +379,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_x_max",
-        fallback_name="MMWave X max boundary",
+        fallback_name="mmWave Width Maximum (Right)",
     )
     .number(
         "mmwave_y_min",
@@ -389,7 +389,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_y_min",
-        fallback_name="MMWave Y min boundary",
+        fallback_name="mmWave Depth Minimum (Near)",
     )
     .number(
         "mmwave_y_max",
@@ -399,7 +399,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_y_max",
-        fallback_name="MMWave Y max boundary",
+        fallback_name="mmWave Depth Maximum (Far)",
     )
     .number(
         "mmwave_detect_sensitivity",
@@ -409,7 +409,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_detect_sensitivity",
-        fallback_name="MMWave detect sensitivity",
+        fallback_name="mmWave detect sensitivity",
     )
     .number(
         "mmwave_detect_trigger",
@@ -419,7 +419,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_detect_trigger",
-        fallback_name="MMWave detect trigger",
+        fallback_name="mmWave detect trigger",
     )
     .number(
         "mmwave_hold_time",
@@ -429,7 +429,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="mmwave_hold_time",
-        fallback_name="MMWave hold time",
+        fallback_name="mmWave hold time",
     )
     .add_to_registry()
 )
