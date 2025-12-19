@@ -342,63 +342,63 @@ MMWAVE_CLUSTER_ID = 0xFC32
     )
     # MMWave cluster entities
     .number(
-        "mmwave_z_min",
+        "mmwave_height_minimum_floor",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_z_min",
+        translation_key="mmwave_height_minimum_floor",
         fallback_name="mmWave Height Minimum (Floor)",
     )
     .number(
-        "mmwave_z_max",
+        "mmwave_height_maximum_ceiling",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_z_max",
+        translation_key="mmwave_height_maximum_ceiling",
         fallback_name="mmWave Height Maximum (Ceiling)",
     )
     .number(
-        "mmwave_x_min",
+        "mmwave_width_minimum_left",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_x_min",
+        translation_key="mmwave_width_minimum_left",
         fallback_name="mmWave Width Minimum (Left)",
     )
     .number(
-        "mmwave_x_max",
+        "mmwave_width_maximum_right",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_x_max",
+        translation_key="mmwave_width_maximum_right",
         fallback_name="mmWave Width Maximum (Right)",
     )
     .number(
-        "mmwave_y_min",
+        "mmwave_depth_minimum_near",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_y_min",
+        translation_key="mmwave_depth_minimum_near",
         fallback_name="mmWave Depth Minimum (Near)",
     )
     .number(
-        "mmwave_y_max",
+        "mmwave_depth_maximum_far",
         MMWAVE_CLUSTER_ID,
         min_value=-32768,
         max_value=32767,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="mmwave_y_max",
+        translation_key="mmwave_depth_maximum_far",
         fallback_name="mmWave Depth Maximum (Far)",
     )
     .number(
