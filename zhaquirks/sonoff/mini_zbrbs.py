@@ -44,13 +44,13 @@ class SonoffCluster(CustomCluster):
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        limits_calibration = ZCLAttributeDef( # 2: automatic calibration, 4: not_calibrated_+open 50% , 6: stop(in pairing)?, 7: manual pairing?+close, 8: stop+stop_pairing
+        limits_calibration = ZCLAttributeDef(  # 2: automatic calibration, 4: not_calibrated_+open 50% , 6: stop(in pairing)?, 7: manual pairing?+close, 8: stop+stop_pairing
             id=0x5001,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
         cluster_revision = ZCLAttributeDef(
-            id=0xfffd,
+            id=0xFFFD,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
@@ -92,8 +92,8 @@ class SonoffExternalSwitchTriggerType(t.enum8):
         SonoffCluster.AttributeDefs.cover_calibrated.name,
         SonoffCoverCalibrationStatus,
         SonoffCluster.cluster_id,
-        entity_platform = EntityPlatform.SENSOR,
-        entity_type = EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
         translation_key="cover_calibrated",
         fallback_name="Calibrated",
     )
@@ -101,9 +101,9 @@ class SonoffExternalSwitchTriggerType(t.enum8):
         SonoffCluster.AttributeDefs.cover_status.name,
         SonoffCoverStatus,
         SonoffCluster.cluster_id,
-        entity_platform = EntityPlatform.SENSOR,
-        entity_type = EntityType.DIAGNOSTIC,
-        initially_disabled = True,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="cover_status",
         fallback_name="Cover status",
     )
