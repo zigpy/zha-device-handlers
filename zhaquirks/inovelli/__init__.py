@@ -1286,32 +1286,32 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        mmwave_z_min = ZCLAttributeDef(
+        mmwave_height_minimum_floor = ZCLAttributeDef(
             id=0x0065,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        mmwave_z_max = ZCLAttributeDef(
+        mmwave_height_maximum_ceiling = ZCLAttributeDef(
             id=0x0066,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        mmwave_x_min = ZCLAttributeDef(
+        mmwave_width_minimum_left = ZCLAttributeDef(
             id=0x0067,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        mmwave_x_max = ZCLAttributeDef(
+        mmwave_width_maximum_right = ZCLAttributeDef(
             id=0x0068,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        mmwave_y_min = ZCLAttributeDef(
+        mmwave_depth_minimum_near = ZCLAttributeDef(
             id=0x0069,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
-        mmwave_y_max = ZCLAttributeDef(
+        mmwave_depth_maximum_far = ZCLAttributeDef(
             id=0x006A,
             type=t.int16s,
             is_manufacturer_specific=True,
