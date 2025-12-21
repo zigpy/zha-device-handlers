@@ -104,7 +104,7 @@ class SonoffExternalSwitchTriggerType(t.enum8):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
-        translation_key="cover_status",
+        translation_key="motor_state",
         fallback_name="Cover status",
     )
     .write_attr_button(
