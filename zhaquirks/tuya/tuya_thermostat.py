@@ -28,6 +28,18 @@ class RegulatorPeriod(t.enum8):
     _90_min = 0x04
 
 
+class ScreenTimeSet(t.enum8):
+    """Tuya screen time set enum."""
+
+    Off = 0x00
+    _10_Sec = 0x01
+    _20_Sec = 0x02
+    _30_Sec = 0x03
+    _40_Sec = 0x04
+    _50_Sec = 0x05
+    _60_Sec = 0x06
+
+
 class ThermostatMode(t.enum8):
     """Tuya thermostat mode."""
 
@@ -67,12 +79,29 @@ class PresetModeV04(t.enum8):
     Eco = 0x03
 
 
-class SensorMode(t.enum8):
-    """Tuya sensor mode enum."""
+class PresetModeV05(t.enum8):
+    """Tuya preset mode v05 enum."""
+
+    Manual = 0x00
+    Temporary_Manual = 0x01
+    Auto = 0x02
+    Eco = 0x03
+
+
+class SensorModeV01(t.enum8):
+    """Tuya sensor mode v01 enum."""
 
     Air = 0x00
     Floor = 0x01
     Both = 0x02
+
+
+class SensorModeV02(t.enum8):
+    """Tuya sensor mode v02 enum."""
+
+    Air = 0x00
+    Both = 0x01
+    Floor = 0x02
 
 
 class BacklightMode(t.enum8):
@@ -123,6 +152,12 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         # Previously mapped, marking as explicitly unsupported.
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.local_temperature_calibration.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.min_heat_setpoint_limit.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.max_heat_setpoint_limit.id
         )
 
 
@@ -211,7 +246,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     .tuya_enum(
         dp_id=102,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -386,7 +421,7 @@ base_avatto_quirk = (
     .tuya_enum(
         dp_id=106,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -568,7 +603,7 @@ base_avatto_quirk = (
     .tuya_enum(
         dp_id=106,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -599,6 +634,190 @@ base_avatto_quirk = (
         off_value=1,
         translation_key="invert_relay",
         fallback_name="Invert relay",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Moes ZHT-SR-GC-WH-MS (Star Ring Thermostat)
+"""Map from the manufacturer: https://github.com/Koenkk/zigbee2mqtt/issues/26278#issuecomment-2660773863"""
+(
+    TuyaQuirkBuilder("_TZE204_lpedvtvr", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV05,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_number(
+        dp_id=18,
+        attribute_name="min_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=1,
+        max_value=15,
+        step=1,
+        multiplier=0.1,
+        translation_key="min_temperature",
+        fallback_name="Min temperature",
+    )
+    .tuya_switch(
+        dp_id=28,
+        attribute_name="factory_reset",
+        translation_key="factory_reset",
+        fallback_name="Factory reset",
+    )
+    .tuya_enum(
+        dp_id=32,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorModeV02,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .tuya_number(
+        dp_id=34,
+        attribute_name="max_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=15,
+        max_value=45,
+        step=1,
+        multiplier=0.1,
+        translation_key="max_temperature",
+        fallback_name="Max temperature",
+    )
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_dp(
+        dp_id=47,
+        ep_attribute=Thermostat.ep_attribute,
+        attribute_name=Thermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Idle if x else RunningState.Heat_State_On,
+    )
+    .tuya_number(
+        dp_id=48,
+        attribute_name="display_brightness",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="display_brightness",
+        fallback_name="Display brightness",
+    )
+    .tuya_dp(
+        dp_id=50,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-10,
+        max_value=10,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_sensor(
+        dp_id=109,
+        attribute_name="external_temperature_input",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="external_temperature_input",
+        fallback_name="External temperature",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0.5,
+        max_value=5,
+        step=0.5,
+        multiplier=0.1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="max_temperature_limit",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=10,
+        max_value=70,
+        step=1,
+        multiplier=0.1,
+        translation_key="max_temperature_limit",
+        fallback_name="Max temp limit",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="min_temperature_limit",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=10,
+        step=1,
+        multiplier=0.1,
+        translation_key="min_temperature_limit",
+        fallback_name="Min temp limit",
+    )
+    .tuya_number(
+        dp_id=113,
+        attribute_name="eco_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=10,
+        max_value=30,
+        step=1,
+        multiplier=0.1,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    .tuya_enum(
+        dp_id=114,
+        attribute_name="screen_time_set",
+        enum_class=ScreenTimeSet,
+        translation_key="screen_time_set",
+        fallback_name="Screen Time",
+    )
+    .tuya_switch(
+        dp_id=115,
+        attribute_name="ring_light",
+        translation_key="ring_light",
+        fallback_name="Ring Light",
     )
     .adds(TuyaThermostat)
     .skip_configuration()
