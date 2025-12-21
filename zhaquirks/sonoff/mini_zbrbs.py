@@ -27,7 +27,7 @@ class SonoffCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        cover_status = ZCLAttributeDef(
+        motor_state = ZCLAttributeDef(
             id=0x5013,
             type=t.uint8_t,
             is_manufacturer_specific=True,
@@ -57,14 +57,14 @@ class SonoffCluster(CustomCluster):
 
 
 class SonoffCoverCalibrationStatus(t.enum8):
-    """extern switch trigger type."""
+    """Cover calibration status."""
 
     not_calibrated = 0x00
     calibrated = 0x01
 
 
-class SonoffCoverStatus(t.enum8):
-    """extern switch trigger type."""
+class SonoffMotorState(t.enum8):
+    """Motor state (can be different from cover state)."""
 
     stopped = 0x00
     opening = 0x01
@@ -72,7 +72,7 @@ class SonoffCoverStatus(t.enum8):
 
 
 class SonoffExternalSwitchTriggerType(t.enum8):
-    """extern switch trigger type."""
+    """External switch trigger type."""
 
     edge_trigger = 0x00
     pulse_trigger = 0x01
@@ -98,14 +98,14 @@ class SonoffExternalSwitchTriggerType(t.enum8):
         fallback_name="Calibrated",
     )
     .enum(
-        SonoffCluster.AttributeDefs.cover_status.name,
-        SonoffCoverStatus,
+        SonoffCluster.AttributeDefs.motor_state.name,
+        SonoffMotorState,
         SonoffCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="motor_state",
-        fallback_name="Cover status",
+        fallback_name="Motor state",
     )
     .write_attr_button(
         SonoffCluster.AttributeDefs.limits_calibration.name,
