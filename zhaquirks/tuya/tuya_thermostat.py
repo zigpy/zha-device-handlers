@@ -153,12 +153,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.local_temperature_calibration.id
         )
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.min_heat_setpoint_limit.id
-        )
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.max_heat_setpoint_limit.id
-        )
 
 
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
