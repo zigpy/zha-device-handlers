@@ -31,13 +31,12 @@ class RegulatorPeriod(t.enum8):
 class ScreenTimeSet(t.enum8):
     """Tuya screen time set enum."""
 
-    Off = 0x00
-    _10_Sec = 0x01
-    _20_Sec = 0x02
-    _30_Sec = 0x03
-    _40_Sec = 0x04
-    _50_Sec = 0x05
-    _60_Sec = 0x06
+    _10_Sec = 0x00
+    _20_Sec = 0x01
+    _30_Sec = 0x02
+    _40_Sec = 0x03
+    _50_Sec = 0x04
+    _60_Sec = 0x05
 
 
 class ThermostatMode(t.enum8):
