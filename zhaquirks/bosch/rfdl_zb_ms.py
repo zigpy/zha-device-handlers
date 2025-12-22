@@ -14,8 +14,9 @@ import logging
 import time
 from typing import Any
 
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -30,7 +31,6 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl import foundation
 
 from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.bosch import BOSCH
