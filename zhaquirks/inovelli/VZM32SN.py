@@ -198,7 +198,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         "light_on_presence_behavior",
         VZM32SN_CLUSTER_ID,
         min_value=0,
-        max_value=2,
+        max_value=6,
         step=1,
         entity_type=EntityType.CONFIG,
         translation_key="light_on_presence_behavior",
