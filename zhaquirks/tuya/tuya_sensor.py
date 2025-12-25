@@ -3,7 +3,12 @@
 import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    LIGHT_LUX,
+    PERCENTAGE,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
