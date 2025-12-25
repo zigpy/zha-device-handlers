@@ -1,5 +1,6 @@
 """Tests for Niko quirks."""
 
+import asyncio
 from unittest import mock
 
 import pytest
@@ -452,6 +453,71 @@ class TestNikoSwitch:
 
                     attr = config_cluster.get(0x0105)
                     assert (0 if attr is None else attr) == expected
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                # LED 1
+                {
+                    "writes": [
+                        {0x0011: t.Bool.true},
+                        {0x0011: t.Bool.true},
+                        {0x0011: t.Bool.false},
+                        {0x0011: t.Bool.true},
+                    ],
+                    "result": 0b01,
+                    "calls": 3,
+                },
+                # LED 2
+                {
+                    "writes": [
+                        {0x0013: t.Bool.true},
+                        {0x0013: t.Bool.true},
+                        {0x0013: t.Bool.false},
+                        {0x0013: t.Bool.true},
+                    ],
+                    "result": 0b10,
+                    "calls": 3,
+                },
+                # Mixed
+                {
+                    "writes": [
+                        {0x0011: t.Bool.true},
+                        {0x0011: t.Bool.true},
+                        {0x0011: t.Bool.true},
+                        {0x0013: t.Bool.true},
+                        {0x0011: t.Bool.true},
+                        {0x0013: t.Bool.true},
+                    ],
+                    "result": 0b11,
+                    "calls": 2,
+                },
+            ],
+        )
+        async def test_rapid_write(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test rapid consecutive writes of LED state."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            async def slow_request(*args, **kwargs):
+                assert not args
+                assert kwargs["expect_reply"]
+                await asyncio.sleep(0)
+                return ([], foundation.Status.SUCCESS)
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", side_effect=slow_request
+            ) as request:
+                for attributes in case["writes"]:
+                    await buttons_cluster.write_attributes(attributes)
+                await wait_for_zigpy_tasks()
+
+                assert request.called
+                assert request.call_count == case["calls"]
+
+                attr = config_cluster.get(0x0105)
+                assert (0 if attr is None else attr) == case["result"]
 
     @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
     class TestLedSync:

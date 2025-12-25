@@ -43,6 +43,7 @@ class NikoCluster(CustomCluster):
     """Niko custom cluster for device configuration."""
 
     attr_config = {}
+    attr_pending = {}
 
     def __init__(self, *args, **kwargs):
         """Initialize the cluster."""
@@ -57,8 +58,21 @@ class NikoCluster(CustomCluster):
     async def write_attributes(self, attributes, **kwargs):
         """Write the attributes and inform the config cluster."""
         result = await super().write_attributes(attributes, **kwargs)
+        for attr in attributes.keys() & self.attr_pending.keys():
+            if self.attr_pending[attr] == attributes[attr]:
+                del self.attr_pending[attr]
         self._notify_cluster("niko_config", attributes)
         return result
+
+    def get_pending(self, attrid):
+        """Retrieve the attribute value (possibly pending a write operation)."""
+        if attrid in self.attr_pending:
+            return self.attr_pending[attrid]
+        return super().get(attrid)
+
+    async def write_pending(self):
+        """Write all pending attribute changes."""
+        await self.write_attributes(self.attr_pending)
 
     def _handle_attribute_event(
         self, event: AttributeReportedEvent | AttributeUpdatedEvent
@@ -72,12 +86,15 @@ class NikoCluster(CustomCluster):
         """Notifies the cluster of attributes changes."""
         if ep_attribute != self.ep_attribute:
             cluster = getattr(self.endpoint, ep_attribute)
+            attr_pending = cluster.attr_pending.copy()
             for attrid, value in attributes.items():
                 if isinstance(attrid, int):
                     attrid = self.attributes[attrid].name
                 callback_name = f"{attrid}_changed"
                 if hasattr(cluster, callback_name):
                     getattr(cluster, callback_name)(value)
+            if attr_pending != cluster.attr_pending:
+                self.create_catching_task(cluster.write_pending())
 
 
 class ButtonsDefaultAction(t.enum8):
@@ -186,51 +203,39 @@ class NikoConfigCluster(NikoCluster):
 
     def led_1_on_changed(self, value: bool):
         """Process a write to the led_1_on attribute."""
-        self.create_catching_task(self.write_led_on(0, value))
+        self.write_led_on(0, value)
 
     def led_3_on_changed(self, value: bool):
         """Process a write to the led_3_on attribute."""
-        self.create_catching_task(self.write_led_on(1, value))
+        self.write_led_on(1, value)
 
     def led_1_switch_sync_changed(self, value: LedSwitchSyncOptions):
         """Process a write to the led_1_switch_sync attribute."""
-        self.create_catching_task(self.write_led_switch_sync(0, value))
+        self.write_led_switch_sync(0, value)
 
     def led_3_switch_sync_changed(self, value: LedSwitchSyncOptions):
         """Process a write to the led_3_switch_sync attribute."""
-        self.create_catching_task(self.write_led_switch_sync(1, value))
+        self.write_led_switch_sync(1, value)
 
     def alert_color_changed(self, value: LedsAlertColors):
         """Process a write to the alert_color attribute."""
-        self.create_catching_task(self.write_leds_alert(value))
+        self.attr_pending[self.AttributeDefs.leds_alert.id] = value
 
-    async def write_led_on(self, led: int, value: bool):
+    def write_led_on(self, led: int, value: bool):
         """Set the status LED to on or off using the leds_on attribute."""
-        # Determine the previous state of the specific status LED
-        state = self.get(self.AttributeDefs.leds_on.id) or 0
+        state = self.get_pending(self.AttributeDefs.leds_on.id) or 0
         mask = 1 << led
-        previous = bool(state & mask)
+        update = (state | mask) if value else state & ~mask
+        if state != update:
+            self.attr_pending[self.AttributeDefs.leds_on.id] = update
 
-        # If the status LED changed, update the leds_on attribute
-        if value != previous:
-            state = (state | mask) if value else state & ~mask
-            await self.write_attributes({self.AttributeDefs.leds_on.id: state})
-
-    async def write_led_switch_sync(self, led: int, value: LedSwitchSyncOptions):
+    def write_led_switch_sync(self, led: int, value: LedSwitchSyncOptions):
         """Set LED/switch synchronization using the leds_switch_sync attribute."""
-        # Determine previous state of individual LED
-        state = self.get(self.AttributeDefs.leds_switch_sync.id) or 0
+        state = self.get_pending(self.AttributeDefs.leds_switch_sync.id) or 0
         shift = led << 2
-        previous = state >> shift & 0xF
-
-        # Update if the LED's state changed
-        if value != previous:
-            state = state & ~(0xF << shift) | (value << shift)
-            await self.write_attributes({self.AttributeDefs.leds_switch_sync.id: state})
-
-    async def write_leds_alert(self, value: LedsAlertColors):
-        """Write the leds_alert attribute."""
-        await self.write_attributes({self.AttributeDefs.leds_alert.id: value})
+        update = state & ~(0xF << shift) | (value << shift)
+        if state != update:
+            self.attr_pending[self.AttributeDefs.leds_switch_sync.id] = update
 
 
 class ButtonStateReporting(t.bitmap8):
