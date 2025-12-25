@@ -3,7 +3,7 @@
 import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX. PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import LIGHT_LUX, PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
@@ -364,13 +364,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_sensor(
         dp_id=101,
         type=t.uint16_t,
-        attribute_name="humidity_value",        
+        attribute_name="humidity_value",
         unit=PERCENTAGE,
         device_class=SensorDeviceClass.HUMIDITY,
         entity_type=EntityType.STANDARD,
         translation_key="humidity",
         fallback_name="Humidity",
-    )  
+    )
     .tuya_dp_attribute(
         dp_id=111,
         attribute_name="water_warning",
