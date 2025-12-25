@@ -75,7 +75,7 @@ class LegrandCableOutletCluster(CustomCluster):
         pilot_wire_mode = ZCLAttributeDef(
             id=0x00,
             type=PilotWireMode,
-            is_manufacturer_specific=True,
+            manufacturer_code=0xFC40,
         )
 
     class ServerCommandDefs(BaseCommandDefs):
@@ -84,7 +84,7 @@ class LegrandCableOutletCluster(CustomCluster):
         set_pilot_wire_mode = ZCLCommandDef(
             id=0x00,
             schema={"mode": PilotWireMode},
-            is_manufacturer_specific=True,
+            manufacturer_code=0xFC40,
         )
 
     async def write_attributes(

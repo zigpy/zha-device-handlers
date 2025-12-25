@@ -21,7 +21,7 @@ class ThirdRealityDoorCluster(CustomCluster):
         open_delay_time: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 

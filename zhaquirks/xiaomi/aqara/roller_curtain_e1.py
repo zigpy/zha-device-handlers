@@ -8,7 +8,7 @@ from typing import Any, Final
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import AttributeReadEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -199,6 +199,19 @@ class AnalogOutputRollerE1(WriteAwareUpdateAttribute, CustomCluster, AnalogOutpu
         AnalogOutput.AttributeDefs.resolution.id: 1.0,
         AnalogOutput.AttributeDefs.status_flags.id: 0x00,
     }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
+
+    def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
+        """Handle attribute read event."""
+        if event.attribute_id == self.AttributeDefs.present_value.id:
+            self.endpoint.window_covering.update_attribute(
+                WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                t.uint8_t(100 - event.value),
+            )
 
     def _update_attribute(
         self, attrid: int, value: Any, is_write: bool | None = None

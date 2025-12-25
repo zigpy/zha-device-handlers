@@ -483,6 +483,18 @@ class TuyaManufCluster(CustomCluster):
             super().command(TUYA_SET_TIME, payload, expect_reply=False)
         )
 
+    def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
+        """Convert attributes dict to list of Attribute records."""
+        records = []
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            record = foundation.Attribute(
+                attrid=attr_def.id, value=foundation.TypeValue()
+            )
+            record.value.value = attr_def.type(value)
+            records.append(record)
+        return records
+
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""

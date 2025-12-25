@@ -421,7 +421,7 @@ async def test_bosch_radiator_thermostat_II_read_attributes_paused(
         success, fail = await bosch_thermostat_cluster.read_attributes(
             [
                 Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.AttributeDefs.pi_heating_demand.id,
+                BoschTrvThermostatCluster.AttributeDefs.pi_heating_demand.id,
             ]
         )
         assert Thermostat.SystemMode.Off in success.values()
@@ -436,7 +436,7 @@ async def test_bosch_radiator_thermostat_II_read_attributes_paused(
         success, fail = await bosch_thermostat_cluster.read_attributes(
             [
                 Thermostat.AttributeDefs.system_mode.name,
-                Thermostat.AttributeDefs.pi_heating_demand.name,
+                BoschTrvThermostatCluster.AttributeDefs.pi_heating_demand.name,
             ]
         )
         assert Thermostat.SystemMode.Off in success.values()
