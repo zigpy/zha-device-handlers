@@ -41,6 +41,7 @@ class DimmableLedController(CustomDevice):
             ("_TZ3210_agjx0pxt", "TS0501B"),
             ("_TZ3210_d062rv7j", "TS0501B"),
             ("_TZ3210_syh4kuef", "TS0501B"),
+            ("_TZB210_rkgngb5o", "TS0501B"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
