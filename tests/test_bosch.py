@@ -15,11 +15,10 @@ from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
 from zhaquirks.bosch.rfdl_zb_ms import (
+    STUCK_MOTION_THRESHOLD_S,
     BoschIasZone,
     BoschOccupancy,
     BoschRFDLZBMS,
-    MOTION_TIMEOUT_S,
-    STUCK_MOTION_THRESHOLD_S,
 )
 
 zhaquirks.setup()
@@ -794,16 +793,16 @@ async def test_bosch_rfdl_zb_ms_motion_event_sets_occupancy(zigpy_device_from_qu
     assert occupancy_cluster._occupied_since is not None
 
 
-async def test_bosch_rfdl_zb_ms_motion_timeout_clears_occupancy(zigpy_device_from_quirk):
+async def test_bosch_rfdl_zb_ms_motion_timeout_clears_occupancy(
+    zigpy_device_from_quirk,
+):
     """Test that occupancy clears after timeout."""
     device = zigpy_device_from_quirk(BoschRFDLZBMS)
     occupancy_cluster = device.endpoints[1].occupancy
     occupancy_listener = ClusterListener(occupancy_cluster)
 
     # Patch the timeout to be very short for testing
-    with mock.patch.object(
-        zhaquirks.bosch.rfdl_zb_ms, "MOTION_TIMEOUT_S", 0.05
-    ):
+    with mock.patch.object(zhaquirks.bosch.rfdl_zb_ms, "MOTION_TIMEOUT_S", 0.05):
         # Trigger motion event
         occupancy_cluster.motion_event()
 
@@ -914,7 +913,9 @@ async def test_bosch_rfdl_zb_ms_multiple_motion_events_reset_timer(
         assert occupancy_cluster._attr_cache.get(0x0000, 0) == 0
 
 
-async def test_bosch_rfdl_zb_ms_ias_zone_forwards_motion_to_bus(zigpy_device_from_quirk):
+async def test_bosch_rfdl_zb_ms_ias_zone_forwards_motion_to_bus(
+    zigpy_device_from_quirk,
+):
     """Test that IAS Zone cluster forwards motion events to the bus."""
     device = zigpy_device_from_quirk(BoschRFDLZBMS)
     ias_zone_cluster = device.endpoints[1].ias_zone
