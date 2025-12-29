@@ -1181,6 +1181,113 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     assert str(s) == expected_string
 
 
+async def test_xiaomi_e1_thermostat_heartbeat_parsing(zigpy_device_from_quirk):
+    """Test heartbeat parsing on Xiaomi E1 thermostat."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import HEARTBEAT, _parse_heartbeat
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    thermostat_cluster = device.endpoints[1].thermostat
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    device_temp_cluster = device.endpoints[1].device_temperature
+    device_temp_listener = ClusterListener(device_temp_cluster)
+
+    power_config_cluster = device.endpoints[1].power
+    power_config_listener = ClusterListener(power_config_cluster)
+
+    # Test heartbeat TLV parsing function directly
+    # Format: key (1 byte) + type (1 byte) + value (N bytes)
+    # Type 0x20 = uint8, 0x21 = uint16, 0x23 = uint32
+
+    # Create a test heartbeat with:
+    # - key 3 (device_temperature): uint8 = 25 (25°C)
+    # - key 5 (power_outage_count): uint8 = 3
+    # - key 101 (preset): uint8 = 1 (auto)
+    # - key 102 (local_temperature): uint16 = 2150 (21.50°C in centidegrees)
+    # - key 105 (battery): uint8 = 85 (85%)
+    heartbeat_data = bytes(
+        [
+            3,
+            0x20,
+            25,  # device_temperature = 25
+            5,
+            0x20,
+            3,  # power_outage_count = 3
+            101,
+            0x20,
+            1,  # preset = auto
+            102,
+            0x21,
+            0x66,
+            0x08,  # local_temperature = 2150 (little-endian)
+            105,
+            0x20,
+            85,  # battery = 85%
+        ]
+    )
+
+    parsed = _parse_heartbeat(heartbeat_data)
+    assert parsed[3] == 25  # device_temperature
+    assert parsed[5] == 3  # power_outage_count
+    assert parsed[101] == 1  # preset
+    assert parsed[102] == 2150  # local_temperature
+    assert parsed[105] == 85  # battery
+
+    # Now test that the cluster correctly updates related attributes
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    # Check device temperature was updated (value * 100 for centidegrees)
+    assert len(device_temp_listener.attribute_updates) >= 1
+    device_temp_update = next(
+        (
+            u
+            for u in device_temp_listener.attribute_updates
+            if u[0] == DeviceTemperature.AttributeDefs.current_temperature.id
+        ),
+        None,
+    )
+    assert device_temp_update is not None
+    assert device_temp_update[1] == 2500  # 25°C * 100
+
+    # Check local temperature was updated on thermostat
+    assert len(thermostat_listener.attribute_updates) >= 1
+    local_temp_update = next(
+        (
+            u
+            for u in thermostat_listener.attribute_updates
+            if u[0] == Thermostat.AttributeDefs.local_temperature.id
+        ),
+        None,
+    )
+    assert local_temp_update is not None
+    assert local_temp_update[1] == 2150  # already in centidegrees
+
+    # Check battery percentage was updated
+    assert len(power_config_listener.attribute_updates) >= 1
+    battery_update = next(
+        (
+            u
+            for u in power_config_listener.attribute_updates
+            if u[0] == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+        ),
+        None,
+    )
+    assert battery_update is not None
+    assert battery_update[1] == 170  # 85% * 2
+
+
+async def test_xiaomi_e1_thermostat_heartbeat_empty(zigpy_device_from_quirk):
+    """Test heartbeat parsing with empty/invalid data."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import _parse_heartbeat
+
+    # Test empty data
+    assert _parse_heartbeat(b"") == {}
+    assert _parse_heartbeat(None) == {}
+    assert _parse_heartbeat(bytes([0])) == {}  # Only 1 byte, can't parse
+
+
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
     (

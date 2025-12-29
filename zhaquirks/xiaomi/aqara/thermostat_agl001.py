@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import reduce
+import logging
 import math
 import struct
 from typing import Any, Final
@@ -10,10 +11,11 @@ from typing import Any, Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
+from zigpy.zcl.clusters.general import Basic, DeviceTemperature, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -29,6 +31,8 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
 
 XIAOMI_SYSTEM_MODE_MAP = {
@@ -36,11 +40,23 @@ XIAOMI_SYSTEM_MODE_MAP = {
     1: Thermostat.SystemMode.Heat,
 }
 
+
+class SystemMode(t.enum8):
+    """Xiaomi TRV system mode.
+
+    Maps to ZCL Thermostat.SystemMode but with Xiaomi-specific values.
+    """
+
+    Off = 0x00  # Heating disabled
+    Heat = 0x01  # Heating enabled
+
+
 SYSTEM_MODE = 0x0271
 PRESET = 0x0272
 WINDOW_DETECTION = 0x0273
 VALVE_DETECTION = 0x0274
 VALVE_ALARM = 0x0275
+CALIBRATE = 0x0270
 CHILD_LOCK = 0x0277
 AWAY_PRESET_TEMPERATURE = 0x0279
 WINDOW_OPEN = 0x027A
@@ -49,8 +65,43 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+HEARTBEAT = 0x00F7
 
-XIAOMI_CLUSTER_ID = 0xFCC0
+XIAOMI_MANUFACTURER_CODE = 0x115F
+
+# Heartbeat data keys (from TLV structure)
+HEARTBEAT_DEVICE_TEMPERATURE = 3
+HEARTBEAT_POWER_OUTAGE_COUNT = 5
+HEARTBEAT_FIRMWARE_VERSION = 13
+HEARTBEAT_PRESET = 101
+HEARTBEAT_LOCAL_TEMPERATURE = 102
+HEARTBEAT_HEATING_SETPOINT = 103
+HEARTBEAT_VALVE_ALARM = 104
+HEARTBEAT_BATTERY = 105
+
+
+class Preset(t.enum8):
+    """TRV operating preset.
+
+    Determines the operating mode of the thermostat.
+    """
+
+    Manual = 0x00  # Manual temperature control
+    Auto = 0x01  # Automatic schedule-based control
+    Away = 0x02  # Away/vacation mode with reduced temperature
+    Setup = 0x03  # Initial setup mode after powering ("E11" on display)
+
+
+class SensorMode(t.enum8):
+    """Temperature sensor mode.
+
+    Determines which temperature source the TRV uses for regulation.
+    """
+
+    Internal = 0x00  # Use internal temperature sensor (at the radiator)
+    ExternalPaired = 0x01  # External Aqara sensor paired via Aqara Hub (automatic)
+    ExternalInput = 0x02  # External temperature input via automation (manual updates)
+
 
 DAYS_MAP = {
     "mon": 0x02,
@@ -370,47 +421,120 @@ class ScheduleSettings(t.LVBytes):
         return result
 
 
+class LocalDeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
+    """Device temperature cluster for internal TRV temperature."""
+
+    _CONSTANT_ATTRIBUTES = {
+        DeviceTemperature.AttributeDefs.min_temp_experienced.id: -4000,
+        DeviceTemperature.AttributeDefs.max_temp_experienced.id: 12500,
+    }
+
+
+# ZCL data type sizes for heartbeat parsing (type_id: (size, signed))
+_ZCL_TYPE_SIZES: dict[int, tuple[int, bool]] = {
+    0x10: (1, False),  # Bool
+    0x20: (1, False),  # uint8
+    0x21: (2, False),  # uint16
+    0x22: (3, False),  # uint24
+    0x23: (4, False),  # uint32
+    0x24: (5, False),  # uint40
+    0x25: (6, False),  # uint48
+    0x28: (1, True),  # int8
+    0x29: (2, True),  # int16
+    0x2B: (4, True),  # int32
+}
+
+
+def _parse_heartbeat(value: bytes) -> dict[int, Any]:
+    """Parse Xiaomi TLV heartbeat structure.
+
+    The heartbeat is a TLV-encoded structure where each entry consists of:
+    - 1 byte: key/index
+    - 1 byte: data type (ZCL type)
+    - N bytes: value (length depends on type)
+
+    Returns a dictionary mapping keys to their parsed values.
+    """
+    result: dict[int, Any] = {}
+    if not value or not isinstance(value, (bytes, bytearray)):
+        return result
+
+    i = 0
+    while i < len(value) - 1:
+        key = value[i]
+        data_type = value[i + 1]
+
+        try:
+            if data_type in _ZCL_TYPE_SIZES:
+                size, signed = _ZCL_TYPE_SIZES[data_type]
+                result[key] = int.from_bytes(
+                    value[i + 2 : i + 2 + size], "little", signed=signed
+                )
+                i += 2 + size
+            elif data_type == 0x39:  # float (single precision)
+                result[key] = struct.unpack("<f", value[i + 2 : i + 6])[0]
+                i += 6
+            else:
+                _LOGGER.debug(
+                    "Unknown data type 0x%02x at position %d in heartbeat",
+                    data_type,
+                    i,
+                )
+                break
+        except (IndexError, struct.error):
+            _LOGGER.debug("Error parsing heartbeat at position %d", i)
+            break
+
+    return result
+
+
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
     class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
         """Attribute definitions."""
 
+        heartbeat: Final = ZCLAttributeDef(
+            id=HEARTBEAT, type=t.LVBytes, is_manufacturer_specific=True
+        )
+        calibrate: Final = ZCLAttributeDef(
+            id=CALIBRATE, type=t.uint8_t, is_manufacturer_specific=True
+        )
         system_mode: Final = ZCLAttributeDef(
-            id=SYSTEM_MODE, type=t.uint8_t, is_manufacturer_specific=True
+            id=SYSTEM_MODE, type=SystemMode, is_manufacturer_specific=True
         )
         preset: Final = ZCLAttributeDef(
-            id=PRESET, type=t.uint8_t, is_manufacturer_specific=True
+            id=PRESET, type=Preset, is_manufacturer_specific=True
         )
         window_detection: Final = ZCLAttributeDef(
-            id=WINDOW_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
+            id=WINDOW_DETECTION, type=t.Bool, is_manufacturer_specific=True
         )
         valve_detection: Final = ZCLAttributeDef(
-            id=VALVE_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
+            id=VALVE_DETECTION, type=t.Bool, is_manufacturer_specific=True
         )
         valve_alarm: Final = ZCLAttributeDef(
-            id=VALVE_ALARM, type=t.uint8_t, is_manufacturer_specific=True
+            id=VALVE_ALARM, type=t.Bool, is_manufacturer_specific=True
         )
         child_lock: Final = ZCLAttributeDef(
-            id=CHILD_LOCK, type=t.uint8_t, is_manufacturer_specific=True
+            id=CHILD_LOCK, type=t.Bool, is_manufacturer_specific=True
         )
         away_preset_temperature: Final = ZCLAttributeDef(
             id=AWAY_PRESET_TEMPERATURE, type=t.uint32_t, is_manufacturer_specific=True
         )
         window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN, type=t.uint8_t, is_manufacturer_specific=True
+            id=WINDOW_OPEN, type=t.Bool, is_manufacturer_specific=True
         )
         calibrated: Final = ZCLAttributeDef(
-            id=CALIBRATED, type=t.uint8_t, is_manufacturer_specific=True
+            id=CALIBRATED, type=t.Bool, is_manufacturer_specific=True
         )
         schedule: Final = ZCLAttributeDef(
-            id=SCHEDULE, type=t.uint8_t, is_manufacturer_specific=True
+            id=SCHEDULE, type=t.Bool, is_manufacturer_specific=True
         )
         schedule_settings: Final = ZCLAttributeDef(
             id=SCHEDULE_SETTINGS, type=ScheduleSettings, is_manufacturer_specific=True
         )
         sensor: Final = ZCLAttributeDef(
-            id=SENSOR, type=t.uint8_t, is_manufacturer_specific=True
+            id=SENSOR, type=SensorMode, is_manufacturer_specific=True
         )
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
@@ -425,7 +549,102 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             self.endpoint.thermostat.update_attribute(
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
+        elif attrid == HEARTBEAT:
+            self._handle_heartbeat(value)
+        elif attrid == PRESET:
+            # Check for setup mode (preset=3)
+            if value == Preset.Setup:
+                self.debug("Device is in setup mode (E11)")
         super()._update_attribute(attrid, value)
+
+    def _handle_heartbeat(self, value: bytes) -> None:
+        """Handle heartbeat message and update related clusters."""
+        heartbeat_data = _parse_heartbeat(value)
+        self.debug("Parsed heartbeat data: %s", heartbeat_data)
+
+        # Update device temperature
+        if HEARTBEAT_DEVICE_TEMPERATURE in heartbeat_data:
+            device_temp = heartbeat_data[HEARTBEAT_DEVICE_TEMPERATURE]
+            # Device temperature is in degrees Celsius, ZCL expects centidegrees
+            self.endpoint.device_temperature.update_attribute(
+                DeviceTemperature.AttributeDefs.current_temperature.id,
+                device_temp * 100,
+            )
+
+        # Update local temperature on thermostat
+        if HEARTBEAT_LOCAL_TEMPERATURE in heartbeat_data:
+            local_temp = heartbeat_data[HEARTBEAT_LOCAL_TEMPERATURE]
+            # Temperature is already in centidegrees from heartbeat
+            self.endpoint.thermostat.update_attribute(
+                Thermostat.AttributeDefs.local_temperature.id,
+                local_temp,
+            )
+
+        # Update battery
+        if HEARTBEAT_BATTERY in heartbeat_data:
+            battery = heartbeat_data[HEARTBEAT_BATTERY]
+            self.endpoint.power.battery_percent_reported(battery)
+
+        # Update preset (and detect setup mode)
+        if HEARTBEAT_PRESET in heartbeat_data:
+            preset = heartbeat_data[HEARTBEAT_PRESET]
+            if preset == Preset.Setup:
+                self.debug("Device is in setup mode (E11) from heartbeat")
+            self.update_attribute(PRESET, preset)
+
+        # Update valve alarm
+        if HEARTBEAT_VALVE_ALARM in heartbeat_data:
+            valve_alarm = heartbeat_data[HEARTBEAT_VALVE_ALARM]
+            self.update_attribute(VALVE_ALARM, 1 if valve_alarm == 1 else 0)
+
+        # Store power outage count for reference
+        if HEARTBEAT_POWER_OUTAGE_COUNT in heartbeat_data:
+            power_outage_count = heartbeat_data[HEARTBEAT_POWER_OUTAGE_COUNT] - 1
+            self.debug("Power outage count: %s", power_outage_count)
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
+        """Read attributes with Xiaomi manufacturer code."""
+        if manufacturer is None:
+            manufacturer = XIAOMI_MANUFACTURER_CODE
+        return await super().read_attributes(
+            attributes, allow_cache, only_cache, manufacturer
+        )
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes with Xiaomi manufacturer code."""
+        if manufacturer is None:
+            manufacturer = XIAOMI_MANUFACTURER_CODE
+
+        attrs_to_write = {}
+        for attr, value in attributes.items():
+            # Resolve attribute name to ID if needed
+            if isinstance(attr, str):
+                attr_def = self.attributes_by_name.get(attr)
+                if attr_def:
+                    attr = attr_def.id
+                else:
+                    self.debug("Unknown attribute name: %s", attr)
+                    continue
+
+            # Handle calibrate trigger specially - writing 1 triggers calibration
+            if attr == CALIBRATE:
+                attrs_to_write[attr] = t.uint8_t(1)
+            # Handle away_preset_temperature - needs to be multiplied by 100
+            elif attr == AWAY_PRESET_TEMPERATURE:
+                # Value comes in as degrees, needs to be in centidegrees
+                attrs_to_write[attr] = t.uint32_t(int(value * 100))
+            else:
+                attrs_to_write[attr] = value
+
+        return await super().write_attributes(attrs_to_write, manufacturer)
 
 
 class AGL001(XiaomiCustomDevice):
@@ -468,6 +687,7 @@ class AGL001(XiaomiCustomDevice):
                     Time.cluster_id,
                     XiaomiPowerConfiguration,
                     AqaraThermostatSpecificCluster,
+                    LocalDeviceTemperatureCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
