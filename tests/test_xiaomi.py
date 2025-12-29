@@ -1330,6 +1330,48 @@ async def test_xiaomi_e1_thermostat_heartbeat_unknown_type(zigpy_device_from_qui
     assert 2 not in parsed
 
 
+async def test_xiaomi_e1_thermostat_heartbeat_truncated(zigpy_device_from_quirk):
+    """Test heartbeat parsing with truncated data triggers exception handling."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import _parse_heartbeat
+
+    # uint16 type (0x21) requires 2 bytes, but we only provide 1
+    # This should trigger IndexError in int.from_bytes
+    truncated_data = bytes([1, 0x21, 0x42])  # Missing second byte for uint16
+    parsed = _parse_heartbeat(truncated_data)
+    # Should return empty dict or partial result, not crash
+    assert isinstance(parsed, dict)
+
+    # Float type (0x39) requires 4 bytes, but we only provide 2
+    truncated_float = bytes([1, 0x39, 0x00, 0x00])  # Missing 2 bytes for float
+    parsed = _parse_heartbeat(truncated_float)
+    assert isinstance(parsed, dict)
+
+
+async def test_xiaomi_e1_thermostat_write_unknown_attribute_name(
+    zigpy_device_from_quirk,
+):
+    """Test writing with unknown attribute name is skipped."""
+    from unittest import mock
+
+    from zigpy.zcl import foundation
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    async def async_success(*args, **kwargs):
+        return [foundation.Status.SUCCESS]
+
+    with mock.patch.object(opple_cluster, "request", side_effect=async_success) as m:
+        # Try to write an unknown attribute name - should be skipped
+        await opple_cluster.write_attributes({"nonexistent_attribute": 123})
+
+        # Request is called but with empty attributes list
+        assert m.call_count == 1
+        args = m.call_args[0]
+        # The attributes list (args[3]) should be empty since unknown attr was skipped
+        assert len(args[3]) == 0
+
+
 async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quirk):
     """Test heartbeat updates valve alarm attribute."""
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
