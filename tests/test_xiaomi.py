@@ -1288,6 +1288,163 @@ async def test_xiaomi_e1_thermostat_heartbeat_empty(zigpy_device_from_quirk):
     assert _parse_heartbeat(bytes([0])) == {}  # Only 1 byte, can't parse
 
 
+async def test_xiaomi_e1_thermostat_heartbeat_float_and_signed(zigpy_device_from_quirk):
+    """Test heartbeat parsing with float and signed integer types."""
+    # Test float (type 0x39) - single precision IEEE 754
+    # Value 23.5 = 0x41BC0000 in big-endian, 0x0000BC41 in little-endian
+    import struct
+
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import _parse_heartbeat
+
+    float_bytes = struct.pack("<f", 23.5)
+    heartbeat_with_float = bytes([1, 0x39]) + float_bytes
+    parsed = _parse_heartbeat(heartbeat_with_float)
+    assert abs(parsed[1] - 23.5) < 0.01
+
+    # Test signed int8 (type 0x28) with negative value
+    heartbeat_with_signed = bytes([2, 0x28, 0xFB])  # -5 in signed int8
+    parsed = _parse_heartbeat(heartbeat_with_signed)
+    assert parsed[2] == -5
+
+    # Test signed int16 (type 0x29) with negative value
+    # -100 = 0xFF9C in little-endian
+    heartbeat_with_int16 = bytes([3, 0x29, 0x9C, 0xFF])
+    parsed = _parse_heartbeat(heartbeat_with_int16)
+    assert parsed[3] == -100
+
+    # Test signed int32 (type 0x2B)
+    heartbeat_with_int32 = bytes([4, 0x2B, 0x00, 0x00, 0x00, 0x80])  # -2147483648
+    parsed = _parse_heartbeat(heartbeat_with_int32)
+    assert parsed[4] == -2147483648
+
+
+async def test_xiaomi_e1_thermostat_heartbeat_unknown_type(zigpy_device_from_quirk):
+    """Test heartbeat parsing with unknown data type stops parsing."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import _parse_heartbeat
+
+    # First entry is valid uint8, second is unknown type 0xFF
+    heartbeat_data = bytes([1, 0x20, 42, 2, 0xFF, 0x00])
+    parsed = _parse_heartbeat(heartbeat_data)
+    # Should parse first entry but stop at unknown type
+    assert parsed[1] == 42
+    assert 2 not in parsed
+
+
+async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quirk):
+    """Test heartbeat updates valve alarm attribute."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+        HEARTBEAT,
+        HEARTBEAT_VALVE_ALARM,
+        VALVE_ALARM,
+    )
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    # Heartbeat with valve_alarm = 1 (key 104, type uint8)
+    heartbeat_data = bytes([HEARTBEAT_VALVE_ALARM, 0x20, 1])
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    # Check valve_alarm was updated
+    valve_alarm_update = next(
+        (u for u in opple_listener.attribute_updates if u[0] == VALVE_ALARM), None
+    )
+    assert valve_alarm_update is not None
+    assert valve_alarm_update[1] == 1
+
+
+async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
+    """Test writing calibrate attribute triggers calibration."""
+    from unittest import mock
+
+    from zigpy.zcl import foundation
+
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import CALIBRATE
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    async def async_success(*args, **kwargs):
+        return [foundation.Status.SUCCESS]
+
+    with mock.patch.object(opple_cluster, "request", side_effect=async_success) as m:
+        await opple_cluster.write_attributes({CALIBRATE: 0})
+
+        # Verify calibrate is always written as 1
+        assert m.call_count == 1
+        args = m.call_args[0]
+        attr = next(attr for attr in args[3] if attr.attrid == CALIBRATE)
+        assert attr.value.value == 1
+
+
+async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_quirk):
+    """Test writing away_preset_temperature converts to centidegrees."""
+    from unittest import mock
+
+    from zigpy.zcl import foundation
+
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import AWAY_PRESET_TEMPERATURE
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    async def async_success(*args, **kwargs):
+        return [foundation.Status.SUCCESS]
+
+    with mock.patch.object(opple_cluster, "request", side_effect=async_success) as m:
+        await opple_cluster.write_attributes({AWAY_PRESET_TEMPERATURE: 18.5})
+
+        assert m.call_count == 1
+        args = m.call_args[0]
+        attr = next(attr for attr in args[3] if attr.attrid == AWAY_PRESET_TEMPERATURE)
+        # 18.5 * 100 = 1850 centidegrees
+        assert attr.value.value == 1850
+
+
+async def test_xiaomi_e1_thermostat_write_by_name(zigpy_device_from_quirk):
+    """Test writing attribute by name."""
+    from unittest import mock
+
+    from zigpy.zcl import foundation
+
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import CHILD_LOCK
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    async def async_success(*args, **kwargs):
+        return [foundation.Status.SUCCESS]
+
+    with mock.patch.object(opple_cluster, "request", side_effect=async_success) as m:
+        await opple_cluster.write_attributes({"child_lock": True})
+
+        assert m.call_count == 1
+        args = m.call_args[0]
+        attr = next(attr for attr in args[3] if attr.attrid == CHILD_LOCK)
+        # t.Bool returns an enum, check truthiness
+        assert bool(attr.value.value)
+
+
+async def test_xiaomi_e1_thermostat_preset_setup_mode(zigpy_device_from_quirk):
+    """Test preset setup mode detection."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import PRESET, Preset
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    # Update preset to Setup (3) - should trigger debug log
+    opple_cluster.update_attribute(PRESET, Preset.Setup)
+
+    # Verify attribute was updated
+    preset_update = next(
+        (u for u in opple_listener.attribute_updates if u[0] == PRESET), None
+    )
+    assert preset_update is not None
+    assert preset_update[1] == Preset.Setup
+
+
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
     (
