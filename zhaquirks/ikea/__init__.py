@@ -10,7 +10,7 @@ from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, 
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
-from zhaquirks.const import BatterySize, ZHA_SEND_EVENT
+from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,7 +72,8 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     ) -> None:
         """Handle cluster specific commands.
 
-        Track move commands to remember direction for stop commands"""
+        Track move commands to remember direction for stop commands
+        """
         if hdr.command_id in (0x01, 0x05):
             move_mode = args[0]
             self._last_move_direction = move_mode
@@ -81,7 +82,7 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
                 self.listener_event(ZHA_SEND_EVENT, "move_up_release", [])
             elif self._last_move_direction == 1:
                 self.listener_event(ZHA_SEND_EVENT, "move_down_release", [])
-                
+
 
 class ShortcutV1Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 1."""

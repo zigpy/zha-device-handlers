@@ -1,9 +1,7 @@
 """IKEA Bilresa 2 button remote control."""
 
-from zigpy.quirks.v2 import QuirkBuilder, CustomDeviceV2
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 from zigpy.zcl import ClusterType
-
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -12,9 +10,9 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
-    DOUBLE_PRESS,
     DIM_DOWN,
     DIM_UP,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
     LONG_PRESS,
     LONG_RELEASE,
@@ -23,9 +21,12 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
+
 
 class IkeaBilresa2ButtonRemote(CustomDeviceV2):
     """Custom device for IKEA Bilresa 2 button remote."""
+
 
 (
     QuirkBuilder(IKEA, "09B9")
@@ -34,9 +35,9 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
-                COMMAND: COMMAND_ON, 
-                CLUSTER_ID: 6, 
-                ENDPOINT_ID: 1
+                COMMAND: COMMAND_ON,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_UP): {
                 COMMAND: COMMAND_MOVE,
@@ -50,9 +51,9 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
                 ENDPOINT_ID: 1,
             },
             (SHORT_PRESS, TURN_OFF): {
-                COMMAND: COMMAND_OFF, 
-                CLUSTER_ID: 6, 
-                ENDPOINT_ID: 1
+                COMMAND: COMMAND_OFF,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_DOWN): {
                 COMMAND: COMMAND_MOVE,
@@ -85,7 +86,7 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
                     "param3": 0,
                 },
             },
-        } 
+        }
     )
     .add_to_registry()
 )
