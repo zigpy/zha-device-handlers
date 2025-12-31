@@ -250,3 +250,56 @@ async def test_double_power_config_firmware(
         # check log output if we expect a warning
         if expect_log_warning:
             assert f"sw_build_id is not a number: {firmware} for device" in caplog.text
+
+
+async def test_bilresa_direction_tracking(zigpy_device_from_v2_quirk):
+    """Test Bilresa remote direction tracking for long press releases."""
+
+    device = zigpy_device_from_v2_quirk("IKEA of Sweden", "09B9")
+    level_cluster = device.endpoints[1].level
+
+    level_listener = ClusterListener(level_cluster)
+
+    # Test stop without prior move - should not emit any event (None case)
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=0, command_id=0x07)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+    assert len(level_listener.cluster_commands) == 0
+
+    # Test move up (command 0x05, move_mode=0)
+    hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=0x05)
+    level_cluster.handle_cluster_request(hdr, [0, 83])  # move_mode=0 (up), rate=83
+    
+    # Test stop - should emit move_up_release
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=0x07)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+    
+    assert len(level_listener.cluster_commands) == 1
+    assert level_listener.cluster_commands[0] == (2, "move_up_release", [])
+
+    # Reset listener
+    level_listener = ClusterListener(level_cluster)
+
+    # Test move down (command 0x01, move_mode=1)
+    hdr = foundation.ZCLHeader.cluster(tsn=3, command_id=0x01)
+    level_cluster.handle_cluster_request(hdr, [1, 83])  # move_mode=1 (down), rate=83
+    
+    # Test stop - should emit move_down_release
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=4, command_id=0x03)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+    
+    assert len(level_listener.cluster_commands) == 1
+    assert level_listener.cluster_commands[0] == (4, "move_down_release", [])
+
+    # Reset listener and test alternative stop command (0x03 after 0x05)
+    level_listener = ClusterListener(level_cluster)
+    
+    # Move up with command 0x05
+    hdr = foundation.ZCLHeader.cluster(tsn=5, command_id=0x05)
+    level_cluster.handle_cluster_request(hdr, [0, 83])
+    
+    # Stop with command 0x03
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=6, command_id=0x03)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+    
+    assert len(level_listener.cluster_commands) == 1
+    assert level_listener.cluster_commands[0] == (6, "move_up_release", [])

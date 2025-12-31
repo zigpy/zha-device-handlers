@@ -1,15 +1,16 @@
 """Ikea module."""
 
 import logging
+from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
-from zhaquirks.const import BatterySize
+from zhaquirks.const import BatterySize, ZHA_SEND_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,6 +52,36 @@ class ScenesCluster(CustomCluster, Scenes):
             is_manufacturer_specific=True,
         )
 
+
+class IkeaBilresaLevelControl(CustomCluster, LevelControl):
+    """Custom LevelControl cluster for IKEA remotes to track direction."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands"""
+        if hdr.command_id in (0x01, 0x05):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif hdr.command_id in (0x03, 0x07):
+            if self._last_move_direction == 0:
+                self.listener_event(ZHA_SEND_EVENT, "move_up_release", [])
+            elif self._last_move_direction == 1:
+                self.listener_event(ZHA_SEND_EVENT, "move_down_release", [])
+                
 
 class ShortcutV1Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 1."""
