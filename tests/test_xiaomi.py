@@ -1396,6 +1396,63 @@ async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quir
     assert valve_alarm_update[1] == 1
 
 
+async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_quirk):
+    """Test heartbeat detects setup mode (preset=3)."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+        HEARTBEAT,
+        HEARTBEAT_PRESET,
+        PRESET,
+        Preset,
+    )
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    # Heartbeat with preset = 3 (Setup mode, key 101, type uint8)
+    heartbeat_data = bytes([HEARTBEAT_PRESET, 0x20, Preset.Setup])
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    # Check preset was updated to Setup mode
+    preset_update = next(
+        (u for u in opple_listener.attribute_updates if u[0] == PRESET), None
+    )
+    assert preset_update is not None
+    assert preset_update[1] == Preset.Setup
+
+
+async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from_quirk):
+    """Test heartbeat updates firmware version on Basic cluster."""
+    from zigpy.zcl.clusters.general import Basic
+
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+        HEARTBEAT,
+        HEARTBEAT_FIRMWARE_VERSION,
+    )
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    basic_cluster = device.endpoints[1].basic
+    basic_listener = ClusterListener(basic_cluster)
+
+    # Heartbeat with firmware version = 2073 (0x819) (key 13, type uint32)
+    # 2073 in little-endian bytes: 0x19 0x08 0x00 0x00
+    heartbeat_data = bytes([HEARTBEAT_FIRMWARE_VERSION, 0x23, 0x19, 0x08, 0x00, 0x00])
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    # Check firmware version was updated on Basic cluster
+    sw_build_update = next(
+        (
+            u
+            for u in basic_listener.attribute_updates
+            if u[0] == Basic.AttributeDefs.sw_build_id.id
+        ),
+        None,
+    )
+    assert sw_build_update is not None
+    assert sw_build_update[1] == "2073"
+
+
 async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
     """Test writing calibrate attribute triggers calibration."""
     from unittest import mock
