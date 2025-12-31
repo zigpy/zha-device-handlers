@@ -501,40 +501,40 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             id=CALIBRATE, type=t.uint8_t, is_manufacturer_specific=True
         )
         system_mode: Final = ZCLAttributeDef(
-            id=SYSTEM_MODE, type=SystemMode, is_manufacturer_specific=True
+            id=SYSTEM_MODE, type=t.uint8_t, is_manufacturer_specific=True
         )
         preset: Final = ZCLAttributeDef(
-            id=PRESET, type=Preset, is_manufacturer_specific=True
+            id=PRESET, type=t.uint8_t, is_manufacturer_specific=True
         )
         window_detection: Final = ZCLAttributeDef(
-            id=WINDOW_DETECTION, type=t.Bool, is_manufacturer_specific=True
+            id=WINDOW_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
         )
         valve_detection: Final = ZCLAttributeDef(
-            id=VALVE_DETECTION, type=t.Bool, is_manufacturer_specific=True
+            id=VALVE_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
         )
         valve_alarm: Final = ZCLAttributeDef(
-            id=VALVE_ALARM, type=t.Bool, is_manufacturer_specific=True
+            id=VALVE_ALARM, type=t.uint8_t, is_manufacturer_specific=True
         )
         child_lock: Final = ZCLAttributeDef(
-            id=CHILD_LOCK, type=t.Bool, is_manufacturer_specific=True
+            id=CHILD_LOCK, type=t.uint8_t, is_manufacturer_specific=True
         )
         away_preset_temperature: Final = ZCLAttributeDef(
             id=AWAY_PRESET_TEMPERATURE, type=t.uint32_t, is_manufacturer_specific=True
         )
         window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN, type=t.Bool, is_manufacturer_specific=True
+            id=WINDOW_OPEN, type=t.uint8_t, is_manufacturer_specific=True
         )
         calibrated: Final = ZCLAttributeDef(
-            id=CALIBRATED, type=t.Bool, is_manufacturer_specific=True
+            id=CALIBRATED, type=t.uint8_t, is_manufacturer_specific=True
         )
         schedule: Final = ZCLAttributeDef(
-            id=SCHEDULE, type=t.Bool, is_manufacturer_specific=True
+            id=SCHEDULE, type=t.uint8_t, is_manufacturer_specific=True
         )
         schedule_settings: Final = ZCLAttributeDef(
             id=SCHEDULE_SETTINGS, type=ScheduleSettings, is_manufacturer_specific=True
         )
         sensor: Final = ZCLAttributeDef(
-            id=SENSOR, type=SensorMode, is_manufacturer_specific=True
+            id=SENSOR, type=t.uint8_t, is_manufacturer_specific=True
         )
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
@@ -602,6 +602,17 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             power_outage_count = heartbeat_data[HEARTBEAT_POWER_OUTAGE_COUNT] - 1
             self.debug("Power outage count: %s", power_outage_count)
 
+        # Update firmware version on Basic cluster
+        if HEARTBEAT_FIRMWARE_VERSION in heartbeat_data:
+            fw_version = heartbeat_data[HEARTBEAT_FIRMWARE_VERSION]
+            # Use raw version number as string (consistent with Z2M)
+            version_str = str(fw_version)
+            self.debug("Firmware version: %s", version_str)
+            self.endpoint.basic.update_attribute(
+                Basic.AttributeDefs.sw_build_id.id,
+                version_str,
+            )
+
     async def read_attributes(
         self,
         attributes: list[int | str],
@@ -637,10 +648,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             # Handle calibrate trigger specially - writing 1 triggers calibration
             if attr == CALIBRATE:
                 attrs_to_write[attr] = t.uint8_t(1)
-            # Handle away_preset_temperature - needs to be multiplied by 100
+            # Handle away_preset_temperature - value already in centidegrees from Number entity
             elif attr == AWAY_PRESET_TEMPERATURE:
-                # Value comes in as degrees, needs to be in centidegrees
-                attrs_to_write[attr] = t.uint32_t(int(value * 100))
+                attrs_to_write[attr] = t.uint32_t(int(value))
             else:
                 attrs_to_write[attr] = value
 

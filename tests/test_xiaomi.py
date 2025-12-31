@@ -1421,7 +1421,11 @@ async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
 
 
 async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_quirk):
-    """Test writing away_preset_temperature converts to centidegrees."""
+    """Test writing away_preset_temperature passes value as uint32.
+
+    Note: ZHA Number entity sends value already in centidegrees,
+    so no multiplication is needed in write_attributes.
+    """
     from unittest import mock
 
     from zigpy.zcl import foundation
@@ -1435,12 +1439,13 @@ async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_qui
         return [foundation.Status.SUCCESS]
 
     with mock.patch.object(opple_cluster, "request", side_effect=async_success) as m:
-        await opple_cluster.write_attributes({AWAY_PRESET_TEMPERATURE: 18.5})
+        # Value comes from ZHA Number entity already in centidegrees
+        await opple_cluster.write_attributes({AWAY_PRESET_TEMPERATURE: 1850})
 
         assert m.call_count == 1
         args = m.call_args[0]
         attr = next(attr for attr in args[3] if attr.attrid == AWAY_PRESET_TEMPERATURE)
-        # 18.5 * 100 = 1850 centidegrees
+        # Value should be passed through as uint32
         assert attr.value.value == 1850
 
 
