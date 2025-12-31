@@ -1,13 +1,12 @@
 """IKEA Bilresa 2 button remote control."""
+
 from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, CustomDeviceV2
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import LevelControl
-
-from zhaquirks.ikea import IKEA, ScenesCluster
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -16,9 +15,9 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
-    DOUBLE_PRESS,
     DIM_DOWN,
     DIM_UP,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
     LONG_PRESS,
     LONG_RELEASE,
@@ -28,6 +27,8 @@ from zhaquirks.const import (
     TURN_ON,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.ikea import IKEA, ScenesCluster
+
 
 class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     """Custom LevelControl cluster for Bilresa remote to track direction."""
@@ -47,8 +48,9 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
         ] = None,
     ) -> None:
         """Handle cluster specific commands.
-        
-        Track move commands to remember direction for stop commands"""
+
+        Track move commands to remember direction for stop commands
+        """
         if hdr.command_id in (0x01, 0x05):
             move_mode = args[0]
             self._last_move_direction = move_mode
@@ -58,8 +60,10 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
             elif self._last_move_direction == 1:
                 self.listener_event(ZHA_SEND_EVENT, "move_down_release", [])
 
+
 class IkeaBilresa2ButtonRemote(CustomDeviceV2):
     """Custom device for IKEA Bilresa 2 button remote."""
+
 
 (
     QuirkBuilder(IKEA, "09B9")
@@ -68,9 +72,9 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
-                COMMAND: COMMAND_ON, 
-                CLUSTER_ID: 6, 
-                ENDPOINT_ID: 1
+                COMMAND: COMMAND_ON,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_UP): {
                 COMMAND: COMMAND_MOVE,
@@ -84,9 +88,9 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
                 ENDPOINT_ID: 1,
             },
             (SHORT_PRESS, TURN_OFF): {
-                COMMAND: COMMAND_OFF, 
-                CLUSTER_ID: 6, 
-                ENDPOINT_ID: 1
+                COMMAND: COMMAND_OFF,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_DOWN): {
                 COMMAND: COMMAND_MOVE,
@@ -119,7 +123,7 @@ class IkeaBilresa2ButtonRemote(CustomDeviceV2):
                     "param3": 0,
                 },
             },
-        } 
+        }
     )
     .add_to_registry()
 )
