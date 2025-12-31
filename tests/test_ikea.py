@@ -262,9 +262,7 @@ async def test_double_power_config_firmware(
         (0x01, 1, 0x07, "move_down_release"),  # move down + stop (0x07)
     ],
 )
-async def test_bilresa_direction_tracking(
-    move_cmd, move_mode, stop_cmd, expected_event
-):
+async def test_bilresa_direction_tracking(move_cmd, move_mode, stop_cmd, expected_event):
     """Test Bilresa remote direction tracking for long press releases."""
     from zhaquirks.ikea import IkeaBilresaLevelControl
 
@@ -282,14 +280,16 @@ async def test_bilresa_direction_tracking(
     if move_cmd is not None:
         hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
         level_cluster.handle_cluster_request(hdr_move, [move_mode, 83])
-
+    
     # Send stop command
     hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=stop_cmd)
     level_cluster.handle_cluster_request(hdr_stop, [])
-
+    
     # Verify expected event
     if expected_event is None:
-        assert len(level_listener.cluster_commands) == 0
+        assert len(level_listener.cluster_events) == 0
     else:
-        assert len(level_listener.cluster_commands) == 1
-        assert level_listener.cluster_commands[0] == (2, expected_event, [])
+        assert len(level_listener.cluster_events) == 1
+        assert level_listener.cluster_events[0][0] == "zha_send_event"
+        assert level_listener.cluster_events[0][1] == expected_event
+
