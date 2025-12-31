@@ -72,12 +72,17 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     ) -> None:
         """Handle cluster specific commands.
 
-        Track move commands to remember direction for stop commands"""
+        Track move commands to remember direction for stop commands
+        """
         if hdr.command_id in (0x01, 0x05):
             move_mode = args[0]
             self._last_move_direction = move_mode
         elif hdr.command_id in (0x03, 0x07) and self._last_move_direction is not None:
-            event = "move_up_release" if self._last_move_direction == 0 else "move_down_release"
+            event = (
+                "move_up_release"
+                if self._last_move_direction == 0
+                else "move_down_release"
+            )
             self.listener_event(ZHA_SEND_EVENT, event, [])
             self.listener_cluster_command(hdr.tsn, event, [])
 
