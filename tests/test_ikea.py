@@ -256,7 +256,7 @@ async def test_bilresa_direction_tracking(zigpy_device_from_v2_quirk):
     """Test Bilresa remote direction tracking for long press releases."""
 
     device = zigpy_device_from_v2_quirk("IKEA of Sweden", "09B9")
-    level_cluster = device.endpoints[1].level
+    level_cluster = device.endpoints[1].out_clusters[8]
 
     level_listener = ClusterListener(level_cluster)
 
