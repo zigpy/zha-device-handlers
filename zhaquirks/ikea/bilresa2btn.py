@@ -2,8 +2,6 @@
 
 from zigpy.quirks.v2 import QuirkBuilder
 
-from zhaquirks.ikea import IKEA
-
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -23,12 +21,17 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.ikea import IKEA
 
 (
     QuirkBuilder(IKEA, "09B9")
     .device_automation_triggers(
         {
-            (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+            (SHORT_PRESS, TURN_ON): {
+                COMMAND: COMMAND_ON,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
+            },
             (LONG_PRESS, DIM_UP): {
                 COMMAND: COMMAND_MOVE_ON_OFF,
                 CLUSTER_ID: 8,
@@ -40,7 +43,11 @@ from zhaquirks.const import (
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 1,
             },
-            (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+            (SHORT_PRESS, TURN_OFF): {
+                COMMAND: COMMAND_OFF,
+                CLUSTER_ID: 6,
+                ENDPOINT_ID: 1,
+            },
             (LONG_PRESS, DIM_DOWN): {
                 COMMAND: COMMAND_MOVE,
                 CLUSTER_ID: 8,
@@ -52,7 +59,7 @@ from zhaquirks.const import (
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 1,
             },
-        } 
+        }
     )
     .add_to_registry()
 )
