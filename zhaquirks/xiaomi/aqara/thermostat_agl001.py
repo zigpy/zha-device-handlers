@@ -602,6 +602,32 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                 version_str,
             )
 
+        # Simulate running_state based on temperature difference
+        # The device doesn't report running_state, but we can derive it
+        if (
+            HEARTBEAT_LOCAL_TEMPERATURE in heartbeat_data
+            and HEARTBEAT_HEATING_SETPOINT in heartbeat_data
+        ):
+            local_temp = heartbeat_data[HEARTBEAT_LOCAL_TEMPERATURE]
+            setpoint = heartbeat_data[HEARTBEAT_HEATING_SETPOINT]
+            # Get current system_mode from cluster cache
+            system_mode = self._attr_cache.get(SYSTEM_MODE, SystemMode.Heat)
+
+            if system_mode == SystemMode.Off:
+                # System is off, not heating
+                running_state = 0  # Idle
+            elif setpoint > local_temp:
+                # Need to heat - setpoint higher than current temperature
+                running_state = Thermostat.RunningState.Heat_State_On
+            else:
+                # At or above setpoint, not heating
+                running_state = 0  # Idle
+
+            self.endpoint.thermostat.update_attribute(
+                Thermostat.AttributeDefs.running_state.id,
+                running_state,
+            )
+
     async def read_attributes(
         self,
         attributes: list[int | str],

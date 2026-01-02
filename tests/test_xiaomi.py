@@ -1454,6 +1454,109 @@ async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(
     assert sw_build_update[1] == "2073"
 
 
+async def test_xiaomi_e1_thermostat_heartbeat_running_state(zigpy_device_from_v2_quirk):
+    """Test heartbeat simulates running_state based on temperature."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+        HEARTBEAT,
+        HEARTBEAT_HEATING_SETPOINT,
+        HEARTBEAT_LOCAL_TEMPERATURE,
+        SYSTEM_MODE,
+        SystemMode,
+    )
+
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
+    opple_cluster = device.endpoints[1].opple_cluster
+    thermostat_cluster = device.endpoints[1].thermostat
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    # Set system_mode to Heat (default)
+    opple_cluster._attr_cache[SYSTEM_MODE] = SystemMode.Heat
+
+    # Test case 1: setpoint > local_temp -> heating
+    # local_temp = 2000 (20.00°C), setpoint = 2200 (22.00°C)
+    heartbeat_data = bytes(
+        [
+            HEARTBEAT_LOCAL_TEMPERATURE,
+            0x21,
+            0xD0,
+            0x07,  # 2000 little-endian
+            HEARTBEAT_HEATING_SETPOINT,
+            0x21,
+            0x98,
+            0x08,  # 2200 little-endian
+        ]
+    )
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    running_state_update = next(
+        (
+            u
+            for u in thermostat_listener.attribute_updates
+            if u[0] == Thermostat.AttributeDefs.running_state.id
+        ),
+        None,
+    )
+    assert running_state_update is not None
+    assert running_state_update[1] == Thermostat.RunningState.Heat_State_On
+
+    # Test case 2: setpoint <= local_temp -> idle
+    thermostat_listener.attribute_updates.clear()
+    # local_temp = 2200 (22.00°C), setpoint = 2000 (20.00°C)
+    heartbeat_data = bytes(
+        [
+            HEARTBEAT_LOCAL_TEMPERATURE,
+            0x21,
+            0x98,
+            0x08,  # 2200 little-endian
+            HEARTBEAT_HEATING_SETPOINT,
+            0x21,
+            0xD0,
+            0x07,  # 2000 little-endian
+        ]
+    )
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    running_state_update = next(
+        (
+            u
+            for u in thermostat_listener.attribute_updates
+            if u[0] == Thermostat.AttributeDefs.running_state.id
+        ),
+        None,
+    )
+    assert running_state_update is not None
+    assert running_state_update[1] == 0  # Idle
+
+    # Test case 3: system_mode = Off -> idle regardless of temperatures
+    thermostat_listener.attribute_updates.clear()
+    opple_cluster._attr_cache[SYSTEM_MODE] = SystemMode.Off
+    # local_temp = 2000, setpoint = 2200 (would be heating if on)
+    heartbeat_data = bytes(
+        [
+            HEARTBEAT_LOCAL_TEMPERATURE,
+            0x21,
+            0xD0,
+            0x07,
+            HEARTBEAT_HEATING_SETPOINT,
+            0x21,
+            0x98,
+            0x08,
+        ]
+    )
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    running_state_update = next(
+        (
+            u
+            for u in thermostat_listener.attribute_updates
+            if u[0] == Thermostat.AttributeDefs.running_state.id
+        ),
+        None,
+    )
+    assert running_state_update is not None
+    assert running_state_update[1] == 0  # Idle because system is off
+
+
 async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_v2_quirk):
     """Test writing calibrate attribute triggers calibration."""
     from unittest import mock
