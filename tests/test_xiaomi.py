@@ -1420,7 +1420,9 @@ async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_v2_qu
     assert preset_update[1] == Preset.Setup
 
 
-async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from_v2_quirk):
+async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(
+    zigpy_device_from_v2_quirk,
+):
     """Test heartbeat updates firmware version on Basic cluster."""
     from zigpy.zcl.clusters.general import Basic
 
