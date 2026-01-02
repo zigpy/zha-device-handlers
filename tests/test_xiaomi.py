@@ -921,13 +921,13 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ],
 )
 async def test_xiaomi_e1_thermostat_rw_redirection(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
     attr_redirect,
     attr_no_redirect,
 ):
     """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat with id and named reads/writes."""
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
@@ -1037,11 +1037,10 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert len(opple_cluster._write_attributes.mock_calls) == 0
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
-async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
+async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_v2_quirk):
     """Test update_attribute on Xiaomi E1 thermostat."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
@@ -1181,11 +1180,11 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     assert str(s) == expected_string
 
 
-async def test_xiaomi_e1_thermostat_heartbeat_parsing(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_heartbeat_parsing(zigpy_device_from_v2_quirk):
     """Test heartbeat parsing on Xiaomi E1 thermostat."""
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import HEARTBEAT, _parse_heartbeat
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     thermostat_cluster = device.endpoints[1].thermostat
@@ -1348,14 +1347,14 @@ async def test_xiaomi_e1_thermostat_heartbeat_truncated(zigpy_device_from_quirk)
 
 
 async def test_xiaomi_e1_thermostat_write_unknown_attribute_name(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
 ):
     """Test writing with unknown attribute name is skipped."""
     from unittest import mock
 
     from zigpy.zcl import foundation
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
 
     async def async_success(*args, **kwargs):
@@ -1372,7 +1371,7 @@ async def test_xiaomi_e1_thermostat_write_unknown_attribute_name(
         assert len(args[3]) == 0
 
 
-async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_v2_quirk):
     """Test heartbeat updates valve alarm attribute."""
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
         HEARTBEAT,
@@ -1380,7 +1379,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quir
         VALVE_ALARM,
     )
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
 
@@ -1396,7 +1395,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_valve_alarm(zigpy_device_from_quir
     assert valve_alarm_update[1] == 1
 
 
-async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_v2_quirk):
     """Test heartbeat detects setup mode (preset=3)."""
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
         HEARTBEAT,
@@ -1405,7 +1404,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_quirk
         Preset,
     )
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
 
@@ -1421,7 +1420,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_setup_mode(zigpy_device_from_quirk
     assert preset_update[1] == Preset.Setup
 
 
-async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from_v2_quirk):
     """Test heartbeat updates firmware version on Basic cluster."""
     from zigpy.zcl.clusters.general import Basic
 
@@ -1430,7 +1429,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from
         HEARTBEAT_FIRMWARE_VERSION,
     )
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
     basic_cluster = device.endpoints[1].basic
     basic_listener = ClusterListener(basic_cluster)
@@ -1453,7 +1452,7 @@ async def test_xiaomi_e1_thermostat_heartbeat_firmware_version(zigpy_device_from
     assert sw_build_update[1] == "2073"
 
 
-async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_v2_quirk):
     """Test writing calibrate attribute triggers calibration."""
     from unittest import mock
 
@@ -1461,7 +1460,7 @@ async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
 
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import CALIBRATE
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
 
     async def async_success(*args, **kwargs):
@@ -1477,7 +1476,7 @@ async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_quirk):
         assert attr.value.value == 1
 
 
-async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_v2_quirk):
     """Test writing away_preset_temperature passes value as uint32.
 
     Note: ZHA Number entity sends value already in centidegrees,
@@ -1489,7 +1488,7 @@ async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_qui
 
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import AWAY_PRESET_TEMPERATURE
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
 
     async def async_success(*args, **kwargs):
@@ -1506,7 +1505,7 @@ async def test_xiaomi_e1_thermostat_write_away_temperature(zigpy_device_from_qui
         assert attr.value.value == 1850
 
 
-async def test_xiaomi_e1_thermostat_write_by_name(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_write_by_name(zigpy_device_from_v2_quirk):
     """Test writing attribute by name."""
     from unittest import mock
 
@@ -1514,7 +1513,7 @@ async def test_xiaomi_e1_thermostat_write_by_name(zigpy_device_from_quirk):
 
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import CHILD_LOCK
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
 
     async def async_success(*args, **kwargs):
@@ -1530,11 +1529,11 @@ async def test_xiaomi_e1_thermostat_write_by_name(zigpy_device_from_quirk):
         assert bool(attr.value.value)
 
 
-async def test_xiaomi_e1_thermostat_preset_setup_mode(zigpy_device_from_quirk):
+async def test_xiaomi_e1_thermostat_preset_setup_mode(zigpy_device_from_v2_quirk):
     """Test preset setup mode detection."""
     from zhaquirks.xiaomi.aqara.thermostat_agl001 import PRESET, Preset
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
 
