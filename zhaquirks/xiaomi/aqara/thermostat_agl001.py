@@ -693,7 +693,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraThermostatSpecificCluster.AttributeDefs.window_detection.name,
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="window_detection",
-        fallback_name="Window detection",
+        fallback_name="Open window detection",
     )
     .switch(
         AqaraThermostatSpecificCluster.AttributeDefs.valve_detection.name,
