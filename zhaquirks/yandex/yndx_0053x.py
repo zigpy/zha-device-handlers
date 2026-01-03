@@ -1,4 +1,4 @@
-"""Support for YNDX-0053x devices."""
+"""Support for YNDX-0053x devices: wired and wireless zigbee switches, relays and dimmer."""
 
 from typing import Final
 
