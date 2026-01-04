@@ -17,6 +17,5 @@ class IasZoneMotionCluster(SmartThingsIasZone):
 (
     QuirkBuilder(SMART_THINGS, "PGC314")
     .adds(IasZoneMotionCluster, endpoint_id=1)
-    .removes_endpoint(2)  # TODO: is this necessary?
     .add_to_registry()
 )

@@ -4,7 +4,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.lighting import Color
 
-from zhaquirks.osram import OSRAM
+from zhaquirks.osram import OSRAM, OsramLightCluster
 
 
 class OsramColorCluster(CustomCluster, Color):
@@ -17,5 +17,6 @@ class OsramColorCluster(CustomCluster, Color):
     QuirkBuilder(OSRAM, "LIGHTIFY A19 Tunable White")
     .applies_to(OSRAM, "LIGHTIFY RT Tunable White")
     .replaces(OsramColorCluster, endpoint_id=3)
+    .replaces(OsramLightCluster, endpoint_id=3)
     .add_to_registry()
 )

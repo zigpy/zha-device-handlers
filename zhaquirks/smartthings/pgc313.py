@@ -17,6 +17,5 @@ class IasZoneContactSwitchCluster(SmartThingsIasZone):
 (
     QuirkBuilder(SMART_THINGS, "PGC313")
     .adds(IasZoneContactSwitchCluster, endpoint_id=1)
-    .removes_endpoint(2)  # TODO: is this necessary?
     .add_to_registry()
 )

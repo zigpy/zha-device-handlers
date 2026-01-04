@@ -15,7 +15,7 @@ class MeteringCluster(CustomCluster, Metering):
 
 
 (
-    QuirkBuilder("EDP-WITHUS", "Smart Plug")
+    QuirkBuilder("EDP-WITHUS", "ZB-SmartPlug-1.0.0")
     .replaces_endpoint(
         85, device_type=zha.DeviceType.ON_OFF_PLUG_IN_UNIT
     )  # was MAIN_POWER_OUTLET
