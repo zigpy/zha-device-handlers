@@ -4,7 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfPower
+from zigpy.quirks.v2.homeassistant import UnitOfPower, UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -38,8 +38,8 @@ class ThirdRealityPlugCluster(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
-        
+
+
 class ThirdRealityPlugClustergen3(CustomCluster):
     """Third Reality's plug gen3 private cluster."""
 
@@ -68,14 +68,14 @@ class ThirdRealityPlugClustergen3(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-                
+
         # power rise threshold
         power_rise_threshold: Final = ZCLAttributeDef(
             id=0x0040,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
+
         # power drop threshold
         power_drop_threshold: Final = ZCLAttributeDef(
             id=0x0041,
@@ -88,9 +88,8 @@ class ThirdRealityPlugClustergen3(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-      
-        
-        
+
+
 # single outlet plugs
 (
     QuirkBuilder("Third Reality, Inc", "3RSP02028BZ")
