@@ -99,33 +99,7 @@ class ZigfredCluster(CustomCluster):
 
 (
     QuirkBuilder("Siglis", "zigfred uno")
-    .replaces(ZigfredCluster, endpoint_id=5)
-    .device_automation_triggers(
-        {
-            (SHORT_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{SHORT_PRESS}"},
-            (SHORT_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{SHORT_PRESS}"},
-            (SHORT_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{SHORT_PRESS}"},
-            (SHORT_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{SHORT_PRESS}"},
-            (DOUBLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{DOUBLE_PRESS}"},
-            (DOUBLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{DOUBLE_PRESS}"},
-            (DOUBLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{DOUBLE_PRESS}"},
-            (DOUBLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{DOUBLE_PRESS}"},
-            (LONG_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{LONG_PRESS}"},
-            (LONG_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{LONG_PRESS}"},
-            (LONG_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_PRESS}"},
-            (LONG_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_PRESS}"},
-            (LONG_RELEASE, BUTTON_1): {COMMAND: f"{BUTTON_1}_{LONG_RELEASE}"},
-            (LONG_RELEASE, BUTTON_2): {COMMAND: f"{BUTTON_2}_{LONG_RELEASE}"},
-            (LONG_RELEASE, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_RELEASE}"},
-            (LONG_RELEASE, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_RELEASE}"},
-        }
-    )
-    .add_to_registry()
-)
-
-
-(
-    QuirkBuilder("Siglis", "zigfred plus")
+    .applies_to("Siglis", "zigfred plus")
     .replaces(ZigfredCluster, endpoint_id=5)
     .device_automation_triggers(
         {

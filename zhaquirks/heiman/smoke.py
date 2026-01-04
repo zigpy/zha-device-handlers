@@ -17,9 +17,9 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
             mac_capability_flags=NodeDescriptor.MACCapabilityFlags.AllocateAddress,  # Clears MACCapabilityFlags.MainsPowered
             manufacturer_code=48042,
             maximum_buffer_size=64,
-            maximum_incoming_transfer_size=0x0000,
-            server_mask=0x0000,
-            maximum_outgoing_transfer_size=0x0000,
+            maximum_incoming_transfer_size=0,
+            server_mask=0,
+            maximum_outgoing_transfer_size=0,
             descriptor_capability_field=(
                 NodeDescriptor.DescriptorCapability.ExtendedActiveEndpointListAvailable
                 | NodeDescriptor.DescriptorCapability.ExtendedSimpleDescriptorListAvailable

@@ -10,7 +10,14 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.philio import MotionCluster
+from zhaquirks import MotionWithReset
+
+
+class MotionCluster(MotionWithReset):
+    """Motion cluster."""
+
+    reset_s: int = 30
+
 
 (
     # TODO: is this correct? The v1 quirk had no manufacturer name.

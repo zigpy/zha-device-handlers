@@ -15,4 +15,8 @@ class ColorClusterTerncy(CustomCluster, Color):
     }
 
 
-(QuirkBuilder("Xiaoyan", "CL001").replaces(ColorClusterTerncy).add_to_registry())
+(
+    QuirkBuilder("Xiaoyan", "CL001")
+    .replaces(ColorClusterTerncy, endpoint_id=1)
+    .add_to_registry()
+)

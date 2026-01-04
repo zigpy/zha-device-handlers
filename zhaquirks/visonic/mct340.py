@@ -4,9 +4,6 @@ from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks import PowerConfigurationCluster
 
-OSRAM_DEVICE = 0x0810  # 2064 base 10
-OSRAM_CLUSTER = 0xFD00  # 64768 base 10
-
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""

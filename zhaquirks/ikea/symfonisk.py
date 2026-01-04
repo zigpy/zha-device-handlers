@@ -67,7 +67,7 @@ DEVICE_AUTOMATION_TRIGGERS = {
 (
     QuirkBuilder(IKEA, "SYMFONISK Sound Controller")
     # TODO: identify the exact firmware versions when this fix stopped being required
-    .filter(lambda device: WWAH_CLUSTER_ID not in device.endpoints[1].in_clusters)
+    .filter(lambda dev: WWAH_CLUSTER_ID not in dev.endpoints[1].in_clusters)
     .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
     .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)
     .add_to_registry()
@@ -77,7 +77,7 @@ DEVICE_AUTOMATION_TRIGGERS = {
 (
     QuirkBuilder(IKEA, "SYMFONISK Sound Controller")
     # TODO: identify the exact firmware versions when this fix stopped being required
-    .filter(lambda device: WWAH_CLUSTER_ID in device.endpoints[1].in_clusters)
+    .filter(lambda dev: WWAH_CLUSTER_ID in dev.endpoints[1].in_clusters)
     .replaces(PowerConfig1CRCluster, endpoint_id=1)
     .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)
     .add_to_registry()

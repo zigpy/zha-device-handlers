@@ -6,6 +6,6 @@ from zhaquirks.smartthings import SMART_THINGS, SmartThingsAccelCluster
 
 (
     QuirkBuilder(SMART_THINGS, "multi")
-    .replaces(SmartThingsAccelCluster)
+    .replaces(SmartThingsAccelCluster, endpoint_id=1)
     .add_to_registry()
 )

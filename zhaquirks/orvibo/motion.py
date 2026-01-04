@@ -7,7 +7,6 @@ from typing import Any
 
 from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, PowerConfigurationCluster
 from zhaquirks.orvibo import ORVIBO_LATIN, MotionCluster, OccupancyCluster
@@ -32,8 +31,8 @@ class OrviboMotionDevice(CustomDeviceV2):
         cluster_id=PowerConfiguration.cluster_id,
         endpoint_id=1,
     )
-    .replaces(MotionCluster, cluster_id=IasZone.cluster_id, endpoint_id=1)
-    .removes(ORVIBO_CLUSTER_ID, endpoint_id=1)
+    .replaces(MotionCluster, endpoint_id=1)
+    .removes(ORVIBO_CLUSTER_ID, endpoint_id=1)  # TODO: is this necessary?
     .adds(OccupancyCluster, endpoint_id=1)
     .add_to_registry()
 )

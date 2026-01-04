@@ -6,10 +6,6 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.imagic import IMAGIC
 
-MANUFACTURER_SPECIFIC_PROFILE_ID = 0xFC01
-MANUFACTURER_SPECIFIC_PROFILE_ID2 = 0xFC02
-
-
 (
     QuirkBuilder(IMAGIC, "1117-S")
     .replaces(

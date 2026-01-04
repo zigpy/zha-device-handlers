@@ -53,9 +53,7 @@ _DEVICE_AUTOMATION_TRIGGERS = {
 
 (
     QuirkBuilder(IKEA, "TRADFRI on/off switch")
-    .filter(
-        lambda device: WindowCovering.cluster_id not in device.endpoints[1].in_clusters
-    )
+    .filter(lambda dev: WindowCovering.cluster_id not in dev.endpoints[1].in_clusters)
     .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
     .device_automation_triggers(_DEVICE_AUTOMATION_TRIGGERS)
     .add_to_registry()
@@ -65,7 +63,7 @@ _DEVICE_AUTOMATION_TRIGGERS = {
 # ZLL profile variant
 (
     QuirkBuilder(IKEA, "TRADFRI on/off switch")
-    .filter(lambda device: WindowCovering.cluster_id in device.endpoints[1].in_clusters)
+    .filter(lambda dev: WindowCovering.cluster_id in dev.endpoints[1].in_clusters)
     .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
     .removes(WindowCovering.cluster_id, endpoint_id=1)
     .device_automation_triggers(_DEVICE_AUTOMATION_TRIGGERS)

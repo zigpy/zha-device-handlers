@@ -1,7 +1,6 @@
 """Samjin button device."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
     BUTTON,
@@ -17,7 +16,7 @@ from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 (
     QuirkBuilder(SAMJIN, BUTTON)
-    .replaces(SamjinIASCluster, cluster_id=IasZone.cluster_id, endpoint_id=1)
+    .replaces(SamjinIASCluster, endpoint_id=1)
     .device_automation_triggers(
         {
             (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_BUTTON_DOUBLE},

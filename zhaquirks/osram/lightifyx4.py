@@ -103,43 +103,16 @@ class OsramButtonCluster(CustomCluster):
         return result
 
 
-# V2 Quirks
 (
     QuirkBuilder(OSRAM, "Switch 4x-LIGHTIFY")
     .applies_to(OSRAM, "Switch 4x EU-LIGHTIFY")
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=1)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=2)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=3)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=4)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=5)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=6)
-    .device_automation_triggers(
-        {
-            (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
-            (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_ON, ENDPOINT_ID: 2},
-            (SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_ON, ENDPOINT_ID: 3},
-            (SHORT_PRESS, BUTTON_4): {COMMAND: COMMAND_ON, ENDPOINT_ID: 4},
-            (LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1},
-            (LONG_PRESS, BUTTON_2): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 2},
-            (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 3},
-            (LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 4},
-            (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 1},
-            (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 2},
-            (LONG_RELEASE, BUTTON_3): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 3},
-            (LONG_RELEASE, BUTTON_4): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 4},
-        }
-    )
-    .add_to_registry()
-)
-
-(
-    QuirkBuilder(OSRAM, "Switch-LIGHTIFY")
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=1)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=2)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=3)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=4)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=5)
-    .replaces(OsramButtonCluster, cluster_id=OSRAM_CLUSTER, endpoint_id=6)
+    .applies_to(OSRAM, "Switch-LIGHTIFY")
+    .replaces(OsramButtonCluster, endpoint_id=1)
+    .replaces(OsramButtonCluster, endpoint_id=2)
+    .replaces(OsramButtonCluster, endpoint_id=3)
+    .replaces(OsramButtonCluster, endpoint_id=4)
+    .replaces(OsramButtonCluster, endpoint_id=5)
+    .replaces(OsramButtonCluster, endpoint_id=6)
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},

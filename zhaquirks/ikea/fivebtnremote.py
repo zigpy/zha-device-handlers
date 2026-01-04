@@ -124,7 +124,7 @@ DEVICE_AUTOMATION_TRIGGERS = {
 (
     QuirkBuilder(IKEA, "TRADFRI remote control")
     # TODO: use firmware version filters to identify exactly when this changed
-    .filter(lambda device: WWAH_CLUSTER_ID not in device.endpoints[1].in_clusters)
+    .filter(lambda dev: WWAH_CLUSTER_ID not in dev.endpoints[1].in_clusters)
     .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client, endpoint_id=1)
     .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)
@@ -135,7 +135,7 @@ DEVICE_AUTOMATION_TRIGGERS = {
 (
     QuirkBuilder(IKEA, "TRADFRI remote control")
     # TODO: use firmware version filters to identify exactly when this changed
-    .filter(lambda device: WWAH_CLUSTER_ID in device.endpoints[1].in_clusters)
+    .filter(lambda dev: WWAH_CLUSTER_ID in dev.endpoints[1].in_clusters)
     .replaces(PowerConfig1CRCluster, endpoint_id=1)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client, endpoint_id=1)
     .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)

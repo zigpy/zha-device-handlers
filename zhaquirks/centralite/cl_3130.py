@@ -30,7 +30,7 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
 (
     QuirkBuilder(OSRAM, "LIGHTIFY Dimming Switch")
     .applies_to(CENTRALITE, "3130")
-    .removes(TemperatureMeasurement.cluster_id, endpoint_id=1)
+    .removes(TemperatureMeasurement, endpoint_id=1)
     .replaces(CustomPowerConfigurationCluster, endpoint_id=1)
     .device_automation_triggers(
         {

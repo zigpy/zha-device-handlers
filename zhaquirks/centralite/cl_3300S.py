@@ -6,8 +6,6 @@ from zigpy.zcl.clusters.general import BinaryInput, PowerConfiguration
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
 
-MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
-
 (
     QuirkBuilder(CENTRALITE, "3300")
     # .applies_to(CENTRALITE, "3300-S")  # TODO: this is also defined in `ias.py`!

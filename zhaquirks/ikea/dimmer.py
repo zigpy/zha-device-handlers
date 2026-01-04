@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI wireless dimmer ICTC-G-1."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -18,11 +17,7 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig1CRXCluster
 
 (
     QuirkBuilder(IKEA, "TRADFRI wireless dimmer")
-    .replaces(
-        DoublingPowerConfig1CRXCluster,
-        cluster_id=PowerConfiguration.cluster_id,
-        endpoint_id=1,
-    )
+    .replaces(DoublingPowerConfig1CRXCluster, endpoint_id=1)
     .device_automation_triggers(
         {
             (ROTATED, RIGHT): {

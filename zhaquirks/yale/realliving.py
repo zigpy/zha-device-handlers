@@ -13,6 +13,7 @@ from zhaquirks import DoublingPowerConfigurationCluster
     .applies_to("Yale", "YRD220/240 TSDB")
     .replaces(DoublingPowerConfigurationCluster, endpoint_id=1)
     .removes(Time.cluster_id, cluster_type=ClusterType.Client, endpoint_id=1)
+    # TODO: Is this being added as an output cluster necessary?
     .adds(DoorLock.cluster_id, cluster_type=ClusterType.Client, endpoint_id=1)
     .add_to_registry()
 )

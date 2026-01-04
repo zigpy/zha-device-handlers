@@ -13,6 +13,6 @@ from zhaquirks.centralite import CENTRALITE, CentraLiteAccelCluster
     .applies_to(CENTRALITE, "3321")
     .replaces(PowerConfigurationCluster, endpoint_id=1)
     .replaces(CentraLiteAccelCluster, endpoint_id=1)
-    .removes(PowerConfiguration.cluster_id, endpoint_id=2)
+    .removes(PowerConfiguration, endpoint_id=2)
     .add_to_registry()
 )

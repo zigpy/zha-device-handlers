@@ -6,6 +6,6 @@ from zhaquirks.sercomm import SERCOMM, SercommPowerConfiguration
 
 (
     QuirkBuilder(SERCOMM, "SZ-WTD02N_SF")
-    .replaces(SercommPowerConfiguration)
+    .replaces(SercommPowerConfiguration, endpoint_id=1)
     .add_to_registry()
 )

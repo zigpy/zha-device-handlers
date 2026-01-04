@@ -18,9 +18,6 @@ from zhaquirks.const import (
     TURN_ON,
 )
 
-ADUROLIGHT_CLUSTER_ID = 64716
-
-
 (
     QuirkBuilder("ADUROLIGHT", "Adurolight_NCC")
     .removes(LevelControl, endpoint_id=1)

@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI Fyrtur blinds."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks.ikea import IKEA, DoublingPowerConfigClusterIKEA
 
@@ -10,10 +9,6 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfigClusterIKEA
     .applies_to(IKEA, "KADRILJ roller blind")
     .applies_to(IKEA, "TREDANSEN block-out cellul blind")
     .applies_to(IKEA, "PRAKTLYSING cellular blind")
-    .replaces(
-        DoublingPowerConfigClusterIKEA,
-        cluster_id=PowerConfiguration.cluster_id,
-        endpoint_id=1,
-    )
+    .replaces(DoublingPowerConfigClusterIKEA, endpoint_id=1)
     .add_to_registry()
 )

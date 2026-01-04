@@ -8,7 +8,7 @@ from zhaquirks.smartthings import SMART_THINGS
 
 (
     QuirkBuilder(SMART_THINGS, "multiv4")
-    .replaces(PowerConfigurationCluster)
-    .replaces(CentraLiteAccelCluster)
+    .replaces(PowerConfigurationCluster, endpoint_id=1)
+    .replaces(CentraLiteAccelCluster, endpoint_id=1)
     .add_to_registry()
 )

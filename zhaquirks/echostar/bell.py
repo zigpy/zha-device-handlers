@@ -18,9 +18,8 @@ from zhaquirks.const import (
 (
     QuirkBuilder(" Echostar", "   Bell")
     .replaces_endpoint(
-        18,
-        device_type=zha.DeviceType.ON_OFF_SWITCH,
-    )
+        18, device_type=zha.DeviceType.ON_OFF_SWITCH
+    )  # was DIMMER_SWITCH
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {

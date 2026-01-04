@@ -1,7 +1,6 @@
 """Philips ROM001 device."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Basic
 
 from zhaquirks.const import COMMAND_HOLD, COMMAND_ON, LONG_PRESS, LONG_RELEASE, TURN_ON
 from zhaquirks.philips import (
@@ -38,8 +37,8 @@ class PhilipsRom001RemoteCluster(PhilipsRemoteCluster):
     QuirkBuilder(PHILIPS, "ROM001")
     .applies_to(SIGNIFY, "ROM001")
     .applies_to(SIGNIFY, "RDM003")
-    .replaces(PhilipsBasicCluster, Basic.cluster_id, endpoint_id=1)
-    .replaces(PhilipsRom001RemoteCluster, DEVICE_SPECIFIC_UNKNOWN, endpoint_id=1)
+    .replaces(PhilipsBasicCluster, endpoint_id=1)
+    .replaces(PhilipsRom001RemoteCluster, endpoint_id=1)
     .device_automation_triggers(
         PhilipsRom001RemoteCluster.generate_device_automation_triggers()
     )

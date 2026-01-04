@@ -1,6 +1,7 @@
 """SmartThings SmartSense Motion quirk."""
 
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.security import ZoneType
 
 from zhaquirks.smartthings import SMART_THINGS, SmartThingsIasZone
 
@@ -8,9 +9,14 @@ from zhaquirks.smartthings import SMART_THINGS, SmartThingsIasZone
 class IasZoneMotionCluster(SmartThingsIasZone):
     """Custom IasZone cluster."""
 
-    ZONE_TYPE = 0x0001
-    MOTION_TYPE = 0x000D
-    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
+    _CONSTANT_ATTRIBUTES = {
+        SmartThingsIasZone.AttributeDefs.zone_type.id: ZoneType.Motion_Sensor
+    }
 
 
-(QuirkBuilder(SMART_THINGS, "PGC314").adds(IasZoneMotionCluster).add_to_registry())
+(
+    QuirkBuilder(SMART_THINGS, "PGC314")
+    .adds(IasZoneMotionCluster, endpoint_id=1)
+    .removes_endpoint(2)  # TODO: is this necessary?
+    .add_to_registry()
+)

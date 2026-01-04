@@ -73,12 +73,12 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
     .applies_to("King Of Fans,  Inc.", "HBUniversalCFRemote")
     .replaces_endpoint(
         endpoint_id=1, device_type=zha.DeviceType.DIMMABLE_LIGHT
-    )  # was 257
-    .replaces(KofBasic)
-    .replaces(KofIdentify)
-    .replaces(KofGroups)
-    .replaces(KofScenes)
-    .replaces(KofOnOff)
-    .replaces(KofLevelControl)
+    )  # was 0x000E (not defined in the spec)
+    .replaces(KofBasic, endpoint_id=1)
+    .replaces(KofIdentify, endpoint_id=1)
+    .replaces(KofGroups, endpoint_id=1)
+    .replaces(KofScenes, endpoint_id=1)
+    .replaces(KofOnOff, endpoint_id=1)
+    .replaces(KofLevelControl, endpoint_id=1)
     .add_to_registry()
 )
