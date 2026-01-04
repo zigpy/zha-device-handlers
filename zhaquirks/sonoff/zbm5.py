@@ -66,7 +66,7 @@ class SonoffCluster(CustomCluster):
     def _update_attribute(self, attrid, value):
         """Update attribute and handle relay mask conversion."""
 
-        super()._update_attribute(attrid, value)
+        # super()._update_attribute(attrid, value)
 
         if attrid == self.AttributeDefs.detach_relay_mask.id:
             # Convert bitmap to individual relay states
@@ -104,15 +104,11 @@ class SonoffCluster(CustomCluster):
             for attr_def, bit_mask in relay_attr_defs:
                 if attrid in (attr_def.id, attr_def.name):
                     new_attributes.pop(attrid)
-
                     if value:
                         mask |= bit_mask
-
                     else:
                         mask &= ~bit_mask
-
                     new_attributes[mask_attr] = mask
-
                     break
 
         return await super().write_attributes(new_attributes, manufacturer, **kwargs)
