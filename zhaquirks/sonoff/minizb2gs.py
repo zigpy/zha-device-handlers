@@ -10,13 +10,16 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 class SonoffExternalSwitchTriggerType(types.enum8):
     """extern switch trigger type."""
+
     Edge_trigger = 0x00
     Pulse_trigger = 0x01
     Normally_on_follow_trigger = 0x02
     Normally_off_follow_trigger = 0x82
 
+
 class SonoffDetachRelayMode2Type(types.enum8):
     """Detach Relay Mode 2 type"""
+
     Detach_none = 0x00
     Detach_relay_l1 = 0x01
     Detach_relay_l2 = 0x02
@@ -48,6 +51,7 @@ class SonoffCluster(CustomCluster):
             type=t.int16s,
             is_manufacturer_specific=True,
         )
+
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB2GS")
