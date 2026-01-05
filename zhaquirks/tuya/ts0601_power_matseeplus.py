@@ -97,8 +97,17 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self._held_values: dict[str, Any] = {}
         super().__init__(*args, **kwargs)
+        self._held_values: dict[str, Any] = {}
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.apparent_power.id
+        )
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency.id
+        )
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.rms_voltage.id
+        )
 
     @property
     def _late_energy_flow(self) -> bool:
@@ -126,14 +135,37 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
         super().update_attribute(attr_name, value)
 
 
-class MatSeePlusElectricalMeasurementTotal(MatSeePlusElectricalMeasurement):
+class MatSeePlusElectricalMeasurementTotal(
+    TuyaZBElectricalMeasurement, TuyaLocalCluster
+):
     """ElectricalMeasurement cluster for MatSeePlus CT Energy Meter common measurements and total power."""
 
+    _CONSTANT_ATTRIBUTES: dict[int, Any] = {
+        **MatSeePlusElectricalMeasurement._CONSTANT_ATTRIBUTES,
+        TuyaZBElectricalMeasurement.AttributeDefs.measurement_type.id: MeasurementType.Active_measurement_AC,
+    }
+
     _VALID_ATTRIBUTES: set[int] = {
-        TuyaZBElectricalMeasurement.AttributeDefs.active_power.id,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency.id,
         TuyaZBElectricalMeasurement.AttributeDefs.rms_voltage.id,
+        TuyaZBElectricalMeasurement.AttributeDefs.total_active_power.id,
     }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.active_power.id
+        )
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.apparent_power.id
+        )
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.power_factor.id
+        )
+        self.add_unsupported_attribute(
+            TuyaZBElectricalMeasurement.AttributeDefs.rms_current.id
+        )
 
 
 class MatSeePlusMetering(TuyaZBMeteringClusterWithUnit, TuyaLocalCluster):
@@ -143,6 +175,13 @@ class MatSeePlusMetering(TuyaZBMeteringClusterWithUnit, TuyaLocalCluster):
         TuyaZBMeteringClusterWithUnit.AttributeDefs.current_summ_delivered.id,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.current_summ_received.id,
     }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(
+            TuyaZBMeteringClusterWithUnit.AttributeDefs.instantaneous_demand.id
+        )
 
 
 class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
@@ -170,22 +209,13 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def _align_value_with_energy_flow(
+    def _align_unsigned_value_with_energy_flow(
         value: int, direction: TuyaEnergyFlow | None
     ) -> int | None:
         """Align the input value with specified energy flow direction."""
         if value and value > 0 and direction == TuyaEnergyFlow.Reverse:
             value = -value
         return value
-
-    def _report_power_value(self, value: int, endpoint_id: int):
-        """Report the power value to the specified ElectricalMeasurement endpoint cluster."""
-        self.endpoint.device.endpoints[
-            endpoint_id
-        ].electrical_measurement.update_attribute(
-            MatSeePlusElectricalMeasurement.AttributeDefs.active_power.name,
-            value,
-        )
 
     def _maybe_report_total_power(self):
         """Calculate and report total power if both channels are ready."""
@@ -195,7 +225,12 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
             and self._power_a is not None
             and self._power_b is not None
         ):
-            self._report_power_value(self._power_a + self._power_b, ENDPOINT_ID_TOTAL)
+            self.endpoint.device.endpoints[
+                ENDPOINT_ID_TOTAL
+            ].electrical_measurement.update_attribute(
+                MatSeePlusElectricalMeasurementTotal.AttributeDefs.total_active_power.name,
+                self._power_a + self._power_b,
+            )
 
     def _process_power_and_energy_flow(
         self,
@@ -237,17 +272,19 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
 
             if attr_name == energy_flow_attr:
                 # Sign previous power using current flow value
-                power = self._align_value_with_energy_flow(self.get(power_attr), value)
+                power = self._align_unsigned_value_with_energy_flow(
+                    self.get(power_attr), value
+                )
             elif attr_name == power_attr and value == 0:
                 # The flow DP was omitted in this interval, sign previous power using stored energy flow
-                power = self._align_value_with_energy_flow(
+                power = self._align_unsigned_value_with_energy_flow(
                     self.get(power_attr), self.get(energy_flow_attr)
                 )
                 # Defer zero power until next interval
                 deferred_power = 0
         elif attr_name == power_attr:
             # Sign power immediately
-            power = self._align_value_with_energy_flow(
+            power = self._align_unsigned_value_with_energy_flow(
                 value, self.get(energy_flow_attr)
             )
             deferred_power = None
@@ -256,7 +293,12 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         if power is not None:
             current_power = power
             report_interval = self._interval
-            self._report_power_value(power, report_endpoint_id)
+            self.endpoint.device.endpoints[
+                report_endpoint_id
+            ].electrical_measurement.update_attribute(
+                MatSeePlusElectricalMeasurementTotal.AttributeDefs.active_power.name,
+                power,
+            )
 
         return current_power, deferred_power, report_interval
 
@@ -330,7 +372,7 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
     .adds_endpoint(ENDPOINT_ID_TOTAL)
     .adds(MatSeePlusElectricalMeasurement)
     .adds(MatSeePlusElectricalMeasurement, endpoint_id=ENDPOINT_ID_CT_B)
-    .adds(MatSeePlusElectricalMeasurement, endpoint_id=ENDPOINT_ID_TOTAL)
+    .adds(MatSeePlusElectricalMeasurementTotal, endpoint_id=ENDPOINT_ID_TOTAL)
     .adds(MatSeePlusMetering)
     .adds(MatSeePlusMetering, endpoint_id=ENDPOINT_ID_CT_B)
     .adds(MatSeePlusLocalConfig)
@@ -436,7 +478,7 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         attribute_name="reporting_interval",
         type=t.uint32_t_be,
         unit=UnitOfTime.SECONDS,
-        min_value=5,
+        min_value=10,
         max_value=60,
         step=1,
         translation_key="reporting_interval",

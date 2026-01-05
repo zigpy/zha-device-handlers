@@ -175,7 +175,7 @@ async def test_matseeplus_power_reporting(
 
     assert ep1_electrical.get("active_power") == expected_power_a
     assert ep2_electrical.get("active_power") == expected_power_b
-    assert ep3_electrical.get("active_power") == expected_total
+    assert ep3_electrical.get("total_active_power") == expected_total
 
 
 @pytest.mark.parametrize(
@@ -276,6 +276,64 @@ async def test_matseeplus_electrical_and_metering(
     assert cluster.get(attr_name) == expected_value
 
 
+async def test_matseeplus_unsupported_attributes(zigpy_device_from_v2_quirk):
+    """Test that unsupported attributes are properly marked to prevent entity creation."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_81yrt3lo", "TS0601")
+
+    # Import cluster unsupported attribute IDs
+    from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+    from zigpy.zcl.clusters.smartenergy import Metering
+
+    ac_frequency_id = ElectricalMeasurement.AttributeDefs.ac_frequency.id
+    active_power_id = ElectricalMeasurement.AttributeDefs.active_power.id
+    apparent_power_id = ElectricalMeasurement.AttributeDefs.apparent_power.id
+    power_factor_id = ElectricalMeasurement.AttributeDefs.power_factor.id
+    rms_current_id = ElectricalMeasurement.AttributeDefs.rms_current.id
+    rms_voltage_id = ElectricalMeasurement.AttributeDefs.rms_voltage.id
+
+    instantaneous_demand_id = Metering.AttributeDefs.instantaneous_demand.id
+
+    # CT endpoint (1 and 2) unsupported attributes
+    for ep_id in (1, 2):
+        # ElectricalMeasurement unsupported attributes
+        assert (
+            ac_frequency_id
+            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
+        )
+        assert (
+            apparent_power_id
+            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
+        )
+        assert (
+            rms_voltage_id
+            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
+        )
+
+        # Metering unsupported attributes
+        assert (
+            instantaneous_demand_id
+            in quirked.endpoints[ep_id].smartenergy_metering.unsupported_attributes
+        )
+
+    # Totals endpoint (3) unsupported attributes
+    assert (
+        active_power_id
+        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
+    )
+    assert (
+        apparent_power_id
+        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
+    )
+    assert (
+        power_factor_id
+        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
+    )
+    assert (
+        rms_current_id
+        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
+    )
+
+
 @pytest.mark.parametrize(
     "late_flow_a,late_flow_b",
     [
@@ -317,7 +375,7 @@ async def test_matseeplus_power_signing(
 
     # Power B should not be reported yet (interval not initialized)
     assert ep2_electrical.get("active_power") is None
-    assert ep3_electrical.get("active_power") is None
+    assert ep3_electrical.get("total_active_power") is None
 
     # Test with correct device sequence over two intervals
     # Interval 1: Establish baseline power values (stored but not reported with mitigation)
@@ -361,15 +419,15 @@ async def test_matseeplus_power_signing(
     # So total can be calculated when report_interval_a=1 and report_interval_b=1
     if late_flow_a and late_flow_b:
         # Both deferred to next interval: report_interval_a=2, report_interval_b=2
-        assert ep3_electrical.get("active_power") is None
+        assert ep3_electrical.get("total_active_power") is None
     elif late_flow_a:
         # A deferred (report_interval_a=2), B reported (report_interval_b=1), intervals don't match
-        assert ep3_electrical.get("active_power") is None
+        assert ep3_electrical.get("total_active_power") is None
     else:
         # A reported (report_interval_a=1)
         # If late_flow_b=True: B reported via energy_flow_b (report_interval_b=1), total=800+(-600)=200
         # If late_flow_b=False: B reported via second power_b (report_interval_b=1), total=800+(-600)=200
-        assert ep3_electrical.get("active_power") == 200
+        assert ep3_electrical.get("total_active_power") == 200
 
     # Interval 2: Flow messages process powers from interval 1 (flow sent because interval 2 power ≠ 0)
     send_dp_message(
@@ -397,7 +455,7 @@ async def test_matseeplus_power_signing(
     # Without mitigation, power_b was already reported as -600
     assert ep2_electrical.get("active_power") == -600
     # Both channels now at interval 2, total calculated
-    assert ep3_electrical.get("active_power") == 200  # 800 + (-600)
+    assert ep3_electrical.get("total_active_power") == 200  # 800 + (-600)
 
 
 @pytest.mark.parametrize("late_flow_a,late_flow_b", [(True, True), (False, False)])
@@ -540,7 +598,7 @@ async def test_matseeplus_late_flow_zero_power_deferral(
     # Verify baseline established
     assert ep1_electrical.get("active_power") == 800
     assert ep2_electrical.get("active_power") == -600
-    assert ep3_electrical.get("active_power") == 200  # 800 + (-600)
+    assert ep3_electrical.get("total_active_power") == 200  # 800 + (-600)
 
     # Interval 3: Zero power values (flow DPs omitted by device)
     send_dp_message(
@@ -551,12 +609,14 @@ async def test_matseeplus_late_flow_zero_power_deferral(
     if late_flow_a:
         # Sign previous power (800), deferred zero to interval 4
         assert ep1_electrical.get("active_power") == 800
-        assert ep3_electrical.get("active_power") == 200  # 800 + (-600), unchanged
+        assert (
+            ep3_electrical.get("total_active_power") == 200
+        )  # 800 + (-600), unchanged
     else:
         # Zero reported immediately
         assert ep1_electrical.get("active_power") == 0
         assert (
-            ep3_electrical.get("active_power") == 200
+            ep3_electrical.get("total_active_power") == 200
         )  # B still at interval 2, no update
 
     send_dp_message(
@@ -568,12 +628,12 @@ async def test_matseeplus_late_flow_zero_power_deferral(
         # Sign previous power (-600), deferred zero to interval 4
         assert ep2_electrical.get("active_power") == -600
         expected_total = 200 if late_flow_a else -600  # 800+(-600) or 0+(-600)
-        assert ep3_electrical.get("active_power") == expected_total
+        assert ep3_electrical.get("total_active_power") == expected_total
     else:
         # Zero reported immediately
         assert ep2_electrical.get("active_power") == 0
         expected_total = 800 if late_flow_a else 0  # 800+0 or 0+0
-        assert ep3_electrical.get("active_power") == expected_total
+        assert ep3_electrical.get("total_active_power") == expected_total
 
     # Interval 4: Non-zero power returns, flow DPs sent for interval 3
     send_dp_message(
@@ -599,19 +659,19 @@ async def test_matseeplus_late_flow_zero_power_deferral(
         # Both deferred to interval 5
         assert ep1_electrical.get("active_power") == 0
         assert ep2_electrical.get("active_power") == 0
-        assert ep3_electrical.get("active_power") == 0  # 0 + 0
+        assert ep3_electrical.get("total_active_power") == 0  # 0 + 0
     elif late_flow_a:
         # A deferred, B reported
         assert ep1_electrical.get("active_power") == 0
         assert ep2_electrical.get("active_power") == 600
-        assert ep3_electrical.get("active_power") == 600  # 0 + 600
+        assert ep3_electrical.get("total_active_power") == 600  # 0 + 600
     elif late_flow_b:
         # A reported, B deferred
         assert ep1_electrical.get("active_power") == 900
         assert ep2_electrical.get("active_power") == 0
-        assert ep3_electrical.get("active_power") == 900  # 900 + 0
+        assert ep3_electrical.get("total_active_power") == 900  # 900 + 0
     else:
         # Both reported immediately
         assert ep1_electrical.get("active_power") == 900
         assert ep2_electrical.get("active_power") == 600
-        assert ep3_electrical.get("active_power") == 1500  # 900 + 600
+        assert ep3_electrical.get("total_active_power") == 1500  # 900 + 600
