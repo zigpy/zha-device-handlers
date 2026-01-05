@@ -71,8 +71,8 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
     This is optional and defaults to off because some use cases only have energy flowing in a single direction.
     """
 
-    # Maps endpoint IDs to their corresponding late energy flow configuration attribute names
-    _EP_MITIGATION_CONFIG_ATTR: dict[int, str] = {
+    # Map Endpoint ID to the corresponding late energy flow config attribute
+    _EP_LATE_FLOW_CONFIG_ATTR: dict[int, str] = {
         ENDPOINT_ID_CT_A: MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name,
         ENDPOINT_ID_CT_B: MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name,
     }
@@ -109,21 +109,14 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
             TuyaZBElectricalMeasurement.AttributeDefs.rms_voltage.id
         )
 
-    @property
-    def _late_energy_flow(self) -> bool:
-        """Return the config value for the channel endpoint."""
-        config_attr = self._EP_MITIGATION_CONFIG_ATTR.get(self.endpoint.endpoint_id)
-        if not config_attr:
-            return False
-        return bool(self.endpoint.device.endpoints[1].local_config.get(config_attr))
-
-    def _late_energy_flow_handler(self, attr_name: str, value: Any) -> Any:
+    def _late_energy_flow_delay_handler(self, attr_name: str, value: Any) -> Any:
         """Hold non-power attribute values until the next update is received from the device."""
         if attr_name == TuyaZBElectricalMeasurement.AttributeDefs.active_power.name:
             return value
-
         held_value = self._held_values.pop(attr_name, None)
-        if not self._late_energy_flow:
+
+        config_attr = self._EP_LATE_FLOW_CONFIG_ATTR.get(self.endpoint.endpoint_id)
+        if not bool(self.endpoint.device.endpoints[1].local_config.get(config_attr)):
             return value
 
         self._held_values[attr_name] = value
@@ -131,7 +124,8 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
 
     def update_attribute(self, attr_name: str, value):
         """Update the cluster attribute."""
-        value = self._late_energy_flow_handler(attr_name, value)
+        if self.endpoint.endpoint_id in self._EP_LATE_FLOW_CONFIG_ATTR:
+            value = self._late_energy_flow_delay_handler(attr_name, value)
         super().update_attribute(attr_name, value)
 
 
