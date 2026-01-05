@@ -19,6 +19,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 
 class SonoffDetachRelayMode2Type(types.enum8):
     """Detach Relay Mode 2 type."""
+
     Detach_none = 0x00
     Detach_relay_l1 = 0x01
     Detach_relay_l2 = 0x02
