@@ -296,7 +296,7 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
             self.endpoint.device.endpoints[
                 report_endpoint_id
             ].electrical_measurement.update_attribute(
-                MatSeePlusElectricalMeasurementTotal.AttributeDefs.active_power.name,
+                MatSeePlusElectricalMeasurement.AttributeDefs.active_power.name,
                 power,
             )
 
@@ -363,10 +363,9 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         super().update_attribute(attr_name, value)
 
 
-(
-    ### MatSee Plus Tuya PJ-1203A 2 CT Bidirectional Energy Meter
-    TuyaQuirkBuilder("_TZE204_81yrt3lo", "TS0601")
-    .also_applies_to("_TZE284_81yrt3lo", "TS0601")
+# MatSeePlus Tuya PJ-1203A 2 CT Bidirectional Energy Meter base quirk
+pj_1203a_base_quirk = (
+    TuyaQuirkBuilder()
     .tuya_enchantment()
     .adds_endpoint(ENDPOINT_ID_CT_B)
     .adds_endpoint(ENDPOINT_ID_TOTAL)
@@ -459,18 +458,18 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
     .switch(
         MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name,
         MatSeePlusLocalConfig.cluster_id,
-        entity_type=EntityType.CONFIG,
-        translation_key="mitigate_flow_a_delay",
-        fallback_name="Mitigate flow A delay",
-        initially_disabled=False,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="late_energy_flow_a",
+        fallback_name="Late energy flow A",
+        initially_disabled=True,
     )
     .switch(
         MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name,
         MatSeePlusLocalConfig.cluster_id,
-        entity_type=EntityType.CONFIG,
-        translation_key="mitigate_flow_b_delay",
-        fallback_name="Mitigate flow B delay",
-        initially_disabled=False,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="late_energy_flow_b",
+        fallback_name="Late energy flow B",
+        initially_disabled=True,
     )
     # Device configuration attributes
     .tuya_number(
@@ -624,6 +623,36 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         fallback_name="Calibrate current B",
         entity_type=EntityType.CONFIG,
         initially_disabled=True,
+    )
+    .skip_configuration()
+)
+
+# MatSeePlus Tuya PJ-1203A versions without firmware bug
+(
+    pj_1203a_base_quirk.clone()
+    .applies_to("_TZE284_81yrt3lo", "TS0601")
+    .add_to_registry(replacement_cluster=TuyaMatSeePlusManufCluster)
+)
+
+# MatSeePlus Tuya PJ-1203A versions with known firmware bug
+(
+    pj_1203a_base_quirk.clone()
+    .applies_to("_TZE204_81yrt3lo", "TS0601")
+    .switch(
+        MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name,
+        MatSeePlusLocalConfig.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="late_energy_flow_a",
+        fallback_name="Late energy flow A",
+        initially_disabled=False,
+    )
+    .switch(
+        MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name,
+        MatSeePlusLocalConfig.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="late_energy_flow_b",
+        fallback_name="Late energy flow B",
+        initially_disabled=False,
     )
     .add_to_registry(replacement_cluster=TuyaMatSeePlusManufCluster)
 )

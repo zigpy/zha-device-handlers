@@ -295,7 +295,6 @@ async def test_matseeplus_unsupported_attributes(zigpy_device_from_v2_quirk):
 
     # CT endpoint (1 and 2) unsupported attributes
     for ep_id in (1, 2):
-        # ElectricalMeasurement unsupported attributes
         assert (
             ac_frequency_id
             in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
@@ -308,14 +307,12 @@ async def test_matseeplus_unsupported_attributes(zigpy_device_from_v2_quirk):
             rms_voltage_id
             in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
         )
-
-        # Metering unsupported attributes
         assert (
             instantaneous_demand_id
             in quirked.endpoints[ep_id].smartenergy_metering.unsupported_attributes
         )
 
-    # Totals endpoint (3) unsupported attributes
+    # Total endpoint (3) unsupported attributes
     assert (
         active_power_id
         in quirked.endpoints[3].electrical_measurement.unsupported_attributes
