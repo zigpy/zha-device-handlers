@@ -1,7 +1,7 @@
 """Tests for Samjin quirks."""
 
 import zhaquirks
-from zhaquirks.samjin.motion import SamjinMotion, SamjinMotionPowerConfiguration
+from zhaquirks.samjin.motion import SamjinMotion, SamjinPowerConfiguration
 
 zhaquirks.setup()
 
@@ -15,7 +15,7 @@ def test_samjin_motion_signature():
 
 def test_samjin_motion_power_configuration_battery_calculation():
     """Test battery percentage calculation from voltage."""
-    cluster = SamjinMotionPowerConfiguration
+    cluster = SamjinPowerConfiguration
 
     # Test voltage thresholds
     assert cluster.MIN_VOLTS == 2.1
