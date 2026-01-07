@@ -86,8 +86,10 @@ Firmware version filtering is useful when different firmware versions need diffe
 )
 ```
 - `min_version`: Minimum firmware version (inclusive)
-- `max_version`: Maximum firmware version (exclusive)
+- `max_version`: Maximum firmware version (exclusive) - the version specified is NOT included
 - `allow_missing`: If `True`, quirk applies when device has no firmware version
+
+Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
 - `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster
@@ -118,6 +120,7 @@ All entity methods require `fallback_name`. Common parameters:
 - `initially_disabled`: Start disabled in HA
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
+- `unique_id_suffix`: Suffix to differentiate entities when multiple use the same attribute (required when creating multiple entities from one attribute)
 
 **Parameter order convention:** `attribute_name`, `cluster_id`, `endpoint_id` first; `translation_key` and `fallback_name` always last (in that order). Use keyword arguments for clarity.
 
