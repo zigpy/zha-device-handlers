@@ -92,7 +92,7 @@ Firmware version filtering is useful when different firmware versions need diffe
 Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
-- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster
+- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
 - `.removes(cluster_id, endpoint_id=1, cluster_type=ClusterType.Server)` - Remove a cluster
 - `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace cluster with custom implementation
 - `.replace_cluster_occurrences(cluster_class, replace_server=True, replace_client=True)` - Replace across all endpoints
@@ -394,6 +394,18 @@ class VOCIndex(CustomCluster):
 ```
 
 **`is_manufacturer_specific`**: When `True`, the device's manufacturer code (from its NodeDescriptor) is sent with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request.
+
+**`_CONSTANT_ATTRIBUTES`**: Force specific attribute values, overriding what the device reports. Useful when devices report incorrect values (e.g., wrong multiplier/divisor for energy metering):
+
+```python
+class MeteringClusterFixed(CustomCluster, Metering):
+    """Fix incorrect multiplier and divisor values."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 100,
+    }
+```
 
 Key base classes in `zhaquirks/__init__.py`:
 - `LocalDataCluster`: Prevents remote calls, responds locally
