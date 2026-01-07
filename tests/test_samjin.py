@@ -44,12 +44,12 @@ async def test_samjin_motion_quirk_match(zigpy_device_from_quirk):
     [
         # Formula: corrected = rawValue - (200 - rawValue) // 2
         (200, 200),  # 100% -> 100% (200 - 0 = 200)
-        (100, 50),   # 50% raw -> 25% (100 - 50 = 50)
+        (100, 50),  # 50% raw -> 25% (100 - 50 = 50)
         (150, 125),  # 75% raw -> 62.5% (150 - 25 = 125)
-        (50, 0),     # 25% raw -> 0% (50 - 75 = -25, clamped to 0)
-        (0, 0),      # 0% -> 0% (clamped)
+        (50, 0),  # 25% raw -> 0% (50 - 75 = -25, clamped to 0)
+        (0, 0),  # 0% -> 0% (clamped)
         (180, 170),  # 90% raw -> 85% (180 - 10 = 170)
-        (120, 80),   # 60% raw -> 40% (120 - 40 = 80)
+        (120, 80),  # 60% raw -> 40% (120 - 40 = 80)
     ],
 )
 async def test_samjin_battery_percentage_correction(
@@ -108,12 +108,12 @@ async def test_samjin_battery_none_value(zigpy_device_from_quirk):
     [
         # Voltage in 100mV units, percentage in 0-200 scale
         # Formula: percent = (volts - 2.1) / (3.0 - 2.1) * 200
-        (30, 200),   # 3.0V = 100% = 200
-        (21, 0),     # 2.1V = 0% = 0
-        (25, 88),    # 2.5V ~= 44% = ~88 (actually 88.88, truncated to 88)
-        (27, 133),   # 2.7V ~= 66.7% = ~133
-        (20, 0),     # 2.0V below min, clamped to 0
-        (35, 200),   # 3.5V above max, clamped to 200
+        (30, 200),  # 3.0V = 100% = 200
+        (21, 0),  # 2.1V = 0% = 0
+        (25, 88),  # 2.5V ~= 44% = ~88 (actually 88.88, truncated to 88)
+        (27, 133),  # 2.7V ~= 66.7% = ~133
+        (20, 0),  # 2.0V below min, clamped to 0
+        (35, 200),  # 3.5V above max, clamped to 200
     ],
 )
 async def test_samjin_battery_voltage_fallback(
