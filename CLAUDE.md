@@ -60,6 +60,17 @@ from zigpy.quirks.v2 import QuirkBuilder
 )
 ```
 
+You can also use an empty constructor with only `.applies_to()` for matching multiple devices:
+```python
+(
+    QuirkBuilder()
+    .applies_to("Signify", "929004608001")
+    .applies_to("Signify", "929004608101")
+    .friendly_name(model="Hue OmniGlow lightstrip", manufacturer="Philips")
+    .add_to_registry()
+)
+```
+
 #### QuirkBuilder Methods Reference
 
 **Device Matching:**
@@ -263,6 +274,7 @@ The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must 
 
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
+- `.device_class(custom_device_class)` - Use a custom device class (e.g., `CustomDeviceV2` subclass for special request handling)
 - `.skip_configuration()` - Skip attribute reporting configuration
 - `.add_to_registry()` - **Required** - Registers the quirk
 
@@ -394,6 +406,27 @@ class VOCIndex(CustomCluster):
 ```
 
 **`is_manufacturer_specific`**: When `True`, the device's manufacturer code (from its NodeDescriptor) is sent with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request.
+
+**`access`**: Controls attribute read/write/report capabilities. Common values:
+- `"r"` - Read-only
+- `"w"` - Write-only
+- `"rw"` - Read and write
+- `"rp"` - Read and reportable (device sends reports on change)
+- `"rwp"` - Read, write, and reportable
+
+**Custom enum types** for attribute values - Define `t.enum8` or `t.enum16` subclasses:
+```python
+class BoschOperatingMode(t.enum8):
+    """Operating mode values."""
+    Schedule = 0x00
+    Manual = 0x01
+    Pause = 0x05
+
+# Use in attribute definition:
+operating_mode = ZCLAttributeDef(
+    id=0x4007, type=BoschOperatingMode, is_manufacturer_specific=True
+)
+```
 
 **`_CONSTANT_ATTRIBUTES`**: Force specific attribute values, overriding what the device reports. Useful when devices report incorrect values (e.g., wrong multiplier/divisor for energy metering):
 
