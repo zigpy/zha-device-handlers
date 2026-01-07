@@ -1,23 +1,17 @@
 """Sonoff SNZB-03P – stable ZHA quirk (practical version)."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
-    EntityPlatform,
-    EntityType,
-    NumberDeviceClass,
-    QuirkBuilder,
-)
+from zigpy.quirks.v2 import EntityPlatform, EntityType, NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
-
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
 
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
 # ---------------------------------------------------------------------
+
 
 class LastIlluminationState(t.enum8):
     Dark = 0x00
@@ -43,13 +37,10 @@ class SonoffIlluminationCluster(CustomCluster):
 
 (
     QuirkBuilder("eWeLink", "SNZB-03P")
-
     # Vendor illumination cluster
     .replaces(SonoffIlluminationCluster)
-
     # Remove IAS motion to avoid duplicate binary_sensor
     .removes(IasZone.cluster_id)
-
     # Motion timeout (mapped by Sonoff to OccupancySensing delay)
     .number(
         OccupancySensing.AttributeDefs.ultrasonic_o_to_u_delay.name,
@@ -62,7 +53,6 @@ class SonoffIlluminationCluster(CustomCluster):
         translation_key="motion_timeout",
         fallback_name="Motion timeout",
     )
-
     # Illumination state (dim / bright)
     .enum(
         SonoffIlluminationCluster.AttributeDefs.last_illumination_state.name,
@@ -73,6 +63,5 @@ class SonoffIlluminationCluster(CustomCluster):
         translation_key="illumination",
         fallback_name="Illumination",
     )
-
     .add_to_registry()
 )
