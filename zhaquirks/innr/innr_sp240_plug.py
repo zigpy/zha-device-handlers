@@ -1,31 +1,10 @@
 """Innr SP 240 plug."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import LevelControl
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.innr import INNR, MeteringClusterInnr
+from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
 
 
 class InnrCluster(CustomCluster):
@@ -34,72 +13,25 @@ class InnrCluster(CustomCluster):
     cluster_id = 0xE001
 
 
-class SP240(CustomDevice):
-    """Innr SP 240  smart plug."""
+(
+    QuirkBuilder(manufacturer="innr", model="SP 240")
+    # Firmware version 421410437 fixed the divisor and multiplier bug,
+    # so only apply this quirk to versions older than that (max_version is exclusive).
+    .firmware_version_filter(max_version=0x191E3685, allow_missing=False)
+    .replaces(MeteringClusterInnrOld, endpoint_id=1)
+    .replaces(InnrCluster, endpoint_id=1)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=LevelControl.cluster_id)
+    .add_to_registry()
+)
 
-    signature = {
-        MODELS_INFO: [(INNR, "SP 240")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    InnrCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    MeteringClusterInnr,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    InnrCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(manufacturer="innr", model="SP 240")
+    # Firmware version 421410437 fixed the divisor and multiplier bug,
+    # so apply this quirk to that and newer versions to force correct new values,
+    # in case the old quirk persisted the old values into the database.
+    .firmware_version_filter(min_version=0x191E3685, allow_missing=True)
+    .replaces(MeteringClusterInnrNew, endpoint_id=1)
+    .replaces(InnrCluster, endpoint_id=1)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=LevelControl.cluster_id)
+    .add_to_registry()
+)
