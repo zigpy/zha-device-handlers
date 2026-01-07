@@ -143,10 +143,10 @@ from zigpy.quirks.v2 import ReportingConfig
 .switch(
     attribute_name="led_enable",
     cluster_id=CustomCluster.cluster_id,
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
-    force_inverted=False,             # Invert on/off
-    off_value=0,                      # Value written when turning off
-    on_value=1,                       # Value written when turning on
+    cluster_type=ClusterType.Server,  # Optional: default Server; use ClusterType.Client for out_clusters
+    force_inverted=False,             # Optional: invert on/off
+    off_value=0,                      # Optional: value written when turning off (default 0)
+    on_value=1,                       # Optional: value written when turning on (default 1)
     translation_key="led_enable",
     fallback_name="LED enable",
 )
@@ -155,13 +155,13 @@ from zigpy.quirks.v2 import ReportingConfig
 .sensor(
     attribute_name="temperature",
     cluster_id=TemperatureMeasurement.cluster_id,
-    cluster_type=ClusterType.Server,          # Default; use ClusterType.Client for out_clusters
-    divisor=100,                              # Divide raw value
-    multiplier=1,                             # Multiply raw value
-    suggested_display_precision=1,            # Decimal places in HA UI
-    device_class=SensorDeviceClass.TEMPERATURE,
-    state_class=SensorStateClass.MEASUREMENT,
-    unit=UnitOfTemperature.CELSIUS,           # Use unit constants, not strings
+    cluster_type=ClusterType.Server,          # Optional: default Server
+    divisor=100,                              # Optional: divide raw value (default 1)
+    multiplier=1,                             # Optional: multiply raw value (default 1)
+    suggested_display_precision=1,            # Optional: decimal places in HA UI
+    device_class=SensorDeviceClass.TEMPERATURE,  # Optional: HA device class
+    state_class=SensorStateClass.MEASUREMENT,    # Optional: HA state class
+    unit=UnitOfTemperature.CELSIUS,           # Optional: use unit constants, not strings
     translation_key="temperature",
     fallback_name="Temperature",
 )
@@ -170,8 +170,8 @@ from zigpy.quirks.v2 import ReportingConfig
 .binary_sensor(
     attribute_name="occupancy",
     cluster_id=OccupancySensing.cluster_id,
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
-    device_class=BinarySensorDeviceClass.OCCUPANCY,
+    cluster_type=ClusterType.Server,  # Optional: default Server
+    device_class=BinarySensorDeviceClass.OCCUPANCY,  # Optional: HA device class
     translation_key="occupancy",
     fallback_name="Occupancy",
 )
@@ -191,14 +191,14 @@ from zigpy.quirks.v2 import ReportingConfig
 .number(
     attribute_name="off_to_on_delay",
     cluster_id=CustomCluster.cluster_id,
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
-    min_value=0,
-    max_value=65535,
-    step=1,
-    unit=UnitOfTime.SECONDS,
-    mode="box",                       # "box" for text input, "slider" for slider
-    multiplier=1,                     # Multiply value before writing to device
-    device_class=NumberDeviceClass.DURATION,
+    cluster_type=ClusterType.Server,  # Optional: default Server
+    min_value=0,                      # Optional: minimum allowed value
+    max_value=65535,                  # Optional: maximum allowed value
+    step=1,                           # Optional: step increment
+    unit=UnitOfTime.SECONDS,          # Optional: unit constant
+    mode="box",                       # Optional: "box" for text input, "slider" for slider
+    multiplier=1,                     # Optional: multiply value before writing to device
+    device_class=NumberDeviceClass.DURATION,  # Optional: HA device class
     translation_key="turn_on_delay",
     fallback_name="Turn on delay",
 )
@@ -208,7 +208,7 @@ from zigpy.quirks.v2 import ReportingConfig
     attribute_name="mode",
     enum_class=ModeEnum,
     cluster_id=CustomCluster.cluster_id,
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
+    cluster_type=ClusterType.Server,  # Optional: default Server
     translation_key="mode",
     fallback_name="Mode",
 )
@@ -218,8 +218,8 @@ from zigpy.quirks.v2 import ReportingConfig
     attribute_name="operating_mode",
     enum_class=OperatingModeEnum,
     cluster_id=CustomCluster.cluster_id,
-    entity_platform=EntityPlatform.SENSOR,  # Makes it read-only
-    entity_type=EntityType.DIAGNOSTIC,
+    entity_platform=EntityPlatform.SENSOR,  # Optional: makes it read-only (default SELECT)
+    entity_type=EntityType.DIAGNOSTIC,      # Optional: default CONFIG
     translation_key="operating_mode",
     fallback_name="Operating mode",
 )
@@ -229,7 +229,7 @@ from zigpy.quirks.v2 import ReportingConfig
     attribute_name="reset",
     attribute_value=1,
     cluster_id=CustomCluster.cluster_id,
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
+    cluster_type=ClusterType.Server,  # Optional: default Server
     translation_key="reset",
     fallback_name="Reset",
 )
@@ -240,7 +240,7 @@ from zigpy.quirks.v2 import ReportingConfig
     cluster_id=Basic.cluster_id,
     command_args=(),                  # Optional: positional args for command
     command_kwargs={},                # Optional: keyword args for command
-    cluster_type=ClusterType.Server,  # Default; use ClusterType.Client for out_clusters
+    cluster_type=ClusterType.Server,  # Optional: default Server
     translation_key="factory_reset",
     fallback_name="Factory reset",
 )
