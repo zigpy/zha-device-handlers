@@ -49,7 +49,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
 
 
 (
-    QuirkBuilder(MANUFACTURER, MODEL)
+    QuirkBuilder("Stello", "HT402")
     .replaces(AlliaThermostatCluster, endpoint_id=EP_THERMOSTAT)
     # Instant Power
     .sensor(
