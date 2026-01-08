@@ -22,8 +22,6 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 
 MANUFACTURER: Final = "Stello"
 MODEL: Final = "HT402"
-EP_THERMOSTAT: Final = 25  # 0x19
-
 
 class AlliaThermostatCluster(Thermostat, CustomCluster):
     """Thermostat cluster extended with Stello/Allia manufacturer attributes."""
@@ -37,25 +35,25 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         """
 
         # 0x4001: Outdoor temperature (int16, read/write)
-        allia_outdoor_temperature = ZCLAttributeDef(
+        outdoor_temperature = ZCLAttributeDef(
             id=0x4001,
             type=t.int16s,
             access="rpw",  # readable, reportable, writable
         )
         # 0x4008: Instant power in Watts (uint16)
-        allia_power_w = ZCLAttributeDef(id=0x4008, type=t.uint16_t, access="rp")
+        power_w = ZCLAttributeDef(id=0x4008, type=t.uint16_t, access="rp")
         # 0x4009: Cumulative energy in Watt-hours (uint32)
-        allia_energy_wh = ZCLAttributeDef(id=0x4009, type=t.uint32_t, access="rp")
+        energy_wh = ZCLAttributeDef(id=0x4009, type=t.uint32_t, access="rp")
 
 
 (
     QuirkBuilder("Stello", "HT402")
-    .replaces(AlliaThermostatCluster, endpoint_id=EP_THERMOSTAT)
+    .replaces(AlliaThermostatCluster, endpoint_id=25)
     # Instant Power
     .sensor(
-        attribute_name=AlliaThermostatCluster.AttributeDefs.allia_power_w.name,
+        attribute_name=AlliaThermostatCluster.AttributeDefs.power_w.name,
         cluster_id=AlliaThermostatCluster.cluster_id,
-        endpoint_id=EP_THERMOSTAT,
+        endpoint_id=25,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfPower.WATT,
@@ -66,9 +64,9 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
     )
     # Energy (cumulative)
     .sensor(
-        attribute_name=AlliaThermostatCluster.AttributeDefs.allia_energy_wh.name,
+        attribute_name=AlliaThermostatCluster.AttributeDefs.energy_wh.name,
         cluster_id=AlliaThermostatCluster.cluster_id,
-        endpoint_id=EP_THERMOSTAT,
+        endpoint_id=25,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         unit=UnitOfEnergy.WATT_HOUR,
@@ -79,9 +77,9 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
     )
     # Outdoor Temperature (0x4001) — read/write
     .sensor(
-        attribute_name=AlliaThermostatCluster.AttributeDefs.allia_outdoor_temperature.name,
+        attribute_name=AlliaThermostatCluster.AttributeDefs.outdoor_temperature.name,
         cluster_id=AlliaThermostatCluster.cluster_id,
-        endpoint_id=EP_THERMOSTAT,
+        endpoint_id=25,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,  # Would need to convert to F
