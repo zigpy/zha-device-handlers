@@ -75,8 +75,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=3600, reportable_change=10
         ),
-        translation_key="allia_energy_wh",
-        fallback_name="Allia Energy",
+        fallback_name="Energy",
     )
     # Outdoor Temperature (0x4001) — read/write
     .sensor(
