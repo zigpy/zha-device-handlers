@@ -62,8 +62,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=5, max_interval=300, reportable_change=1
         ),
-        translation_key="allia_power_w",
-        fallback_name="Allia Power",
+        fallback_name="Power",
     )
     # Energy (cumulative)
     .sensor(
