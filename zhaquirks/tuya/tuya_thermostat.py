@@ -66,6 +66,7 @@ class PresetModeV04(t.enum8):
     Auto = 0x01
     Eco = 0x03
 
+
 class PresetModeV05(t.enum8):
     """Tuya preset mode v05 enum."""
 
@@ -666,7 +667,7 @@ base_avatto_quirk = (
         dp_id=36,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
-        #converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+        # converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
         converter=lambda x: RunningState.Idle if not x else RunningState.Heat_State_On,
     )
     .tuya_switch(
@@ -709,5 +710,3 @@ base_avatto_quirk = (
     .skip_configuration()
     .add_to_registry()
 )
-
-
