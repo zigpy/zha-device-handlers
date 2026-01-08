@@ -23,6 +23,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 MANUFACTURER: Final = "Stello"
 MODEL: Final = "HT402"
 
+
 class AlliaThermostatCluster(Thermostat, CustomCluster):
     """Thermostat cluster extended with Stello/Allia manufacturer attributes."""
 
