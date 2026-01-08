@@ -168,6 +168,18 @@ async def test_tuya_no_mcu_version(zigpy_device_from_v2_quirk):
             109,
             -99,
         ),  # Local temp calibration to -9.9, dp 109
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x1d\x02\x00\x10\x02\x02\x00\x04\x00\x00\x00\x01",
+            2,
+            1,
+        ),  # Preset Mode to 1, dp 2
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x1d\x02\x00\x10\x1f\x02\x00\x04\x00\x00\x00\x02",
+            31,
+            2,
+        ),  # Working Day to 2, dp 31
     ],
 )
 async def test_handle_get_data_tmcu(
