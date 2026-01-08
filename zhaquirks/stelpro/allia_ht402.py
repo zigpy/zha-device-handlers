@@ -85,8 +85,8 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,  # Would need to convert to F
-        translation_key="allia_outdoor_temperature",
-        fallback_name="Outdoor Temperature",
+        translation_key="outdoor_temperature",
+        fallback_name="Outdoor temperature",
     )
     .add_to_registry()
 )
