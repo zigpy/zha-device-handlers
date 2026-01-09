@@ -501,18 +501,35 @@ import zigpy.types as t
 
 ## Code Style
 
-**Avoid magic numbers** for attribute IDs and command IDs. Use the cluster's definition instead:
+**Avoid magic numbers** for cluster IDs, attribute IDs, and command IDs. Use the cluster's definition instead:
 
 ```python
-# Good - use AttributeDefs and CommandDefs references
+# Good - use cluster and attribute/command references
+Metering.cluster_id                            # Cluster ID (int)
 Metering.AttributeDefs.multiplier.id           # Attribute ID (int)
 Metering.AttributeDefs.multiplier.name         # Attribute name (str)
 WindowCovering.ServerCommandDefs.go_to_lift_percentage.id  # Server command ID
 IasZone.ClientCommandDefs.status_change_notification.id    # Client command ID
 
 # Bad - magic numbers
+0x0702  # What cluster is this?
 0x0301  # What attribute is this?
 0x00    # What command is this?
+```
+
+**Accessing clusters on an endpoint** - Use the cluster's `ep_attribute` (e.g., `IasZone.ep_attribute` is `"ias_zone"`):
+```python
+# Access cluster on current endpoint
+self.endpoint.ias_zone.update_attribute(
+    IasZone.AttributeDefs.zone_status.id,
+    IasZone.ZoneStatus.Alarm_1,
+)
+
+# Access cluster on a different endpoint
+self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
+    ElectricalMeasurement.AttributeDefs.active_power.id,
+    value,
+)
 ```
 
 ## PR Requirements
