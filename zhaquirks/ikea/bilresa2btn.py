@@ -1,6 +1,6 @@
 """IKEA Bilresa 2 button remote control."""
 
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 
 from zhaquirks.const import (
