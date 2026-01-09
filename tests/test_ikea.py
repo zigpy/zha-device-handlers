@@ -255,11 +255,11 @@ async def test_double_power_config_firmware(
 @pytest.mark.parametrize(
     "move_cmd,move_mode,stop_cmd,expected_event",
     [
-        (None, None, 0x07, None),  # stop without prior move
-        (0x05, 0, 0x07, "move_up_release"),  # move up + stop (0x07)
+        (None, None, 0x07, None),  # stop_with_on_off without prior move
+        (0x05, 0, 0x07, "move_up_release"),  # move up + stop_with_on_off (0x07)
         (0x05, 0, 0x03, "move_up_release"),  # move up + stop (0x03)
         (0x01, 1, 0x03, "move_down_release"),  # move down + stop (0x03)
-        (0x01, 1, 0x07, "move_down_release"),  # move down + stop (0x07)
+        (0x01, 1, 0x07, "move_down_release"),  # move down + stop_with_on_off (0x07)
     ],
 )
 async def test_bilresa_direction_tracking(
