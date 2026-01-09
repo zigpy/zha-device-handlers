@@ -23,12 +23,17 @@ SWITCH_DOUBLE = (
     {"endpoint_ids": [0, 1, 2, 242]},
 )
 
+DIMMER = (
+    ["NIKO NV", "Connectable dimmer,3-200W,2-wire"],
+    {"endpoint_ids": [0, 1, 242]},
+)
+
 
 # pylint: disable=R0903
 class TestNikoSwitch:
     """Tests for Niko Connected Switches (552-721X1 and 552-721X2)."""
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     class TestClusters:
         """Test whether all clusters are present and complete."""
 
@@ -91,7 +96,7 @@ class TestNikoSwitch:
                 0x0100: foundation.ZCLAttributeAccess.from_str("rw"),
             }
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     # pylint: disable=R0903
     class TestConfiguration:
         """Test device configuration."""
@@ -237,7 +242,7 @@ class TestNikoSwitch:
                 },
             }
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     class TestButtonState:
         """Test button state and associated events."""
 
@@ -379,7 +384,7 @@ class TestNikoSwitch:
                         },
                     )
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     class TestLedState:
         """Test reading and writing status LED state."""
 
@@ -519,7 +524,7 @@ class TestNikoSwitch:
                 attr = config_cluster.get(0x0105)
                 assert (0 if attr is None else attr) == case["result"]
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     class TestLedSync:
         """Test reading and writing status LED synchronization state."""
 
@@ -597,7 +602,7 @@ class TestNikoSwitch:
                     attr = config_cluster.get(0x0107)
                     assert (0 if attr is None else attr) == expected
 
-    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE, DIMMER])
     class TestLedsAlert:
         """Test reading and writing status LED alert state."""
 

@@ -1,4 +1,4 @@
-"""Niko Connected Switches (552-721X1 and 552-721X2)."""
+"""Niko Connected Switches (552-721X1 and 552-721X2) and Dimmer (552-722X1)."""
 
 from zigpy import types as t
 from zigpy.quirks.v2 import CustomCluster, EntityType, QuirkBuilder
@@ -532,5 +532,12 @@ class NikoQuirkBuilder(QuirkBuilder):
     .removes(Diagnostic.cluster_id, endpoint_id=2)
     .removes(NikoConfigCluster.cluster_id, endpoint_id=2)
     .removes(NikoStateCluster.cluster_id, endpoint_id=2)
+    .add_to_registry()
+)
+
+(
+    NikoQuirkBuilder("Connectable dimmer,3-200W,2-wire")
+    .friendly_name(manufacturer="Niko", model="Connected dimmer")
+    .setup_buttons(2)
     .add_to_registry()
 )
