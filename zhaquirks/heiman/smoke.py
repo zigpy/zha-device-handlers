@@ -1,5 +1,6 @@
 """Smoke Sensor."""
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -13,6 +14,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasWd, IasZone
 import zigpy.zdo.types
+import logging
+
+logger = logging.getLogger('zha.debug')
+
+# from heiman import HeimanE1Cluster
+
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -353,3 +360,106 @@ class HeimanSmokeEM(CustomDevice):
             },
         },
     }
+
+# BUZZER_MANUAL_MUTE = 0x0126
+# SELF_TEST = 0x0127
+# SMOKE = 0x013A
+# SMOKE_DENSITY = 0x013B
+# HEARTBEAT_INDICATOR = 0x013C
+# BUZZER_MANUAL_ALARM = 0x013D
+# BUZZER = 0x013E
+# LINKAGE_ALARM = 0x014B
+# LINKAGE_ALARM_STATE = 0x014C
+# SMOKE_DENSITY_DBM = 0x1403  # fake attribute for smoke density in dB/m
+
+
+# SMOKE_DENSITY_DBM_MAP = {
+#     0: 0,
+#     1: 0.085,
+#     2: 0.088,
+#     3: 0.093,
+#     4: 0.095,
+#     5: 0.100,
+#     6: 0.105,
+#     7: 0.110,
+#     8: 0.115,
+#     9: 0.120,
+#     10: 0.125,
+# }
+
+
+# class OppleCluster(XiaomiAqaraE1Cluster):
+# class OppleCluster(HeimanE1Cluster):
+#     """Opple cluster."""
+
+#     attributes = {
+#         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
+#         SELF_TEST: ("self_test", types.Bool, True),
+#         SMOKE: ("smoke", types.uint8_t, True),
+#         SMOKE_DENSITY: ("smoke_density", types.uint8_t, True),
+#         HEARTBEAT_INDICATOR: ("heartbeat_indicator", types.uint8_t, True),
+#         BUZZER_MANUAL_ALARM: ("buzzer_manual_alarm", types.uint8_t, True),
+#         BUZZER: ("buzzer", types.uint32_t, True),
+#         LINKAGE_ALARM: ("linkage_alarm", types.uint8_t, True),
+#         LINKAGE_ALARM_STATE: ("linkage_alarm_state", types.uint8_t, True),
+#         SMOKE_DENSITY_DBM: ("smoke_density_dbm", types.Single, True),
+#     }
+
+#     def _update_attribute(self, attrid: int, value: any) -> None:
+#         """Pass attribute update to another cluster if necessary."""
+#         # super()._update_attribute(attrid, value)
+#         if attrid == SMOKE:
+#             # self.endpoint.ias_zone.update_attribute(ZONE_STATUS, value)
+#             logger.debug("=== SMOKE ===")
+#         elif attrid == SMOKE_DENSITY:
+#             self.update_attribute(SMOKE_DENSITY_DBM, SMOKE_DENSITY_DBM_MAP[value])
+
+
+
+
+# class HeimanSmokeEFA2(CustomDevice):
+#     """SmokeEFA2 quirk."""
+
+#     signature = {
+#         MODELS_INFO: [("HEIMAN", "HS1SA-EF-3.0")],
+#         ENDPOINTS: {
+#             1: {
+#                 PROFILE_ID: zha.PROFILE_ID,
+#                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+#                 INPUT_CLUSTERS: [
+#                     Basic.cluster_id,
+#                     PowerConfiguration.cluster_id,
+#                     Identify.cluster_id,
+#                     PollControl.cluster_id,
+#                     IasZone.cluster_id,
+#                     IasWd.cluster_id,
+#                     Diagnostic.cluster_id,
+#                 ],
+#                 OUTPUT_CLUSTERS: [
+#                     Identify.cluster_id,
+#                     Ota.cluster_id,
+#                 ],
+#             },
+#         },
+#     }
+
+#     replacement = {
+#         ENDPOINTS: {
+#             1: {
+#                 PROFILE_ID: zha.PROFILE_ID,
+#                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+#                 INPUT_CLUSTERS: [
+#                     Basic.cluster_id,
+#                     PowerConfiguration.cluster_id,
+#                     Identify.cluster_id,
+#                     PollControl.cluster_id,
+#                     IasZone.cluster_id,
+#                     Diagnostic.cluster_id,
+#                 ],
+#                 OUTPUT_CLUSTERS: [
+#                     Identify.cluster_id,
+#                     Ota.cluster_id,
+#                 ],
+#             },
+#         },
+#     }
