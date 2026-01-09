@@ -84,6 +84,7 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
                 else "move_down_release"
             )
             self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
 
 
 class ShortcutV1Cluster(EventableCluster):
