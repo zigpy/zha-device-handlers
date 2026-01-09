@@ -266,8 +266,6 @@ async def test_bilresa_direction_tracking(
     move_cmd, move_mode, stop_cmd, expected_event
 ):
     """Test Bilresa remote direction tracking for long press releases."""
-    from unittest.mock import patch
-
     from zhaquirks.ikea import IkeaBilresaLevelControl
 
     # Create a mock endpoint
@@ -280,7 +278,7 @@ async def test_bilresa_direction_tracking(
     level_cluster = IkeaBilresaLevelControl(endpoint, is_server=False)
 
     # Mock listener_event to capture event calls
-    with patch.object(level_cluster, "listener_event") as mock_listener:
+    with mock.patch.object(level_cluster, "listener_event") as mock_listener:
         # Send move command if provided
         if move_cmd is not None:
             hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
