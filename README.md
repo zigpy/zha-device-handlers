@@ -9,10 +9,11 @@ ZHA device handlers bridge the functionality gap created when manufacturers devi
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters (formerly Zigbee-Shepherd Converters) as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
+> [!NOTE]
+> This README primarily documents v1 quirks and will be updated.\
+> For v2 quirks documentation (recommended for new quirks), see [copilot-instructions.md](/.github/copilot-instructions.md).
 
 For supporting Tuya devices, see [using the TuyaQuirkBuilder](/tuya.md).
-
-> **Note:** This README primarily documents v1 quirks and will be updated. For v2 quirks documentation (recommended for new quirks), see [CLAUDE.md](/.github/CLAUDE.md).
 
 # How to contribute
 
