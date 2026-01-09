@@ -407,7 +407,7 @@ class VOCIndex(CustomCluster):
 
 **`is_manufacturer_specific`**: When `True`, the device's manufacturer code (from its NodeDescriptor) is sent with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request.
 
-**`access`**: Controls attribute read/write/report capabilities. Common values:
+**`access`**: Controls attribute read/write/report capabilities. Not needed to explicitly specify - defaults to `"rwp"`. Values:
 - `"r"` - Read-only
 - `"w"` - Write-only
 - `"rw"` - Read and write
