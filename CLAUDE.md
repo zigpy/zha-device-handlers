@@ -532,6 +532,17 @@ self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
 )
 ```
 
+**Handling commands in cluster request handlers** - Compare by ID using command definitions:
+```python
+def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+    if hdr.command_id in (
+        LevelControl.ServerCommandDefs.move.id,
+        LevelControl.ServerCommandDefs.move_with_on_off.id,
+    ):
+        # Handle move command
+        pass
+```
+
 ## PR Requirements
 
 - Run `pre-commit run --all-files` before submitting
