@@ -72,7 +72,7 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     ) -> None:
         """Handle cluster specific commands.
 
-        Track move commands to remember direction for stop commands
+        Track move commands to remember direction for stop commands.
         """
         if hdr.command_id in (0x01, 0x05):
             move_mode = args[0]
