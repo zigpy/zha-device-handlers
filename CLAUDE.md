@@ -499,6 +499,22 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumid
 import zigpy.types as t
 ```
 
+## Code Style
+
+**Avoid magic numbers** for attribute IDs and command IDs. Use the cluster's definition instead:
+
+```python
+# Good - use AttributeDefs and CommandDefs references
+Metering.AttributeDefs.multiplier.id           # Attribute ID (int)
+Metering.AttributeDefs.multiplier.name         # Attribute name (str)
+WindowCovering.ServerCommandDefs.go_to_lift_percentage.id  # Server command ID
+IasZone.ClientCommandDefs.status_change_notification.id    # Client command ID
+
+# Bad - magic numbers
+0x0301  # What attribute is this?
+0x00    # What command is this?
+```
+
 ## PR Requirements
 
 - Run `pre-commit run --all-files` before submitting
