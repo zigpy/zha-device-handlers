@@ -1,8 +1,12 @@
 """IKEA Bilresa 2 button remote control."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl import ClusterType
-
+from zigpy.zcl import ClusterType 
+from zigpy.zcl.clusters.general import (
+    LevelControl,
+    OnOff,
+    Scenes,
+)
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -31,39 +35,39 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
         {
             (SHORT_PRESS, TURN_ON): {
                 COMMAND: COMMAND_ON,
-                CLUSTER_ID: 6,
+                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_UP): {
                 COMMAND: COMMAND_MOVE,
-                CLUSTER_ID: 8,
+                CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
                 PARAMS: {"move_mode": 0},
             },
             (LONG_RELEASE, DIM_UP): {
                 COMMAND: "move_up_release",
-                CLUSTER_ID: 8,
+                CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
             },
             (SHORT_PRESS, TURN_OFF): {
                 COMMAND: COMMAND_OFF,
-                CLUSTER_ID: 6,
+                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_DOWN): {
                 COMMAND: COMMAND_MOVE,
-                CLUSTER_ID: 8,
+                CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
                 PARAMS: {"move_mode": 1},
             },
             (LONG_RELEASE, DIM_DOWN): {
                 COMMAND: "move_down_release",
-                CLUSTER_ID: 8,
+                CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
             },
             (DOUBLE_PRESS, DIM_UP): {
                 COMMAND: COMMAND_PRESS,
-                CLUSTER_ID: 5,
+                CLUSTER_ID: Scenes.cluster_id,
                 ENDPOINT_ID: 1,
                 PARAMS: {
                     "param1": 256,
@@ -73,7 +77,7 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
             },
             (DOUBLE_PRESS, DIM_DOWN): {
                 COMMAND: COMMAND_PRESS,
-                CLUSTER_ID: 5,
+                CLUSTER_ID: Scenes.cluster_id,
                 ENDPOINT_ID: 1,
                 PARAMS: {
                     "param1": 257,
