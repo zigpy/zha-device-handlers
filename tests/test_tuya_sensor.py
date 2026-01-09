@@ -45,6 +45,7 @@ zhaquirks.setup()
         ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
         ("_TZE284_locansqn", "TS0601", 100, 10, False),
         ("_TZE200_vvmbj46n", "TS0601", 100, 10, False),
+        ("_TZE284_9ern5sfh", "TS0601", 10, 10, True),
     ],
 )
 async def test_handle_get_data(
@@ -115,6 +116,7 @@ async def test_handle_get_data(
         ("_TZE284_upagmta9", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_1wnh8bqp", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE284_1wnh8bqp", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE284_9ern5sfh", "TS0601", 10, 10, TUYA_TEMP01_HUM02_BAT04),
     ],
 )
 async def test_handle_get_data_enum_batt(
