@@ -67,10 +67,10 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
         args: list[Any],
         *,
         dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing. NWK]
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ) -> None:
-        """Handle cluster specific commands. 
+        """Handle cluster specific commands.
 
         Track move commands to remember direction for stop commands.
         """
@@ -81,7 +81,8 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
             move_mode = args[0]
             self._last_move_direction = move_mode
         elif (
-            hdr.command_id in (
+            hdr.command_id
+            in (
                 LevelControl.ServerCommandDefs.stop.id,
                 LevelControl.ServerCommandDefs.stop_with_on_off.id,
             )
