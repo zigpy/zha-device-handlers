@@ -259,7 +259,7 @@ class CustomHeimanCluster(CustomCluster):
         "initiate_test_mode",
         ExtendIasZoneCluster.cluster_id,
         entity_type=EntityType.STANDARD,
-        translation_key="remote_mute",
+        translation_key="remote_test",
         fallback_name="remote Test",
     )
     .sensor(

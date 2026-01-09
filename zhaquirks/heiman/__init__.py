@@ -1,3 +1,3 @@
 """Quirks for Heiman devices."""
-HEIMAN = "Heiman"
 
+HEIMAN = "Heiman"
