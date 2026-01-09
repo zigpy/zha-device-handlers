@@ -37,24 +37,24 @@ class SmokeRemoteTestEnum(t.uint8_t):
 
 def smoke_chamber_contamination_converter(value: int) -> str:
     """Extract contamination value."""
-    value_hex = hex(value)[2:].zfill(8)
+    # Mapping integers directly to their descriptions
     actions = {
-        "00": "normal",
-        "01": "light contamination",
-        "02": "medium contamication",
-        "03": "critical contamication",
+        0: "normal",
+        1: "light contamination",
+        2: "medium contamication",
+        3: "critical contamication",
     }
-    return actions.get(value_hex[2:4])
+    # value is 0, 1, 2, or 3
+    return actions.get(value, "unknown")
 
 
 def smoke_level_unit_converter(value: int) -> str:
     """Extract smoke level unit."""
-    value_hex = hex(value)[2:].zfill(8)
     actions = {
-        "00": "dB/m",
-        "01": "%ft OBS",
+        0: "dB/m",
+        1: "%ft OBS",
     }
-    return actions.get(value_hex[2:4])
+    return actions.get(value, "unknown")
 
 
 class ExtendIasZoneCluster(CustomCluster, IasZone):
