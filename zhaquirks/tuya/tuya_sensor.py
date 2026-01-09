@@ -51,6 +51,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
     .applies_to("_TZE200_zl1kmjqx", "TS0601")
+    .applies_to("_TZE284_9ern5sfh", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
