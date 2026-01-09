@@ -74,12 +74,15 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
 
         Track move commands to remember direction for stop commands.
         """
-        if hdr.command_id in (0x01, 0x05):  # 0x01 and 0x05 are move commands
+        cmd = self.server_commands.get(hdr.command_id)
+        if cmd and cmd.name in ("move", "move_with_on_off"):
             move_mode = args[0]
             self._last_move_direction = move_mode
         elif (
-            hdr.command_id in (0x03, 0x07) and self._last_move_direction is not None
-        ):  # 0x03 and 0x07 are stop commands
+            cmd
+            and cmd.name in ("stop", "stop_with_on_off")
+            and self._last_move_direction is not None
+        ):
             event = (
                 "move_up_release"
                 if self._last_move_direction == 0
