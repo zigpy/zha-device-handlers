@@ -1,18 +1,13 @@
 """Heiman HS1SA-E smoke sensor."""
 
-
-from typing import Any, Final, Optional, Union
-
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
+from zigpy.quirks.v2.homeassistant import EntityType
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
-
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
 
 # Heiman's actual manufacturer code
 HEIMAN_MANUF_CODE = 0x120B
@@ -25,17 +20,20 @@ class SmokeSirenEnum(t.enum8):
     smoke_siren = 1
     co_siren = 2
 
+
 class SmokeRemoteMuteEnum(t.uint8_t):
     """smoke remote mute."""
 
     normal = 0
     mute = 1
 
+
 class SmokeRemoteTestEnum(t.uint8_t):
     """smoke remote test."""
 
     normal = 0
     start_test = 1
+
 
 def smoke_chamber_contamination_converter(value: int) -> str:
     """Extract contamination value."""
@@ -48,6 +46,7 @@ def smoke_chamber_contamination_converter(value: int) -> str:
     }
     return actions.get(value_hex[2:4])
 
+
 def smoke_level_unit_converter(value: int) -> str:
     """Extract smoke level unit."""
     value_hex = hex(value)[2:].zfill(8)
@@ -59,26 +58,31 @@ def smoke_level_unit_converter(value: int) -> str:
 
 
 class ExtendIasZoneCluster(CustomCluster, IasZone):
+    """Heiman IAS Zone cluster extension."""
+
     cluster_id = IasZone.cluster_id
 
     # Map the command name to your new function
     server_commands = IasZone.server_commands.copy()
-    server_commands.update({
-        0x02: ZCLCommandDef(
-            "initiate_test_mode", 
-            {
-                "test_mode_duration": t.uint8_t, 
-                "current_zone_sensitivity": t.uint8_t
-            },
-            direction=foundation.Direction.Client_to_Server,
-            is_manufacturer_specific=False, # Set to False for standard commands
-        )
-    })
+    server_commands.update(
+        {
+            0x02: ZCLCommandDef(
+                "initiate_test_mode",
+                {
+                    "test_mode_duration": t.uint8_t,
+                    "current_zone_sensitivity": t.uint8_t,
+                },
+                direction=foundation.Direction.Client_to_Server,
+                is_manufacturer_specific=False,  # Set to False for standard commands
+            )
+        }
+    )
 
     async def command(self, command_id, *args, **kwargs):
+        """Handle wd commands for the cluster."""
         # If the UI calls command 0x02 (initiate_test_mode) without arguments
         if command_id == 0x02 and not args:
-            # Provide default: 240 seconds, 0 sensitivity
+            # Provide default: 5 seconds, 0 sensitivity
             return await super().command(command_id, 5, 0, **kwargs)
         return await super().command(command_id, *args, **kwargs)
 
@@ -86,25 +90,14 @@ class ExtendIasZoneCluster(CustomCluster, IasZone):
 class CustomHeimanCluster(CustomCluster):
     """Heiman custom cluster."""
 
-    cluster_id = 0xfc90
+    cluster_id = 0xFC90
     # manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     # We override the manufacturer_id at the cluster level
     @property
     def manufacturer_id(self) -> t.uint16_t:
-        return 0x120b
-
-    # class ServerCommandDefs(IasZone.ServerCommandDefs):
-    #     """Heiman IAS server commands."""
-
-    #     Initiate_Test_Mode: Final = ZCLCommandDef(
-    #         id=0X02,
-    #         schema={
-    #           "test_mode_duration": t.uint8_t,
-    #           "current_zone_sensitivity": t.uint8_t,
-    #         },
-    #         is_manufacturer_specific=False,
-    #     )
+        """Return manufacturer ID for the cluster."""
+        return 0x120B
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -182,6 +175,7 @@ class CustomHeimanCluster(CustomCluster):
             type=t.uint8_t,
         )
 
+
 (
     QuirkBuilder("HEIMAN", "HS1SA-EF-3.0")
     .removes(0x0502)
@@ -219,7 +213,7 @@ class CustomHeimanCluster(CustomCluster):
         # reporting_config=ReportingConfig(
         #     min_interval=1,
         #     max_interval=5,
-        #     reportable_change=10 
+        #     reportable_change=10
         # )
     )
     .binary_sensor(
@@ -229,10 +223,8 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="selftest",
         fallback_name="selftest",
         reporting_config=ReportingConfig(
-            min_interval=2,
-            max_interval=0,
-            reportable_change=1 
-        )
+            min_interval=2, max_interval=0, reportable_change=1
+        ),
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_fault_state.name,
@@ -303,5 +295,3 @@ class CustomHeimanCluster(CustomCluster):
     )
     .add_to_registry()
 )
-
-
