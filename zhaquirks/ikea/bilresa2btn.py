@@ -23,11 +23,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
 
-
-class IkeaBilresa2ButtonRemote(CustomDeviceV2):
-    """Custom device for IKEA Bilresa 2 button remote."""
-
-
 (
     QuirkBuilder(IKEA, "09B9")
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
