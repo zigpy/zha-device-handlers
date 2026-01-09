@@ -14,11 +14,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasWd, IasZone
 import zigpy.zdo.types
-import logging
-
-logger = logging.getLogger('zha.debug')
-
-# from heiman import HeimanE1Cluster
 
 
 from zhaquirks.const import (
