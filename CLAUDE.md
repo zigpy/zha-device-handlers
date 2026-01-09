@@ -60,17 +60,6 @@ from zigpy.quirks.v2 import QuirkBuilder
 )
 ```
 
-You can also use an empty constructor with only `.applies_to()` for matching multiple devices:
-```python
-(
-    QuirkBuilder()
-    .applies_to("Signify", "929004608001")
-    .applies_to("Signify", "929004608101")
-    .friendly_name(model="Hue OmniGlow lightstrip", manufacturer="Philips")
-    .add_to_registry()
-)
-```
-
 #### QuirkBuilder Methods Reference
 
 **Device Matching:**
