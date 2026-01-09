@@ -2259,6 +2259,43 @@ def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
 
 
+@pytest.mark.parametrize("model", ["lumi.light.agl003", "lumi.light.agl005"])
+def test_t2_led_bulb(zigpy_device_from_v2_quirk, model):
+    """Test Aqara T2 LED bulb quirk exposes power_on_state attribute.
+
+    https://github.com/zigpy/zha-device-handlers/issues/4116
+    """
+    device = zigpy_device_from_v2_quirk(AQARA, model)
+    assert AqaraLightT1M.cluster_id in device.endpoints[1].in_clusters
+
+    aqara_cluster = device.endpoints[1].opple_cluster
+    cluster_listener = ClusterListener(aqara_cluster)
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x00)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.On
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.LastState
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
+    assert len(cluster_listener.attribute_updates) == 3
+    assert (
+        cluster_listener.attribute_updates[2][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[2][1] == LumiPowerOnStateMode.Off
+
+
 async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, caplog):
     """Test Aqara Magnet Sensor AQ2 quirk dealing with bad ZCL command direction."""
 

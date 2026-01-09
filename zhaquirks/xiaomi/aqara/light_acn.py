@@ -255,3 +255,19 @@ class LumiLightAcn014(XiaomiCustomDevice):
     )
     .add_to_registry()
 )
+
+# Aqara T2 LED Bulb (E27 and GU10 variants)
+# https://github.com/zigpy/zha-device-handlers/issues/4116
+(
+    QuirkBuilder(AQARA, "lumi.light.agl003")
+    .applies_to(AQARA, "lumi.light.agl005")
+    .replaces(AqaraLightT1M)
+    .enum(
+        AqaraLightT1M.AttributeDefs.power_on_state.name,
+        LumiPowerOnStateMode,
+        AqaraLightT1M.cluster_id,
+        translation_key="power_on_state",
+        fallback_name="Power on state",
+    )
+    .add_to_registry()
+)
