@@ -7,6 +7,7 @@ from zigpy.zcl.clusters.general import Basic, Scenes
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import GeneralCommand
+
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     ARGS,
@@ -16,16 +17,16 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_MOVE,
-    COMMAND_ON,
     COMMAND_OFF,
+    COMMAND_ON,
     COMMAND_STEP,
     COMMAND_STOP,
     DIM_DOWN,
     DIM_UP,
     ENDPOINT_ID,
-    SHORT_PRESS,
     LONG_PRESS,
     LONG_RELEASE,
+    SHORT_PRESS,
     VALUE,
 )
 
