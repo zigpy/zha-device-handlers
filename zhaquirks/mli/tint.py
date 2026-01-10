@@ -4,6 +4,8 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, Scenes
+from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import GeneralCommand
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
@@ -204,8 +206,11 @@ DAT = {
 
 (
     QuirkBuilder("MLI", "tint-Remote-white")
-    .replaces(TintRemoteBasicCluster)
+    .replaces(TintRemoteBasicCluster, cluster_type=ClusterType.Server)
+    .adds(LightLink, cluster_type=ClusterType.Server)
+    .adds(TintRemoteBasicCluster, cluster_type=ClusterType.Client)
     .adds(TintRemoteScenesCluster, cluster_type=ClusterType.Client)
+    .adds(Color, cluster_type=ClusterType.Client)
     .device_automation_triggers(DAT.copy())
     .add_to_registry()
 )
