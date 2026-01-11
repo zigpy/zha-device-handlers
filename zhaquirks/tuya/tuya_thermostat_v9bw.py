@@ -148,7 +148,7 @@ def _schedule_raw_to_str(v) -> str:
         unit=UnitOfTemperature.CELSIUS,
         entity_type=EntityType.CONFIG,
         translation_key="deadzone_temperature",
-        fallback_name="Deadzone",
+        fallback_name="Deadzone temperature",
     )
     .tuya_number(
         dp_id=116,
