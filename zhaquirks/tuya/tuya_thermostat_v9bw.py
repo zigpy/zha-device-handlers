@@ -40,7 +40,7 @@ def schedule_raw_to_str(v) -> str:
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name="system_mode",
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
         converter=lambda v: Thermostat.SystemMode.Heat
         if bool(v)
         else Thermostat.SystemMode.Off,
