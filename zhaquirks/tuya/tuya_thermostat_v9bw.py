@@ -9,9 +9,9 @@ from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
 
 
 class PresetMode(t.enum8):
-    auto = 0x00
-    manual = 0x01
-    eco = 0x02
+    Auto = 0x00
+    Manual = 0x01
+    Eco = 0x02
 
 
 def deci_c_to_zigbee_0_01(v: int) -> int:
