@@ -1,4 +1,4 @@
-""" Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s """
+"""Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s"""
 
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTemperature
 import zigpy.types as t
@@ -10,6 +10,7 @@ from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
 
 class PresetMode(t.enum8):
     """Preset mode enum."""
+
     Auto = 0x00
     Manual = 0x01
     Eco = 0x02
