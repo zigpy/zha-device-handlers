@@ -189,7 +189,6 @@ async def test_external_sensor_temp_message_length_regression(
 
 
 @pytest.mark.parametrize("quirk", (AGL001,))
-@pytest.mark.asyncio
 async def test_system_mode_read_forwarding(zigpy_device_from_quirk, quirk):
     """Test that system_mode read is forwarded to the Xiaomi cluster and mapped."""
 

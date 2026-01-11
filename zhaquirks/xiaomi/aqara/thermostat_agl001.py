@@ -39,9 +39,14 @@ XIAOMI_SYSTEM_MODE_MAP = {
 
 
 class Constants:
-    """Constants specific for Aqara E1 TRV."""
+    """Constants specific for Aqara E1 TRV.
 
-    SENSOR_ID = bytearray.fromhex("00158d00019d1b98")
+    This class contains protocol-specific byte sequences for the Aqara E1 radiator
+    thermostat. The values define the structure of proprietary commands used to
+    configure internal/external temperature sensor switching and temperature settings.
+    """
+
+    SENSOR_ID = bytes.fromhex("00158d00019d1b98")
     SENSOR_ID_SUFFIX = bytes([0x00, 0x01, 0x00, 0x55])
     INTERNAL_SENSOR_ACTION_CODES = [bytes([0x3D, 0x05]), bytes([0x3D, 0x04])]
     EXTERNAL_SENSOR_ACTION_CODES = [bytes([0x3D, 0x04]), bytes([0x3D, 0x05])]
@@ -72,6 +77,13 @@ class Constants:
     EXTERNAL_SENSOR_TRAILING_3 = bytes([0x65])
     EXTERNAL_SENSOR_PARAMS2_SUFFIX = bytes([0x08, 0x00, 0x07, 0xFD])
     EXTERNAL_SENSOR_TRAILING_4 = bytes([0x04])
+    # Action codes for aqara_header method
+    ACTION_SET_EXTERNAL_TEMP = 0x05
+    ACTION_SET_INTERNAL_SENSOR = 0x04
+    ACTION_SET_EXTERNAL_SENSOR = 0x02
+    # Header action/command identifiers
+    HEADER_ACTION_SENSOR_TEMP = 0x12
+    HEADER_ACTION_SENSOR_MODE = 0x13
 
 
 DAYS_MAP = {
@@ -482,21 +494,61 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             )
         super()._update_attribute(attrid, value)
 
-    def aqara_header(self, counter: int, params: bytearray, action: int) -> bytearray:
-        """Create Aqara header for setting external sensor."""
+    def aqara_header(self, counter: int, params: bytes, action: int) -> bytes:
+        """Build Aqara vendor-specific frame header.
+
+        This helper wraps an already constructed ``params`` payload with the
+        manufacturer header used by the E1 radiator thermostat when sending
+        proprietary commands (for example, switching between internal and
+        external temperature sensors).
+
+        Args:
+            counter: One-byte message sequence counter that is included in
+                the header and typically echoed by the device.
+            params: Vendor-specific payload that will follow the header. The
+                length of this byte array is encoded into the header.
+            action: One-byte Aqara action/command code that selects which
+                proprietary action the payload performs. The caller uses
+                values such as ACTION_SET_EXTERNAL_TEMP, ACTION_SET_INTERNAL_SENSOR,
+                and ACTION_SET_EXTERNAL_SENSOR.
+
+        Returns:
+            The complete header bytes to prepend to ``params`` before sending
+            the command to the device.
+
+        """
         header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
-        integrity = 512 - sum(header)
+        integrity = (512 - sum(header)) % 256
 
         return header + bytes([integrity, action, 0x41, len(params)])
 
-    def _float_to_hex(self, f):
-        """Convert float to hex."""
+    @staticmethod
+    def _float_to_hex(f: float) -> str:
+        """Convert float to hex string representation."""
         return hex(struct.unpack("<I", struct.pack("<f", f))[0])
 
+    @staticmethod
     def _build_sensor_mode_params(
-        self, is_external: bool, device: bytes, timestamp: bytes
-    ):
-        """Build params1 and params2 for internal/external sensor mode."""
+        is_external: bool, device: bytes, timestamp: bytes
+    ) -> tuple[bytes, bytes]:
+        """Build params1 and params2 for internal/external sensor mode switching.
+
+        This method constructs the two parameter payloads needed to configure the device
+        to use either the internal temperature sensor or an external one. The two payloads
+        (params1 and params2) are sent in separate aqara_header commands to complete the
+        sensor mode switch.
+
+        Args:
+            is_external: True to switch to external sensor mode, False for internal.
+            device: The device's IEEE address as bytes for inclusion in the command payload.
+            timestamp: The current Unix timestamp as bytes (in reverse byte order) to include
+                in the command.
+
+        Returns:
+            A tuple of (params1, params2) where each is a bytes object representing the
+            complete parameter payload for one of the two configuration commands.
+
+        """
         if is_external:
             # External sensor
             # params1
@@ -552,18 +604,20 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             attr_def = self.find_attribute(attr)
 
             if attr_def and attr_def.id == self.AttributeDefs.sensor_temp.id:
-                # set external sensor temp. this function expect value to be passed multiplied by 100
-                temperatureBuf = bytearray.fromhex(
+                # set external sensor temperature; value is expected in degrees Celsius (e.g. 25.0 for 25°C)
+                temperature_buf = bytearray.fromhex(
                     self._float_to_hex(round(float(value)))[2:]
                 )
 
                 params = bytearray(Constants.SENSOR_ID)
-                params += bytes([0x00, 0x01, 0x00, 0x55])
-                params += temperatureBuf
+                params += Constants.SENSOR_ID_SUFFIX
+                params += temperature_buf
 
-                attrs[self.AttributeDefs.sensor_attr.name] = (
-                    self.aqara_header(0x12, params, 0x05) + params
-                )
+                attrs[self.AttributeDefs.sensor_attr.name] = self.aqara_header(
+                    Constants.HEADER_ACTION_SENSOR_TEMP,
+                    bytes(params),
+                    Constants.ACTION_SET_EXTERNAL_TEMP,
+                ) + bytes(params)
 
             elif attr_def and attr_def.id == self.AttributeDefs.sensor.id:
                 # set internal/external temperature sensor
@@ -580,11 +634,23 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 
                 attrs1 = {}
                 attrs1[self.AttributeDefs.sensor_attr.name] = (
-                    self.aqara_header(0x12, params1, 0x02 if is_external else 0x04)
+                    self.aqara_header(
+                        Constants.HEADER_ACTION_SENSOR_TEMP,
+                        params1,
+                        Constants.ACTION_SET_EXTERNAL_SENSOR
+                        if is_external
+                        else Constants.ACTION_SET_INTERNAL_SENSOR,
+                    )
                     + params1
                 )
                 attrs[self.AttributeDefs.sensor_attr.name] = (
-                    self.aqara_header(0x13, params2, 0x02 if is_external else 0x04)
+                    self.aqara_header(
+                        Constants.HEADER_ACTION_SENSOR_MODE,
+                        params2,
+                        Constants.ACTION_SET_EXTERNAL_SENSOR
+                        if is_external
+                        else Constants.ACTION_SET_INTERNAL_SENSOR,
+                    )
                     + params2
                 )
 
