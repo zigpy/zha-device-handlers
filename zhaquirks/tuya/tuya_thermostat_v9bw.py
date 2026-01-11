@@ -1,4 +1,4 @@
-# Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s
+""" Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s """
 
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTemperature
 import zigpy.types as t
@@ -9,24 +9,26 @@ from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
 
 
 class PresetMode(t.enum8):
+    """Preset mode enum."""
     Auto = 0x00
     Manual = 0x01
     Eco = 0x02
 
 
-def deci_c_to_zigbee_0_01(v: int) -> int:
+def _deci_c_to_zigbee_0_01(v: int) -> int:
     return int(v) * 10
 
 
-def zigbee_0_01_to_deci_c(v: int) -> int:
+def _zigbee_0_01_to_deci_c(v: int) -> int:
     return int(v) // 10
 
 
-def is_open(v) -> bool:
+def _is_open(v) -> bool:
     return v in (1, True, "open", "OPEN")
 
 
-def schedule_raw_to_str(v) -> str:
+def _schedule_raw_to_str(v) -> str:
+    """Convert schedule to raw hex string."""
     if v is None:
         return ""
     if isinstance(v, (bytes, bytearray)):
@@ -69,8 +71,8 @@ def schedule_raw_to_str(v) -> str:
         dp_id=16,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
-        converter=deci_c_to_zigbee_0_01,
-        dp_converter=zigbee_0_01_to_deci_c,
+        converter=_deci_c_to_zigbee_0_01,
+        dp_converter=_zigbee_0_01_to_deci_c,
     )
     # DP 18/19: min/max limits (°C 0.1)
     .tuya_number(
@@ -104,7 +106,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=24,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
-        converter=deci_c_to_zigbee_0_01,
+        converter=_deci_c_to_zigbee_0_01,
     )
     # DP 36: running_state heat/idle
     .tuya_dp(
@@ -112,7 +114,7 @@ def schedule_raw_to_str(v) -> str:
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
         converter=lambda v: RunningState.Heat_State_On
-        if is_open(v)
+        if _is_open(v)
         else RunningState.Idle,
     )
     # DP 40: child lock
@@ -130,8 +132,8 @@ def schedule_raw_to_str(v) -> str:
         dp_id=109,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name="local_temperature_calibration",
-        converter=deci_c_to_zigbee_0_01,
-        dp_converter=zigbee_0_01_to_deci_c,
+        converter=_deci_c_to_zigbee_0_01,
+        dp_converter=_zigbee_0_01_to_deci_c,
     )
     # DP 112/116: deadzone + eco temp
     .tuya_number(
@@ -162,7 +164,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=65,
         attribute_name="schedule_monday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_monday",
         fallback_name="Schedule Monday",
@@ -171,7 +173,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=66,
         attribute_name="schedule_tuesday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_tuesday",
         fallback_name="Schedule Tuesday",
@@ -180,7 +182,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=67,
         attribute_name="schedule_wednesday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_wednesday",
         fallback_name="Schedule Wednesday",
@@ -189,7 +191,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=68,
         attribute_name="schedule_thursday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_thursday",
         fallback_name="Schedule Thursday",
@@ -198,7 +200,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=69,
         attribute_name="schedule_friday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_friday",
         fallback_name="Schedule Friday",
@@ -207,7 +209,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=70,
         attribute_name="schedule_saturday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_saturday",
         fallback_name="Schedule Saturday",
@@ -216,7 +218,7 @@ def schedule_raw_to_str(v) -> str:
         dp_id=71,
         attribute_name="schedule_sunday",
         type=t.LVBytes,
-        converter=schedule_raw_to_str,
+        converter=_schedule_raw_to_str,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="schedule_sunday",
         fallback_name="Schedule Sunday",
