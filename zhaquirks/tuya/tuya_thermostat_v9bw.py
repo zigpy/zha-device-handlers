@@ -110,7 +110,7 @@ def schedule_raw_to_str(v) -> str:
     .tuya_dp(
         dp_id=36,
         ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name="running_state",
+        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
         converter=lambda v: RunningState.Heat_State_On
         if is_open(v)
         else RunningState.Idle,
