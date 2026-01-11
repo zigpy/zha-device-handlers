@@ -1,7 +1,8 @@
 """Tests for CentraLite quirks."""
 
-import pytest
 from unittest import mock
+
+import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasAce
 
