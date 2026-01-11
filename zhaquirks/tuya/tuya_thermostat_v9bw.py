@@ -1,10 +1,12 @@
 # Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s
 
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTemperature
 import zigpy.types as t
-from zigpy.zcl.clusters.hvac import Thermostat, RunningState
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature, EntityPlatform, EntityType
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
+
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
+
 
 class PresetMode(t.enum8):
     auto = 0x00
@@ -34,16 +36,16 @@ def schedule_raw_to_str(v) -> str:
 
 (
     TuyaQuirkBuilder("_TZE204_wc2w9t1s", "TS0601")
-
     # DP 1: heat/off
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name="system_mode",
-        converter=lambda v: Thermostat.SystemMode.Heat if bool(v) else Thermostat.SystemMode.Off,
+        converter=lambda v: Thermostat.SystemMode.Heat
+        if bool(v)
+        else Thermostat.SystemMode.Off,
         dp_converter=lambda v: True if v == Thermostat.SystemMode.Heat else False,
     )
-
     # DP 2: preset enum
     .tuya_enum(
         dp_id=2,
@@ -54,7 +56,6 @@ def schedule_raw_to_str(v) -> str:
         translation_key="preset",
         fallback_name="Preset",
     )
-
     # DP 10: frost switch
     .tuya_switch(
         dp_id=10,
@@ -63,7 +64,6 @@ def schedule_raw_to_str(v) -> str:
         translation_key="frost",
         fallback_name="Frost protection",
     )
-
     # DP 16: setpoint 0.1°C -> 0.01°C
     .tuya_dp(
         dp_id=16,
@@ -72,7 +72,6 @@ def schedule_raw_to_str(v) -> str:
         converter=deci_c_to_zigbee_0_01,
         dp_converter=zigbee_0_01_to_deci_c,
     )
-
     # DP 18/19: min/max limits (°C 0.1)
     .tuya_number(
         dp_id=18,
@@ -100,7 +99,6 @@ def schedule_raw_to_str(v) -> str:
         translation_key="max_temperature_limit",
         fallback_name="Max temperature limit",
     )
-
     # DP 24: local temp 0.1°C -> 0.01°C
     .tuya_dp(
         dp_id=24,
@@ -108,15 +106,15 @@ def schedule_raw_to_str(v) -> str:
         attribute_name="local_temperature",
         converter=deci_c_to_zigbee_0_01,
     )
-
     # DP 36: running_state heat/idle
     .tuya_dp(
         dp_id=36,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name="running_state",
-        converter=lambda v: RunningState.Heat_State_On if is_open(v) else RunningState.Idle,
+        converter=lambda v: RunningState.Heat_State_On
+        if is_open(v)
+        else RunningState.Idle,
     )
-
     # DP 40: child lock
     .tuya_switch(
         dp_id=40,
@@ -125,10 +123,8 @@ def schedule_raw_to_str(v) -> str:
         translation_key="child_lock",
         fallback_name="Child lock",
     )
-
     # DP 107: battery
     .tuya_battery(dp_id=107)
-
     # DP 109: calibration 0.1°C -> 0.01°C
     .tuya_dp(
         dp_id=109,
@@ -137,7 +133,6 @@ def schedule_raw_to_str(v) -> str:
         converter=deci_c_to_zigbee_0_01,
         dp_converter=zigbee_0_01_to_deci_c,
     )
-
     # DP 112/116: deadzone + eco temp
     .tuya_number(
         dp_id=112,
@@ -162,7 +157,6 @@ def schedule_raw_to_str(v) -> str:
         translation_key="eco_temperature",
         fallback_name="Eco temperature",
     )
-
     # DP 65-71: schedules (raw hex)
     .tuya_sensor(
         dp_id=65,
@@ -227,7 +221,6 @@ def schedule_raw_to_str(v) -> str:
         translation_key="schedule_sunday",
         fallback_name="Schedule Sunday",
     )
-
     .adds(TuyaThermostatV2)
     .skip_configuration()
     .add_to_registry()
