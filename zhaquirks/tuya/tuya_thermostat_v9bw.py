@@ -1,4 +1,4 @@
-"""Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s"""
+"""Thermostat v9bw from Tuya TS0601/_TZE204_wc2w9t1s."""
 
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTemperature
 import zigpy.types as t
