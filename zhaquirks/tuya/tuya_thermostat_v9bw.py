@@ -68,7 +68,7 @@ def schedule_raw_to_str(v) -> str:
     .tuya_dp(
         dp_id=16,
         ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name="occupied_heating_setpoint",
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
         converter=deci_c_to_zigbee_0_01,
         dp_converter=zigbee_0_01_to_deci_c,
     )
