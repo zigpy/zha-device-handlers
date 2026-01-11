@@ -103,7 +103,7 @@ def schedule_raw_to_str(v) -> str:
     .tuya_dp(
         dp_id=24,
         ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name="local_temperature",
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
         converter=deci_c_to_zigbee_0_01,
     )
     # DP 36: running_state heat/idle
