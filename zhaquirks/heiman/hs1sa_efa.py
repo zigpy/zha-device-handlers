@@ -41,8 +41,8 @@ def smoke_chamber_contamination_converter(value: int) -> str:
     actions = {
         0: "normal",
         1: "light contamination",
-        2: "medium contamication",
-        3: "critical contamication",
+        2: "medium contamination",
+        3: "critical contamination",
     }
     # value is 0, 1, 2, or 3
     return actions.get(value, "unknown")

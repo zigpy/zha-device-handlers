@@ -15,8 +15,8 @@ def test_heiman_converters():
     # Coverage for smoke_chamber_contamination_converter
     assert smoke_chamber_contamination_converter(0) == "normal"
     assert smoke_chamber_contamination_converter(1) == "light contamination"
-    assert smoke_chamber_contamination_converter(2) == "medium contamication"
-    assert smoke_chamber_contamination_converter(3) == "critical contamication"
+    assert smoke_chamber_contamination_converter(2) == "medium contamination"
+    assert smoke_chamber_contamination_converter(3) == "critical contamination"
     assert smoke_chamber_contamination_converter(99) == "unknown"
 
     # Coverage for smoke_level_unit_converter
