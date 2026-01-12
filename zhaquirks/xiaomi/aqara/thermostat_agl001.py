@@ -696,8 +696,8 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     .replaces(XiaomiPowerConfiguration)
     .adds(LocalDeviceTemperatureCluster)
     # Complete entity definitions for this device.
-    # Note: ZHA currently has legacy hardcoded entities for this device which may
-    # cause duplicates. Those should be removed from ZHA in a follow-up PR.
+    # unique_id_suffix values match legacy ZHA entity IDs for seamless migration
+    # (prevents duplicate entities and preserves automations/dashboards).
     #
     # Switches
     .switch(
@@ -705,24 +705,28 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="child_lock",
         fallback_name="Child lock",
+        unique_id_suffix="child_lock",
     )
     .switch(
         AqaraThermostatSpecificCluster.AttributeDefs.window_detection.name,
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="window_detection",
         fallback_name="Open window detection",
+        unique_id_suffix="window_detection",
     )
     .switch(
         AqaraThermostatSpecificCluster.AttributeDefs.valve_detection.name,
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="valve_detection",
         fallback_name="Valve detection",
+        unique_id_suffix="valve_detection",
     )
     .switch(
         AqaraThermostatSpecificCluster.AttributeDefs.schedule.name,
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="schedule",
         fallback_name="Schedule",
+        unique_id_suffix="schedule",
     )
     # Binary sensors
     .binary_sensor(
@@ -731,6 +735,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="valve_alarm",
         fallback_name="Valve alarm",
+        unique_id_suffix="valve_alarm",
     )
     .binary_sensor(
         AqaraThermostatSpecificCluster.AttributeDefs.window_open.name,
@@ -738,6 +743,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         device_class=BinarySensorDeviceClass.WINDOW,
         translation_key="window_open",
         fallback_name="Window open",
+        unique_id_suffix="window_open",
     )
     .binary_sensor(
         AqaraThermostatSpecificCluster.AttributeDefs.calibrated.name,
@@ -745,6 +751,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="calibrated",
         fallback_name="Calibrated",
+        unique_id_suffix="calibrated",
     )
     # Selects (enums)
     .enum(
@@ -753,6 +760,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="preset",
         fallback_name="Preset",
+        unique_id_suffix="preset",
     )
     .enum(
         AqaraThermostatSpecificCluster.AttributeDefs.sensor.name,
@@ -760,6 +768,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraThermostatSpecificCluster.cluster_id,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
+        unique_id_suffix="sensor",
     )
     # Number
     .number(
@@ -773,6 +782,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         device_class=NumberDeviceClass.TEMPERATURE,
         translation_key="away_preset_temperature",
         fallback_name="Away preset temperature",
+        unique_id_suffix="away_preset_temperature",
     )
     # Button
     .write_attr_button(
