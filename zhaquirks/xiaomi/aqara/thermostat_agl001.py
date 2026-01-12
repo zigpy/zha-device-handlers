@@ -115,6 +115,9 @@ class ThermostatCluster(CustomCluster, Thermostat):
         ].id: Thermostat.ControlSequenceOfOperation.Heating_Only
     }
 
+    # Attribute IDs for special handling
+    _RUNNING_STATE_ATTR = Thermostat.AttributeDefs.running_state.id
+
     async def read_attributes(
         self,
         attributes: list[int | str],
@@ -125,6 +128,20 @@ class ThermostatCluster(CustomCluster, Thermostat):
         """Pass reading attributes to Xiaomi cluster if applicable."""
         successful_r, failed_r = {}, {}
         remaining_attributes = attributes.copy()
+
+        # Handle running_state - device doesn't support it natively, we simulate it
+        # from heartbeat data. Return cached value or default to Idle.
+        running_state_requested = (
+            self._RUNNING_STATE_ATTR in attributes or "running_state" in attributes
+        )
+        if running_state_requested:
+            if self._RUNNING_STATE_ATTR in attributes:
+                remaining_attributes.remove(self._RUNNING_STATE_ATTR)
+            if "running_state" in attributes:
+                remaining_attributes.remove("running_state")
+            # Return cached value (set by heartbeat) or default to Idle (0)
+            cached_state = self._attr_cache.get(self._RUNNING_STATE_ATTR, 0)
+            successful_r[self._RUNNING_STATE_ATTR] = cached_state
 
         # read system_mode from Xiaomi cluster (can be numeric or string)
         if ZCL_SYSTEM_MODE in attributes or "system_mode" in attributes:

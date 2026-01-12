@@ -1557,6 +1557,60 @@ async def test_xiaomi_e1_thermostat_heartbeat_running_state(zigpy_device_from_v2
     assert running_state_update[1] == 0  # Idle because system is off
 
 
+async def test_xiaomi_e1_thermostat_read_running_state(zigpy_device_from_v2_quirk):
+    """Test reading running_state returns cached value (simulated from heartbeat)."""
+    from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+        HEARTBEAT,
+        HEARTBEAT_HEATING_SETPOINT,
+        HEARTBEAT_LOCAL_TEMPERATURE,
+        SYSTEM_MODE,
+        SystemMode,
+    )
+
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
+    opple_cluster = device.endpoints[1].opple_cluster
+    thermostat_cluster = device.endpoints[1].thermostat
+
+    # Test 1: Read running_state before any heartbeat - should return default (0 = Idle)
+    result = await thermostat_cluster.read_attributes(["running_state"])
+    assert Thermostat.AttributeDefs.running_state.id in result[0]
+    assert result[0][Thermostat.AttributeDefs.running_state.id] == 0  # Default Idle
+
+    # Test 2: Send heartbeat that triggers heating, then read running_state
+    opple_cluster._attr_cache[SYSTEM_MODE] = SystemMode.Heat
+    heartbeat_data = bytes(
+        [
+            HEARTBEAT_LOCAL_TEMPERATURE,
+            0x21,
+            0xD0,
+            0x07,  # 2000 = 20.00°C
+            HEARTBEAT_HEATING_SETPOINT,
+            0x21,
+            0x98,
+            0x08,  # 2200 = 22.00°C (setpoint > local = heating)
+        ]
+    )
+    opple_cluster.update_attribute(HEARTBEAT, heartbeat_data)
+
+    # Now read running_state - should return Heat_State_On from cache
+    result = await thermostat_cluster.read_attributes(["running_state"])
+    assert Thermostat.AttributeDefs.running_state.id in result[0]
+    assert (
+        result[0][Thermostat.AttributeDefs.running_state.id]
+        == Thermostat.RunningState.Heat_State_On
+    )
+
+    # Test 3: Also test reading by attribute ID
+    result = await thermostat_cluster.read_attributes(
+        [Thermostat.AttributeDefs.running_state.id]
+    )
+    assert Thermostat.AttributeDefs.running_state.id in result[0]
+    assert (
+        result[0][Thermostat.AttributeDefs.running_state.id]
+        == Thermostat.RunningState.Heat_State_On
+    )
+
+
 async def test_xiaomi_e1_thermostat_write_calibrate(zigpy_device_from_v2_quirk):
     """Test writing calibrate attribute triggers calibration."""
     from unittest import mock
