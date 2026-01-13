@@ -4,6 +4,8 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
+from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Sets divisor attributes missing on the device."""
@@ -17,5 +19,7 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 (
     QuirkBuilder(manufacturer="ubisys", model="S1-R (5601)")
     .replaces(UbisysElectricalMeasurement)
+    # SmartEnergy summation attributes do not support attribute reporting, need polling
+    .exposes_feature(SE_POLL_SUMMATION)
     .add_to_registry()
 )

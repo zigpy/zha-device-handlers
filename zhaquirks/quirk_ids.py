@@ -14,3 +14,9 @@ XIAOMI_AQARA_VIBRATION_AQ1 = (
 
 # Danfoss
 DANFOSS_ALLY_THERMOSTAT = "danfoss.ally_thermostat"  # Thermostatic Radiator Valves based on Danfoss Ally with custom clusters
+
+
+# Exposed features
+
+# Hint to poll SmartEnergy summation delivered and received attributes
+SE_POLL_SUMMATION = "se_poll_summation"
