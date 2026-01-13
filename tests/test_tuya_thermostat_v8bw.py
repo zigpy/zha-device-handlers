@@ -95,6 +95,10 @@ def _dp_u32(seq: int, dp: int, value_u32: int) -> bytes:
         ),
     )
 
+def _dp_raw(seq: int, dp: int, raw_data: bytes) -> bytes:
+    """Build raw bytes DP report (LVBytes type)."""
+    return _tuya_dp_report(seq, dp, 0x00, raw_data)
+
 
 def _feed_tuya_payload(tuya_cluster, payload: bytes) -> None:
     """Deserialize and handle Tuya payload."""
@@ -212,6 +216,21 @@ def _cases() -> Iterable[DpCase]:
         target="power",
         attr_name="battery_percentage_remaining",
         expected=170,  # 85 * 2 = 170 (battery in 0.5% units)
+    )
+
+    # DP 65: schedule_monday (raw bytes converted to hex string)
+    # Example: 06:30 @ 20.0°C, 08:00 @ 22.0°C (2 segments, 8 bytes total)
+    # Segment 1: 06:30 = 390 minutes = 0x0186, 20.0°C = 200 (0.1°C) = 0x00C8
+    # Segment 2: 08:00 = 480 minutes = 0x01E0, 22.0°C = 220 (0.1°C) = 0x00DC
+    yield DpCase(
+        dp=65,
+        name="DP65 schedule_monday",
+        build_payload=lambda seq: _dp_raw(
+            seq, 65, bytes([0x01, 0x86, 0x00, 0xC8, 0x01, 0xE0, 0x00, 0xDC])
+        ),
+        target="tuya",
+        attr_name="schedule_monday",
+        expected="018600c801e000dc",  # Hex string representation
     )
 
 
