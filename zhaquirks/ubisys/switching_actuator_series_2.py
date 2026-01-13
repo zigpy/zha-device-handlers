@@ -9,7 +9,6 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Sets divisor attributes missing on the device."""
 
     _CONSTANT_ATTRIBUTES = {
-        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
         ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 10,
     }
 
