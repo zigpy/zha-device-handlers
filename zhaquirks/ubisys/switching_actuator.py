@@ -1,4 +1,4 @@
-"""Ubisys Switching Actuator S1-R (Series 2) quirk."""
+"""Ubisys Switching Actuator S1 quirk."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -12,27 +12,25 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
     _CONSTANT_ATTRIBUTES = {
         ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
-        ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 10,
-        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
-        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 1000,
     }
 
 
 (
-    QuirkBuilder(manufacturer="ubisys", model="S1-R (5601)")
-    .replaces(UbisysElectricalMeasurement, endpoint_id=1)
+    QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
+    .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
     # so we disable the other entities by default
     # TODO: Disabling this entity also disables polling for the entire EM cluster in ZHA
     .change_entity_metadata(
-        endpoint_id=1,
+        endpoint_id=3,
         cluster_id=ElectricalMeasurement.cluster_id,
-        unique_id_suffix="1-2820",  # no translation key and no actual suffix for this
+        unique_id_suffix="3-2820",  # no translation key and no actual suffix for this
         new_entity_registry_enabled_default=False,
     )
     .change_entity_metadata(
-        endpoint_id=1,
+        endpoint_id=3,
         cluster_id=ElectricalMeasurement.cluster_id,
         unique_id_suffix="total_active_power",
         new_entity_registry_enabled_default=False,
