@@ -101,6 +101,17 @@ def _dp_raw(seq: int, dp: int, raw_data: bytes) -> bytes:
     return _tuya_dp_report(seq, dp, 0x00, raw_data)
 
 
+def _dp_enum(seq: int, dp: int, value: int) -> bytes:
+    """Build enum DP report."""
+    return _tuya_dp_report(seq, dp, 0x04, bytes([value & 0xFF]))
+
+
+def _dp_string(seq: int, dp: int, value: str) -> bytes:
+    """Build string DP report."""
+    encoded = value.encode('utf-8')
+    return _tuya_dp_report(seq, dp, 0x03, encoded)
+
+
 def _feed_tuya_payload(tuya_cluster, payload: bytes) -> None:
     """Deserialize and handle Tuya payload."""
     hdr, args = tuya_cluster.deserialize(payload)
@@ -166,6 +177,36 @@ def _cases() -> Iterable[DpCase]:
         target="thermostat",
         attr_name="running_state",
         expected=Thermostat.RunningState.Idle,
+    )
+
+    # DP 36: running_state with value=1 (tests _is_open with int)
+    yield DpCase(
+        dp=36,
+        name="DP36 running_state heat (int 1)",
+        build_payload=lambda seq: _dp_u32(seq, 36, 1),
+        target="thermostat",
+        attr_name="running_state",
+        expected=Thermostat.RunningState.Heat_State_On,
+    )
+
+    # DP 36: running_state with string "open" (tests _is_open with string)
+    yield DpCase(
+        dp=36,
+        name="DP36 running_state heat (string 'open')",
+        build_payload=lambda seq: _dp_string(seq, 36, "open"),
+        target="thermostat",
+        attr_name="running_state",
+        expected=Thermostat.RunningState.Heat_State_On,
+    )
+
+    # DP 36: running_state with string "OPEN" (tests _is_open with uppercase)
+    yield DpCase(
+        dp=36,
+        name="DP36 running_state heat (string 'OPEN')",
+        build_payload=lambda seq: _dp_string(seq, 36, "OPEN"),
+        target="thermostat",
+        attr_name="running_state",
+        expected=Thermostat.RunningState.Heat_State_On,
     )
 
     # DP 10: frost (bool) -> attribute on Tuya cluster
@@ -234,6 +275,17 @@ def _cases() -> Iterable[DpCase]:
         expected="018600c801e000dc",  # Hex string representation
     )
 
+    # DP 109: local_temperature_calibration (tests _zigbee_0_01_to_deci_c converter)
+    # Test writing setpoint to trigger dp_converter
+    yield DpCase(
+        dp=109,
+        name="DP109 calibration 1.5C",
+        build_payload=lambda seq: _dp_u32(seq, 109, 15),  # 1.5°C in 0.1°C units
+        target="thermostat",
+        attr_name="local_temperature_calibration",
+        expected=150,  # 15 * 10 = 150 (0.01°C units)
+    )
+
 
 @pytest.mark.parametrize("case", list(_cases()), ids=lambda c: c.name)
 async def test_wc2w9t1s_datapoints_apply(
@@ -294,3 +346,4 @@ async def test_wc2w9t1s_datapoints_apply(
             f"{case.name}: expected {case.attr_name}={case.expected}, "
             f"got {actual_value}"
         )
+
