@@ -18,7 +18,7 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="S1-R (5601)")
-    .replaces(UbisysElectricalMeasurement)
+    .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # SmartEnergy summation attributes do not support attribute reporting, need polling
     .exposes_feature(SE_POLL_SUMMATION)
     .add_to_registry()
