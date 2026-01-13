@@ -71,7 +71,7 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         return result
 
 
-class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
+class TVOCDisplayUnit(t.enum8):
     """Display values."""
 
     mgm3_celsius = 0x00
