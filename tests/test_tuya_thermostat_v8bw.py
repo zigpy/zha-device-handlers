@@ -95,6 +95,7 @@ def _dp_u32(seq: int, dp: int, value_u32: int) -> bytes:
         ),
     )
 
+
 def _dp_raw(seq: int, dp: int, raw_data: bytes) -> bytes:
     """Build raw bytes DP report (LVBytes type)."""
     return _tuya_dp_report(seq, dp, 0x00, raw_data)
