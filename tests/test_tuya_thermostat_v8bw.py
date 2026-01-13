@@ -108,7 +108,7 @@ def _dp_enum(seq: int, dp: int, value: int) -> bytes:
 
 def _dp_string(seq: int, dp: int, value: str) -> bytes:
     """Build string DP report."""
-    encoded = value.encode('utf-8')
+    encoded = value.encode("utf-8")
     return _tuya_dp_report(seq, dp, 0x03, encoded)
 
 
@@ -346,4 +346,3 @@ async def test_wc2w9t1s_datapoints_apply(
             f"{case.name}: expected {case.attr_name}={case.expected}, "
             f"got {actual_value}"
         )
-
