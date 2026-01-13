@@ -1,14 +1,15 @@
 """Tests for Tuya TS0601 thermostat v9bw (_TZE204_wc2w9t1s)."""
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Callable, Final, Iterable
+from typing import Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from zigpy.zcl.clusters.hvac import Thermostat
 
-import zhaquirks
 from tests.common import ClusterListener
+import zhaquirks
 
 # Import quirk module so TuyaQuirkBuilder(...).add_to_registry() executes.
 from zhaquirks.tuya import tuya_thermostat_v9bw  # noqa: F401
