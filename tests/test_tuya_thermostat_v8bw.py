@@ -347,22 +347,23 @@ async def test_wc2w9t1s_datapoints_apply(
             f"got {actual_value}"
         )
 
+
 def test_converter_functions():
     """Test converter functions directly for full coverage."""
     from zhaquirks.tuya.tuya_thermostat_v9bw import (
         _deci_c_to_zigbee_0_01,
-        _zigbee_0_01_to_deci_c,
         _is_open,
         _schedule_raw_to_str,
+        _zigbee_0_01_to_deci_c,
     )
 
     # Test _deci_c_to_zigbee_0_01
     assert _deci_c_to_zigbee_0_01(240) == 2400  # 24.0°C
-    assert _deci_c_to_zigbee_0_01(15) == 150    # 1.5°C
+    assert _deci_c_to_zigbee_0_01(15) == 150  # 1.5°C
 
     # Test _zigbee_0_01_to_deci_c (inverse)
     assert _zigbee_0_01_to_deci_c(2400) == 240  # 24.0°C
-    assert _zigbee_0_01_to_deci_c(150) == 15    # 1.5°C
+    assert _zigbee_0_01_to_deci_c(150) == 15  # 1.5°C
     assert _zigbee_0_01_to_deci_c(2455) == 245  # 24.55°C -> 24.5°C (integer division)
 
     # Test _is_open
