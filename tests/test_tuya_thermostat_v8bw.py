@@ -1,21 +1,21 @@
 """Tests for Tuya TS0601 thermostat v9bw (_TZE204_wc2w9t1s)."""
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Callable, Final, Iterable
+from typing import Final
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from zigpy.zcl.clusters.hvac import Thermostat
 
-import zhaquirks
 from tests.common import ClusterListener
+import zhaquirks
 
 # Ensure all quirks are registered.
 zhaquirks.setup()
 
 # Import quirk module so TuyaQuirkBuilder(...).add_to_registry() executes.
 from zhaquirks.tuya import tuya_thermostat_v9bw  # noqa: F401
-
 
 MANUFACTURER: Final[str] = "_TZE204_wc2w9t1s"
 MODEL: Final[str] = "TS0601"
@@ -39,8 +39,7 @@ class DpCase:
 
 
 def _tuya_dp_report(seq: int, dp: int, dp_type: int, data: bytes) -> bytes:
-    """
-    Build a Tuya 'DP report' ZCL payload matching zhaquirks format.
+    """Build a Tuya 'DP report' ZCL payload matching zhaquirks format.
 
     Format based on actual Tuya messages from test_tuya.py:
     - 0x09: command prefix
@@ -57,17 +56,22 @@ def _tuya_dp_report(seq: int, dp: int, dp_type: int, data: bytes) -> bytes:
     # Total length = dp(1) + type(1) + len(2) + data
     total_len = 1 + 1 + 2 + dlen
 
-    return bytes([
-        0x09,                    # Command prefix
-        seq & 0xFF,              # Sequence number
-        0x01,                    # Status (0x01 for reports)
-        0x03,                    # Unknown constant
-        total_len & 0xFF,        # Total length of DP data
-        dp & 0xFF,               # DP ID
-        dp_type & 0xFF,          # Data type
-        (dlen >> 8) & 0xFF,      # Data length high byte
-        dlen & 0xFF,             # Data length low byte
-    ]) + data
+    return (
+        bytes(
+            [
+                0x09,  # Command prefix
+                seq & 0xFF,  # Sequence number
+                0x01,  # Status (0x01 for reports)
+                0x03,  # Unknown constant
+                total_len & 0xFF,  # Total length of DP data
+                dp & 0xFF,  # DP ID
+                dp_type & 0xFF,  # Data type
+                (dlen >> 8) & 0xFF,  # Data length high byte
+                dlen & 0xFF,  # Data length low byte
+            ]
+        )
+        + data
+    )
 
 
 def _dp_bool(seq: int, dp: int, value: bool) -> bytes:
@@ -81,12 +85,14 @@ def _dp_u32(seq: int, dp: int, value_u32: int) -> bytes:
         seq,
         dp,
         0x02,
-        bytes([
-            (value_u32 >> 24) & 0xFF,
-            (value_u32 >> 16) & 0xFF,
-            (value_u32 >> 8) & 0xFF,
-            value_u32 & 0xFF,
-        ]),
+        bytes(
+            [
+                (value_u32 >> 24) & 0xFF,
+                (value_u32 >> 16) & 0xFF,
+                (value_u32 >> 8) & 0xFF,
+                value_u32 & 0xFF,
+            ]
+        ),
     )
 
 
@@ -221,10 +227,11 @@ async def test_wc2w9t1s_datapoints_apply(
     tuya = ep1.in_clusters[TUYA_CLUSTER_ID]
     thermostat = ep1.in_clusters[Thermostat.cluster_id]
     from zigpy.zcl.clusters.general import PowerConfiguration
+
     power = ep1.in_clusters[PowerConfiguration.cluster_id]
 
     # Mock the async reply method to avoid RuntimeError
-    with patch.object(tuya, 'reply', new_callable=AsyncMock):
+    with patch.object(tuya, "reply", new_callable=AsyncMock):
         # Select target cluster
         if case.target == "thermostat":
             target_cluster = thermostat
@@ -242,13 +249,16 @@ async def test_wc2w9t1s_datapoints_apply(
         # ClusterListener.attribute_updates contains tuples (attr_id, value)
         # Need to get attr_id from attribute name
         attr_def = target_cluster.attributes_by_name.get(case.attr_name)
-        assert attr_def is not None, f"Attribute {case.attr_name} not found in {target_cluster}"
+        assert attr_def is not None, (
+            f"Attribute {case.attr_name} not found in {target_cluster}"
+        )
 
         expected_attr_id = attr_def.id
 
         # Find updates by attr_id
         matching_updates = [
-            evt for evt in listener.attribute_updates
+            evt
+            for evt in listener.attribute_updates
             if len(evt) >= 2 and evt[0] == expected_attr_id
         ]
 
