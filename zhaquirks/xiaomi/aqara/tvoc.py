@@ -8,7 +8,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import LocalDataCluster, PowerConfigurationCluster
@@ -87,7 +87,10 @@ class TVOCCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         display_unit: Final = ZCLAttributeDef(
-            id=DISPLAY_UNIT, type=TVOCDisplayUnit, is_manufacturer_specific=True
+            id=DISPLAY_UNIT,
+            type=TVOCDisplayUnit,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
 
 
