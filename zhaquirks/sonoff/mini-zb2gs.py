@@ -5,7 +5,6 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.typing import AddressingMode, EndpointType
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -17,6 +16,7 @@ class SonoffCluster(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
+
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
@@ -36,30 +36,37 @@ class SonoffCluster(CustomCluster):
             type=t.Bool,
         )
 
+
 class SonoffExternalSwitchTriggerType(types.enum8):
     """extern switch trigger type."""
+
     Edge_trigger = 0x00
     Pulse_trigger = 0x01
     Normally_off_follow_trigger = 0x02
     Normally_on_follow_trigger = 0x82
 
+
 class SonoffDetachRelayType(types.enum8):
     """detach relay type."""
+
     ALL_CH_DETACH_RELAY_CLOSE = 0x00
     JUST_CH1_ENABLE_DETACH_RELAY = 0x01
     JUST_CH2_ENABLE_DETACH_RELAY = 0x02
     CH1_AND_CH2_ENABLE_DETACH_RELAY = 0x03
 
+
 # 定义turbo模式的枚举类型
 class SonoffTurboModeType(types.enum16):
     """turbo mode type."""
+
     NORMAL_MODE = 0x0009  # 9
-    TURBO_MODE = 0x0014   # 20
+    TURBO_MODE = 0x0014  # 20
+
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB2GS")
-    .replaces(SonoffCluster, endpoint_id = 1)
-    .replaces(SonoffCluster, endpoint_id = 2)
+    .replaces(SonoffCluster, endpoint_id=1)
+    .replaces(SonoffCluster, endpoint_id=2)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
