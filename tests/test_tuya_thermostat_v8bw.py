@@ -346,3 +346,38 @@ async def test_wc2w9t1s_datapoints_apply(
             f"{case.name}: expected {case.attr_name}={case.expected}, "
             f"got {actual_value}"
         )
+
+def test_converter_functions():
+    """Test converter functions directly for full coverage."""
+    from zhaquirks.tuya.tuya_thermostat_v9bw import (
+        _deci_c_to_zigbee_0_01,
+        _zigbee_0_01_to_deci_c,
+        _is_open,
+        _schedule_raw_to_str,
+    )
+
+    # Test _deci_c_to_zigbee_0_01
+    assert _deci_c_to_zigbee_0_01(240) == 2400  # 24.0°C
+    assert _deci_c_to_zigbee_0_01(15) == 150    # 1.5°C
+
+    # Test _zigbee_0_01_to_deci_c (inverse)
+    assert _zigbee_0_01_to_deci_c(2400) == 240  # 24.0°C
+    assert _zigbee_0_01_to_deci_c(150) == 15    # 1.5°C
+    assert _zigbee_0_01_to_deci_c(2455) == 245  # 24.55°C -> 24.5°C (integer division)
+
+    # Test _is_open
+    assert _is_open(1) is True
+    assert _is_open(True) is True
+    assert _is_open("open") is True
+    assert _is_open("OPEN") is True
+    assert _is_open(0) is False
+    assert _is_open(False) is False
+    assert _is_open("close") is False
+    assert _is_open("closed") is False
+
+    # Test _schedule_raw_to_str
+    assert _schedule_raw_to_str(None) == ""
+    assert _schedule_raw_to_str(bytes([0x01, 0x02, 0x03])) == "010203"
+    assert _schedule_raw_to_str(bytearray([0xAB, 0xCD])) == "abcd"
+    assert _schedule_raw_to_str("test") == "test"
+    assert _schedule_raw_to_str(123) == "123"
