@@ -1,4 +1,4 @@
-"""Ubisys Switching Actuator S1-R (Series 2) quirk."""
+"""Ubisys Switching Actuator S1 quirk."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -17,7 +17,7 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 
 (
-    QuirkBuilder(manufacturer="ubisys", model="S1-R (5601)")
+    QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # SmartEnergy summation attributes do not support attribute reporting, need polling
     .exposes_feature(SE_POLL_SUMMATION)
