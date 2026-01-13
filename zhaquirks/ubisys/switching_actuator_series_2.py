@@ -38,5 +38,9 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     # SmartEnergy summation attributes do not support attribute reporting, need polling
     # TODO: Add support for this in ZHA
     .exposes_feature(SE_POLL_SUMMATION)
+    # TODO: Fix/rework/rethink EM polling
+    # ElectricalMeasurement cluster does not support attribute reporting at all,
+    # so poll current explicitly (active power does, but if disabled, nothing will poll)
+    # .exposes_feature(EM_POLL_CURRENT)
     .add_to_registry()
 )
