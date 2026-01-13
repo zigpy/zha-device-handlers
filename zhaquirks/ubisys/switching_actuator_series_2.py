@@ -19,6 +19,22 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 (
     QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
+    # The device exposes total active power on multiple attributes,
+    # but only supports attribute reporting on the SE "instantaneous demand" attribute,
+    # so we disable the other entities by default
+    # TODO: Disabling this entity also disables polling for the entire EM cluster in ZHA
+    .change_entity_metadata(
+        endpoint_id=3,
+        cluster_id=ElectricalMeasurement.cluster_id,
+        unique_id_suffix="3-2820",  # no translation key and no actual suffix for this
+        new_entity_registry_enabled_default=False,
+    )
+    .change_entity_metadata(
+        endpoint_id=3,
+        cluster_id=ElectricalMeasurement.cluster_id,
+        unique_id_suffix="total_active_power",
+        new_entity_registry_enabled_default=False,
+    )
     # SmartEnergy summation attributes do not support attribute reporting, need polling
     .exposes_feature(SE_POLL_SUMMATION)
     .add_to_registry()
