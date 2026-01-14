@@ -2,8 +2,10 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
+from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 
 
@@ -42,5 +44,15 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     # ElectricalMeasurement cluster does not support attribute reporting at all,
     # so poll current explicitly (active power does, but if disabled, nothing will poll)
     # .exposes_feature(EM_POLL_CURRENT)
+    .device_automation_triggers(
+        {
+            # this also toggles light by default, but on up + down, so normal switch
+            (COMMAND_CLICK, BUTTON): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+        }
+    )
     .add_to_registry()
 )
