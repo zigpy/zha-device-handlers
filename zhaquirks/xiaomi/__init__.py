@@ -391,15 +391,20 @@ class XiaomiCluster(CustomCluster):
                 {
                     100: TEMPERATURE_MEASUREMENT,
                     101: HUMIDITY_MEASUREMENT,
-                    102: TVOC_MEASUREMENT
-                    if self.endpoint.device.model == "lumi.airmonitor.acn01"
-                    else PRESSURE_MEASUREMENT_PRECISION
-                    if self.endpoint.device.model == "lumi.weather"
-                    else PRESSURE_MEASUREMENT,
+                    102: (
+                        TVOC_MEASUREMENT
+                        if self.endpoint.device.model == "lumi.airmonitor.acn01"
+                        else (
+                            PRESSURE_MEASUREMENT_PRECISION
+                            if self.endpoint.device.model == "lumi.weather"
+                            else PRESSURE_MEASUREMENT
+                        )
+                    ),
                 }
             )
         elif self.endpoint.device.model in [
             "lumi.plug",
+            "lumi.plug.aeu001",
             "lumi.plug.maus01",
             "lumi.plug.maeu01",
             "lumi.plug.mmeu01",
