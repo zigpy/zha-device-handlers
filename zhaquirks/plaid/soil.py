@@ -1,6 +1,11 @@
 """PLAID SYSTEMS PS-SPRZMS-SLP3 soil moisture sensor."""
 
+from typing import Final
+
 from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
+from zigpy.zcl.clusters.general import BatterySize
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.plaid import PLAID_SYSTEMS
@@ -9,33 +14,27 @@ from zhaquirks.plaid import PLAID_SYSTEMS
 class PowerConfigurationClusterMains(PowerConfigurationCluster):
     """Common use power configuration cluster."""
 
-    MAINS_VOLTAGE_ATTR = 0x0000
-    ATTR_ID_BATT_SIZE = 0x0031
-    ATTR_ID_BATT_QTY = 0x0033
-    _CONSTANT_ATTRIBUTES = {ATTR_ID_BATT_SIZE: 0x08, ATTR_ID_BATT_QTY: 1}
+    class AttributeDefs(PowerConfigurationCluster.AttributeDefs):  # type: ignore[name-defined]
+        """Attribute definitions for Power Configuration cluster with bad voltage."""
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.MAINS_VOLTAGE_ATTR:
-            super()._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(value / 100))
+        # The manufacturer uses the mains_voltage attribute to report battery voltage
+        battery_voltage: Final = ZCLAttributeDef(id=0x0000, type=t.uint16_t, access="r")
+        mains_voltage: Final = None
 
-    def _remap(self, attr):
-        """Replace battery voltage attribute name/id with mains_voltage."""
-        if attr in (self.BATTERY_VOLTAGE_ATTR, "battery_voltage"):
-            return self.MAINS_VOLTAGE_ATTR
-        return attr
+    async def read_attribute_override_battery_size(self) -> int:
+        """Return constant battery size."""
+        return BatterySize.CR123A
 
-    async def read_attributes(self, attributes, *args, **kwargs):
-        """Replace battery voltage with mains voltage."""
-        return await super().read_attributes(
-            [self._remap(attr) for attr in attributes], *args, **kwargs
+    async def read_attribute_override_battery_quantity(self) -> int:
+        """Return constant battery quantity."""
+        return 1
+
+    async def read_attribute_override_battery_voltage(self) -> int:
+        """Read battery_voltage from mains_voltage."""
+        success, failure = await super().read_attributes(
+            [self.AttributeDefs.mains_voltage]
         )
-
-    async def configure_reporting(self, attribute, *args, **kwargs):
-        """Replace battery voltage with mains voltage."""
-        return await super().configure_reporting(
-            self._remap(attribute), *args, **kwargs
-        )
+        return round(success[self.AttributeDefs.battery_voltage] / 100)
 
 
 (
