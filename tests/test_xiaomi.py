@@ -63,6 +63,7 @@ from zhaquirks.xiaomi import (
 )
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
+import zhaquirks.xiaomi.aqara.curtain_c3
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -2282,3 +2283,65 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+@pytest.mark.parametrize(
+    "command, expected_command_id, expected_args",
+    [
+        (
+            WindowCovering.ServerCommandDefs.up_open.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            (0,),
+        ),
+        (
+            WindowCovering.ServerCommandDefs.down_close.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            (100,),
+        ),
+        (
+            WindowCovering.ServerCommandDefs.stop.id,
+            WindowCovering.ServerCommandDefs.stop.id,
+            (),
+        ),
+    ],
+)
+async def test_xiaomi_curtain_c3_commands(
+    zigpy_device_from_v2_quirk, command, expected_command_id, expected_args
+):
+    """Test Aqara Curtain C3 commands map to go_to_lift_percentage."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.curtain.acn04")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+
+    p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
+
+    with p as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await window_covering_cluster.command(command)
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[0][1] == expected_command_id
+        if expected_args:
+            assert request_mock.call_args[0][3] == expected_args[0]
+
+
+async def test_xiaomi_curtain_c3_position_sync(zigpy_device_from_v2_quirk):
+    """Test Aqara Curtain C3 position sync from manufacturer cluster to WindowCovering."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.curtain.acn04")
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    window_covering_cluster = device.endpoints[1].window_covering
+    wc_listener = ClusterListener(window_covering_cluster)
+
+    curtain_position_attr_id = zhaquirks.xiaomi.aqara.curtain_c3.XiaomiAqaraCurtainC3.AttributeDefs.curtain_position.id
+
+    # Simulate position update from device
+    opple_cluster.update_attribute(curtain_position_attr_id, 75)
+
+    # Verify WindowCovering cluster received the position update
+    assert len(wc_listener.attribute_updates) == 1
+    assert (
+        wc_listener.attribute_updates[0][0]
+        == WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    assert wc_listener.attribute_updates[0][1] == 75
