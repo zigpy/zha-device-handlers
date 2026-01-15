@@ -275,15 +275,15 @@ def _cases() -> Iterable[DpCase]:
         expected="018600c801e000dc",  # Hex string representation
     )
 
-    # DP 109: local_temperature_calibration (tests _zigbee_0_01_to_deci_c converter)
-    # Test writing setpoint to trigger dp_converter
+    # DP 109: temperature_calibration (tuya_number with multiplier)
+    # Device sends raw value, cluster stores it, HA applies multiplier
     yield DpCase(
         dp=109,
         name="DP109 calibration 1.5C",
         build_payload=lambda seq: _dp_u32(seq, 109, 15),  # 1.5°C in 0.1°C units
-        target="thermostat",
-        attr_name="local_temperature_calibration",
-        expected=150,  # 15 * 10 = 150 (0.01°C units)
+        target="tuya",
+        attr_name="temperature_calibration",
+        expected=15,  # Raw value BEFORE multiplier is applied!
     )
 
 

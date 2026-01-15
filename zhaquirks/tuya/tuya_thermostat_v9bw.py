@@ -129,12 +129,18 @@ def _schedule_raw_to_str(v) -> str:
     # DP 107: battery
     .tuya_battery(dp_id=107)
     # DP 109: calibration 0.1°C -> 0.01°C
-    .tuya_dp(
+    .tuya_number(
         dp_id=109,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name="local_temperature_calibration",
-        converter=_deci_c_to_zigbee_0_01,
-        dp_converter=_zigbee_0_01_to_deci_c,
+        attribute_name="temperature_calibration",
+        type=t.int8s,
+        multiplier=0.1,
+        min_value=-9.9,
+        max_value=9.9,
+        step=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
     )
     # DP 112/116: deadzone + eco temp
     .tuya_number(
