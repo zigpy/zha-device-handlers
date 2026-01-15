@@ -1277,6 +1277,15 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
 
 
+class MMWaveControlId(t.enum8):
+    """MMWave control command IDs."""
+
+    RESET_TO_FACTORY = 0x00
+    AUTO_GENERATE_INTERFERENCE_AREA = 0x01
+    OBTAIN_AREAS = 0x02
+    CLEAR_INTERFERENCE_AREA = 0x03
+
+
 class InovelliVZM32SNMMWaveCluster(CustomCluster):
     """Inovelli VZM32-SN MMWave custom cluster."""
 
@@ -1353,26 +1362,9 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
         mmwave_control_command = ZCLCommandDef(
             id=0x00,
             schema={
-                "control_id": t.uint8_t,
+                "control_id": MMWaveControlId,
             },
             is_manufacturer_specific=True,
-        )
-
-    def handle_cluster_request(
-        self,
-        hdr: ZCLHeader,
-        args: list[Any],
-        *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
-        """Handle a cluster request."""
-        _LOGGER.debug(
-            "%s: handle_cluster_request - Command: %s Data: %s",
-            self.name,
-            hdr.command_id,
-            args,
         )
 
 
