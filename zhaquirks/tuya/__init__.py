@@ -538,12 +538,12 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         self._update_attribute(tuya_cmd, zvalue)
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+        self, attributes, allow_cache=False, only_cache=False, *args, **kwargs
     ):
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
         return await super().read_attributes(
-            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+            attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
     async def write_attributes(self, attributes, manufacturer=None):

@@ -82,17 +82,9 @@ class ZosungIRControl(CustomCluster):
             manufacturer_code=None,
         )
 
-    async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
-        """Read attributes ZCL foundation command."""
-        if (
-            self.AttributeDefs.last_learned_ir_code.id in attributes
-            or "last_learned_ir_code" in attributes
-        ):
-            return {0: self.endpoint.device.last_learned_ir_code}, {}
-        else:
-            return {}, {0: foundation.Status.UNSUPPORTED_ATTRIBUTE}
+    async def read_attribute_override_last_learned_ir_code(self) -> t.CharacterString:
+        """Return the last learned IR code stored on the device."""
+        return self.endpoint.device.last_learned_ir_code
 
     async def command(
         self,
