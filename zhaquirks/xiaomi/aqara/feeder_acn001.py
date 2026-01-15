@@ -145,14 +145,23 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
         # Set default values for attributes
-        self._update_attribute(ZCL_DISABLE_LED_INDICATOR, False)
-        self._update_attribute(ZCL_CHILD_LOCK, False)
-        self._update_attribute(ZCL_FEEDING_MODE, FeedingMode.Manual)
-        self._update_attribute(ZCL_SERVING_SIZE, 1)
-        self._update_attribute(ZCL_PORTION_WEIGHT, 8)
-        self._update_attribute(ZCL_ERROR_DETECTED, False)
-        self._update_attribute(ZCL_PORTIONS_DISPENSED, 0)
-        self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
+        if ZCL_DISABLE_LED_INDICATOR not in self._attr_cache:
+            self._update_attribute(ZCL_DISABLE_LED_INDICATOR, False)
+        if ZCL_CHILD_LOCK not in self._attr_cache:
+            self._update_attribute(ZCL_CHILD_LOCK, False)
+        if ZCL_FEEDING_MODE not in self._attr_cache:
+            self._update_attribute(ZCL_FEEDING_MODE, FeedingMode.Manual)
+        if ZCL_SERVING_SIZE not in self._attr_cache:
+            self._update_attribute(ZCL_SERVING_SIZE, 1)
+        if ZCL_PORTION_WEIGHT not in self._attr_cache:
+            self._update_attribute(ZCL_PORTION_WEIGHT, 8)
+        if ZCL_ERROR_DETECTED not in self._attr_cache:
+            self._update_attribute(ZCL_ERROR_DETECTED, False)
+        if ZCL_PORTIONS_DISPENSED not in self._attr_cache:
+            self._update_attribute(ZCL_PORTIONS_DISPENSED, 0)
+        if ZCL_WEIGHT_DISPENSED not in self._attr_cache:
+            self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
+
         # Subscribe to attribute events to parse feeder_attr
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
         self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
