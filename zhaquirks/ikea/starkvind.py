@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -72,28 +70,29 @@ class IkeaAirpurifier(CustomCluster):
         self.endpoint.device.change_fan_mode_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
-        if attrid == 0x0004:
-            if (
-                value is not None and value < 5500
-            ):  # > 5500 = out of scale; if value is 65535 (0xFFFF), device is off
+        # Forward PM2.5 readings to the bus for the PM25Cluster
+        if attrid == self.AttributeDefs.air_quality_25pm.id:
+            if value is not None and value < 5500:
                 self.endpoint.device.pm25_bus.listener_event("update_state", value)
-        elif attrid in (0x0006, 0x0007):
-            if value >= 10 and value <= 50:
-                value = value // 5
         super()._update_attribute(attrid, value)
 
-    async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
-    ) -> list:
-        """Override wrong writes to thermostat attributes."""
-        if "fan_mode" in attributes:
-            fan_mode = attributes.get("fan_mode")
-            if fan_mode and fan_mode > 1 and fan_mode < 11:
-                fan_mode = fan_mode * 5
-                return await super().write_attributes(
-                    {"fan_mode": fan_mode}, manufacturer
-                )
-        return await super().write_attributes(attributes, manufacturer)
+    def report_attribute_override_fan_mode(self, value: int) -> int:
+        """Transform fan_mode from device scale (10-50) to logical scale (2-10)."""
+        if value >= 10 and value <= 50:
+            return value // 5
+        return value
+
+    def report_attribute_override_fan_speed(self, value: int) -> int:
+        """Transform fan_speed from device scale (10-50) to logical scale (2-10)."""
+        if value >= 10 and value <= 50:
+            return value // 5
+        return value
+
+    def write_attribute_transform_fan_mode(self, value: int) -> int:
+        """Transform fan_mode value before writing (multiply by 5)."""
+        if value > 1 and value < 11:
+            return value * 5
+        return value
 
 
 class PM25Cluster(CustomCluster, PM25):

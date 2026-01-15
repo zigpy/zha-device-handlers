@@ -78,80 +78,38 @@ class ThermostatCluster(CustomCluster, Thermostat):
         _LOGGER.debug("update attribute %04x to %s... [ ok ]", attrid, value)
         super()._update_attribute(attrid, value)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
-        """Override wrong attribute reports from the thermostat."""
-        success = []
-        error = []
+    async def read_attribute_override_ctrl_sequence_of_oper(
+        self,
+    ) -> Thermostat.ControlSequenceOfOperation:
+        """Return constant value for ctrl_sequence_of_oper."""
+        return Thermostat.ControlSequenceOfOperation.Heating_Only
 
-        if CTRL_SEQ_OF_OPER_ATTR in attributes:
-            rar = foundation.ReadAttributeRecord(
-                CTRL_SEQ_OF_OPER_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
-            )
-            rar.value.value = 0x2
-            success.append(rar)
+    async def read_attribute_override_system_mode(self) -> Thermostat.SystemMode:
+        """Return constant value for system_mode."""
+        return Thermostat.SystemMode.Heat
 
-        if SYSTEM_MODE_ATTR in attributes:
-            rar = foundation.ReadAttributeRecord(
-                SYSTEM_MODE_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
-            )
-            rar.value.value = 0x4
-            success.append(rar)
-
-        if OCCUPIED_HEATING_SETPOINT_ATTR in attributes:
-            _LOGGER.debug("intercepting OCC_HS")
-
-            values = await super().read_attributes_raw(
-                [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
-            )
-
-            if len(values) == 2:
-                current_temp_setpoint = values[1][0]
-                current_temp_setpoint.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
-
-                error.extend(values[1])
-            else:
-                current_temp_setpoint = values[0][0]
-                current_temp_setpoint.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
-
-                success.extend(values[0])
-
-        attributes = list(
-            filter(
-                lambda x: x
-                not in (
-                    CTRL_SEQ_OF_OPER_ATTR,
-                    SYSTEM_MODE_ATTR,
-                    OCCUPIED_HEATING_SETPOINT_ATTR,
-                ),
-                attributes,
-            )
+    async def read_attribute_override_occupied_heating_setpoint(self) -> t.int16s:
+        """Read occupied_heating_setpoint from current_temperature_setpoint."""
+        _LOGGER.debug("intercepting OCC_HS")
+        success, failure = await super().read_attributes(
+            [self.AttributeDefs.current_temperature_setpoint], manufacturer=MANUFACTURER
         )
+        return success[self.AttributeDefs.current_temperature_setpoint]
 
-        if attributes:
-            values = await super().read_attributes_raw(
-                attributes, manufacturer, **kwargs
+    async def write_attribute_override_system_mode(
+        self, value: Thermostat.SystemMode
+    ) -> foundation.WriteAttributesResponse:
+        """Convert system_mode writes to host_flags."""
+        host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
+        _LOGGER.debug("current host_flags: %s", host_flags)
+
+        if value == Thermostat.SystemMode.Off:
+            return await super().write_attributes(
+                {self.AttributeDefs.host_flags: host_flags | SET_OFF_MODE_FLAG},
+                MANUFACTURER,
             )
-
-            success.extend(values[0])
-
-            if len(values) == 2:
-                error.extend(values[1])
-
-        return success, error
-
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
-        """Override wrong writes to thermostat attributes."""
-        if "system_mode" in attributes:
-            host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
-            _LOGGER.debug("current host_flags: %s", host_flags)
-
-            if attributes.get("system_mode") == 0x0:
-                return await super().write_attributes(
-                    {"host_flags": host_flags | SET_OFF_MODE_FLAG}, MANUFACTURER
-                )
-            if attributes.get("system_mode") == 0x4:
-                return await super().write_attributes(
-                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG}, MANUFACTURER
-                )
-
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        if value == Thermostat.SystemMode.Heat:
+            return await super().write_attributes(
+                {self.AttributeDefs.host_flags: host_flags | CLR_OFF_MODE_FLAG},
+                MANUFACTURER,
+            )
