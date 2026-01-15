@@ -83,7 +83,8 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
-    OppleCluster,
+    FeedingMode,
+    FeedingSource,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -656,12 +657,12 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
         ("child_lock", 0, b"\x00\x02\x01\x04\x16\x00U\x01\x00"),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Manual,
+            FeedingMode.Manual,
             b"\x00\x02\x01\x04\x18\x00U\x01\x00",
         ),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Schedule,
+            FeedingMode.Schedule,
             b"\x00\x02\x01\x04\x18\x00U\x01\x01",
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
@@ -712,9 +713,7 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(
-                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
-                ),
+                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -766,9 +765,7 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(
-                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
-                ),
+                mock.call(ZCL_FEEDING_MODE, FeedingMode.Schedule, mock.ANY),
                 mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
