@@ -181,11 +181,9 @@ class ZemismartTemperatureHumidtySensor(CustomDevice):
 class RelativeHumidityX10(CustomCluster, RelativeHumidity):
     """Handles invalid humidity values."""
 
-    def _update_attribute(self, attrid, value):
-        # x10 factor in measured_value`(attrid=0)
-        if attrid == 0:
-            value = value * 10
-        super()._update_attribute(attrid, value)
+    def report_attribute_override_measured_value(self, value: int) -> int:
+        """Multiply measured_value by 10."""
+        return value * 10
 
 
 class MoesTemperatureHumidtySensorWithScreen(CustomDevice):

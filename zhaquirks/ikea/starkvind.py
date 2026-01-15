@@ -108,13 +108,11 @@ class PM25Cluster(CustomCluster, PM25):
         """25pm reported."""
         self._update_attribute(0x0000, value)
 
-    def _update_attribute(self, attrid, value):
-        """Check for a valid PM2.5 value."""
-        if attrid == 0x0000:
-            if value < 5500:
-                super()._update_attribute(attrid, value)
-        else:
-            super()._update_attribute(attrid, value)
+    def report_attribute_override_measured_value(self, value: int) -> int | None:
+        """Filter invalid PM2.5 values >= 5500."""
+        if value >= 5500:
+            return None
+        return value
 
     async def read_attribute_override_measured_value(self) -> t.uint16_t:
         """Read measured_value from IkeaAirpurifier air_quality_25pm."""

@@ -28,13 +28,9 @@ from zhaquirks.salus import COMPUTIME
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that divides value by 2."""
 
-    ATTR_ID = 0
-
-    def _update_attribute(self, attrid, value):
-        # divide values by 2
-        if attrid == self.ATTR_ID:
-            value = value / 2
-        super()._update_attribute(attrid, value)
+    def report_attribute_override_measured_value(self, value: int) -> float:
+        """Divide measured_value by 2."""
+        return value / 2
 
 
 class SP600(CustomDevice):

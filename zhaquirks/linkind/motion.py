@@ -32,11 +32,11 @@ class IasZoneLinkind(CustomCluster, IasZone):
     As ZHA only needs either Alarm_1 or Alarm_2 to activate the motion entity, we need to ignore Alarm_2 for now.
     """
 
-    def _update_attribute(self, attrid, value):
-        if attrid == IasZone.AttributeDefs.zone_status.id:
-            # always set Alarm_2 bit to 0
-            value = value & ~IasZone.ZoneStatus.Alarm_2
-        super()._update_attribute(attrid, value)
+    def report_attribute_override_zone_status(
+        self, value: IasZone.ZoneStatus
+    ) -> IasZone.ZoneStatus:
+        """Clear Alarm_2 bit from zone_status."""
+        return value & ~IasZone.ZoneStatus.Alarm_2
 
 
 class LinkindD0003(CustomDevice):

@@ -60,11 +60,14 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
         motor_reversal: Final = ZCLAttributeDef(id=0xF002, type=t.enum8)
         calibration_time: Final = ZCLAttributeDef(id=0xF003, type=t.uint16_t)
 
-    def _update_attribute(self, attrid, value):
-        if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
-            # Invert the percentage value (cf https://github.com/dresden-elektronik/deconz-rest-plugin/issues/3757)
-            value = 100 - value
-        super()._update_attribute(attrid, value)
+    def report_attribute_override_current_position_lift_percentage(
+        self, value: int
+    ) -> int:
+        """Invert the percentage value.
+
+        cf https://github.com/dresden-elektronik/deconz-rest-plugin/issues/3757
+        """
+        return 100 - value
 
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
