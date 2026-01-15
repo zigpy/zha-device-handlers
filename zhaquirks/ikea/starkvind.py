@@ -116,28 +116,13 @@ class PM25Cluster(CustomCluster, PM25):
         else:
             super()._update_attribute(attrid, value)
 
-    async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
-        """Read attributes ZCL foundation command."""
-        if "measured_value" in attributes:
-            return (
-                await self.endpoint.device.endpoints[1]
-                .in_clusters[64637]
-                .read_attributes(
-                    ["air_quality_25pm"],
-                    allow_cache=allow_cache,
-                    only_cache=only_cache,
-                    manufacturer=manufacturer,
-                )
-            )
-        else:
-            return await super().read_attributes(
-                attributes,
-                allow_cache=allow_cache,
-                only_cache=only_cache,
-                manufacturer=manufacturer,
-            )
+    async def read_attribute_override_measured_value(self) -> t.uint16_t:
+        """Read measured_value from IkeaAirpurifier air_quality_25pm."""
+        ikea_airpurifier = self.endpoint.device.endpoints[1].ikea_airpurifier
+        success, failure = await ikea_airpurifier.read_attributes(
+            [IkeaAirpurifier.AttributeDefs.air_quality_25pm]
+        )
+        return success[IkeaAirpurifier.AttributeDefs.air_quality_25pm]
 
 
 class IkeaSTARKVIND(CustomDevice):
