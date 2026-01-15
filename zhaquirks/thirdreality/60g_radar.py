@@ -1,4 +1,4 @@
-"""Third Reality formaldehyde sensor devices."""
+"""Third Reality 60g radar devices."""
 
 from typing import Final
 
@@ -10,7 +10,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ThirdRealityRadarCluster(CustomCluster):
-    """Third Reality's plug private cluster."""
+    """Third Reality's 60g radar private cluster."""
 
     cluster_id = 0x042E
 
