@@ -82,7 +82,7 @@ def _schedule_raw_to_str(v) -> str:
         type=t.int16s,
         multiplier=0.1,
         min_value=5,
-        max_value=30,
+        max_value=25,
         step=0.5,
         unit=UnitOfTemperature.CELSIUS,
         entity_type=EntityType.CONFIG,
