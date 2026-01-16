@@ -1280,10 +1280,10 @@ class InovelliVZM32SNCluster(InovelliCluster):
 class MMWaveControlId(t.enum8):
     """MMWave control command IDs."""
 
-    RESET_TO_FACTORY = 0x00
-    AUTO_GENERATE_INTERFERENCE_AREA = 0x01
-    OBTAIN_AREAS = 0x02
-    CLEAR_INTERFERENCE_AREA = 0x03
+    Reset_to_factory = 0x00
+    Auto_generate_interference_area = 0x01
+    Obtain_areas = 0x02
+    Clear_interference_area = 0x03
 
 
 class InovelliVZM32SNMMWaveCluster(CustomCluster):
