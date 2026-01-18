@@ -2,8 +2,8 @@
 
 from typing import Any, Final
 
-import zigpy.types as t
 from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
