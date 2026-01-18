@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-import zigpy.types as t
 from zigpy.zcl import foundation
 
 from zhaquirks.hobeian.zg101zd import HobeianOnOffCluster
