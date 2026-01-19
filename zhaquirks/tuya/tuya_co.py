@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import zigpy.types as t
+
 from zhaquirks.tuya.builder import (
     MOL_VOL_AIR_NTP,
     TuyaFormaldehydeConcentration,
@@ -23,11 +25,11 @@ def tuya_air_quality_temperature_converter(value: Any) -> int:
 class TuyaPM25ConcentrationIgnoreValues(TuyaPM25Concentration):
     """Tuya PM25 concentration measurement cluster that ignores invalid high values."""
 
-    def report_attribute_override_measured_value(self, value: int) -> int | None:
-        """Ignore values over 1000."""
-        if value > 1000:
-            return None
-        return value
+    def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
+        """Update an attribute on this cluster and ignore values over 1000."""
+        if attrid == self.AttributeDefs.measured_value.id and value > 1000:
+            return
+        super()._update_attribute(attrid, value)
 
 
 base_air_quality = (

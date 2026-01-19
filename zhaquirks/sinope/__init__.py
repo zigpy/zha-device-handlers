@@ -138,6 +138,7 @@ LIGHT_DEVICE_TRIGGERS = {
 class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
     """Custom device temperature cluster that multiplies temperature by 100."""
 
-    def report_attribute_override_current_temperature(self, value: int) -> int:
-        """Multiply current_temperature by 100."""
-        return value * 100
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.current_temperature.id:
+            value = value * 100
+        super()._update_attribute(attrid, value)

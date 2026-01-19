@@ -276,11 +276,11 @@ class SEWindowCovering(CustomCluster, WindowCovering):
             is_manufacturer_specific=True,
         )
 
-    def report_attribute_override_current_position_lift_percentage(
-        self, value: int
-    ) -> int:
-        """Invert the percentage value."""
-        return 100 - value
+    def _update_attribute(self, attrid: Union[int, t.uint16_t], value: Any):
+        if attrid == WindowCovering.AttributeDefs.current_position_lift_percentage.id:
+            # Invert the percentage value
+            value = 100 - value
+        super()._update_attribute(attrid, value)
 
     async def command(
         self,

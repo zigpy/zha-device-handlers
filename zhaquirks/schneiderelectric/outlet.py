@@ -28,9 +28,10 @@ from zhaquirks.schneiderelectric import SE_MANUF_NAME
 class MeteringCluster(CustomCluster, Metering):
     """Custom Metering cluster to fix instantaneous demand value multiplied by 1000."""
 
-    def report_attribute_override_instantaneous_demand(self, value: int) -> float:
-        """Divide instantaneous_demand by 1000."""
-        return value / 1000
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.instantaneous_demand.id:
+            value = value / 1000
+        super()._update_attribute(attrid, value)
 
 
 class SocketOutlet(CustomDevice):

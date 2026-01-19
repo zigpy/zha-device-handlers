@@ -305,9 +305,10 @@ class SinopeTechnologiesMeteringCluster(CustomCluster, Metering):
 class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     """Custom flow measurement cluster that divides value by 10."""
 
-    def report_attribute_override_measured_value(self, value: int) -> float:
-        """Divide measured_value by 10."""
-        return value / 10
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.measured_value.id:
+            value = value / 10
+        super()._update_attribute(attrid, value)
 
 
 class SinopeTechnologiesSwitch(CustomDevice):

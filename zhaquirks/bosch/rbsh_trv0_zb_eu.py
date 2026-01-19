@@ -1,6 +1,6 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Final
+from typing import Any, Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
@@ -128,6 +128,19 @@ BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
 )
 
 
+def get_attribute_id_or_name(
+    attribute: ZCLAttributeDef, attributes: dict[str | int, Any] | list[int | str]
+) -> int | str | None:
+    """Return the attribute id/name when the id/name of the attribute is in the attributes list or None otherwise."""
+
+    if attribute.id in attributes:
+        return attribute.id
+    elif attribute.name in attributes:
+        return attribute.name
+    else:
+        return None
+
+
 class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
 
@@ -175,47 +188,230 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             is_manufacturer_specific=True,
         )
 
-    async def write_attribute_override_system_mode(
-        self, value: Thermostat.SystemMode
-    ) -> foundation.WriteAttributesResponse:
-        """Write system_mode by converting to operating_mode."""
-        new_operating_mode_value = SYSTEM_MODE_TO_OPERATING_MODE_MAP[value]
-        return await super().write_attributes(
-            {self.AttributeDefs.operating_mode: new_operating_mode_value}
-        )
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """system_mode special handling.
 
-    async def read_attribute_override_system_mode(self) -> Thermostat.SystemMode:
-        """Read system_mode by converting operating_mode."""
-        successful_r, failed_r = await super().read_attributes(
-            [
-                self.AttributeDefs.operating_mode,
-                Thermostat.AttributeDefs.ctrl_sequence_of_oper,
-            ],
-        )
-
-        operating_mode_value = successful_r[self.AttributeDefs.operating_mode]
-        system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[operating_mode_value]
-
-        if Thermostat.AttributeDefs.ctrl_sequence_of_oper in successful_r:
-            ctrl_sequence_of_oper_value = successful_r[
-                Thermostat.AttributeDefs.ctrl_sequence_of_oper
-            ]
-            if (
-                ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling
-                and system_mode_value == Thermostat.SystemMode.Heat
-            ):
-                system_mode_value = Thermostat.SystemMode.Cool
-
-        return system_mode_value
-
-    def report_attribute_override_system_mode(
-        self, value: Thermostat.SystemMode
-    ) -> Thermostat.SystemMode | None:
-        """Ignore system_mode reports from device.
-
-        TRV incorrectly reports being in Heat mode, even when turned off.
+        - turn off by setting operating_mode to Pause
+        - turn on by setting operating_mode to Manual
+        - add new system_mode value to the internal zigpy Cluster cache
         """
-        return None
+
+        operating_mode_attr = self.AttributeDefs.operating_mode
+
+        result = []
+        remaining_attributes = attributes.copy()
+        system_mode_value = None
+        operating_mode_value = None
+
+        """Check if SYSTEM_MODE_ATTR is being written (can be numeric or string):
+            - do not write it to the device since it is not supported
+            - keep the value to be converted to the supported operating_mode
+        """
+        system_mode_attribute_id = get_attribute_id_or_name(
+            SYSTEM_MODE_ATTR, attributes
+        )
+        if system_mode_attribute_id is not None:
+            remaining_attributes.pop(system_mode_attribute_id)
+            system_mode_value = attributes.get(system_mode_attribute_id)
+
+        """Check if operating_mode_attr is being written (can be numeric or string).
+            - ignore incoming operating_mode when system_mode is also written
+            - system_mode has priority and its value would be converted to operating_mode
+            - add resulting system_mode to the internal zigpy Cluster cache
+        """
+        operating_mode_attribute_id = get_attribute_id_or_name(
+            operating_mode_attr, attributes
+        )
+        if operating_mode_attribute_id is not None:
+            if system_mode_value is not None:
+                operating_mode_value = remaining_attributes.pop(
+                    operating_mode_attribute_id
+                )
+            else:
+                operating_mode_value = attributes.get(operating_mode_attribute_id)
+
+        if system_mode_value is not None:
+            """Write operating_mode (from system_mode value)."""
+            new_operating_mode_value = SYSTEM_MODE_TO_OPERATING_MODE_MAP[
+                system_mode_value
+            ]
+            result += await super().write_attributes(
+                {operating_mode_attr.id: new_operating_mode_value}, manufacturer
+            )
+            self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+        elif operating_mode_value is not None:
+            new_system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[
+                operating_mode_value
+            ]
+
+            if new_system_mode_value == Thermostat.SystemMode.Heat:
+                """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
+                ctrl_sequence_of_oper_attr = (
+                    Thermostat.AttributeDefs.ctrl_sequence_of_oper
+                )
+                successful_r, failed_r = await super().read_attributes(
+                    [ctrl_sequence_of_oper_attr.name], True, False, manufacturer
+                )
+                if ctrl_sequence_of_oper_attr.name in successful_r:
+                    ctrl_sequence_of_oper_value = successful_r.pop(
+                        ctrl_sequence_of_oper_attr.name
+                    )
+                    if (
+                        ctrl_sequence_of_oper_value
+                        == BoschControlSequenceOfOperation.Cooling
+                    ):
+                        new_system_mode_value = Thermostat.SystemMode.Cool
+
+            self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
+        else:
+            """Sync system_mode with ctrl_sequence_of_oper."""
+            ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+
+            ctrl_sequence_of_oper_attribute_id = get_attribute_id_or_name(
+                ctrl_sequence_of_oper_attr, attributes
+            )
+            if ctrl_sequence_of_oper_attribute_id is not None:
+                ctrl_sequence_of_oper_value = attributes.get(
+                    ctrl_sequence_of_oper_attribute_id
+                )
+                if ctrl_sequence_of_oper_value is not None:
+                    successful_r, failed_r = await super().read_attributes(
+                        [operating_mode_attr.name], True, False, manufacturer
+                    )
+                    if operating_mode_attr.name in successful_r:
+                        operating_mode_attr_value = successful_r.pop(
+                            operating_mode_attr.name
+                        )
+                        if operating_mode_attr_value == BoschOperatingMode.Manual:
+                            new_system_mode_value = Thermostat.SystemMode.Heat
+                            if (
+                                ctrl_sequence_of_oper_value
+                                == BoschControlSequenceOfOperation.Cooling
+                            ):
+                                new_system_mode_value = Thermostat.SystemMode.Cool
+
+                            self._update_attribute(
+                                SYSTEM_MODE_ATTR.id, new_system_mode_value
+                            )
+
+        """Write the remaining attributes to thermostat cluster."""
+        if remaining_attributes:
+            result += await super().write_attributes(remaining_attributes, manufacturer)
+        return result
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
+        """system_mode special handling.
+
+        - read and convert operating_mode to system_mode.
+        """
+
+        operating_mode_attr = self.AttributeDefs.operating_mode
+
+        successful_r, failed_r = {}, {}
+        remaining_attributes = attributes.copy()
+
+        """Check if SYSTEM_MODE_ATTR is being read (can be numeric or string)."""
+        system_mode_attribute_id = get_attribute_id_or_name(
+            SYSTEM_MODE_ATTR, attributes
+        )
+        if system_mode_attribute_id is not None:
+            """Read operating_mode instead and convert it to system_mode."""
+
+            remaining_attributes.remove(system_mode_attribute_id)
+
+            ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+
+            successful_r, failed_r = await super().read_attributes(
+                [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name],
+                allow_cache,
+                only_cache,
+                manufacturer,
+            )
+            if operating_mode_attr.name in successful_r:
+                operating_mode_value = successful_r.pop(operating_mode_attr.name)
+                system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[
+                    operating_mode_value
+                ]
+
+                """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
+                if ctrl_sequence_of_oper_attr.name in successful_r:
+                    ctrl_sequence_of_oper_value = successful_r.pop(
+                        ctrl_sequence_of_oper_attr.name
+                    )
+                    if (
+                        ctrl_sequence_of_oper_value
+                        == BoschControlSequenceOfOperation.Cooling
+                        and system_mode_value == Thermostat.SystemMode.Heat
+                    ):
+                        system_mode_value = Thermostat.SystemMode.Cool
+
+                successful_r[system_mode_attribute_id] = system_mode_value
+                self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+
+        """Read remaining attributes from thermostat cluster."""
+        if remaining_attributes:
+            remaining_result = await super().read_attributes(
+                remaining_attributes, allow_cache, only_cache, manufacturer
+            )
+
+            successful_r.update(remaining_result[0])
+            failed_r.update(remaining_result[1])
+
+        return successful_r, failed_r
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """system_mode special handling.
+
+        - ignore updates of system_mode coming from device (TRV incorrectly
+          reports being in Heat mode, even when turned off).
+        """
+
+        """Pass-through anything that is not related to attributes reporting."""
+        if hdr.command_id != foundation.GeneralCommand.Report_Attributes:
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
+
+        """Pass-through reports of all attributes, except for system_mode."""
+        has_system_mode_report = False
+        for attr in args.attribute_reports:
+            if attr.attrid == SYSTEM_MODE_ATTR.id:
+                has_system_mode_report = True
+                break
+
+        if not has_system_mode_report:
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
+        else:
+            update_attributes = [
+                attr
+                for attr in args.attribute_reports
+                if attr.attrid != SYSTEM_MODE_ATTR.id
+            ]
+            if len(update_attributes) > 0:
+                msg = foundation.GENERAL_COMMANDS[
+                    foundation.GeneralCommand.Report_Attributes
+                ].schema(attribute_reports=update_attributes)
+                return super().handle_cluster_general_request(
+                    hdr, msg, dst_addressing=dst_addressing
+                )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):

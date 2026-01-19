@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Final
 
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.zcl import AttributeReadEvent, foundation
+from zigpy.zcl import AttributeReadEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -97,34 +98,19 @@ class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """AnalogOutput cluster reporting current position and used for writing target position."""
 
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Current position",
+        AnalogOutput.AttributeDefs.max_present_value.id: 100.0,
+        AnalogOutput.AttributeDefs.min_present_value.id: 0.0,
+        AnalogOutput.AttributeDefs.out_of_service.id: 0,
+        AnalogOutput.AttributeDefs.resolution.id: 1.0,
+        AnalogOutput.AttributeDefs.status_flags.id: 0x00,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
-
-    async def read_attribute_override_description(self) -> str:
-        """Attribute overridden with a constant value."""
-        return "Current position"
-
-    async def read_attribute_override_max_present_value(self) -> float:
-        """Attribute overridden with a constant value."""
-        return 100.0
-
-    async def read_attribute_override_min_present_value(self) -> float:
-        """Attribute overridden with a constant value."""
-        return 0.0
-
-    async def read_attribute_override_out_of_service(self) -> int:
-        """Attribute overridden with a constant value."""
-        return 0
-
-    async def read_attribute_override_resolution(self) -> float:
-        """Attribute overridden with a constant value."""
-        return 1.0
-
-    async def read_attribute_override_status_flags(self) -> int:
-        """Attribute overridden with a constant value."""
-        return 0x00
 
     def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
         """Handle attribute read event."""
@@ -138,25 +124,28 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
 class WindowCoveringRollerE1(CustomCluster, WindowCovering):
     """Window covering cluster for handling motor commands."""
 
-    async def read_attribute_override_window_covering_type(
-        self,
-    ) -> WindowCovering.WindowCoveringType:
-        """Attribute overridden with a constant value."""
-        return WindowCovering.WindowCoveringType.Rollershade
+    _CONSTANT_ATTRIBUTES = {
+        WindowCovering.AttributeDefs.window_covering_type.id: WindowCovering.WindowCoveringType.Rollershade,
+    }
 
-    async def read_attribute_override_current_position_lift_percentage(
-        self,
-    ) -> t.uint8_t:
-        """Read current_position_lift_percentage from AnalogOutput present_value."""
-        success, failure = await self.endpoint.analog_output.read_attributes(
-            [AnalogOutput.AttributeDefs.present_value]
-        )
-        return t.uint8_t(100 - success[AnalogOutput.AttributeDefs.present_value])
+    # This is used to redirect 'current_position_lift_percentage' reads to AnalogOutput 'present_value'
+    _REDIRECT_ATTRIBUTES: dict[
+        ZCLAttributeDef, tuple[ZCLAttributeDef, type[Cluster], Callable]
+    ] = {
+        WindowCovering.AttributeDefs.current_position_lift_percentage: (
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+            lambda x: t.uint8_t(100 - x),
+        ),
+    }
 
     async def command(
         self,
         command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args: Any,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ) -> Any:
         """Overwrite the commands to make it work for both firmware 1425 and 1427.
@@ -220,6 +209,49 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
+
+    async def read_attributes(
+        self, attributes: list[int | str | ZCLAttributeDef], *args, **kwargs
+    ):
+        """Redirect attribute reads to another cluster."""
+        success = {}
+        failure = {}
+
+        # Attribute reads reply with the attribute format as provided during the read
+        attr_defs = {self.find_attribute(attr): attr for attr in attributes}
+
+        for redirected_attr_def, (
+            target_attr,
+            target_cluster,
+            format_func,
+        ) in self._REDIRECT_ATTRIBUTES.items():
+            if redirected_attr_def not in attr_defs:
+                continue
+
+            # Skip this attribute and read it from the other cluster
+            other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
+            other_success, other_failure = await other_cluster.read_attributes(
+                [target_attr], *args, **kwargs
+            )
+
+            # Remove it from the remaining attributes
+            attr_key = attr_defs.pop(redirected_attr_def)
+            attributes.remove(attr_key)
+
+            if target_attr in other_success:
+                success[attr_key] = format_func(other_success[target_attr])
+
+            if target_attr in other_failure:
+                failure[attr_key] = other_failure[target_attr]
+
+        # Read the remaining ones directly
+        other_success, other_failure = await super().read_attributes(
+            attributes, *args, **kwargs
+        )
+        success.update(other_success)
+        failure.update(other_failure)
+
+        return success, failure
 
 
 class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
