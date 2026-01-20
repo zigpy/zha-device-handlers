@@ -575,10 +575,7 @@ class MoesThermostat(TuyaThermostatCluster):
             MOES_MAX_TEMPERATURE_ATTR,
             lambda value: round(value / 100),
         ),
-        "local_temperature_calibration": (
-            MOES_TEMP_CALIBRATION_ATTR,
-            lambda value: round(value / 10),
-        ),
+        "local_temperature_calibration": (MOES_TEMP_CALIBRATION_ATTR, None),
         "work_days": (MOES_WEEK_FORMAT_ATTR, None),
         "operation_preset": (MOES_MODE_ATTR, None),
         "boost_duration_seconds": (MOES_BOOST_TIME_ATTR, None),
