@@ -296,7 +296,7 @@ class MoesManufCluster(TuyaManufClusterAttributes):
         MOES_ECO_TEMP_ATTR: ("eco_heating_setpoint", lambda value: value * 100),
         MOES_TEMP_CALIBRATION_ATTR: (
             "local_temperature_calibration",
-            lambda value: value * 10,
+            lambda value: value * 1,
         ),
         MOES_MIN_TEMPERATURE_ATTR: (
             "min_heat_setpoint_limit",
