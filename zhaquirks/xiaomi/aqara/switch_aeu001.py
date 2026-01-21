@@ -3,34 +3,17 @@
 from typing import Final
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.general import (
     DeviceTemperature,
     Groups,
     Identify,
-    MultistateInput,
     OnOff,
     Scenes,
 )
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.const import (
-    ATTR_ID,
-    BUTTON_1,
-    BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
-    COMMAND,
-    DOUBLE_PRESS,
-    ENDPOINT_ID,
-    LONG_PRESS,
-    PRESS_TYPE,
-    SHORT_PRESS,
-    VALUE,
-    ZHA_SEND_EVENT,
-)
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
@@ -38,37 +21,6 @@ from zhaquirks.xiaomi import (
     MeteringCluster,
     XiaomiAqaraE1Cluster,
 )
-
-# Press type mapping from device values to human-readable strings
-PRESS_TYPES = {0: "hold", 1: "single", 2: "double"}
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-
-
-class MultistateInputCluster(CustomCluster, MultistateInput):
-    """Multistate input cluster for button events."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = None
-        super().__init__(*args, **kwargs)
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == STATUS_TYPE_ATTR:
-            # Map value to press type
-            self._current_state = PRESS_TYPES.get(value)
-            if self._current_state:
-                # Generate event with format: "{endpoint_id}_{press_type}"
-                event_args = {
-                    ENDPOINT_ID: self.endpoint.endpoint_id,
-                    PRESS_TYPE: self._current_state,
-                    ATTR_ID: attrid,
-                    VALUE: value,
-                }
-                action = f"{self.endpoint.endpoint_id}_{self._current_state}"
-                self.listener_event(ZHA_SEND_EVENT, action, event_args)
-                # Update attribute 0 for display in Home Assistant
-                super()._update_attribute(0, action)
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -191,7 +143,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .adds(Groups)
     .adds(Scenes)
     .adds(OnOff)
-    .replaces(MultistateInputCluster)
     .replaces(MeteringCluster)
     .replaces(ElectricalMeasurementCluster)
     .replaces(OppleCluster, cluster_id=0xFCC0)
@@ -200,79 +151,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .adds(Groups, endpoint_id=2)
     .adds(Scenes, endpoint_id=2)
     .adds(OnOff, endpoint_id=2)
-    .replaces(MultistateInputCluster, endpoint_id=2)
     .replaces(OppleCluster, cluster_id=0xFCC0, endpoint_id=2)
-    # Endpoint 3: Button 1 (decoupled mode)
-    .adds(Identify, endpoint_id=3)
-    .adds(Groups, endpoint_id=3)
-    .adds(Scenes, endpoint_id=3)
-    .replaces(MultistateInputCluster, endpoint_id=3)
-    .replaces(OppleCluster, cluster_id=0xFCC0, endpoint_id=3)
-    # Endpoint 4: Button 2 (decoupled mode)
-    .adds(Identify, endpoint_id=4)
-    .adds(Groups, endpoint_id=4)
-    .adds(Scenes, endpoint_id=4)
-    .replaces(MultistateInputCluster, endpoint_id=4)
-    .replaces(OppleCluster, cluster_id=0xFCC0, endpoint_id=4)
     # Endpoint 21: Analog input
     .replaces(AnalogInputCluster, endpoint_id=21)
-    # Device automation triggers for all button events
-    .device_automation_triggers(
-        {
-            # Button 1 (Endpoint 1)
-            (SHORT_PRESS, BUTTON_1): {
-                ENDPOINT_ID: 1,
-                COMMAND: "1_single",
-            },
-            (DOUBLE_PRESS, BUTTON_1): {
-                ENDPOINT_ID: 1,
-                COMMAND: "1_double",
-            },
-            (LONG_PRESS, BUTTON_1): {
-                ENDPOINT_ID: 1,
-                COMMAND: "1_hold",
-            },
-            # Button 2 (Endpoint 2)
-            (SHORT_PRESS, BUTTON_2): {
-                ENDPOINT_ID: 2,
-                COMMAND: "2_single",
-            },
-            (DOUBLE_PRESS, BUTTON_2): {
-                ENDPOINT_ID: 2,
-                COMMAND: "2_double",
-            },
-            (LONG_PRESS, BUTTON_2): {
-                ENDPOINT_ID: 2,
-                COMMAND: "2_hold",
-            },
-            # Button 3 (Endpoint 3 - decoupled mode)
-            (SHORT_PRESS, BUTTON_3): {
-                ENDPOINT_ID: 3,
-                COMMAND: "3_single",
-            },
-            (DOUBLE_PRESS, BUTTON_3): {
-                ENDPOINT_ID: 3,
-                COMMAND: "3_double",
-            },
-            (LONG_PRESS, BUTTON_3): {
-                ENDPOINT_ID: 3,
-                COMMAND: "3_hold",
-            },
-            # Button 4 (Endpoint 4 - decoupled mode)
-            (SHORT_PRESS, BUTTON_4): {
-                ENDPOINT_ID: 4,
-                COMMAND: "4_single",
-            },
-            (DOUBLE_PRESS, BUTTON_4): {
-                ENDPOINT_ID: 4,
-                COMMAND: "4_double",
-            },
-            (LONG_PRESS, BUTTON_4): {
-                ENDPOINT_ID: 4,
-                COMMAND: "4_hold",
-            },
-        }
-    )
     # Display configuration entities
     .number(
         OppleCluster.AttributeDefs.display_brightness.name,
