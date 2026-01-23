@@ -408,7 +408,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=104,
         attribute_name="soil_moisture_calibration",
-        type=t.uint16_t,
+        type=t.int16_t,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
@@ -421,7 +421,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=105,
         attribute_name="humidity_calibration",
-        type=t.uint16_t,
+        type=t.int16_t,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
@@ -434,7 +434,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=106,
         attribute_name="illuminance_calibration",
-        type=t.uint16_t,
+        type=t.int16_t,
         unit=LIGHT_LUX,
         min_value=-1000,
         max_value=1000,
@@ -447,7 +447,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=107,
         attribute_name="temperature_calibration",
-        type=t.uint16_t,
+        type=t.int16_t,
         unit=UnitOfTemperature.KELVIN,
         min_value=-2,
         max_value=2,
