@@ -1,6 +1,7 @@
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 import zigpy.types as t
 
 
@@ -12,16 +13,13 @@ class PowerOnState(t.enum8):
 
 
 class FanSpeed(t.enum8):
-    """Enum for the fan's speed"""
+    """Enum for the fan's speed."""
 
     Level_1 = 0x00
     Level_2 = 0x01
     Level_3 = 0x02
     Level_4 = 0x03
     Level_5 = 0x04
-
-
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 (
     TuyaQuirkBuilder("_TZE284_z5jz7wpo", "TS0601")
@@ -37,7 +35,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         attribute_name="speed",
         enum_class=FanSpeed,
         translation_key="speed",
-        fallback_name="fan speed",
+        fallback_name="Speed",
         entity_type=EntityType.STANDARD,
     )
     # I tried using a "tuya_number" instead of a tuya_enum. The following displayed the value correctly (even though one off from the device's display), but does not let me set the value via ZHA.
