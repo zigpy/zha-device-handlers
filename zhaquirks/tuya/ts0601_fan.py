@@ -1,6 +1,6 @@
 from zigpy.quirks.v2 import EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant import UnitOfTime, EntityPlatform
 import zigpy.types as t
 
 
