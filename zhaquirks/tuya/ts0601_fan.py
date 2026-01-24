@@ -1,3 +1,4 @@
+"""Tuya fan control."""
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
@@ -65,14 +66,14 @@ class FanSpeed(t.enum8):
         max_value=43200,
         step=1,
         translation_key="timer_duration",
-        fallback_name="timer",
+        fallback_name="Timer duration",
     )
     .tuya_enum(  # The app offers three states: on, off and remember last state. The latter does not work, so I don't offer it.
         dp_id=11,
         attribute_name="power_on_state",
         enum_class=PowerOnState,
         translation_key="power_on_state",
-        fallback_name="Power On State",
+        fallback_name="Power on state",
     )
     # According to the Tuya-App (when paired to a Tuya-gateway) and the guide to find DPs (https://www.zigbee2mqtt.io/advanced/support-new-devices/03_find_tuya_data_points.html),
     # the device offers two more DPs (both are also not available in Zigbee2Mqtt)
