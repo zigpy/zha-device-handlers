@@ -12,6 +12,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ED00_ID,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
@@ -344,6 +345,51 @@ class TuyaZemismartSmartCover0601_2_inv_position(TuyaWindowCover):
                     TuyaWindowCoverControl,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        },
+    }
+
+
+class TuyaZemismartSmartCover0601_TZE284(TuyaWindowCover):
+    """Tuya Zemismart blind cover motor."""
+
+    signature = {
+        # "node_descriptor": "<NodeDescriptor byte1=2 byte2=0 mac_capability_flags=128 manufacturer_code=4417
+        #                       maximum_buffer_size=66 maximum_incoming_transfer_size=66 server_mask=10752
+        #                       maximum_outgoing_transfer_size=66 descriptor_capability_field=0>",
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xed00, 0xef00]
+        # output_clusters=[0x000a,0x0019]
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=81 input_clusters=[0, 4, 5, 60672, 61184] output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE284_2gi1hy8s", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TUYA_CLUSTER_ED00_ID,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerWindowCover,
+                    TuyaWindowCoverControl,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
     }
