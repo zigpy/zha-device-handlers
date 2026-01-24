@@ -1,8 +1,9 @@
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
 import zigpy.types as t
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class PowerOnState(t.enum8):
@@ -20,6 +21,7 @@ class FanSpeed(t.enum8):
     Level_3 = 0x02
     Level_4 = 0x03
     Level_5 = 0x04
+
 
 (
     TuyaQuirkBuilder("_TZE284_z5jz7wpo", "TS0601")
