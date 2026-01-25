@@ -411,3 +411,108 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+(
+    TuyaQuirkBuilder("_TZE284_a14rjslz", "TS0601")
+    # Metering
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="energy_consumed",
+        type=t.uint32_t,
+        divisor=100,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        fallback_name="Energy",
+    )
+    .tuya_sensor(
+        dp_id=23,
+        attribute_name="energy_produced",
+        type=t.uint32_t,
+        divisor=100,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="energy_produced",
+        fallback_name="Energy produced",
+    )
+    # ElectricalMeasurement
+    .tuya_dp(
+        dp_id=29,
+        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+        attribute_name="total_active_power",
+    )
+    .tuya_dp(
+        dp_id=30,
+        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+        attribute_name="total_reactive_power",
+    )
+    .tuya_dp_multi(
+        dp_id=6,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="active_power",
+                converter=multi_dp_to_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_voltage",
+                converter=multi_dp_to_voltage,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_current",
+                converter=multi_dp_to_current,
+            ),
+        ],
+    )
+    .tuya_dp_multi(
+        dp_id=7,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="active_power_ph_b",
+                converter=multi_dp_to_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_voltage_ph_b",
+                converter=multi_dp_to_voltage,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_current_ph_b",
+                converter=multi_dp_to_current,
+            ),
+        ],
+    )
+    .tuya_dp_multi(
+        dp_id=8,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="active_power_ph_c",
+                converter=multi_dp_to_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_voltage_ph_c",
+                converter=multi_dp_to_voltage,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_current_ph_c",
+                converter=multi_dp_to_current,
+            ),
+        ],
+    )
+    .tuya_dp(
+        dp_id=50,
+        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+        attribute_name="power_factor",
+    )
+    .adds(Tuya3PhaseElectricalMeasurement)
+    .skip_configuration()
+    .add_to_registry()
+)
