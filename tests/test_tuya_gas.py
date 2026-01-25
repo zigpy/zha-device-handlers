@@ -62,6 +62,12 @@ zhaquirks.setup()
             ZCL_TUYA_GAS_PRESENT_ENUM,
             ZCL_TUYA_GAS_CLEAR_ENUM,
         ),
+        (
+            "_TZE204_uo8qcagc",
+            "TS0601",
+            ZCL_TUYA_GAS_PRESENT_ENUM,
+            ZCL_TUYA_GAS_CLEAR_ENUM,
+        ),
     ],
 )
 async def test_tuya_gas_quirk(

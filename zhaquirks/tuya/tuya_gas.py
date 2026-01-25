@@ -180,3 +180,31 @@ tuya_gas_alarm_base = (
     )
     .add_to_registry()
 )
+
+(
+    tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
+    .applies_to("_TZE204_uo8qcagc", "TS0601")
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat_active",
+        entity_type=EntityType.STANDARD,
+        translation_key="preheat_active",
+        fallback_name="Preheat active",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_switch(
+        dp_id=13,
+        attribute_name="alarm_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="alarm_switch",
+        fallback_name="Alarm switch",
+    )
+    .add_to_registry()
+)
