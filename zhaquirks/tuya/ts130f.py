@@ -5,6 +5,7 @@ from typing import Final
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -18,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -48,8 +50,14 @@ class MotorMode(t.enum8):
     WEAK_MOTOR = 0x01
 
 
-class TuyaCoveringCluster(CustomCluster, WindowCovering):
-    """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
+class TuyaCoveringCluster(LocalDataCluster, WindowCovering):
+    """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices.
+
+    Uses LocalDataCluster to prevent reading attributes from the device, as some
+    Tuya TS130F variants return stale/incorrect values when attributes are read
+    directly. Instead, we rely on attribute reports from the device and cache them
+    locally. See https://github.com/zigpy/zha-device-handlers/issues/2676
+    """
 
     class AttributeDefs(WindowCovering.AttributeDefs):
         """Attribute definitions."""
@@ -65,6 +73,20 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
             # Invert the percentage value (cf https://github.com/dresden-elektronik/deconz-rest-plugin/issues/3757)
             value = 100 - value
         super()._update_attribute(attrid, value)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
+        """Un-invert percent lift value when reading attributes from cache."""
+        records = await super().read_attributes_raw(
+            attributes, manufacturer=manufacturer, **kwargs
+        )
+        for record in records[0]:
+            if (
+                record.attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE
+                and record.status == foundation.Status.SUCCESS
+                and record.value.value is not None
+            ):
+                record.value.value = 100 - record.value.value
+        return records
 
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
