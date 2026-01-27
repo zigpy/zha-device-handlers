@@ -2,6 +2,7 @@
 
 from typing import Final
 
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -11,7 +12,6 @@ from zhaquirks.elko import (
     ELKO,
     ElkoElectricalMeasurementCluster,
     ElkoThermostat,
-    ElkoThermostatCluster,
     ElkoUserInterfaceCluster,
 )
 
@@ -45,10 +45,10 @@ class ActiveSensor(t.enum8):
     PROTECTION = 0x03
 
 
-class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
+class ElkoSuperTRThermostatCluster(CustomCluster, Thermostat):
     """Elko custom thermostat cluster."""
 
-    class AttributeDefs(ElkoThermostatCluster.AttributeDefs):
+    class AttributeDefs(Thermostat.AttributeDefs):
         """Attribute definitions."""
 
         unknown_1: Final = ZCLAttributeDef(id=UNKNOWN_1, type=t.uint16_t)

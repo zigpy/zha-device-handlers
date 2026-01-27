@@ -1,37 +1,12 @@
 """Module for Elko quirks implementations."""
 
-from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.hvac import UserInterface
 
 from zhaquirks import Bus, LocalDataCluster
 
 ELKO = "ELKO"
-
-
-class ElkoThermostatCluster(CustomCluster, Thermostat):
-    """Thermostat cluster for Elko Thermostats."""
-
-    class AttributeDefs(Thermostat.AttributeDefs):
-        """Cluster attributes."""
-
-    def __init__(self, *args, **kwargs):
-        """Init thermostat cluster."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.add_listener(self)
-
-    def heating_active_change(self, value):
-        """State update from device."""
-        if value == 0:
-            mode = self.RunningMode.Off
-            state = self.RunningState.Idle
-        else:
-            mode = self.RunningMode.Heat
-            state = self.RunningState.Heat_State_On
-
-        self._update_attribute(self.attributes_by_name["running_mode"].id, mode)
-        self._update_attribute(self.attributes_by_name["running_state"].id, state)
 
 
 class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
