@@ -6,6 +6,6 @@ from zhaquirks.osram import OSRAM, OsramLightCluster
 
 (
     QuirkBuilder(OSRAM, "Gardenpole RGBW-Lightify")
-    .replaces(OsramLightCluster, endpoint_id=1)
+    .replaces(OsramLightCluster, endpoint_id=3)
     .add_to_registry()
 )
