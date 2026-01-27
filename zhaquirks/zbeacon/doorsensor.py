@@ -12,4 +12,9 @@ from zigpy.zcl.clusters.general import PollControl
 # The model zbeacon DS01 sounds a lot like ("eWeLink", "DS01") from Sonoff sold as Sonoff SNZB-04
 # The device tested is sold as Elivco and IHseno IH-MC01 and uses a TuYa ZTU module as described here:
 #     https://github.com/dresden-elektronik/deconz-rest-plugin/issues/7415
-(QuirkBuilder("zbeacon", "DS01").removes(PollControl, endpoint_id=1).add_to_registry())
+
+(
+    QuirkBuilder("zbeacon", "DS01")
+    .removes(PollControl, endpoint_id=1)
+    .add_to_registry()
+)  # fmt:skip
