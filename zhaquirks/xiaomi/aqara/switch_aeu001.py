@@ -99,6 +99,32 @@ class ProximitySensitivity(t.enum8):
     Far = 0x05
 
 
+class ElderMode(t.enum8):
+    """Elder mode enum (larger interface elements)."""
+
+    Off = 0x03
+    On = 0x05
+
+
+class ButtonRelay(t.enum8):
+    """Button relay assignment enum."""
+
+    Relay1 = 0x01
+    Relay2 = 0x02
+
+
+class ButtonLayout(t.enum8):
+    """Button layout assignment enum."""
+
+    Empty = 0x00
+    Switch1 = 0x01
+    Switch2 = 0x02
+    Button1 = 0x03
+    Button2 = 0x04
+    Button3 = 0x05
+    Button4 = 0x06
+
+
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster for button events (single press only)."""
 
@@ -134,10 +160,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
         button_relay: Final = ZCLAttributeDef(
-            id=0x0235, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0235,
+            type=ButtonRelay,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         button_layout: Final = ZCLAttributeDef(
-            id=0x0300, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0300,
+            type=ButtonLayout,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
 
         # Display configuration
@@ -191,7 +223,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
         # Other features
         elder_mode: Final = ZCLAttributeDef(
-            id=0x0217, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0217,
+            type=ElderMode,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         double_tap_override: Final = ZCLAttributeDef(
             id=0x0236, type=t.uint8_t, is_manufacturer_specific=True
@@ -328,15 +363,123 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.AttributeDefs.startup_on_off.name,
         StartupOnOff,
         OppleCluster.cluster_id,
+        endpoint_id=1,
         translation_key="startup_on_off",
-        fallback_name="Power-on behavior",
+        fallback_name="Switch 1 power-on behavior",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.startup_on_off.name,
+        StartupOnOff,
+        OppleCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="startup_on_off",
+        fallback_name="Switch 2 power-on behavior",
     )
     .enum(
         OppleCluster.AttributeDefs.button_operation_mode.name,
         ButtonOperationMode,
         OppleCluster.cluster_id,
+        endpoint_id=1,
         translation_key="button_operation_mode",
-        fallback_name="Button operation mode",
+        fallback_name="Button 1 operation mode",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_operation_mode.name,
+        ButtonOperationMode,
+        OppleCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="button_operation_mode",
+        fallback_name="Button 2 operation mode",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_operation_mode.name,
+        ButtonOperationMode,
+        OppleCluster.cluster_id,
+        endpoint_id=3,
+        translation_key="button_operation_mode",
+        fallback_name="Button 3 operation mode",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_operation_mode.name,
+        ButtonOperationMode,
+        OppleCluster.cluster_id,
+        endpoint_id=4,
+        translation_key="button_operation_mode",
+        fallback_name="Button 4 operation mode",
+    )
+    # Button relay assignment (which relay each button controls)
+    .enum(
+        OppleCluster.AttributeDefs.button_relay.name,
+        ButtonRelay,
+        OppleCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="button_relay",
+        fallback_name="Button 1 relay",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_relay.name,
+        ButtonRelay,
+        OppleCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="button_relay",
+        fallback_name="Button 2 relay",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_relay.name,
+        ButtonRelay,
+        OppleCluster.cluster_id,
+        endpoint_id=3,
+        translation_key="button_relay",
+        fallback_name="Button 3 relay",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_relay.name,
+        ButtonRelay,
+        OppleCluster.cluster_id,
+        endpoint_id=4,
+        translation_key="button_relay",
+        fallback_name="Button 4 relay",
+    )
+    # Button layout assignment (what each button position shows)
+    .enum(
+        OppleCluster.AttributeDefs.button_layout.name,
+        ButtonLayout,
+        OppleCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="button_layout",
+        fallback_name="Button 1 layout",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_layout.name,
+        ButtonLayout,
+        OppleCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="button_layout",
+        fallback_name="Button 2 layout",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_layout.name,
+        ButtonLayout,
+        OppleCluster.cluster_id,
+        endpoint_id=3,
+        translation_key="button_layout",
+        fallback_name="Button 3 layout",
+    )
+    .enum(
+        OppleCluster.AttributeDefs.button_layout.name,
+        ButtonLayout,
+        OppleCluster.cluster_id,
+        endpoint_id=4,
+        translation_key="button_layout",
+        fallback_name="Button 4 layout",
+    )
+    # Elder mode (larger interface elements)
+    .enum(
+        OppleCluster.AttributeDefs.elder_mode.name,
+        ElderMode,
+        OppleCluster.cluster_id,
+        translation_key="elder_mode",
+        fallback_name="Elder mode",
     )
     # Switch entities for boolean settings
     .switch(
@@ -359,3 +502,15 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     )
     .add_to_registry()
 )
+
+
+# Example service call to set button/switch names or icons:
+# service: zha.set_zigbee_cluster_attribute
+# data:
+#   ieee: "your:device:ieee:address"
+#   endpoint_id: 1        # 1-4 for buttons, 1-2 for switches
+#   cluster_id: 64704     # 0xfcc0
+#   cluster_type: in
+#   attribute: 619        # button_name (619), button_icon (620), switch_name (622), switch_icon (623)
+#   value: "My Label"
+#   manufacturer: 4447    # 0x115f (Aqara)
