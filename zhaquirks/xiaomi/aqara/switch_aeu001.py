@@ -6,15 +6,8 @@ from zigpy import types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.zcl.clusters.general import (
-    DeviceTemperature,
-    Groups,
-    Identify,
-    MultistateInput,
-    OnOff,
-    Scenes,
-)
-from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+from zigpy.zcl.clusters.general import Groups, Identify, MultistateInput, OnOff, Scenes
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -140,7 +133,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster for Aqara Display Switch."""
 
-    class AttributeDefs(BaseAttributeDefs):
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
         """Attribute definitions."""
 
         # Switch configuration
@@ -200,6 +193,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
+        # weather_data and color_button are complex byte arrays with device-specific
+        # encoding. They are defined for attribute discovery but not exposed as
+        # Home Assistant entities since their format is not fully documented.
         weather_data: Final = ZCLAttributeDef(
             id=0xFFF2, type=t.LVBytes, is_manufacturer_specific=True
         )
@@ -248,7 +244,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     QuirkBuilder("Aqara", "lumi.switch.aeu001")
     # Endpoint 1: Primary switch with metering
     .replaces(BasicCluster)
-    .adds(DeviceTemperature)
     .adds(Identify)
     .adds(Groups)
     .adds(Scenes)
