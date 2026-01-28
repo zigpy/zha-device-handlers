@@ -361,7 +361,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         StartupOnOff,
         OppleCluster.cluster_id,
         endpoint_id=1,
-        translation_key="startup_on_off",
+        translation_key="startup_on_off_1",
         fallback_name="Switch 1 power-on behavior",
     )
     .enum(
@@ -369,7 +369,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         StartupOnOff,
         OppleCluster.cluster_id,
         endpoint_id=2,
-        translation_key="startup_on_off",
+        translation_key="startup_on_off_2",
         fallback_name="Switch 2 power-on behavior",
     )
     .enum(
@@ -377,7 +377,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonOperationMode,
         OppleCluster.cluster_id,
         endpoint_id=1,
-        translation_key="button_operation_mode",
+        translation_key="button_operation_mode_1",
         fallback_name="Button 1 operation mode",
     )
     .enum(
@@ -385,7 +385,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonOperationMode,
         OppleCluster.cluster_id,
         endpoint_id=2,
-        translation_key="button_operation_mode",
+        translation_key="button_operation_mode_2",
         fallback_name="Button 2 operation mode",
     )
     .enum(
@@ -393,7 +393,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonOperationMode,
         OppleCluster.cluster_id,
         endpoint_id=3,
-        translation_key="button_operation_mode",
+        translation_key="button_operation_mode_3",
         fallback_name="Button 3 operation mode",
     )
     .enum(
@@ -401,7 +401,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonOperationMode,
         OppleCluster.cluster_id,
         endpoint_id=4,
-        translation_key="button_operation_mode",
+        translation_key="button_operation_mode_4",
         fallback_name="Button 4 operation mode",
     )
     # Button relay assignment (which relay each button controls)
@@ -410,7 +410,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonRelay,
         OppleCluster.cluster_id,
         endpoint_id=1,
-        translation_key="button_relay",
+        translation_key="button_relay_1",
         fallback_name="Button 1 relay",
     )
     .enum(
@@ -418,7 +418,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonRelay,
         OppleCluster.cluster_id,
         endpoint_id=2,
-        translation_key="button_relay",
+        translation_key="button_relay_2",
         fallback_name="Button 2 relay",
     )
     .enum(
@@ -426,7 +426,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonRelay,
         OppleCluster.cluster_id,
         endpoint_id=3,
-        translation_key="button_relay",
+        translation_key="button_relay_3",
         fallback_name="Button 3 relay",
     )
     .enum(
@@ -434,7 +434,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonRelay,
         OppleCluster.cluster_id,
         endpoint_id=4,
-        translation_key="button_relay",
+        translation_key="button_relay_4",
         fallback_name="Button 4 relay",
     )
     # Button layout assignment (what each button position shows)
@@ -443,7 +443,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonLayout,
         OppleCluster.cluster_id,
         endpoint_id=1,
-        translation_key="button_layout",
+        translation_key="button_layout_1",
         fallback_name="Button 1 layout",
     )
     .enum(
@@ -451,7 +451,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonLayout,
         OppleCluster.cluster_id,
         endpoint_id=2,
-        translation_key="button_layout",
+        translation_key="button_layout_2",
         fallback_name="Button 2 layout",
     )
     .enum(
@@ -459,7 +459,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonLayout,
         OppleCluster.cluster_id,
         endpoint_id=3,
-        translation_key="button_layout",
+        translation_key="button_layout_3",
         fallback_name="Button 3 layout",
     )
     .enum(
@@ -467,7 +467,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         ButtonLayout,
         OppleCluster.cluster_id,
         endpoint_id=4,
-        translation_key="button_layout",
+        translation_key="button_layout_4",
         fallback_name="Button 4 layout",
     )
     # Elder mode (larger interface elements)
