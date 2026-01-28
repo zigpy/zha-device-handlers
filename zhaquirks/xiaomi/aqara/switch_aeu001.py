@@ -38,6 +38,16 @@ from zhaquirks.xiaomi import (
 PRESENT_VALUE_ATTR = MultistateInput.AttributeDefs.present_value.id
 
 
+class LVBytesString(t.LVBytes):
+    """LVBytes type that accepts string input and encodes to UTF-8."""
+
+    def __new__(cls, value=b""):
+        """Create new instance, converting string to bytes if needed."""
+        if isinstance(value, str):
+            value = value.encode("utf-8")
+        return super().__new__(cls, value)
+
+
 class StartupOnOff(t.enum8):
     """Startup behavior enum."""
 
@@ -185,6 +195,20 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         )
         double_tap_override: Final = ZCLAttributeDef(
             id=0x0236, type=t.uint8_t, is_manufacturer_specific=True
+        )
+
+        # Button/Switch labels (writable via zha.set_zigbee_cluster_attribute service)
+        button_name: Final = ZCLAttributeDef(
+            id=0x026B, type=LVBytesString, is_manufacturer_specific=True
+        )
+        button_icon: Final = ZCLAttributeDef(
+            id=0x026C, type=LVBytesString, is_manufacturer_specific=True
+        )
+        switch_name: Final = ZCLAttributeDef(
+            id=0x026E, type=LVBytesString, is_manufacturer_specific=True
+        )
+        switch_icon: Final = ZCLAttributeDef(
+            id=0x026F, type=LVBytesString, is_manufacturer_specific=True
         )
 
 
