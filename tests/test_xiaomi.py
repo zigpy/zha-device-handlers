@@ -96,6 +96,12 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+from zhaquirks.xiaomi.aqara.switch_aeu001 import (
+    ButtonOperationMode,
+    OppleCluster as DisplaySwitchOppleCluster,
+    StartupOnOff,
+    Theme,
+)
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -2341,51 +2347,47 @@ def test_aqara_display_switch_button_events(zigpy_device_from_v2_quirk, endpoint
 
 def test_aqara_display_switch_opple_cluster(zigpy_device_from_v2_quirk):
     """Test Aqara Display Switch OppleCluster attribute definitions."""
-    from zhaquirks.xiaomi.aqara.switch_aeu001 import (
-        ButtonOperationMode,
-        OppleCluster,
-        StartupOnOff,
-        Theme,
-    )
-
     device = zigpy_device_from_v2_quirk(
         "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
     )
 
-    opple_cluster = device.endpoints[1].in_clusters[OppleCluster.cluster_id]
+    opple_cluster = device.endpoints[1].in_clusters[
+        DisplaySwitchOppleCluster.cluster_id
+    ]
     cluster_listener = ClusterListener(opple_cluster)
 
     # Test startup_on_off attribute update
     opple_cluster.update_attribute(
-        OppleCluster.AttributeDefs.startup_on_off.id,
+        DisplaySwitchOppleCluster.AttributeDefs.startup_on_off.id,
         StartupOnOff.RestorePrevious,
     )
     assert len(cluster_listener.attribute_updates) == 1
     assert (
         cluster_listener.attribute_updates[0][0]
-        == OppleCluster.AttributeDefs.startup_on_off.id
+        == DisplaySwitchOppleCluster.AttributeDefs.startup_on_off.id
     )
     assert cluster_listener.attribute_updates[0][1] == StartupOnOff.RestorePrevious
 
     # Test button_operation_mode attribute update
     opple_cluster.update_attribute(
-        OppleCluster.AttributeDefs.button_operation_mode.id,
+        DisplaySwitchOppleCluster.AttributeDefs.button_operation_mode.id,
         ButtonOperationMode.Decoupled,
     )
     assert len(cluster_listener.attribute_updates) == 2
     assert (
         cluster_listener.attribute_updates[1][0]
-        == OppleCluster.AttributeDefs.button_operation_mode.id
+        == DisplaySwitchOppleCluster.AttributeDefs.button_operation_mode.id
     )
     assert cluster_listener.attribute_updates[1][1] == ButtonOperationMode.Decoupled
 
     # Test theme attribute update
     opple_cluster.update_attribute(
-        OppleCluster.AttributeDefs.theme.id,
+        DisplaySwitchOppleCluster.AttributeDefs.theme.id,
         Theme.Option2,
     )
     assert len(cluster_listener.attribute_updates) == 3
     assert (
-        cluster_listener.attribute_updates[2][0] == OppleCluster.AttributeDefs.theme.id
+        cluster_listener.attribute_updates[2][0]
+        == DisplaySwitchOppleCluster.AttributeDefs.theme.id
     )
     assert cluster_listener.attribute_updates[2][1] == Theme.Option2
