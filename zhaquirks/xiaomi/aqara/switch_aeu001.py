@@ -114,15 +114,12 @@ class ButtonRelay(t.enum8):
 
 
 class ButtonLayout(t.enum8):
-    """Button layout assignment enum."""
+    """Button layout assignment enum (only used when button_operation_mode = WirelessButton)."""
 
-    Empty = 0x00
-    Switch1 = 0x01
-    Switch2 = 0x02
-    Button1 = 0x03
-    Button2 = 0x04
-    Button3 = 0x05
-    Button4 = 0x06
+    Button1 = 0x01
+    Button2 = 0x02
+    Button3 = 0x04
+    Button4 = 0x08
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
@@ -505,12 +502,18 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 
 # Example service call to set button/switch names or icons:
+#
+# The device uses DIFFERENT attributes depending on the button's operation mode:
+#   - Switch mode (button_operation_mode = ControlRelay): use switch_name/switch_icon
+#   - Button mode (button_operation_mode = WirelessButton): use button_name/button_icon
+#
 # service: zha.set_zigbee_cluster_attribute
 # data:
 #   ieee: "your:device:ieee:address"
-#   endpoint_id: 1        # 1-4 for buttons, 1-2 for switches
+#   endpoint_id: 1        # Display position 1-4
 #   cluster_id: 64704     # 0xfcc0
 #   cluster_type: in
-#   attribute: 619        # button_name (619), button_icon (620), switch_name (622), switch_icon (623)
-#   value: "My Label"
+#   attribute: 623        # switch_icon (623) or switch_name (622) for switch mode
+#                         # button_icon (620) or button_name (619) for button mode
+#   value: "light_bulb"   # Icon name or custom text label
 #   manufacturer: 4447    # 0x115f (Aqara)
