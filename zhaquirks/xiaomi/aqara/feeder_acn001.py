@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types
 from zigpy.profiles import zgp, zha
-from zigpy.zcl import foundation
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -18,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -82,62 +83,95 @@ ZCL_TO_AQARA: dict[int, int] = {
 LOGGER = logging.getLogger(__name__)
 
 
+class FeedingSource(types.enum8):
+    """Feeding source."""
+
+    Feeder = 0x01
+    Remote = 0x02
+
+
+class FeedingMode(types.enum8):
+    """Feeding mode."""
+
+    Manual = 0x00
+    Schedule = 0x01
+
+
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    class FeedingSource(types.enum8):
-        """Feeding source."""
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
 
-        Feeder = 0x01
-        Remote = 0x02
-
-    class FeedingMode(types.enum8):
-        """Feeding mode."""
-
-        Manual = 0x00
-        Schedule = 0x01
-
-    attributes = {
-        ZCL_FEEDING: ("feeding", types.Bool, True),
-        ZCL_LAST_FEEDING_SOURCE: ("last_feeding_source", FeedingSource, True),
-        ZCL_LAST_FEEDING_SIZE: ("last_feeding_size", types.uint8_t, True),
-        ZCL_PORTIONS_DISPENSED: ("portions_dispensed", types.uint16_t, True),
-        ZCL_WEIGHT_DISPENSED: ("weight_dispensed", types.uint32_t, True),
-        ZCL_ERROR_DETECTED: ("error_detected", types.Bool, True),
-        ZCL_DISABLE_LED_INDICATOR: ("disable_led_indicator", types.Bool, True),
-        ZCL_CHILD_LOCK: ("child_lock", types.Bool, True),
-        ZCL_FEEDING_MODE: ("feeding_mode", FeedingMode, True),
-        ZCL_SERVING_SIZE: ("serving_size", types.uint8_t, True),
-        ZCL_PORTION_WEIGHT: ("portion_weight", types.uint8_t, True),
-        FEEDER_ATTR: (FEEDER_ATTR_NAME, types.LVBytes, True),
-    }
+        feeding: Final = ZCLAttributeDef(
+            id=ZCL_FEEDING, type=types.Bool, manufacturer_code=0x115F
+        )
+        last_feeding_source: Final = ZCLAttributeDef(
+            id=ZCL_LAST_FEEDING_SOURCE, type=FeedingSource, manufacturer_code=0x115F
+        )
+        last_feeding_size: Final = ZCLAttributeDef(
+            id=ZCL_LAST_FEEDING_SIZE, type=types.uint8_t, manufacturer_code=0x115F
+        )
+        portions_dispensed: Final = ZCLAttributeDef(
+            id=ZCL_PORTIONS_DISPENSED, type=types.uint16_t, manufacturer_code=0x115F
+        )
+        weight_dispensed: Final = ZCLAttributeDef(
+            id=ZCL_WEIGHT_DISPENSED, type=types.uint32_t, manufacturer_code=0x115F
+        )
+        error_detected: Final = ZCLAttributeDef(
+            id=ZCL_ERROR_DETECTED, type=types.Bool, manufacturer_code=0x115F
+        )
+        disable_led_indicator: Final = ZCLAttributeDef(
+            id=ZCL_DISABLE_LED_INDICATOR, type=types.Bool, manufacturer_code=0x115F
+        )
+        child_lock: Final = ZCLAttributeDef(
+            id=ZCL_CHILD_LOCK, type=types.Bool, manufacturer_code=0x115F
+        )
+        feeding_mode: Final = ZCLAttributeDef(
+            id=ZCL_FEEDING_MODE, type=FeedingMode, manufacturer_code=0x115F
+        )
+        serving_size: Final = ZCLAttributeDef(
+            id=ZCL_SERVING_SIZE, type=types.uint8_t, manufacturer_code=0x115F
+        )
+        portion_weight: Final = ZCLAttributeDef(
+            id=ZCL_PORTION_WEIGHT, type=types.uint8_t, manufacturer_code=0x115F
+        )
+        feeder_attr: Final = ZCLAttributeDef(
+            id=FEEDER_ATTR, type=types.LVBytes, manufacturer_code=0x115F
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
-        self._attr_cache: dict[int, Any] = {
-            ZCL_DISABLE_LED_INDICATOR: False,
-            ZCL_CHILD_LOCK: False,
-            ZCL_FEEDING_MODE: self.FeedingMode.Manual,
-            ZCL_SERVING_SIZE: 1,
-            ZCL_PORTION_WEIGHT: 8,
-            ZCL_ERROR_DETECTED: False,
-            ZCL_PORTIONS_DISPENSED: 0,
-            ZCL_WEIGHT_DISPENSED: 0,
-        }
+        # Set default values for attributes
+        if ZCL_DISABLE_LED_INDICATOR not in self._attr_cache:
+            self._update_attribute(ZCL_DISABLE_LED_INDICATOR, False)
+        if ZCL_CHILD_LOCK not in self._attr_cache:
+            self._update_attribute(ZCL_CHILD_LOCK, False)
+        if ZCL_FEEDING_MODE not in self._attr_cache:
+            self._update_attribute(ZCL_FEEDING_MODE, FeedingMode.Manual)
+        if ZCL_SERVING_SIZE not in self._attr_cache:
+            self._update_attribute(ZCL_SERVING_SIZE, 1)
+        if ZCL_PORTION_WEIGHT not in self._attr_cache:
+            self._update_attribute(ZCL_PORTION_WEIGHT, 8)
+        if ZCL_ERROR_DETECTED not in self._attr_cache:
+            self._update_attribute(ZCL_ERROR_DETECTED, False)
+        if ZCL_PORTIONS_DISPENSED not in self._attr_cache:
+            self._update_attribute(ZCL_PORTIONS_DISPENSED, 0)
+        if ZCL_WEIGHT_DISPENSED not in self._attr_cache:
+            self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
 
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        super()._update_attribute(attrid, value)
-        LOGGER.debug(
-            "OppleCluster._update_attribute: %s, %s",
-            self.attributes.get(attrid).name
-            if self.attributes.get(attrid) is not None
-            else attrid,
-            value.name if isinstance(value, types.enum8) else value,
-        )
-        if attrid == FEEDER_ATTR:
-            self._parse_feeder_attribute(value)
+        # Subscribe to attribute events to parse feeder_attr
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report/update event to parse feeder attribute."""
+        if event.attribute_id == FEEDER_ATTR:
+            self._parse_feeder_attribute(event.value)
 
     def _update_feeder_attribute(self, attrid: int, value: Any) -> None:
         zcl_attr_def = self.attributes.get(AQARA_TO_ZCL[attrid])
@@ -159,7 +193,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             feeding_source = attr_str[0:2]
             feeding_size = attr_str[3:4]
             self._update_attribute(
-                ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource(feeding_source)
+                ZCL_LAST_FEEDING_SOURCE, FeedingSource(feeding_source)
             )
             self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size, base=16))
         elif attribute == PORTIONS_DISPENSED:

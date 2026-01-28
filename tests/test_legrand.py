@@ -49,10 +49,8 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
         0x02,
         manufacturer=0xFC40,
     )
-    cable_cluster._write_attributes.assert_awaited_with(
-        [],
-        manufacturer=0xFC40,
-    )
+    # With an empty attrs dict, _write_attributes is not called in the new zigpy API
+    assert len(cable_cluster._write_attributes.mock_calls) == 0
 
 
 async def test_legrand_identify_command(zigpy_device_from_v2_quirk):

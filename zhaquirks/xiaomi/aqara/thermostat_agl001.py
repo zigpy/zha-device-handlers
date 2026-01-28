@@ -99,9 +99,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
             )
             # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
-                successful_r[ZCL_SYSTEM_MODE] = XIAOMI_SYSTEM_MODE_MAP[
-                    successful_r.pop(SYSTEM_MODE)
-                ]
+                mapped_value = XIAOMI_SYSTEM_MODE_MAP[successful_r.pop(SYSTEM_MODE)]
+                successful_r[ZCL_SYSTEM_MODE] = mapped_value
+                # Update the thermostat cluster's cache
+                self._update_attribute(ZCL_SYSTEM_MODE, mapped_value)
         # read remaining attributes from thermostat cluster
         if remaining_attributes:
             remaining_result = await super().read_attributes(
@@ -133,6 +134,8 @@ class ThermostatCluster(CustomCluster, Thermostat):
             result += await self.endpoint.opple_cluster.write_attributes(
                 {SYSTEM_MODE: min(int(system_mode_value), 1)}
             )
+            # Update the thermostat cluster's cache
+            self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
 
         # write remaining attributes to thermostat cluster
         if remaining_attributes:

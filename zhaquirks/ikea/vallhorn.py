@@ -21,11 +21,13 @@ class IkeaVallhornManufSpecificConfig(CustomCluster):
         on_only_when_dark: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.Bool,
+            manufacturer_code=4476,
         )
 
         on_time: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
+            manufacturer_code=4476,
         )
 
 
