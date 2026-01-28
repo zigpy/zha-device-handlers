@@ -2282,3 +2282,110 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_aqara_display_switch_endpoints(zigpy_device_from_v2_quirk):
+    """Test Aqara Display Switch V1 EU quirk creates all expected endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    # Verify all endpoints exist
+    assert 1 in device.endpoints
+    assert 2 in device.endpoints
+    assert 3 in device.endpoints
+    assert 4 in device.endpoints
+    assert 21 in device.endpoints
+
+    # Endpoint 1: Primary switch with metering
+    assert OnOff.cluster_id in device.endpoints[1].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[1].in_clusters
+
+    # Endpoint 2: Secondary switch
+    assert OnOff.cluster_id in device.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
+
+    # Endpoint 3: Button 1 (decoupled mode)
+    assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+    # Endpoint 4: Button 2 (decoupled mode)
+    assert MultistateInput.cluster_id in device.endpoints[4].in_clusters
+
+    # Endpoint 21: Analog input
+    assert AnalogInput.cluster_id in device.endpoints[21].in_clusters
+
+
+@pytest.mark.parametrize("endpoint_id", [1, 2, 3, 4])
+def test_aqara_display_switch_button_events(zigpy_device_from_v2_quirk, endpoint_id):
+    """Test Aqara Display Switch button press events."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    multistate_cluster = device.endpoints[endpoint_id].multistate_input
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    # Simulate single press (value=1)
+    multistate_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, 1
+    )
+
+    # Verify ZHA send event was called with correct action
+    assert listener.zha_send_event.call_count == 1
+    expected_action = f"button_{endpoint_id}_single"
+    assert listener.zha_send_event.call_args[0][0] == expected_action
+    assert listener.zha_send_event.call_args[0][1]["endpoint_id"] == endpoint_id
+    assert listener.zha_send_event.call_args[0][1]["value"] == 1
+
+
+def test_aqara_display_switch_opple_cluster(zigpy_device_from_v2_quirk):
+    """Test Aqara Display Switch OppleCluster attribute definitions."""
+    from zhaquirks.xiaomi.aqara.switch_aeu001 import (
+        ButtonOperationMode,
+        OppleCluster,
+        StartupOnOff,
+        Theme,
+    )
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+
+    opple_cluster = device.endpoints[1].in_clusters[OppleCluster.cluster_id]
+    cluster_listener = ClusterListener(opple_cluster)
+
+    # Test startup_on_off attribute update
+    opple_cluster.update_attribute(
+        OppleCluster.AttributeDefs.startup_on_off.id,
+        StartupOnOff.RestorePrevious,
+    )
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == OppleCluster.AttributeDefs.startup_on_off.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == StartupOnOff.RestorePrevious
+
+    # Test button_operation_mode attribute update
+    opple_cluster.update_attribute(
+        OppleCluster.AttributeDefs.button_operation_mode.id,
+        ButtonOperationMode.Decoupled,
+    )
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == OppleCluster.AttributeDefs.button_operation_mode.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == ButtonOperationMode.Decoupled
+
+    # Test theme attribute update
+    opple_cluster.update_attribute(
+        OppleCluster.AttributeDefs.theme.id,
+        Theme.Option2,
+    )
+    assert len(cluster_listener.attribute_updates) == 3
+    assert (
+        cluster_listener.attribute_updates[2][0] == OppleCluster.AttributeDefs.theme.id
+    )
+    assert cluster_listener.attribute_updates[2][1] == Theme.Option2

@@ -3,17 +3,29 @@
 from typing import Final
 
 from zigpy import types as t
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.general import (
     DeviceTemperature,
     Groups,
     Identify,
+    MultistateInput,
     OnOff,
     Scenes,
 )
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    COMMAND,
+    ENDPOINT_ID,
+    SHORT_PRESS,
+    ZHA_SEND_EVENT,
+)
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
@@ -22,64 +34,94 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
 )
 
+# Attribute for present_value in MultistateInput cluster
+PRESENT_VALUE_ATTR = MultistateInput.AttributeDefs.present_value.id
+
+
+class StartupOnOff(t.enum8):
+    """Startup behavior enum."""
+
+    On = 0x00
+    RestorePrevious = 0x01
+    Off = 0x02
+    ReversePrevious = 0x03
+
+
+class ButtonOperationMode(t.enum8):
+    """Button operation mode enum."""
+
+    Disabled = 0x00
+    ControlRelay = 0x01
+    Decoupled = 0x02
+    WirelessButton = 0x04
+
+
+class Theme(t.enum8):
+    """Display theme enum."""
+
+    Option1 = 0x00
+    Option2 = 0x01
+
+
+class ShowMode(t.enum8):
+    """Button display mode enum."""
+
+    IconAndText = 0x01
+    IconOnly = 0x02
+    TextOnly = 0x03
+
+
+class ScreensaverStyle(t.enum8):
+    """Screensaver style enum."""
+
+    DigitalClock = 0x01
+    WeatherConditions = 0x02
+    IndoorEnvironment = 0x03
+
+
+class ProximitySensitivity(t.enum8):
+    """Proximity sensitivity enum."""
+
+    Near = 0x01
+    LessNear = 0x02
+    Medium = 0x03
+    LessFar = 0x04
+    Far = 0x05
+
+
+class MultistateInputCluster(CustomCluster, MultistateInput):
+    """Multistate input cluster for button events (single press only)."""
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == PRESENT_VALUE_ATTR and value == 1:
+            # Single press detected (value=1)
+            action = f"button_{self.endpoint.endpoint_id}_single"
+            event_args = {
+                "endpoint_id": self.endpoint.endpoint_id,
+                "value": value,
+            }
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
 
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster for Aqara Display Switch."""
 
-    class StartupOnOff(t.enum8):
-        """Startup behavior enum."""
-
-        On = 0x00
-        RestorePrevious = 0x01
-        Off = 0x02
-        ReversePrevious = 0x03
-
-    class ButtonOperationMode(t.enum8):
-        """Button operation mode enum."""
-
-        Disabled = 0x00
-        ControlRelay = 0x01
-        Decoupled = 0x02
-        WirelessButton = 0x04
-
-    class Theme(t.enum8):
-        """Display theme enum."""
-
-        Option1 = 0x00
-        Option2 = 0x01
-
-    class ShowMode(t.enum8):
-        """Button display mode enum."""
-
-        IconAndText = 0x01
-        IconOnly = 0x02
-        TextOnly = 0x03
-
-    class ScreensaverStyle(t.enum8):
-        """Screensaver style enum."""
-
-        DigitalClock = 0x01
-        WeatherConditions = 0x02
-        IndoorEnvironment = 0x03
-
-    class ProximitySensitivity(t.enum8):
-        """Proximity sensitivity enum."""
-
-        Near = 0x01
-        LessNear = 0x02
-        Medium = 0x03
-        LessFar = 0x04
-        Far = 0x05
-
-    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         # Switch configuration
         startup_on_off: Final = ZCLAttributeDef(
-            id=0x0517, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0517,
+            type=StartupOnOff,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         button_operation_mode: Final = ZCLAttributeDef(
-            id=0x0269, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0269,
+            type=ButtonOperationMode,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         button_relay: Final = ZCLAttributeDef(
             id=0x0235, type=t.uint8_t, is_manufacturer_specific=True
@@ -90,10 +132,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
         # Display configuration
         theme: Final = ZCLAttributeDef(
-            id=0x0215, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0215,
+            type=Theme,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         show_mode: Final = ZCLAttributeDef(
-            id=0x026A, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x026A,
+            type=ShowMode,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         display_brightness: Final = ZCLAttributeDef(
             id=0x0211, type=t.uint8_t, is_manufacturer_specific=True
@@ -108,7 +156,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0222, type=t.uint8_t, is_manufacturer_specific=True
         )
         screensaver_style: Final = ZCLAttributeDef(
-            id=0x0214, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0214,
+            type=ScreensaverStyle,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
         weather_data: Final = ZCLAttributeDef(
             id=0xFFF2, type=t.LVBytes, is_manufacturer_specific=True
@@ -122,7 +173,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x026D, type=t.uint8_t, is_manufacturer_specific=True
         )
         proximity_sensitivity: Final = ZCLAttributeDef(
-            id=0x0268, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0268,
+            type=ProximitySensitivity,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
 
         # Other features
@@ -143,17 +197,52 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .adds(Groups)
     .adds(Scenes)
     .adds(OnOff)
+    .replaces(MultistateInputCluster)
     .replaces(MeteringCluster)
     .replaces(ElectricalMeasurementCluster)
-    .replaces(OppleCluster, cluster_id=0xFCC0)
+    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id)
     # Endpoint 2: Secondary switch
     .adds(Identify, endpoint_id=2)
     .adds(Groups, endpoint_id=2)
     .adds(Scenes, endpoint_id=2)
     .adds(OnOff, endpoint_id=2)
-    .replaces(OppleCluster, cluster_id=0xFCC0, endpoint_id=2)
+    .replaces(MultistateInputCluster, endpoint_id=2)
+    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=2)
+    # Endpoint 3: Button 1 (decoupled mode)
+    .adds(Identify, endpoint_id=3)
+    .adds(Groups, endpoint_id=3)
+    .adds(Scenes, endpoint_id=3)
+    .replaces(MultistateInputCluster, endpoint_id=3)
+    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=3)
+    # Endpoint 4: Button 2 (decoupled mode)
+    .adds(Identify, endpoint_id=4)
+    .adds(Groups, endpoint_id=4)
+    .adds(Scenes, endpoint_id=4)
+    .replaces(MultistateInputCluster, endpoint_id=4)
+    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=4)
     # Endpoint 21: Analog input
     .replaces(AnalogInputCluster, endpoint_id=21)
+    # Device automation triggers for single press events
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, BUTTON_1): {
+                ENDPOINT_ID: 1,
+                COMMAND: "button_1_single",
+            },
+            (SHORT_PRESS, BUTTON_2): {
+                ENDPOINT_ID: 2,
+                COMMAND: "button_2_single",
+            },
+            (SHORT_PRESS, BUTTON_3): {
+                ENDPOINT_ID: 3,
+                COMMAND: "button_3_single",
+            },
+            (SHORT_PRESS, BUTTON_4): {
+                ENDPOINT_ID: 4,
+                COMMAND: "button_4_single",
+            },
+        }
+    )
     # Display configuration entities
     .number(
         OppleCluster.AttributeDefs.display_brightness.name,
@@ -185,42 +274,42 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     )
     .enum(
         OppleCluster.AttributeDefs.theme.name,
-        OppleCluster.Theme,
+        Theme,
         OppleCluster.cluster_id,
         translation_key="theme",
         fallback_name="Display theme",
     )
     .enum(
         OppleCluster.AttributeDefs.show_mode.name,
-        OppleCluster.ShowMode,
+        ShowMode,
         OppleCluster.cluster_id,
         translation_key="show_mode",
         fallback_name="Button display mode",
     )
     .enum(
         OppleCluster.AttributeDefs.screensaver_style.name,
-        OppleCluster.ScreensaverStyle,
+        ScreensaverStyle,
         OppleCluster.cluster_id,
         translation_key="screensaver_style",
         fallback_name="Screensaver style",
     )
     .enum(
         OppleCluster.AttributeDefs.proximity_sensitivity.name,
-        OppleCluster.ProximitySensitivity,
+        ProximitySensitivity,
         OppleCluster.cluster_id,
         translation_key="proximity_sensitivity",
         fallback_name="Proximity sensitivity",
     )
     .enum(
         OppleCluster.AttributeDefs.startup_on_off.name,
-        OppleCluster.StartupOnOff,
+        StartupOnOff,
         OppleCluster.cluster_id,
         translation_key="startup_on_off",
         fallback_name="Power-on behavior",
     )
     .enum(
         OppleCluster.AttributeDefs.button_operation_mode.name,
-        OppleCluster.ButtonOperationMode,
+        ButtonOperationMode,
         OppleCluster.cluster_id,
         translation_key="button_operation_mode",
         fallback_name="Button operation mode",
