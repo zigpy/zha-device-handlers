@@ -1585,7 +1585,7 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
             self._update_attribute(attrid, value)
 
             await self.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, manufacturer=None
+                {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, **kwargs
             )
         return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
@@ -1636,7 +1636,7 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
 
             # different Endpoint for compatibility issue
             await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, manufacturer=None
+                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
             )
         return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
