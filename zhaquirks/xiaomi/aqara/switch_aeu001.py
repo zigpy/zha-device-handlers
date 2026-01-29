@@ -1,6 +1,7 @@
 """Aqara Display Switch V1 EU (lumi.switch.aeu001)."""
 
-from typing import Final
+import struct
+from typing import Any, Final
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
@@ -113,6 +114,37 @@ class ButtonLayout(t.enum8):
     Button2 = 0x02
     Button3 = 0x04
     Button4 = 0x08
+
+
+class WeatherCondition(t.enum8):
+    """Weather condition codes for the display screensaver."""
+
+    Sunny = 0x00
+    Clear = 0x01
+    Fair = 0x03
+    Cloudy = 0x04
+    PartlyCloudy = 0x05
+    MostlyCloudy = 0x07
+    Overcast = 0x09
+    LightRain = 0x0D
+    ModerateRain = 0x0E
+    Storm = 0x10
+    HeavyStorm = 0x11
+    SevereStorm = 0x12
+    FreezingRain = 0x13
+    Sleet = 0x14
+    SnowFlurry = 0x15
+    LightSnow = 0x16
+    ModerateSnow = 0x17
+    HeavySnow = 0x18
+    Snowstorm = 0x19
+    Foggy = 0x1E
+    Windy = 0x20
+    Blustery = 0x21
+    Hurricane = 0x22
+    TropicalStorm = 0x23
+    Tornado = 0x24
+    Unknown = 0x25
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
@@ -238,6 +270,151 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         switch_icon: Final = ZCLAttributeDef(
             id=0x026F, type=LVBytesString, is_manufacturer_specific=True
         )
+
+        # Weather display attributes (write-only, used with screensaver_style=WeatherConditions)
+        # These are virtual attributes that encode data into weather_data packets.
+        weather_condition: Final = ZCLAttributeDef(
+            id=0xFFF0,  # Virtual ID (not a real device attribute)
+            type=WeatherCondition,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
+        )
+        weather_temperature: Final = ZCLAttributeDef(
+            id=0xFFF1,  # Virtual ID (not a real device attribute)
+            type=t.int16s,  # Temperature in Celsius (e.g., -10 to 50)
+            is_manufacturer_specific=True,
+        )
+
+    # Class-level sequence counter for weather packets
+    _weather_seq: int = 0
+
+    def _get_ieee_bytes(self) -> bytes:
+        """Extract last 6 bytes of device IEEE address for weather packets."""
+        ieee = self.endpoint.device.ieee
+        # IEEE address is 8 bytes, we need the last 6
+        ieee_bytes = ieee.serialize()
+        return ieee_bytes[2:8]  # Skip first 2 bytes
+
+    def _build_weather_packet(self, msg_type: tuple[int, int], payload: bytes) -> bytes:
+        """Build a weather data packet for the display.
+
+        Packet format (22 bytes):
+        - Header: 0xAA 0x71 0x13 0x44 (4 bytes)
+        - Sequence: 1 byte (incrementing counter)
+        - Checksum: 1 byte (0x8E - sequence)
+        - Type marker: 0x08 0x41 0x10 (3 bytes)
+        - Reserved: 0x00 0x00 (2 bytes)
+        - IEEE address: 6 bytes (last 6 bytes of device address)
+        - Message type: 2 bytes (e.g., 0x0D 0x02 for condition)
+        - Data marker: 0x00 0x55 (2 bytes)
+        - Payload: 4 bytes
+        """
+        # Increment and wrap sequence counter
+        OppleCluster._weather_seq = (OppleCluster._weather_seq + 1) & 0xFF
+        seq = OppleCluster._weather_seq
+        checksum = (0x8E - seq) & 0xFF
+
+        ieee_bytes = self._get_ieee_bytes()
+
+        packet = (
+            bytes(
+                [
+                    0xAA,
+                    0x71,
+                    0x13,
+                    0x44,  # Header
+                    seq,  # Sequence number
+                    checksum,  # Checksum (seq + checksum = 0x8E)
+                    0x08,
+                    0x41,
+                    0x10,  # Type marker (Octet String, Length 16)
+                    0x00,
+                    0x00,  # Reserved
+                ]
+            )
+            + ieee_bytes
+            + bytes(
+                [
+                    msg_type[0],
+                    msg_type[1],  # Message type
+                    0x00,
+                    0x55,  # Data marker
+                ]
+            )
+            + payload
+        )
+
+        return packet
+
+    def _build_condition_packet(self, condition_code: int) -> bytes:
+        """Build weather condition packet (message type 0x0D, 0x02)."""
+        payload = bytes([0x00, 0x00, 0x00, condition_code])
+        return self._build_weather_packet((0x0D, 0x02), payload)
+
+    def _build_null_packet(self) -> bytes:
+        """Build null packet required after some weather conditions (message type 0x00, 0x06)."""
+        payload = bytes([0x00, 0x00, 0x00, 0x00])
+        return self._build_weather_packet((0x00, 0x06), payload)
+
+    def _build_temperature_packet(self, temperature: float) -> bytes:
+        """Build weather temperature packet (message type 0x00, 0x04)."""
+        # Convert temperature to IEEE 754 single-precision float (big-endian)
+        payload = struct.pack(">f", temperature)
+        return self._build_weather_packet((0x00, 0x04), payload)
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Override write_attributes to handle weather virtual attributes."""
+        # Check for weather virtual attributes
+        weather_condition_id = self.AttributeDefs.weather_condition.id
+        weather_temperature_id = self.AttributeDefs.weather_temperature.id
+        weather_data_id = self.AttributeDefs.weather_data.id
+
+        # Process weather_condition
+        if weather_condition_id in attributes or "weather_condition" in attributes:
+            value = attributes.pop(weather_condition_id, None) or attributes.pop(
+                "weather_condition", None
+            )
+            if value is not None:
+                # Convert enum value if needed
+                if isinstance(value, WeatherCondition):
+                    condition_code = value.value
+                elif isinstance(value, int):
+                    condition_code = value
+                else:
+                    # Try to look up by name
+                    condition_code = WeatherCondition[value].value
+
+                # Build and send condition packet
+                condition_packet = self._build_condition_packet(condition_code)
+                await super().write_attributes(
+                    {weather_data_id: condition_packet}, manufacturer=manufacturer
+                )
+
+                # Send null packet (required for some conditions like fog)
+                null_packet = self._build_null_packet()
+                await super().write_attributes(
+                    {weather_data_id: null_packet}, manufacturer=manufacturer
+                )
+
+        # Process weather_temperature
+        if weather_temperature_id in attributes or "weather_temperature" in attributes:
+            value = attributes.pop(weather_temperature_id, None) or attributes.pop(
+                "weather_temperature", None
+            )
+            if value is not None:
+                temperature = float(value)
+                temp_packet = self._build_temperature_packet(temperature)
+                await super().write_attributes(
+                    {weather_data_id: temp_packet}, manufacturer=manufacturer
+                )
+
+        # Process remaining attributes normally
+        if attributes:
+            return await super().write_attributes(attributes, manufacturer=manufacturer)
+
+        return [0]  # Success
 
 
 (
@@ -506,9 +683,41 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 # data:
 #   ieee: "your:device:ieee:address"
 #   endpoint_id: 1        # Display position 1-4
-#   cluster_id: 64704     # 0xfcc0
+#   cluster_id: 64704     # 0xFCC0
 #   cluster_type: in
-#   attribute: 623        # switch_icon (623) or switch_name (622) for switch mode
-#                         # button_icon (620) or button_name (619) for button mode
+#   attribute: 0x026F     # switch_icon (0x026F) or switch_name (0x026E) for switch mode
+#                         # button_icon (0x026C) or button_name (0x026B) for button mode
 #   value: "light_bulb"   # Icon name or custom text label
-#   manufacturer: 4447    # 0x115f (Aqara)
+#   manufacturer: 4447    # 0x115F (Aqara)
+#
+#
+# Example service calls to set weather display (for screensaver_style = WeatherConditions):
+#
+# Set weather condition:
+# service: zha.set_zigbee_cluster_attribute
+# data:
+#   ieee: "your:device:ieee:address"
+#   endpoint_id: 1
+#   cluster_id: 64704     # 0xFCC0
+#   cluster_type: in
+#   attribute: 0xFFF0     # weather_condition (virtual attribute)
+#   value: 4              # WeatherCondition enum value (see below)
+#   manufacturer: 4447    # 0x115F (Aqara)
+#
+# Set weather temperature:
+# service: zha.set_zigbee_cluster_attribute
+# data:
+#   ieee: "your:device:ieee:address"
+#   endpoint_id: 1
+#   cluster_id: 64704     # 0xFCC0
+#   cluster_type: in
+#   attribute: 0xFFF1     # weather_temperature (virtual attribute)
+#   value: 22             # Temperature in Celsius
+#   manufacturer: 4447    # 0x115F (Aqara)
+#
+# WeatherCondition values:
+#   Sunny=0, Clear=1, Fair=3, Cloudy=4, PartlyCloudy=5, MostlyCloudy=7,
+#   Overcast=9, LightRain=13, ModerateRain=14, Storm=16, HeavyStorm=17,
+#   SevereStorm=18, FreezingRain=19, Sleet=20, SnowFlurry=21, LightSnow=22,
+#   ModerateSnow=23, HeavySnow=24, Snowstorm=25, Foggy=30, Windy=32,
+#   Blustery=33, Hurricane=34, TropicalStorm=35, Tornado=36, Unknown=37
