@@ -79,7 +79,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         self,
         attributes: list[int | str | foundation.ZCLAttributeDef],
         **kwargs,
-    ):
+    ) -> Any:
         """Pass reading attributes to Xiaomi cluster if applicable."""
         successful_r, failed_r = {}, {}
         remaining_attributes = attributes.copy()
@@ -112,8 +112,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
         return successful_r, failed_r
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], **kwargs
-    ) -> list:
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Pass writing attributes to Xiaomi cluster if applicable."""
         result = []
         remaining_attributes = attributes.copy()
