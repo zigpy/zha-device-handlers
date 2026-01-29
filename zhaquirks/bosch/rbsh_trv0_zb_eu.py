@@ -254,7 +254,10 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                     Thermostat.AttributeDefs.ctrl_sequence_of_oper
                 )
                 successful_r, failed_r = await super().read_attributes(
-                    [ctrl_sequence_of_oper_attr.name], True, False, **kwargs
+                    [ctrl_sequence_of_oper_attr.name],
+                    allow_cache=True,
+                    only_cache=False,
+                    **kwargs,
                 )
                 if ctrl_sequence_of_oper_attr.name in successful_r:
                     ctrl_sequence_of_oper_value = successful_r.pop(
@@ -280,7 +283,10 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 )
                 if ctrl_sequence_of_oper_value is not None:
                     successful_r, failed_r = await super().read_attributes(
-                        [operating_mode_attr.name], True, False, **kwargs
+                        [operating_mode_attr.name],
+                        allow_cache=True,
+                        only_cache=False,
+                        **kwargs,
                     )
                     if operating_mode_attr.name in successful_r:
                         operating_mode_attr_value = successful_r.pop(
