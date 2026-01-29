@@ -7,7 +7,6 @@ from typing import Any, Final
 
 from zigpy import types
 from zigpy.profiles import zgp, zha
-from zigpy.typing import UNDEFINED
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -272,7 +271,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return await super().write_attributes(attrs, **kwargs)
 
     async def write_attributes_raw(
-        self, attrs: list[foundation.Attribute], manufacturer=UNDEFINED
+        self,
+        attrs: list[foundation.Attribute],
+        manufacturer=None,
     ) -> list:
         """Write attributes to device without internal 'attributes' validation."""
         # intentionally skip attr cache because of the encoding from Xiaomi and
