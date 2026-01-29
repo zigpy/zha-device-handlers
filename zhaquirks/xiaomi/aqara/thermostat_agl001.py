@@ -10,7 +10,6 @@ from typing import Any, Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -81,10 +80,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         attributes: list[int | str | foundation.ZCLAttributeDef],
         allow_cache: bool = False,
         only_cache: bool = False,
-        manufacturer: int
-        | t.uint16_t
-        | UndefinedType
-        | None = UNDEFINED,  # Not needed to make tests pass
+        **kwargs,
     ):
         """Pass reading attributes to Xiaomi cluster if applicable."""
         successful_r, failed_r = {}, {}
@@ -103,7 +99,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
                 [SYSTEM_MODE],
                 allow_cache,
                 only_cache,
-                UNDEFINED,  # This makes test pass
+                **kwargs,
             )
             # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
@@ -114,14 +110,14 @@ class ThermostatCluster(CustomCluster, Thermostat):
         # read remaining attributes from thermostat cluster
         if remaining_attributes:
             remaining_result = await super().read_attributes(
-                remaining_attributes, allow_cache, only_cache, manufacturer
+                remaining_attributes, allow_cache, only_cache, **kwargs
             )
             successful_r.update(remaining_result[0])
             failed_r.update(remaining_result[1])
         return successful_r, failed_r
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+        self, attributes: dict[str | int, Any], **kwargs
     ) -> list:
         """Pass writing attributes to Xiaomi cluster if applicable."""
         result = []
@@ -140,14 +136,14 @@ class ThermostatCluster(CustomCluster, Thermostat):
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
-                {SYSTEM_MODE: min(int(system_mode_value), 1)}
+                {SYSTEM_MODE: min(int(system_mode_value), 1)}, **kwargs
             )
             # Update the thermostat cluster's cache
             self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
 
         # write remaining attributes to thermostat cluster
         if remaining_attributes:
-            result += await super().write_attributes(remaining_attributes, manufacturer)
+            result += await super().write_attributes(remaining_attributes, **kwargs)
         return result
 
 
