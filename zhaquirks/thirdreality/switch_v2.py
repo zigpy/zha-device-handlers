@@ -21,13 +21,13 @@ class ThirdRealitySwitchCluster(CustomCluster):
         on_to_off_delay: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         off_to_on_delay: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 

@@ -337,7 +337,10 @@ class MCUVersionRsp(t.Struct):
 
 
 class NoManufacturerCluster(CustomCluster):
-    """Forces the NO manufacturer id in command."""
+    """Forces no manufacturer id in command.
+
+    TODO: Remove this class once all clusters are properly migrated.
+    """
 
     async def command(
         self,
@@ -349,11 +352,11 @@ class NoManufacturerCluster(CustomCluster):
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
-        self.debug("Setting the NO manufacturer id in command: %s", command_id)
+        self.debug("Setting no manufacturer id in command: %s", command_id)
         return await super().command(
             command_id,
             *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
+            manufacturer=None,
             expect_reply=expect_reply,
             tsn=tsn,
             **kwargs,
@@ -368,9 +371,6 @@ class TuyaManufCluster(CustomCluster):
     ep_attribute = "tuya_manufacturer"
     set_time_offset: datetime.datetime | None = None
     set_time_local_offset: datetime.datetime | None = None
-
-    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     # TODO: remove, kept for backwards compatibility
     Command = Command
@@ -400,32 +400,32 @@ class TuyaManufCluster(CustomCluster):
         """Server command definitions."""
 
         set_data = foundation.ZCLCommandDef(
-            id=0x0000, schema={"param": Command}, is_manufacturer_specific=True
+            id=0x0000, schema={"param": Command}, manufacturer_code=None
         )
         mcu_version_req = foundation.ZCLCommandDef(
-            id=0x0010, schema={"param": t.uint16_t}, is_manufacturer_specific=True
+            id=0x0010, schema={"param": t.uint16_t}, manufacturer_code=None
         )
         set_time = foundation.ZCLCommandDef(
-            id=0x0024, schema={"param": TuyaTimePayload}, is_manufacturer_specific=True
+            id=0x0024, schema={"param": TuyaTimePayload}, manufacturer_code=None
         )
 
     class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
 
         get_data = foundation.ZCLCommandDef(
-            id=0x0001, schema={"param": Command}, is_manufacturer_specific=True
+            id=0x0001, schema={"param": Command}, manufacturer_code=None
         )
         set_data_response = foundation.ZCLCommandDef(
-            id=0x0002, schema={"param": Command}, is_manufacturer_specific=True
+            id=0x0002, schema={"param": Command}, manufacturer_code=None
         )
         active_status_report = foundation.ZCLCommandDef(
-            id=0x0006, schema={"param": Command}, is_manufacturer_specific=True
+            id=0x0006, schema={"param": Command}, manufacturer_code=None
         )
         mcu_version_rsp = foundation.ZCLCommandDef(
-            id=0x0011, schema={"param": MCUVersionRsp}, is_manufacturer_specific=True
+            id=0x0011, schema={"param": MCUVersionRsp}, manufacturer_code=None
         )
         set_time_request = foundation.ZCLCommandDef(
-            id=0x0024, schema={"param": t.data16}, is_manufacturer_specific=True
+            id=0x0024, schema={"param": t.data16}, manufacturer_code=None
         )
 
     def __init__(self, *args, **kwargs):
@@ -482,6 +482,18 @@ class TuyaManufCluster(CustomCluster):
         self.create_catching_task(
             super().command(TUYA_SET_TIME, payload, expect_reply=False)
         )
+
+    def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
+        """Convert attributes dict to list of Attribute records."""
+        records = []
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            record = foundation.Attribute(
+                attrid=attr_def.id, value=foundation.TypeValue()
+            )
+            record.value.value = attr_def.type(value)
+            records.append(record)
+        return records
 
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
@@ -1521,9 +1533,6 @@ class TuyaNewManufCluster(CustomCluster):
     # command for writing datapoint values to the device, some use TUYA_SEND_DATA
     mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA
 
-    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
@@ -1531,22 +1540,22 @@ class TuyaNewManufCluster(CustomCluster):
         """Server command definitions."""
 
         query_data = foundation.ZCLCommandDef(
-            id=TUYA_QUERY_DATA, schema={}, is_manufacturer_specific=True
+            id=TUYA_QUERY_DATA, schema={}, manufacturer_code=None
         )
         set_data = foundation.ZCLCommandDef(
             id=TUYA_SET_DATA,
             schema={"data": TuyaCommand},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         send_data = foundation.ZCLCommandDef(
             id=TUYA_SEND_DATA,
             schema={"data": TuyaCommand},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         set_time = foundation.ZCLCommandDef(
             id=TUYA_SET_TIME,
             schema={"time": TuyaTimePayload},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     class ClientCommandDefs(BaseCommandDefs):
@@ -1555,20 +1564,20 @@ class TuyaNewManufCluster(CustomCluster):
         get_data = foundation.ZCLCommandDef(
             id=TUYA_GET_DATA,
             schema={"data": TuyaCommand},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         set_data_response = foundation.ZCLCommandDef(
             id=TUYA_SET_DATA_RESPONSE,
             schema={"data": TuyaCommand},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         active_status_report = foundation.ZCLCommandDef(
             id=TUYA_ACTIVE_STATUS_RPT,
             schema={"data": TuyaCommand},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         set_time_request = foundation.ZCLCommandDef(
-            id=TUYA_SET_TIME, schema={"data": t.data16}, is_manufacturer_specific=True
+            id=TUYA_SET_TIME, schema={"data": t.data16}, manufacturer_code=None
         )
 
     dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}

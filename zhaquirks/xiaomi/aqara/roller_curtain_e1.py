@@ -8,7 +8,7 @@ from typing import Any, Final
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import AttributeReadEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -43,99 +43,6 @@ class AqaraRollerControl(t.enum8):
     Close = 0x00
     Open = 0x01
     Stop = 0x02
-
-
-class RedirectAttributes:
-    """Methods for redirecting attribute reads to another cluster."""
-
-    _REDIRECT_ATTRIBUTES: (
-        dict[ZCLAttributeDef, tuple[ZCLAttributeDef, Cluster, Callable | None]] | None
-    ) = None
-
-    async def read_attributes(
-        self,
-        attributes: list[int | str],
-        allow_cache: bool = False,
-        only_cache: bool = False,
-        manufacturer: int | t.uint16_t | None = None,
-    ):
-        """Redirect attribute reads to another cluster."""
-
-        successful, failed = {}, {}
-        remaining_attributes = attributes.copy()
-        redirect_attributes = self._REDIRECT_ATTRIBUTES or {}
-
-        for attr in redirect_attributes:
-            if attr.id not in attributes and attr.name not in attributes:
-                continue
-            if attr.id in attributes:
-                remaining_attributes.remove(attr.id)
-            if attr.name in attributes:
-                remaining_attributes.remove(attr.name)
-
-            target_attr, target_cluster, format_func = redirect_attributes[attr]
-            result_s, result_f = await getattr(
-                self.endpoint, target_cluster.ep_attribute
-            ).read_attributes(
-                [target_attr.id],
-                allow_cache,
-                only_cache,
-                manufacturer,
-            )
-
-            if target_attr.id in result_s:
-                value = result_s[target_attr.id]
-                successful[attr.id] = format_func(value) if format_func else value
-            if target_attr.id in result_f:
-                failed[attr.id] = result_f[target_attr.id]
-
-        if remaining_attributes:
-            result_s, result_f = await super().read_attributes(
-                remaining_attributes, allow_cache, only_cache, manufacturer
-            )
-            successful.update(result_s)
-            failed.update(result_f)
-
-        return successful, failed
-
-
-class WriteAwareUpdateAttribute:
-    """Methods providing 'is_write' arg to _update_attribute."""
-
-    async def write_attributes_raw(
-        self,
-        attrs: list[foundation.Attribute],
-        manufacturer: int | None = None,
-        **kwargs,
-    ) -> list:
-        """Provide the is_write=True flag when calling _update_attribute."""
-
-        result = await self._write_attributes(
-            attrs, manufacturer=manufacturer, **kwargs
-        )
-        if not isinstance(result[0], list):
-            return result
-
-        records = result[0]
-        if len(records) == 1 and records[0].status == foundation.Status.SUCCESS:
-            for attr_rec in attrs:
-                self._update_attribute(
-                    attr_rec.attrid, attr_rec.value.value, is_write=True
-                )
-        else:
-            failed = [rec.attrid for rec in records]
-            for attr_rec in attrs:
-                if attr_rec.attrid not in failed:
-                    self._update_attribute(
-                        attr_rec.attrid, attr_rec.value.value, is_write=True
-                    )
-
-        return result
-
-    def _update_attribute(
-        self, attrid: int, value: Any, is_write: bool | None = None
-    ) -> None:
-        super()._update_attribute(attrid, value)
 
 
 class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
@@ -188,7 +95,7 @@ class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
         )
 
 
-class AnalogOutputRollerE1(WriteAwareUpdateAttribute, CustomCluster, AnalogOutput):
+class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """AnalogOutput cluster reporting current position and used for writing target position."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -200,20 +107,21 @@ class AnalogOutputRollerE1(WriteAwareUpdateAttribute, CustomCluster, AnalogOutpu
         AnalogOutput.AttributeDefs.status_flags.id: 0x00,
     }
 
-    def _update_attribute(
-        self, attrid: int, value: Any, is_write: bool | None = None
-    ) -> None:
-        """Non-write 'present_value' updates should update the WindowCovering position."""
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
 
-        super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.present_value.id and not is_write:
+    def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
+        """Handle attribute read event."""
+        if event.attribute_id == self.AttributeDefs.present_value.id:
             self.endpoint.window_covering.update_attribute(
                 WindowCovering.AttributeDefs.current_position_lift_percentage.id,
-                t.uint8_t(100 - value),
+                t.uint8_t(100 - event.value),
             )
 
 
-class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
+class WindowCoveringRollerE1(CustomCluster, WindowCovering):
     """Window covering cluster for handling motor commands."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -221,7 +129,9 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
     }
 
     # This is used to redirect 'current_position_lift_percentage' reads to AnalogOutput 'present_value'
-    _REDIRECT_ATTRIBUTES = {
+    _REDIRECT_ATTRIBUTES: dict[
+        ZCLAttributeDef, tuple[ZCLAttributeDef, type[Cluster], Callable]
+    ] = {
         WindowCovering.AttributeDefs.current_position_lift_percentage: (
             AnalogOutput.AttributeDefs.present_value,
             AnalogOutput,
@@ -300,6 +210,49 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
+    async def read_attributes(
+        self, attributes: list[int | str | ZCLAttributeDef], *args, **kwargs
+    ):
+        """Redirect attribute reads to another cluster."""
+        success = {}
+        failure = {}
+
+        # Attribute reads reply with the attribute format as provided during the read
+        attr_defs = {self.find_attribute(attr): attr for attr in attributes}
+
+        for redirected_attr_def, (
+            target_attr,
+            target_cluster,
+            format_func,
+        ) in self._REDIRECT_ATTRIBUTES.items():
+            if redirected_attr_def not in attr_defs:
+                continue
+
+            # Skip this attribute and read it from the other cluster
+            other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
+            other_success, other_failure = await other_cluster.read_attributes(
+                [target_attr], *args, **kwargs
+            )
+
+            # Remove it from the remaining attributes
+            attr_key = attr_defs.pop(redirected_attr_def)
+            attributes.remove(attr_key)
+
+            if target_attr in other_success:
+                success[attr_key] = format_func(other_success[target_attr])
+
+            if target_attr in other_failure:
+                failure[attr_key] = other_failure[target_attr]
+
+        # Read the remaining ones directly
+        other_success, other_failure = await super().read_attributes(
+            attributes, *args, **kwargs
+        )
+        success.update(other_success)
+        failure.update(other_failure)
+
+        return success, failure
+
 
 class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     """MultistateOutput cluster used for writing commands (up_open, down_close, stop).
@@ -312,7 +265,11 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
         """Aqara attribute definition overrides."""
 
         present_value: Final = ZCLAttributeDef(
-            id=0x0055, type=t.uint16_t, access="r*w", mandatory=True
+            id=0x0055,
+            type=t.Single,
+            zcl_type=DataTypeId.uint16,
+            access="r*w",
+            mandatory=True,
         )
 
 
@@ -327,12 +284,12 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
         endpoint_id=1, cluster_id=MultistateOutput.cluster_id
     )
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
-    .replaces(AnalogOutputRollerE1)
-    .replaces(BasicCluster)
-    .replaces(MultistateOutputRollerE1)
-    .replaces(XiaomiPowerConfigurationPercent)
-    .replaces(WindowCoveringRollerE1)
-    .replaces(XiaomiAqaraRollerE1)
+    .replaces(AnalogOutputRollerE1, endpoint_id=1)
+    .replaces(BasicCluster, endpoint_id=1)
+    .replaces(MultistateOutputRollerE1, endpoint_id=1)
+    .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
+    .replaces(WindowCoveringRollerE1, endpoint_id=1)
+    .replaces(XiaomiAqaraRollerE1, endpoint_id=1)
     .enum(
         XiaomiAqaraRollerE1.AttributeDefs.speed.name,
         AqaraRollerDriverSpeed,

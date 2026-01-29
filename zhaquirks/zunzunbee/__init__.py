@@ -1,0 +1,3 @@
+"""zunzunbee devices."""
+
+ZUNZUNBEE = "zunzunbee"

@@ -8,8 +8,6 @@ import pathlib
 from types import FrameType
 from typing import Any, Self
 
-from zigpy.quirks import _DEVICE_REGISTRY
-from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -194,17 +192,12 @@ class TuyaIlluminance(IlluminanceMeasurement, TuyaLocalCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
-    def __init__(
-        self,
-        manufacturer: str | None = None,
-        model: str | None = None,
-        registry: DeviceRegistry = _DEVICE_REGISTRY,
-    ) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Init the TuyaQuirkBuilder."""
+        super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}
         self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
-        super().__init__(manufacturer, model, registry)
         # quirk_file will point to the init call above if called from this QuirkBuilder,
         # so we need to re-set it correctly
         current_frame: FrameType = inspect.currentframe()
