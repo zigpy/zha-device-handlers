@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "sys_platform != 'win32'",
@@ -786,15 +786,15 @@ wheels = [
 ]
 
 [[package]]
-name = "pyserial-asyncio"
-version = "0.6"
+name = "pyserial-asyncio-fast"
+version = "0.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyserial" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/9a/8477699dcbc1882ea51dcff4d3c25aa3f2063ed8f7d7a849fd8f610506b6/pyserial-asyncio-0.6.tar.gz", hash = "sha256:b6032923e05e9d75ec17a5af9a98429c46d2839adfaf80604d52e0faacd7a32f", size = 31322, upload-time = "2021-09-30T22:29:02.174Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/d1/6c444e0f6b886345a7993d358c6734ccc440521cdca4999601e86f111708/pyserial_asyncio_fast-0.16.tar.gz", hash = "sha256:fd52643380406739d777014b0aea0873d756b542eb62f7556567239cec007115", size = 32696, upload-time = "2025-03-27T02:35:20.624Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/24/c820cf15f87f7b164e83710c1852d4f900d9793961579e5ef64189bc0c10/pyserial_asyncio-0.6-py3-none-any.whl", hash = "sha256:de9337922619421b62b9b1a84048634b3ac520e1d690a674ed246a2af7ce1fc5", size = 7594, upload-time = "2021-09-30T22:29:00.12Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/19/f76987bad313bb2dabf21914c1ec7441a1e846f05764f9948f1ccc2640a8/pyserial_asyncio_fast-0.16-py3-none-any.whl", hash = "sha256:88939d94e341a04c0c8bc3c1ed4e874439cb5a1e21ccfb0fd7315a8e45df1687", size = 9729, upload-time = "2025-03-27T02:35:19.062Z" },
 ]
 
 [[package]]
@@ -1321,7 +1321,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "zigpy", specifier = ">=0.82.2" }]
+requires-dist = [{ name = "zigpy", specifier = ">=0.91.0" }]
 
 [package.metadata.requires-dev]
 ci = [
@@ -1347,7 +1347,7 @@ dev = [
 
 [[package]]
 name = "zigpy"
-version = "0.82.2"
+version = "0.91.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1357,11 +1357,11 @@ dependencies = [
     { name = "cryptography" },
     { name = "frozendict" },
     { name = "jsonschema" },
-    { name = "pyserial-asyncio" },
+    { name = "pyserial-asyncio-fast" },
     { name = "typing-extensions" },
     { name = "voluptuous" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/37/09fd67594bdc1015f5741904a307ee4620d3a1a628b0ebf5f68e605313e6/zigpy-0.82.2.tar.gz", hash = "sha256:0de4756bf7ba126c9d609604cd16d70b2a81eef8b808b33a3f92ac305761233d", size = 293060, upload-time = "2025-08-05T17:29:11.87Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bc/32/87d5723e840bea973522ec2dbdd4e35e1f9b3622f16c4ef91ca7487dc550/zigpy-0.91.0.tar.gz", hash = "sha256:3f43cb2d2b1dfdc2a1de185be3365bd0d9c0712999f2301a49eb4a8beca5cbab", size = 322520, upload-time = "2026-01-27T23:14:58.664Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/6e/44c9bebaa505ba945ce519c190f3074ade2a095fba6a6e417fedc84d955f/zigpy-0.82.2-py3-none-any.whl", hash = "sha256:642ae8949d3955b8a5626a2f8d114d5b718c78f3822b097f1d1cb6698b2b1210", size = 228435, upload-time = "2025-08-05T17:29:10.333Z" },
+    { url = "https://files.pythonhosted.org/packages/db/63/9d7f3a476490385a0c330f8f362014f8afa6f46515df588659b712d3de04/zigpy-0.91.0-py3-none-any.whl", hash = "sha256:dadfe7cf68edd4efaff2021b551ef040b4393abf219eff11e4f815174c529a74", size = 246454, upload-time = "2026-01-27T23:14:57.404Z" },
 ]

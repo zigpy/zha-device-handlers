@@ -60,7 +60,7 @@ class TuyaClusterData(t.Struct):
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
-    manufacturer: int
+    manufacturer: int | None
 
 
 class MoesBacklight(t.enum8):
@@ -214,10 +214,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tuya_commands: list[TuyaCommand] = []
         for dp, mapping in dp_mapping.items():
-            cmd_payload = TuyaCommand()
-            cmd_payload.status = 0
-            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-
             val = data.attr_value
             if mapping.dp_converter:
                 args = []
@@ -237,9 +233,15 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             dpd = TuyaDatapointData(dp, val)
             self.debug("raw: %s", dpd.data.raw)
-            cmd_payload.datapoints = t.List([dpd])
 
-            tuya_commands.append(cmd_payload)
+            tuya_commands.append(
+                TuyaCommand(
+                    status=0,
+                    tsn=self.endpoint.device.application.get_sequence(),
+                    datapoints=[dpd],
+                )
+            )
+
         return tuya_commands
 
     def tuya_mcu_command(self, cluster_data: TuyaClusterData):
