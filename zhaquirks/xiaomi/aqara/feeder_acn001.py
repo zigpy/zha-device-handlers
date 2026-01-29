@@ -270,10 +270,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         LOGGER.debug("OppleCluster.write_attributes: %s", attrs)
         return await super().write_attributes(attrs, **kwargs)
 
+    # XXX: This is not called anymore
     async def write_attributes_raw(
-        self,
-        attrs: list[foundation.Attribute],
-        manufacturer=None,
+        self, attrs: list[foundation.Attribute], manufacturer: int | None = None
     ) -> list:
         """Write attributes to device without internal 'attributes' validation."""
         # intentionally skip attr cache because of the encoding from Xiaomi and
