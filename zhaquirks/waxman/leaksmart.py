@@ -57,7 +57,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Ignore write_attributes."""
-        return (0,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     def update_state(self, value):
         """Update IAS state."""
