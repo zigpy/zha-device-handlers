@@ -78,8 +78,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
     async def read_attributes(
         self,
         attributes: list[int | str | foundation.ZCLAttributeDef],
-        allow_cache: bool = False,
-        only_cache: bool = False,
         **kwargs,
     ):
         """Pass reading attributes to Xiaomi cluster if applicable."""
@@ -96,10 +94,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
                 remaining_attributes.remove("system_mode")
 
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
-                [SYSTEM_MODE],
-                allow_cache,
-                only_cache,
-                **kwargs,
+                [SYSTEM_MODE], **kwargs
             )
             # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
@@ -110,7 +105,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         # read remaining attributes from thermostat cluster
         if remaining_attributes:
             remaining_result = await super().read_attributes(
-                remaining_attributes, allow_cache, only_cache, **kwargs
+                remaining_attributes, **kwargs
             )
             successful_r.update(remaining_result[0])
             failed_r.update(remaining_result[1])
