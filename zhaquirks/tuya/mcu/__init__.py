@@ -7,6 +7,7 @@ import datetime
 from typing import Any, Final
 
 import zigpy.types as t
+from zigpy.typing import UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -60,7 +61,7 @@ class TuyaClusterData(t.Struct):
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
-    manufacturer: int | None
+    manufacturer: int | UndefinedType | None
 
 
 class MoesBacklight(t.enum8):
