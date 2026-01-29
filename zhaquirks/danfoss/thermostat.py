@@ -36,6 +36,7 @@ from typing import Any
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -341,6 +342,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """There are 2 types of setpoint changes: Fast and Slow.
@@ -373,7 +375,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             await self.setpoint_command(
                 DanfossSetpointCommandEnum.User_interaction,
                 fast_setpoint_change,
-                **kwargs,
+                manufacturer=manufacturer,
             )
 
         return write_res
