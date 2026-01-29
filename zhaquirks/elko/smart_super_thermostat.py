@@ -2,25 +2,16 @@
 
 from typing import Final
 
-import zigpy.profiles.zha as zha_p
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.elko import (
     ELKO,
     ElkoElectricalMeasurementCluster,
     ElkoThermostat,
-    ElkoThermostatCluster,
     ElkoUserInterfaceCluster,
 )
 
@@ -54,10 +45,10 @@ class ActiveSensor(t.enum8):
     PROTECTION = 0x03
 
 
-class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
+class ElkoSuperTRThermostatCluster(CustomCluster, Thermostat):
     """Elko custom thermostat cluster."""
 
-    class AttributeDefs(ElkoThermostatCluster.AttributeDefs):
+    class AttributeDefs(Thermostat.AttributeDefs):
         """Attribute definitions."""
 
         unknown_1: Final = ZCLAttributeDef(id=UNKNOWN_1, type=t.uint16_t)
@@ -88,6 +79,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         """Init Elko thermostat."""
         super().__init__(*args, **kwargs)
         self.active_sensor = None
+        self.endpoint.device.thermostat_bus.add_listener(self)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override writes to thermostat attributes."""
@@ -108,9 +100,15 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
 
     def _update_attribute(self, attrid, value):
         if attrid == HEATING_ACTIVE:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "heating_active_change", value
-            )
+            if value == 0:
+                mode = self.RunningMode.Off
+                state = self.RunningState.Idle
+            else:
+                mode = self.RunningMode.Heat
+                state = self.RunningState.Heat_State_On
+
+            self._update_attribute(self.attributes_by_name["running_mode"].id, mode)
+            self._update_attribute(self.attributes_by_name["running_state"].id, state)
         elif attrid == CHILD_LOCK:
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
         elif attrid == ACTIVE_SENSOR:
@@ -135,48 +133,11 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         super()._update_attribute(attrid, value)
 
 
-class ElkoSuperTRThermostat(ElkoThermostat):
-    """Elko thermostat custom device."""
-
-    manufacturer_id_override = 0
-
-    signature = {
-        MODELS_INFO: [(ELKO, "Super TR")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    Thermostat.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    ElkoSuperTRThermostatCluster,
-                    ElkoUserInterfaceCluster,
-                    ElkoElectricalMeasurementCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(ELKO, "Super TR")
+    .device_class(ElkoThermostat)
+    .replaces(ElkoSuperTRThermostatCluster, endpoint_id=1)
+    .adds(ElkoUserInterfaceCluster, endpoint_id=1)
+    .adds(ElkoElectricalMeasurementCluster, endpoint_id=1)
+    .add_to_registry()
+)

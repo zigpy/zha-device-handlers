@@ -234,6 +234,8 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
                     for cluster_id in out_clusters:
                         ep.add_output_cluster(cluster_id)
             return raw_device
+        else:
+            assert isinstance(quirked, zigpy.quirks.BaseCustomDevice)
 
         MockAppController.devices[ieee] = quirked
 

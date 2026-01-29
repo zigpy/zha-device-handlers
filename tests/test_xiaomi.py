@@ -1593,10 +1593,10 @@ async def test_xiaomi_t1_door_sensor(
     ],
 )
 async def test_xiaomi_e1_driver_commands(
-    zigpy_device_from_quirk, command, command_id, value
+    zigpy_device_from_v2_quirk, command, command_id, value
 ):
     """Test Aqara E1 driver commands for basic movement functions using WindowCovering cluster."""
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.curtain.agl001")
 
     window_covering_cluster = device.endpoints[1].window_covering
     p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
@@ -1621,10 +1621,10 @@ async def test_xiaomi_e1_driver_commands(
     ],
 )
 async def test_xiaomi_e1_driver_light_level(
-    zigpy_device_from_quirk, device_level, converted_level
+    zigpy_device_from_v2_quirk, device_level, converted_level
 ):
     """Test Aqara E1 driver light level cluster conversion."""
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.curtain.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)

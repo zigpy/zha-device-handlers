@@ -1,19 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI SYMFONISK remote control."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-    Scenes,
-)
-from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -22,16 +9,10 @@ from zhaquirks.const import (
     COMMAND_STEP,
     COMMAND_STOP,
     COMMAND_TOGGLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LEFT,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
     PARAMS,
-    PROFILE_ID,
     RIGHT,
     ROTATED,
     SHORT_PRESS,
@@ -41,225 +22,63 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import (
     IKEA,
-    IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
     PowerConfig1CRCluster,
 )
 
+DEVICE_AUTOMATION_TRIGGERS = {
+    (SHORT_PRESS, TURN_ON): {
+        COMMAND: COMMAND_TOGGLE,
+        CLUSTER_ID: 6,
+        ENDPOINT_ID: 1,
+    },
+    (ROTATED, RIGHT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"move_mode": 0},
+    },
+    (ROTATED, LEFT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"move_mode": 1},
+    },
+    (ROTATED, STOP): {
+        COMMAND: COMMAND_STOP,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+    },
+    (DOUBLE_PRESS, TURN_ON): {
+        COMMAND: COMMAND_STEP,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"step_mode": 0},
+    },
+    (TRIPLE_PRESS, TURN_ON): {
+        COMMAND: COMMAND_STEP,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"step_mode": 1},
+    },
+}
 
-class IkeaSYMFONISK1(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
-        # device_version=1
-        # input_clusters=[0, 1, 3, 32, 4096]
-        # output_clusters=[3, 4, 6, 8, 25, 4096]>
-        MODELS_INFO: [(IKEA, "SYMFONISK Sound Controller")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_TOGGLE,
-            CLUSTER_ID: 6,
-            ENDPOINT_ID: 1,
-        },
-        (ROTATED, RIGHT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0},
-        },
-        (ROTATED, LEFT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1},
-        },
-        (ROTATED, STOP): {
-            COMMAND: COMMAND_STOP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-        },
-        (DOUBLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0},
-        },
-        (TRIPLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1},
-        },
-    }
+(
+    QuirkBuilder(IKEA, "SYMFONISK Sound Controller")
+    # TODO: identify the exact firmware versions when this fix stopped being required
+    .filter(lambda dev: WWAH_CLUSTER_ID not in dev.endpoints[1].in_clusters)
+    .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
+    .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)
+    .add_to_registry()
+)
 
 
-class IkeaSYMFONISK2(IkeaSYMFONISK1):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
-        # device_version=1
-        # input_clusters=[0, 1, 3, 32, 4096, 64636]
-        # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
-        MODELS_INFO: [(IKEA, "SYMFONISK Sound Controller")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class IkeaSYMFONISK3(IkeaSYMFONISK1):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
-        # input_clusters=[0, 1, 3, 32, 4096, 64599, 64636]
-        # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
-        MODELS_INFO: [(IKEA, "SYMFONISK Sound Controller")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    WWAH_CLUSTER_ID,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfig1CRCluster,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    WWAH_CLUSTER_ID,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(IKEA, "SYMFONISK Sound Controller")
+    # TODO: identify the exact firmware versions when this fix stopped being required
+    .filter(lambda dev: WWAH_CLUSTER_ID in dev.endpoints[1].in_clusters)
+    .replaces(PowerConfig1CRCluster, endpoint_id=1)
+    .device_automation_triggers(DEVICE_AUTOMATION_TRIGGERS)
+    .add_to_registry()
+)

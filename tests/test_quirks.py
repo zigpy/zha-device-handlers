@@ -21,7 +21,6 @@ from zigpy.zcl import foundation
 import zigpy.zdo.types
 
 import zhaquirks
-from zhaquirks import const
 import zhaquirks.bosch.motion
 import zhaquirks.centralite.cl_3310S
 from zhaquirks.const import (
@@ -408,10 +407,6 @@ def test_signature(quirk: CustomDevice) -> None:
             zhaquirks.xbee.xbee_io.XBeeSensor,
             zhaquirks.xbee.xbee3_io.XBee3Sensor,
             zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
-            zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
-            zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
-            zhaquirks.netvox.z308e3ed.Z308E3ED,
-            zhaquirks.gledopto.soposhgu10.SoposhGU10,
         )
     ],
 )
@@ -471,102 +466,6 @@ def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
         in caplog.text
     )
     assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
-
-
-def test_custom_quirk_loading(
-    zigpy_device_from_quirk: CustomDevice, tmp_path: Path
-) -> None:
-    """Make sure custom quirks take priority over regular quirks."""
-
-    device = zigpy_device_from_quirk(
-        zhaquirks.bosch.motion.ISWZPR1WP13, apply_quirk=False
-    )
-    assert type(device) is zigpy.device.Device
-
-    # Make sure our target quirk will load after we re-setup zhaquirks
-    zhaquirks.setup()
-    assert type(zq.get_device(device)) is zhaquirks.bosch.motion.ISWZPR1WP13
-
-    custom_quirks = tmp_path / "custom_zha_quirks"
-    custom_quirks.mkdir()
-
-    # Make our own custom quirk
-    (custom_quirks / "__init__.py").touch()
-
-    (custom_quirks / "bosch").mkdir()
-    (custom_quirks / "bosch/__init__.py").touch()
-    (custom_quirks / "bosch/custom_quirk.py").write_text(
-        '''
-"""Device handler for Bosch motion sensors."""
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.zcl.clusters.security import IasZone
-
-from zhaquirks import PowerConfigurationCluster
-
-from zhaquirks.bosch import BOSCH
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-
-class TestReplacementISWZPR1WP13(CustomDevice):
-    """Custom device representing Bosch motion sensors."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
-        #  output_clusters=[25]>
-        MODELS_INFO: [(BOSCH, "ISW-ZPR1-WP13")],
-        ENDPOINTS: {
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            5: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        }
-    }
-'''
-    )
-
-    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
-
-    assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
-    assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
 
 
 def test_zigpy_custom_cluster_pollution() -> None:
@@ -640,33 +539,7 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
 
 KNOWN_DUPLICATE_TRIGGERS = {
-    zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
-        [
-            # XXX: why is this constant defined in the module?
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.LEFT),
-        ],
-        [
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
-        ],
-    ],
-    zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
-        [
-            (const.LONG_RELEASE, const.BUTTON_1),
-            (const.LONG_RELEASE, const.BUTTON_2),
-        ],
-        [
-            (const.LONG_RELEASE, const.BUTTON_3),
-            (const.LONG_RELEASE, const.BUTTON_4),
-        ],
-    ],
-    zhaquirks.thirdreality.button.Button: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
+    # v2 quirks removed: aurora.aurora_dimmer, paulmann.fourbtnremote, thirdreality.button
 }
 
 
@@ -871,8 +744,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
             # also add OTA input cluster (Aqara cube):
             zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
-            # remove custom Xiaomi output cluster (E1 curtain driver):
-            zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
             # remove random AnalogInput input cluster (Aqara remote + temp sensor):
             zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01,
             zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01,
@@ -885,8 +756,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             # remove OTA input cluster (Aqara remote + motion sensor):
             zhaquirks.xiaomi.mija.motion.Motion,
             zhaquirks.xiaomi.mija.sensor_switch.MijaButton,
-            # remove a bunch of incorrect output clusters (LUMI/Keen temp sensor):
-            zhaquirks.keenhome.weather.TemperatureHumidtyPressureSensor,
             # this just exposed all ZCL clusters, remove a lot (Aqara light):
             zhaquirks.xiaomi.aqara.light_aqcn2.LightAqcn02,
             # DoorLock cluster that's actually a MultistateInput cluster
@@ -896,23 +765,8 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             # -- IKEA devices --
             # swap PM25 cluster from output to input cluster (IKEA Starkvind):
             zhaquirks.ikea.starkvind.IkeaSTARKVIND,
-            zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
-            # removes Group input cluster (IKEA remote):
-            zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
-            # remove WindowCovering input cluster (IKEA remote):
-            zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
             #
             # -- other devices --
-            # adds DoorLock cluster to output clusters (Yale door locks):
-            zhaquirks.yale.realliving.YRD210PBDB220TSLL,
-            zhaquirks.yale.realliving.YRD220240TSDB,
-            # remove LevelControl input cluster (Adurolight remote):
-            zhaquirks.aduro.adurolightncc.AdurolightNCC,
-            # add a bunch of output clusters (Zhongxing motion sensor):
-            zhaquirks.zhongxing.motion.SN10ZW,
-            # remove Tuya clusters from input and output clusters (ZLinky):
-            zhaquirks.lixee.zlinky.ZLinkyTICFWV14,
-            zhaquirks.lixee.zlinky.ZLinkyTICFWV15,
         )
     ],
 )

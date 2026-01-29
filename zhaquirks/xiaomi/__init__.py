@@ -11,8 +11,9 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.typing import AddressingMode
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -122,28 +123,15 @@ class XiaomiCustomDevice(CustomDevice):
             self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
 
-    def _find_zcl_cluster(
-        self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
-    ) -> Cluster:
-        """Find a cluster for the packet."""
 
-        # Aqara devices seem to be very lax with their ZCL header's `direction` field,
-        # we should try "flipping" it if matching doesn't work normally.
-        try:
-            return super()._find_zcl_cluster_strict(hdr, packet)
-        except KeyError:
-            _LOGGER.debug(
-                "Packet is coming in the wrong direction, swapping direction and trying again",
-            )
+class XiaomiCustomDeviceV2(CustomDeviceV2):
+    """Custom device representing xiaomi devices."""
 
-            return super()._find_zcl_cluster_strict(
-                hdr.replace(
-                    frame_control=hdr.frame_control.replace(
-                        direction=hdr.frame_control.direction.flip()
-                    )
-                ),
-                packet,
-            )
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        if not hasattr(self, BATTERY_SIZE):
+            self.battery_size = BatterySize.CR2032
+        super().__init__(*args, **kwargs)
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):

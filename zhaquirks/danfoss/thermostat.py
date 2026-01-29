@@ -34,28 +34,13 @@ import time
 from typing import Any
 
 from zigpy import types
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-    Time,
-)
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
+from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 
 DANFOSS = "Danfoss"
@@ -480,59 +465,25 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
         return result
 
 
-class DanfossThermostat(CustomDevice):
+class DanfossThermostat(CustomDeviceV2):
     """DanfossThermostat custom device."""
 
     quirk_id = DANFOSS_ALLY_THERMOSTAT
-
     manufacturer_code = 0x1246
 
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=0 input_clusters=[0, 1, 3, 10, 32, 513, 516, 1026, 2821]
-        # output_clusters=[0, 25]>
-        MODELS_INFO: [
-            (DANFOSS, "eTRV0100"),
-            (DANFOSS, "eTRV0101"),
-            (DANFOSS, "eTRV0103"),
-            (POPP, "eT093WRO"),
-            (POPP, "eT093WRG"),
-            (HIVE, "TRV001"),
-            (HIVE, "TRV003"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Time.cluster_id,
-                    PollControl.cluster_id,
-                    Thermostat.cluster_id,
-                    UserInterface.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    DanfossTimeCluster,
-                    DanfossThermostatCluster,
-                    DanfossUserInterfaceCluster,
-                    DanfossDiagnosticCluster,
-                ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
+(
+    QuirkBuilder(DANFOSS, "eTRV0100")
+    .device_class(DanfossThermostat)
+    .applies_to(DANFOSS, "eTRV0101")
+    .applies_to(DANFOSS, "eTRV0103")
+    .applies_to(POPP, "eT093WRO")
+    .applies_to(POPP, "eT093WRG")
+    .applies_to(HIVE, "TRV001")
+    .applies_to(HIVE, "TRV003")
+    .replaces(DanfossTimeCluster, endpoint_id=1)
+    .replaces(DanfossThermostatCluster, endpoint_id=1)
+    .replaces(DanfossUserInterfaceCluster, endpoint_id=1)
+    .replaces(DanfossDiagnosticCluster, endpoint_id=1)
+    .add_to_registry()
+)

@@ -3,32 +3,16 @@
 # pylint: disable=W0102
 from typing import Any, Optional, Union
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
 from zigpy.zcl.clusters.homeautomation import ApplianceEventAlerts
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (
-    CLUSTER_COMMAND,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+from zhaquirks.const import CLUSTER_COMMAND
 from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
@@ -93,103 +77,20 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
             self.endpoint.device.ias_bus.listener_event("update_state", state)
 
 
-class WAXMANleakSMARTv2(CustomDevice):
-    """Custom device representing WAXMAN leakSMART v2."""
+class WAXMANLeakSmartCustomDevice(CustomDeviceV2):
+    """Custom device for WAXMAN leakSMART with Bus support."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
         self.ias_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 32, 1026, 2818, 64514]
-        #  output_clusters=[3, 25]>
-        MODELS_INFO: [(WAXMAN, "leakSMART Water Sensor V2")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    ApplianceEventAlerts.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    WAXMANApplianceEventAlerts,
-                    EmulatedIasZone,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
-
-
-class WAXMANleakSMARTv2NOPOLL(CustomDevice):
-    """Custom WAXMAN leakSMART v2 without PollControl cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 1026, 2818, 64514]
-        #  output_clusters=[3, 25]>
-        MODELS_INFO: [(WAXMAN, "leakSMART Water Sensor V2")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    ApplianceEventAlerts.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    WAXMANApplianceEventAlerts,
-                    EmulatedIasZone,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
+(
+    QuirkBuilder(WAXMAN, "leakSMART Water Sensor V2")
+    .device_class(WAXMANLeakSmartCustomDevice)
+    .removes(MANUFACTURER_SPECIFIC_CLUSTER_ID, endpoint_id=1)
+    .replaces(WAXMANApplianceEventAlerts, endpoint_id=1)
+    .adds(EmulatedIasZone, endpoint_id=1)
+    .add_to_registry()
+)

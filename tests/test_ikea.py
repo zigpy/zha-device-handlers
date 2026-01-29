@@ -15,77 +15,6 @@ from zhaquirks.ikea.starkvind import IkeaAirpurifier
 zhaquirks.setup()
 
 
-def test_ikea_starkvind(assert_signature_matches_quirk):
-    """Test new 'STARKVIND Air purifier table' signature is matched to its quirk."""
-
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4476, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0007",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0003",
-                    "0x0004",
-                    "0x0005",
-                    "0x0202",
-                    "0xfc57",
-                    "0xfc7d",
-                ],
-                "out_clusters": ["0x0019", "0x0400", "0x042a"],
-            },
-            "242": {
-                "profile_id": 41440,
-                "device_type": "0x0061",
-                "in_clusters": [],
-                "out_clusters": ["0x0021"],
-            },
-        },
-        "manufacturer": "IKEA of Sweden",
-        "model": "STARKVIND Air purifier",
-        "class": "ikea.starkvind.IkeaSTARKVIND",
-    }
-
-    assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND, signature)
-
-
-def test_ikea_starkvind_v2(assert_signature_matches_quirk):
-    """Test new 'STARKVIND Air purifier table' signature is matched to its quirk."""
-
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4476, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0007",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0003",
-                    "0x0004",
-                    "0x0005",
-                    "0x0202",
-                    "0xfc57",
-                    "0xfc7c",
-                    "0xfc7d",
-                ],
-                "out_clusters": ["0x0019", "0x0400", "0x042a"],
-            },
-            "242": {
-                "profile_id": 41440,
-                "device_type": "0x0061",
-                "in_clusters": [],
-                "out_clusters": ["0x0021"],
-            },
-        },
-        "manufacturer": "IKEA of Sweden",
-        "model": "STARKVIND Air purifier table",
-        "class": "ikea.starkvind.IkeaSTARKVIND_v2",
-    }
-
-    assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2, signature)
-
-
 @pytest.mark.parametrize("attribute", ["fan_speed", "fan_mode"])
 @pytest.mark.parametrize(
     "value,expected",
@@ -98,11 +27,13 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
     ],
 )
 async def test_fan_speed_mode_update(
-    zigpy_device_from_quirk, attribute, value, expected
+    zigpy_device_from_v2_quirk, attribute, value, expected
 ):
     """Test reading the fan speed and mode."""
 
-    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
+    starkvind_device = zigpy_device_from_v2_quirk(
+        "IKEA of Sweden", "STARKVIND Air purifier"
+    )
     assert starkvind_device.model == "STARKVIND Air purifier"
 
     ikea_cluster = starkvind_device.endpoints[1].in_clusters[
@@ -117,10 +48,12 @@ async def test_fan_speed_mode_update(
     assert ikea_listener.attribute_updates[0] == (attr_id, expected)
 
 
-async def test_pm25_cluster_read(zigpy_device_from_quirk):
+async def test_pm25_cluster_read(zigpy_device_from_v2_quirk):
     """Test reading from PM25 cluster."""
 
-    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
+    starkvind_device = zigpy_device_from_v2_quirk(
+        "IKEA of Sweden", "STARKVIND Air purifier"
+    )
     assert starkvind_device.model == "STARKVIND Air purifier"
 
     pm25_cluster = starkvind_device.endpoints[1].in_clusters[PM25.cluster_id]
@@ -175,7 +108,7 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
 )
 async def test_double_power_config_firmware(
     caplog,
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
     firmware,
     pct_device,
     pct_correct,
@@ -184,7 +117,7 @@ async def test_double_power_config_firmware(
 ):
     """Test battery percentage remaining is doubled for old firmware."""
 
-    device = zigpy_device_from_quirk(zhaquirks.ikea.fivebtnremote.IkeaTradfriRemote1)
+    device = zigpy_device_from_v2_quirk("IKEA of Sweden", "TRADFRI remote control")
 
     basic_cluster = device.endpoints[1].basic
     ClusterListener(basic_cluster)

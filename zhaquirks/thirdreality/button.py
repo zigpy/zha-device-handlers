@@ -1,8 +1,8 @@
 """Third Reality button devices."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks import CustomCluster, PowerConfigurationCluster
 from zhaquirks.const import (
@@ -11,17 +11,10 @@ from zhaquirks.const import (
     COMMAND_HOLD,
     COMMAND_RELEASE,
     COMMAND_SINGLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
-    SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -63,50 +56,19 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class Button(CustomDevice):
-    """thirdreality button device - alternate version."""
-
-    signature = {
-        MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    MultistateInput.cluster_id,
-                    CustomPowerConfigurationCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        SKIP_CONFIGURATION: True,
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomPowerConfigurationCluster,
-                    MultistateInputCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    device_automation_triggers = {
-        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
-        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
-        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
-        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
-    }
+(
+    QuirkBuilder(THIRD_REALITY, "3RSB22BZ")
+    .skip_configuration()
+    .replaces_endpoint(endpoint_id=1, device_type=zha.DeviceType.REMOTE_CONTROL)
+    .replaces(CustomPowerConfigurationCluster, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=1)
+    .device_automation_triggers(
+        {
+            (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+            (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+            (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+            (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
+        }
+    )
+    .add_to_registry()
+)

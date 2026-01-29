@@ -7,29 +7,12 @@ Supported devices are WL4200, WL4200S and LM4110-ZB
 from typing import Final
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    AnalogInput,
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 
 
@@ -87,167 +70,18 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         )
 
 
-class SinopeTechnologiesSensor(CustomDevice):
-    """SinopeTechnologiesSensor custom device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        # device_version=0 input_clusters=[0, 1, 3, 1026, 1280, 2821, 65281]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            (SINOPE, "WL4200"),
-            (SINOPE, "WL4200S"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SinopeTechnologiesIasZoneCluster,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(SINOPE, "WL4200")
+    .applies_to(SINOPE, "WL4200S")
+    .replaces(SinopeTechnologiesIasZoneCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .add_to_registry()
+)
 
 
-class SinopeTechnologiesSensor2(CustomDevice):
-    """SinopeTechnologiesSensor2 custom device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        # device_version=0 input_clusters=[0, 1, 3, 20, 1026, 1280, 2821, 65281]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            (SINOPE, "WL4200"),
-            (SINOPE, "WL4200S"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SinopeTechnologiesIasZoneCluster,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesLevelMonitor(CustomDevice):
-    """SinopeTechnologiesLevelMonitor custom device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=0
-        # device_version=0 input_clusters=[0, 1, 3, 12, 32, 1026, 2821, 65281]
-        # output_clusters=[25]>
-        MODELS_INFO: [
-            (SINOPE, "LM4110-ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    AnalogInput.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    AnalogInput.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(SINOPE, "LM4110-ZB")
+    .replaces_endpoint(1, device_type=zha_p.DeviceType.METER_INTERFACE)
+    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .add_to_registry()
+)

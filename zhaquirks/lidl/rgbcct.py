@@ -1,29 +1,8 @@
 """Quirk for LIDL RGB+CCT bulb."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.lightlink import LightLink
-
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class LidlRGBCCTColorCluster(CustomCluster, Color):
@@ -34,66 +13,8 @@ class LidlRGBCCTColorCluster(CustomCluster, Color):
     _CONSTANT_ATTRIBUTES = {0x400A: 0b11001}
 
 
-class RGBCCTLight(CustomDevice):
-    """Lidl RGB+CCT Lighting device."""
-
-    signature = {
-        MODELS_INFO: [("_TZ3000_dbou1ap4", "TS0505A")],
-        ENDPOINTS: {
-            1: {
-                # <SimpleDescriptor endpoint=1 profile=269 device_type=268
-                # device_version=1
-                # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
-                # output_clusters=[10, 25]
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Color.cluster_id,
-                    LightLink.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # device_version=0
-                # input_clusters=[]
-                # output_clusters=[33]
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    LidlRGBCCTColorCluster,
-                    LightLink.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        }
-    }
+(
+    QuirkBuilder("_TZ3000_dbou1ap4", "TS0505A")
+    .replaces(LidlRGBCCTColorCluster, endpoint_id=1)
+    .add_to_registry()
+)
