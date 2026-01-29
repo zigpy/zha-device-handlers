@@ -368,7 +368,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             attributes[system_mode.name] = system_mode.type.Heat
 
         # Attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
-        write_res = await super().write_attributes(attributes, **kwargs)
+        write_res = await super().write_attributes(attributes, manufacturer, **kwargs)
 
         if fast_setpoint_change is not None:
             # On Danfoss a fast setpoint change is done through a command
