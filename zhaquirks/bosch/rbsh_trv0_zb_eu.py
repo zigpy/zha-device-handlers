@@ -7,6 +7,7 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
     ControlSequenceOfOperation,
@@ -189,8 +190,11 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         )
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
-    ) -> list:
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """system_mode special handling.
 
         - turn off by setting operating_mode to Pause
@@ -303,11 +307,12 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
     async def read_attributes(
         self,
-        attributes: list[int | str],
+        attributes: list[int | str | foundation.ZCLAttributeDef],
         allow_cache: bool = False,
         only_cache: bool = False,
-        manufacturer: int | t.uint16_t | None = None,
-    ):
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> Any:
         """system_mode special handling.
 
         - read and convert operating_mode to system_mode.

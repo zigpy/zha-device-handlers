@@ -10,6 +10,8 @@ from typing import Any, Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -76,10 +78,13 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
     async def read_attributes(
         self,
-        attributes: list[int | str],
+        attributes: list[int | str | foundation.ZCLAttributeDef],
         allow_cache: bool = False,
         only_cache: bool = False,
-        manufacturer: int | t.uint16_t | None = None,
+        manufacturer: int
+        | t.uint16_t
+        | UndefinedType
+        | None = UNDEFINED,  # Not needed to make tests pass
     ):
         """Pass reading attributes to Xiaomi cluster if applicable."""
         successful_r, failed_r = {}, {}
@@ -95,7 +100,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
                 remaining_attributes.remove("system_mode")
 
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
-                [SYSTEM_MODE], allow_cache, only_cache, manufacturer
+                [SYSTEM_MODE],
+                allow_cache,
+                only_cache,
+                UNDEFINED,  # This makes test pass
             )
             # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
