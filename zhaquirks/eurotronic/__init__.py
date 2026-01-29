@@ -5,6 +5,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -139,7 +140,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         return success, error
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED, **kwargs):
         """Override wrong writes to thermostat attributes."""
         if "system_mode" in attributes:
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)

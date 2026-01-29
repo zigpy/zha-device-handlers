@@ -7,6 +7,7 @@ from typing import Any, Final
 
 from zigpy import types
 from zigpy.profiles import zgp, zha
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -249,7 +250,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return FEEDER_ATTR_NAME, val
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+        self, attributes: dict[str | int, Any], manufacturer=UNDEFINED
     ) -> list:
         """Write attributes to device with internal 'attributes' validation."""
         attrs = {}
@@ -269,7 +270,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return await super().write_attributes(attrs, manufacturer)
 
     async def write_attributes_raw(
-        self, attrs: list[foundation.Attribute], manufacturer: int | None = None
+        self, attrs: list[foundation.Attribute], manufacturer=UNDEFINED
     ) -> list:
         """Write attributes to device without internal 'attributes' validation."""
         # intentionally skip attr cache because of the encoding from Xiaomi and

@@ -6,6 +6,7 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.typing import UNDEFINED
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -41,7 +42,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     }
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+        self, attributes: dict[str | int, Any], manufacturer=UNDEFINED
     ) -> list:
         """Write attributes to device with internal 'attributes' validation."""
         result = await super().write_attributes(attributes, manufacturer)

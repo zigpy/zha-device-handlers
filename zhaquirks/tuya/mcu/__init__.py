@@ -7,7 +7,7 @@ import datetime
 from typing import Any, Final
 
 import zigpy.types as t
-from zigpy.typing import UndefinedType
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -92,7 +92,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
             attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
         )
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Defer attributes writing to the set_data tuya command."""
 
         await super().write_attributes(attributes, manufacturer)

@@ -4,6 +4,7 @@ from typing import Final
 
 import zigpy.profiles.zha as zha_p
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -89,7 +90,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         super().__init__(*args, **kwargs)
         self.active_sensor = None
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Override writes to thermostat attributes."""
         if "system_mode" in attributes:
             val = attributes.get("system_mode")

@@ -11,6 +11,7 @@ from typing import Any, Final, Optional, Union
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -83,7 +84,7 @@ class ZosungIRControl(CustomCluster):
         )
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=UNDEFINED
     ):
         """Read attributes ZCL foundation command."""
         if (

@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -51,7 +52,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         """Bind cluster."""
         return await self.endpoint.device.app_cluster.bind()
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Ignore write_attributes."""
         return (0,)
 

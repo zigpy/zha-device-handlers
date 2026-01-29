@@ -11,7 +11,7 @@ from typing import Any, Final
 
 from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.typing import AddressingMode
+from zigpy.typing import UNDEFINED, AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
@@ -546,7 +546,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
         )
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)
@@ -750,7 +750,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Implement writeable attributes."""
 
         records = self._write_attr_records(attributes)
@@ -862,7 +862,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
         """Defer the keypad_lockout attribute to child_lock."""
 
         records = self._write_attr_records(attributes)

@@ -5,6 +5,7 @@ from typing import Any
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -90,7 +91,7 @@ class LegrandCableOutletCluster(CustomCluster):
     async def write_attributes(
         self,
         attributes: dict[str | int, Any],
-        manufacturer: int | None = None,
+        manufacturer=UNDEFINED,
         **kwargs,
     ) -> list:
         """Write attributes to the cluster."""

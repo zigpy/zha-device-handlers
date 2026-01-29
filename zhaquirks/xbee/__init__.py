@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -249,7 +250,7 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
 
     _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED, **kwargs):
         """Intercept present_value attribute write."""
         attr_id = None
         if ATTR_PRESENT_VALUE in attributes:

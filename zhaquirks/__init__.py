@@ -16,6 +16,7 @@ import zigpy.device
 import zigpy.endpoint
 from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.util import ListenableMixin
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -120,7 +121,7 @@ class LocalDataCluster(CustomCluster):
             records.append(record)
         return records
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(self, attributes, manufacturer=UNDEFINED, **kwargs):
         """Prevent remote writes."""
         msg = "writing attributes for LocalDataCluster"
         self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")

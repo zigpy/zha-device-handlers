@@ -7,6 +7,7 @@ from typing import Any
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -83,7 +84,7 @@ class IkeaAirpurifier(CustomCluster):
         super()._update_attribute(attrid, value)
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+        self, attributes: dict[str | int, Any], manufacturer=UNDEFINED
     ) -> list:
         """Override wrong writes to thermostat attributes."""
         if "fan_mode" in attributes:
@@ -117,7 +118,7 @@ class PM25Cluster(CustomCluster, PM25):
             super()._update_attribute(attrid, value)
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=UNDEFINED
     ):
         """Read attributes ZCL foundation command."""
         if "measured_value" in attributes:
