@@ -8,7 +8,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.general import Groups, Identify, MultistateInput, OnOff, Scenes
-from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -172,25 +172,21 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         startup_on_off: Final = ZCLAttributeDef(
             id=0x0517,
             type=StartupOnOff,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_operation_mode: Final = ZCLAttributeDef(
             id=0x0269,
             type=ButtonOperationMode,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_relay: Final = ZCLAttributeDef(
             id=0x0235,
             type=ButtonRelay,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_layout: Final = ZCLAttributeDef(
             id=0x0300,
             type=ButtonLayout,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -198,13 +194,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         theme: Final = ZCLAttributeDef(
             id=0x0215,
             type=Theme,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         show_mode: Final = ZCLAttributeDef(
             id=0x026A,
             type=ShowMode,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         display_brightness: Final = ZCLAttributeDef(
@@ -222,7 +216,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         screensaver_style: Final = ZCLAttributeDef(
             id=0x0214,
             type=ScreensaverStyle,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         # weather_data and color_button are complex byte arrays with device-specific
@@ -242,7 +235,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         proximity_sensitivity: Final = ZCLAttributeDef(
             id=0x0268,
             type=ProximitySensitivity,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -250,7 +242,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         elder_mode: Final = ZCLAttributeDef(
             id=0x0217,
             type=ElderMode,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         double_tap_override: Final = ZCLAttributeDef(
@@ -276,7 +267,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         weather_condition: Final = ZCLAttributeDef(
             id=0xFFF0,  # Virtual ID (not a real device attribute)
             type=WeatherCondition,
-            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         weather_temperature: Final = ZCLAttributeDef(
@@ -285,8 +275,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-    # Class-level sequence counter for weather packets
-    _weather_seq: int = 0
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster with instance-level weather sequence counter."""
+        super().__init__(*args, **kwargs)
+        self._weather_seq = 0
 
     def _get_ieee_bytes(self) -> bytes:
         """Extract last 6 bytes of device IEEE address for weather packets."""
@@ -310,8 +302,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         - Payload: 4 bytes
         """
         # Increment and wrap sequence counter
-        OppleCluster._weather_seq = (OppleCluster._weather_seq + 1) & 0xFF
-        seq = OppleCluster._weather_seq
+        self._weather_seq = (self._weather_seq + 1) & 0xFF
+        seq = self._weather_seq
         checksum = (0x8E - seq) & 0xFF
 
         ieee_bytes = self._get_ieee_bytes()
@@ -384,7 +376,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                     condition_code = value
                 else:
                     # Try to look up by name
-                    condition_code = WeatherCondition[value].value
+                    try:
+                        condition_code = WeatherCondition[value].value
+                    except KeyError as exc:
+                        raise ValueError(
+                            f"Invalid weather condition: {value!r}"
+                        ) from exc
 
                 # Build and send condition packet
                 condition_packet = self._build_condition_packet(condition_code)
@@ -428,26 +425,26 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .replaces(MultistateInputCluster)
     .replaces(MeteringCluster)
     .replaces(ElectricalMeasurementCluster)
-    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id)
+    .replaces(OppleCluster)
     # Endpoint 2: Secondary switch
     .adds(Identify, endpoint_id=2)
     .adds(Groups, endpoint_id=2)
     .adds(Scenes, endpoint_id=2)
     .adds(OnOff, endpoint_id=2)
     .replaces(MultistateInputCluster, endpoint_id=2)
-    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=2)
+    .replaces(OppleCluster, endpoint_id=2)
     # Endpoint 3: Button 1 (decoupled mode)
     .adds(Identify, endpoint_id=3)
     .adds(Groups, endpoint_id=3)
     .adds(Scenes, endpoint_id=3)
     .replaces(MultistateInputCluster, endpoint_id=3)
-    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=3)
+    .replaces(OppleCluster, endpoint_id=3)
     # Endpoint 4: Button 2 (decoupled mode)
     .adds(Identify, endpoint_id=4)
     .adds(Groups, endpoint_id=4)
     .adds(Scenes, endpoint_id=4)
     .replaces(MultistateInputCluster, endpoint_id=4)
-    .replaces(OppleCluster, cluster_id=OppleCluster.cluster_id, endpoint_id=4)
+    .replaces(OppleCluster, endpoint_id=4)
     # Endpoint 21: Analog input
     .replaces(AnalogInputCluster, endpoint_id=21)
     # Device automation triggers for single press events
