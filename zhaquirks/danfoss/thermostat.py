@@ -36,7 +36,7 @@ from typing import Any
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.typing import UNDEFINED
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -338,7 +338,11 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             id=0x4051, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """There are 2 types of setpoint changes: Fast and Slow.
 
         Fast is used for immediate changes; this is done using a command (setpoint_command).
@@ -362,16 +366,14 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             attributes[system_mode.name] = system_mode.type.Heat
 
         # Attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
-        write_res = await super().write_attributes(
-            attributes, manufacturer=manufacturer
-        )
+        write_res = await super().write_attributes(attributes, **kwargs)
 
         if fast_setpoint_change is not None:
             # On Danfoss a fast setpoint change is done through a command
             await self.setpoint_command(
                 DanfossSetpointCommandEnum.User_interaction,
                 fast_setpoint_change,
-                manufacturer=manufacturer,
+                **kwargs,
             )
 
         return write_res

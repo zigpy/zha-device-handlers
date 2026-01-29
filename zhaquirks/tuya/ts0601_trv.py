@@ -2,11 +2,10 @@
 
 import datetime
 import logging
-from typing import Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.typing import UNDEFINED
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogOutput,
@@ -959,7 +958,11 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         )
         self._update_attribute(self.attributes_by_name["on_off"].id, value[2])
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)
@@ -1005,7 +1008,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
 
         if has_change:
             return await self.endpoint.tuya_manufacturer.write_attributes(
-                {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
+                {MOES_WINDOW_DETECT_ATTR: data}, **kwargs
             )
 
         return [
@@ -1429,7 +1432,11 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         """Return dict with attribute and value for thermostat."""
         return None
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
         records = self._write_attr_records(attributes)
         if not records:
@@ -1447,7 +1454,7 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
             if attr_val is not None:
                 # global self in case when different endpoint has to exist
                 return await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                    attr_val, manufacturer=manufacturer
+                    attr_val, **kwargs
                 )
 
         return [
@@ -1563,7 +1570,11 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
         """Get current temperature offset value."""
         return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Modify value before passing it to the set_data tuya command."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
@@ -1609,7 +1620,11 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
         """Get temperature value when opened window detected."""
         return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Modify value before passing it to the set_data tuya command."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):

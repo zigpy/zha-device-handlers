@@ -538,12 +538,14 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         self._update_attribute(tuya_cmd, zvalue)
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
         return await super().read_attributes(
-            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+            attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
     async def write_attributes(self, attributes, manufacturer=UNDEFINED):
@@ -750,7 +752,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Implement writeable attributes."""
 
         records = self._write_attr_records(attributes)
@@ -788,7 +794,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
-            manufacturer_attrs, manufacturer=manufacturer
+            manufacturer_attrs, **kwargs
         )
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
@@ -862,7 +868,11 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer the keypad_lockout attribute to child_lock."""
 
         records = self._write_attr_records(attributes)
@@ -901,7 +911,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
             ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
-            manufacturer_attrs, manufacturer=manufacturer
+            manufacturer_attrs, **kwargs
         )
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]

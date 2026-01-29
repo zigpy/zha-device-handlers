@@ -211,8 +211,10 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
     async def read_attributes(
-        self, attributes: list[int | str | ZCLAttributeDef], *args, **kwargs
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Redirect attribute reads to another cluster."""
         success = {}
         failure = {}
@@ -231,7 +233,7 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
             # Skip this attribute and read it from the other cluster
             other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
             other_success, other_failure = await other_cluster.read_attributes(
-                [target_attr], *args, **kwargs
+                [target_attr], **kwargs
             )
 
             # Remove it from the remaining attributes
@@ -246,7 +248,7 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
 
         # Read the remaining ones directly
         other_success, other_failure = await super().read_attributes(
-            attributes, *args, **kwargs
+            attributes, **kwargs
         )
         success.update(other_success)
         failure.update(other_failure)

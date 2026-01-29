@@ -250,8 +250,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return FEEDER_ATTR_NAME, val
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer=UNDEFINED
-    ) -> list:
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Write attributes to device with internal 'attributes' validation."""
         attrs = {}
         for attr, value in attributes.items():
@@ -267,7 +269,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             else:
                 attrs[attr] = value
         LOGGER.debug("OppleCluster.write_attributes: %s", attrs)
-        return await super().write_attributes(attrs, manufacturer)
+        return await super().write_attributes(attrs, **kwargs)
 
     async def write_attributes_raw(
         self, attrs: list[foundation.Attribute], manufacturer=UNDEFINED

@@ -7,7 +7,7 @@ from typing import Any
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.typing import UNDEFINED
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -84,17 +84,17 @@ class IkeaAirpurifier(CustomCluster):
         super()._update_attribute(attrid, value)
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer=UNDEFINED
-    ) -> list:
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Override wrong writes to thermostat attributes."""
         if "fan_mode" in attributes:
             fan_mode = attributes.get("fan_mode")
             if fan_mode and fan_mode > 1 and fan_mode < 11:
                 fan_mode = fan_mode * 5
-                return await super().write_attributes(
-                    {"fan_mode": fan_mode}, manufacturer
-                )
-        return await super().write_attributes(attributes, manufacturer)
+                return await super().write_attributes({"fan_mode": fan_mode}, **kwargs)
+        return await super().write_attributes(attributes, **kwargs)
 
 
 class PM25Cluster(CustomCluster, PM25):
@@ -118,27 +118,19 @@ class PM25Cluster(CustomCluster, PM25):
             super()._update_attribute(attrid, value)
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=UNDEFINED
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Read attributes ZCL foundation command."""
         if "measured_value" in attributes:
             return (
                 await self.endpoint.device.endpoints[1]
                 .in_clusters[64637]
-                .read_attributes(
-                    ["air_quality_25pm"],
-                    allow_cache=allow_cache,
-                    only_cache=only_cache,
-                    manufacturer=manufacturer,
-                )
+                .read_attributes(["air_quality_25pm"], **kwargs)
             )
         else:
-            return await super().read_attributes(
-                attributes,
-                allow_cache=allow_cache,
-                only_cache=only_cache,
-                manufacturer=manufacturer,
-            )
+            return await super().read_attributes(attributes, **kwargs)
 
 
 class IkeaSTARKVIND(CustomDevice):
