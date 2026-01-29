@@ -270,6 +270,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         LOGGER.debug("OppleCluster.write_attributes: %s", attrs)
         # Skip attr cache because of the encoding from Xiaomi and
         # the attributes are reported back by the device
+        kwargs.pop("update_cache", None)  # To not break when this is passed already
         return await super().write_attributes(attrs, update_cache=False, **kwargs)
 
 

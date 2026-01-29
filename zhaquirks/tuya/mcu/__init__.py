@@ -90,6 +90,9 @@ class TuyaAttributesCluster(TuyaLocalCluster):
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
         self.debug("read_attributes --> attrs: %s", attributes)
+        # Pop from kwargs to avoid duplicate keyword argument errors
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
