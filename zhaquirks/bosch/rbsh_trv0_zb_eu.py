@@ -306,8 +306,6 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     async def read_attributes(
         self,
         attributes: list[int | str | foundation.ZCLAttributeDef],
-        allow_cache: bool = False,
-        only_cache: bool = False,
         **kwargs,
     ) -> Any:
         """system_mode special handling.
@@ -333,8 +331,6 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
             successful_r, failed_r = await super().read_attributes(
                 [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name],
-                allow_cache,
-                only_cache,
                 **kwargs,
             )
             if operating_mode_attr.name in successful_r:
@@ -361,7 +357,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         """Read remaining attributes from thermostat cluster."""
         if remaining_attributes:
             remaining_result = await super().read_attributes(
-                remaining_attributes, allow_cache, only_cache, **kwargs
+                remaining_attributes, **kwargs
             )
 
             successful_r.update(remaining_result[0])
