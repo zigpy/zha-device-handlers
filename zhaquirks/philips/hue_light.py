@@ -226,3 +226,25 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1746330P7")
+    .friendly_name(
+        model="Hue Appear Outdoor wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX004")
+    .friendly_name(
+        model="Hue Gradient lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
