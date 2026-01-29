@@ -11,7 +11,7 @@ from typing import Any, Final
 
 from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.typing import UNDEFINED, AddressingMode
+from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
@@ -548,7 +548,12 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)

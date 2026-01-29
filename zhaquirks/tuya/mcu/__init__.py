@@ -94,10 +94,15 @@ class TuyaAttributesCluster(TuyaLocalCluster):
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    async def write_attributes(self, attributes, manufacturer=UNDEFINED):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
-        await super().write_attributes(attributes, manufacturer)
+        await super().write_attributes(attributes, manufacturer=manufacturer, **kwargs)
 
         records = self._write_attr_records(attributes)
 
