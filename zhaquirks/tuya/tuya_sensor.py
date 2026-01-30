@@ -333,3 +333,87 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+# Zigbee Soil Moisture Sensor with Air Humidity and Temperature
+(
+    TuyaQuirkBuilder("_TZE200_npj9bug3", "TS0601")
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_humidity(dp_id=109)
+    .tuya_number(
+        dp_id=102,
+        attribute_name="soil_moisture_calibration",
+        type=t.int8s,
+        min_value=-50,
+        max_value=50,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="soil_moisture_calibration",
+        fallback_name="Soil Moisture Calibration",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="air_humidity_calibration",
+        type=t.int8s,
+        min_value=-50,
+        max_value=50,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="air_humidity_calibration",
+        fallback_name="Air Humidity Calibration",
+    )
+
+    .tuya_number(
+        dp_id=112,
+        attribute_name="air_humidity_report_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1004,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="air_humidity_report_interval",
+        fallback_name="Air Humidity Report Interval",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="soil_moisture_report_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1004,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="soil_moisture_report_interval",
+        fallback_name="Soil Moisture Report Interval",
+    )
+
+    .tuya_number(
+        dp_id=110,
+        attribute_name="water_shortage_value",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="water_shortage_value",
+        fallback_name="Water Shortage Value",
+    )
+	.tuya_enum(
+        dp_id=106,
+        attribute_name="water_shortage",
+        enum_class=TuyaHumidityAlarm,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="water_shortage",
+        fallback_name="Water Shortage",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
