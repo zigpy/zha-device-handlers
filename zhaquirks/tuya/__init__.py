@@ -337,7 +337,7 @@ class MCUVersionRsp(t.Struct):
 
 
 class NoManufacturerCluster(CustomCluster):
-    """Originally used to force no manufacturer id in command. Now useless.
+    """Originally used to force no manufacturer id in command. Now without function.
 
     Instead, specify manufacturer_code=None in the command definitions instead.
     TODO: Remove this class once all clusters are properly migrated.
