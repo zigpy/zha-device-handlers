@@ -989,7 +989,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.1,
         translation_key="max_temperature",
-        fallback_name="Maximum temperature",
+        fallback_name="Max temperature",
     )
     .tuya_number(
         dp_id=10,
@@ -1001,7 +1001,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.1,
         translation_key="min_temperature",
-        fallback_name="Minimum temperature",
+        fallback_name="Min temperature",
     )
     .tuya_switch(
         dp_id=14,
