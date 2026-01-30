@@ -137,7 +137,7 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class EventableCluster(CustomCluster):

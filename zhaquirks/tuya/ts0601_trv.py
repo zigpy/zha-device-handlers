@@ -1587,7 +1587,7 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
             await self.endpoint.tuya_manufacturer.write_attributes(
                 {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, **kwargs
             )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
@@ -1638,7 +1638,7 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
             await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
                 {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
             )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class SiterwellGS361_Type1(TuyaThermostat):
