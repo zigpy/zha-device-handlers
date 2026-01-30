@@ -31,6 +31,11 @@ class TuyaNousTempHumiAlarm(t.enum8):
     UpperAlarm = 0x01
     Canceled = 0x02
 
+class TuyaHumidityAlarm(t.enum8):
+    """Tuya humidity alarm enum."""
+
+    OK = 0x00
+    Alarm = 0x01
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
