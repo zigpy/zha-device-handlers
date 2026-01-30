@@ -365,7 +365,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="air_humidity_calibration",
         fallback_name="Air Humidity Calibration",
     )
-
     .tuya_number(
         dp_id=112,
         attribute_name="air_humidity_report_interval",
@@ -392,7 +391,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="soil_moisture_report_interval",
         fallback_name="Soil Moisture Report Interval",
     )
-
     .tuya_number(
         dp_id=110,
         attribute_name="water_shortage_value",
@@ -405,7 +403,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="water_shortage_value",
         fallback_name="Water Shortage Value",
     )
-	.tuya_enum(
+    .tuya_enum(
         dp_id=106,
         attribute_name="water_shortage",
         enum_class=TuyaHumidityAlarm,
