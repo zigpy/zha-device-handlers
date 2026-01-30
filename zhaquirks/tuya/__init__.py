@@ -337,30 +337,11 @@ class MCUVersionRsp(t.Struct):
 
 
 class NoManufacturerCluster(CustomCluster):
-    """Forces no manufacturer id in command.
+    """Originally used to force no manufacturer id in command. Now useless.
 
+    Instead, specify manufacturer_code=None in the command definitions instead.
     TODO: Remove this class once all clusters are properly migrated.
     """
-
-    async def command(
-        self,
-        command_id: foundation.GeneralCommand | int | t.uint8_t,
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        expect_reply: bool = True,
-        tsn: int | t.uint8_t | None = None,
-        **kwargs: Any,
-    ):
-        """Override the default Cluster command."""
-        self.debug("Setting no manufacturer id in command: %s", command_id)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=None,
-            expect_reply=expect_reply,
-            tsn=tsn,
-            **kwargs,
-        )
 
 
 class TuyaManufCluster(CustomCluster):
