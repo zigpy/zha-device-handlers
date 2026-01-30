@@ -43,27 +43,27 @@ class IkeaAirpurifier(CustomCluster):
         """Cluster attributes."""
 
         filter_run_time = ZCLAttributeDef(
-            id=0x0000, type=t.uint32_t, manufacturer_code=0x1002
+            id=0x0000, type=t.uint32_t, manufacturer_code=0x117C
         )
         replace_filter = ZCLAttributeDef(
-            id=0x0001, type=t.uint8_t, manufacturer_code=0x1002
+            id=0x0001, type=t.uint8_t, manufacturer_code=0x117C
         )
         filter_life_time = ZCLAttributeDef(
-            id=0x0002, type=t.uint32_t, manufacturer_code=0x1002
+            id=0x0002, type=t.uint32_t, manufacturer_code=0x117C
         )
-        disable_led = ZCLAttributeDef(id=0x0003, type=t.Bool, manufacturer_code=0x1002)
+        disable_led = ZCLAttributeDef(id=0x0003, type=t.Bool, manufacturer_code=0x117C)
         air_quality_25pm = ZCLAttributeDef(
-            id=0x0004, type=t.uint16_t, manufacturer_code=0x1002
+            id=0x0004, type=t.uint16_t, manufacturer_code=0x117C
         )
-        child_lock = ZCLAttributeDef(id=0x0005, type=t.Bool, manufacturer_code=0x1002)
+        child_lock = ZCLAttributeDef(id=0x0005, type=t.Bool, manufacturer_code=0x117C)
         fan_mode = ZCLAttributeDef(
-            id=0x0006, type=t.uint8_t, manufacturer_code=0x1002
+            id=0x0006, type=t.uint8_t, manufacturer_code=0x117C
         )  # fan mode (Off, Auto, fanspeed 10 - 50)  read/write
         fan_speed = ZCLAttributeDef(
-            id=0x0007, type=t.uint8_t, manufacturer_code=0x1002
+            id=0x0007, type=t.uint8_t, manufacturer_code=0x117C
         )  # current fan speed (only fan speed 10-50)
         device_run_time = ZCLAttributeDef(
-            id=0x0008, type=t.uint32_t, manufacturer_code=0x1002
+            id=0x0008, type=t.uint32_t, manufacturer_code=0x117C
         )
 
     def __init__(self, *args, **kwargs):
