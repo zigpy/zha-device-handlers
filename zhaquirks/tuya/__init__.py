@@ -1060,8 +1060,6 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         0x01: DOUBLE_PRESS,
         0x02: LONG_PRESS,
     }
-    name = "TS004X_cluster"
-    ep_attribute = "TS004X_cluster"
 
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
