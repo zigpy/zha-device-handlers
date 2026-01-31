@@ -29,7 +29,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
-    TuyaSmartRemoteOnOffCluster,
+    TuyaOnOffCluster,
     TuyaZBE000Cluster,
 )
 
@@ -61,7 +61,7 @@ class TuyaSmartRemote0041TO(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
@@ -103,7 +103,7 @@ class TuyaSmartRemote0041TI(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                     Time.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -182,7 +182,7 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
         },
@@ -233,7 +233,7 @@ class TuyaSmartRemote0041_var04(CustomDevice):
                     OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
@@ -287,7 +287,7 @@ class TuyaSmartRemote0041PollControl(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                     Ota.cluster_id,
                 ],
             },

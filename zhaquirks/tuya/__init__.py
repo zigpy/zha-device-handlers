@@ -1035,20 +1035,8 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
-    """Tuya Zigbee On Off cluster with extra attributes."""
-
-    class AttributeDefs(OnOff.AttributeDefs):
-        """Attribute definitions."""
-
-        child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
-        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
-        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
-        switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
-
-
-class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
-    """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
+class TuyaOnOffCluster(OnOff, EventableCluster):
+    """TuyaOnOffCluster: fire events corresponding to press type."""
 
     rotate_type = {
         0x00: RIGHT,
@@ -1064,6 +1052,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
 
+        child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
         backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
         power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)

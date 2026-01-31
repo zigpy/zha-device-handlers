@@ -23,12 +23,12 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     EnchantedDevice,
+    TuyaOnOffCluster,
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
-    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -80,7 +80,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     Time.cluster_id,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
@@ -150,7 +150,7 @@ class Tuya_2G_Wall_Switch_Metering(EnchantedDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
@@ -165,7 +165,7 @@ class Tuya_2G_Wall_Switch_Metering(EnchantedDevice):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],

@@ -20,7 +20,7 @@ from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     EnchantedDevice,
     TuyaNewManufCluster,
-    TuyaZBOnOffAttributeCluster,
+    TuyaOnOffCluster,
 )
 import zhaquirks.tuya.tuya_valve
 
@@ -55,7 +55,7 @@ class TuyaTestSpellDevice(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaNewManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [],

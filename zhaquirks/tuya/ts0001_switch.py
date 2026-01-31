@@ -5,7 +5,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster, TuyaZBOnOffAttributeCluster
+from zhaquirks.tuya import TuyaOnOffCluster, TuyaZBExternalSwitchTypeCluster
 
 
 class CustomElectricalMeasurement(ElectricalMeasurement, CustomCluster):
@@ -46,7 +46,7 @@ class CustomMetering(Metering, CustomCluster):
     .applies_to("_TZ3000_jsfzkftc", "TS0001")
     .replaces(CustomMetering)
     .replaces(CustomElectricalMeasurement)
-    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaOnOffCluster)
     .replaces(TuyaZBExternalSwitchTypeCluster)
     .add_to_registry()
 )

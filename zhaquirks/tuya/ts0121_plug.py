@@ -26,11 +26,11 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import (
     TuyaNewManufCluster,
+    TuyaOnOffCluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
-    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -70,7 +70,7 @@ class Plug(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                 ],
@@ -122,7 +122,7 @@ class TS0121B(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaZBE000Cluster,
@@ -187,7 +187,7 @@ class TS0121_Var03(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaOnOffCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaNewManufCluster,

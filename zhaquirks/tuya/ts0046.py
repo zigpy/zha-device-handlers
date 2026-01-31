@@ -25,7 +25,7 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNoBindPowerConfigurationCluster,
-    TuyaSmartRemoteOnOffCluster,
+    TuyaOnOffCluster,
     TuyaZBE000Cluster,
 )
 
@@ -116,7 +116,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
@@ -126,7 +126,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
             3: {
@@ -134,7 +134,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
             4: {
@@ -142,7 +142,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
             5: {
@@ -150,7 +150,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
             6: {
@@ -158,7 +158,7 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    TuyaOnOffCluster,
                 ],
             },
         },
