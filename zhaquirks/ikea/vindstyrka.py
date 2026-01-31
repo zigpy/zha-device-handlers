@@ -11,9 +11,8 @@ from zigpy.quirks.v2 import (
 )
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
+from zigpy.zcl.clusters.measurement import PM25  # Import the PM2.5 cluster
 from zhaquirks.ikea import IKEA
-
 
 class VOCIndex(CustomCluster):
     """IKEA VOC index cluster."""
@@ -34,7 +33,9 @@ class VOCIndex(CustomCluster):
         max_measured_value: Final = ZCLAttributeDef(
             id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
-
+class HPM25(CustomCluster, PM25):
+    """PM2.5 cluster forced to override the IKEA default."""
+    cluster_id = 0x042A
 
 (
     QuirkBuilder(IKEA, "VINDSTYRKA")
@@ -49,6 +50,18 @@ class VOCIndex(CustomCluster):
         ),
         translation_key="voc_index",
         fallback_name="VOC index",
+    )
+    .sensor(
+        attribute_name="measured_value",
+        cluster_id=HPM25.cluster_id,
+        device_class=SensorDeviceClass.PM25,
+        state_class=SensorStateClass.MEASUREMENT,
+        reporting_config=ReportingConfig(
+            min_interval=5,      # 5 seconds
+            max_interval=45,     # 45 seconds max
+            reportable_change=1
+        ),
+        fallback_name="Particulate Matter 2.5",
     )
     .add_to_registry()
 )
