@@ -63,8 +63,8 @@ class HPM25(CustomCluster, PM25):
         device_class=SensorDeviceClass.PM25,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
-            min_interval=5,  # 5 seconds
-            max_interval=45,  # 45 seconds max
+            min_interval=20,  # 20 seconds
+            max_interval=120,  # 120 seconds max
             reportable_change=1,
         ),
         fallback_name="Particulate Matter 2.5",
