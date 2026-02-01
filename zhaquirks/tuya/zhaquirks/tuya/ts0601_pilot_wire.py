@@ -1,6 +1,8 @@
 """Tuya TS0601 pilot wire heating controller quirk for ZHA."""
+
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 import zigpy.types as t
+
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
