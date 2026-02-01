@@ -982,7 +982,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_number(
         dp_id=9,
         attribute_name="max_temperature",
-        type=t.int16s,
+        type=t.int32s,
         min_value=20,
         max_value=35,
         step=1,
@@ -994,7 +994,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_number(
         dp_id=10,
         attribute_name="min_temperature",
-        type=t.int16s,
+        type=t.int32s,
         min_value=5,
         max_value=15,
         step=1,
@@ -1018,7 +1018,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_number(
         dp_id=21,
         attribute_name="holiday_temperature",
-        type=t.int16s,
+        type=t.int32s,
         min_value=5,
         max_value=35,
         step=0.5,
@@ -1041,7 +1041,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=10,
         step=0.5,
         unit=UnitOfTemperature.CELSIUS,
-        multiplier=0.5,
+        multiplier=0.1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
@@ -1064,7 +1064,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_number(
         dp_id=105,
         attribute_name="eco_temperature",
-        type=t.int16s,
+        type=t.int32s,
         min_value=5,
         max_value=35,
         step=0.5,
