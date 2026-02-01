@@ -1092,7 +1092,13 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
-    .adds(TuyaThermostatV2)
+    .adds(
+        TuyaThermostatV2,
+        constant_attributes={
+            Thermostat.AttributeDefs.abs_max_heat_setpoint_limit: 3500,
+        },
+    )
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )
