@@ -375,7 +375,16 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 (
     TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")  # Arteco ZS-304Z
-    .tuya_soil_moisture(dp_id=3)
+    .tuya_sensor(
+        dp_id=3,
+        type=t.uint16_t,
+        attribute_name="soil_moisture",
+        unit=PERCENTAGE,
+        device_class=SensorDeviceClass.MOISTURE,
+        entity_type=EntityType.STANDARD,
+        translation_key="soil_moisture",
+        fallback_name="Soil moisture",
+    )
     .tuya_temperature(dp_id=5, scale=10)
     # DP 14 is Battery State (Enum: 0=Low, 1=Middle, 2=High).
     # We convert it to Zigbee percentage (0-200) for standard integration.

@@ -215,8 +215,8 @@ async def test_handle_get_data_soil_sensor(zigpy_device_from_v2_quirk):
 
     # Verify attributes
 
-    # Soil Moisture: DP 3 * 100 = 50 * 100 = 5000
-    assert ep.soil_moisture.get("measured_value") == 5000
+    # Soil Moisture: DP 3 -> 50
+    assert ep.tuya_manufacturer.get("soil_moisture") == 50
 
     # Temperature: DP 5 * 10 = 250 * 10 = 2500
     assert ep.temperature.get("measured_value") == 2500
