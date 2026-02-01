@@ -1015,6 +1015,14 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         device_class=BinarySensorDeviceClass.WINDOW,
         fallback_name="Window open",
     )
+    # Button to mark window as closed (manually reset the window open state as it reports open since the device was turned on)
+    .write_attr_button(
+        attribute_name="window_open",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_value=0,
+        translation_key="mark_window_as_closed",
+        fallback_name="Mark window as closed",
+    )
     .tuya_number(
         dp_id=21,
         attribute_name="holiday_temperature",
