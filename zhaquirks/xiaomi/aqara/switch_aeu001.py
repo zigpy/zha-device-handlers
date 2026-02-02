@@ -539,17 +539,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.AttributeDefs.startup_on_off.name,
         StartupOnOff,
         OppleCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="startup_on_off_1",
-        fallback_name="Switch 1 power-on behavior",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.startup_on_off.name,
-        StartupOnOff,
-        OppleCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="startup_on_off_2",
-        fallback_name="Switch 2 power-on behavior",
+        translation_key="startup_on_off",
+        fallback_name="Power-on behavior",
     )
     .enum(
         OppleCluster.AttributeDefs.button_operation_mode.name,
