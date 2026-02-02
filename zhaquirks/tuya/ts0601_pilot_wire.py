@@ -35,24 +35,6 @@ class OperatingMode(t.enum8):
         entity_platform=EntityPlatform.SELECT,
     )
     .tuya_temperature(dp_id=16, scale=10)
-"""
-    .tuya_sensor(
-        dp_id=8,
-        attribute_name="unknown_dp8",
-        type=t.uint8_t,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="unknown_dp8",
-        fallback_name="Unknown DP8 (41-42)",
-    )
-    .tuya_sensor(
-        dp_id=126,
-        attribute_name="unknown_dp126",
-        type=t.uint8_t,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="unknown_dp126",
-        fallback_name="Unknown DP126",
-    )
-"""
     .skip_configuration()
     .add_to_registry()
 )
