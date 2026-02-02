@@ -1,22 +1,17 @@
-"""Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor with custom firmware."""
+"""Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+# https://github.com/devbis/z03mmc
+# defined by 1.1.0 firmware (0x11003001)
+# see README.md in the repo for more info
+
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.types import Bool, int16s, uint16_t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import UserInterface
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
@@ -30,7 +25,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             id=0x0010,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
@@ -45,7 +40,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             id=0x0010,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
@@ -66,7 +61,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0010,
             type=Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # display. 0 - display is off, 1 - display is on
@@ -74,7 +69,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0011,
             type=Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort temperature min: A value in 0.01ºC to set minimum comfort temperature for happy face
@@ -82,7 +77,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0102,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort temperature max: A value in 0.01ºC to set maximum comfort temperature for happy face
@@ -90,7 +85,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0103,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort humidity min: A value in 0.01%RH to set minimum comfort humidity for happy face
@@ -98,7 +93,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0104,
             type=uint16_t,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort humidity max: A value in 0.01%RH to set maximum comfort humidity for happy face
@@ -106,48 +101,110 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0105,
             type=uint16_t,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
-# https://github.com/devbis/z03mmc
-# defined by 1.1.0 firmware (0x11003001)
-# see README.md in the repo for more info
-class DevbisLYWSD03MMC(CustomDevice):
-    """LYWSD03MMC sensor with devbis custom firmware."""
-
-    signature = {
-        MODELS_INFO: [("Xiaomi", "LYWSD03MMC")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    RelativeHumidity.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    UserInterface.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    RelativeHumidityCustom,
-                    TemperatureMeasurementCustom,
-                    UserInterfaceCustom,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-        },
-    }
+(
+    QuirkBuilder("Xiaomi", "LYWSD03MMC")
+    .replaces(TemperatureMeasurementCustom, endpoint_id=1)
+    .replaces(RelativeHumidityCustom, endpoint_id=1)
+    .replaces(UserInterfaceCustom, endpoint_id=1)
+    .number(
+        attribute_name=TemperatureMeasurementCustom.AttributeDefs.temperature_calibration.name,
+        cluster_id=TemperatureMeasurementCustom.cluster_id,
+        endpoint_id=1,
+        min_value=-99,
+        max_value=99,
+        step=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        mode="box",
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .number(
+        attribute_name=RelativeHumidityCustom.AttributeDefs.humidity_calibration.name,
+        cluster_id=RelativeHumidityCustom.cluster_id,
+        endpoint_id=1,
+        min_value=-99,
+        max_value=99,
+        step=0.01,
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        mode="box",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
+    .number(
+        attribute_name=UserInterfaceCustom.AttributeDefs.comfort_temperature_min.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        min_value=-99,
+        max_value=99,
+        step=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        mode="box",
+        translation_key="comfort_temperature_min",
+        fallback_name="Comfort temperature min",
+    )
+    .number(
+        attribute_name=UserInterfaceCustom.AttributeDefs.comfort_temperature_max.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        min_value=-99,
+        max_value=99,
+        step=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        mode="box",
+        translation_key="comfort_temperature_max",
+        fallback_name="Comfort temperature max",
+    )
+    .number(
+        attribute_name=UserInterfaceCustom.AttributeDefs.comfort_humidity_min.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        min_value=0,
+        max_value=99,
+        step=1,
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        mode="box",
+        translation_key="comfort_humidity_min",
+        fallback_name="Comfort humidity min",
+    )
+    .number(
+        attribute_name=UserInterfaceCustom.AttributeDefs.comfort_humidity_max.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        min_value=0,
+        max_value=99,
+        step=1,
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        mode="box",
+        translation_key="comfort_humidity_max",
+        fallback_name="Comfort humidity max",
+    )
+    .switch(
+        attribute_name=UserInterfaceCustom.AttributeDefs.display.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        off_value=False,
+        on_value=True,
+        translation_key="display_enabled",
+        fallback_name="Display enabled",
+    )
+    .switch(
+        attribute_name=UserInterfaceCustom.AttributeDefs.smiley.name,
+        cluster_id=UserInterfaceCustom.cluster_id,
+        endpoint_id=1,
+        off_value=False,
+        on_value=True,
+        translation_key="show_smiley",
+        fallback_name="Show smiley",
+    )
+    .add_to_registry()
+)

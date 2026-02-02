@@ -19,6 +19,7 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
@@ -248,7 +249,11 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
 
     _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Intercept present_value attribute write."""
         attr_id = None
         if ATTR_PRESENT_VALUE in attributes:
@@ -263,7 +268,7 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
             at_command = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
             await self._endpoint.device.remote_at(at_command, PIN_ANALOG_OUTPUT)
 
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        return await super().write_attributes(attributes, **kwargs)
 
     async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Intercept present_value attribute read."""
@@ -278,16 +283,23 @@ class XBeeRemoteATRequest(LocalDataCluster):
     """Remote AT Command Request Cluster."""
 
     cluster_id = XBEE_AT_REQUEST_CLUSTER
-    client_commands = {}
-    server_commands = {
-        k: foundation.ZCLCommandDef(
-            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
-            schema={"param?": v[1]} if v[1] else {},
-            is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        pass
+
+    # Dynamically create command definitions
+    for index, (command_id, command_type) in enumerate(AT_COMMANDS.items()):
+        setattr(
+            ServerCommandDefs,
+            command_id.replace("%", "Percent").replace("+", "Plus"),
+            foundation.ZCLCommandDef(
+                id=index + 1,
+                schema={"param?": command_type} if command_type is not None else {},
+                is_manufacturer_specific=True,
+            ),
         )
-        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-    }
 
     _seq: int = 1
 
@@ -363,7 +375,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 XBEE_AT_REQUEST_CLUSTER,
                 XBEE_AT_ENDPOINT,
                 XBEE_AT_ENDPOINT,
-                self._endpoint.device.application.get_sequence(),
+                self._endpoint.device.get_sequence(),
                 data,
                 expect_reply=False,
             )
@@ -393,14 +405,14 @@ class XBeeRemoteATRequest(LocalDataCluster):
         else:
             value = await self.remote_at_command(command)
 
-        tsn = self._endpoint.device.application.get_sequence()
+        tsn = self._endpoint.device.get_sequence()
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
         self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, {"response": value})
 
         if command == "IS" and value:
-            tsn = self._endpoint.device.application.get_sequence()
+            tsn = self._endpoint.device.get_sequence()
             hdr = foundation.ZCLHeader.cluster(tsn, SAMPLE_DATA_CMD)
             self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].in_clusters[
                 XBEE_IO_CLUSTER
@@ -462,10 +474,11 @@ class XBeeRemoteATResponse(LocalDataCluster):
         else:
             super().handle_cluster_request(hdr, args)
 
-    client_commands = {}
-    server_commands = {
-        AT_RESPONSE_CMD: foundation.ZCLCommandDef(
-            name="remote_at_response",
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        remote_at_response = foundation.ZCLCommandDef(
+            id=AT_RESPONSE_CMD,
             schema={
                 "frame_id": t.uint8_t,
                 "cmd": ATCommand,
@@ -473,9 +486,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
                 "value": Bytes,
             },
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
-    }
 
 
 class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
@@ -521,39 +532,43 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         else:
             super().handle_cluster_request(hdr, args)
 
-    client_commands = {}
-    server_commands = {
-        SAMPLE_DATA_CMD: foundation.ZCLCommandDef(
-            name="io_sample",
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        io_sample = foundation.ZCLCommandDef(
+            id=SAMPLE_DATA_CMD,
             schema={"io_sample": IOSample},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
-    }
 
 
 # pylint: disable=too-many-ancestors
 class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
     """A cluster with cluster_id which is allowed to send events."""
 
-    attributes = {}
-    client_commands = {}
-    server_commands = {
-        k: foundation.ZCLCommandDef(
-            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
-            + "_command_response",
-            schema={"response?": v[1]} if v[1] else {},
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        receive_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
+            schema={"data": str},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
-        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-    }
-    server_commands[SERIAL_DATA_CMD] = foundation.ZCLCommandDef(
-        name="receive_data",
-        schema={"data": str},
-        is_manufacturer_specific=True,
-        direction=foundation.Direction.Client_to_Server,
-    )
+
+    # Dynamically create command definitions
+    for index, (command_id, command_type) in enumerate(AT_COMMANDS.items()):
+        setattr(
+            ServerCommandDefs,
+            (
+                command_id.replace("%", "Percent").replace("+", "Plus").lower()
+                + "_command_response"
+            ),
+            foundation.ZCLCommandDef(
+                id=index + 1,
+                schema={"response?": command_type} if command_type is not None else {},
+                is_manufacturer_specific=True,
+            ),
+        )
 
 
 class XBeeSerialDataCluster(LocalDataCluster):
@@ -572,24 +587,20 @@ class XBeeSerialDataCluster(LocalDataCluster):
         tsn=None,
     ):
         """Handle outgoing data."""
-        data = BinaryString(data).serialize()
+        status, _ = await self._endpoint.device.application.request(
+            self._endpoint.device,
+            XBEE_PROFILE_ID,
+            XBEE_DATA_CLUSTER,
+            XBEE_DATA_ENDPOINT,
+            XBEE_DATA_ENDPOINT,
+            self._endpoint.device.get_sequence(),
+            BinaryString(data).serialize(),
+            expect_reply=False,
+        )
+
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
-        ].schema(
-            command_id=0x00,
-            status=(
-                await self._endpoint.device.application.request(
-                    self._endpoint.device,
-                    XBEE_PROFILE_ID,
-                    XBEE_DATA_CLUSTER,
-                    XBEE_DATA_ENDPOINT,
-                    XBEE_DATA_ENDPOINT,
-                    self._endpoint.device.application.get_sequence(),
-                    data,
-                    expect_reply=False,
-                )
-            )[0],
-        )
+        ].schema(command_id=0x00, status=status)
 
     def handle_cluster_request(
         self,
@@ -606,23 +617,23 @@ class XBeeSerialDataCluster(LocalDataCluster):
         else:
             super().handle_cluster_request(hdr, args)
 
-    attributes = {}
-    client_commands = {
-        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
-            name="send_data",
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        send_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Server_to_Client,
         )
-    }
-    server_commands = {
-        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
-            name="receive_data",
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        receive_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
-    }
 
 
 class XBeeCommon(CustomDevice):
@@ -636,15 +647,21 @@ class XBeeCommon(CustomDevice):
             .remote_at_command(command, *args, apply_changes=True, **kwargs)
         )
 
-    def deserialize(self, endpoint_id, cluster_id, data):
+    def custom_profile_packet_received(self, packet: t.ZigbeePacket) -> None:
         """Deserialize."""
-        if endpoint_id == 0:
-            return super().deserialize(endpoint_id, cluster_id, data)
+        if packet.profile_id != XBEE_PROFILE_ID:
+            return
+
+        # TODO: get rid of this roundabout fake ZCL cluster stuff
         tsn = self._application.get_sequence()
-        command_id = 0x0000
+        command_id = 0x00
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
-        data = hdr.serialize() + data
-        return super().deserialize(endpoint_id, cluster_id, data)
+        data = hdr.serialize() + packet.data.serialize()
+
+        zcl_cluster = self.endpoints[packet.src_ep].in_clusters[packet.cluster_id]
+        _, args = zcl_cluster.deserialize(data)
+
+        zcl_cluster.handle_message(hdr, args)
 
     replacement = {
         ENDPOINTS: {

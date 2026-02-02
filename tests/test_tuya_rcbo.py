@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-import zigpy.types as t
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -39,7 +38,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -56,7 +55,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -73,7 +72,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -257,7 +256,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
         ),
         (
             [],
-            b'\x01\x04\x00\x00\x06n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
+            b'\x01\x04\x00\x00\x05n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
             "electrical_measurement",
             {
                 "rms_extreme_over_voltage": 2850,
@@ -326,7 +325,7 @@ async def test_write_attr_rcbo(
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
