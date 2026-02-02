@@ -129,28 +129,35 @@ class SonoffCluster(CustomCluster):
 
     async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Handle writing individual relay attributes by updating the mask."""
-        # Check if any individual relay attributes are being written
         mask_attr = self.AttributeDefs.detach_relay_mask.id
         mask = self.get(mask_attr, 0)
         new_attributes = attributes.copy()
+        mask_changed = False
 
         relay_attr_defs = [
             (self.AttributeDefs.relay_1_detached, SonoffDetachedRelayMask.Relay1),
             (self.AttributeDefs.relay_2_detached, SonoffDetachedRelayMask.Relay2),
             (self.AttributeDefs.relay_3_detached, SonoffDetachedRelayMask.Relay3),
         ]
-        for attrid, value in attributes.items():
+        for attrid, value in list(attributes.items()):
             for attr_def, bit_mask in relay_attr_defs:
                 if attrid in (attr_def.id, attr_def.name):
-                    new_attributes.pop(attrid)
+                    new_attributes.pop(attrid, None)
                     if value:
                         mask |= bit_mask
                     else:
                         mask &= ~bit_mask
                     new_attributes[mask_attr] = mask
+                    mask_changed = True
                     break
 
-        return await super().write_attributes(new_attributes, manufacturer, **kwargs)
+        result = await super().write_attributes(new_attributes, manufacturer, **kwargs)
+
+        # Update local cache after successful write to keep HA state in sync
+        if mask_changed:
+            self._update_attribute(mask_attr, mask)
+
+        return result
 
 
 # Base quirk for 1-channel device
