@@ -31,7 +31,7 @@ class OperatingMode(t.enum8):
         attribute_name="operating_mode",
         enum_class=OperatingMode,
         translation_key="operating_mode",
-        fallback_name="Operating Mode",
+        fallback_name="Operating mode",
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SELECT,
     )
