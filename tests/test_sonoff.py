@@ -65,7 +65,7 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk, quirk):
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="ZBM5-2C-80/86",
-        cluster_ids={1: {0xFC11: "in"}},
+        cluster_ids={1: {0xFC11: "in", 0x0006: "in"}, 2: {0x0006: "in"}},
     )
 
     sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
@@ -101,7 +101,11 @@ async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk, quirk):
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="ZBM5-3C-80/86",
-        cluster_ids={1: {0xFC11: "in"}},
+        cluster_ids={
+            1: {0xFC11: "in", 0x0006: "in"},
+            2: {0x0006: "in"},
+            3: {0x0006: "in"},
+        },
     )
 
     sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
