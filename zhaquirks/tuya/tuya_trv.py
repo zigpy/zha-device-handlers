@@ -654,7 +654,6 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
 # Moes TRV602Z and TRV801Z
 (
     TuyaQuirkBuilder("_TZE204_qyr2m29i", "TS0601")
-    .applies_to("_TZE204_ltwbm23f", "TS0601")
     .tuya_dp(
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
@@ -838,6 +837,78 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         enum_class=TuyaHysteresis,
         translation_key="hysteresis_mode",
         fallback_name="Hysteresis mode",
+    )
+    .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# TRV _TZE204_ltwbm23f - Fixed running_state logic and temperature calibration
+(
+    TuyaQuirkBuilder("_TZE204_ltwbm23f", "TS0601")
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: (
+            Thermostat.SystemMode.Heat if x == 1 else Thermostat.SystemMode.Off
+        ),
+        dp_converter=lambda x: 1 if x == Thermostat.SystemMode.Heat else 0,
+    )
+    .tuya_dp(
+        dp_id=4,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,  # Device sends degrees, ZCL wants decidegrees
+        dp_converter=lambda x: x // 10,  # ZCL sends decidegrees, device wants degrees
+    )
+    .tuya_dp(
+        dp_id=5,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,  # Device sends degrees, ZCL wants decidegrees
+    )
+    .tuya_dp(
+        dp_id=102,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        # FIX: Inverted logic - device sends True=idle, False=heating
+        converter=lambda x: (RunningState.Idle if x else RunningState.Heat_State_On),
+    )
+    .tuya_sensor(
+        dp_id=6,
+        attribute_name="battery_percentage_remaining",
+        type=t.uint8_t,
+        divisor=2,  # Device reports 0-200, ZCL wants 0-100
+        fallback_name="Battery",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="local_temperature_calibration",
+        type=t.int16s,
+        # FIX: Range -60 to 60 decidegrees for -6.0°C to +6.0°C in 0.1°C increments
+        min_value=-60,
+        max_value=60,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_switch(
+        dp_id=7,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_sensor(
+        dp_id=101,
+        attribute_name="valve_position",
+        type=t.uint8_t,
+        unit=PERCENTAGE,
+        translation_key="valve_position",
+        fallback_name="Valve position",
     )
     .adds(TuyaThermostatV2)
     .skip_configuration()
