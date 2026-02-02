@@ -1,11 +1,13 @@
 """Compatibility shim for misplaced Tuya TS0601 pilot wire quirk module.
 
 This file resides under a duplicated ``zhaquirks/tuya/zhaquirks/tuya`` path.
-The canonical implementation lives in ``zhaquirks/tuya/ts0601_pilot_wire.py``.
+The canonical implementation should live in ``zhaquirks/tuya/ts0601_pilot_wire.py``.
 
 It is kept only to preserve compatibility for any imports that might
-accidentally reference the nested module path. All symbols are re-exported
-from the canonical module.
+accidentally reference the nested module path. This stub intentionally
+does not import the canonical module to avoid ImportError when that file
+is not present.
 """
 
-from zhaquirks.tuya.ts0601_pilot_wire import *  # noqa: F401,F403
+# No-op stub: importing this module has no side effects.
+pass
