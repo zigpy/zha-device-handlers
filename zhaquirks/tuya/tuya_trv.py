@@ -876,13 +876,9 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         # FIX: Inverted logic - device sends True=idle, False=heating
         converter=lambda x: (RunningState.Idle if x else RunningState.Heat_State_On),
     )
-    .tuya_sensor(
-        dp_id=6,
-        attribute_name="battery_percentage_remaining",
-        type=t.uint8_t,
-        divisor=2,  # Device reports 0-200, ZCL wants 0-100
-        fallback_name="Battery",
-    )
+    .tuya_battery(
+        dp_id=6
+    )  # Device reports 0-100, default scale=2 gives 0-200% (ZCL format)
     .tuya_number(
         dp_id=104,
         attribute_name="local_temperature_calibration",
