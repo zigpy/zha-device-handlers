@@ -25,7 +25,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             id=0x0010,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
@@ -40,7 +40,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             id=0x0010,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
@@ -61,7 +61,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0010,
             type=Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # display. 0 - display is off, 1 - display is on
@@ -69,7 +69,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0011,
             type=Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort temperature min: A value in 0.01ºC to set minimum comfort temperature for happy face
@@ -77,7 +77,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0102,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort temperature max: A value in 0.01ºC to set maximum comfort temperature for happy face
@@ -85,7 +85,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0103,
             type=int16s,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort humidity min: A value in 0.01%RH to set minimum comfort humidity for happy face
@@ -93,7 +93,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0104,
             type=uint16_t,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
         # comfort humidity max: A value in 0.01%RH to set maximum comfort humidity for happy face
@@ -101,7 +101,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0105,
             type=uint16_t,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1141,
         )
 
 
