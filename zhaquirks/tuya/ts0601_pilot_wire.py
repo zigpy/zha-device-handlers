@@ -40,7 +40,7 @@ class OperatingMode(t.enum8):
         attribute_name="pilot_wire_mode",
         enum_class=PilotWireMode,
         translation_key="pilot_wire_mode",
-        fallback_name="Pilot Wire Mode",
+        fallback_name="Pilot wire mode",
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SELECT,
     )
