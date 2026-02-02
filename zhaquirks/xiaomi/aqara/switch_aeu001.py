@@ -8,7 +8,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.general import Groups, Identify, MultistateInput, OnOff, Scenes
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -172,21 +172,25 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         startup_on_off: Final = ZCLAttributeDef(
             id=0x0517,
             type=StartupOnOff,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_operation_mode: Final = ZCLAttributeDef(
             id=0x0269,
             type=ButtonOperationMode,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_relay: Final = ZCLAttributeDef(
             id=0x0235,
             type=ButtonRelay,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         button_layout: Final = ZCLAttributeDef(
             id=0x0300,
             type=ButtonLayout,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -194,11 +198,13 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         theme: Final = ZCLAttributeDef(
             id=0x0215,
             type=Theme,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         show_mode: Final = ZCLAttributeDef(
             id=0x026A,
             type=ShowMode,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         display_brightness: Final = ZCLAttributeDef(
@@ -216,6 +222,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         screensaver_style: Final = ZCLAttributeDef(
             id=0x0214,
             type=ScreensaverStyle,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         # weather_data and color_button are complex byte arrays with device-specific
@@ -235,6 +242,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         proximity_sensitivity: Final = ZCLAttributeDef(
             id=0x0268,
             type=ProximitySensitivity,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -242,6 +250,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         elder_mode: Final = ZCLAttributeDef(
             id=0x0217,
             type=ElderMode,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         double_tap_override: Final = ZCLAttributeDef(
@@ -267,6 +276,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         weather_condition: Final = ZCLAttributeDef(
             id=0xFFF0,  # Virtual ID (not a real device attribute)
             type=WeatherCondition,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         weather_temperature: Final = ZCLAttributeDef(
