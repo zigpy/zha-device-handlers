@@ -1,19 +1,29 @@
 """Tuya TS0601 pilot wire heating control quirk for ZHA - Complete."""
+
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 import zigpy.types as t
+
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+
+
 class PilotWireMode(t.enum8):
     """Pilot wire mode enum."""
+
     Comfort = 0x00
     Comfort_Minus_1 = 0x01
     Comfort_Minus_2 = 0x02
     Eco = 0x03
     Anti_Frost = 0x04
     Off = 0x05
+
+
 class OperatingMode(t.enum8):
     """Operating mode enum."""
+
     Auto = 0x00
     Manual = 0x01
+
+
 (
     TuyaQuirkBuilder("_TZE204_3q3maeoo", "TS0601")
     .tuya_enum(
