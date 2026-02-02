@@ -3,13 +3,14 @@
 import asyncio
 import logging
 import math
+from typing import Any
 from unittest import mock
 
 import pytest
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -35,9 +36,11 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
+    ATTR_ID,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MANUFACTURER,
@@ -46,7 +49,9 @@ from zhaquirks.const import (
     OFF,
     ON,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    VALUE,
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
 )
@@ -78,7 +83,8 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
-    OppleCluster,
+    FeedingMode,
+    FeedingSource,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -651,12 +657,12 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
         ("child_lock", 0, b"\x00\x02\x01\x04\x16\x00U\x01\x00"),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Manual,
+            FeedingMode.Manual,
             b"\x00\x02\x01\x04\x18\x00U\x01\x00",
         ),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Schedule,
+            FeedingMode.Schedule,
             b"\x00\x02\x01\x04\x18\x00U\x01\x01",
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
@@ -670,7 +676,11 @@ async def test_aqara_feeder_write_attrs(
 
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_cluster._write_attributes = mock.AsyncMock()
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
 
     expected_attr_def = opple_cluster.find_attribute(0xFFF1)
     expected = foundation.Attribute(0xFFF1, foundation.TypeValue())
@@ -679,12 +689,12 @@ async def test_aqara_feeder_write_attrs(
     ).type_id
     expected.value.value = expected_attr_def.type(expected_bytes)
 
-    await opple_cluster.write_attributes({attribute: value}, manufacturer=0x115F)
+    await opple_cluster.write_attributes({attribute: value})
 
-    opple_cluster._write_attributes.assert_awaited_with(
-        [expected],
-        manufacturer=0x115F,
-    )
+    assert len(opple_cluster._write_attributes.mock_calls) == 1
+    call_args = opple_cluster._write_attributes.mock_calls[0]
+    assert call_args.args[0] == [expected]
+    assert call_args.kwargs["manufacturer"] == 0x115F
 
 
 @pytest.mark.parametrize(
@@ -703,9 +713,7 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(
-                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
-                ),
+                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -757,9 +765,7 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(
-                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
-                ),
+                mock.call(ZCL_FEEDING_MODE, FeedingMode.Schedule, mock.ANY),
                 mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
@@ -802,15 +808,17 @@ async def test_aqara_feeder_write_attrs(
 async def test_aqara_feeder_attr_reports(
     zigpy_device_from_quirk, bytes_received, call_count, calls
 ):
-    """Test Aqara C1 pet feeder attr writing."""
-
-    class Listener:
-        attribute_updated = mock.MagicMock()
-
+    """Test Aqara C1 pet feeder attr reports and parsing."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    cluster_listener = Listener()
-    opple_cluster.add_listener(cluster_listener)
+
+    attribute_updates: list[tuple[int, Any]] = []
+
+    def on_attribute_event(event: AttributeReportedEvent | AttributeUpdatedEvent):
+        attribute_updates.append((event.attribute_id, event.value))
+
+    opple_cluster.on_event(AttributeReportedEvent.event_type, on_attribute_event)
+    opple_cluster.on_event(AttributeUpdatedEvent.event_type, on_attribute_event)
 
     device.packet_received(
         t.ZigbeePacket(
@@ -822,9 +830,14 @@ async def test_aqara_feeder_attr_reports(
         )
     )
 
-    assert cluster_listener.attribute_updated.call_count == call_count
-    for call in calls:
-        assert call in cluster_listener.attribute_updated.mock_calls
+    # Check the expected attribute updates occurred
+    expected_updates = [(c.args[0], c.args[1]) for c in calls]
+    actual_updates = attribute_updates[-call_count:]
+    assert len(actual_updates) == call_count
+    for attr_id, value in expected_updates:
+        assert any(u[0] == attr_id and u[1] == value for u in actual_updates), (
+            f"Expected ({attr_id}, {value}) in {actual_updates}"
+        )
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
@@ -930,8 +943,6 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
 
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_listener = ClusterListener(opple_cluster)
-
     thermostat_cluster = device.endpoints[1].thermostat
     thermostat_listener = ClusterListener(thermostat_cluster)
 
@@ -990,16 +1001,15 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
+        # check that attributes are correctly mapped and updated on ZCL thermostat cluster
         assert (
-            thermostat_listener.attribute_updates[0]
-            == (
-                Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.SystemMode.Heat,
-            )
-        )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.SystemMode.Heat,
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # check that other attribute reads are not redirected
         await thermostat_cluster.read_attributes([attr_no_redirect])
@@ -1009,6 +1019,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # test writes:
 
@@ -1020,12 +1031,11 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         # check that system_mode writes were directed to the Opple cluster
         assert len(thermostat_cluster._write_attributes.mock_calls) == 0
         assert len(opple_cluster._write_attributes.mock_calls) == 1
-        assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
-
-        assert thermostat_listener.attribute_updates[2] == (
+        # check ZCL attribute is updated on thermostat cluster
+        assert (
             Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
-        )  # check ZCL attribute is in correct mode
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._write_attributes.reset_mock()
         opple_cluster._write_attributes.reset_mock()
@@ -2062,16 +2072,31 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay)
     mi_cluster = device.endpoints[endpoint].multistate_input
     mi_listener = ClusterListener(mi_cluster)
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
 
     buttons = {1: BUTTON_1, 2: BUTTON_2}
 
+    # Button press triggers zha_send_event
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
-    assert len(mi_listener.attribute_updates) == 1
-    assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == buttons[endpoint]
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            buttons[endpoint],
+            {
+                PRESS_TYPE: buttons[endpoint],
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: 1,
+                ENDPOINT_ID: endpoint,
+            },
+        )
+    ]
 
+    # Regular attribute updates still work
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
     assert len(mi_listener.attribute_updates) == 2
+    # First update is the legacy cache update for fake attribute 0 (button state)
+    assert mi_listener.attribute_updates[0] == (0, buttons[endpoint])
+    # Second update is the state_text attribute
     assert (
         mi_listener.attribute_updates[1][0]
         == MultistateInput.AttributeDefs.state_text.id

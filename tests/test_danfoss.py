@@ -108,20 +108,16 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
     with patch_danfoss_trv_write:
         # data should be written to trv, but reach thermostat
-        success, fail = await danfoss_thermostat_cluster.write_attributes(
+        await danfoss_thermostat_cluster.write_attributes(
             {"external_open_window_detected": False}
         )
-        assert success
-        assert not fail
         assert not danfoss_thermostat_cluster._attr_cache[0x4003]
 
         with patch_danfoss_setpoint:
             # data should be received from danfoss_trv
-            success, fail = await danfoss_thermostat_cluster.write_attributes(
+            await danfoss_thermostat_cluster.write_attributes(
                 {"occupied_heating_setpoint": 6}
             )
-            assert success
-            assert not fail
             assert danfoss_thermostat_cluster._attr_cache[0x0012] == 6
             assert operation == 0x01
             assert setting == 6
@@ -130,11 +126,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
                 5  # min_limit is present normally
             )
 
-            success, fail = await danfoss_thermostat_cluster.write_attributes(
-                {"system_mode": 0x00}
-            )
-            assert success
-            assert not fail
+            await danfoss_thermostat_cluster.write_attributes({"system_mode": 0x00})
             assert danfoss_thermostat_cluster._attr_cache[0x001C] == 0x04
 
             # setpoint to min_limit, when system_mode to off

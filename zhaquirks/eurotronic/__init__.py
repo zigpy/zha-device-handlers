@@ -1,7 +1,7 @@
 """Eurotronic devices."""
 
 import logging
-from typing import Final
+from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -139,7 +139,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         return success, error
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Override wrong writes to thermostat attributes."""
         if "system_mode" in attributes:
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
@@ -147,11 +151,13 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
             if attributes.get("system_mode") == 0x0:
                 return await super().write_attributes(
-                    {"host_flags": host_flags | SET_OFF_MODE_FLAG}, MANUFACTURER
+                    {"host_flags": host_flags | SET_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
                 )
             if attributes.get("system_mode") == 0x4:
                 return await super().write_attributes(
-                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG}, MANUFACTURER
+                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
                 )
 
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        return await super().write_attributes(attributes, **kwargs)
