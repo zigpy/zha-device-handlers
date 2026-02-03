@@ -1726,7 +1726,7 @@ async def test_xiaomi_e1_roller_commands_1(
     with (
         patch_window_covering_read,
         patch_analog_read,
-        patch_multistate_write,
+        patch_multistate_write as mock_writes,
     ):
         # test command
         await window_covering_cluster.command(command)
@@ -1757,6 +1757,16 @@ async def test_xiaomi_e1_roller_commands_1(
         else:
             # confirm the command did not read the current position
             assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+        assert len(mock_writes.mock_calls) == 1
+        assert mock_writes.mock_calls[0].args[0] == [
+            foundation.Attribute(
+                attrid=MultistateOutput.AttributeDefs.present_value.id,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint16, value=value
+                ),
+            )
+        ]
 
 
 @pytest.mark.parametrize(
