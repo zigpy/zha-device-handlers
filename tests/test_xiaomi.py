@@ -10,7 +10,13 @@ import pytest
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    ClusterType,
+    foundation,
+)
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -1668,7 +1674,11 @@ async def test_xiaomi_e1_roller_commands_1(
     zigpy_device_from_v2_quirk, command, value, read_current_position
 ):
     """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.curtain.acn002",
+        cluster_ids={1: {MultistateOutput.cluster_id: ClusterType.Server}},
+    )
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
