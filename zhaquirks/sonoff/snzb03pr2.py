@@ -7,47 +7,29 @@ import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-SONOFF_PRIVATE_CLUSTER_ID = 0xFC11
-SONOFF_ILLUM_COMP_ATTR_ID = 0x2018
-PIROCCUPIEDTOUNOCCUPIEDDELAY_ATTR_ID = 0x0010
-
 
 class SonoffPrivateCluster(CustomCluster):
     """Manufacturer-specific cluster for Sonoff SNZB-03PR2."""
 
-    cluster_id = SONOFF_PRIVATE_CLUSTER_ID
+    cluster_id = 0xFC11
     ep_attribute = "sonoff_private"
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for the Sonoff private cluster."""
 
         illumination_compensation = ZCLAttributeDef(
-            id=SONOFF_ILLUM_COMP_ATTR_ID,
+            id=0x2018,
             type=t.int16s,
             access="rw",
-            is_manufacturer_specific=True,
-        )
-
-
-class SonoffOccupancyCluster(CustomCluster, OccupancySensing):
-    """Occupancy sensing cluster for SNZB-03PR2."""
-
-    class AttributeDefs(OccupancySensing.AttributeDefs):
-        """Custom occupancy-related attributes for SNZB-03PR2."""
-
-        pir_occupied_to_unoccupied_delay = ZCLAttributeDef(
-            id=PIROCCUPIEDTOUNOCCUPIEDDELAY_ATTR_ID,
-            type=t.uint16_t,
-            access="rw",
+            manufacturer_code=None,
         )
 
 
 (
     QuirkBuilder("SONOFF", "SNZB-03PR2")
     .replaces(SonoffPrivateCluster)
-    .replaces(SonoffOccupancyCluster)
     .number(
-        PIROCCUPIEDTOUNOCCUPIEDDELAY_ATTR_ID,
+        OccupancySensing.AttributeDefs.pir_o_to_u_delay.id,
         OccupancySensing.cluster_id,
         min_value=5,
         max_value=60,
