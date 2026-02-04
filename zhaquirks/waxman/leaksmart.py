@@ -51,9 +51,13 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         """Bind cluster."""
         return await self.endpoint.device.app_cluster.bind()
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Ignore write_attributes."""
-        return (0,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     def update_state(self, value):
         """Update IAS state."""

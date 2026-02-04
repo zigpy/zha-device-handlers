@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 
@@ -16,12 +15,30 @@ class FrientMetering(CustomCluster, Metering):
     # fix device issue
     _CONSTANT_ATTRIBUTES = {Metering.AttributeDefs.divisor.id: 1000}
 
-    def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
-        """Update attribute with value."""
-        # prevent attribute_updated events for divisor
-        if attrid == Metering.AttributeDefs.divisor.id:
-            return
-        super()._update_attribute(attrid, value)
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: t.Addressing.Group
+        | t.Addressing.IEEE
+        | t.Addressing.NWK
+        | None = None,
+    ) -> None:
+        """Filter out incorrect divisor attribute reports from device."""
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            # Filter out divisor attribute reports
+            args.attribute_reports = [
+                attr
+                for attr in args.attribute_reports
+                if attr.attrid != Metering.AttributeDefs.divisor.id
+            ]
+
+            # Don't process if no attributes remain
+            if not args.attribute_reports:
+                return
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 
 (

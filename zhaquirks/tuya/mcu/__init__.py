@@ -7,6 +7,7 @@ import datetime
 from typing import Any, Final
 
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -60,7 +61,7 @@ class TuyaClusterData(t.Struct):
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
-    manufacturer: int
+    manufacturer: int | UndefinedType | None
 
 
 class MoesBacklight(t.enum8):
@@ -82,19 +83,29 @@ class TuyaAttributesCluster(TuyaLocalCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
         self.debug("read_attributes --> attrs: %s", attributes)
+        # Pop from kwargs to avoid duplicate keyword argument errors
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
         return await super().read_attributes(
-            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+            attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
-        await super().write_attributes(attributes, manufacturer)
+        await super().write_attributes(attributes, manufacturer=manufacturer, **kwargs)
 
         records = self._write_attr_records(attributes)
 
@@ -214,10 +225,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tuya_commands: list[TuyaCommand] = []
         for dp, mapping in dp_mapping.items():
-            cmd_payload = TuyaCommand()
-            cmd_payload.status = 0
-            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-
             val = data.attr_value
             if mapping.dp_converter:
                 args = []
@@ -237,9 +244,15 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             dpd = TuyaDatapointData(dp, val)
             self.debug("raw: %s", dpd.data.raw)
-            cmd_payload.datapoints = t.List([dpd])
 
-            tuya_commands.append(cmd_payload)
+            tuya_commands.append(
+                TuyaCommand(
+                    status=0,
+                    tsn=self.endpoint.device.application.get_sequence(),
+                    datapoints=[dpd],
+                )
+            )
+
         return tuya_commands
 
     def tuya_mcu_command(self, cluster_data: TuyaClusterData):

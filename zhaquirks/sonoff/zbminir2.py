@@ -4,7 +4,6 @@ from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -13,25 +12,23 @@ class SonoffCluster(CustomCluster):
 
     cluster_id = 0xFC11
 
-    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         detach_relay = ZCLAttributeDef(
             id=0x0017,
             type=t.Bool,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         turbo_mode = ZCLAttributeDef(
             id=0x0012,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
 
