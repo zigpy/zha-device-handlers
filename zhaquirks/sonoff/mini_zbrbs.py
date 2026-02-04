@@ -3,7 +3,6 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -12,47 +11,45 @@ class SonoffCluster(CustomCluster):
 
     cluster_id = 0xFC11
 
-    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         cover_calibrated = ZCLAttributeDef(
             id=0x5012,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         motor_state = ZCLAttributeDef(
             id=0x5013,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
             access="r",
         )
         attrib_0010 = ZCLAttributeDef(  # factory value=515
             id=0x0010,
             type=t.uint32_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
             access="r",
         )
         attrib_0012 = ZCLAttributeDef(  # factiry value=10
             id=0x0012,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         limits_calibration = ZCLAttributeDef(  # 2: automatic calibration, 4: not_calibrated_+open 50% , 6: stop(in pairing)?, 7: manual pairing?+close, 8: stop+stop_pairing
             id=0x5001,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         cluster_revision = ZCLAttributeDef(
             id=0xFFFD,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
 
