@@ -46,8 +46,8 @@ class SonoffPrivateCluster(CustomCluster):
         step=1,
         device_class=NumberDeviceClass.ILLUMINANCE,
         unit=LIGHT_LUX,
-        translation_key="illuminance_compensation",
-        fallback_name="Illuminance compensation",
+        translation_key="illuminance_offset",
+        fallback_name="Illuminance offset",
     )
     .add_to_registry()
 )
