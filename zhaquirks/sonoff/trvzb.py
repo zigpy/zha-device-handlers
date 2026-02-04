@@ -1,5 +1,5 @@
 """Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
-from zigpy import types
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature, UnitOfTime
@@ -116,7 +116,6 @@ class CustomSonoffCluster(CustomCluster):
             type=t.bitmap8,
         )
 
-
     def _update_attribute(self, attrid, value):
         """Update attribute and handle temporary mode conversion."""
         super()._update_attribute(attrid, value)
@@ -140,10 +139,10 @@ class CustomSonoffCluster(CustomCluster):
                     new_attributes[mode_attr] = mode_value
                     break
         return await super().write_attributes(new_attributes, manufacturer, **kwargs)
+
     @property
     def _is_manuf_specific(self):
         return False
-
 
 
 (
