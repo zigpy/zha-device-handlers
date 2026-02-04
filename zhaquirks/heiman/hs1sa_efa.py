@@ -186,7 +186,7 @@ class CustomHeimanCluster(CustomCluster):
         CustomHeimanCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         translation_key="heartbeat_indicator",
-        fallback_name="heartbeat indicator",
+        fallback_name="Heartbeat indicator",
     )
     .enum(
         CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
@@ -194,7 +194,7 @@ class CustomHeimanCluster(CustomCluster):
         CustomHeimanCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         translation_key="siren_for_automation_only",
-        fallback_name="siren_for_automation_only",
+        fallback_name="Siren for automation only",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
@@ -202,26 +202,21 @@ class CustomHeimanCluster(CustomCluster):
         entity_type=EntityType.DIAGNOSTIC,
         attribute_converter=smoke_chamber_contamination_converter,
         translation_key="chamber_contamination",
-        fallback_name="chamber contamination",
+        fallback_name="Chamber contamination",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.smoke_unit.name,
         CustomHeimanCluster.cluster_id,
         attribute_converter=smoke_level_unit_converter,
         translation_key="smoke_level_unit",
-        fallback_name="smoke level unit",
-        # reporting_config=ReportingConfig(
-        #     min_interval=1,
-        #     max_interval=5,
-        #     reportable_change=10
-        # )
+        fallback_name="Smoke level unit",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
         CustomHeimanCluster.cluster_id,
         unique_id_suffix="selftest",
         translation_key="selftest",
-        fallback_name="selftest",
+        fallback_name="Self test",
         reporting_config=ReportingConfig(
             min_interval=2, max_interval=0, reportable_change=1
         ),
@@ -232,42 +227,42 @@ class CustomHeimanCluster(CustomCluster):
         device_class=BinarySensorDeviceClass.PROBLEM,
         unique_id_suffix="fault",
         translation_key="fault",
-        fallback_name="fault",
+        fallback_name="Fault",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_mute_state.name,
         CustomHeimanCluster.cluster_id,
         unique_id_suffix="muted",
         translation_key="muted",
-        fallback_name="muted",
+        fallback_name="Muted",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.interconnectable.name,
         CustomHeimanCluster.cluster_id,
         unique_id_suffix="interconnectable",
         translation_key="interconnectable",
-        fallback_name="interconnectable",
+        fallback_name="Interconnectable",
     )
     .switch(
         CustomHeimanCluster.AttributeDefs.remote_mute.name,
         CustomHeimanCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         translation_key="remote_mute",
-        fallback_name="remote mute",
+        fallback_name="Remote mute",
     )
     .command_button(
         "initiate_test_mode",
         ExtendIasZoneCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         translation_key="remote_test",
-        fallback_name="remote Test",
+        fallback_name="Remote test",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.smoke_level.name,
         CustomHeimanCluster.cluster_id,
         multiplier=0.01,
         translation_key="smoke_level",
-        fallback_name="smoke level",
+        fallback_name="Smoke level",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.rebooted_count.name,
@@ -275,7 +270,7 @@ class CustomHeimanCluster(CustomCluster):
         device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="rebooted_count",
-        fallback_name="rebooted count",
+        fallback_name="Rebooted count",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.rejoined_count.name,
@@ -283,7 +278,7 @@ class CustomHeimanCluster(CustomCluster):
         device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="rejoined_count",
-        fallback_name="rejoined count",
+        fallback_name="Rejoined count",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.reported_packages.name,
@@ -291,7 +286,7 @@ class CustomHeimanCluster(CustomCluster):
         device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="reported_packages",
-        fallback_name="reported packages",
+        fallback_name="Reported packages",
     )
     .add_to_registry()
 )
