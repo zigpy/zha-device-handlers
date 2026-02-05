@@ -402,6 +402,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE200_yqgbrdyo", "TS0601")
     .applies_to("_TZE284_p3dbf6qs", "TS0601")
     .applies_to("_TZE200_rxq4iti9", "TS0601")
+    .applies_to("_TZE200_d3z1ukqw", "TS0601")
     .applies_to("_TZE200_hvaxb2tc", "TS0601")
     .applies_to("_TZE284_o3x45p96", "TS0601")
     .applies_to("_TZE284_c6wv4xyo", "TS0601")
