@@ -6,10 +6,8 @@ import inspect
 import math
 import pathlib
 from types import FrameType
-from typing import Any
+from typing import Any, Self
 
-from zigpy.quirks import _DEVICE_REGISTRY
-from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -194,17 +192,12 @@ class TuyaIlluminance(IlluminanceMeasurement, TuyaLocalCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
-    def __init__(
-        self,
-        manufacturer: str | None = None,
-        model: str | None = None,
-        registry: DeviceRegistry = _DEVICE_REGISTRY,
-    ) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Init the TuyaQuirkBuilder."""
+        super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}
         self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
-        super().__init__(manufacturer, model, registry)
         # quirk_file will point to the init call above if called from this QuirkBuilder,
         # so we need to re-set it correctly
         current_frame: FrameType = inspect.currentframe()
@@ -217,7 +210,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         power_cfg: PowerConfiguration,
         scale: float,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Battery Power Configuration."""
         self.tuya_dp(
             dp_id,
@@ -236,7 +229,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         battery_qty: int | None = 2,
         battery_voltage: int | None = None,
         scale: float = 2,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Battery Power Configuration."""
 
         if power_cfg:
@@ -262,7 +255,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
-        converter: Callable[[Any], Any] | None = (lambda x: 10000 * math.log10(x) + 1),
+        converter: Callable[[Any], Any] | None = (
+          lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
+        ),
     ) -> QuirkBuilder:
         """Add a Tuya Illuminance Configuration."""
         self.tuya_dp(
@@ -274,7 +269,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(illuminance_cfg)
         return self
 
-    def tuya_contact(self, dp_id: int):
+    def tuya_contact(self, dp_id: int) -> Self:
         """Add a Tuya IAS contact sensor."""
         self.tuya_ias(
             dp_id=dp_id,
@@ -288,7 +283,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         co2_cfg: TuyaLocalCluster = TuyaCO2Concentration,
         scale: float = 1e-6,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya CO2 Configuration."""
         self.tuya_dp(
             dp_id,
@@ -304,7 +299,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         ec_cfg: TuyaLocalCluster = TuyaElectricalConductivity,
         scale: float = 1,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Electrical Conductivity Configuration."""
         self.tuya_dp(
             dp_id,
@@ -324,7 +319,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
         )
         * 1e-6,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Formaldehyde Configuration."""
         self.tuya_dp(
             dp_id,
@@ -340,7 +335,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         pm25_cfg: TuyaLocalCluster = TuyaPM25Concentration,
         scale: float = 1,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya PM25 Configuration."""
         self.tuya_dp(
             dp_id,
@@ -351,7 +346,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(pm25_cfg)
         return self
 
-    def tuya_gas(self, dp_id: int):
+    def tuya_gas(self, dp_id: int) -> Self:
         """Add a Tuya IAS gas sensor."""
         self.tuya_ias(
             dp_id=dp_id,
@@ -360,7 +355,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         )
         return self
 
-    def tuya_smoke(self, dp_id: int):
+    def tuya_smoke(self, dp_id: int) -> Self:
         """Add a Tuya IAS smoke/fire sensor."""
         self.tuya_ias(
             dp_id=dp_id,
@@ -374,7 +369,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         ias_cfg: TuyaLocalCluster,
         converter: Callable[[Any], Any] | None = None,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya IAS Configuration."""
         self.tuya_dp(
             dp_id,
@@ -390,7 +385,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumedNoInstDemand,
         scale: float = 1,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Metering Configuration."""
         self.tuya_dp(
             dp_id,
@@ -405,7 +400,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         onoff_cfg: TuyaLocalCluster = TuyaOnOffNM,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya OnOff Configuration."""
         self.tuya_dp(
             dp_id,
@@ -420,7 +415,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         rh_cfg: TuyaLocalCluster = TuyaRelativeHumidity,
         scale: float = 100,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Relative Humidity Configuration."""
         self.tuya_dp(
             dp_id,
@@ -436,7 +431,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         soil_cfg: TuyaLocalCluster = TuyaSoilMoisture,
         scale: float = 100,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Soil Moisture Configuration."""
         self.tuya_dp(
             dp_id,
@@ -452,7 +447,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
         scale: float = 100,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya Temperature Configuration."""
         self.tuya_dp(
             dp_id,
@@ -463,7 +458,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(temp_cfg)
         return self
 
-    def tuya_vibration(self, dp_id: int):
+    def tuya_vibration(self, dp_id: int) -> Self:
         """Add a Tuya IAS vibration sensor."""
         self.tuya_ias(
             dp_id=dp_id,
@@ -477,7 +472,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         voc_cfg: TuyaLocalCluster = TuyaAirQualityVOC,
         scale: float = 1e-6,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add a Tuya VOC Configuration."""
         self.tuya_dp(
             dp_id,
@@ -495,7 +490,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         type: type = t.uint16_t,
         access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.NONE,
         is_manufacturer_specific=True,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add an attribute to AttributeDefs."""
         attr_id: int = int.from_bytes([0xEF, dp_id])
 
@@ -520,7 +515,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_converter: Callable[[Any], Any] | None = None,
         endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add Tuya DP Converter."""
 
         self.tuya_dp_multi(
@@ -543,7 +538,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_mapping: list[DPToAttributeMapping],
         dp_handler: str = "_dp_2_attr_update",
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> Self:  # fmt: skip
         """Add Tuya DP Converter that maps to multiple attributes."""
 
         if dp_id in self.tuya_dp_to_attribute:
@@ -565,7 +560,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         type: type = t.uint16_t,
         access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.NONE,
         is_manufacturer_specific=True,
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Add an Tuya DataPoint and corresponding AttributeDef."""
         self.tuya_attribute(
             dp_id=dp_id,
@@ -600,7 +595,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
         This method allows exposing a switch entity in Home Assistant.
@@ -625,6 +622,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
         return self
@@ -643,7 +641,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
         This method allows exposing an enum based entity in Home Assistant.
@@ -664,6 +664,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -689,7 +690,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
         This method allows exposing a number entity in Home Assistant.
@@ -715,6 +718,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -731,7 +735,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
         This method allows exposing a binary sensor entity in Home Assistant.
@@ -752,6 +758,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -775,7 +782,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
@@ -803,6 +812,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
         )
 
@@ -810,7 +820,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def tuya_enchantment(
         self, read_attr_spell: bool = True, data_query_spell: bool = False
-    ) -> QuirkBuilder:
+    ) -> Self:
         """Set the Tuya enchantment spells."""
 
         class EnchantedDeviceV2(CustomDeviceV2, BaseEnchantedDevice):

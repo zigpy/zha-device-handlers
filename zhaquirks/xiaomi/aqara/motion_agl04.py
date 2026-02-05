@@ -6,6 +6,7 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -41,10 +42,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     }
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
-    ) -> list:
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Write attributes to device with internal 'attributes' validation."""
-        result = await super().write_attributes(attributes, manufacturer)
+        result = await super().write_attributes(attributes, **kwargs)
         interval = attributes.get(
             "detection_interval", attributes.get(DETECTION_INTERVAL)
         )

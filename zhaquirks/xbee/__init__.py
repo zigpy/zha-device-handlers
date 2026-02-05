@@ -249,7 +249,11 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
 
     _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Intercept present_value attribute write."""
         attr_id = None
         if ATTR_PRESENT_VALUE in attributes:
@@ -264,7 +268,7 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
             at_command = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
             await self._endpoint.device.remote_at(at_command, PIN_ANALOG_OUTPUT)
 
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        return await super().write_attributes(attributes, **kwargs)
 
     async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Intercept present_value attribute read."""
