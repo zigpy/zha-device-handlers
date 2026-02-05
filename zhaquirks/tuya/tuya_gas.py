@@ -44,6 +44,7 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Standard_Warning_Device
     }
 
+
 (
     TuyaQuirkBuilder("_TZE200_hr0tdd47", "TS0601")
     .applies_to("_TZE200_rjxqso4a", "TS0601")
