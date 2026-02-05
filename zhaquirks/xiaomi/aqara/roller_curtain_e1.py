@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Any
 
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
@@ -256,25 +256,6 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         return success, failure
 
 
-class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
-    """MultistateOutput cluster used for writing commands (up_open, down_close, stop).
-
-    This requires a change to the present_value attribute type because the device responds
-    with an error when using the standard t.Single type.
-    """
-
-    class AttributeDefs(MultistateOutput.AttributeDefs):
-        """Aqara attribute definition overrides."""
-
-        present_value: Final = ZCLAttributeDef(
-            id=0x0055,
-            type=t.Single,
-            zcl_type=DataTypeId.uint16,
-            access="r*w",
-            mandatory=True,
-        )
-
-
 (
     QuirkBuilder(LUMI, "lumi.curtain.acn002")
     # temporarily commented out due to potentially breaking existing blueprints
@@ -288,7 +269,6 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .replaces(AnalogOutputRollerE1, endpoint_id=1)
     .replaces(BasicCluster, endpoint_id=1)
-    .replaces(MultistateOutputRollerE1, endpoint_id=1)
     .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
     .replaces(WindowCoveringRollerE1, endpoint_id=1)
     .replaces(XiaomiAqaraRollerE1, endpoint_id=1)
