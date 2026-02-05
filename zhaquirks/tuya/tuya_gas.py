@@ -168,13 +168,13 @@ tuya_gas_alarm_base = (
     .applies_to("_TZE204_iuk8kupi", "TS0601")
     .tuya_sensor(
         dp_id=2,
-        attribute_name="lower_explosive_limit",
+        attribute_name="fuel_gas",
         type=t.int16s,
         divisor=1000,
         state_class=SensorStateClass.MEASUREMENT,
         unit="%LEL",  # Not present in zigpy
-        translation_key="lower_explosive_limit",
-        fallback_name="% Lower explosive limit",
+        translation_key="fuel_gas_concentration",
+        fallback_name="Fuel gas concentration",
     )
     .tuya_enum(
         dp_id=6,
