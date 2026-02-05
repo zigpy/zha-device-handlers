@@ -44,6 +44,21 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Standard_Warning_Device
     }
 
+(
+    TuyaQuirkBuilder("_TZE204_iuk8kupi", "TS0601")
+    .tuya_gas(dp_id=18)
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="co",
+        type=t.int16s,
+        device_class=SensorDeviceClass.CO,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        fallback_name="CO concentration",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
 
 (
     TuyaQuirkBuilder("_TZE200_hr0tdd47", "TS0601")
@@ -121,6 +136,7 @@ tuya_gas_alarm_base = (
 
 (
     tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
+    .applies_to("_TZE204_iuk8kupi", "TS0601")
     .applies_to("_TZE200_yojqa8xn", "TS0601")
     .applies_to("_TZE204_zougpkpy", "TS0601")
     .applies_to("_TZE204_chbyv06x", "TS0601")
