@@ -208,6 +208,22 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
+    # The attribute comments below are in French to match the reference documentation,
+    # see https://github.com/fairecasoimeme/Zlinky_TIC/tree/v9.0#synth%C3%A8se-d%C3%A9veloppeur
+    # and https://github.com/fairecasoimeme/Zlinky_TIC/blob/v9.0/ZLinky/Source/LixeeCluster.h
+    class AttributeDefs(Metering.AttributeDefs):
+        """Attribute additions."""
+
+        # Standard mode: EAIT "Energie active injectée totale" (Production) / Int48 9 car
+        std_total_injected_active_energy: Final = ZCLAttributeDef(
+            id=0x0001, type=t.uint48_t, is_manufacturer_specific=True
+        )
+
+        # Standard mode: PTEC "Période tarifaire en cours" / String 4 car
+        hist_current_tarif_period: Final = ZCLAttributeDef(
+            id=0x0020, type=t.LimitedCharString(4), is_manufacturer_specific=True
+        )
+
 
 # The v1 quirk carried four subclasses matching firmware variants by exact
 # cluster list: the base signature, plus PowerConfiguration on v12, Time and a
