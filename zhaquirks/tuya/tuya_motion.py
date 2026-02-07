@@ -11,7 +11,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks import MotionWithReset
+from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -1609,6 +1610,16 @@ base_tuya_motion = (
         translation_key="breath_detection_max",
         fallback_name="Breath detection max",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR motion sensor, SNZB-03
+(
+    TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
+    .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )
