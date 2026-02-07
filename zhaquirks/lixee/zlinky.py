@@ -215,12 +215,14 @@ class ZLinkyTICMetering(CustomCluster, Metering):
         """Attribute additions."""
 
         # Standard mode: EAIT "Energie active injectée totale" (Production) / Int48 9 car
-        std_total_injected_active_energy: Final = ZCLAttributeDef(
+        # Overwrite: current_summ_received
+        current_summ_received: Final = ZCLAttributeDef(
             id=0x0001, type=t.uint48_t, is_manufacturer_specific=True
         )
 
         # Standard mode: PTEC "Période tarifaire en cours" / String 4 car
-        hist_current_tarif_period: Final = ZCLAttributeDef(
+        # Overwrite: active_register_tier_delivered
+        active_register_tier_delivered: Final = ZCLAttributeDef(
             id=0x0020, type=t.LimitedCharString(4), is_manufacturer_specific=True
         )
 
