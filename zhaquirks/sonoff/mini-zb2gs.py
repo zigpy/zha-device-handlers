@@ -54,6 +54,7 @@ class SonoffDetachRelayType(types.enum8):
     CH2_enabled = 0x02
     All_channels_enabled = 0x03
 
+
 (
     QuirkBuilder("SONOFF", "MINI-ZB2GS")
     .replaces(SonoffCluster, endpoint_id=1)
