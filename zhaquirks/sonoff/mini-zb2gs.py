@@ -49,19 +49,10 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 class SonoffDetachRelayType(types.enum8):
     """detach relay type."""
 
-    ALL_CH_DETACH_RELAY_CLOSE = 0x00
-    JUST_CH1_ENABLE_DETACH_RELAY = 0x01
-    JUST_CH2_ENABLE_DETACH_RELAY = 0x02
-    CH1_AND_CH2_ENABLE_DETACH_RELAY = 0x03
-
-
-# 定义turbo模式的枚举类型
-class SonoffTurboModeType(types.enum16):
-    """turbo mode type."""
-
-    NORMAL_MODE = 0x0009  # 9
-    TURBO_MODE = 0x0014  # 20
-
+    All_channels_disabled = 0x00
+    CH1_enabled = 0x01
+    CH2_enabled = 0x02
+    All_channels_enabled = 0x03
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB2GS")
@@ -92,10 +83,11 @@ class SonoffTurboModeType(types.enum16):
         endpoint_id=2,
     )
     # 添加turbo模式实体
-    .enum(
+    .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
-        SonoffTurboModeType,
         SonoffCluster.cluster_id,
+        off_value=9,
+        on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
         endpoint_id=1,
