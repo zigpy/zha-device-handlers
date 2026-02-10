@@ -240,7 +240,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             return []
 
         tuya_commands: list[TuyaCommand] = []
-        for dp, mapping in dp_mapping.items():
+        for dp in dp_mapping:
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
@@ -255,7 +255,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                         continue
                     endpoint = self.endpoint
                     if dp_attr.endpoint_id:
-                        endpoint = endpoint.device.endpoints[mapping.endpoint_id]
+                        endpoint = endpoint.device.endpoints[dp_attr.endpoint_id]
                     cluster = getattr(endpoint, dp_attr.ep_attribute)
                     args.append(cluster.get(dp_attr.attribute_name))
                 val = attr_to_dp_converter(*args)

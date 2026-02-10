@@ -1510,7 +1510,7 @@ class DPToAttributeMapping:
         self.endpoint_id = endpoint_id
 
         if not isinstance(attribute_name, str):
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Using a tuple for attribute_name is deprecated, please update ZHA quirks "
                 "to use multiple DPToAttributeMapping instances instead. Affected tuple: %s",
                 attribute_name,
@@ -1618,7 +1618,6 @@ class TuyaNewManufCluster(CustomCluster):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
 
-        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
         # Normalize dp_to_attribute: map each DP to a flat list of single attr mappings
         # This decomposes old tuple-based mappings
         self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {}
@@ -1632,7 +1631,6 @@ class TuyaNewManufCluster(CustomCluster):
                 for mapping in mappings
                 for decomposed in mapping.decompose_attributes()
             ]
-        }
         for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
