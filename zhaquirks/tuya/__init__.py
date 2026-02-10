@@ -1619,10 +1619,19 @@ class TuyaNewManufCluster(CustomCluster):
         super().__init__(*args, **kwargs)
 
         self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
-            dp: [x for mapping in mappings for x in mapping.decompose_attributes()]
-            if isinstance(mappings, list)
-            else mappings.decompose_attributes()
-            for dp, mappings in self.dp_to_attribute.items()
+        # Normalize dp_to_attribute: map each DP to a flat list of single attr mappings
+        # This decomposes old tuple-based mappings
+        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {}
+        for dp, mappings in self.dp_to_attribute.items():
+            # Normalize to list (dp_to_attribute allows single mapping or list)
+            if not isinstance(mappings, list):
+                mappings = [mappings]
+            # Flatten: decompose any tuple-based mappings into individual mappings
+            self._dp_to_attributes[dp] = [
+                decomposed
+                for mapping in mappings
+                for decomposed in mapping.decompose_attributes()
+            ]
         }
         for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
