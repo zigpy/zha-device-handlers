@@ -217,6 +217,8 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 if not isinstance(mappings, list):
                     mappings = [mappings]
                 for dp_mapping in mappings:
+                    # DPToAttributeMapping from the base Tuya module doesn't have `dp_converter`
+                    # only the MCU DPToAttributeMapping has dp_converter, so check hasattr before
                     if hasattr(dp_mapping, "dp_converter") and dp_mapping.dp_converter:
                         self._attributes_to_dp_converters[dp] = dp_mapping.dp_converter
 
