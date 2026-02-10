@@ -129,7 +129,7 @@ class SonoffCluster(CustomCluster):
         elif "level_for_calibration" in attributes:
             val = attributes.get("level_for_calibration")
             attributes["level_for_calibration"] = 255 / 100 * val
-        
+
         return await super().write_attributes(attributes, manufacturer=manufacturer)
 
     async def write_attributes_raw(
@@ -149,13 +149,11 @@ class SonoffCluster(CustomCluster):
 
     def _update_attribute(self, attrid, value):
         """Convert the min_brightness_threshold attribute value."""
-        if attrid == self.AttributeDefs.min_brightness_threshold.id:
-            val = round(float(value) / 255 * 100)
-            super()._update_attribute(attrid, val)
-        elif attrid == self.AttributeDefs.max_brightness_threshold.id:
-            val = round(float(value) / 255 * 100)
-            super()._update_attribute(attrid, val)
-        elif attrid == self.AttributeDefs.level_for_calibration.id:
+        if (
+            attrid == self.AttributeDefs.min_brightness_threshold.id
+            or attrid == self.AttributeDefs.max_brightness_threshold.id
+            or attrid == self.AttributeDefs.level_for_calibration.id
+        ):
             val = round(float(value) / 255 * 100)
             super()._update_attribute(attrid, val)
         else:

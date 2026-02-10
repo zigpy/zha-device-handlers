@@ -1,9 +1,7 @@
 """Sonoff S60ZBTPF - Zigbee Smart Plug."""
 
-from typing import (
-    Final,
-    Any,
-)
+from typing import Any, Final
+
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -13,14 +11,12 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfPower,
 )
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 import zigpy.zcl.foundation as zcl_f
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.zcl.clusters.general import (
-    OnOff,
-)
 
 
 class SonoffCluster(CustomCluster):
@@ -98,6 +94,7 @@ class SonoffCluster(CustomCluster):
     def _is_manuf_specific(self):
         return False
 
+
 class PrivateOnoffCluster(OnOff, CustomCluster):
     """Private Onoff Cluster"""
 
@@ -115,14 +112,15 @@ class PrivateOnoffCluster(OnOff, CustomCluster):
                     ElectricalMeasurement.AttributeDefs.rms_current.id,
                     0,
                 )
-            
+
+
 class PrivateElectricalMeasurementCluster(ElectricalMeasurement, CustomCluster):
     """Private Electrical Measurement Cluster"""
 
     cluster_id = 0x0B04
 
     def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
-        if False == self.endpoint.on_off._attr_cache[OnOff.AttributeDefs.on_off.id]:
+        if self.endpoint.on_off._attr_cache[OnOff.AttributeDefs.on_off.id] == False:
             if attrid == self.AttributeDefs.active_power.id:
                 value = 0
             if attrid == self.AttributeDefs.rms_current.id:
@@ -146,8 +144,8 @@ class SonoffNetworkLedSetType(types.enum8):
         SonoffCluster.AttributeDefs.network_led.name,
         SonoffNetworkLedSetType,
         0xFC11,
-        translation_key = "network_led",
-        fallback_name = "Network led",
+        translation_key="network_led",
+        fallback_name="Network led",
     )
     .switch(
         SonoffCluster.AttributeDefs.outlet_Control_Protect_Setting.name,
