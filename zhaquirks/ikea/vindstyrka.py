@@ -37,7 +37,7 @@ class VOCIndex(CustomCluster):
         )
 
 
-class PM25(CustomCluster, PM25):
+#class PM25(CustomCluster, PM25):
     """PM2.5 cluster forced to override the IKEA default."""
 
     cluster_id = 0x042A
@@ -57,6 +57,7 @@ class PM25(CustomCluster, PM25):
         translation_key="voc_index",
         fallback_name="VOC index",
     )
+    .replaces(PM25) #instead of new custom cluster PM25
     .sensor(
         attribute_name="measured_value",
         cluster_id=PM25.cluster_id,
