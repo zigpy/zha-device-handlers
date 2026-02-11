@@ -36,15 +36,10 @@ class VOCIndex(CustomCluster):
             id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
 
-    # class PM25(CustomCluster, PM25):
-    """PM2.5 cluster forced to override the IKEA default."""
-
-    cluster_id = 0x042A
-
-
 (
     QuirkBuilder(IKEA, "VINDSTYRKA")
     .replaces(VOCIndex)
+    .replaces(PM25)
     .sensor(
         VOCIndex.AttributeDefs.measured_value.name,
         VOCIndex.cluster_id,
@@ -56,7 +51,6 @@ class VOCIndex(CustomCluster):
         translation_key="voc_index",
         fallback_name="VOC index",
     )
-    .replaces(PM25)  # instead of new custom cluster PM25
     .sensor(
         attribute_name="measured_value",
         cluster_id=PM25.cluster_id,
