@@ -36,6 +36,7 @@ class VOCIndex(CustomCluster):
             id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
 
+
 (
     QuirkBuilder(IKEA, "VINDSTYRKA")
     .replaces(VOCIndex)
