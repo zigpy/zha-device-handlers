@@ -37,7 +37,7 @@ class VOCIndex(CustomCluster):
         )
 
 
-class HPM25(CustomCluster, PM25):
+class PM25(CustomCluster, PM25):
     """PM2.5 cluster forced to override the IKEA default."""
 
     cluster_id = 0x042A
@@ -59,7 +59,7 @@ class HPM25(CustomCluster, PM25):
     )
     .sensor(
         attribute_name="measured_value",
-        cluster_id=HPM25.cluster_id,
+        cluster_id=PM25.cluster_id,
         device_class=SensorDeviceClass.PM25,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
