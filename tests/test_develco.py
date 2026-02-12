@@ -162,22 +162,31 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     # divisor should still be fixed at 1000
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
 
-    # send current_summ_delivered attribute report
-    # Frame: 0x18, TSN=1, cmd=0x0a, attr=0x0000, value=1234 (uint48)
+    # send real attribute report with current_summ_delivered, current_summ_received,
+    # instantaneous_demand, and status
+    # Frame: 0x18 (server-to-client, disable-default-rsp),
+    #        TSN=54, cmd=0x0a (Report_Attributes)
     device.packet_received(
         t.ZigbeePacket(
             profile_id=260,
             cluster_id=Metering.cluster_id,
             src_ep=2,
-            dst_ep=2,
+            dst_ep=1,
             data=t.SerializableBytes(
-                b"\x18\x01\x0a\x00\x00\x25\xd2\x04\x00\x00\x00\x00"
+                b"\x18\x36\x0a\x00\x00\x25\x08\xcc\xd4\x01\x00\x00"
+                b"\x01\x00\x25\x00\x00\x00\x00\x00\x00"
+                b"\x00\x04\x2a\xa1\x0f\x00"
+                b"\x00\x02\x18\x00"
             ),
         )
     )
 
-    # attribute_updated event should be emitted
-    assert len(metering_listener.attribute_updates) == 1
+    # attribute_updated events should be emitted
+    assert len(metering_listener.attribute_updates) == 4
     assert (
-        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id)
+        == 30_723_080
     )
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_received.id) == 0
+    assert metering_cluster.get(Metering.AttributeDefs.instantaneous_demand.id) == 4001
+    assert metering_cluster.get(Metering.AttributeDefs.status.id) == 0
