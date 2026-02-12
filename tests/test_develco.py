@@ -151,7 +151,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
             profile_id=260,
             cluster_id=Metering.cluster_id,
             src_ep=2,
-            dst_ep=2,
+            dst_ep=1,
             data=t.SerializableBytes(b"\x1c\x15\x10\x03\x0a\x02\x03\x31\x00\x02"),
         )
     )
