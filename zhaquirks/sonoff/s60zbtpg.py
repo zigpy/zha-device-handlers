@@ -72,7 +72,7 @@ class SonoffCluster(CustomCluster):
         """Server command definitions."""
 
         self_test: Final = zcl_f.ZCLCommandDef(
-            id=0x00, schema={"identify_time": t.uint8_t}, direction=False
+            id=0x00, schema={"identify_time": t.uint8_t}
         )
 
     async def _read_attributes(
