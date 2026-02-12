@@ -23,7 +23,7 @@ from zigpy.zcl.clusters.general import LevelControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeAccess, ZCLAttributeDef
 
 ACTION_ID_MAPPING = [0xFFD1, 0xFFD2, 0xFFD3]
-
+BRIGHTNESS_ID_MAPPING = [0x4001, 0x4002, 0x4006]
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -148,16 +148,10 @@ class SonoffCluster(CustomCluster):
         )
 
     def _update_attribute(self, attrid, value):
-        """Convert the min_brightness_threshold attribute value."""
-        if attrid == self.AttributeDefs.min_brightness_threshold.id:
+        """Convert attribute value."""
+        if attrid in BRIGHTNESS_ID_MAPPING:
             val = round(float(value) / 255 * 100)
-            super()._update_attribute(attrid, val)
-        elif attrid == self.AttributeDefs.max_brightness_threshold.id:
-            val = round(float(value) / 255 * 100)
-            super()._update_attribute(attrid, val)
-        elif attrid == self.AttributeDefs.level_for_calibration.id:
-            val = round(float(value) / 255 * 100)
-            super()._update_attribute(attrid, val)
+            super()._update_attribute(attrid, val) 
         else:
             super()._update_attribute(attrid, value)
 

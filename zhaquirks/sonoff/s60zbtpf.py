@@ -36,38 +36,38 @@ class SonoffCluster(CustomCluster):
             id=0x0001,
             type=t.Bool,
         )
-        outlet_Control_Protect_Setting = ZCLAttributeDef(
+        outlet_control_protect_setting = ZCLAttributeDef(
             name="outlet_Control_Protect_Setting",
             id=0x7007,
             type=t.uint8_t,
         )
-        ac_Current_Max_Overload_Enable = ZCLAttributeDef(
-            name="ac_Current_Max_Overload_Enable",
+        ac_current_max_overload_enable = ZCLAttributeDef(
+            name="ac_current_max_overload_enable",
             id=0x700C,
             type=t.uint8_t,
         )
-        ac_Voltage_Max_Overload_Enable = ZCLAttributeDef(
-            name="ac_Voltage_Max_Overload_Enable",
+        ac_voltage_max_overload_enable = ZCLAttributeDef(
+            name="ac_voltage_max_overload_enable",
             id=0x700E,
             type=t.uint8_t,
         )
-        ac_Power_Max_Overload_Enable = ZCLAttributeDef(
-            name="ac_Power_Max_Overload_Enable",
+        ac_power_max_overload_enable = ZCLAttributeDef(
+            name="ac_power_max_overload_enable",
             id=0x7010,
             type=t.uint8_t,
         )
-        ac_Current_Max_Overload = ZCLAttributeDef(
-            name="ac_Current_Max_Overload",
+        ac_current_max_overload = ZCLAttributeDef(
+            name="ac_current_max_overload",
             id=0x700D,
             type=t.uint32_t,
         )
-        ac_Voltage_Max_Overload = ZCLAttributeDef(
-            name="ac_Voltage_Max_Overload",
+        ac_voltage_max_overload = ZCLAttributeDef(
+            name="ac_voltage_max_overload",
             id=0x700F,
             type=t.uint32_t,
         )
-        ac_Power_Max_Overload = ZCLAttributeDef(
-            name="ac_Power_Max_Overload",
+        ac_power_max_overload = ZCLAttributeDef(
+            name="ac_power_max_overload",
             id=0x7011,
             type=t.uint32_t,
         )
@@ -99,14 +99,14 @@ class SonoffCluster(CustomCluster):
         return False
 
 class PrivateOnoffCluster(OnOff, CustomCluster):
-    """Private Onoff Cluster"""
+    """Private Onoff Cluster."""
 
     cluster_id = 0x0006
 
     def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
         super()._update_attribute(attrid, value)
         if attrid == self.AttributeDefs.on_off.id:
-            if value == False:
+            if not value:
                 self.endpoint.electrical_measurement.update_attribute(
                     ElectricalMeasurement.AttributeDefs.active_power.id,
                     0,
@@ -117,12 +117,12 @@ class PrivateOnoffCluster(OnOff, CustomCluster):
                 )
             
 class PrivateElectricalMeasurementCluster(ElectricalMeasurement, CustomCluster):
-    """Private Electrical Measurement Cluster"""
+    """Private Electrical Measurement Cluster."""
 
     cluster_id = 0x0B04
 
     def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
-        if False == self.endpoint.on_off._attr_cache[OnOff.AttributeDefs.on_off.id]:
+        if not self.endpoint.on_off._attr_cache[OnOff.AttributeDefs.on_off.id]:
             if attrid == self.AttributeDefs.active_power.id:
                 value = 0
             if attrid == self.AttributeDefs.rms_current.id:
@@ -150,39 +150,39 @@ class SonoffNetworkLedSetType(types.enum8):
         fallback_name = "Network led",
     )
     .switch(
-        SonoffCluster.AttributeDefs.outlet_Control_Protect_Setting.name,
+        SonoffCluster.AttributeDefs.outlet_control_protect_setting.name,
         SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
-        translation_key="outlet_Control_Protect_Setting",
+        translation_key="outlet_control_protect_setting",
         fallback_name="Outlet control protect setting",
     )
     .switch(
-        SonoffCluster.AttributeDefs.ac_Current_Max_Overload_Enable.name,
+        SonoffCluster.AttributeDefs.ac_current_max_overload_enable.name,
         SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
-        translation_key="ac_Current_Max_Overload_Enable",
+        translation_key="ac_current_max_overload_enable",
         fallback_name="AC current max overload enable",
     )
     .switch(
-        SonoffCluster.AttributeDefs.ac_Voltage_Max_Overload_Enable.name,
+        SonoffCluster.AttributeDefs.ac_voltage_max_overload_enable.name,
         SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
-        translation_key="ac_Voltage_Max_Overload_Enable",
+        translation_key="ac_voltage_max_overload_enable",
         fallback_name="AC voltage max overload enable",
     )
     .switch(
-        SonoffCluster.AttributeDefs.ac_Power_Max_Overload_Enable.name,
+        SonoffCluster.AttributeDefs.ac_power_max_overload_enable.name,
         SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
-        translation_key="ac_Power_Max_Overload_Enable",
+        translation_key="ac_power_max_overload_enable",
         fallback_name="AC power max overload enable",
     )
     .number(
-        "ac_Current_Max_Overload",
+        "ac_current_max_overload",
         0xFC11,
         ClusterType.Server,
         1,
@@ -191,12 +191,12 @@ class SonoffNetworkLedSetType(types.enum8):
         0.1,
         unit=UnitOfElectricCurrent.AMPERE,
         multiplier=0.001,
-        translation_key="ac_Current_Max_Overload",
+        translation_key="ac_current_max_overload",
         device_class=NumberDeviceClass.CURRENT,
         fallback_name="AC current max overload",
     )
     .number(
-        "ac_Voltage_Max_Overload",
+        "ac_voltage_max_overload",
         0xFC11,
         ClusterType.Server,
         1,
@@ -205,12 +205,12 @@ class SonoffNetworkLedSetType(types.enum8):
         1.0,
         unit=UnitOfElectricPotential.VOLT,
         multiplier=0.001,
-        translation_key="ac_Voltage_Max_Overload",
+        translation_key="ac_voltage_max_overload",
         device_class=NumberDeviceClass.POWER,
         fallback_name="AC voltage max overload",
     )
     .number(
-        "ac_Power_Max_Overload",
+        "ac_power_max_overload",
         0xFC11,
         ClusterType.Server,
         1,
@@ -219,7 +219,7 @@ class SonoffNetworkLedSetType(types.enum8):
         0.1,
         unit=UnitOfPower.WATT,
         multiplier=0.001,
-        translation_key="ac_Power_Max_Overload",
+        translation_key="ac_power_max_overload",
         device_class=NumberDeviceClass.POWER,
         fallback_name="AC power max overload",
     )
