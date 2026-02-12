@@ -131,7 +131,11 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
-    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-132",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
 
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
