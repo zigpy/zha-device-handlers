@@ -139,8 +139,8 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     # divisor already fixed at 1000
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
 
-    # send incorrect divisor attribute report
-    # Frame: 0x18 (non-mfr-specific, server-to-client, disable-default-rsp),
+    # send incorrect divisor attribute report (TODO: check comment)
+    # Frame: 0x18 (mfr-specific, server-to-client, disable-default-rsp),
     #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
     device.packet_received(
         t.ZigbeePacket(
@@ -148,7 +148,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
             cluster_id=Metering.cluster_id,
             src_ep=2,
             dst_ep=2,
-            data=t.SerializableBytes(b"\x18\x01\x0a\x02\x03\x22\x00\x02\x00"),
+            data=t.SerializableBytes(b"\x1c\x15\x10\x03\x0a\x02\x03\x31\x00\x02"),
         )
     )
 
