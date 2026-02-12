@@ -104,6 +104,7 @@ class SonoffNetworkLedSetType(types.enum8):
 
 class PrivateOnoffCluster(OnOff, CustomCluster):
     """Private Onoff Cluster."""
+
     cluster_id = 0x0006
 
     def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
