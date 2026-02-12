@@ -129,7 +129,7 @@ class SonoffCluster(CustomCluster):
         elif "level_for_calibration" in attributes:
             val = attributes.get("level_for_calibration")
             attributes["level_for_calibration"] = 255 / 100 * val
-        
+
         return await super().write_attributes(attributes, manufacturer=manufacturer)
 
     async def write_attributes_raw(
