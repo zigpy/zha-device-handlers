@@ -33,7 +33,7 @@ class SonoffCluster(CustomCluster):
             type=t.Bool,
         )
         outlet_control_protect_setting = ZCLAttributeDef(
-            name="outlet_Control_Protect_Setting",
+            name="outlet_control_protect_setting",
             id=0x7007,
             type=t.uint8_t,
         )
