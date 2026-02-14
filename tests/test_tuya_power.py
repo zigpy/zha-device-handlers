@@ -295,39 +295,31 @@ async def test_matseeplus_unsupported_attributes(zigpy_device_from_v2_quirk):
 
     # CT endpoint (1 and 2) unsupported attributes
     for ep_id in (1, 2):
-        assert (
+        assert quirked.endpoints[ep_id].electrical_measurement.is_attribute_unsupported(
             ac_frequency_id
-            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
         )
-        assert (
+        assert quirked.endpoints[ep_id].electrical_measurement.is_attribute_unsupported(
             apparent_power_id
-            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
         )
-        assert (
+        assert quirked.endpoints[ep_id].electrical_measurement.is_attribute_unsupported(
             rms_voltage_id
-            in quirked.endpoints[ep_id].electrical_measurement.unsupported_attributes
         )
-        assert (
+        assert quirked.endpoints[ep_id].smartenergy_metering.is_attribute_unsupported(
             instantaneous_demand_id
-            in quirked.endpoints[ep_id].smartenergy_metering.unsupported_attributes
         )
 
     # Total endpoint (3) unsupported attributes
-    assert (
+    assert quirked.endpoints[3].electrical_measurement.is_attribute_unsupported(
         active_power_id
-        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
     )
-    assert (
+    assert quirked.endpoints[3].electrical_measurement.is_attribute_unsupported(
         apparent_power_id
-        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
     )
-    assert (
+    assert quirked.endpoints[3].electrical_measurement.is_attribute_unsupported(
         power_factor_id
-        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
     )
-    assert (
+    assert quirked.endpoints[3].electrical_measurement.is_attribute_unsupported(
         rms_current_id
-        in quirked.endpoints[3].electrical_measurement.unsupported_attributes
     )
 
 
