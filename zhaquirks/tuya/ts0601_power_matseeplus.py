@@ -47,13 +47,13 @@ class MatSeePlusLocalConfig(LocalDataCluster):
             id=0x5010,
             type=t.Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         late_energy_flow_b = ZCLAttributeDef(
             id=0x5011,
             type=t.Bool,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
 
@@ -126,6 +126,8 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
         """Update the cluster attribute."""
         if self.endpoint.endpoint_id in self._EP_LATE_FLOW_CONFIG_ATTR:
             value = self._late_energy_flow_delay_handler(attr_name, value)
+            if value is None:
+                return
         super().update_attribute(attr_name, value)
 
 
