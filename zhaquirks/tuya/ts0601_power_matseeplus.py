@@ -62,7 +62,7 @@ class MatSeePlusElectricalMeasurement(TuyaZBElectricalMeasurement, TuyaLocalClus
 
     _TZE204_81yrt3lo (app_version: 74, hw_version: 1 and stack_version: 0) has a bug
     where the current energy flow values are incorrectly emitted during the next reporting interval.
-    This means a change in direction result in incorrect power values.
+    This means a change in direction results in incorrect power values.
 
     The bug has remained unfixed for multiple years, with no provided firmware updates from the manufacturer.
     When enabled this mitigation holds non-power attribute values until the subsequent interval's attribute report.
