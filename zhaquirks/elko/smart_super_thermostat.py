@@ -1,9 +1,10 @@
 """Module to handle quirks of the Elko Smart Super thermostat."""
 
-from typing import Final
+from typing import Any, Final
 
 import zigpy.profiles.zha as zha_p
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -89,7 +90,11 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         super().__init__(*args, **kwargs)
         self.active_sensor = None
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Override writes to thermostat attributes."""
         if "system_mode" in attributes:
             val = attributes.get("system_mode")
@@ -104,7 +109,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
             attributes["device_on"] = device_on
             attributes["night_lowering"] = night_lowering
 
-        return await super().write_attributes(attributes, manufacturer=manufacturer)
+        return await super().write_attributes(attributes, **kwargs)
 
     def _update_attribute(self, attrid, value):
         if attrid == HEATING_ACTIVE:

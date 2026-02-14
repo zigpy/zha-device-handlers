@@ -22,21 +22,21 @@ class ThirdRealityPlugCluster(CustomCluster):
         reset_summation_delivered: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # turn off delay
         on_to_off_delay: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # turn on delay
         off_to_on_delay: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 

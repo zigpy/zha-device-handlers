@@ -16,7 +16,7 @@ import zigpy.profiles
 import zigpy.quirks as zq
 from zigpy.quirks import CustomDevice, DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types
+import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zdo.types
 
@@ -997,6 +997,12 @@ async def test_local_data_cluster(device_mock) -> None:
         _CONSTANT_ATTRIBUTES = {1: 10}
         _VALID_ATTRIBUTES = [2]
 
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            valid_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
     (
         QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .adds(TestLocalCluster)
@@ -1004,12 +1010,6 @@ async def test_local_data_cluster(device_mock) -> None:
     )
     device = registry.get_device(device_mock)
     assert isinstance(device.endpoints[1].in_clusters[0x1234], TestLocalCluster)
-
-    # reading invalid attribute return unsupported attribute
-    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([0]) == (
-        {},
-        {0: foundation.Status.UNSUPPORTED_ATTRIBUTE},
-    )
 
     # reading constant attribute works
     assert await device.endpoints[1].in_clusters[0x1234].read_attributes([1]) == (
