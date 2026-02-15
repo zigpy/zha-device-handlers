@@ -1097,6 +1097,57 @@ class Plug_v2(EnchantedDevice):
     }
 
 
+class Plug_v2_with_fc11(EnchantedDevice):
+    """Another TS011F Tuya plug, Model _TZ3000_okaz9tjs (Plug_v2) with additional 0xfc11 in-cluster."""
+
+    quirk_id = TUYA_PLUG_ONOFF
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0051",
+            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001", "0xfc11"],
+            # "out_clusters": []
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    0xFC11,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+
 class Plug_v3(EnchantedDevice):
     """Tuya TS011F plug. One plug is _Tz3000_0Zfrhq4I."""
 
