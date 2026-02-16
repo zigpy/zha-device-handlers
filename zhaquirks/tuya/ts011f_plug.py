@@ -1141,6 +1141,7 @@ class Plug_v2_with_fc11(EnchantedDevice):
                     TuyaZBMeteringClusterWithUnit,
                     TuyaZBElectricalMeasurement,
                     TuyaZBExternalSwitchTypeCluster,
+                    0xFC11,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
