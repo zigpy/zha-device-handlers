@@ -54,6 +54,7 @@ ZCL_TUYA_BUTTON_1_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
 ZCL_TUYA_BUTTON_2_SINGLE_PRESS = b"\tN\x06\x01\x1f\x02\x04\x00\x01\x00"
 ZCL_TUYA_BUTTON_2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
 ZCL_TUYA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
+ZCL_TUYA_BATTERY_REPORT_100_PCT = b"\tv\x06\x00\xed\n\x02\x00\x04\x00\x00\x00d"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
 ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
@@ -120,48 +121,59 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "quirk,raw_event,expected_attr_name,expected_attr_value",
+    "quirk,raw_event,button_number,press_type,expected_attr_value",
     (
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_1_SINGLE_PRESS,
-            "btn_1_pressed",
+            1,
+            "single",
             0x00,
         ),
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_1_DOUBLE_PRESS,
-            "btn_1_pressed",
+            1,
+            "double",
             0x01,
         ),
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_1_LONG_PRESS,
-            "btn_1_pressed",
+            1,
+            "long",
             0x02,
         ),
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_2_SINGLE_PRESS,
-            "btn_2_pressed",
+            2,
+            "single",
             0x00,
         ),
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_2_DOUBLE_PRESS,
-            "btn_2_pressed",
+            2,
+            "double",
             0x01,
         ),
         (
             zhaquirks.tuya.ts0021.TS0021,
             ZCL_TUYA_BUTTON_2_LONG_PRESS,
-            "btn_2_pressed",
+            2,
+            "long",
             0x02,
         ),
     ),
 )
-async def test_ts0021_switch(
-    zigpy_device_from_quirk, quirk, raw_event, expected_attr_name, expected_attr_value
+async def test_ts0021_switch_button_press(
+    zigpy_device_from_quirk,
+    quirk,
+    raw_event,
+    button_number,
+    press_type,
+    expected_attr_value,
 ):
     """Test tuya TS0021 2-gang switch."""
 
@@ -169,6 +181,8 @@ async def test_ts0021_switch(
 
     tuya_cluster = device.endpoints[1].tuya_manufacturer
     switch_listener = ClusterListener(tuya_cluster)
+    listener = mock.MagicMock()
+    tuya_cluster.add_listener(listener)
 
     hdr, args = tuya_cluster.deserialize(raw_event)
     tuya_cluster.handle_message(hdr, args)
@@ -176,8 +190,56 @@ async def test_ts0021_switch(
     assert len(switch_listener.cluster_commands) == 1
     assert len(switch_listener.attribute_updates) == 1
 
-    assert switch_listener.attribute_updates[0][0] == expected_attr_name
+    assert switch_listener.attribute_updates[0][0] == f"btn_{button_number}_pressed"
     assert switch_listener.attribute_updates[0][1] == expected_attr_value
+
+    # We fire two events:
+    # - One for the attribute update;
+    # - One for the button press.
+    assert listener.zha_send_event.mock_calls == [
+        mock.call(
+            "attribute_updated",
+            {
+                "attribute_id": f"btn_{button_number}_pressed",
+                "attribute_name": "Unknown",
+                "value": expected_attr_value,
+            },
+        ),
+        mock.call(
+            f"button_{button_number}_{press_type}_press",
+            {
+                "button": button_number,
+                "press_type": press_type,
+            },
+        ),
+    ]
+
+
+async def test_ts0021_switch_battery_report(zigpy_device_from_quirk):
+    """Test tuya TS0021 2-gang switch."""
+
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts0021.TS0021)
+
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+    power_cluster = device.endpoints[1].power
+
+    switch_listener = ClusterListener(tuya_cluster)
+    power_listener = ClusterListener(power_cluster)
+
+    tuya_cluster.add_listener(mock.MagicMock())
+    power_cluster.add_listener(mock.MagicMock())
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_BATTERY_REPORT_100_PCT)
+    tuya_cluster.handle_message(hdr, args)
+
+    # Custom manufacturer cluster handled 1 message.
+    assert len(switch_listener.cluster_commands) == 1
+
+    # We do not update the attribute internally, but instead pipe it to the PowerConfiguration cluster.
+    assert len(switch_listener.attribute_updates) == 0
+
+    # PowerConfiguration.battery_percentage_remaining.id, 100% in 0.5% increments == 200.
+    assert power_listener.attribute_updates == [(0x0021, 200)]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))

@@ -5,7 +5,7 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import EventableCluster
+from zhaquirks import Bus, EventableCluster
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -24,7 +24,13 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID, DPToAttributeMapping, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    DPToAttributeMapping,
+    TuyaDatapointData,
+    TuyaNewManufCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 
 BTN_1 = "Button 1"
 BTN_2 = "Button 2"
@@ -35,6 +41,8 @@ ATTR_BTN_2_PRESSED = "btn_2_pressed"
 
 class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
     """Tuya Custom Cluster for mapping data points to attributes."""
+
+    PRESS_TYPE = {0: "single", 1: "double", 2: "long"}
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -50,11 +58,52 @@ class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
     data_point_handlers = {
         1: "_dp_2_attr_update",
         2: "_dp_2_attr_update",
+        10: "_battery_pct_attr_update",
     }
+
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
+        super()._dp_2_attr_update(datapoint)
+        button_n = datapoint.dp
+        press_type = self.PRESS_TYPE.get(datapoint.data.payload, "unknown")
+        action = f"button_{button_n}_{press_type}_press"
+        self.listener_event(
+            "zha_send_event",
+            action,
+            {
+                "button": button_n,
+                "press_type": press_type,
+            },
+        )
+
+    def _battery_pct_attr_update(self, datapoint: TuyaDatapointData) -> None:
+        self.endpoint.device.battery_pct_bus.listener_event(
+            "battery_percentage_reported", datapoint.data.payload
+        )
+
+
+class TuyaCustomPowerCluster(TuyaPowerConfigurationCluster2AAA):
+    """Tuya Custom PowerCluster. This cluster is used to report battery percentage."""
+
+    def __init__(self, *args, **kwargs):
+        """Init cluster."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.battery_pct_bus.add_listener(self)
+
+    def battery_percentage_reported(self, value: int) -> None:
+        """Handle battery percentage reported."""
+        # Reports battery percentage in 0.5% increments; i.e. 2 x the actual percentage.
+        self._update_attribute(
+            self.AttributeDefs.battery_percentage_remaining.id, 2 * value
+        )
 
 
 class TS0021(CustomDevice):
     """Tuya TS0021 2-button switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.battery_pct_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026,
@@ -87,8 +136,7 @@ class TS0021(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IasZone.cluster_id,
+                    TuyaCustomPowerCluster,
                     TuyaCustomCluster,
                 ],
                 OUTPUT_CLUSTERS: [
