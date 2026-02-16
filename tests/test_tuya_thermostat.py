@@ -78,6 +78,13 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
             Thermostat.AttributeDefs.system_mode,
             Thermostat.SystemMode.Heat,
         ),  # Set to heat, dp 1
+        (
+            "_TZE200_6kijc7nd",
+            b"\t\x13\x02\x00\x06\x01\x01\x00\x01\x01",
+            Thermostat.AttributeDefs.system_mode,
+            Thermostat.SystemMode.Heat,
+            # Set to heat, dp 1
+        ),
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, manuf, msg, attr, value):
