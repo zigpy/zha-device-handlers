@@ -147,6 +147,7 @@ class EventableCluster(CustomCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
