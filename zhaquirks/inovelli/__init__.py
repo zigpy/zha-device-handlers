@@ -151,7 +151,7 @@ class InovelliCluster(CustomCluster):
         )
         internal_temp_monitor = ZCLAttributeDef(
             id=0x0020,
-            type=t.uint8_t,
+            type=t.int8s,
             is_manufacturer_specific=True,
         )
         overheated = ZCLAttributeDef(
