@@ -146,7 +146,7 @@ class InovelliCluster(CustomCluster):
         )
         power_type = ZCLAttributeDef(
             id=0x0015,
-            type=t.uint8_t,
+            type=t.Bool,
             is_manufacturer_specific=True,
         )
         internal_temp_monitor = ZCLAttributeDef(
