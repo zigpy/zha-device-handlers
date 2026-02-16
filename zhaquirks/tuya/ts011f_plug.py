@@ -1098,7 +1098,10 @@ class Plug_v2(EnchantedDevice):
 
 
 class Plug_v2_with_fc11(EnchantedDevice):
-    """Another TS011F Tuya plug, Model _TZ3000_okaz9tjs (Plug_v2) with additional 0xfc11 in-cluster."""
+    """
+    Another TS011F Tuya plug, Plug_v2 variant with additional 0xfc11 input-cluster.
+    First ones using this definition are _TZ3000_okaz9tjs and _TZ3000_5f43h46b.
+    """
 
     quirk_id = TUYA_PLUG_ONOFF
 
