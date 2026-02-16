@@ -1099,7 +1099,7 @@ class Plug_v2(EnchantedDevice):
 
 class Plug_v2_var_fc11(EnchantedDevice):
     """Another TS011F Tuya plug, Plug_v2 variant with additional 0xfc11 input-cluster.
-    
+
     First ones using this definition are _TZ3000_okaz9tjs and _TZ3000_5f43h46b.
     """
 
