@@ -156,7 +156,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     # TODO: mfr-specific report should not update the standard divisor attribute,
     #  but zigpy currently does not filter this. Fix in zigpy.
     assert len(metering_listener.attribute_updates) == 0
-    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) is None
+    assert metering_cluster.get(Metering.AttributeDefs.divisor) is None
 
     # send real attribute report with current_summ_delivered, current_summ_received,
     # instantaneous_demand, and status
