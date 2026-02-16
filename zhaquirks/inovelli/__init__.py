@@ -317,7 +317,7 @@ class InovelliVZM30SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -647,7 +647,7 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -987,7 +987,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
