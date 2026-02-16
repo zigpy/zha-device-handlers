@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 import logging
 import math
+import struct
 from typing import Any, Final
 
 from zigpy import types as t
@@ -22,6 +23,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     OccupancySensing,
@@ -90,6 +92,23 @@ BUZZER_MANUAL_MUTE = "buzzer_manual_mute"
 HEARTBEAT_INDICATOR = "heartbeat_indicator"
 LINKAGE_ALARM = "linkage_alarm"
 LINKAGE_ALARM_STATE = "linkage_alarm_state"
+# E1 TRV Heartbeat keys (TLV-encoded in attribute 0x00F7)
+# String names for attribute mapping
+DEVICE_TEMPERATURE = "device_temperature"
+FIRMWARE_VERSION = "firmware_version"
+PRESET_MODE = "preset_mode"
+LOCAL_TEMPERATURE = "local_temperature"
+HEATING_SETPOINT = "heating_setpoint"
+VALVE_ALARM = "valve_alarm"
+# Integer keys from TLV structure (for direct parsing)
+HEARTBEAT_DEVICE_TEMPERATURE = 3
+HEARTBEAT_POWER_OUTAGE_COUNT = 5
+HEARTBEAT_FIRMWARE_VERSION = 13
+HEARTBEAT_PRESET = 101
+HEARTBEAT_LOCAL_TEMPERATURE = 102
+HEARTBEAT_HEATING_SETPOINT = 103
+HEARTBEAT_VALVE_ALARM = 104
+HEARTBEAT_BATTERY = 105
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
@@ -111,6 +130,65 @@ XIAOMI_NODE_DESC = NodeDescriptor(
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# ZCL data type sizes for TLV parsing (type_id: (size, signed))
+_ZCL_TYPE_SIZES: dict[int, tuple[int, bool]] = {
+    0x10: (1, False),  # Bool
+    0x20: (1, False),  # uint8
+    0x21: (2, False),  # uint16
+    0x22: (3, False),  # uint24
+    0x23: (4, False),  # uint32
+    0x24: (5, False),  # uint40
+    0x25: (6, False),  # uint48
+    0x28: (1, True),  # int8
+    0x29: (2, True),  # int16
+    0x2B: (4, True),  # int32
+}
+
+
+def _parse_tlv_heartbeat(value: bytes) -> dict[int, int | float]:
+    """Parse Xiaomi TLV-encoded heartbeat structure.
+
+    Used by E1 devices (e.g., lumi.airrtc.agl001) for attribute 0x00F7.
+    The heartbeat is a TLV-encoded structure where each entry consists of:
+    - 1 byte: key/index
+    - 1 byte: data type (ZCL type)
+    - N bytes: value (length depends on type)
+
+    Returns a dictionary mapping keys to their parsed values.
+    """
+    result: dict[int, int | float] = {}
+    if not value or not isinstance(value, (bytes, bytearray)):
+        return result
+
+    i = 0
+    while i < len(value) - 1:
+        key = value[i]
+        data_type = value[i + 1]
+
+        try:
+            if data_type in _ZCL_TYPE_SIZES:
+                size, signed = _ZCL_TYPE_SIZES[data_type]
+                result[key] = int.from_bytes(
+                    value[i + 2 : i + 2 + size], "little", signed=signed
+                )
+                i += 2 + size
+            elif data_type == 0x39:  # float (single precision)
+                result[key] = struct.unpack("<f", value[i + 2 : i + 6])[0]
+                i += 6
+            else:
+                _LOGGER.debug(
+                    "Unknown data type 0x%02x at position %d in TLV heartbeat",
+                    data_type,
+                    i,
+                )
+                break
+        except (IndexError, struct.error):
+            _LOGGER.debug("Error parsing TLV heartbeat at position %d", i)
+            break
+
+    return result
 
 
 class XiaomiCustomDevice(CustomDevice):
@@ -282,6 +360,34 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.ias_zone.update_attribute(
                 IasZone.AttributeDefs.zone_status.id, attributes[SMOKE]
             )
+
+        self._dispatch_e1_trv_attributes(attributes)
+
+    def _dispatch_e1_trv_attributes(self, attributes: dict[str, Any]) -> None:
+        """Dispatch E1 TRV specific attributes from heartbeat data."""
+        if DEVICE_TEMPERATURE in attributes:
+            if hasattr(self.endpoint, "device_temperature"):
+                # Device temperature is in degrees Celsius, ZCL expects centidegrees
+                self.endpoint.device_temperature.update_attribute(
+                    DeviceTemperature.AttributeDefs.current_temperature.id,
+                    attributes[DEVICE_TEMPERATURE] * 100,
+                )
+
+        if LOCAL_TEMPERATURE in attributes:
+            if hasattr(self.endpoint, "thermostat"):
+                # Temperature is already in centidegrees from heartbeat
+                self.endpoint.thermostat.update_attribute(
+                    Thermostat.AttributeDefs.local_temperature.id,
+                    attributes[LOCAL_TEMPERATURE],
+                )
+
+        if FIRMWARE_VERSION in attributes:
+            if hasattr(self.endpoint, "basic"):
+                version_str = str(attributes[FIRMWARE_VERSION])
+                self.endpoint.basic.update_attribute(
+                    Basic.AttributeDefs.sw_build_id.id,
+                    version_str,
+                )
 
     def _iter_parse_attr_report(
         self, data: bytes
@@ -455,6 +561,31 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({163: BUZZER_MANUAL_MUTE})
             attribute_names.update({164: HEARTBEAT_INDICATOR})
             attribute_names.update({165: LINKAGE_ALARM})
+        elif self.endpoint.device.model == "lumi.airrtc.agl001":
+            # E1 TRV uses TLV-encoded heartbeat structure, not standard Xiaomi format
+            result = _parse_tlv_heartbeat(value)
+            attribute_names.update(
+                {
+                    3: DEVICE_TEMPERATURE,
+                    5: POWER_OUTAGE_COUNT,
+                    13: FIRMWARE_VERSION,
+                    101: PRESET_MODE,
+                    102: LOCAL_TEMPERATURE,
+                    103: HEATING_SETPOINT,
+                    104: VALVE_ALARM,
+                    105: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
+                }
+            )
+            # Map TLV result to attribute names
+            attributes = {}
+            for item, val in result.items():
+                key = (
+                    attribute_names[item]
+                    if item in attribute_names
+                    else "0x00f7-" + str(item)
+                )
+                attributes[key] = val
+            return attributes
         result = {}
 
         # Some attribute reports end with a stray null byte
