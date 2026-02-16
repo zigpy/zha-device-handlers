@@ -258,7 +258,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         converter: Callable[[Any], Any] | None = (
             lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
         ),
-    ) -> Self:
+    ) -> QuirkBuilder:
         """Add a Tuya Illuminance Configuration."""
         self.tuya_dp(
             dp_id,
