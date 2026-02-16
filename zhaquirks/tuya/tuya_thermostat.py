@@ -67,6 +67,14 @@ class PresetModeV04(t.enum8):
     Eco = 0x03
 
 
+class PresetModeV05(t.enum8):
+    """Tuya preset mode v05 enum."""
+
+    Manual = 0x00
+    Auto = 0x01
+    Temporary_Manual = 0x03
+
+
 class SensorMode(t.enum8):
     """Tuya sensor mode enum."""
 
@@ -599,6 +607,77 @@ base_avatto_quirk = (
         off_value=1,
         translation_key="invert_relay",
         fallback_name="Invert relay",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+# ANFEL HY09BW ZIGBEE
+(
+    TuyaQuirkBuilder("_TZE200_mzik0ov2", "TS0601")
+    .tuya_dp(
+        dp_id=125,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=50,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_enum(
+        dp_id=128,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV05,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="regulator_set_point",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0.5,
+        max_value=2.5,
+        step=0.5,
+        multiplier=0.1,
+        translation_key="regulator_set_point",
+        fallback_name="Regulator set point",
+    )
+    .tuya_dp(
+        dp_id=114,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
     )
     .adds(TuyaThermostat)
     .skip_configuration()

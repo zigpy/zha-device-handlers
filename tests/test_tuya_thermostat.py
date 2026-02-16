@@ -78,6 +78,30 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
             Thermostat.AttributeDefs.system_mode,
             Thermostat.SystemMode.Heat,
         ),  # Set to heat, dp 1
+        (
+            "_TZE200_mzik0ov2",
+            b"\t\x13\x02\x00\x06\x7d\x01\x00\x01\x01",
+            Thermostat.AttributeDefs.system_mode,
+            Thermostat.SystemMode.Heat,
+        ),  # Set to heat, dp 125
+        (
+            "_TZE200_mzik0ov2",
+            b"\t\x16\x02\x00\t\x10\x02\x00\x04\x00\x00\x00\xeb",
+            Thermostat.AttributeDefs.local_temperature,
+            2350,
+        ),  # Current temp 23.5, dp 16
+        (
+            "_TZE200_mzik0ov2",
+            b"\t\x15\x02\x00\x08\x32\x02\x00\x04\x00\x00\x00\xaa",
+            Thermostat.AttributeDefs.occupied_heating_setpoint,
+            1700,
+        ),  # Setpoint to 17, dp 50
+        (
+            "_TZE200_mzik0ov2",
+            b"\t\x1d\x02\x00\x10\x72\x02\x00\x04\x00\x00\x00\x23",
+            Thermostat.AttributeDefs.max_heat_setpoint_limit,
+            3500,
+        ),  # Max heat set point, dp 114
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, manuf, msg, attr, value):
@@ -144,6 +168,12 @@ async def test_tuya_no_mcu_version(zigpy_device_from_v2_quirk):
             19,
             -99,
         ),  # Local temp calibration to -9.9, dp 19
+        (
+            "_TZE200_mzik0ov2",
+            b"\t\x1d\x02\x00\x10\x6d\x02\x00\x04\xff\xff\xff\xec",
+            109,
+            -20,
+        ),  # Local temp calibration to -2, dp 109
     ],
 )
 async def test_handle_get_data_tmcu(
