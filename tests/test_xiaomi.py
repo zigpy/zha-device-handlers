@@ -940,13 +940,13 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ],
 )
 async def test_xiaomi_e1_thermostat_rw_redirection(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
     attr_redirect,
     attr_no_redirect,
 ):
     """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat with id and named reads/writes."""
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     thermostat_cluster = device.endpoints[1].thermostat
@@ -1053,11 +1053,10 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert len(opple_cluster._write_attributes.mock_calls) == 0
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
-async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
+async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_v2_quirk):
     """Test update_attribute on Xiaomi E1 thermostat."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(manufacturer="LUMI", model="lumi.airrtc.agl001")
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)

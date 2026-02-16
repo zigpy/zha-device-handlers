@@ -2,33 +2,21 @@
 
 from __future__ import annotations
 
-from functools import reduce
 import math
 import struct
 from typing import Any, Final
 
-from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTemperature
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.xiaomi import (
-    LUMI,
-    XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
+from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
 
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
 
@@ -51,8 +39,6 @@ SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
 
-XIAOMI_CLUSTER_ID = 0xFCC0
-
 DAYS_MAP = {
     "mon": 0x02,
     "tue": 0x04,
@@ -65,10 +51,25 @@ DAYS_MAP = {
 NEXT_DAY_FLAG = 1 << 15
 
 
+class Preset(t.enum8):
+    """TRV operating preset."""
+
+    Manual = 0x00
+    Auto = 0x01
+    Away = 0x02
+
+
+class SensorMode(t.enum8):
+    """Temperature sensor mode."""
+
+    Internal = 0x00
+    ExternalPaired = 0x01
+    ExternalInput = 0x02
+
+
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
-    # remove cooling mode
     _CONSTANT_ATTRIBUTES = {
         Thermostat.attributes_by_name[
             "ctrl_sequence_of_oper"
@@ -84,7 +85,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
         successful_r, failed_r = {}, {}
         remaining_attributes = attributes.copy()
 
-        # read system_mode from Xiaomi cluster (can be numeric or string)
         if ZCL_SYSTEM_MODE in attributes or "system_mode" in attributes:
             self.debug("Passing 'system_mode' read to Xiaomi cluster")
 
@@ -96,13 +96,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
                 [SYSTEM_MODE], **kwargs
             )
-            # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
                 mapped_value = XIAOMI_SYSTEM_MODE_MAP[successful_r.pop(SYSTEM_MODE)]
                 successful_r[ZCL_SYSTEM_MODE] = mapped_value
-                # Update the thermostat cluster's cache
                 self._update_attribute(ZCL_SYSTEM_MODE, mapped_value)
-        # read remaining attributes from thermostat cluster
         if remaining_attributes:
             remaining_result = await super().read_attributes(
                 remaining_attributes, **kwargs
@@ -121,7 +118,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
         remaining_attributes = attributes.copy()
         system_mode_value = None
 
-        # check if system_mode is being written (can be numeric or string)
         if ZCL_SYSTEM_MODE in attributes:
             remaining_attributes.pop(ZCL_SYSTEM_MODE)
             system_mode_value = attributes.get(ZCL_SYSTEM_MODE)
@@ -129,16 +125,13 @@ class ThermostatCluster(CustomCluster, Thermostat):
             remaining_attributes.pop("system_mode")
             system_mode_value = attributes.get("system_mode")
 
-        # write system_mode to Xiaomi cluster if applicable
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
                 {SYSTEM_MODE: min(int(system_mode_value), 1)}, **kwargs
             )
-            # Update the thermostat cluster's cache
             self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
 
-        # write remaining attributes to thermostat cluster
         if remaining_attributes:
             result += await super().write_attributes(remaining_attributes, **kwargs)
         return result
@@ -352,7 +345,7 @@ class ScheduleSettings(t.LVBytes):
             prev_time = event.get_time()
         if any(d < 60 for d in durations):
             raise ValueError("The individual times must be at least 1 hour apart")
-        if reduce((lambda x, y: x + y), durations) > full_day:
+        if sum(durations) > full_day:
             raise ValueError("The start and end times must be at most 24 hours apart")
 
     @staticmethod
@@ -425,60 +418,101 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         if attrid == BATTERY_PERCENTAGE:
             self.endpoint.power.battery_percent_reported(value)
         elif attrid == SYSTEM_MODE:
-            # update ZCL system_mode attribute (e.g. on attribute reports)
             self.endpoint.thermostat.update_attribute(
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
         super()._update_attribute(attrid, value)
 
 
-class AGL001(XiaomiCustomDevice):
-    """Aqara E1 Radiator Thermostat (AGL001) Device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=1
-        # input_clusters=[0, 1, 3, 513, 64704]
-        # output_clusters=[3, 513, 64704]>
-        MODELS_INFO: [(LUMI, "lumi.airrtc.agl001")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration,
-                    AqaraThermostatSpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    AqaraThermostatSpecificCluster,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(LUMI, "lumi.airrtc.agl001")
+    .replaces(ThermostatCluster)
+    .replaces(AqaraThermostatSpecificCluster)
+    .replaces(XiaomiPowerConfiguration)
+    # Switches
+    .switch(
+        AqaraThermostatSpecificCluster.AttributeDefs.child_lock.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="child_lock",
+        fallback_name="Child lock",
+        unique_id_suffix="64704-child_lock",
+    )
+    .switch(
+        AqaraThermostatSpecificCluster.AttributeDefs.window_detection.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+        unique_id_suffix="64704-window_detection",
+    )
+    .switch(
+        AqaraThermostatSpecificCluster.AttributeDefs.valve_detection.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="valve_detection",
+        fallback_name="Valve detection",
+        unique_id_suffix="64704-valve_detection",
+    )
+    .switch(
+        AqaraThermostatSpecificCluster.AttributeDefs.schedule.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="schedule",
+        fallback_name="Schedule",
+        unique_id_suffix="64704-schedule",
+    )
+    # Binary sensors
+    .binary_sensor(
+        AqaraThermostatSpecificCluster.AttributeDefs.valve_alarm.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="valve_alarm",
+        fallback_name="Valve alarm",
+        unique_id_suffix="64704-valve_alarm",
+    )
+    .binary_sensor(
+        AqaraThermostatSpecificCluster.AttributeDefs.window_open.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        device_class=BinarySensorDeviceClass.WINDOW,
+        translation_key="window_open",
+        fallback_name="Window open",
+        unique_id_suffix="64704-window_open",
+    )
+    .binary_sensor(
+        AqaraThermostatSpecificCluster.AttributeDefs.calibrated.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="calibrated",
+        fallback_name="Calibrated",
+        unique_id_suffix="64704-calibrated",
+    )
+    # Selects
+    .enum(
+        AqaraThermostatSpecificCluster.AttributeDefs.preset.name,
+        Preset,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="preset",
+        fallback_name="Preset",
+        unique_id_suffix="64704-preset",
+    )
+    .enum(
+        AqaraThermostatSpecificCluster.AttributeDefs.sensor.name,
+        SensorMode,
+        AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+        unique_id_suffix="64704-sensor",
+    )
+    # Number
+    .number(
+        AqaraThermostatSpecificCluster.AttributeDefs.away_preset_temperature.name,
+        AqaraThermostatSpecificCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="away_preset_temperature",
+        fallback_name="Away preset temperature",
+        unique_id_suffix="64704-away_preset_temperature",
+    )
+    .add_to_registry()
+)
