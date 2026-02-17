@@ -187,6 +187,19 @@ class AqaraManuSpecificCluster(CustomCluster):
                 LOGGER.debug("Failed to update lift percentage from percent value")
         if attrid in (0x0420, 0x0421):
             try:
+                # If position is stuck at an end, nudge to mid so UI enables both actions
+                current = self.endpoint.window_covering.get(
+                    WindowCovering.AttributeDefs.current_position_lift_percentage.id
+                )
+                if current in (0, 100):
+                    self.endpoint.window_covering.update_attribute(
+                        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                        50,
+                    )
+                    self.endpoint.window_covering.update_attribute(
+                        WindowCovering.AttributeDefs.current_position_lift.id,
+                        50,
+                    )
                 asyncio.create_task(
                     self.read_attributes([self.AttributeDefs.position_percent.id])
                 )
