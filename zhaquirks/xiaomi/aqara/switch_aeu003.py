@@ -105,8 +105,6 @@ class AqaraManuSpecificCluster(CustomCluster):
     _MULTI_CLICK_ATTR: Final = 0x0286
     _Aqara_MFG_CODE: Final = 0x115F
     _RAW_POSITION_MASK: Final = 0xFF
-    _RAW_POSITION_OPEN: Final = 0x3F
-    _RAW_POSITION_CLOSED: Final = 0x27
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for Aqara shutter switch."""
@@ -159,6 +157,12 @@ class AqaraManuSpecificCluster(CustomCluster):
             access="r",
             is_manufacturer_specific=True,
         )
+        position_percent: Final = ZCLAttributeDef(
+            id=0x041F,
+            type=t.uint8_t,
+            access="r",
+            is_manufacturer_specific=True,
+        )
 
     def _update_attribute(self, attrid, value):
         """Log manufacturer-specific updates to help map attributes."""
@@ -168,31 +172,26 @@ class AqaraManuSpecificCluster(CustomCluster):
             attrid,
             value,
         )
-        if attrid == self.AttributeDefs.position_raw.id:
-            raw = int(value) & self._RAW_POSITION_MASK
-            span = self._RAW_POSITION_CLOSED - self._RAW_POSITION_OPEN
-            if span:
-                pct = (raw - self._RAW_POSITION_OPEN) / span * 100.0
-                pct = 100 - pct  # 0x0D=open, 0x12=closed
-                pct = max(0, min(100, int(round(pct))))
-                try:
-                    self.endpoint.window_covering.update_attribute(
-                        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
-                        pct,
-                    )
-                    self.endpoint.window_covering.update_attribute(
-                        WindowCovering.AttributeDefs.current_position_lift.id,
-                        pct,
-                    )
-                except Exception:  # noqa: BLE001 - best effort update
-                    LOGGER.debug("Failed to update lift percentage from raw value")
+        if attrid == self.AttributeDefs.position_percent.id:
+            try:
+                pct = max(0, min(100, int(value)))
+                self.endpoint.window_covering.update_attribute(
+                    WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                    pct,
+                )
+                self.endpoint.window_covering.update_attribute(
+                    WindowCovering.AttributeDefs.current_position_lift.id,
+                    pct,
+                )
+            except Exception:  # noqa: BLE001 - best effort update
+                LOGGER.debug("Failed to update lift percentage from percent value")
         if attrid in (0x0420, 0x0421):
             try:
                 asyncio.create_task(
-                    self.read_attributes([self.AttributeDefs.position_raw.id])
+                    self.read_attributes([self.AttributeDefs.position_percent.id])
                 )
             except Exception:
-                LOGGER.debug("Failed to refresh raw position on movement update")
+                LOGGER.debug("Failed to refresh position on movement update")
         super()._update_attribute(attrid, value)
 
     async def bind(self):
@@ -208,7 +207,7 @@ class AqaraManuSpecificCluster(CustomCluster):
                 {self._MULTI_CLICK_ATTR: 2}, manufacturer=self._Aqara_MFG_CODE
             )
         if self.endpoint.endpoint_id == 1:
-            await self.read_attributes([self.AttributeDefs.position_raw.id])
+            await self.read_attributes([self.AttributeDefs.position_percent.id])
         return result
 
     async def write_attributes(self, attributes, manufacturer=None):
