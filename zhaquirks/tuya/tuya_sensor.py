@@ -27,9 +27,9 @@ class TuyaTempUnitConvert(t.enum8):
 class TuyaNousTempHumiAlarm(t.enum8):
     """Tuya temperature and humidity alarm enum."""
 
-    LowerAlarm = 0x00
-    UpperAlarm = 0x01
-    Canceled = 0x02
+    Canceled = 0x00
+    LowerAlarm = 0x01
+    UpperAlarm = 0x02
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -116,7 +116,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_w6n8jeuu", "TS0601")
     .applies_to("_TZE200_vvmbj46n", "TS0601")
     .applies_to("_TZE284_vvmbj46n", "TS0601")
-    .tuya_temperature(dp_id=1, scale=10)
+    # Not using tuya_temperature because device reports negative values incorrectly
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
+        attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
+        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+    )
+    .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
     .tuya_number(
@@ -165,7 +172,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=10,
         attribute_name="alarm_temperature_max",
-        type=t.uint16_t,
+        type=t.int16s,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
         max_value=60,
@@ -178,7 +185,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=11,
         attribute_name="alarm_temperature_min",
-        type=t.uint16_t,
+        type=t.int16s,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
         max_value=60,
