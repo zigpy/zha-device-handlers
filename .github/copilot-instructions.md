@@ -371,7 +371,7 @@ class CustomOnOffCluster(CustomCluster, OnOff):
 
     class AttributeDefs(OnOff.AttributeDefs):
         custom_attr: Final = ZCLAttributeDef(
-            id=0x8000, type=t.Bool, is_manufacturer_specific=True
+            id=0x8000, type=t.Bool, manufacturer_code=0x117C
         )
 ```
 
@@ -390,11 +390,11 @@ class VOCIndex(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):  # Note: BaseAttributeDefs, not a ZCL cluster
         measured_value: Final = ZCLAttributeDef(
-            id=0x0000, type=t.Single, access="rp", is_manufacturer_specific=True
+            id=0x0000, type=t.Single, access="rp", manufacturer_code=0x117C
         )
 ```
 
-**`is_manufacturer_specific`**: When `True`, the device's manufacturer code (from its NodeDescriptor) is sent with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request.
+**`manufacturer_code`**: Specifies the manufacturer code to send with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request. Use the hex code for the manufacturer (e.g., `0x117C` for IKEA, `0x115F` for Xiaomi). Set `manufacturer_code=None` to explicitly suppress sending a manufacturer code, even on manufacturer-specific clusters. This replaces the older `is_manufacturer_specific=True` approach which obtained the code from the device's NodeDescriptor.
 
 **`access`**: Controls attribute read/write/report capabilities. Not needed to explicitly specify - defaults to `"rwp"`. Values:
 - `"r"` - Read-only
@@ -413,7 +413,7 @@ class BoschOperatingMode(t.enum8):
 
 # Use in attribute definition:
 operating_mode = ZCLAttributeDef(
-    id=0x4007, type=BoschOperatingMode, is_manufacturer_specific=True
+    id=0x4007, type=BoschOperatingMode, manufacturer_code=0x1209
 )
 ```
 
@@ -459,6 +459,23 @@ def test_my_device_signature(assert_signature_matches_quirk):
     signature = {...}  # From HA device page "Zigbee Device Signature"
     assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
+
+**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+
+```python
+(
+    QuirkBuilder("Manufacturer", "Model")
+    .friendly_name(model="Wireless Mini Switch", manufacturer="Acme")
+    .replaces(ExistingCustomCluster)
+    .device_automation_triggers({
+        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
+        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+    })
+    .add_to_registry()
+)
+```
+
+Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, or custom filter functions.
 
 ## Code Organization
 

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Any
 
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.zcl import AttributeReadEvent, Cluster, foundation
+from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -110,10 +110,17 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
+        self.on_event(
+            AttributeReadEvent.event_type, self._handle_attribute_read_or_reported
+        )
+        self.on_event(
+            AttributeReportedEvent.event_type, self._handle_attribute_read_or_reported
+        )
 
-    def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
-        """Handle attribute read event."""
+    def _handle_attribute_read_or_reported(
+        self, event: AttributeReadEvent | AttributeReportedEvent
+    ) -> None:
+        """Handle attribute read/reported events."""
         if event.attribute_id == self.AttributeDefs.present_value.id:
             self.endpoint.window_covering.update_attribute(
                 WindowCovering.AttributeDefs.current_position_lift_percentage.id,
@@ -256,25 +263,6 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         return success, failure
 
 
-class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
-    """MultistateOutput cluster used for writing commands (up_open, down_close, stop).
-
-    This requires a change to the present_value attribute type because the device responds
-    with an error when using the standard t.Single type.
-    """
-
-    class AttributeDefs(MultistateOutput.AttributeDefs):
-        """Aqara attribute definition overrides."""
-
-        present_value: Final = ZCLAttributeDef(
-            id=0x0055,
-            type=t.Single,
-            zcl_type=DataTypeId.uint16,
-            access="r*w",
-            mandatory=True,
-        )
-
-
 (
     QuirkBuilder(LUMI, "lumi.curtain.acn002")
     # temporarily commented out due to potentially breaking existing blueprints
@@ -288,7 +276,6 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .replaces(AnalogOutputRollerE1, endpoint_id=1)
     .replaces(BasicCluster, endpoint_id=1)
-    .replaces(MultistateOutputRollerE1, endpoint_id=1)
     .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
     .replaces(WindowCoveringRollerE1, endpoint_id=1)
     .replaces(XiaomiAqaraRollerE1, endpoint_id=1)
