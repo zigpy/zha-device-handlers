@@ -105,8 +105,8 @@ class AqaraManuSpecificCluster(CustomCluster):
     _MULTI_CLICK_ATTR: Final = 0x0286
     _Aqara_MFG_CODE: Final = 0x115F
     _RAW_POSITION_MASK: Final = 0xFF
-    _RAW_POSITION_OPEN: Final = 0x0D
-    _RAW_POSITION_CLOSED: Final = 0x12
+    _RAW_POSITION_OPEN: Final = 0x3F
+    _RAW_POSITION_CLOSED: Final = 0x27
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for Aqara shutter switch."""
@@ -178,6 +178,10 @@ class AqaraManuSpecificCluster(CustomCluster):
                 try:
                     self.endpoint.window_covering.update_attribute(
                         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                        pct,
+                    )
+                    self.endpoint.window_covering.update_attribute(
+                        WindowCovering.AttributeDefs.current_position_lift.id,
                         pct,
                     )
                 except Exception:  # noqa: BLE001 - best effort update
