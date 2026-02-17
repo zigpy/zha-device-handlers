@@ -174,7 +174,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         )
         if attrid == self.AttributeDefs.position_percent.id:
             try:
-                pct = max(0, min(100, int(value)))
+                pct = max(0, min(100, 100 - int(value)))
                 self.endpoint.window_covering.update_attribute(
                     WindowCovering.AttributeDefs.current_position_lift_percentage.id,
                     pct,
