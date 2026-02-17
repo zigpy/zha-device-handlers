@@ -1632,6 +1632,7 @@ class LightControlMode(t.enum8):
         attribute_name="brightness_threshold",
         type=t.uint16_t,
         device_class=SensorDeviceClass.ILLUMINANCE,
+        unit="lx",
         min_value=0,
         max_value=1000,
         step=1,
@@ -1640,22 +1641,21 @@ class LightControlMode(t.enum8):
     )
     .tuya_number(
         dp_id=103,
-        attribute_name="motion_hold_time",
+        attribute_name="fading_time",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=3600,
         step=1,
-        translation_key="motion_hold_time",
-        fallback_name="Motion hold time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .tuya_binary_sensor(
         dp_id=104,
         attribute_name="motion",
         device_class=BinarySensorDeviceClass.MOTION,
         entity_type=EntityType.STANDARD,
-        translation_key="motion",
         fallback_name="Motion",
     )
     .tuya_enum(
@@ -1672,6 +1672,7 @@ class LightControlMode(t.enum8):
         min_value=0,
         max_value=100,
         step=1,
+        unit="%",
         translation_key="motion_sensitivity",
         fallback_name="Motion sensitivity",
     )

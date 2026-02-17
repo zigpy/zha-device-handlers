@@ -270,6 +270,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     tuya_command,
                     expect_reply=cluster_data.expect_reply,
                     manufacturer=cluster_data.manufacturer,
+                    priority=t.PacketPriority.NORMAL,
                 )
             )
 
