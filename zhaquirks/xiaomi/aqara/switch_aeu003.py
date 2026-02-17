@@ -3,6 +3,7 @@
 from typing import Final
 
 import logging
+import asyncio
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
@@ -183,7 +184,9 @@ class AqaraManuSpecificCluster(CustomCluster):
                     LOGGER.debug("Failed to update lift percentage from raw value")
         if attrid in (0x0420, 0x0421):
             try:
-                self.read_attributes([self.AttributeDefs.position_raw.id])
+                asyncio.create_task(
+                    self.read_attributes([self.AttributeDefs.position_raw.id])
+                )
             except Exception:
                 LOGGER.debug("Failed to refresh raw position on movement update")
         super()._update_attribute(attrid, value)
