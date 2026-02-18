@@ -2,6 +2,14 @@
 
 import asyncio
 
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    foundation,
+)
+
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
 ZCL_OCC_ATTR_RPT_OCC = b"\x18d\n\x00\x00\x18\x01"
 
@@ -14,10 +22,25 @@ class ClusterListener:
         self.cluster_commands = []
         self.attribute_updates = []
         cluster.add_listener(self)
+        cluster.on_event(AttributeReportedEvent.event_type, self._on_attribute_event)
+        cluster.on_event(AttributeUpdatedEvent.event_type, self._on_attribute_event)
+        cluster.on_event(AttributeWrittenEvent.event_type, self._on_attribute_written)
+        cluster.on_event(AttributeReadEvent.event_type, self._on_attribute_read)
 
-    def attribute_updated(self, attr_id, value, timestamp):
-        """Attribute updated listener."""
-        self.attribute_updates.append((attr_id, value))
+    def _on_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ):
+        """Handle attribute report/update event."""
+        self.attribute_updates.append((event.attribute_id, event.value))
+
+    def _on_attribute_written(self, event: AttributeWrittenEvent):
+        """Handle attribute written event (only for successful writes)."""
+        if event.status == foundation.Status.SUCCESS:
+            self.attribute_updates.append((event.attribute_id, event.value))
+
+    def _on_attribute_read(self, event: AttributeReadEvent):
+        """Handle attribute read event."""
+        self.attribute_updates.append((event.attribute_id, event.value))
 
     def cluster_command(self, tsn, command_id, args):
         """Command received listener."""
