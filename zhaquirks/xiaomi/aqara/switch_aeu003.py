@@ -1,9 +1,8 @@
 """Quirk for Aqara Shutter Switch H2 EU (lumi.switch.aeu003)."""
 
-from typing import Final
-
-import logging
 import asyncio
+import logging
+from typing import Final
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
@@ -100,6 +99,12 @@ class AqaraPowerOnMode(t.enum8):
 class AqaraManuSpecificCluster(CustomCluster):
     """Manufacturer-specific cluster for Aqara shutter switch features."""
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._movement_stopped: bool = False
+        self._position_refresh_task: asyncio.Task | None = None
+        super().__init__(*args, **kwargs)
+
     cluster_id: Final = 0xFCC0
     ep_attribute: Final = "opple_cluster"
     _MULTI_CLICK_ATTR: Final = 0x0286
@@ -190,7 +195,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         if attrid in (0x0420, 0x0421):
             try:
                 self._movement_stopped = value == 0
-                asyncio.create_task(
+                self._position_refresh_task = asyncio.create_task(
                     self.read_attributes([self.AttributeDefs.position_percent.id])
                 )
             except Exception:
