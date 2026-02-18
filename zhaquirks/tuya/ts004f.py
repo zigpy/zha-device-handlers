@@ -440,13 +440,12 @@ class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
         },
     }
 
+
 class TuyaSmartRemote004FRotaryDimmer(EnchantedDevice):
     """Tuya TS004F rotary encoder remote, _TZ3000_402vrq2i variant."""
 
     signature = {
-        MODELS_INFO: [
-            ("_TZ3000_402vrq2i", "TS004F")
-        ],
+        MODELS_INFO: [("_TZ3000_402vrq2i", "TS004F")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -501,11 +500,7 @@ class TuyaSmartRemote004FRotaryDimmer(EnchantedDevice):
 
     device_automation_triggers = {
         # --- Dimmer / Remote mode ---
-        (SHORT_PRESS, BUTTON): {
-            COMMAND: COMMAND_TOGGLE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 6
-        },
+        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, CLUSTER_ID: 6},
         (ROTATED, DIM_UP): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
@@ -530,20 +525,10 @@ class TuyaSmartRemote004FRotaryDimmer(EnchantedDevice):
             CLUSTER_ID: 768,
             PARAMS: {"step_mode": 3},
         },
-
         # --- Scene mode ---
-        (SHORT_PRESS, BUTTON_1): {
-            ENDPOINT_ID: 1,
-            COMMAND: SHORT_PRESS
-        },
-        (DOUBLE_PRESS, BUTTON_1): {
-            ENDPOINT_ID: 1,
-            COMMAND: DOUBLE_PRESS
-        },
-        (LONG_PRESS, BUTTON_1): {
-            ENDPOINT_ID: 1,
-            COMMAND: LONG_PRESS
-        },
+        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
+        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (SHORT_PRESS, RIGHT): {
             COMMAND: RIGHT,
             ENDPOINT_ID: 1,
@@ -555,6 +540,7 @@ class TuyaSmartRemote004FRotaryDimmer(EnchantedDevice):
             CLUSTER_ID: 6,
         },
     }
+
 
 class TuyaSmartRemote004F(EnchantedDevice):
     """Tuya 4-button New version remote device."""
@@ -648,5 +634,3 @@ class TuyaSmartRemote004F(EnchantedDevice):
             ENDPOINT_ID: 1,
         },
     }
-
-
