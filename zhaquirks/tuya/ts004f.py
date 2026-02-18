@@ -481,6 +481,8 @@ class TuyaSmartRemote004FRotaryDimmer(EnchantedDevice):
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
