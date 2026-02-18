@@ -1,9 +1,13 @@
 """Ubisys Switching Actuator S1 quirk."""
 
+from typing import Final
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
@@ -18,8 +22,30 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     }
 
 
+class UbisysCluster(CustomCluster):
+    """Ubisys custom cluster 0xFC00."""
+
+    cluster_id = 0xFC00
+    name = "Ubisys Cluster 0xFC00"
+    ep_attribute = "ubisys_cluster_0xfc00"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Ubisys attribute definitions."""
+
+        input_configurations: Final = ZCLAttributeDef(
+            id=0x0000, type=t.LVList[t.uint8_t, t.uint16_t], manufacturer_code=None
+        )
+        input_actions: Final = ZCLAttributeDef(
+            id=0x0001, type=t.LVList[t.LVBytes, t.uint16_t], manufacturer_code=None
+        )
+        cluster_revision: Final = ZCLAttributeDef(
+            id=0xFFFD, type=t.uint16_t, manufacturer_code=None
+        )
+
+
 (
     QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
+    .replaces(UbisysCluster, endpoint_id=232)
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
