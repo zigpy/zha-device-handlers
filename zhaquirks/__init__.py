@@ -70,12 +70,28 @@ class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls.
 
     Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _DEFAULT_VALUES to provide default values for attribute ids. These are
+    returned when no value is cached yet, but are overridden by any cached value.
     Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
     These are attributes that should be populated later.
     """
 
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
+
+    def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
+        """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
+        result = super().get(key)
+        if result is not None:
+            return result
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return default
+        if attr_def.id in self._DEFAULT_VALUES:
+            return self._DEFAULT_VALUES[attr_def.id]
+        return default
 
     async def bind(self):
         """Prevent bind."""
@@ -106,7 +122,9 @@ class LocalDataCluster(CustomCluster):
             if record.attrid in self._CONSTANT_ATTRIBUTES:
                 record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
             else:
-                record.value.value = self._attr_cache.get(record.attrid)
+                record.value.value = self._attr_cache.get(
+                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+                )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
