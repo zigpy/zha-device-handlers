@@ -19,9 +19,8 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseCommandDefs
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
-    CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -41,11 +40,6 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Water_Sensor
     }
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.ias_bus.add_listener(self)
-
     async def bind(self):
         """Bind the ApplianceEventAlerts cluster instead."""
         return await self.endpoint.appliance_event.bind()
@@ -57,15 +51,6 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Ignore write_attributes."""
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-    def update_state(self, value):
-        """Update IAS state."""
-        super().listener_event(
-            CLUSTER_COMMAND,
-            None,
-            IasZone.ClientCommandDefs.status_change_notification.id,
-            [value],
-        )
 
 
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
@@ -93,16 +78,14 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         if hdr.command_id == self.ClientCommandDefs.alerts_notification.id:
             state = bool(args[1] & 0x1000)
 
-            self.endpoint.device.ias_bus.listener_event("update_state", state)
+            self.endpoint.ias_zone.update_attribute(
+                IasZone.AttributeDefs.zone_status.id,
+                IasZone.ZoneStatus.Alarm_1 if state else 0,
+            )
 
 
 class WAXMANleakSMARTv2(CustomDevice):
     """Custom device representing WAXMAN leakSMART v2."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
@@ -150,11 +133,6 @@ class WAXMANleakSMARTv2(CustomDevice):
 
 class WAXMANleakSMARTv2NOPOLL(CustomDevice):
     """Custom WAXMAN leakSMART v2 without PollControl cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
