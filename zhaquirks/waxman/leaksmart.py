@@ -32,10 +32,6 @@ from zhaquirks.const import (
 from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
-MOISTURE_TYPE = 0x002A
-WAXMAN_CMDID = 0x0001
-ZONE_STATE = 0
-ZONE_TYPE = 0x0001
 
 
 class EmulatedIasZone(LocalDataCluster, IasZone):
@@ -64,7 +60,12 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 
     def update_state(self, value):
         """Update IAS state."""
-        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [value])
+        super().listener_event(
+            CLUSTER_COMMAND,
+            None,
+            IasZone.ClientCommandDefs.status_change_notification.id,
+            [value],
+        )
 
 
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
@@ -74,7 +75,7 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         """Client command definitions."""
 
         alerts_notification = foundation.ZCLCommandDef(
-            id=WAXMAN_CMDID,
+            id=0x0001,
             schema={"param1": t.uint8_t, "state": t.bitmap24},
             is_manufacturer_specific=True,
         )
@@ -94,7 +95,7 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         ] = None,
     ):
         """Handle a cluster command received on this cluster."""
-        if hdr.command_id == WAXMAN_CMDID:
+        if hdr.command_id == self.ClientCommandDefs.alerts_notification.id:
             state = bool(args[1] & 0x1000)
 
             self.endpoint.device.ias_bus.listener_event("update_state", state)
