@@ -1,9 +1,13 @@
 """Ubisys Dimmer D1 quirk."""
 
+from typing import Any, Final
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -27,12 +31,38 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 
 class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
-    """Input configuration for the D1.
+    """Input configuration for the D1 with two inputs.
 
-    EP2 -> EP1 with OnOff + LevelControl self-bindings.
+    Input 1: EP2 -> EP1 (OnOff + LevelControl)
+    Input 2: EP3 -> EP1 (OnOff + LevelControl)
     """
 
     BIND_CLUSTERS: list[int] = [OnOff.cluster_id, LevelControl.cluster_id]
+
+    class AttributeDefs(BaseAttributeDefs):
+        """D1 input configuration attributes for both inputs."""
+
+        input_mode_1: Final = ZCLAttributeDef(id=0x0000, type=InputMode)
+        detached_1: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
+        input_mode_2: Final = ZCLAttributeDef(id=0x0002, type=InputMode)
+        detached_2: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
+
+    _ATTRIBUTE_DEFAULTS: dict[int, Any] = {
+        AttributeDefs.input_mode_1.id: InputMode.Toggle,
+        AttributeDefs.detached_1.id: t.Bool.false,
+        AttributeDefs.input_mode_2.id: InputMode.Toggle,
+        AttributeDefs.detached_2.id: t.Bool.true,
+    }
+
+    _INPUT_MODE_CONFIG: tuple[tuple[str, int, int], ...] = (
+        ("input_mode_1", 0, 2),  # Input 1: index 0, source EP2
+        ("input_mode_2", 1, 3),  # Input 2: index 1, source EP3
+    )
+
+    _DETACHED_CONFIG: tuple[tuple[str, int, int], ...] = (
+        ("detached_1", 2, 1),  # EP2 -> EP1
+        ("detached_2", 3, 1),  # EP3 -> EP1
+    )
 
 
 (
@@ -40,17 +70,34 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
     .replaces(UbisysCluster, endpoint_id=232)
     .adds(UbisysD1InputConfigCluster)
     .enum(
-        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.input_mode.name,
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name,
         enum_class=InputMode,
         cluster_id=UbisysD1InputConfigCluster.cluster_id,
-        translation_key="input_mode",
-        fallback_name="Input mode",
+        translation_key="input_mode_id",
+        fallback_name="Input mode 1",
+        translation_placeholders={"input_id": "1"},
     )
     .switch(
-        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.detached.name,
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.detached_1.name,
         cluster_id=UbisysD1InputConfigCluster.cluster_id,
-        translation_key="detached",
-        fallback_name="Detached mode",
+        translation_key="detached_id",
+        fallback_name="Detached mode 1",
+        translation_placeholders={"input_id": "1"},
+    )
+    .enum(
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.name,
+        enum_class=InputMode,
+        cluster_id=UbisysD1InputConfigCluster.cluster_id,
+        translation_key="input_mode_id",
+        fallback_name="Input mode 2",
+        translation_placeholders={"input_id": "2"},
+    )
+    .switch(
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.detached_2.name,
+        cluster_id=UbisysD1InputConfigCluster.cluster_id,
+        translation_key="detached_id",
+        fallback_name="Detached mode 2",
+        translation_placeholders={"input_id": "2"},
     )
     .replaces(UbisysElectricalMeasurement, endpoint_id=4)
     # The device exposes total active power on multiple attributes,

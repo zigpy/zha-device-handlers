@@ -338,9 +338,79 @@ async def test_s2_detached_2(ubisys_s2, detach):
 # --- D1 Tests ---
 
 
+@pytest.mark.parametrize("mode", list(InputMode))
+async def test_d1_input_mode_1_write(ubisys_d1, mode):
+    """Test D1 input_mode_1 writes actions for both inputs to endpoint 232."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name: mode}
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        # Actions for both inputs: input 1 with new mode, input 2 with default Toggle
+        expected_actions = build_onoff_actions(0, 2, mode) + build_onoff_actions(
+            1, 3, InputMode.Toggle
+        )
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.id,
+        mode,
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("mode", list(InputMode))
+async def test_d1_input_mode_2_write(ubisys_d1, mode):
+    """Test D1 input_mode_2 writes actions for both inputs to endpoint 232."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.name: mode}
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        # Actions for both inputs: input 1 with default Toggle, input 2 with new mode
+        expected_actions = build_onoff_actions(
+            0, 2, InputMode.Toggle
+        ) + build_onoff_actions(1, 3, mode)
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
+        mode,
+    ) in input_config_listener.attribute_updates
+
+
 @pytest.mark.parametrize("detach", [True, False])
-async def test_d1_detached_mode(ubisys_d1, detach):
-    """Test D1 detached sends bind/unbind for both OnOff and LevelControl."""
+async def test_d1_detached_1(ubisys_d1, detach):
+    """Test D1 detached_1 sends bind/unbind for EP2 -> EP1 on OnOff + LevelControl."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     zdo = ubisys_d1.zdo
 
@@ -353,7 +423,7 @@ async def test_d1_detached_mode(ubisys_d1, detach):
         mock.AsyncMock(return_value=[0]),
     ) as mock_req:
         await input_config_cluster.write_attributes(
-            {UbisysD1InputConfigCluster.AttributeDefs.detached.name: detach}
+            {UbisysD1InputConfigCluster.AttributeDefs.detached_1.name: detach}
         )
 
         # Should be called twice: once for OnOff, once for LevelControl
@@ -376,7 +446,50 @@ async def test_d1_detached_mode(ubisys_d1, detach):
         assert dst.endpoint == 1  # EP1
 
     assert (
-        UbisysD1InputConfigCluster.AttributeDefs.detached.id,
+        UbisysD1InputConfigCluster.AttributeDefs.detached_1.id,
+        t.Bool(detach),
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("detach", [True, False])
+async def test_d1_detached_2(ubisys_d1, detach):
+    """Test D1 detached_2 sends bind/unbind for EP3 -> EP1 on OnOff + LevelControl."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    zdo = ubisys_d1.zdo
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    req_name = "Unbind_req" if detach else "Bind_req"
+    with mock.patch.object(
+        zdo,
+        req_name,
+        mock.AsyncMock(return_value=[0]),
+    ) as mock_req:
+        await input_config_cluster.write_attributes(
+            {UbisysD1InputConfigCluster.AttributeDefs.detached_2.name: detach}
+        )
+
+        # Should be called twice: once for OnOff, once for LevelControl
+        assert mock_req.call_count == 2
+
+        # First call: OnOff
+        args_onoff = mock_req.call_args_list[0][0]
+        assert args_onoff[0] == ubisys_d1.ieee
+        assert args_onoff[1] == 3  # EP3
+        assert args_onoff[2] == OnOff.cluster_id
+        dst = args_onoff[3]
+        assert dst.endpoint == 1  # EP1
+
+        # Second call: LevelControl
+        args_level = mock_req.call_args_list[1][0]
+        assert args_level[0] == ubisys_d1.ieee
+        assert args_level[1] == 3  # EP3
+        assert args_level[2] == LevelControl.cluster_id
+        dst = args_level[3]
+        assert dst.endpoint == 1  # EP1
+
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.detached_2.id,
         t.Bool(detach),
     ) in input_config_listener.attribute_updates
 
