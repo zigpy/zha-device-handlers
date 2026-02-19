@@ -9,7 +9,6 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
@@ -166,25 +165,6 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         step=1,
         translation_key="minimum_on_level",
         fallback_name="Minimum on level",
-    )
-    # --- Ballast min/max level ---
-    .number(
-        attribute_name=Ballast.AttributeDefs.min_level.name,
-        cluster_id=Ballast.cluster_id,
-        min_value=1,
-        max_value=254,
-        step=1,
-        translation_key="ballast_minimum_level",
-        fallback_name="Ballast minimum level",
-    )
-    .number(
-        attribute_name=Ballast.AttributeDefs.max_level.name,
-        cluster_id=Ballast.cluster_id,
-        min_value=1,
-        max_value=254,
-        step=1,
-        translation_key="ballast_maximum_level",
-        fallback_name="Ballast maximum level",
     )
     # --- Dimmer capabilities (diagnostic binary sensors) ---
     .binary_sensor(
