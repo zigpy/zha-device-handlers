@@ -18,6 +18,7 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="J1 (5502)")
+    .applies_to(manufacturer="ubisys", model="J1-R (5602)")
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
