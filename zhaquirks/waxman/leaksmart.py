@@ -44,14 +44,6 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         """Bind the ApplianceEventAlerts cluster instead."""
         return await self.endpoint.appliance_event.bind()
 
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Ignore write_attributes."""
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
 
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
