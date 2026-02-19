@@ -3,7 +3,9 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener
@@ -91,4 +93,43 @@ async def test_input_mode_write(ubisys_s1, mode):
     assert (
         UbisysInputConfigCluster.AttributeDefs.input_mode.id,
         mode,
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("detach", [True, False])
+async def test_detached_mode(ubisys_s1, detach):
+    """Test detached switch sends bind/unbind for self-binding on OnOff."""
+    input_config_cluster = ubisys_s1.endpoints[1].ubisys_input_config
+    zdo = ubisys_s1.zdo
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        zdo,
+        "Unbind_req" if detach else "Bind_req",
+        mock.AsyncMock(return_value=[0]),
+    ) as mock_req:
+        await input_config_cluster.write_attributes(
+            {UbisysInputConfigCluster.AttributeDefs.detached.name: detach}
+        )
+
+        assert mock_req.call_count == 1
+
+        args = mock_req.call_args[0]
+        # Source IEEE
+        assert args[0] == ubisys_s1.ieee
+        # Source endpoint (input)
+        assert args[1] == UbisysInputConfigCluster.INPUT_ENDPOINT
+        # Cluster
+        assert args[2] == OnOff.cluster_id
+        # Destination: self-bind to output endpoint
+        dst = args[3]
+        assert dst.addrmode == 0x03
+        assert dst.ieee == ubisys_s1.ieee
+        assert dst.endpoint == UbisysInputConfigCluster.OUTPUT_ENDPOINT
+
+    # Verify local cache was updated
+    assert (
+        UbisysInputConfigCluster.AttributeDefs.detached.id,
+        t.Bool(detach),
     ) in input_config_listener.attribute_updates
