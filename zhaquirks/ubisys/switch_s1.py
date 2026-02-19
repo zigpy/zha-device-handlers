@@ -9,6 +9,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
+from zigpy.zdo.types import MultiAddress
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
@@ -119,22 +120,37 @@ _INPUT_ACTION_TEMPLATES: dict[InputMode, list[bytes]] = {
 
 
 class UbisysInputConfigCluster(LocalDataCluster):
-    """Local cluster to configure ubisys S1 input mode."""
+    """Local cluster to configure ubisys S1 input mode and decoupling."""
 
     cluster_id = 0xFBFF
     name = "Ubisys Input Configuration"
     ep_attribute = "ubisys_input_config"
 
+    # S1 endpoint layout: EP2 = physical input, EP1 = relay output
+    INPUT_ENDPOINT = 2
+    OUTPUT_ENDPOINT = 1
+
     class AttributeDefs(BaseAttributeDefs):
         """Ubisys input configuration attribute definitions."""
 
         input_mode: Final = ZCLAttributeDef(id=0x0000, type=InputMode)
+        detached: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
 
     def __init__(self, *args, **kwargs):
-        """Init with default input mode."""
+        """Init with defaults."""
         super().__init__(*args, **kwargs)
         if self.AttributeDefs.input_mode.id not in self._attr_cache:
             self._update_attribute(self.AttributeDefs.input_mode.id, InputMode.Toggle)
+        if self.AttributeDefs.detached.id not in self._attr_cache:
+            self._update_attribute(self.AttributeDefs.detached.id, t.Bool.false)
+
+    def _self_bind_address(self) -> MultiAddress:
+        """Build a MultiAddress pointing to the device's own output endpoint."""
+        return MultiAddress(
+            addrmode=0x03,
+            ieee=self.endpoint.device.ieee,
+            endpoint=self.OUTPUT_ENDPOINT,
+        )
 
     async def write_attributes(
         self,
@@ -142,9 +158,10 @@ class UbisysInputConfigCluster(LocalDataCluster):
         manufacturer=None,
         **kwargs,
     ) -> list:
-        """Write input_mode locally and send input_actions to device."""
+        """Handle writes to input_mode and detached attributes."""
         for attr, value in attributes.items():
             attr_name = attr if isinstance(attr, str) else self.attributes[attr].name
+
             if attr_name == self.AttributeDefs.input_mode.name:
                 mode = InputMode(value)
                 actions = _INPUT_ACTION_TEMPLATES[mode]
@@ -156,6 +173,31 @@ class UbisysInputConfigCluster(LocalDataCluster):
                 # Update local cache on success
                 self._update_attribute(self.AttributeDefs.input_mode.id, mode)
                 return result
+
+            if attr_name == self.AttributeDefs.detached.name:
+                detach = bool(value)
+                zdo = self.endpoint.device.zdo
+                dst = self._self_bind_address()
+
+                if detach:
+                    # Unbind EP2 -> EP1 on OnOff to decouple input from relay
+                    await zdo.Unbind_req(
+                        self.endpoint.device.ieee,
+                        self.INPUT_ENDPOINT,
+                        OnOff.cluster_id,
+                        dst,
+                    )
+                else:
+                    # Bind EP2 -> EP1 on OnOff to recouple input to relay
+                    await zdo.Bind_req(
+                        self.endpoint.device.ieee,
+                        self.INPUT_ENDPOINT,
+                        OnOff.cluster_id,
+                        dst,
+                    )
+
+                self._update_attribute(self.AttributeDefs.detached.id, t.Bool(detach))
+                return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
 
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
@@ -170,6 +212,12 @@ class UbisysInputConfigCluster(LocalDataCluster):
         cluster_id=UbisysInputConfigCluster.cluster_id,
         translation_key="input_mode",
         fallback_name="Input mode",
+    )
+    .switch(
+        attribute_name=UbisysInputConfigCluster.AttributeDefs.detached.name,
+        cluster_id=UbisysInputConfigCluster.cluster_id,
+        translation_key="detached",
+        fallback_name="Detached mode",
     )
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # The device exposes total active power on multiple attributes,
