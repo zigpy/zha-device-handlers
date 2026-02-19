@@ -31,6 +31,7 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="J1 (5502)")
+    .applies_to(manufacturer="ubisys", model="J1-R (5602)")
     .replaces(UbisysCluster, endpoint_id=232)
     .adds(UbisysJ1InputConfigCluster)
     .switch(
