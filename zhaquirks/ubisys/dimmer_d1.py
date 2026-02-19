@@ -4,9 +4,12 @@ from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityType
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
@@ -28,6 +31,49 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
         ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 1000,
     }
+
+
+class PhaseControlMode(t.enum8):
+    """Phase control mode for the D1 dimmer."""
+
+    Automatic = 0x00
+    Forward = 0x01
+    Reverse = 0x02
+
+
+class UbisysDimmerSetup(CustomCluster):
+    """Ubisys Dimmer Setup cluster 0xFC01.
+
+    Manufacturer-specific cluster for dimmer configuration and diagnostics.
+    Uses manufacturer_code=None (ubisysNull) — the device does not expect
+    a manufacturer code in the ZCL frame for this cluster's attributes.
+    """
+
+    cluster_id = 0xFC01
+    name = "Ubisys Dimmer Setup"
+    ep_attribute = "ubisys_dimmer_setup"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Dimmer setup attribute definitions."""
+
+        capabilities: Final = ZCLAttributeDef(
+            id=0x0000, type=t.bitmap8, manufacturer_code=None
+        )
+        status: Final = ZCLAttributeDef(
+            id=0x0001, type=t.bitmap8, manufacturer_code=None
+        )
+        mode: Final = ZCLAttributeDef(id=0x0002, type=t.bitmap8, manufacturer_code=None)
+
+
+class UbisysLevelControl(CustomCluster, LevelControl):
+    """LevelControl with ubisys minimum_on_level attribute."""
+
+    class AttributeDefs(LevelControl.AttributeDefs):
+        """Extended LevelControl attributes."""
+
+        minimum_on_level: Final = ZCLAttributeDef(
+            id=0x0000, type=t.uint8_t, manufacturer_code=0x10F2
+        )
 
 
 class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
@@ -67,8 +113,12 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="D1 (5503)")
+    .applies_to(manufacturer="ubisys", model="D1-R (5603)")
     .replaces(UbisysCluster, endpoint_id=232)
     .adds(UbisysD1InputConfigCluster)
+    .adds(UbisysDimmerSetup)
+    .replaces(UbisysLevelControl, endpoint_id=1)
+    # --- Input mode / detached ---
     .enum(
         attribute_name=UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name,
         enum_class=InputMode,
@@ -99,6 +149,137 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         fallback_name="Detached mode 2",
         translation_placeholders={"input_id": "2"},
     )
+    # --- Phase control mode ---
+    .enum(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.mode.name,
+        enum_class=PhaseControlMode,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        translation_key="phase_control",
+        fallback_name="Phase control",
+    )
+    # --- Minimum on level ---
+    .number(
+        attribute_name=UbisysLevelControl.AttributeDefs.minimum_on_level.name,
+        cluster_id=UbisysLevelControl.cluster_id,
+        min_value=0,
+        max_value=255,
+        step=1,
+        translation_key="minimum_on_level",
+        fallback_name="Minimum on level",
+    )
+    # --- Ballast min/max level ---
+    .number(
+        attribute_name=Ballast.AttributeDefs.min_level.name,
+        cluster_id=Ballast.cluster_id,
+        min_value=1,
+        max_value=254,
+        step=1,
+        translation_key="ballast_minimum_level",
+        fallback_name="Ballast minimum level",
+    )
+    .number(
+        attribute_name=Ballast.AttributeDefs.max_level.name,
+        cluster_id=Ballast.cluster_id,
+        min_value=1,
+        max_value=254,
+        step=1,
+        translation_key="ballast_maximum_level",
+        fallback_name="Ballast maximum level",
+    )
+    # --- Dimmer capabilities (diagnostic binary sensors) ---
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x01),
+        unique_id_suffix="forward_phase_support",
+        translation_key="forward_phase_support",
+        fallback_name="Forward phase control support",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x02),
+        unique_id_suffix="reverse_phase_support",
+        translation_key="reverse_phase_support",
+        fallback_name="Reverse phase control support",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x20),
+        unique_id_suffix="reactance_discriminator",
+        translation_key="reactance_discriminator",
+        fallback_name="Reactance discriminator",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x40),
+        unique_id_suffix="configurable_curve",
+        translation_key="configurable_curve",
+        fallback_name="Configurable curve",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x80),
+        unique_id_suffix="overload_detection",
+        translation_key="overload_detection",
+        fallback_name="Overload detection",
+    )
+    # --- Dimmer operating status (diagnostic binary sensors) ---
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x01),
+        unique_id_suffix="forward_phase_active",
+        translation_key="forward_phase_active",
+        fallback_name="Forward phase control active",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x02),
+        unique_id_suffix="reverse_phase_active",
+        translation_key="reverse_phase_active",
+        fallback_name="Reverse phase control active",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x08),
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        unique_id_suffix="overload",
+        translation_key="overload",
+        fallback_name="Overload",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x40),
+        unique_id_suffix="capacitive_load",
+        translation_key="capacitive_load",
+        fallback_name="Capacitive load detected",
+    )
+    .binary_sensor(
+        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
+        cluster_id=UbisysDimmerSetup.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=lambda v: bool(v & 0x80),
+        unique_id_suffix="inductive_load",
+        translation_key="inductive_load",
+        fallback_name="Inductive load detected",
+    )
+    # --- Electrical measurement ---
     .replaces(UbisysElectricalMeasurement, endpoint_id=4)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
