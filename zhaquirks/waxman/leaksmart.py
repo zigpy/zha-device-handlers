@@ -47,8 +47,8 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         self.endpoint.device.ias_bus.add_listener(self)
 
     async def bind(self):
-        """Bind cluster."""
-        return await self.endpoint.device.app_cluster.bind()
+        """Bind the ApplianceEventAlerts cluster instead."""
+        return await self.endpoint.appliance_event.bind()
 
     async def write_attributes(
         self,
@@ -79,11 +79,6 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
             schema={"param1": t.uint8_t, "state": t.bitmap24},
             is_manufacturer_specific=True,
         )
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.app_cluster = self
 
     def handle_cluster_request(
         self,
