@@ -1,19 +1,13 @@
 """Ubisys Switching Actuator S1 quirk."""
 
-from typing import Any, Final
-
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
-from zigpy.zdo.types import MultiAddress
 
-from zhaquirks import LocalDataCluster
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -23,183 +17,6 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
         ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 1000,
     }
-
-
-class UbisysCluster(CustomCluster):
-    """Ubisys custom cluster 0xFC00."""
-
-    cluster_id = 0xFC00
-    name = "Ubisys Cluster 0xFC00"
-    ep_attribute = "ubisys_cluster_0xfc00"
-
-    # ZCL Write Attributes Structured command ID (not supported by zigpy natively)
-    WRITE_ATTRIBUTES_STRUCTURED = 0x0F
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Ubisys attribute definitions."""
-
-        input_configurations: Final = ZCLAttributeDef(
-            id=0x0000, type=t.LVList[t.uint8_t, t.uint16_t], manufacturer_code=None
-        )
-        input_actions: Final = ZCLAttributeDef(
-            id=0x0001, type=t.LVList[t.LVBytes, t.uint16_t], manufacturer_code=None
-        )
-        cluster_revision: Final = ZCLAttributeDef(
-            id=0xFFFD, type=t.uint16_t, manufacturer_code=None
-        )
-
-    async def write_input_actions(self, actions: list[bytes]) -> list:
-        """Write input_actions using ZCL Write Attributes Structured.
-
-        ubisys devices require the structured write command (0x0F) for array
-        attributes. Regular write_attributes sends an invalid ZCL type.
-        """
-        tsn = self.endpoint.device.application.get_sequence()
-
-        # Build raw ZCL frame
-        frame = bytearray()
-        # ZCL Header
-        frame.append(0x00)  # Frame control: global, no manufacturer, client->server
-        frame.append(tsn)
-        frame.append(self.WRITE_ATTRIBUTES_STRUCTURED)
-
-        # Payload: write whole input_actions attribute as array
-        # Attribute ID (uint16 LE)
-        frame.extend(
-            self.AttributeDefs.input_actions.id.to_bytes(2, byteorder="little")
-        )
-        # Selector indicator: 0x00 (whole attribute, no indexes)
-        frame.append(0x00)
-        # Data Type: 0x48 (Array)
-        frame.append(0x48)
-        # Element Type: 0x41 (OCTET_STR)
-        frame.append(0x41)
-        # Element Count (uint16 LE)
-        frame.extend(len(actions).to_bytes(2, byteorder="little"))
-        # Each element as length-prefixed octet string
-        for action in actions:
-            frame.append(len(action))
-            frame.extend(action)
-
-        await self.endpoint.request(
-            cluster=self.cluster_id,
-            sequence=tsn,
-            data=bytes(frame),
-            command_id=self.WRITE_ATTRIBUTES_STRUCTURED,
-        )
-
-        # Return format expected by write_attributes_safe
-        return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
-
-
-class InputMode(t.enum8):
-    """Input mode for ubisys S1."""
-
-    Toggle = 0x00
-    Toggle_switch = 0x01
-    On_off_switch = 0x02
-
-
-# Input action descriptors per mode.
-# Format: [input_index, transition, source_endpoint, cluster_id_lo, cluster_id_hi, command, ...]
-# Transitions: 0x0D = any->pressed, 0x03 = any->released
-# OnOff cluster 0x0006: 0x00=Off, 0x01=On, 0x02=Toggle
-_INPUT_ACTION_TEMPLATES: dict[InputMode, list[bytes]] = {
-    InputMode.Toggle: [
-        bytes([0x00, 0x0D, 0x02, 0x06, 0x00, 0x02]),
-    ],
-    InputMode.Toggle_switch: [
-        bytes([0x00, 0x0D, 0x02, 0x06, 0x00, 0x02]),
-        bytes([0x00, 0x03, 0x02, 0x06, 0x00, 0x02]),
-    ],
-    InputMode.On_off_switch: [
-        bytes([0x00, 0x0D, 0x02, 0x06, 0x00, 0x01]),
-        bytes([0x00, 0x03, 0x02, 0x06, 0x00, 0x00]),
-    ],
-}
-
-
-class UbisysInputConfigCluster(LocalDataCluster):
-    """Local cluster to configure ubisys S1 input mode and decoupling."""
-
-    cluster_id = 0xFBFF
-    name = "Ubisys Input Configuration"
-    ep_attribute = "ubisys_input_config"
-
-    # S1 endpoint layout: EP2 = physical input, EP1 = relay output
-    INPUT_ENDPOINT = 2
-    OUTPUT_ENDPOINT = 1
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Ubisys input configuration attribute definitions."""
-
-        input_mode: Final = ZCLAttributeDef(id=0x0000, type=InputMode)
-        detached: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
-
-    def __init__(self, *args, **kwargs):
-        """Init with defaults."""
-        super().__init__(*args, **kwargs)
-        if self.AttributeDefs.input_mode.id not in self._attr_cache:
-            self._update_attribute(self.AttributeDefs.input_mode.id, InputMode.Toggle)
-        if self.AttributeDefs.detached.id not in self._attr_cache:
-            self._update_attribute(self.AttributeDefs.detached.id, t.Bool.false)
-
-    def _self_bind_address(self) -> MultiAddress:
-        """Build a MultiAddress pointing to the device's own output endpoint."""
-        return MultiAddress(
-            addrmode=0x03,
-            ieee=self.endpoint.device.ieee,
-            endpoint=self.OUTPUT_ENDPOINT,
-        )
-
-    async def write_attributes(
-        self,
-        attributes: dict[str | int, Any],
-        manufacturer=None,
-        **kwargs,
-    ) -> list:
-        """Handle writes to input_mode and detached attributes."""
-        for attr, value in attributes.items():
-            attr_name = attr if isinstance(attr, str) else self.attributes[attr].name
-
-            if attr_name == self.AttributeDefs.input_mode.name:
-                mode = InputMode(value)
-                actions = _INPUT_ACTION_TEMPLATES[mode]
-
-                # Write input_actions to the real UbisysCluster on endpoint 232
-                device_setup = self.endpoint.device.endpoints[232].ubisys_cluster_0xfc00
-                result = await device_setup.write_input_actions(actions)
-
-                # Update local cache on success
-                self._update_attribute(self.AttributeDefs.input_mode.id, mode)
-                return result
-
-            if attr_name == self.AttributeDefs.detached.name:
-                detach = bool(value)
-                zdo = self.endpoint.device.zdo
-                dst = self._self_bind_address()
-
-                if detach:
-                    # Unbind EP2 -> EP1 on OnOff to decouple input from relay
-                    await zdo.Unbind_req(
-                        self.endpoint.device.ieee,
-                        self.INPUT_ENDPOINT,
-                        OnOff.cluster_id,
-                        dst,
-                    )
-                else:
-                    # Bind EP2 -> EP1 on OnOff to recouple input to relay
-                    await zdo.Bind_req(
-                        self.endpoint.device.ieee,
-                        self.INPUT_ENDPOINT,
-                        OnOff.cluster_id,
-                        dst,
-                    )
-
-                self._update_attribute(self.AttributeDefs.detached.id, t.Bool(detach))
-                return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
-
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
 (

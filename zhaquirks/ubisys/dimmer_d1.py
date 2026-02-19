@@ -2,7 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.const import (
@@ -14,6 +14,7 @@ from zhaquirks.const import (
     ENDPOINT_ID,
 )
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -25,8 +26,32 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     }
 
 
+class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
+    """Input configuration for the D1.
+
+    EP2 -> EP1 with OnOff + LevelControl self-bindings.
+    """
+
+    BIND_CLUSTERS: list[int] = [OnOff.cluster_id, LevelControl.cluster_id]
+
+
 (
     QuirkBuilder(manufacturer="ubisys", model="D1 (5503)")
+    .replaces(UbisysCluster, endpoint_id=232)
+    .adds(UbisysD1InputConfigCluster)
+    .enum(
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.input_mode.name,
+        enum_class=InputMode,
+        cluster_id=UbisysD1InputConfigCluster.cluster_id,
+        translation_key="input_mode",
+        fallback_name="Input mode",
+    )
+    .switch(
+        attribute_name=UbisysD1InputConfigCluster.AttributeDefs.detached.name,
+        cluster_id=UbisysD1InputConfigCluster.cluster_id,
+        translation_key="detached",
+        fallback_name="Detached mode",
+    )
     .replaces(UbisysElectricalMeasurement, endpoint_id=4)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,

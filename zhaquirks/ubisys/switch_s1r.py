@@ -14,6 +14,7 @@ from zhaquirks.const import (
     ENDPOINT_ID,
 )
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -29,6 +30,21 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="S1-R (5601)")
+    .replaces(UbisysCluster, endpoint_id=232)
+    .adds(UbisysInputConfigCluster)
+    .enum(
+        attribute_name=UbisysInputConfigCluster.AttributeDefs.input_mode.name,
+        enum_class=InputMode,
+        cluster_id=UbisysInputConfigCluster.cluster_id,
+        translation_key="input_mode",
+        fallback_name="Input mode",
+    )
+    .switch(
+        attribute_name=UbisysInputConfigCluster.AttributeDefs.detached.name,
+        cluster_id=UbisysInputConfigCluster.cluster_id,
+        translation_key="detached",
+        fallback_name="Detached mode",
+    )
     .replaces(UbisysElectricalMeasurement, endpoint_id=1)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
