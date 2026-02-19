@@ -55,9 +55,6 @@ class UbisysDimmerSetup(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Dimmer setup attribute definitions."""
 
-        capabilities: Final = ZCLAttributeDef(
-            id=0x0000, type=t.bitmap8, manufacturer_code=None
-        )
         status: Final = ZCLAttributeDef(
             id=0x0001, type=t.bitmap8, manufacturer_code=None
         )
@@ -165,52 +162,6 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         step=1,
         translation_key="minimum_on_level",
         fallback_name="Minimum on level",
-    )
-    # --- Dimmer capabilities (diagnostic binary sensors) ---
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x01),
-        unique_id_suffix="forward_phase_support",
-        translation_key="forward_phase_support",
-        fallback_name="Forward phase control support",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x02),
-        unique_id_suffix="reverse_phase_support",
-        translation_key="reverse_phase_support",
-        fallback_name="Reverse phase control support",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x20),
-        unique_id_suffix="reactance_discriminator",
-        translation_key="reactance_discriminator",
-        fallback_name="Reactance discriminator",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x40),
-        unique_id_suffix="configurable_curve",
-        translation_key="configurable_curve",
-        fallback_name="Configurable curve",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.capabilities.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x80),
-        unique_id_suffix="overload_detection",
-        translation_key="overload_detection",
-        fallback_name="Overload detection",
     )
     # --- Dimmer operating status (diagnostic binary sensors) ---
     .binary_sensor(
