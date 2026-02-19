@@ -96,6 +96,8 @@ class AqaraPowerOnMode(t.enum8):
     Inverted = 0x03
 
 
+
+
 class AqaraManuSpecificCluster(CustomCluster):
     """Manufacturer-specific cluster for Aqara shutter switch features."""
 
@@ -122,7 +124,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         )
         operation_mode: Final = ZCLAttributeDef(
             id=0x0200,
-            type=AqaraOperationMode,
+            type=t.uint8_t,
             access="rw",
             is_manufacturer_specific=True,
         )
@@ -134,12 +136,6 @@ class AqaraManuSpecificCluster(CustomCluster):
         )
         flip_led_indicator: Final = ZCLAttributeDef(
             id=0x00F0,
-            type=t.Bool,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-        lock_relay: Final = ZCLAttributeDef(
-            id=0x0285,
             type=t.Bool,
             access="rw",
             is_manufacturer_specific=True,
@@ -233,6 +229,7 @@ class AqaraManuSpecificCluster(CustomCluster):
 
 (
     QuirkBuilder("Aqara", "lumi.switch.aeu003")
+    .friendly_name(model="Shutter Switch H2", manufacturer="Aqara")
     .replaces(MultistateInputCluster, endpoint_id=3)
     .replaces(MultistateInputCluster, endpoint_id=4)
     .replaces(AqaraManuSpecificCluster, endpoint_id=1)
@@ -244,52 +241,11 @@ class AqaraManuSpecificCluster(CustomCluster):
         cluster_id=WindowCovering.cluster_id,
         function=lambda entity: getattr(entity, "translation_key", None) == "inverted",
     )
-    .enum(
-        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
-        AqaraOperationMode,
-        AqaraManuSpecificCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="operation_mode_left",
-        fallback_name="Operation mode left",
-        unique_id_suffix="left",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
-    )
-    .enum(
-        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
-        AqaraOperationMode,
-        AqaraManuSpecificCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="operation_mode_right",
-        fallback_name="Operation mode right",
-        unique_id_suffix="right",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
-    )
-    .switch(
-        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
-        AqaraManuSpecificCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="lock_relay_left",
-        fallback_name="Lock relay left",
-        unique_id_suffix="left",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
-    )
-    .switch(
-        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
-        AqaraManuSpecificCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="lock_relay_right",
-        fallback_name="Lock relay right",
-        unique_id_suffix="right",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
-    )
     .command_button(
         command_name="up_open",
         cluster_id=WindowCovering.cluster_id,
         endpoint_id=1,
+        entity_type=EntityType.STANDARD,
         translation_key="force_open_cover",
         fallback_name="Force open cover",
     )
@@ -297,6 +253,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         command_name="down_close",
         cluster_id=WindowCovering.cluster_id,
         endpoint_id=1,
+        entity_type=EntityType.STANDARD,
         translation_key="force_close_cover",
         fallback_name="Force close cover",
     )
@@ -304,8 +261,9 @@ class AqaraManuSpecificCluster(CustomCluster):
         command_name="stop",
         cluster_id=WindowCovering.cluster_id,
         endpoint_id=1,
+        entity_type=EntityType.STANDARD,
         translation_key="stop_cover",
-        fallback_name="Stop cover",
+        fallback_name="Force stop cover",
     )
     .switch(
         AqaraManuSpecificCluster.AttributeDefs.multi_click.name,
@@ -314,7 +272,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         on_value=2,
         endpoint_id=3,
         translation_key="multi_click_button_3",
-        fallback_name="Multi click button 3",
+        fallback_name="Multi-click button 3",
         unique_id_suffix="button_3",
     )
     .switch(
@@ -324,20 +282,15 @@ class AqaraManuSpecificCluster(CustomCluster):
         on_value=2,
         endpoint_id=4,
         translation_key="multi_click_button_4",
-        fallback_name="Multi click button 4",
+        fallback_name="Multi-click button 4",
         unique_id_suffix="button_4",
-    )
-    .switch(
-        AqaraManuSpecificCluster.AttributeDefs.reverse_direction.name,
-        AqaraManuSpecificCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="inverted",
-        fallback_name="Inverted",
     )
     .sensor(
         AqaraManuSpecificCluster.AttributeDefs.position_raw.name,
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
+        entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="position_raw",
         fallback_name="Position raw",
     )
