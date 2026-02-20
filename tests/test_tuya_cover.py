@@ -190,17 +190,13 @@ async def test_zemismart_zm16b_go_to_lift_percentage(zigpy_device_from_v2_quirk)
         )
         await wait_for_zigpy_tasks()
 
-        # Should send inverted value (100 - 25 = 75) to device
-        # Multiple calls expected (DP 8 and DP 9 both mapped)
-        assert req_mock.call_count >= 1
-        # Check that at least one call has the correct position value
-        found_correct_position = False
-        for call in req_mock.call_args_list:
-            call_data = call[1]["data"]
-            # DP 9 (position control) with value 75
-            if b"\x09" in call_data and b"\x00\x00\x00\x4b" in call_data:
-                found_correct_position = True
-        assert found_correct_position, "Expected DP 9 with value 75 in sent data"
+        # Should send inverted value (100 - 25 = 75) only to DP 9
+        # DP 8 is read_only so it should not be written
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        # DP 9 (position control) with value 75
+        assert b"\x09" in call_data, "Expected DP 9 in sent data"
+        assert b"\x00\x00\x00\x4b" in call_data, "Expected value 75 in sent data"
 
 
 async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
