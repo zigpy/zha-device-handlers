@@ -428,7 +428,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Add a Tuya WindowCovering Configuration.
 
         :param control_dp: DP ID for open/stop/close control (enum).
-        :param position_state_dp: DP ID for current position reports (0-100).
+        :param position_state_dp: DP ID for current position reports (read-only).
         :param position_control_dp: DP ID for setting target position (0-100).
         :param invert: Invert position values (most Tuya covers report
             0=closed, 100=open which is opposite to ZCL convention).
@@ -447,7 +447,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             cover_cfg.ep_attribute,
             WindowCovering.AttributeDefs.current_position_lift_percentage.name,
             converter=converter,
-            dp_converter=dp_converter,
+            read_only=True,
         )
         self.tuya_dp(
             position_control_dp,

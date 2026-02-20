@@ -1503,6 +1503,7 @@ class DPToAttributeMapping:
     attribute_name: str | tuple[str, ...]
     converter: Callable[[Any], Any] | None = None
     endpoint_id: int | None = None
+    read_only: bool = False
 
 
 @dataclasses.dataclass

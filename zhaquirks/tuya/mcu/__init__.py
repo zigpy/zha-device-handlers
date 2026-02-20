@@ -48,9 +48,12 @@ class DPToAttributeMapping(DpToAttributeMappingBase):
         converter: Callable[[Any], Any] | None = None,
         dp_converter: Callable[[Any], Any] | None = None,
         endpoint_id: int | None = None,
+        read_only: bool = False,
     ):
         """Init method for compatibility with previous quirks using positional arguments."""
-        super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
+        super().__init__(
+            ep_attribute, attribute_name, converter, endpoint_id, read_only
+        )
         self.dp_converter = dp_converter
 
 
@@ -295,6 +298,8 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         result: dict[int, DPToAttributeMapping] = {}
         for dp, dp_mapping in self._dp_to_attributes.items():
             for mapped_attr in dp_mapping:
+                if mapped_attr.read_only:
+                    continue
                 if (
                     attribute_name == mapped_attr.attribute_name
                     or (
