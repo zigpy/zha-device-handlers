@@ -1,6 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -17,6 +18,7 @@ from zhaquirks.tuya import (
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -623,3 +625,26 @@ class TuyaCloneCover0601(TuyaWindowCover):
             }
         }
     }
+
+
+class MotorDirection(t.enum8):
+    """Motor direction values."""
+
+    Forward = 0x00
+    Back = 0x01
+
+
+(
+    TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
+    .tuya_battery(dp_id=13)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
