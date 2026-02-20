@@ -168,7 +168,9 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _handle_attribute_report(self, event: AttributeReportedEvent) -> None:
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
         """Handle attribute report event."""
         self.listener_event(
             ZHA_SEND_EVENT,
