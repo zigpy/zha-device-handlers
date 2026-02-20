@@ -423,15 +423,23 @@ class TuyaQuirkBuilder(QuirkBuilder):
         position_state_dp: int,
         position_control_dp: int,
         invert: bool = True,
+        covering_type: WindowCovering.WindowCoveringType = WindowCovering.WindowCoveringType.Rollershade,
         cover_cfg: TuyaLocalCluster = TuyaWindowCovering,
     ) -> Self:
         """Add a Tuya WindowCovering Configuration.
+
+        Both position_state_dp and position_control_dp are mapped to the same
+        ZCL attribute (current_position_lift_percentage). The position_state_dp
+        is marked read_only so that outgoing position commands only write to
+        position_control_dp.
 
         :param control_dp: DP ID for open/stop/close control (enum).
         :param position_state_dp: DP ID for current position reports (read-only).
         :param position_control_dp: DP ID for setting target position (0-100).
         :param invert: Invert position values (most Tuya covers report
             0=closed, 100=open which is opposite to ZCL convention).
+        :param covering_type: ZCL WindowCoveringType that determines the HA
+            device class (e.g. Rollershade→shade, Drapery→curtain).
         :param cover_cfg: Custom WindowCovering cluster class to use.
         """
         converter = (lambda x: 100 - x) if invert else None
@@ -456,7 +464,12 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=converter,
             dp_converter=dp_converter,
         )
-        self.adds(cover_cfg)
+        self.adds(
+            cover_cfg,
+            constant_attributes={
+                WindowCovering.AttributeDefs.window_covering_type: covering_type,
+            },
+        )
         self.replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
         return self
 
