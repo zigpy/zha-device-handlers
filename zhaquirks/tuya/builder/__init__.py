@@ -565,6 +565,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_converter: Callable[[Any], Any] | None = None,
         endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
+        read_only: bool = False,
     ) -> Self:
         """Add Tuya DP Converter."""
 
@@ -577,6 +578,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
                     converter=converter,
                     dp_converter=dp_converter,
                     endpoint_id=endpoint_id,
+                    read_only=read_only,
                 )
             ],
             dp_handler,
