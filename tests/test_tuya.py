@@ -154,7 +154,7 @@ async def test_ts0021_remote(
         "attribute_updated",
         {
             "attribute_id": expected_attr_name,
-            "attribute_name": "Unknown",
+            "attribute_name": "Unknown",  # no ZCLAttributeDef for Tuya DP-mapped attr
             "value": expected_attr_value,
         },
     )
