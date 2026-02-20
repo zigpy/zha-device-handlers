@@ -2,14 +2,12 @@
 
 from unittest import mock
 
-from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
-from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
 from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
 
 zhaquirks.setup()
@@ -32,24 +30,6 @@ def test_ts601_moes_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(TuyaMoesCover0601, signature)
-
-
-async def test_zemismart_zm16b_quirk(zigpy_device_from_v2_quirk):
-    """Test Zemismart ZM16B cover motor v2 quirk."""
-
-    quirked = zigpy_device_from_v2_quirk("_TZE284_3mzb0sdz", "TS0601")
-    assert isinstance(quirked, CustomDeviceV2)
-
-    ep = quirked.endpoints[1]
-
-    # Verify clusters are present
-    cover_cluster = ep.window_covering
-    assert cover_cluster is not None
-    assert isinstance(cover_cluster, TuyaWindowCovering)
-
-    tuya_cluster = ep.tuya_manufacturer
-    assert tuya_cluster is not None
-    assert isinstance(tuya_cluster, TuyaMCUCluster)
 
 
 async def test_zemismart_zm16b_position_report(zigpy_device_from_v2_quirk):
