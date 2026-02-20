@@ -805,7 +805,7 @@ class TuyaReportingPeriod(t.enum8):
         enum_class=TuyaReportingPeriod,
         entity_type=EntityType.CONFIG,
         translation_key="reporting_interval",
-        fallback_name="Reporting Interval",
+        fallback_name="Reporting interval",
     )
     # Warning - type is bitmap16, TBD.
     # .tuya_dp(
