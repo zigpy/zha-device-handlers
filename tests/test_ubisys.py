@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener
+import zhaquirks
 from zhaquirks.ubisys import (
     InputMode,
     UbisysCluster,
@@ -18,12 +19,16 @@ from zhaquirks.ubisys import (
 )
 from zhaquirks.ubisys.control_c4 import UbisysC4InputConfigCluster
 from zhaquirks.ubisys.cover_j1 import UbisysJ1InputConfigCluster
-from zhaquirks.ubisys.dimmer_d1 import UbisysD1InputConfigCluster
-import zhaquirks.ubisys.switch_s1  # noqa: F401 - registers QuirkBuilder
-from zhaquirks.ubisys.switch_s1r import (
-    UbisysS1RInputConfigCluster,  # also registers quirk
+from zhaquirks.ubisys.dimmer_d1 import (
+    DimmerInputMode,
+    UbisysD1InputConfigCluster,
+    build_dimmer_double_actions,
+    build_dimmer_single_actions,
 )
+from zhaquirks.ubisys.switch_s1r import UbisysS1RInputConfigCluster
 from zhaquirks.ubisys.switch_s2 import UbisysS2InputConfigCluster
+
+zhaquirks.setup()
 
 
 @pytest.fixture
@@ -493,9 +498,21 @@ async def test_s2_detached_2(ubisys_s2, detach):
 # --- D1 Tests ---
 
 
-@pytest.mark.parametrize("mode", list(InputMode))
+def _build_d1_expected_actions(
+    input_index: int, source_ep: int, mode: DimmerInputMode
+) -> list[bytes]:
+    """Build expected actions for a D1 input, dispatching by mode."""
+    if mode == DimmerInputMode.Dimmer_single:
+        return build_dimmer_single_actions(input_index, source_ep)
+    return build_onoff_actions(input_index, source_ep, InputMode(mode))
+
+
+_D1_PER_INPUT_MODES = [m for m in DimmerInputMode if m != DimmerInputMode.Dimmer_double]
+
+
+@pytest.mark.parametrize("mode", _D1_PER_INPUT_MODES)
 async def test_d1_input_mode_1_write(ubisys_d1, mode):
-    """Test D1 input_mode_1 writes actions for both inputs to endpoint 232."""
+    """Test D1 input_mode_1 writes per-input actions to endpoint 232."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     endpoint_232 = ubisys_d1.endpoints[232]
 
@@ -515,10 +532,10 @@ async def test_d1_input_mode_1_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Actions for both inputs: input 1 with new mode, input 2 with default Toggle
-        expected_actions = build_onoff_actions(0, 2, mode) + build_onoff_actions(
-            1, 3, InputMode.Toggle
-        )
+        # Input 1 with new mode, input 2 with default Toggle
+        expected_actions = _build_d1_expected_actions(
+            0, 2, mode
+        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Toggle)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
@@ -528,9 +545,9 @@ async def test_d1_input_mode_1_write(ubisys_d1, mode):
     ) in input_config_listener.attribute_updates
 
 
-@pytest.mark.parametrize("mode", list(InputMode))
+@pytest.mark.parametrize("mode", _D1_PER_INPUT_MODES)
 async def test_d1_input_mode_2_write(ubisys_d1, mode):
-    """Test D1 input_mode_2 writes actions for both inputs to endpoint 232."""
+    """Test D1 input_mode_2 writes per-input actions to endpoint 232."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     endpoint_232 = ubisys_d1.endpoints[232]
 
@@ -550,16 +567,132 @@ async def test_d1_input_mode_2_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Actions for both inputs: input 1 with default Toggle, input 2 with new mode
-        expected_actions = build_onoff_actions(
-            0, 2, InputMode.Toggle
-        ) + build_onoff_actions(1, 3, mode)
+        # Input 1 with default Toggle, input 2 with new mode
+        expected_actions = _build_d1_expected_actions(
+            0, 2, DimmerInputMode.Toggle
+        ) + _build_d1_expected_actions(1, 3, mode)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
     assert (
         UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
         mode,
+    ) in input_config_listener.attribute_updates
+
+
+async def test_d1_dimmer_double_from_input_1(ubisys_d1):
+    """Test setting input_mode_1 to Dimmer_double generates paired actions and syncs."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {
+                UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name: DimmerInputMode.Dimmer_double
+            }
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        expected_actions = build_dimmer_double_actions(0, 2, 1, 3)
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    # Both inputs should be updated to Dimmer_double
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
+        DimmerInputMode.Dimmer_double,
+    ) in input_config_listener.attribute_updates
+
+
+async def test_d1_dimmer_double_from_input_2(ubisys_d1):
+    """Test setting input_mode_2 to Dimmer_double generates paired actions and syncs."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {
+                UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.name: DimmerInputMode.Dimmer_double
+            }
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        expected_actions = build_dimmer_double_actions(0, 2, 1, 3)
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    # Both inputs should be updated to Dimmer_double
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.id,
+        DimmerInputMode.Dimmer_double,
+    ) in input_config_listener.attribute_updates
+
+
+async def test_d1_dimmer_double_exit_resets_other(ubisys_d1):
+    """Test leaving Dimmer_double resets the other input to Dimmer_single."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+
+    # First, set both to Dimmer_double
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {
+                UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name: DimmerInputMode.Dimmer_double
+            }
+        )
+
+    # Now change input_mode_1 to Toggle — input_mode_2 should reset to Dimmer_single
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {
+                UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name: DimmerInputMode.Toggle
+            }
+        )
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        # Both should now be per-input: Toggle + Dimmer_single
+        expected_actions = _build_d1_expected_actions(
+            0, 2, DimmerInputMode.Toggle
+        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Dimmer_single)
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    # input_mode_2 should have been reset to Dimmer_single
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
+        DimmerInputMode.Dimmer_single,
     ) in input_config_listener.attribute_updates
 
 
