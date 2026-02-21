@@ -60,8 +60,6 @@ def smoke_level_unit_converter(value: int) -> str:
 class ExtendIasZoneCluster(CustomCluster, IasZone):
     """Heiman IAS Zone cluster extension."""
 
-    cluster_id = IasZone.cluster_id
-
     # Map the command name to your new function
     server_commands = IasZone.server_commands.copy()
     server_commands.update(
