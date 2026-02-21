@@ -16,8 +16,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 
-# TODO: Combine with switching_actuator_s1.py?
-
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Sets divisor attributes missing on the device."""
