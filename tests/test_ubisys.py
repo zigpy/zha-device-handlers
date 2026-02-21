@@ -20,6 +20,9 @@ from zhaquirks.ubisys.control_c4 import UbisysC4InputConfigCluster
 from zhaquirks.ubisys.cover_j1 import UbisysJ1InputConfigCluster
 from zhaquirks.ubisys.dimmer_d1 import UbisysD1InputConfigCluster
 import zhaquirks.ubisys.switch_s1  # noqa: F401 - registers QuirkBuilder
+from zhaquirks.ubisys.switch_s1r import (
+    UbisysS1RInputConfigCluster,  # also registers quirk
+)
 from zhaquirks.ubisys.switch_s2 import UbisysS2InputConfigCluster
 
 
@@ -31,6 +34,19 @@ def ubisys_s1(zigpy_device_from_v2_quirk):
         "S1 (5501)",
         cluster_ids={
             3: {ElectricalMeasurement.cluster_id: ClusterType.Server},
+            232: {UbisysCluster.cluster_id: ClusterType.Server},
+        },
+    )
+
+
+@pytest.fixture
+def ubisys_s1r(zigpy_device_from_v2_quirk):
+    """Create ubisys S1-R device."""
+    return zigpy_device_from_v2_quirk(
+        "ubisys",
+        "S1-R (5601)",
+        cluster_ids={
+            1: {ElectricalMeasurement.cluster_id: ClusterType.Server},
             232: {UbisysCluster.cluster_id: ClusterType.Server},
         },
     )
@@ -192,6 +208,145 @@ async def test_s1_detached_mode(ubisys_s1, detach):
     # Verify local cache was updated
     assert (
         UbisysInputConfigCluster.AttributeDefs.detached.id,
+        t.Bool(detach),
+    ) in input_config_listener.attribute_updates
+
+
+# --- S1-R Tests ---
+
+
+@pytest.mark.parametrize("mode", list(InputMode))
+async def test_s1r_input_mode_1_write(ubisys_s1r, mode):
+    """Test S1-R input_mode_1 writes actions for both inputs to endpoint 232."""
+    input_config_cluster = ubisys_s1r.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_s1r.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {UbisysS1RInputConfigCluster.AttributeDefs.input_mode_1.name: mode}
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        # Actions for both inputs: input 1 with new mode, input 2 with default Toggle
+        expected_actions = build_onoff_actions(0, 2, mode) + build_onoff_actions(
+            1, 3, InputMode.Toggle
+        )
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    assert (
+        UbisysS1RInputConfigCluster.AttributeDefs.input_mode_1.id,
+        mode,
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("mode", list(InputMode))
+async def test_s1r_input_mode_2_write(ubisys_s1r, mode):
+    """Test S1-R input_mode_2 writes actions for both inputs to endpoint 232."""
+    input_config_cluster = ubisys_s1r.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_s1r.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes(
+            {UbisysS1RInputConfigCluster.AttributeDefs.input_mode_2.name: mode}
+        )
+
+        assert endpoint_232.request.call_count == 1
+
+        sent_data = endpoint_232.request.call_args.kwargs["data"]
+        tsn = sent_data[1]
+
+        # Actions for both inputs: input 1 with default Toggle, input 2 with new mode
+        expected_actions = build_onoff_actions(
+            0, 2, InputMode.Toggle
+        ) + build_onoff_actions(1, 3, mode)
+        expected = _build_expected_frame(expected_actions, tsn=tsn)
+        assert sent_data == expected
+
+    assert (
+        UbisysS1RInputConfigCluster.AttributeDefs.input_mode_2.id,
+        mode,
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("detach", [True, False])
+async def test_s1r_detached_1(ubisys_s1r, detach):
+    """Test S1-R detached_1 sends bind/unbind for EP2 -> EP1 on OnOff."""
+    input_config_cluster = ubisys_s1r.endpoints[1].ubisys_input_config
+    zdo = ubisys_s1r.zdo
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        zdo,
+        "Unbind_req" if detach else "Bind_req",
+        mock.AsyncMock(return_value=[0]),
+    ) as mock_req:
+        await input_config_cluster.write_attributes(
+            {UbisysS1RInputConfigCluster.AttributeDefs.detached_1.name: detach}
+        )
+
+        assert mock_req.call_count == 1
+        args = mock_req.call_args[0]
+        assert args[0] == ubisys_s1r.ieee
+        assert args[1] == 2  # EP2
+        assert args[2] == OnOff.cluster_id
+        dst = args[3]
+        assert dst.addrmode == 0x03
+        assert dst.ieee == ubisys_s1r.ieee
+        assert dst.endpoint == 1  # EP1
+
+    assert (
+        UbisysS1RInputConfigCluster.AttributeDefs.detached_1.id,
+        t.Bool(detach),
+    ) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("detach", [True, False])
+async def test_s1r_detached_2(ubisys_s1r, detach):
+    """Test S1-R detached_2 sends bind/unbind for EP3 -> EP1 on OnOff."""
+    input_config_cluster = ubisys_s1r.endpoints[1].ubisys_input_config
+    zdo = ubisys_s1r.zdo
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        zdo,
+        "Unbind_req" if detach else "Bind_req",
+        mock.AsyncMock(return_value=[0]),
+    ) as mock_req:
+        await input_config_cluster.write_attributes(
+            {UbisysS1RInputConfigCluster.AttributeDefs.detached_2.name: detach}
+        )
+
+        assert mock_req.call_count == 1
+        args = mock_req.call_args[0]
+        assert args[0] == ubisys_s1r.ieee
+        assert args[1] == 3  # EP3
+        assert args[2] == OnOff.cluster_id
+        dst = args[3]
+        assert dst.addrmode == 0x03
+        assert dst.ieee == ubisys_s1r.ieee
+        assert dst.endpoint == 1  # EP1
+
+    assert (
+        UbisysS1RInputConfigCluster.AttributeDefs.detached_2.id,
         t.Bool(detach),
     ) in input_config_listener.attribute_updates
 
