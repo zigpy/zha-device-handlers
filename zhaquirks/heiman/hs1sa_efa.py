@@ -89,13 +89,6 @@ class CustomHeimanCluster(CustomCluster):
     """Heiman custom cluster."""
 
     cluster_id = 0xFC90
-    # manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
-    # We override the manufacturer_id at the cluster level
-    @property
-    def manufacturer_id(self) -> t.uint16_t:
-        """Return manufacturer ID for the cluster."""
-        return 0x120B
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -103,74 +96,72 @@ class CustomHeimanCluster(CustomCluster):
         sensor_self_check_state = ZCLAttributeDef(
             id=0x0001,
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x120B,
         )
-
         sensor_fault_state = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x120B,
         )
-
         sensor_mute_state = ZCLAttributeDef(
             id=0x0009,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x120B,
         )
-
         heartbeat_indicator = ZCLAttributeDef(
             id=0x1004,
             type=t.uint8_t,
+            manufacturer_code=0x120B,
         )
-
         siren_for_automation = ZCLAttributeDef(
             id=0x0012,
             type=t.enum8,
+            manufacturer_code=0x120B,
         )
-
         interconnectable = ZCLAttributeDef(
             id=0x1007,
             type=t.uint8_t,
+            manufacturer_code=0x120B,
         )
-
         smoke_level = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
+            manufacturer_code=0x120B,
         )
-
         smoke_unit = ZCLAttributeDef(
             id=0x0018,
             type=t.enum8,
+            manufacturer_code=0x120B,
         )
-
         chamber_contamination = ZCLAttributeDef(
             id=0x0017,
             type=t.enum8,
+            manufacturer_code=0x120B,
         )
-
         rebooted_count = ZCLAttributeDef(
             id=0x0019,
             type=t.uint16_t,
+            manufacturer_code=0x120B,
         )
-
         rejoined_count = ZCLAttributeDef(
             id=0x001A,
             type=t.uint16_t,
+            manufacturer_code=0x120B,
         )
-
         reported_packages = ZCLAttributeDef(
             id=0x001B,
             type=t.uint16_t,
+            manufacturer_code=0x120B,
         )
-
         remote_mute = ZCLAttributeDef(
             id=0x0008,
             type=t.uint8_t,
+            manufacturer_code=0x120B,
         )
-
         remote_test = ZCLAttributeDef(
             id=0x1009,
             type=t.uint8_t,
+            manufacturer_code=0x120B,
         )
 
 
