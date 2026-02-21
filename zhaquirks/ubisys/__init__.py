@@ -28,7 +28,7 @@ class UbisysCluster(CustomCluster):
 
     cluster_id = 0xFC00
     name = "Ubisys Cluster 0xFC00"
-    ep_attribute = "ubisys_cluster_0xfc00"
+    ep_attribute = "ubisys_cluster"
 
     # ZCL Write Attributes Structured command ID (not supported by zigpy natively)
     WRITE_ATTRIBUTES_STRUCTURED = 0x0F
@@ -197,9 +197,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
                 if attr_name == mode_attr_name:
                     mode = InputMode(value)
                     actions = self._build_all_actions(mode_attr_name, mode)
-                    device_setup = self.endpoint.device.endpoints[
-                        232
-                    ].ubisys_cluster_0xfc00
+                    device_setup = self.endpoint.device.endpoints[232].ubisys_cluster
                     result = await device_setup.write_input_actions(actions)
                     self._update_attribute(self.attributes_by_name[attr_name].id, mode)
                     return result
