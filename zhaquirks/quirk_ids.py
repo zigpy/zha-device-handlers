@@ -20,7 +20,3 @@ DANFOSS_ALLY_THERMOSTAT = "danfoss.ally_thermostat"  # Thermostatic Radiator Val
 
 # Hint to poll SmartEnergy summation delivered and received attributes
 SE_POLL_SUMMATION = "se_poll_summation"
-
-# TODO: Fix/rework/rethink
-# Hint to poll ElectricalMeasurement current attributes
-EM_POLL_CURRENT = "em_poll_current"
