@@ -17,6 +17,8 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_CLICK,
     ENDPOINT_ID,
+    TURN_OFF,
+    TURN_ON,
 )
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
@@ -133,10 +135,30 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
             },
+            (TURN_ON, BUTTON_1): {
+                ENDPOINT_ID: 3,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON_1): {
+                ENDPOINT_ID: 3,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
+            },
             (COMMAND_CLICK, BUTTON_2): {
                 ENDPOINT_ID: 4,
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+            (TURN_ON, BUTTON_2): {
+                ENDPOINT_ID: 4,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON_2): {
+                ENDPOINT_ID: 4,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
     )

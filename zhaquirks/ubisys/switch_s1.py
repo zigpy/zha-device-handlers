@@ -5,7 +5,15 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
+from zhaquirks.const import (
+    BUTTON,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_CLICK,
+    ENDPOINT_ID,
+    TURN_OFF,
+    TURN_ON,
+)
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
@@ -61,6 +69,16 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
                 ENDPOINT_ID: 2,
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+            (TURN_ON, BUTTON): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
     )

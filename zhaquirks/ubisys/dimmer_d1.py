@@ -18,6 +18,8 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_CLICK,
     ENDPOINT_ID,
+    TURN_OFF,
+    TURN_ON,
 )
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
@@ -215,6 +217,7 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
     # so we disable the other entities by default
+    # TODO: Disabling this entity also disables polling for the entire EM cluster in ZHA
     .change_entity_metadata(
         endpoint_id=4,
         cluster_id=ElectricalMeasurement.cluster_id,
@@ -228,7 +231,12 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         new_entity_registry_enabled_default=False,
     )
     # SmartEnergy summation attributes do not support attribute reporting, need polling
+    # TODO: Add support for this in ZHA
     .exposes_feature(SE_POLL_SUMMATION)
+    # TODO: Fix/rework/rethink EM polling
+    # ElectricalMeasurement cluster does not support attribute reporting at all,
+    # so poll current explicitly (active power does, but if disabled, nothing will poll)
+    # .exposes_feature(EM_POLL_CURRENT)
     .device_automation_triggers(
         {
             # this also toggles light by default
@@ -239,12 +247,30 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
             },
-            # XXX: move_with_on_off + stop_with_on_off are also fired when holding down
-            #  move_with_on_off with move_mode 0 and 1
+            (TURN_ON, BUTTON_1): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON_1): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
+            },
             (COMMAND_CLICK, BUTTON_2): {
                 ENDPOINT_ID: 3,
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+            (TURN_ON, BUTTON_2): {
+                ENDPOINT_ID: 3,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON_2): {
+                ENDPOINT_ID: 3,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
     )
