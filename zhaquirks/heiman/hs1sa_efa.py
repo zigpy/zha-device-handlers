@@ -2,87 +2,35 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityType
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
-
-# Heiman's actual manufacturer code
-HEIMAN_MANUF_CODE = 0x120B
+from zigpy.zcl.clusters.security import IasWd, IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class SmokeSirenEnum(t.enum8):
-    """smoke siren type."""
+    """Smoke siren type."""
 
-    stop = 0
-    smoke_siren = 1
-    co_siren = 2
-
-
-class SmokeRemoteMuteEnum(t.uint8_t):
-    """smoke remote mute."""
-
-    normal = 0
-    mute = 1
+    Stop = 0
+    Smoke_siren = 1
+    CO_siren = 2
 
 
-class SmokeRemoteTestEnum(t.uint8_t):
-    """smoke remote test."""
+class ChamberContaminationEnum(t.enum8):
+    """Chamber contamination level."""
 
-    normal = 0
-    start_test = 1
-
-
-def smoke_chamber_contamination_converter(value: int) -> str:
-    """Extract contamination value."""
-    # Mapping integers directly to their descriptions
-    actions = {
-        0: "normal",
-        1: "light contamination",
-        2: "medium contamination",
-        3: "critical contamination",
-    }
-    # value is 0, 1, 2, or 3
-    return actions.get(value, "unknown")
+    Normal = 0
+    Light_contamination = 1
+    Medium_contamination = 2
+    Critical_contamination = 3
 
 
-def smoke_level_unit_converter(value: int) -> str:
-    """Extract smoke level unit."""
-    actions = {
-        0: "dB/m",
-        1: "%ft OBS",
-    }
-    return actions.get(value, "unknown")
+class SmokeLevelUnitEnum(t.enum8):
+    """Smoke level unit."""
 
-
-class ExtendIasZoneCluster(CustomCluster, IasZone):
-    """Heiman IAS Zone cluster extension."""
-
-    # Map the command name to your new function
-    server_commands = IasZone.server_commands.copy()
-    server_commands.update(
-        {
-            0x02: ZCLCommandDef(
-                "initiate_test_mode",
-                {
-                    "test_mode_duration": t.uint8_t,
-                    "current_zone_sensitivity": t.uint8_t,
-                },
-                direction=foundation.Direction.Client_to_Server,
-                is_manufacturer_specific=False,  # Set to False for standard commands
-            )
-        }
-    )
-
-    async def command(self, command_id, *args, **kwargs):
-        """Handle wd commands for the cluster."""
-        # If the UI calls command 0x02 (initiate_test_mode) without arguments
-        if command_id == 0x02 and not args:
-            # Provide default: 5 seconds, 0 sensitivity
-            return await super().command(command_id, 5, 0, **kwargs)
-        return await super().command(command_id, *args, **kwargs)
+    dB_m = 0
+    pct_ft_OBS = 1
 
 
 class CustomHeimanCluster(CustomCluster):
@@ -115,7 +63,7 @@ class CustomHeimanCluster(CustomCluster):
         )
         siren_for_automation = ZCLAttributeDef(
             id=0x0012,
-            type=t.enum8,
+            type=SmokeSirenEnum,
             manufacturer_code=0x120B,
         )
         interconnectable = ZCLAttributeDef(
@@ -130,12 +78,12 @@ class CustomHeimanCluster(CustomCluster):
         )
         smoke_unit = ZCLAttributeDef(
             id=0x0018,
-            type=t.enum8,
+            type=SmokeLevelUnitEnum,
             manufacturer_code=0x120B,
         )
         chamber_contamination = ZCLAttributeDef(
             id=0x0017,
-            type=t.enum8,
+            type=ChamberContaminationEnum,
             manufacturer_code=0x120B,
         )
         rebooted_count = ZCLAttributeDef(
@@ -167,13 +115,11 @@ class CustomHeimanCluster(CustomCluster):
 
 (
     QuirkBuilder("HEIMAN", "HS1SA-EF-3.0")
-    .removes(0x0502)
-    .replaces(ExtendIasZoneCluster)
+    .removes(IasWd.cluster_id)
     .replaces(CustomHeimanCluster)
     .switch(
         CustomHeimanCluster.AttributeDefs.heartbeat_indicator.name,
         CustomHeimanCluster.cluster_id,
-        entity_type=EntityType.STANDARD,
         translation_key="heartbeat_indicator",
         fallback_name="Heartbeat indicator",
     )
@@ -181,99 +127,96 @@ class CustomHeimanCluster(CustomCluster):
         CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
         SmokeSirenEnum,
         CustomHeimanCluster.cluster_id,
-        entity_type=EntityType.STANDARD,
         translation_key="siren_for_automation_only",
         fallback_name="Siren for automation only",
     )
-    .sensor(
+    .enum(
         CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
+        ChamberContaminationEnum,
         CustomHeimanCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=smoke_chamber_contamination_converter,
         translation_key="chamber_contamination",
         fallback_name="Chamber contamination",
     )
-    .sensor(
+    .enum(
         CustomHeimanCluster.AttributeDefs.smoke_unit.name,
+        SmokeLevelUnitEnum,
         CustomHeimanCluster.cluster_id,
-        attribute_converter=smoke_level_unit_converter,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
         translation_key="smoke_level_unit",
         fallback_name="Smoke level unit",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
         CustomHeimanCluster.cluster_id,
-        unique_id_suffix="selftest",
-        translation_key="selftest",
-        fallback_name="Self test",
         reporting_config=ReportingConfig(
             min_interval=2, max_interval=0, reportable_change=1
         ),
+        translation_key="self_test",
+        fallback_name="Self-test",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_fault_state.name,
         CustomHeimanCluster.cluster_id,
         device_class=BinarySensorDeviceClass.PROBLEM,
-        unique_id_suffix="fault",
-        translation_key="fault",
         fallback_name="Fault",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_mute_state.name,
         CustomHeimanCluster.cluster_id,
-        unique_id_suffix="muted",
         translation_key="muted",
         fallback_name="Muted",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.interconnectable.name,
         CustomHeimanCluster.cluster_id,
-        unique_id_suffix="interconnectable",
         translation_key="interconnectable",
         fallback_name="Interconnectable",
     )
     .switch(
         CustomHeimanCluster.AttributeDefs.remote_mute.name,
         CustomHeimanCluster.cluster_id,
-        entity_type=EntityType.STANDARD,
-        translation_key="remote_mute",
-        fallback_name="Remote mute",
+        translation_key="buzzer_manual_mute",
+        fallback_name="Buzzer manual mute",
     )
     .command_button(
-        "initiate_test_mode",
-        ExtendIasZoneCluster.cluster_id,
-        entity_type=EntityType.STANDARD,
+        IasZone.ServerCommandDefs.init_test_mode.name,
+        IasZone.cluster_id,
+        command_kwargs={"test_mode_duration": 5, "current_zone_sensitivity_level": 0},
         translation_key="remote_test",
         fallback_name="Remote test",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.smoke_level.name,
         CustomHeimanCluster.cluster_id,
-        multiplier=0.01,
+        divisor=100,
         translation_key="smoke_level",
         fallback_name="Smoke level",
     )
+    # Zigbee debug sensors:
     .sensor(
         CustomHeimanCluster.AttributeDefs.rebooted_count.name,
         CustomHeimanCluster.cluster_id,
-        device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="rebooted_count",
         fallback_name="Rebooted count",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.rejoined_count.name,
         CustomHeimanCluster.cluster_id,
-        device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="rejoined_count",
         fallback_name="Rejoined count",
     )
     .sensor(
         CustomHeimanCluster.AttributeDefs.reported_packages.name,
         CustomHeimanCluster.cluster_id,
-        device_class=None,
         entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="reported_packages",
         fallback_name="Reported packages",
     )

@@ -30,5 +30,6 @@ from . import DevelcoIasZone, DevelcoPowerConfiguration
         new_primary=False,
         new_entity_category=EntityType.DIAGNOSTIC,
     )
+    .exposes_feature("siren_basic")
     .add_to_registry()
 )
