@@ -48,14 +48,14 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     .device_automation_triggers(
         {
             # this also toggles light by default
-            # TODO: move_with_on_off + stop_with_on_off are also fired when holding down
+            # XXX: move_with_on_off + stop_with_on_off are also fired when holding down
             #  move_with_on_off with move_mode 0 and 1
             (COMMAND_CLICK, BUTTON_1): {
                 ENDPOINT_ID: 2,
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
             },
-            # TODO: move_with_on_off + stop_with_on_off are also fired when holding down
+            # XXX: move_with_on_off + stop_with_on_off are also fired when holding down
             #  move_with_on_off with move_mode 0 and 1
             (COMMAND_CLICK, BUTTON_2): {
                 ENDPOINT_ID: 3,
