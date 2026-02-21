@@ -16,7 +16,6 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder(manufacturer="ubisys", model="C4 (5504)")
-    # TODO: Add configuration for other input modes?
     .device_automation_triggers(
         {
             (COMMAND_CLICK, BUTTON_1): {
