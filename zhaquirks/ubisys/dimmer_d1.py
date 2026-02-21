@@ -31,7 +31,6 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
     # so we disable the other entities by default
-    # TODO: Disabling this entity also disables polling for the entire EM cluster in ZHA
     .change_entity_metadata(
         endpoint_id=4,
         cluster_id=ElectricalMeasurement.cluster_id,
@@ -45,7 +44,6 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         new_entity_registry_enabled_default=False,
     )
     # SmartEnergy summation attributes do not support attribute reporting, need polling
-    # TODO: Add support for this in ZHA
     .exposes_feature(SE_POLL_SUMMATION)
     .device_automation_triggers(
         {
