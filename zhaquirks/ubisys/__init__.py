@@ -183,6 +183,31 @@ class UbisysInputConfigCluster(LocalDataCluster):
             actions.extend(build_onoff_actions(input_index, source_ep, mode))
         return actions
 
+    async def _set_detached(self, det_attr_name: str, detach: bool) -> None:
+        """Bind or unbind an input endpoint for the given detached attribute."""
+        input_ep = next(
+            ep for name, ep, _ in self._DETACHED_CONFIG if name == det_attr_name
+        )
+        output_ep = next(
+            ep for name, _, ep in self._DETACHED_CONFIG if name == det_attr_name
+        )
+        zdo = self.endpoint.device.zdo
+        dst = MultiAddress(
+            addrmode=0x03,
+            ieee=self.endpoint.device.ieee,
+            endpoint=output_ep,
+        )
+        for cluster_id in self.BIND_CLUSTERS:
+            if detach:
+                await zdo.Unbind_req(
+                    self.endpoint.device.ieee, input_ep, cluster_id, dst
+                )
+            else:
+                await zdo.Bind_req(self.endpoint.device.ieee, input_ep, cluster_id, dst)
+        self._update_attribute(
+            self.attributes_by_name[det_attr_name].id, t.Bool(detach)
+        )
+
     async def write_attributes(
         self,
         attributes: dict[str | int, Any],
@@ -202,33 +227,9 @@ class UbisysInputConfigCluster(LocalDataCluster):
                     self._update_attribute(self.attributes_by_name[attr_name].id, mode)
                     return result
 
-            for det_attr_name, input_ep, output_ep in self._DETACHED_CONFIG:
+            for det_attr_name, _, _ in self._DETACHED_CONFIG:
                 if attr_name == det_attr_name:
-                    detach = bool(value)
-                    zdo = self.endpoint.device.zdo
-                    dst = MultiAddress(
-                        addrmode=0x03,
-                        ieee=self.endpoint.device.ieee,
-                        endpoint=output_ep,
-                    )
-                    for cluster_id in self.BIND_CLUSTERS:
-                        if detach:
-                            await zdo.Unbind_req(
-                                self.endpoint.device.ieee,
-                                input_ep,
-                                cluster_id,
-                                dst,
-                            )
-                        else:
-                            await zdo.Bind_req(
-                                self.endpoint.device.ieee,
-                                input_ep,
-                                cluster_id,
-                                dst,
-                            )
-                    self._update_attribute(
-                        self.attributes_by_name[attr_name].id, t.Bool(detach)
-                    )
+                    await self._set_detached(det_attr_name, bool(value))
                     return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
 
         return await super().write_attributes(attributes, manufacturer, **kwargs)
