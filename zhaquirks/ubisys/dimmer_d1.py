@@ -4,8 +4,6 @@ from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -323,53 +321,8 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         translation_key="minimum_on_level",
         fallback_name="Minimum on level",
     )
-    # --- Dimmer operating status (diagnostic binary sensors) ---
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x01),
-        unique_id_suffix="forward_phase_active",
-        translation_key="forward_phase_active",
-        fallback_name="Forward phase control active",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x02),
-        unique_id_suffix="reverse_phase_active",
-        translation_key="reverse_phase_active",
-        fallback_name="Reverse phase control active",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x08),
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        unique_id_suffix="overload",
-        translation_key="overload",
-        fallback_name="Overload",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x40),
-        unique_id_suffix="capacitive_load",
-        translation_key="capacitive_load",
-        fallback_name="Capacitive load detected",
-    )
-    .binary_sensor(
-        attribute_name=UbisysDimmerSetup.AttributeDefs.status.name,
-        cluster_id=UbisysDimmerSetup.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
-        attribute_converter=lambda v: bool(v & 0x80),
-        unique_id_suffix="inductive_load",
-        translation_key="inductive_load",
-        fallback_name="Inductive load detected",
-    )
+    # Status binary sensors (forward/reverse phase active, overload,
+    # capacitive/inductive load) require polling, so aren't exposed
     # --- Electrical measurement ---
     .replaces(UbisysElectricalMeasurement, endpoint_id=4)
     # The device exposes total active power on multiple attributes,
