@@ -296,10 +296,10 @@ async def test_pj1203_read_attributes_constant(pj1203_device):
         [ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 10
+    success, failure = result
+    assert ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id in success
+    assert success[ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id] == 10
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_attributes_cached(pj1203_device):
@@ -316,10 +316,10 @@ async def test_pj1203_read_attributes_cached(pj1203_device):
         [ElectricalMeasurement.AttributeDefs.rms_voltage.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 2400
+    success, failure = result
+    assert ElectricalMeasurement.AttributeDefs.rms_voltage.id in success
+    assert success[ElectricalMeasurement.AttributeDefs.rms_voltage.id] == 2400
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_attributes_unsupported(pj1203_device):
@@ -331,9 +331,13 @@ async def test_pj1203_read_attributes_unsupported(pj1203_device):
         [ElectricalMeasurement.AttributeDefs.ac_frequency.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    success, failure = result
+    assert len(success) == 0
+    assert ElectricalMeasurement.AttributeDefs.ac_frequency.id in failure
+    assert (
+        failure[ElectricalMeasurement.AttributeDefs.ac_frequency.id]
+        == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    )
 
 
 async def test_pj1203_read_attributes_by_name(pj1203_device):
@@ -348,14 +352,14 @@ async def test_pj1203_read_attributes_by_name(pj1203_device):
     # Read by name
     result = await em_cluster.read_attributes(["rms_current"], allow_cache=False)
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 500
+    success, failure = result
+    assert ElectricalMeasurement.AttributeDefs.rms_current.id in success
+    assert success[ElectricalMeasurement.AttributeDefs.rms_current.id] == 500
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_active_power_type(pj1203_device):
-    """Test that active_power is read with correct type (int16s)."""
+    """Test that active_power is read with correct value (including negative)."""
     em_cluster = pj1203_device.endpoints[1].electrical_measurement
 
     # Update active power
@@ -368,11 +372,11 @@ async def test_pj1203_read_active_power_type(pj1203_device):
         [ElectricalMeasurement.AttributeDefs.active_power.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    # Should preserve negative value (signed int)
-    assert records[0].value.value == -50
+    success, failure = result
+    assert ElectricalMeasurement.AttributeDefs.active_power.id in success
+    # Should preserve negative value
+    assert success[ElectricalMeasurement.AttributeDefs.active_power.id] == -50
+    assert len(failure) == 0
 
 
 def test_pj1203_metering_cluster_constants():
@@ -422,10 +426,10 @@ async def test_pj1203_read_metering_attributes_constant(pj1203_device):
         [Metering.AttributeDefs.divisor.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 1000
+    success, failure = result
+    assert Metering.AttributeDefs.divisor.id in success
+    assert success[Metering.AttributeDefs.divisor.id] == 1000
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_metering_attributes_cached(pj1203_device):
@@ -442,10 +446,10 @@ async def test_pj1203_read_metering_attributes_cached(pj1203_device):
         [Metering.AttributeDefs.current_summ_delivered.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 54321
+    success, failure = result
+    assert Metering.AttributeDefs.current_summ_delivered.id in success
+    assert success[Metering.AttributeDefs.current_summ_delivered.id] == 54321
+    assert len(failure) == 0
 
 
 # Tests for energy integration feature
@@ -899,38 +903,38 @@ async def test_pj1203_read_metering_attributes_by_name(pj1203_device):
         ["current_summ_delivered"], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 12345
+    success, failure = result
+    assert Metering.AttributeDefs.current_summ_delivered.id in success
+    assert success[Metering.AttributeDefs.current_summ_delivered.id] == 12345
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_metering_summation_formatting(pj1203_device):
-    """Test reading summation_formatting constant attribute (bitmap8 type)."""
+    """Test reading summation_formatting constant attribute."""
     metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
 
     result = await metering_cluster.read_attributes(
         [Metering.AttributeDefs.summation_formatting.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 0b0_0100_011
+    success, failure = result
+    assert Metering.AttributeDefs.summation_formatting.id in success
+    assert success[Metering.AttributeDefs.summation_formatting.id] == 0b0_0100_011
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_metering_unit_of_measure(pj1203_device):
-    """Test reading unit_of_measure constant attribute (enum8 type)."""
+    """Test reading unit_of_measure constant attribute."""
     metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
 
     result = await metering_cluster.read_attributes(
         [Metering.AttributeDefs.unit_of_measure.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 0x0000  # POWER_WATT
+    success, failure = result
+    assert Metering.AttributeDefs.unit_of_measure.id in success
+    assert success[Metering.AttributeDefs.unit_of_measure.id] == 0x0000  # POWER_WATT
+    assert len(failure) == 0
 
 
 async def test_pj1203_read_metering_unsupported_attribute(pj1203_device):
@@ -942,6 +946,10 @@ async def test_pj1203_read_metering_unsupported_attribute(pj1203_device):
         [Metering.AttributeDefs.current_tier1_summ_delivered.id], allow_cache=False
     )
 
-    records = result[0]
-    assert len(records) == 1
-    assert records[0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    success, failure = result
+    assert len(success) == 0
+    assert Metering.AttributeDefs.current_tier1_summ_delivered.id in failure
+    assert (
+        failure[Metering.AttributeDefs.current_tier1_summ_delivered.id]
+        == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    )
