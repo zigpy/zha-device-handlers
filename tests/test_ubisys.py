@@ -584,13 +584,21 @@ async def test_d1_dimmer_double_from_input_1(ubisys_d1):
     """Test setting input_mode_1 to Dimmer_double generates paired actions and syncs."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     endpoint_232 = ubisys_d1.endpoints[232]
+    zdo = ubisys_d1.zdo
 
     input_config_listener = ClusterListener(input_config_cluster)
 
-    with mock.patch.object(
-        endpoint_232,
-        "request",
-        mock.AsyncMock(return_value=[0]),
+    with (
+        mock.patch.object(
+            endpoint_232,
+            "request",
+            mock.AsyncMock(return_value=[0]),
+        ),
+        mock.patch.object(
+            zdo,
+            "Bind_req",
+            mock.AsyncMock(return_value=[0]),
+        ) as mock_bind,
     ):
         await input_config_cluster.write_attributes(
             {
@@ -607,10 +615,18 @@ async def test_d1_dimmer_double_from_input_1(ubisys_d1):
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
+        # detached_2 defaults to True, so it should be re-bound
+        assert mock_bind.call_count == 2  # OnOff + LevelControl for EP3
+
     # Both inputs should be updated to Dimmer_double
     assert (
         UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
         DimmerInputMode.Dimmer_double,
+    ) in input_config_listener.attribute_updates
+    # detached_2 should have been reset to False
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.detached_2.id,
+        t.Bool.false,
     ) in input_config_listener.attribute_updates
 
 
@@ -618,13 +634,21 @@ async def test_d1_dimmer_double_from_input_2(ubisys_d1):
     """Test setting input_mode_2 to Dimmer_double generates paired actions and syncs."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     endpoint_232 = ubisys_d1.endpoints[232]
+    zdo = ubisys_d1.zdo
 
     input_config_listener = ClusterListener(input_config_cluster)
 
-    with mock.patch.object(
-        endpoint_232,
-        "request",
-        mock.AsyncMock(return_value=[0]),
+    with (
+        mock.patch.object(
+            endpoint_232,
+            "request",
+            mock.AsyncMock(return_value=[0]),
+        ),
+        mock.patch.object(
+            zdo,
+            "Bind_req",
+            mock.AsyncMock(return_value=[0]),
+        ) as mock_bind,
     ):
         await input_config_cluster.write_attributes(
             {
@@ -641,10 +665,18 @@ async def test_d1_dimmer_double_from_input_2(ubisys_d1):
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
+        # detached_2 defaults to True, so it should be re-bound
+        assert mock_bind.call_count == 2  # OnOff + LevelControl for EP3
+
     # Both inputs should be updated to Dimmer_double
     assert (
         UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.id,
         DimmerInputMode.Dimmer_double,
+    ) in input_config_listener.attribute_updates
+    # detached_2 should have been reset to False
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.detached_2.id,
+        t.Bool.false,
     ) in input_config_listener.attribute_updates
 
 
@@ -652,12 +684,20 @@ async def test_d1_dimmer_double_exit_resets_other(ubisys_d1):
     """Test leaving Dimmer_double resets the other input to Dimmer_single."""
     input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
     endpoint_232 = ubisys_d1.endpoints[232]
+    zdo = ubisys_d1.zdo
 
-    # First, set both to Dimmer_double
-    with mock.patch.object(
-        endpoint_232,
-        "request",
-        mock.AsyncMock(return_value=[0]),
+    # First, set both to Dimmer_double (also re-binds detached_2)
+    with (
+        mock.patch.object(
+            endpoint_232,
+            "request",
+            mock.AsyncMock(return_value=[0]),
+        ),
+        mock.patch.object(
+            zdo,
+            "Bind_req",
+            mock.AsyncMock(return_value=[0]),
+        ),
     ):
         await input_config_cluster.write_attributes(
             {
@@ -693,6 +733,76 @@ async def test_d1_dimmer_double_exit_resets_other(ubisys_d1):
     assert (
         UbisysD1InputConfigCluster.AttributeDefs.input_mode_2.id,
         DimmerInputMode.Dimmer_single,
+    ) in input_config_listener.attribute_updates
+
+
+async def test_d1_dimmer_double_unbinds_detached(ubisys_d1):
+    """Test entering Dimmer_double re-binds any detached inputs."""
+    input_config_cluster = ubisys_d1.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_d1.endpoints[232]
+    zdo = ubisys_d1.zdo
+
+    # Pre-detach both inputs by setting cache directly
+    input_config_cluster._attr_cache[
+        UbisysD1InputConfigCluster.AttributeDefs.detached_1.id
+    ] = t.Bool.true
+    input_config_cluster._attr_cache[
+        UbisysD1InputConfigCluster.AttributeDefs.detached_2.id
+    ] = t.Bool.true
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with (
+        mock.patch.object(
+            endpoint_232,
+            "request",
+            mock.AsyncMock(return_value=[0]),
+        ),
+        mock.patch.object(
+            zdo,
+            "Bind_req",
+            mock.AsyncMock(return_value=[0]),
+        ) as mock_bind,
+    ):
+        await input_config_cluster.write_attributes(
+            {
+                UbisysD1InputConfigCluster.AttributeDefs.input_mode_1.name: DimmerInputMode.Dimmer_double
+            }
+        )
+
+        # Should have called Bind_req for both inputs (2 clusters each = 4 calls)
+        assert mock_bind.call_count == 4
+
+        # EP2 -> EP1 binds (OnOff + LevelControl)
+        args_ep2_onoff = mock_bind.call_args_list[0][0]
+        assert args_ep2_onoff[1] == 2  # EP2
+        assert args_ep2_onoff[2] == OnOff.cluster_id
+        assert args_ep2_onoff[3].endpoint == 1
+
+        args_ep2_level = mock_bind.call_args_list[1][0]
+        assert args_ep2_level[1] == 2  # EP2
+        assert args_ep2_level[2] == LevelControl.cluster_id
+        assert args_ep2_level[3].endpoint == 1
+
+        # EP3 -> EP1 binds (OnOff + LevelControl)
+        args_ep3_onoff = mock_bind.call_args_list[2][0]
+        assert args_ep3_onoff[1] == 3  # EP3
+        assert args_ep3_onoff[2] == OnOff.cluster_id
+        assert args_ep3_onoff[3].endpoint == 1
+
+        args_ep3_level = mock_bind.call_args_list[3][0]
+        assert args_ep3_level[1] == 3  # EP3
+        assert args_ep3_level[2] == LevelControl.cluster_id
+        assert args_ep3_level[3].endpoint == 1
+
+    # Both detached attributes should have been reset to False
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.detached_1.id,
+        t.Bool.false,
+    ) in input_config_listener.attribute_updates
+    assert (
+        UbisysD1InputConfigCluster.AttributeDefs.detached_2.id,
+        t.Bool.false,
     ) in input_config_listener.attribute_updates
 
 

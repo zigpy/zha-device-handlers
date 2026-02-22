@@ -246,6 +246,14 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                         self._update_attribute(
                             other_attr_id, DimmerInputMode.Dimmer_double
                         )
+                        # Both inputs must be bound for double mode to work —
+                        # re-bind any detached inputs before writing actions
+                        for det_attr_name, _, _ in self._DETACHED_CONFIG:
+                            det_attr_id = self.attributes_by_name[det_attr_name].id
+                            if self._attr_cache.get(det_attr_id, t.Bool.false):
+                                await super().write_attributes(
+                                    {det_attr_name: False}, manufacturer, **kwargs
+                                )
                     elif (
                         new_mode != DimmerInputMode.Dimmer_double
                         and other_mode == DimmerInputMode.Dimmer_double
