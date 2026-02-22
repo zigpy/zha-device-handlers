@@ -28,7 +28,6 @@ import time
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -155,8 +154,12 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
-        """Read attributes ZCL foundation command."""
-        records = []
+        """Read attributes ZCL foundation command.
+
+        Returns (success_dict, failure_dict) matching the zigpy Cluster API.
+        """
+        success = {}
+        failure = {}
         for attr in attributes:
             if isinstance(attr, str):
                 attr_id = self.attributes_by_name[attr].id
@@ -165,41 +168,13 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
 
             # Check constant attributes first
             if attr_id in self._CONSTANT_ATTRIBUTES:
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.SUCCESS,
-                        foundation.TypeValue(
-                            type=t.uint16_t, value=self._CONSTANT_ATTRIBUTES[attr_id]
-                        ),
-                    )
-                )
+                success[attr_id] = self._CONSTANT_ATTRIBUTES[attr_id]
             elif attr_id in self._attr_cache:
-                # Determine the correct type for the attribute
-                if attr_id == self.AttributeDefs.active_power.id:
-                    attr_type = t.int16s
-                else:
-                    attr_type = t.uint16_t
-
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.SUCCESS,
-                        foundation.TypeValue(
-                            type=attr_type, value=self._attr_cache[attr_id]
-                        ),
-                    )
-                )
+                success[attr_id] = self._attr_cache[attr_id]
             else:
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                        foundation.TypeValue(),
-                    )
-                )
+                failure[attr_id] = foundation.Status.UNSUPPORTED_ATTRIBUTE
 
-        return (records,)
+        return (success, failure)
 
 
 class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
@@ -317,8 +292,12 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
-        """Read attributes ZCL foundation command."""
-        records = []
+        """Read attributes ZCL foundation command.
+
+        Returns (success_dict, failure_dict) matching the zigpy Cluster API.
+        """
+        success = {}
+        failure = {}
         for attr in attributes:
             if isinstance(attr, str):
                 attr_id = self.attributes_by_name[attr].id
@@ -327,43 +306,13 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
 
             # Check constant attributes first
             if attr_id in self._CONSTANT_ATTRIBUTES:
-                # Determine the correct type for each constant attribute
-                if attr_id == Metering.AttributeDefs.summation_formatting.id:
-                    attr_type = t.bitmap8
-                elif attr_id == Metering.AttributeDefs.unit_of_measure.id:
-                    attr_type = t.enum8
-                else:
-                    attr_type = t.uint24_t
-
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.SUCCESS,
-                        foundation.TypeValue(
-                            type=attr_type, value=self._CONSTANT_ATTRIBUTES[attr_id]
-                        ),
-                    )
-                )
+                success[attr_id] = self._CONSTANT_ATTRIBUTES[attr_id]
             elif attr_id in self._attr_cache:
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.SUCCESS,
-                        foundation.TypeValue(
-                            type=t.uint48_t, value=self._attr_cache[attr_id]
-                        ),
-                    )
-                )
+                success[attr_id] = self._attr_cache[attr_id]
             else:
-                records.append(
-                    foundation.ReadAttributeRecord(
-                        attr_id,
-                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                        foundation.TypeValue(),
-                    )
-                )
+                failure[attr_id] = foundation.Status.UNSUPPORTED_ATTRIBUTE
 
-        return (records,)
+        return (success, failure)
 
 
 class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
