@@ -342,6 +342,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         for attr in attributes:
             attr_def = self.find_attribute(attr)
             if attr_def == self.AttributeDefs.prepare_calibration:
+                self._set_state(CalibrationState.Idle)
                 await self._write_preparation_defaults()
                 return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
             if attr_def == self.AttributeDefs.run_calibration:
