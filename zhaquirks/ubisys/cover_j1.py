@@ -221,8 +221,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         while True:
             await asyncio.sleep(_POLL_INTERVAL_S)
             elapsed += _POLL_INTERVAL_S
-            result = await wc.read_attributes([attr.name])
-            if result[0].get(attr.name, 0) == 0:
+            await wc.read_attributes([attr])
+            if (wc.get_cached_value(attr) or 0) == 0:
                 break
             if elapsed >= _MOTOR_TIMEOUT_S:
                 raise TimeoutError(f"Motor did not stop within {_MOTOR_TIMEOUT_S}s")
@@ -232,13 +232,13 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         """Set or clear the calibration bit in window_covering_mode."""
         wc = self.endpoint.device.endpoints[1].window_covering
         mode_attr = WindowCovering.AttributeDefs.window_covering_mode
-        result = await wc.read_attributes([mode_attr.name])
-        current_mode = result[0].get(mode_attr.name, 0)
+        await wc.read_attributes([mode_attr])
+        current_mode = wc.get_cached_value(mode_attr) or 0
         if enable:
             new_mode = current_mode | _CALIBRATION_MODE_BIT
         else:
             new_mode = current_mode & ~_CALIBRATION_MODE_BIT
-        await wc.write_attributes({mode_attr.name: new_mode})
+        await wc.write_attributes({mode_attr: new_mode})
         await asyncio.sleep(_POLL_INTERVAL_S)
 
     async def _run_calibration(self) -> None:
