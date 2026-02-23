@@ -95,6 +95,13 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
     .applies_to(manufacturer="ubisys", model="J1-R (5602)")
     .replaces(UbisysCluster, endpoint_id=232)
     .replaces(UbisysWindowCovering, endpoint_id=1)
+    .enum(
+        attribute_name=UbisysWindowCovering.AttributeDefs.window_covering_type_config.name,
+        enum_class=WindowCovering.WindowCoveringType,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        translation_key="window_covering_type",
+        fallback_name="Window covering type",
+    )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
         attribute_name=UbisysJ1InputConfigCluster.AttributeDefs.detached.name,
