@@ -9,6 +9,8 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
     DEGREE,
     PERCENTAGE,
+    EntityPlatform,
+    EntityType,
     UnitOfLength,
     UnitOfPower,
     UnitOfTime,
@@ -32,6 +34,11 @@ from zigpy.zcl.foundation import (
 from zhaquirks import LocalDataCluster
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
+
+_LOGGER = logging.getLogger(__name__)
+
+_POLL_INTERVAL_S = 2  # seconds between operational_status polls
+_MOTOR_TIMEOUT_S = 300  # 5 minutes
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -144,11 +151,20 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
     BIND_CLUSTERS: list[int] = [WindowCovering.cluster_id]
 
 
-_LOGGER = logging.getLogger(__name__)
+class CalibrationState(t.enum8):
+    """Auto-calibration progress state."""
 
-_CALIBRATION_MODE_BIT = 0x02
-_POLL_INTERVAL_S = 2
-_MOTOR_TIMEOUT_S = 300
+    Idle = 0
+    Moving_to_top = 1
+    Writing_defaults = 2
+    Entering_calibration = 3
+    Moving_down = 4
+    Detecting_upper_limit = 5
+    Counting_open_to_close = 6
+    Counting_close_to_open = 7
+    Exiting_calibration = 8
+    Complete = 9
+    Failed = 10
 
 
 class UbisysJ1CalibrationCluster(LocalDataCluster):
@@ -169,6 +185,19 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         run_calibration: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
         enter_calibration_mode: Final = ZCLAttributeDef(id=0x0002, type=t.Bool)
         exit_calibration_mode: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
+        calibration_state: Final = ZCLAttributeDef(id=0x0004, type=CalibrationState)
+
+    def __init__(self, *args, **kwargs):
+        """Init with calibration state set to Idle."""
+        super().__init__(*args, **kwargs)
+        self._update_attribute(
+            self.AttributeDefs.calibration_state, CalibrationState.Idle
+        )
+
+    def _set_state(self, state: CalibrationState) -> None:
+        """Update the calibration state attribute."""
+        _LOGGER.debug("ubisys J1: Calibration state -> %s", state.name)
+        self._update_attribute(self.AttributeDefs.calibration_state, state)
 
     async def _write_preparation_defaults(self) -> None:
         """Write calibration preparation defaults to the WindowCovering cluster."""
@@ -222,7 +251,9 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
             await asyncio.sleep(_POLL_INTERVAL_S)
             elapsed += _POLL_INTERVAL_S
             await wc.read_attributes([attr])
-            if (wc.get_cached_value(attr) or 0) == 0:
+            status = wc.get_cached_value(attr) or 0
+            _LOGGER.debug("ubisys J1: operational_status=0x%02X (%ds)", status, elapsed)
+            if status == 0:
                 break
             if elapsed >= _MOTOR_TIMEOUT_S:
                 raise TimeoutError(f"Motor did not stop within {_MOTOR_TIMEOUT_S}s")
@@ -235,66 +266,73 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         await wc.read_attributes([mode_attr])
         current_mode = wc.get_cached_value(mode_attr) or 0
         if enable:
-            new_mode = current_mode | _CALIBRATION_MODE_BIT
+            new_mode = (
+                current_mode | WindowCovering.WindowCoveringMode.Run_in_calibration_mode
+            )
         else:
-            new_mode = current_mode & ~_CALIBRATION_MODE_BIT
+            new_mode = (
+                current_mode
+                & ~WindowCovering.WindowCoveringMode.Run_in_calibration_mode
+            )
         await wc.write_attributes({mode_attr: new_mode})
         await asyncio.sleep(_POLL_INTERVAL_S)
 
     async def _run_calibration(self) -> None:
         """Run the full auto-calibration sequence (Steps 1-9)."""
         wc = self.endpoint.device.endpoints[1].window_covering
-        _LOGGER.warning("ubisys J1: Calibration starting")
 
-        # Cancel any active calibration
-        await self._set_calibration_mode(False)
+        try:
+            # Cancel any active calibration
+            self._set_state(CalibrationState.Moving_to_top)
+            await self._set_calibration_mode(False)
 
-        # Move to top position for a good starting point
-        _LOGGER.warning("ubisys J1: Moving to top position")
-        await wc.up_open()
-        await self._wait_until_stopped()
+            # Move to top position for a good starting point
+            await wc.up_open()
+            await self._wait_until_stopped()
 
-        # Write preparation defaults (Step 2)
-        _LOGGER.warning("ubisys J1: Writing preparation defaults")
-        await self._write_preparation_defaults()
+            # Write preparation defaults (Step 2)
+            self._set_state(CalibrationState.Writing_defaults)
+            await self._write_preparation_defaults()
 
-        # Enter calibration mode (Step 3)
-        _LOGGER.warning("ubisys J1: Entering calibration mode")
-        await self._set_calibration_mode(True)
+            # Enter calibration mode (Step 3)
+            self._set_state(CalibrationState.Entering_calibration)
+            await self._set_calibration_mode(True)
 
-        # Move down briefly, then stop (Step 4)
-        _LOGGER.warning("ubisys J1: Moving down briefly")
-        await wc.down_close()
-        await asyncio.sleep(5)
-        await wc.stop()
-        await asyncio.sleep(_POLL_INTERVAL_S)
+            # Move down briefly, then stop (Step 4)
+            self._set_state(CalibrationState.Moving_down)
+            await wc.down_close()
+            await asyncio.sleep(5)
+            await wc.stop()
+            await asyncio.sleep(_POLL_INTERVAL_S)
 
-        # Move up to detect upper limit (Step 5)
-        _LOGGER.warning("ubisys J1: Moving up to detect upper limit")
-        await wc.up_open()
-        await self._wait_until_stopped()
+            # Move up to detect upper limit (Step 5)
+            self._set_state(CalibrationState.Detecting_upper_limit)
+            await wc.up_open()
+            await self._wait_until_stopped()
 
-        # Move down to count steps open→close (Step 6)
-        _LOGGER.warning("ubisys J1: Moving down to count steps (open to close)")
-        await wc.down_close()
-        await self._wait_until_stopped()
+            # Move down to count steps open -> close (Step 6)
+            self._set_state(CalibrationState.Counting_open_to_close)
+            await wc.down_close()
+            await self._wait_until_stopped()
 
-        # Move up to count steps close→open (Step 7)
-        _LOGGER.warning("ubisys J1: Moving up to count steps (close to open)")
-        await wc.up_open()
-        await self._wait_until_stopped()
+            # Move up to count steps close -> open (Step 7)
+            self._set_state(CalibrationState.Counting_close_to_open)
+            await wc.up_open()
+            await self._wait_until_stopped()
 
-        # Exit calibration mode (Step 9)
-        _LOGGER.warning("ubisys J1: Exiting calibration mode")
-        await self._set_calibration_mode(False)
+            # Exit calibration mode (Step 9)
+            self._set_state(CalibrationState.Exiting_calibration)
+            await self._set_calibration_mode(False)
 
-        # Re-read calibration attributes so HA entities reflect the new values.
-        # Reading the manufacturer-specific attrs also triggers the config-to-standard
-        # sync via _handle_config_attr_sync.
-        _LOGGER.warning("ubisys J1: Reading back calibration results")
-        await self._read_calibration_attributes()
-
-        _LOGGER.warning("ubisys J1: Calibration complete")
+            self._set_state(CalibrationState.Complete)
+        except Exception:
+            self._set_state(CalibrationState.Failed)
+            raise
+        finally:
+            # Re-read calibration attributes so HA entities reflect the new values.
+            # Reading the manufacturer-specific attrs also triggers the
+            # config-to-standard sync via _handle_config_attr_sync.
+            await self._read_calibration_attributes()
 
     async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Handle calibration action attributes."""
@@ -493,6 +531,15 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         cluster_id=UbisysJ1CalibrationCluster.cluster_id,
         translation_key="exit_calibration_mode",
         fallback_name="Exit calibration mode",
+    )
+    .enum(
+        attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.calibration_state.name,
+        enum_class=CalibrationState,
+        cluster_id=UbisysJ1CalibrationCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="auto_calibration_state",
+        fallback_name="Auto-calibration state",
     )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
