@@ -392,8 +392,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfLength.CENTIMETERS,
         mode="box",
         device_class=NumberDeviceClass.DISTANCE,
-        translation_key="installed_open_limit_lift",
-        fallback_name="Installed open limit lift",
+        translation_key="open_limit_lift",
+        fallback_name="Open limit lift",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.installed_closed_limit_lift_config.name,
@@ -404,8 +404,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfLength.CENTIMETERS,
         mode="box",
         device_class=NumberDeviceClass.DISTANCE,
-        translation_key="installed_closed_limit_lift",
-        fallback_name="Installed closed limit lift",
+        translation_key="closed_limit_lift",
+        fallback_name="Closed limit lift",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.installed_open_limit_tilt_config.name,
@@ -416,8 +416,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         multiplier=0.1,
         unit=DEGREE,
         mode="box",
-        translation_key="installed_open_limit_tilt",
-        fallback_name="Installed open limit tilt",
+        translation_key="open_limit_tilt",
+        fallback_name="Open limit tilt",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.installed_closed_limit_tilt_config.name,
@@ -428,8 +428,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         multiplier=0.1,
         unit=DEGREE,
         mode="box",
-        translation_key="installed_closed_limit_tilt",
-        fallback_name="Installed closed limit tilt",
+        translation_key="closed_limit_tilt",
+        fallback_name="Closed limit tilt",
     )
     # --- Step counts (calibration, measured in full AC waves) ---
     # Displayed in seconds assuming 50 Hz AC frequency (0.02s per step)
