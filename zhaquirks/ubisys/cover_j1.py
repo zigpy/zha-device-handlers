@@ -81,13 +81,14 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
 
     # Maps manufacturer-specific config attr names to standard ZCLAttributeDefs.
     # After writing a config attr, the standard attr cache is updated to match.
+    # Note: cannot use AttributeDefs.*.name here — .name is None at class definition time.
     _CONFIG_TO_STANDARD: dict[str, ZCLAttributeDef] = {
-        AttributeDefs.window_covering_type_config.name: WindowCovering.AttributeDefs.window_covering_type,
-        AttributeDefs.config_status_config.name: WindowCovering.AttributeDefs.config_status,
-        AttributeDefs.installed_open_limit_lift_config.name: WindowCovering.AttributeDefs.installed_open_limit_lift,
-        AttributeDefs.installed_closed_limit_lift_config.name: WindowCovering.AttributeDefs.installed_closed_limit_lift,
-        AttributeDefs.installed_open_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_open_limit_tilt,
-        AttributeDefs.installed_closed_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_closed_limit_tilt,
+        "window_covering_type_config": WindowCovering.AttributeDefs.window_covering_type,
+        "config_status_config": WindowCovering.AttributeDefs.config_status,
+        "installed_open_limit_lift_config": WindowCovering.AttributeDefs.installed_open_limit_lift,
+        "installed_closed_limit_lift_config": WindowCovering.AttributeDefs.installed_closed_limit_lift,
+        "installed_open_limit_tilt_config": WindowCovering.AttributeDefs.installed_open_limit_tilt,
+        "installed_closed_limit_tilt_config": WindowCovering.AttributeDefs.installed_closed_limit_tilt,
     }
 
     def __init__(self, *args, **kwargs):
