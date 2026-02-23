@@ -5,9 +5,10 @@ from typing import Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl import AttributeWrittenEvent
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import Status, ZCLAttributeDef
 
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
@@ -78,30 +79,29 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
             id=0x1007, type=t.uint16_t, manufacturer_code=0x10F2
         )
 
-    # Maps manufacturer-specific config attr names to standard attr names.
+    # Maps manufacturer-specific config attr names to standard ZCLAttributeDefs.
     # After writing a config attr, the standard attr cache is updated to match.
-    _CONFIG_TO_STANDARD: dict[str, str] = {
-        AttributeDefs.window_covering_type_config.name: WindowCovering.AttributeDefs.window_covering_type.name,
-        AttributeDefs.config_status_config.name: WindowCovering.AttributeDefs.config_status.name,
-        AttributeDefs.installed_open_limit_lift_config.name: WindowCovering.AttributeDefs.installed_open_limit_lift.name,
-        AttributeDefs.installed_closed_limit_lift_config.name: WindowCovering.AttributeDefs.installed_closed_limit_lift.name,
-        AttributeDefs.installed_open_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_open_limit_tilt.name,
-        AttributeDefs.installed_closed_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_closed_limit_tilt.name,
+    _CONFIG_TO_STANDARD: dict[str, ZCLAttributeDef] = {
+        AttributeDefs.window_covering_type_config.name: WindowCovering.AttributeDefs.window_covering_type,
+        AttributeDefs.config_status_config.name: WindowCovering.AttributeDefs.config_status,
+        AttributeDefs.installed_open_limit_lift_config.name: WindowCovering.AttributeDefs.installed_open_limit_lift,
+        AttributeDefs.installed_closed_limit_lift_config.name: WindowCovering.AttributeDefs.installed_closed_limit_lift,
+        AttributeDefs.installed_open_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_open_limit_tilt,
+        AttributeDefs.installed_closed_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_closed_limit_tilt,
     }
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
-        """Write attributes and sync standard attrs when config attrs change."""
-        result = await super().write_attributes(attributes, manufacturer, **kwargs)
+    def __init__(self, *args, **kwargs):
+        """Init and register event handler for config-to-standard sync."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_attribute_written)
 
-        # After successful writes, update the corresponding standard attribute
-        for attr, value in attributes.items():
-            attr_name = attr if isinstance(attr, str) else self.attributes[attr].name
-            std_name = self._CONFIG_TO_STANDARD.get(attr_name)
-            if std_name is not None:
-                std_attr_id = self.attributes_by_name[std_name].id
-                self._update_attribute(std_attr_id, value)
-
-        return result
+    def _handle_attribute_written(self, event: AttributeWrittenEvent) -> None:
+        """Sync standard attribute cache when a config attribute is written."""
+        if event.status != Status.SUCCESS:
+            return
+        std_attr = self._CONFIG_TO_STANDARD.get(event.attribute_name)
+        if std_attr is not None:
+            self._update_attribute(std_attr, event.value)
 
 
 class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
