@@ -984,6 +984,53 @@ async def test_j1_prepare_calibration(ubisys_j1):
         assert written_attrs[attrs.total_steps_2] == 0xFFFF
 
 
+async def test_j1_wait_until_stopped(ubisys_j1):
+    """Test _wait_until_stopped polls until operational_status is 0."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+    attr = UbisysWindowCovering.AttributeDefs.operational_status
+
+    # Simulate motor running for 2 polls, then stopped
+    poll_values = [0x01, 0x01, 0x00]
+    poll_index = 0
+
+    async def mock_read_attributes(_attrs):
+        nonlocal poll_index
+        wc_cluster._update_attribute(attr, poll_values[poll_index])
+        poll_index += 1
+        return [{}, {}]
+
+    with (
+        mock.patch.object(
+            wc_cluster, "read_attributes", side_effect=mock_read_attributes
+        ),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+    ):
+        await cal_cluster._wait_until_stopped()
+
+    assert poll_index == 3
+
+
+async def test_j1_wait_until_stopped_timeout(ubisys_j1):
+    """Test _wait_until_stopped raises TimeoutError when motor doesn't stop."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+    attr = UbisysWindowCovering.AttributeDefs.operational_status
+
+    async def mock_read_attributes(_attrs):
+        wc_cluster._update_attribute(attr, 0x01)
+        return [{}, {}]
+
+    with (
+        mock.patch.object(
+            wc_cluster, "read_attributes", side_effect=mock_read_attributes
+        ),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+        pytest.raises(TimeoutError, match="Motor did not stop"),
+    ):
+        await cal_cluster._wait_until_stopped()
+
+
 @pytest.mark.parametrize(
     ("attr_name", "enable"),
     [
