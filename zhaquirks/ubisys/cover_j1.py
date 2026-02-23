@@ -102,6 +102,15 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
         translation_key="window_covering_type",
         fallback_name="Window covering type",
     )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.inactive_power_threshold.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65534,
+        step=1,
+        translation_key="inactive_power_threshold",
+        fallback_name="Inactive power threshold",
+    )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
         attribute_name=UbisysJ1InputConfigCluster.AttributeDefs.detached.name,
