@@ -341,19 +341,20 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         """Handle calibration action attributes."""
         for attr in attributes:
             attr_def = self.find_attribute(attr)
+
             if attr_def == self.AttributeDefs.prepare_calibration:
                 self._set_state(CalibrationState.Idle)
                 await self._write_preparation_defaults()
-                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
-            if attr_def == self.AttributeDefs.run_calibration:
+            elif attr_def == self.AttributeDefs.run_calibration:
                 self.create_catching_task(self._run_calibration())
-                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
-            if attr_def == self.AttributeDefs.enter_calibration_mode:
+            elif attr_def == self.AttributeDefs.enter_calibration_mode:
                 await self._set_calibration_mode(True)
-                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
-            if attr_def == self.AttributeDefs.exit_calibration_mode:
+            elif attr_def == self.AttributeDefs.exit_calibration_mode:
                 await self._set_calibration_mode(False)
-                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
+            else:
+                continue
+            return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
+
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
