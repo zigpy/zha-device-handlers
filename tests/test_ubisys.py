@@ -19,6 +19,7 @@ from zhaquirks.ubisys import (
 )
 from zhaquirks.ubisys.control_c4 import UbisysC4InputConfigCluster
 from zhaquirks.ubisys.cover_j1 import (
+    CalibrationState,
     UbisysJ1CalibrationCluster,
     UbisysJ1InputConfigCluster,
     UbisysWindowCovering,
@@ -1109,6 +1110,12 @@ async def test_j1_auto_calibration(ubisys_j1):
 
     call_log = []
 
+    original_set_state = cal_cluster._set_state
+
+    def mock_set_state(state):
+        call_log.append(("state", state))
+        original_set_state(state)
+
     async def mock_set_calibration_mode(enable):
         call_log.append(("set_calibration_mode", enable))
 
@@ -1132,6 +1139,7 @@ async def test_j1_auto_calibration(ubisys_j1):
 
     with (
         mock.patch.object(cal_cluster, "create_catching_task") as mock_task,
+        mock.patch.object(cal_cluster, "_set_state", side_effect=mock_set_state),
         mock.patch.object(
             cal_cluster, "_set_calibration_mode", side_effect=mock_set_calibration_mode
         ),
@@ -1166,30 +1174,39 @@ async def test_j1_auto_calibration(ubisys_j1):
         await coro
 
     assert call_log == [
-        # Cancel any active calibration
+        # Cancel any active calibration and move to top
+        ("state", CalibrationState.Moving_to_top),
         ("set_calibration_mode", False),
-        # Move to top position
         ("up_open",),
         ("wait_until_stopped",),
         # Write preparation defaults (Step 2)
+        ("state", CalibrationState.Writing_defaults),
         ("write_preparation_defaults",),
         # Enter calibration mode (Step 3)
+        ("state", CalibrationState.Entering_calibration),
         ("set_calibration_mode", True),
         # Move down briefly, then stop (Step 4)
+        ("state", CalibrationState.Moving_down),
         ("down_close",),
         ("stop",),
         # Move up to detect upper limit (Step 5)
+        ("state", CalibrationState.Detecting_upper_limit),
         ("up_open",),
         ("wait_until_stopped",),
         # Move down to count steps (Step 6)
+        ("state", CalibrationState.Counting_open_to_close),
         ("down_close",),
         ("wait_until_stopped",),
         # Move up to count steps (Step 7)
+        ("state", CalibrationState.Counting_close_to_open),
         ("up_open",),
         ("wait_until_stopped",),
         # Exit calibration mode (Step 9)
+        ("state", CalibrationState.Exiting_calibration),
         ("set_calibration_mode", False),
-        # Read back results
+        # Complete
+        ("state", CalibrationState.Complete),
+        # Finally: read back results
         ("read_calibration_attributes",),
     ]
 
