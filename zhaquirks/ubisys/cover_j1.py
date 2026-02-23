@@ -4,7 +4,14 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfPower
+from zigpy.quirks.v2.homeassistant import (
+    DEGREE,
+    PERCENTAGE,
+    UnitOfLength,
+    UnitOfPower,
+    UnitOfTime,
+)
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import AttributeWrittenEvent
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -192,7 +199,9 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         min_value=0,
         max_value=65535,
         step=1,
+        unit=UnitOfLength.CENTIMETERS,
         mode="box",
+        device_class=NumberDeviceClass.DISTANCE,
         translation_key="installed_open_limit_lift",
         fallback_name="Installed open limit lift",
     )
@@ -202,7 +211,9 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         min_value=0,
         max_value=65535,
         step=1,
+        unit=UnitOfLength.CENTIMETERS,
         mode="box",
+        device_class=NumberDeviceClass.DISTANCE,
         translation_key="installed_closed_limit_lift",
         fallback_name="Installed closed limit lift",
     )
@@ -210,8 +221,10 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.installed_open_limit_tilt_config.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=6553.5,
+        step=0.1,
+        multiplier=0.1,
+        unit=DEGREE,
         mode="box",
         translation_key="installed_open_limit_tilt",
         fallback_name="Installed open limit tilt",
@@ -220,13 +233,15 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.installed_closed_limit_tilt_config.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=6553.5,
+        step=0.1,
+        multiplier=0.1,
+        unit=DEGREE,
         mode="box",
         translation_key="installed_closed_limit_tilt",
         fallback_name="Installed closed limit tilt",
     )
-    # --- Step counts (calibration) ---
+    # --- Step counts (calibration, measured in full AC waves) ---
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps.name,
         cluster_id=UbisysWindowCovering.cluster_id,
@@ -235,7 +250,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         step=1,
         mode="box",
         translation_key="lift_to_tilt_transition_steps",
-        fallback_name="Lift to tilt transition steps",
+        fallback_name="Tilt full turn steps (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps.name,
@@ -245,7 +260,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         step=1,
         mode="box",
         translation_key="total_steps",
-        fallback_name="Total steps",
+        fallback_name="Total steps (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps_2.name,
@@ -255,7 +270,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         step=1,
         mode="box",
         translation_key="lift_to_tilt_transition_steps_2",
-        fallback_name="Lift to tilt transition steps 2",
+        fallback_name="Tilt full turn steps (close to open)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps_2.name,
@@ -265,16 +280,19 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         step=1,
         mode="box",
         translation_key="total_steps_2",
-        fallback_name="Total steps 2",
+        fallback_name="Total steps (close to open)",
     )
     # --- Other calibration settings ---
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.turnaround_guard_time.name,
         cluster_id=UbisysWindowCovering.cluster_id,
-        min_value=0,
-        max_value=254,
-        step=1,
+        min_value=0.5,
+        max_value=12.7,
+        step=0.05,
+        multiplier=0.05,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="turnaround_guard_time",
         fallback_name="Turnaround guard time",
     )
@@ -282,8 +300,9 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.additional_steps.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=254,
+        max_value=100,
         step=1,
+        unit=PERCENTAGE,
         mode="box",
         translation_key="additional_steps",
         fallback_name="Additional steps",
