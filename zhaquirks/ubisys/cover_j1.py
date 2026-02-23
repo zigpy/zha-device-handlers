@@ -9,8 +9,9 @@ import zigpy.types as t
 from zigpy.zcl import AttributeWrittenEvent
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import Status, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
 
@@ -114,6 +115,45 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
     """
 
     BIND_CLUSTERS: list[int] = [WindowCovering.cluster_id]
+
+
+class UbisysJ1CalibrationCluster(LocalDataCluster):
+    """Virtual cluster for J1 calibration actions.
+
+    Writing the prepare_calibration attribute resets all calibration-related
+    attributes on UbisysWindowCovering to their defaults (Step 2 of the
+    ubisys calibration procedure).
+    """
+
+    cluster_id = 0xFBFE
+    name = "Ubisys J1 Calibration"
+    ep_attribute = "ubisys_j1_calibration"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Calibration action attributes."""
+
+        prepare_calibration: Final = ZCLAttributeDef(id=0x0000, type=t.Bool)
+
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+        """Write calibration preparation defaults to the WindowCovering cluster."""
+        for attr in attributes:
+            if self.find_attribute(attr) == self.AttributeDefs.prepare_calibration:
+                wc = self.endpoint.device.endpoints[1].window_covering
+                attrs = UbisysWindowCovering.AttributeDefs
+                await wc.write_attributes(
+                    {
+                        attrs.installed_open_limit_lift_config: 0x0000,
+                        attrs.installed_closed_limit_lift_config: 0x00F0,
+                        attrs.installed_open_limit_tilt_config: 0x0000,
+                        attrs.installed_closed_limit_tilt_config: 0x0384,
+                        attrs.lift_to_tilt_transition_steps: 0xFFFF,
+                        attrs.total_steps: 0xFFFF,
+                        attrs.lift_to_tilt_transition_steps_2: 0xFFFF,
+                        attrs.total_steps_2: 0xFFFF,
+                    }
+                )
+                return [[Status.SUCCESS]]
+        return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
 (
@@ -267,6 +307,14 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
         cluster_id=UbisysWindowCovering.cluster_id,
         translation_key="exit_calibration_mode",
         fallback_name="Exit calibration mode",
+    )
+    .adds(UbisysJ1CalibrationCluster)
+    .write_attr_button(
+        attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.prepare_calibration.name,
+        attribute_value=True,
+        cluster_id=UbisysJ1CalibrationCluster.cluster_id,
+        translation_key="prepare_calibration",
+        fallback_name="Prepare calibration",
     )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
