@@ -48,6 +48,10 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
     class AttributeDefs(WindowCovering.AttributeDefs):
         """Extended WindowCovering attributes for ubisys calibration."""
 
+        # Standard attribute missing from WindowCovering AttributeDefs (R6 draft attr)
+        operational_status: Final = ZCLAttributeDef(
+            id=0x000A, type=t.bitmap8, access="rp"
+        )
         # Writable versions of standard attributes (same IDs, manufacturer code 0x10F2)
         window_covering_type_config: Final = ZCLAttributeDef(
             id=0x0000, type=t.enum8, manufacturer_code=0x10F2
