@@ -39,6 +39,8 @@ _LOGGER = logging.getLogger(__name__)
 
 _POLL_INTERVAL_S = 2  # seconds between operational_status polls
 _MOTOR_TIMEOUT_S = 300  # 5 minutes
+_AC_FREQUENCY_HZ = 50  # steps are measured in full AC waves
+_SECONDS_PER_STEP = 1 / _AC_FREQUENCY_HZ
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -428,45 +430,58 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         fallback_name="Installed closed limit tilt",
     )
     # --- Step counts (calibration, measured in full AC waves) ---
+    # Displayed in seconds assuming 50 Hz AC frequency (0.02s per step)
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=65535 * _SECONDS_PER_STEP,
+        step=_SECONDS_PER_STEP,
+        multiplier=_SECONDS_PER_STEP,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="lift_to_tilt_transition_steps",
-        fallback_name="Tilt full turn steps (open to close)",
+        fallback_name="Tilt full turn time (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=65535 * _SECONDS_PER_STEP,
+        step=_SECONDS_PER_STEP,
+        multiplier=_SECONDS_PER_STEP,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="total_steps",
-        fallback_name="Total steps (open to close)",
+        fallback_name="Total travel time (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps_2.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=65535 * _SECONDS_PER_STEP,
+        step=_SECONDS_PER_STEP,
+        multiplier=_SECONDS_PER_STEP,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="lift_to_tilt_transition_steps_2",
-        fallback_name="Tilt full turn steps (close to open)",
+        fallback_name="Tilt full turn time (close to open)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps_2.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=65535 * _SECONDS_PER_STEP,
+        step=_SECONDS_PER_STEP,
+        multiplier=_SECONDS_PER_STEP,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="total_steps_2",
-        fallback_name="Total steps (close to open)",
+        fallback_name="Total travel time (close to open)",
     )
     # --- Other calibration settings ---
     .number(
@@ -497,11 +512,14 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.startup_steps.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65535,
-        step=1,
+        max_value=65535 * _SECONDS_PER_STEP,
+        step=_SECONDS_PER_STEP,
+        multiplier=_SECONDS_PER_STEP,
+        unit=UnitOfTime.SECONDS,
         mode="box",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="startup_steps",
-        fallback_name="Startup steps",
+        fallback_name="Startup time",
     )
     # --- Calibration mode buttons ---
     .adds(UbisysJ1CalibrationCluster)
