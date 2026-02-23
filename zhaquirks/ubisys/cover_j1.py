@@ -527,8 +527,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.prepare_calibration.name,
         attribute_value=True,
         cluster_id=UbisysJ1CalibrationCluster.cluster_id,
-        translation_key="prepare_calibration",
-        fallback_name="Prepare calibration",
+        translation_key="prepare_manual_calibration",
+        fallback_name="Prepare manual calibration",
     )
     .write_attr_button(
         attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.run_calibration.name,
