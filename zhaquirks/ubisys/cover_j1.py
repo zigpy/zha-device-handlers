@@ -326,6 +326,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
 
             self._set_state(CalibrationState.Complete)
         except Exception:
+            _LOGGER.exception("ubisys J1: Auto-calibration failed")
             self._set_state(CalibrationState.Failed)
             raise
         finally:
