@@ -167,6 +167,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
 
         prepare_calibration: Final = ZCLAttributeDef(id=0x0000, type=t.Bool)
         run_calibration: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
+        enter_calibration_mode: Final = ZCLAttributeDef(id=0x0002, type=t.Bool)
+        exit_calibration_mode: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
 
     async def _write_preparation_defaults(self) -> None:
         """Write calibration preparation defaults to the WindowCovering cluster."""
@@ -303,6 +305,12 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
                 return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
             if attr_def == self.AttributeDefs.run_calibration:
                 self.create_catching_task(self._run_calibration())
+                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
+            if attr_def == self.AttributeDefs.enter_calibration_mode:
+                await self._set_calibration_mode(True)
+                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
+            if attr_def == self.AttributeDefs.exit_calibration_mode:
+                await self._set_calibration_mode(False)
                 return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
@@ -457,22 +465,6 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         fallback_name="Startup steps",
     )
     # --- Calibration mode buttons ---
-    .write_attr_button(
-        attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
-        attribute_value=0x02,
-        cluster_id=UbisysWindowCovering.cluster_id,
-        unique_id_suffix="enter_calibration_mode",
-        translation_key="enter_calibration_mode",
-        fallback_name="Enter calibration mode",
-    )
-    .write_attr_button(
-        attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
-        attribute_value=0x00,
-        cluster_id=UbisysWindowCovering.cluster_id,
-        unique_id_suffix="exit_calibration_mode",
-        translation_key="exit_calibration_mode",
-        fallback_name="Exit calibration mode",
-    )
     .adds(UbisysJ1CalibrationCluster)
     .write_attr_button(
         attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.prepare_calibration.name,
@@ -487,6 +479,20 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         cluster_id=UbisysJ1CalibrationCluster.cluster_id,
         translation_key="run_auto_calibration",
         fallback_name="Run auto-calibration",
+    )
+    .write_attr_button(
+        attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.enter_calibration_mode.name,
+        attribute_value=True,
+        cluster_id=UbisysJ1CalibrationCluster.cluster_id,
+        translation_key="enter_calibration_mode",
+        fallback_name="Enter calibration mode",
+    )
+    .write_attr_button(
+        attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.exit_calibration_mode.name,
+        attribute_value=True,
+        cluster_id=UbisysJ1CalibrationCluster.cluster_id,
+        translation_key="exit_calibration_mode",
+        fallback_name="Exit calibration mode",
     )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
