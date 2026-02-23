@@ -132,13 +132,141 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.inactive_power_threshold.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65.534,
+        max_value=65.535,
         step=0.001,
         multiplier=0.001,
         unit=UnitOfPower.WATT,
         mode="box",
         translation_key="inactive_power_threshold",
         fallback_name="Inactive power threshold",
+    )
+    # --- Installed limits (calibration) ---
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.installed_open_limit_lift_config.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="installed_open_limit_lift",
+        fallback_name="Installed open limit lift",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.installed_closed_limit_lift_config.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="installed_closed_limit_lift",
+        fallback_name="Installed closed limit lift",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.installed_open_limit_tilt_config.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="installed_open_limit_tilt",
+        fallback_name="Installed open limit tilt",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.installed_closed_limit_tilt_config.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="installed_closed_limit_tilt",
+        fallback_name="Installed closed limit tilt",
+    )
+    # --- Step counts (calibration) ---
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="lift_to_tilt_transition_steps",
+        fallback_name="Lift to tilt transition steps",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.total_steps.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="total_steps",
+        fallback_name="Total steps",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps_2.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="lift_to_tilt_transition_steps_2",
+        fallback_name="Lift to tilt transition steps 2",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.total_steps_2.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="total_steps_2",
+        fallback_name="Total steps 2",
+    )
+    # --- Other calibration settings ---
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.turnaround_guard_time.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=254,
+        step=1,
+        mode="box",
+        translation_key="turnaround_guard_time",
+        fallback_name="Turnaround guard time",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.additional_steps.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=254,
+        step=1,
+        mode="box",
+        translation_key="additional_steps",
+        fallback_name="Additional steps",
+    )
+    .number(
+        attribute_name=UbisysWindowCovering.AttributeDefs.startup_steps.name,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="startup_steps",
+        fallback_name="Startup steps",
+    )
+    # --- Calibration mode buttons ---
+    .write_attr_button(
+        attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
+        attribute_value=0x02,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        translation_key="enter_calibration_mode",
+        fallback_name="Enter calibration mode",
+    )
+    .write_attr_button(
+        attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
+        attribute_value=0x00,
+        cluster_id=UbisysWindowCovering.cluster_id,
+        translation_key="exit_calibration_mode",
+        fallback_name="Exit calibration mode",
     )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
