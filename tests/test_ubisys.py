@@ -977,9 +977,14 @@ async def test_j1_config_to_standard_sync_via_update(ubisys_j1):
 
 
 async def test_j1_prepare_calibration(ubisys_j1):
-    """Test prepare_calibration button writes defaults to WindowCovering."""
+    """Test prepare_calibration button resets state and writes defaults."""
     cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
     wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    # Simulate a previous calibration run
+    cal_cluster._set_state(CalibrationState.Complete)
+
+    cal_listener = ClusterListener(cal_cluster)
 
     with mock.patch.object(
         wc_cluster,
@@ -1001,6 +1006,10 @@ async def test_j1_prepare_calibration(ubisys_j1):
         assert written_attrs[attrs.total_steps] == 0xFFFF
         assert written_attrs[attrs.lift_to_tilt_transition_steps_2] == 0xFFFF
         assert written_attrs[attrs.total_steps_2] == 0xFFFF
+
+    # Verify state was reset to Idle
+    state_attr = UbisysJ1CalibrationCluster.AttributeDefs.calibration_state
+    assert (state_attr.id, CalibrationState.Idle) in cal_listener.attribute_updates
 
 
 async def test_j1_wait_until_stopped(ubisys_j1):
