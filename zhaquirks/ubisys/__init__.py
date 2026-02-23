@@ -216,7 +216,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
     ) -> list:
         """Handle writes to input_mode and detached attributes."""
         for attr, value in attributes.items():
-            attr_name = attr if isinstance(attr, str) else self.attributes[attr].name
+            attr_name = self.find_attribute(attr).name
 
             for mode_attr_name, _, _ in self._INPUT_MODE_CONFIG:
                 if attr_name == mode_attr_name:
