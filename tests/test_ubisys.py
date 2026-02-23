@@ -1031,6 +1031,38 @@ async def test_j1_wait_until_stopped_timeout(ubisys_j1):
         await cal_cluster._wait_until_stopped()
 
 
+async def test_j1_read_calibration_attributes(ubisys_j1):
+    """Test _read_calibration_attributes reads all 14 calibration attrs."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    with mock.patch.object(
+        wc_cluster,
+        "read_attributes",
+        mock.AsyncMock(return_value=[{}, {}]),
+    ) as mock_read:
+        await cal_cluster._read_calibration_attributes()
+
+        mock_read.assert_called_once()
+        attrs = UbisysWindowCovering.AttributeDefs
+        requested = mock_read.call_args[0][0]
+        assert attrs.window_covering_type_config in requested
+        assert attrs.config_status_config in requested
+        assert attrs.installed_open_limit_lift_config in requested
+        assert attrs.installed_closed_limit_lift_config in requested
+        assert attrs.installed_open_limit_tilt_config in requested
+        assert attrs.installed_closed_limit_tilt_config in requested
+        assert attrs.lift_to_tilt_transition_steps in requested
+        assert attrs.total_steps in requested
+        assert attrs.lift_to_tilt_transition_steps_2 in requested
+        assert attrs.total_steps_2 in requested
+        assert attrs.additional_steps in requested
+        assert attrs.inactive_power_threshold in requested
+        assert attrs.startup_steps in requested
+        assert attrs.turnaround_guard_time in requested
+        assert len(requested) == 14
+
+
 @pytest.mark.parametrize(
     ("attr_name", "enable"),
     [
