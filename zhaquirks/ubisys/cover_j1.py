@@ -78,6 +78,31 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
             id=0x1007, type=t.uint16_t, manufacturer_code=0x10F2
         )
 
+    # Maps manufacturer-specific config attr names to standard attr names.
+    # After writing a config attr, the standard attr cache is updated to match.
+    _CONFIG_TO_STANDARD: dict[str, str] = {
+        AttributeDefs.window_covering_type_config.name: WindowCovering.AttributeDefs.window_covering_type.name,
+        AttributeDefs.config_status_config.name: WindowCovering.AttributeDefs.config_status.name,
+        AttributeDefs.installed_open_limit_lift_config.name: WindowCovering.AttributeDefs.installed_open_limit_lift.name,
+        AttributeDefs.installed_closed_limit_lift_config.name: WindowCovering.AttributeDefs.installed_closed_limit_lift.name,
+        AttributeDefs.installed_open_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_open_limit_tilt.name,
+        AttributeDefs.installed_closed_limit_tilt_config.name: WindowCovering.AttributeDefs.installed_closed_limit_tilt.name,
+    }
+
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+        """Write attributes and sync standard attrs when config attrs change."""
+        result = await super().write_attributes(attributes, manufacturer, **kwargs)
+
+        # After successful writes, update the corresponding standard attribute
+        for attr, value in attributes.items():
+            attr_name = attr if isinstance(attr, str) else self.attributes[attr].name
+            std_name = self._CONFIG_TO_STANDARD.get(attr_name)
+            if std_name is not None:
+                std_attr_id = self.attributes_by_name[std_name].id
+                self._update_attribute(std_attr_id, value)
+
+        return result
+
 
 class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
     """Input configuration for the J1.
