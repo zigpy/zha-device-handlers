@@ -957,6 +957,33 @@ async def test_j1_config_to_standard_sync(ubisys_j1):
     ) in wc_listener.attribute_updates
 
 
+async def test_j1_prepare_calibration(ubisys_j1):
+    """Test prepare_calibration button writes defaults to WindowCovering."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    with mock.patch.object(
+        wc_cluster,
+        "write_attributes",
+        mock.AsyncMock(return_value=[[0x00]]),
+    ) as mock_write:
+        await cal_cluster.write_attributes(
+            {UbisysJ1CalibrationCluster.AttributeDefs.prepare_calibration.name: True}
+        )
+
+        mock_write.assert_called_once()
+        written_attrs = mock_write.call_args[0][0]
+        attrs = UbisysWindowCovering.AttributeDefs
+        assert written_attrs[attrs.installed_open_limit_lift_config] == 0x0000
+        assert written_attrs[attrs.installed_closed_limit_lift_config] == 0x00F0
+        assert written_attrs[attrs.installed_open_limit_tilt_config] == 0x0000
+        assert written_attrs[attrs.installed_closed_limit_tilt_config] == 0x0384
+        assert written_attrs[attrs.lift_to_tilt_transition_steps] == 0xFFFF
+        assert written_attrs[attrs.total_steps] == 0xFFFF
+        assert written_attrs[attrs.lift_to_tilt_transition_steps_2] == 0xFFFF
+        assert written_attrs[attrs.total_steps_2] == 0xFFFF
+
+
 @pytest.mark.parametrize(
     ("attr_name", "enable"),
     [
