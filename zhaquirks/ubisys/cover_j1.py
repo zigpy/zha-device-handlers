@@ -298,6 +298,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
         attribute_value=0x02,
         cluster_id=UbisysWindowCovering.cluster_id,
+        unique_id_suffix="enter_calibration_mode",
         translation_key="enter_calibration_mode",
         fallback_name="Enter calibration mode",
     )
@@ -305,6 +306,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         attribute_name=WindowCovering.AttributeDefs.window_covering_mode.name,
         attribute_value=0x00,
         cluster_id=UbisysWindowCovering.cluster_id,
+        unique_id_suffix="exit_calibration_mode",
         translation_key="exit_calibration_mode",
         fallback_name="Exit calibration mode",
     )
