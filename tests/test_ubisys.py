@@ -945,6 +945,7 @@ async def test_j1_config_to_standard_sync(ubisys_j1):
             }
         )
 
+    # TODO: Update zigpy version
     # Standard window_covering_type should have been updated via _update_attribute
     assert (
         WindowCovering.AttributeDefs.window_covering_type.id,
