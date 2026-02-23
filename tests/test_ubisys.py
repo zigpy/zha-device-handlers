@@ -958,6 +958,24 @@ async def test_j1_config_to_standard_sync(ubisys_j1):
     ) in wc_listener.attribute_updates
 
 
+async def test_j1_config_to_standard_sync_via_update(ubisys_j1):
+    """Test _update_attribute on a config attr syncs the standard attr."""
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    wc_listener = ClusterListener(wc_cluster)
+
+    # _update_attribute fires AttributeUpdatedEvent, which the handler should catch
+    wc_cluster._update_attribute(
+        UbisysWindowCovering.AttributeDefs.installed_closed_limit_lift_config,
+        240,
+    )
+
+    assert (
+        WindowCovering.AttributeDefs.installed_closed_limit_lift.id,
+        240,
+    ) in wc_listener.attribute_updates
+
+
 async def test_j1_prepare_calibration(ubisys_j1):
     """Test prepare_calibration button writes defaults to WindowCovering."""
     cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
