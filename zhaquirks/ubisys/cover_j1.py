@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfPower
 import zigpy.types as t
 from zigpy.zcl import AttributeWrittenEvent
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -131,8 +132,11 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
         attribute_name=UbisysWindowCovering.AttributeDefs.inactive_power_threshold.name,
         cluster_id=UbisysWindowCovering.cluster_id,
         min_value=0,
-        max_value=65534,
-        step=1,
+        max_value=65.534,
+        step=0.001,
+        multiplier=0.001,
+        unit=UnitOfPower.WATT,
+        mode="box",
         translation_key="inactive_power_threshold",
         fallback_name="Inactive power threshold",
     )
