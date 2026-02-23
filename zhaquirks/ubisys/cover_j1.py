@@ -99,8 +99,7 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
         """Sync standard attribute cache when a config attribute is written."""
         if event.status != Status.SUCCESS:
             return
-        std_attr = self._CONFIG_TO_STANDARD.get(event.attribute_name)
-        if std_attr is not None:
+        if (std_attr := self._CONFIG_TO_STANDARD.get(event.attribute_name)) is not None:
             self._update_attribute(std_attr, event.value)
 
 
