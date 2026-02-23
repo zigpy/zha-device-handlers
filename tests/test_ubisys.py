@@ -18,7 +18,11 @@ from zhaquirks.ubisys import (
     build_onoff_actions,
 )
 from zhaquirks.ubisys.control_c4 import UbisysC4InputConfigCluster
-from zhaquirks.ubisys.cover_j1 import UbisysJ1InputConfigCluster, UbisysWindowCovering
+from zhaquirks.ubisys.cover_j1 import (
+    UbisysJ1CalibrationCluster,
+    UbisysJ1InputConfigCluster,
+    UbisysWindowCovering,
+)
 from zhaquirks.ubisys.dimmer_d1 import (
     DimmerInputMode,
     UbisysD1InputConfigCluster,
@@ -951,6 +955,45 @@ async def test_j1_config_to_standard_sync(ubisys_j1):
         WindowCovering.AttributeDefs.window_covering_type.id,
         WindowCovering.WindowCoveringType.Shutter,
     ) in wc_listener.attribute_updates
+
+
+@pytest.mark.parametrize(
+    ("attr_name", "enable"),
+    [
+        (UbisysJ1CalibrationCluster.AttributeDefs.enter_calibration_mode.name, True),
+        (UbisysJ1CalibrationCluster.AttributeDefs.exit_calibration_mode.name, False),
+    ],
+)
+async def test_j1_calibration_mode(ubisys_j1, attr_name, enable):
+    """Test enter/exit calibration mode does read-modify-write on mode bitmap."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    # Pre-set mode with bit 0 (motor reversed) to verify it's preserved
+    existing_mode = 0x01
+    mode_attr = WindowCovering.AttributeDefs.window_covering_mode
+    wc_cluster._update_attribute(mode_attr, existing_mode)
+
+    with (
+        mock.patch.object(
+            wc_cluster,
+            "read_attributes",
+            mock.AsyncMock(return_value=[{}, {}]),
+        ),
+        mock.patch.object(
+            wc_cluster,
+            "write_attributes",
+            mock.AsyncMock(return_value=[[0x00]]),
+        ) as mock_write,
+    ):
+        await cal_cluster.write_attributes({attr_name: True})
+
+        mock_write.assert_called_once()
+        written_attrs = mock_write.call_args[0][0]
+        if enable:
+            assert written_attrs[mode_attr] == existing_mode | 0x02
+        else:
+            assert written_attrs[mode_attr] == existing_mode & ~0x02
 
 
 # --- C4 Tests ---
