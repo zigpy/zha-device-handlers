@@ -1,5 +1,7 @@
 """Ubisys Cover J1 quirk."""
 
+import asyncio
+import logging
 from typing import Final
 
 from zigpy.quirks import CustomCluster
@@ -142,12 +144,18 @@ class UbisysJ1InputConfigCluster(UbisysInputConfigCluster):
     BIND_CLUSTERS: list[int] = [WindowCovering.cluster_id]
 
 
+_LOGGER = logging.getLogger(__name__)
+
+_CALIBRATION_MODE_BIT = 0x02
+_POLL_INTERVAL_S = 2
+_MOTOR_TIMEOUT_S = 300
+
+
 class UbisysJ1CalibrationCluster(LocalDataCluster):
     """Virtual cluster for J1 calibration actions.
 
-    Writing the prepare_calibration attribute resets all calibration-related
-    attributes on UbisysWindowCovering to their defaults (Step 2 of the
-    ubisys calibration procedure).
+    - prepare_calibration: resets calibration attributes to defaults (Step 2)
+    - run_calibration: runs the full auto-calibration sequence (Steps 1-9)
     """
 
     cluster_id = 0xFBFE
@@ -158,25 +166,143 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         """Calibration action attributes."""
 
         prepare_calibration: Final = ZCLAttributeDef(id=0x0000, type=t.Bool)
+        run_calibration: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
+
+    async def _write_preparation_defaults(self) -> None:
+        """Write calibration preparation defaults to the WindowCovering cluster."""
+        wc = self.endpoint.device.endpoints[1].window_covering
+        attrs = UbisysWindowCovering.AttributeDefs
+        await wc.write_attributes(
+            {
+                attrs.installed_open_limit_lift_config: 0x0000,
+                attrs.installed_closed_limit_lift_config: 0x00F0,
+                attrs.installed_open_limit_tilt_config: 0x0000,
+                attrs.installed_closed_limit_tilt_config: 0x0384,
+                attrs.lift_to_tilt_transition_steps: 0xFFFF,
+                attrs.total_steps: 0xFFFF,
+                attrs.lift_to_tilt_transition_steps_2: 0xFFFF,
+                attrs.total_steps_2: 0xFFFF,
+            }
+        )
+
+    async def _read_calibration_attributes(self) -> None:
+        """Read all calibration attributes from the device."""
+        wc = self.endpoint.device.endpoints[1].window_covering
+        attrs = UbisysWindowCovering.AttributeDefs
+        await wc.read_attributes(
+            [
+                attrs.window_covering_type_config,
+                attrs.config_status_config,
+                attrs.installed_open_limit_lift_config,
+                attrs.installed_closed_limit_lift_config,
+                attrs.installed_open_limit_tilt_config,
+                attrs.installed_closed_limit_tilt_config,
+                attrs.lift_to_tilt_transition_steps,
+                attrs.total_steps,
+                attrs.lift_to_tilt_transition_steps_2,
+                attrs.total_steps_2,
+                attrs.additional_steps,
+                attrs.inactive_power_threshold,
+                attrs.startup_steps,
+                attrs.turnaround_guard_time,
+            ]
+        )
+
+    async def _wait_until_stopped(self) -> None:
+        """Poll operational_status until the motor stops.
+
+        Raises TimeoutError if the motor doesn't stop within _MOTOR_TIMEOUT_S.
+        """
+        wc = self.endpoint.device.endpoints[1].window_covering
+        attr = UbisysWindowCovering.AttributeDefs.operational_status
+        elapsed = 0
+        while True:
+            await asyncio.sleep(_POLL_INTERVAL_S)
+            elapsed += _POLL_INTERVAL_S
+            result = await wc.read_attributes([attr.name])
+            if result[0].get(attr.name, 0) == 0:
+                break
+            if elapsed >= _MOTOR_TIMEOUT_S:
+                raise TimeoutError(f"Motor did not stop within {_MOTOR_TIMEOUT_S}s")
+        await asyncio.sleep(_POLL_INTERVAL_S)
+
+    async def _set_calibration_mode(self, enable: bool) -> None:
+        """Set or clear the calibration bit in window_covering_mode."""
+        wc = self.endpoint.device.endpoints[1].window_covering
+        mode_attr = WindowCovering.AttributeDefs.window_covering_mode
+        result = await wc.read_attributes([mode_attr.name])
+        current_mode = result[0].get(mode_attr.name, 0)
+        if enable:
+            new_mode = current_mode | _CALIBRATION_MODE_BIT
+        else:
+            new_mode = current_mode & ~_CALIBRATION_MODE_BIT
+        await wc.write_attributes({mode_attr.name: new_mode})
+        await asyncio.sleep(_POLL_INTERVAL_S)
+
+    async def _run_calibration(self) -> None:
+        """Run the full auto-calibration sequence (Steps 1-9)."""
+        wc = self.endpoint.device.endpoints[1].window_covering
+        _LOGGER.warning("ubisys J1: Calibration starting")
+
+        # Cancel any active calibration
+        await self._set_calibration_mode(False)
+
+        # Move to top position for a good starting point
+        _LOGGER.warning("ubisys J1: Moving to top position")
+        await wc.up_open()
+        await self._wait_until_stopped()
+
+        # Write preparation defaults (Step 2)
+        _LOGGER.warning("ubisys J1: Writing preparation defaults")
+        await self._write_preparation_defaults()
+
+        # Enter calibration mode (Step 3)
+        _LOGGER.warning("ubisys J1: Entering calibration mode")
+        await self._set_calibration_mode(True)
+
+        # Move down briefly, then stop (Step 4)
+        _LOGGER.warning("ubisys J1: Moving down briefly")
+        await wc.down_close()
+        await asyncio.sleep(5)
+        await wc.stop()
+        await asyncio.sleep(_POLL_INTERVAL_S)
+
+        # Move up to detect upper limit (Step 5)
+        _LOGGER.warning("ubisys J1: Moving up to detect upper limit")
+        await wc.up_open()
+        await self._wait_until_stopped()
+
+        # Move down to count steps open→close (Step 6)
+        _LOGGER.warning("ubisys J1: Moving down to count steps (open to close)")
+        await wc.down_close()
+        await self._wait_until_stopped()
+
+        # Move up to count steps close→open (Step 7)
+        _LOGGER.warning("ubisys J1: Moving up to count steps (close to open)")
+        await wc.up_open()
+        await self._wait_until_stopped()
+
+        # Exit calibration mode (Step 9)
+        _LOGGER.warning("ubisys J1: Exiting calibration mode")
+        await self._set_calibration_mode(False)
+
+        # Re-read calibration attributes so HA entities reflect the new values.
+        # Reading the manufacturer-specific attrs also triggers the config-to-standard
+        # sync via _handle_config_attr_sync.
+        _LOGGER.warning("ubisys J1: Reading back calibration results")
+        await self._read_calibration_attributes()
+
+        _LOGGER.warning("ubisys J1: Calibration complete")
 
     async def write_attributes(self, attributes, manufacturer=None, **kwargs):
-        """Write calibration preparation defaults to the WindowCovering cluster."""
+        """Handle calibration action attributes."""
         for attr in attributes:
-            if self.find_attribute(attr) == self.AttributeDefs.prepare_calibration:
-                wc = self.endpoint.device.endpoints[1].window_covering
-                attrs = UbisysWindowCovering.AttributeDefs
-                await wc.write_attributes(
-                    {
-                        attrs.installed_open_limit_lift_config: 0x0000,
-                        attrs.installed_closed_limit_lift_config: 0x00F0,
-                        attrs.installed_open_limit_tilt_config: 0x0000,
-                        attrs.installed_closed_limit_tilt_config: 0x0384,
-                        attrs.lift_to_tilt_transition_steps: 0xFFFF,
-                        attrs.total_steps: 0xFFFF,
-                        attrs.lift_to_tilt_transition_steps_2: 0xFFFF,
-                        attrs.total_steps_2: 0xFFFF,
-                    }
-                )
+            attr_def = self.find_attribute(attr)
+            if attr_def == self.AttributeDefs.prepare_calibration:
+                await self._write_preparation_defaults()
+                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
+            if attr_def == self.AttributeDefs.run_calibration:
+                self.create_catching_task(self._run_calibration())
                 return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
@@ -354,6 +480,13 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         cluster_id=UbisysJ1CalibrationCluster.cluster_id,
         translation_key="prepare_calibration",
         fallback_name="Prepare calibration",
+    )
+    .write_attr_button(
+        attribute_name=UbisysJ1CalibrationCluster.AttributeDefs.run_calibration.name,
+        attribute_value=True,
+        cluster_id=UbisysJ1CalibrationCluster.cluster_id,
+        translation_key="run_auto_calibration",
+        fallback_name="Run auto-calibration",
     )
     .adds(UbisysJ1InputConfigCluster)
     .switch(
