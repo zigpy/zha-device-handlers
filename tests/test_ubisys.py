@@ -996,6 +996,98 @@ async def test_j1_calibration_mode(ubisys_j1, attr_name, enable):
             assert written_attrs[mode_attr] == existing_mode & ~0x02
 
 
+async def test_j1_auto_calibration(ubisys_j1):
+    """Test run_calibration button launches and runs the full sequence."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    call_log = []
+
+    async def mock_set_calibration_mode(enable):
+        call_log.append(("set_calibration_mode", enable))
+
+    async def mock_wait_until_stopped():
+        call_log.append(("wait_until_stopped",))
+
+    async def mock_write_preparation_defaults():
+        call_log.append(("write_preparation_defaults",))
+
+    async def mock_read_calibration_attributes():
+        call_log.append(("read_calibration_attributes",))
+
+    async def mock_up_open():
+        call_log.append(("up_open",))
+
+    async def mock_down_close():
+        call_log.append(("down_close",))
+
+    async def mock_stop():
+        call_log.append(("stop",))
+
+    with (
+        mock.patch.object(cal_cluster, "create_catching_task") as mock_task,
+        mock.patch.object(
+            cal_cluster, "_set_calibration_mode", side_effect=mock_set_calibration_mode
+        ),
+        mock.patch.object(
+            cal_cluster, "_wait_until_stopped", side_effect=mock_wait_until_stopped
+        ),
+        mock.patch.object(
+            cal_cluster,
+            "_write_preparation_defaults",
+            side_effect=mock_write_preparation_defaults,
+        ),
+        mock.patch.object(
+            cal_cluster,
+            "_read_calibration_attributes",
+            side_effect=mock_read_calibration_attributes,
+        ),
+        mock.patch.object(wc_cluster, "up_open", side_effect=mock_up_open),
+        mock.patch.object(wc_cluster, "down_close", side_effect=mock_down_close),
+        mock.patch.object(wc_cluster, "stop", side_effect=mock_stop),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+    ):
+        # Write the run_calibration attribute via the button
+        await cal_cluster.write_attributes(
+            {UbisysJ1CalibrationCluster.AttributeDefs.run_calibration.name: True}
+        )
+
+        # Verify create_catching_task was called with the coroutine
+        assert mock_task.call_count == 1
+        coro = mock_task.call_args[0][0]
+
+        # Await the captured coroutine to run the full sequence
+        await coro
+
+    assert call_log == [
+        # Cancel any active calibration
+        ("set_calibration_mode", False),
+        # Move to top position
+        ("up_open",),
+        ("wait_until_stopped",),
+        # Write preparation defaults (Step 2)
+        ("write_preparation_defaults",),
+        # Enter calibration mode (Step 3)
+        ("set_calibration_mode", True),
+        # Move down briefly, then stop (Step 4)
+        ("down_close",),
+        ("stop",),
+        # Move up to detect upper limit (Step 5)
+        ("up_open",),
+        ("wait_until_stopped",),
+        # Move down to count steps (Step 6)
+        ("down_close",),
+        ("wait_until_stopped",),
+        # Move up to count steps (Step 7)
+        ("up_open",),
+        ("wait_until_stopped",),
+        # Exit calibration mode (Step 9)
+        ("set_calibration_mode", False),
+        # Read back results
+        ("read_calibration_attributes",),
+    ]
+
+
 # --- C4 Tests ---
 
 
