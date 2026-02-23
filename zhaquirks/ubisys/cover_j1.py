@@ -443,8 +443,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfTime.SECONDS,
         mode="box",
         device_class=NumberDeviceClass.DURATION,
-        translation_key="lift_to_tilt_transition_steps",
-        fallback_name="Tilt full turn time (open to close)",
+        translation_key="tilt_turn_time_open_to_close",
+        fallback_name="Tilt turn time (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps.name,
@@ -456,8 +456,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfTime.SECONDS,
         mode="box",
         device_class=NumberDeviceClass.DURATION,
-        translation_key="total_steps",
-        fallback_name="Total travel time (open to close)",
+        translation_key="travel_time_open_to_close",
+        fallback_name="Travel time (open to close)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.lift_to_tilt_transition_steps_2.name,
@@ -469,8 +469,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfTime.SECONDS,
         mode="box",
         device_class=NumberDeviceClass.DURATION,
-        translation_key="lift_to_tilt_transition_steps_2",
-        fallback_name="Tilt full turn time (close to open)",
+        translation_key="tilt_turn_time_close_to_open",
+        fallback_name="Tilt turn time (close to open)",
     )
     .number(
         attribute_name=UbisysWindowCovering.AttributeDefs.total_steps_2.name,
@@ -482,8 +482,8 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfTime.SECONDS,
         mode="box",
         device_class=NumberDeviceClass.DURATION,
-        translation_key="total_steps_2",
-        fallback_name="Total travel time (close to open)",
+        translation_key="travel_time_close_to_open",
+        fallback_name="Travel time (close to open)",
     )
     # --- Other calibration settings ---
     .number(
@@ -520,7 +520,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         unit=UnitOfTime.SECONDS,
         mode="box",
         device_class=NumberDeviceClass.DURATION,
-        translation_key="startup_steps",
+        translation_key="startup_time",
         fallback_name="Startup time",
     )
     # --- Calibration mode buttons ---
