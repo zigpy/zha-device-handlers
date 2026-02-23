@@ -1229,6 +1229,71 @@ async def test_j1_auto_calibration(ubisys_j1):
     ]
 
 
+async def test_j1_auto_calibration_failure(ubisys_j1):
+    """Test auto-calibration sets Failed state and still reads attributes on error."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    call_log = []
+
+    original_set_state = cal_cluster._set_state
+
+    def mock_set_state(state):
+        call_log.append(("state", state))
+        original_set_state(state)
+
+    async def mock_set_calibration_mode(enable):
+        call_log.append(("set_calibration_mode", enable))
+
+    async def mock_wait_until_stopped():
+        raise TimeoutError("Motor did not stop within 300s")
+
+    async def mock_write_preparation_defaults():
+        call_log.append(("write_preparation_defaults",))
+
+    async def mock_read_calibration_attributes():
+        call_log.append(("read_calibration_attributes",))
+
+    async def mock_up_open():
+        call_log.append(("up_open",))
+
+    with (
+        mock.patch.object(cal_cluster, "_set_state", side_effect=mock_set_state),
+        mock.patch.object(
+            cal_cluster, "_set_calibration_mode", side_effect=mock_set_calibration_mode
+        ),
+        mock.patch.object(
+            cal_cluster, "_wait_until_stopped", side_effect=mock_wait_until_stopped
+        ),
+        mock.patch.object(
+            cal_cluster,
+            "_write_preparation_defaults",
+            side_effect=mock_write_preparation_defaults,
+        ),
+        mock.patch.object(
+            cal_cluster,
+            "_read_calibration_attributes",
+            side_effect=mock_read_calibration_attributes,
+        ),
+        mock.patch.object(wc_cluster, "up_open", side_effect=mock_up_open),
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
+        pytest.raises(TimeoutError, match="Motor did not stop"),
+    ):
+        await cal_cluster._run_calibration()
+
+    assert call_log == [
+        # Cancel any active calibration and move to top
+        ("state", CalibrationState.Moving_to_top),
+        ("set_calibration_mode", False),
+        ("up_open",),
+        # _wait_until_stopped raises TimeoutError here
+        # State set to Failed via except block
+        ("state", CalibrationState.Failed),
+        # finally block still reads attributes
+        ("read_calibration_attributes",),
+    ]
+
+
 # --- C4 Tests ---
 
 
