@@ -13,7 +13,11 @@ from zigpy.quirks.v2.homeassistant import (
 )
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+)
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import (
@@ -112,11 +116,16 @@ class UbisysWindowCovering(CustomCluster, WindowCovering):
     def __init__(self, *args, **kwargs):
         """Init and register event handler for config-to-standard sync."""
         super().__init__(*args, **kwargs)
-        self.on_event(AttributeWrittenEvent.event_type, self._handle_attribute_written)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_config_attr_sync)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_config_attr_sync)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_config_attr_sync)
 
-    def _handle_attribute_written(self, event: AttributeWrittenEvent) -> None:
-        """Sync standard attribute cache when a config attribute is written."""
-        if event.status != Status.SUCCESS:
+    def _handle_config_attr_sync(
+        self,
+        event: AttributeWrittenEvent | AttributeReportedEvent | AttributeUpdatedEvent,
+    ) -> None:
+        """Sync standard attribute cache when a config attribute changes."""
+        if isinstance(event, AttributeWrittenEvent) and event.status != Status.SUCCESS:
             return
         if (std_attr := self._CONFIG_TO_STANDARD.get(event.attribute_name)) is not None:
             self._update_attribute(std_attr, event.value)
