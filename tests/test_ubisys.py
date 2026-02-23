@@ -18,7 +18,7 @@ from zhaquirks.ubisys import (
     build_onoff_actions,
 )
 from zhaquirks.ubisys.control_c4 import UbisysC4InputConfigCluster
-from zhaquirks.ubisys.cover_j1 import UbisysJ1InputConfigCluster
+from zhaquirks.ubisys.cover_j1 import UbisysJ1InputConfigCluster, UbisysWindowCovering
 from zhaquirks.ubisys.dimmer_d1 import (
     DimmerInputMode,
     UbisysD1InputConfigCluster,
@@ -926,6 +926,30 @@ async def test_j1_detached_mode(ubisys_j1, detach):
         UbisysJ1InputConfigCluster.AttributeDefs.detached.id,
         t.Bool(detach),
     ) in input_config_listener.attribute_updates
+
+
+async def test_j1_config_to_standard_sync(ubisys_j1):
+    """Test writing a config attr updates the corresponding standard attr."""
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+
+    wc_listener = ClusterListener(wc_cluster)
+
+    with mock.patch.object(
+        wc_cluster.endpoint,
+        "request",
+        mock.AsyncMock(return_value=[0x00]),
+    ):
+        await wc_cluster.write_attributes(
+            {
+                UbisysWindowCovering.AttributeDefs.window_covering_type_config.name: WindowCovering.WindowCoveringType.Shutter
+            }
+        )
+
+    # Standard window_covering_type should have been updated via _update_attribute
+    assert (
+        WindowCovering.AttributeDefs.window_covering_type.id,
+        WindowCovering.WindowCoveringType.Shutter,
+    ) in wc_listener.attribute_updates
 
 
 # --- C4 Tests ---
