@@ -9,7 +9,12 @@ import zigpy.types as t
 from zigpy.zcl import AttributeWrittenEvent
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    Status,
+    WriteAttributesStatusRecord,
+    ZCLAttributeDef,
+)
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
@@ -152,7 +157,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
                         attrs.total_steps_2: 0xFFFF,
                     }
                 )
-                return [[Status.SUCCESS]]
+                return [[WriteAttributesStatusRecord(Status.SUCCESS)]]
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
