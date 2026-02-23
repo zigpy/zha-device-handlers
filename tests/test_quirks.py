@@ -899,6 +899,7 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
             # removes Group input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
+            zhaquirks.ikea.somrigsmartbtn.IkeaSomrigSmartButton,
             # remove WindowCovering input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
             #
