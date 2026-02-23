@@ -7,6 +7,7 @@ from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfT
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya import TUYA_CLUSTER_ID
@@ -146,12 +147,11 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
 
     async def write_attributes(
         self,
-        attributes: dict[str | int, Any],
-        manufacturer: int | None = None,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         **kwargs,
-    ) -> list:
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Catch attribute writes for system_mode and set schedule to off."""
-        results = await super().write_attributes(attributes, manufacturer)
+        results = await super().write_attributes(attributes, **kwargs)
         if (
             Thermostat.AttributeDefs.system_mode.id in attributes
             or Thermostat.AttributeDefs.system_mode.name in attributes
@@ -402,6 +402,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE200_yqgbrdyo", "TS0601")
     .applies_to("_TZE284_p3dbf6qs", "TS0601")
     .applies_to("_TZE200_rxq4iti9", "TS0601")
+    .applies_to("_TZE200_d3z1ukqw", "TS0601")
     .applies_to("_TZE200_hvaxb2tc", "TS0601")
     .applies_to("_TZE284_o3x45p96", "TS0601")
     .applies_to("_TZE284_c6wv4xyo", "TS0601")
@@ -697,17 +698,17 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
                     TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
                     TuyaPresetMode.Off: Thermostat.SystemMode.Off,
                 }[x],
-                dp_converter=lambda x: {
-                    Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
-                    Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
-                    Thermostat.SystemMode.Off: TuyaPresetMode.Off,
-                }[x],
             ),
             DPToAttributeMapping(
                 ep_attribute=TuyaMCUCluster.ep_attribute,
                 attribute_name="preset_mode",
             ),
         ],
+        dp_converter=lambda x, _: {
+            Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
+            Thermostat.SystemMode.Off: TuyaPresetMode.Off,
+        }[x],
     )
     .tuya_attribute(
         dp_id=2,

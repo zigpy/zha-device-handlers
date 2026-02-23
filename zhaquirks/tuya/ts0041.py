@@ -2,7 +2,16 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+    Time,
+)
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -226,6 +235,59 @@ class TuyaSmartRemote0041_var04(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     TuyaSmartRemoteOnOffCluster,
                     Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
+        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
+        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+    }
+
+
+class TuyaSmartRemote0041PollControl(CustomDevice):
+    """Tuya 1-button remote device with poll control."""
+
+    signature = {
+        MODEL: "TS0041",
+        ENDPOINTS: {
+            # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 3, 4, 32], output_clusters=[4, 6, 25])
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    PollControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    PollControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    TuyaSmartRemoteOnOffCluster,
                     Ota.cluster_id,
                 ],
             },

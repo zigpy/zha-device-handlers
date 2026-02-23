@@ -428,7 +428,6 @@ async def test_tuya_mcu_set_time(device_mock):
 
     ep = quirked.endpoints[1]
 
-    assert not ep.tuya_manufacturer._is_manuf_specific
     assert not ep.tuya_manufacturer.server_commands[
         TUYA_SET_TIME
     ].is_manufacturer_specific

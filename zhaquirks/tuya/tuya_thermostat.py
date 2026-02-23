@@ -482,7 +482,9 @@ base_avatto_quirk = (
 
 # Beok TGM50-ZB-WPB
 (
-    TuyaQuirkBuilder("_TZE204_cvub6xbb", "TS0601")
+    TuyaQuirkBuilder()
+    .applies_to("_TZE204_cvub6xbb", "TS0601")
+    .applies_to("_TZE284_cvub6xbb", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,

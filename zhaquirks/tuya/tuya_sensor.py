@@ -116,6 +116,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_w6n8jeuu", "TS0601")
     .applies_to("_TZE200_vvmbj46n", "TS0601")
     .applies_to("_TZE284_vvmbj46n", "TS0601")
+    .applies_to("_TZE284_4dosadbh", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -312,6 +313,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_upagmta9", "TS0601")
     .applies_to("_TZE204_1wnh8bqp", "TS0601")
     .applies_to("_TZE284_1wnh8bqp", "TS0601")
+    .applies_to("_TZE204_kwi6bbk4", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(

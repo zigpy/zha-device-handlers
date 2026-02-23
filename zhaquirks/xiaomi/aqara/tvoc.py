@@ -5,13 +5,19 @@ from typing import Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
+from zigpy.zcl.clusters.general import (
+    AnalogInput,
+    Basic,
+    Identify,
+    Ota,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,6 +34,7 @@ from zhaquirks.xiaomi import (
     TemperatureMeasurementCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 MEASURED_VALUE = 0x0000
@@ -71,7 +78,7 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         return result
 
 
-class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
+class TVOCDisplayUnit(t.enum8):
     """Display values."""
 
     mgm3_celsius = 0x00
@@ -87,7 +94,10 @@ class TVOCCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         display_unit: Final = ZCLAttributeDef(
-            id=DISPLAY_UNIT, type=TVOCDisplayUnit, is_manufacturer_specific=True
+            id=DISPLAY_UNIT,
+            type=TVOCDisplayUnit,
+            zcl_type=DataTypeId.uint8,
+            is_manufacturer_specific=True,
         )
 
 
@@ -109,7 +119,7 @@ class TVOCMonitor(XiaomiCustomDevice):
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                     AnalogInput.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -129,7 +139,7 @@ class TVOCMonitor(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     RelativeHumidityCluster,
                     AnalogInputCluster,
                     EmulatedTVOCMeasurement,
@@ -158,7 +168,7 @@ class TVOCMonitor2(XiaomiCustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     IasZone.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }

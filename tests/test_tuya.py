@@ -120,64 +120,44 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "quirk,raw_event,expected_attr_name,expected_attr_value",
+    "raw_event,expected_attr_name,expected_attr_value",
     (
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_1_SINGLE_PRESS,
-            "btn_1_pressed",
-            0x00,
-        ),
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_1_DOUBLE_PRESS,
-            "btn_1_pressed",
-            0x01,
-        ),
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_1_LONG_PRESS,
-            "btn_1_pressed",
-            0x02,
-        ),
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_2_SINGLE_PRESS,
-            "btn_2_pressed",
-            0x00,
-        ),
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_2_DOUBLE_PRESS,
-            "btn_2_pressed",
-            0x01,
-        ),
-        (
-            zhaquirks.tuya.ts0021.TS0021,
-            ZCL_TUYA_BUTTON_2_LONG_PRESS,
-            "btn_2_pressed",
-            0x02,
-        ),
+        (ZCL_TUYA_BUTTON_1_SINGLE_PRESS, "btn_1_pressed", 0x00),
+        (ZCL_TUYA_BUTTON_1_DOUBLE_PRESS, "btn_1_pressed", 0x01),
+        (ZCL_TUYA_BUTTON_1_LONG_PRESS, "btn_1_pressed", 0x02),
+        (ZCL_TUYA_BUTTON_2_SINGLE_PRESS, "btn_2_pressed", 0x00),
+        (ZCL_TUYA_BUTTON_2_DOUBLE_PRESS, "btn_2_pressed", 0x01),
+        (ZCL_TUYA_BUTTON_2_LONG_PRESS, "btn_2_pressed", 0x02),
     ),
 )
-async def test_ts0021_switch(
-    zigpy_device_from_quirk, quirk, raw_event, expected_attr_name, expected_attr_value
+async def test_ts0021_remote(
+    zigpy_device_from_quirk, raw_event, expected_attr_name, expected_attr_value
 ):
-    """Test tuya TS0021 2-gang switch."""
+    """Test tuya TS0021 2-button remote attributes and ZHA events."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts0021.TS0021)
 
     tuya_cluster = device.endpoints[1].tuya_manufacturer
     switch_listener = ClusterListener(tuya_cluster)
+    zha_listener = mock.MagicMock()
+    tuya_cluster.add_listener(zha_listener)
 
     hdr, args = tuya_cluster.deserialize(raw_event)
     tuya_cluster.handle_message(hdr, args)
 
     assert len(switch_listener.cluster_commands) == 1
     assert len(switch_listener.attribute_updates) == 1
-
     assert switch_listener.attribute_updates[0][0] == expected_attr_name
     assert switch_listener.attribute_updates[0][1] == expected_attr_value
+
+    zha_listener.zha_send_event.assert_called_once_with(
+        "attribute_updated",
+        {
+            "attribute_id": expected_attr_name,
+            "attribute_name": "Unknown",  # no ZCLAttributeDef for Tuya DP-mapped attr
+            "value": expected_attr_value,
+        },
+    )
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
