@@ -4,10 +4,11 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import ClusterType
+from zigpy.zcl import AttributeWrittenEvent, ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.foundation import Status
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -1301,6 +1302,56 @@ async def test_j1_auto_calibration_failure(ubisys_j1):
         # finally block still reads attributes
         ("read_calibration_attributes",),
     ]
+
+
+async def test_j1_config_sync_skips_failed_write(ubisys_j1):
+    """Test _handle_config_attr_sync ignores failed AttributeWrittenEvents."""
+    wc_cluster = ubisys_j1.endpoints[1].window_covering
+    wc_listener = ClusterListener(wc_cluster)
+
+    wc_cluster._handle_config_attr_sync(
+        AttributeWrittenEvent(
+            device_ieee=str(ubisys_j1.ieee),
+            endpoint_id=1,
+            cluster_type=0,
+            cluster_id=WindowCovering.cluster_id,
+            attribute_name="window_covering_type_config",
+            attribute_id=0x0000,
+            manufacturer_code=0x10F2,
+            value=WindowCovering.WindowCoveringType.Shutter,
+            status=Status.UNSUPPORTED_ATTRIBUTE,
+        )
+    )
+
+    # Standard attr should NOT have been updated
+    assert (
+        WindowCovering.AttributeDefs.window_covering_type.id,
+        WindowCovering.WindowCoveringType.Shutter,
+    ) not in wc_listener.attribute_updates
+
+
+async def test_j1_calibration_cluster_unknown_attribute(ubisys_j1):
+    """Test write_attributes with unknown attr falls through to super()."""
+    cal_cluster = ubisys_j1.endpoints[1].ubisys_j1_calibration
+
+    # calibration_state is a known attribute but not handled in write_attributes,
+    # so it falls through to super() (LocalDataCluster) which updates the cache
+    cal_listener = ClusterListener(cal_cluster)
+    await cal_cluster.write_attributes(
+        {
+            UbisysJ1CalibrationCluster.AttributeDefs.calibration_state.name: CalibrationState.Idle
+        }
+    )
+
+    state_attr = UbisysJ1CalibrationCluster.AttributeDefs.calibration_state
+    assert (state_attr.id, CalibrationState.Idle) in cal_listener.attribute_updates
+
+
+def test_build_onoff_actions_unknown_mode():
+    """Test build_onoff_actions returns empty list for unknown mode."""
+    # Use an invalid mode value that doesn't match any known InputMode
+    result = build_onoff_actions(0, 2, InputMode(0xFF))
+    assert result == []
 
 
 # --- C4 Tests ---
