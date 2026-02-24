@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import datetime
+import logging
 from typing import Any, Final
 
 import zigpy.types as t
@@ -30,6 +31,8 @@ from zhaquirks.tuya import (
     TuyaTimePayload,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
 
@@ -51,6 +54,12 @@ class DPToAttributeMapping(DpToAttributeMappingBase):
         """Init method for compatibility with previous quirks using positional arguments."""
         super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
         self.dp_converter = dp_converter
+        if dp_converter:
+            _LOGGER.debug(
+                "DPToAttributeMapping with dp_converter is deprecated, use TuyaQuirkBuilder "
+                "(or TuyaMCUCluster.attributes_to_dp_converters) instead. attribute_name: %s",
+                attribute_name,
+            )
 
 
 class TuyaClusterData(t.Struct):
@@ -163,6 +172,7 @@ class TuyaConnectionStatus(t.Struct):
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
+    attributes_to_dp_converters: dict[int, Callable[[Any], Any]] = {}
     set_time_offset = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
     set_time_local_offset = datetime.datetime(1970, 1, 1)
 
@@ -206,6 +216,23 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
+
+        self._attributes_to_dp_converters: dict[int, Callable[[Any], Any]]
+        if self.attributes_to_dp_converters:
+            self._attributes_to_dp_converters = self.attributes_to_dp_converters
+        else:
+            # convert from legacy DP2AttributeMapping with attribute_name tuple to new
+            # DP2AttributeMapping with single attribute_name
+            self._attributes_to_dp_converters = {}
+            for dp, mappings in self.dp_to_attribute.items():
+                if not isinstance(mappings, list):
+                    mappings = [mappings]
+                for dp_mapping in mappings:
+                    # DPToAttributeMapping from the base Tuya module doesn't have `dp_converter`
+                    # only the MCU DPToAttributeMapping has dp_converter, so check hasattr before
+                    if hasattr(dp_mapping, "dp_converter") and dp_mapping.dp_converter:
+                        self._attributes_to_dp_converters[dp] = dp_mapping.dp_converter
+
         # Cluster for endpoint: 1 (listen MCU commands)
         self.endpoint.device.command_bus = Bus()
         self.endpoint.device.command_bus.add_listener(self)
@@ -224,22 +251,21 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             return []
 
         tuya_commands: list[TuyaCommand] = []
-        for dp, mapping in dp_mapping.items():
+        for dp in dp_mapping:
             val = data.attr_value
-            if mapping.dp_converter:
+
+            if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
                 args = []
-                if isinstance(mapping.attribute_name, tuple):
+                for dp_attr in self._dp_to_attributes[dp]:
+                    if dp_attr.attribute_name == data.cluster_attr:
+                        args.append(val)
+                        continue
                     endpoint = self.endpoint
-                    if mapping.endpoint_id:
-                        endpoint = endpoint.device.endpoints[mapping.endpoint_id]
-                    cluster = getattr(endpoint, mapping.ep_attribute)
-                    for attr in mapping.attribute_name:
-                        args.append(
-                            val if attr == data.cluster_attr else cluster.get(attr)
-                        )
-                else:
-                    args.append(val)
-                val = mapping.dp_converter(*args)
+                    if dp_attr.endpoint_id:
+                        endpoint = endpoint.device.endpoints[dp_attr.endpoint_id]
+                    cluster = getattr(endpoint, dp_attr.ep_attribute)
+                    args.append(cluster.get(dp_attr.attribute_name))
+                val = attr_to_dp_converter(*args)
             self.debug("value: %s", val)
 
             dpd = TuyaDatapointData(dp, val)
@@ -294,21 +320,20 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         result: dict[int, DPToAttributeMapping] = {}
         for dp, dp_mapping in self._dp_to_attributes.items():
             for mapped_attr in dp_mapping:
-                if (
-                    attribute_name == mapped_attr.attribute_name
-                    or (
-                        isinstance(mapped_attr.attribute_name, tuple)
-                        and attribute_name in mapped_attr.attribute_name
-                    )
-                ) and (
+                if attribute_name != mapped_attr.attribute_name:
+                    continue
+                if not (
                     (
                         mapped_attr.endpoint_id is None
                         and endpoint_id == self.endpoint.endpoint_id
                     )
                     or (endpoint_id == mapped_attr.endpoint_id)
                 ):
-                    self.debug("get_dp_mapping --> found DP: %s", dp)
-                    result[dp] = mapped_attr
+                    continue
+                self.debug("get_dp_mapping --> found DP: %s", dp)
+                result[dp] = mapped_attr
+                break
+
         return result
 
     def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:  # type:ignore[valid-type]
