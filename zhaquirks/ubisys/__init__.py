@@ -154,8 +154,8 @@ class UbisysInputConfigCluster(LocalDataCluster):
             if attr_name == override_attr_name:
                 mode = override_mode
             else:
-                attr_id = self.attributes_by_name[attr_name].id
-                mode = InputMode(self._attr_cache.get(attr_id, InputMode.Toggle))
+                attr_def = self.find_attribute(attr_name)
+                mode = InputMode(self._attr_cache.get(attr_def.id, InputMode.Toggle))
             actions.extend(build_onoff_actions(input_index, source_ep, mode))
         return actions
 
@@ -180,9 +180,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
                 )
             else:
                 await zdo.Bind_req(self.endpoint.device.ieee, input_ep, cluster_id, dst)
-        self._update_attribute(
-            self.attributes_by_name[det_attr_name].id, t.Bool(detach)
-        )
+        self._update_attribute(self.find_attribute(det_attr_name), t.Bool(detach))
 
     async def write_attributes(
         self,
@@ -200,7 +198,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
                     actions = self._build_all_actions(mode_attr_name, mode)
                     device_setup = self.endpoint.device.endpoints[232].ubisys_cluster
                     result = await device_setup.write_input_actions(actions)
-                    self._update_attribute(self.attributes_by_name[attr_name].id, mode)
+                    self._update_attribute(self.find_attribute(attr_name), mode)
                     return result
 
             for det_attr_name, _, _ in self._DETACHED_CONFIG:

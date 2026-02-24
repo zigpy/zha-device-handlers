@@ -182,10 +182,10 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
             if attr_name == override_attr_name:
                 modes.append(DimmerInputMode(override_mode))
             else:
-                attr_id = self.attributes_by_name[attr_name].id
+                attr_def = self.find_attribute(attr_name)
                 modes.append(
                     DimmerInputMode(
-                        self._attr_cache.get(attr_id, DimmerInputMode.Toggle)
+                        self._attr_cache.get(attr_def.id, DimmerInputMode.Toggle)
                     )
                 )
         return modes
@@ -231,9 +231,9 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                         for name, _, _ in self._INPUT_MODE_CONFIG
                         if name != mode_attr_name
                     )
-                    other_attr_id = self.attributes_by_name[other_attr_name].id
+                    other_attr = self.find_attribute(other_attr_name)
                     other_mode = DimmerInputMode(
-                        self._attr_cache.get(other_attr_id, DimmerInputMode.Toggle)
+                        self._attr_cache.get(other_attr.id, DimmerInputMode.Toggle)
                     )
 
                     if (
@@ -242,13 +242,13 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                     ):
                         # Entering double mode: sync other input
                         self._update_attribute(
-                            other_attr_id, DimmerInputMode.Dimmer_double
+                            other_attr, DimmerInputMode.Dimmer_double
                         )
                         # Both inputs must be bound for double mode to work —
                         # re-bind any detached inputs before writing actions
                         for det_attr_name, _, _ in self._DETACHED_CONFIG:
-                            det_attr_id = self.attributes_by_name[det_attr_name].id
-                            if self._attr_cache.get(det_attr_id, t.Bool.false):
+                            det_attr = self.find_attribute(det_attr_name)
+                            if self._attr_cache.get(det_attr.id, t.Bool.false):
                                 await self._set_detached(det_attr_name, False)
                     elif (
                         new_mode != DimmerInputMode.Dimmer_double
@@ -256,7 +256,7 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                     ):
                         # Leaving double mode: reset other to Dimmer_single
                         self._update_attribute(
-                            other_attr_id, DimmerInputMode.Dimmer_single
+                            other_attr, DimmerInputMode.Dimmer_single
                         )
                     break
 
