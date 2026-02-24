@@ -50,6 +50,9 @@ class DimmerInputMode(t.enum8):
     Dimmer_double = 0x04
 
 
+_DEFAULT_DIMMING_RATE = 50  # move_with_on_off rate for level control
+
+
 def build_dimmer_single_actions(input_index: int, source_ep: int) -> list[bytes]:
     """Build input actions for dimmer single mode.
 
@@ -59,7 +62,7 @@ def build_dimmer_single_actions(input_index: int, source_ep: int) -> list[bytes]
                  0xC6 = long press alt 2, 0x0B = release after long press
     LevelControl cluster 0x0008: 0x05 = move_with_on_off, 0x03 = stop
     """
-    rate = 50
+    rate = _DEFAULT_DIMMING_RATE
     return [
         bytes([input_index, 0x07, source_ep, 0x06, 0x00, 0x02]),  # toggle
         bytes([input_index, 0x86, source_ep, 0x08, 0x00, 0x05, 0x00, rate]),  # move up
@@ -82,7 +85,7 @@ def build_dimmer_double_actions(
     Input 2 (down): short press → off, long press → move level down, release → stop.
     Transitions: 0x07 = short press, 0x06 = long press, 0x0B = release after long press
     """
-    rate = 50
+    rate = _DEFAULT_DIMMING_RATE
     return [
         # Up button
         bytes([input_index_up, 0x07, source_ep_up, 0x06, 0x00, 0x01]),  # on
