@@ -153,10 +153,23 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
         )
     )
 
-    # TODO: mfr-specific report should not update the standard divisor attribute,
-    #  but zigpy currently does not filter this. Fix in zigpy.
-    assert len(metering_listener.attribute_updates) == 0
+    # An attribute update with the divisor ID is emitted, but as the manufacturer bit
+    # is set, the value in the attribute cache for the divisor should NOT be updated.
+    assert len(metering_listener.attribute_updates) == 1
+    assert metering_listener.attribute_updates == [
+        (Metering.AttributeDefs.divisor.id, 512)
+    ]
     assert metering_cluster.get(Metering.AttributeDefs.divisor) is None
+
+    # It is only present in the legacy cache, as the definition for the manufacturer
+    # specific attribute does not yet exist in the quirk.
+    assert metering_cluster._attr_cache.get(Metering.AttributeDefs.divisor.id) == 512
+    assert (
+        metering_cluster._attr_cache._legacy_cache[
+            Metering.AttributeDefs.divisor.id
+        ].value
+        == 512
+    )
 
     # send real attribute report with current_summ_delivered, current_summ_received,
     # instantaneous_demand, and status
@@ -177,7 +190,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
         )
     )
 
-    # attribute_updated events should be emitted (5 instead of 4 due to zigpy bug above)
+    # attribute_updated events should be emitted (5 due to previous mfr-specific report)
     assert len(metering_listener.attribute_updates) == 5
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id)
