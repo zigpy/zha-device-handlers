@@ -30,9 +30,6 @@ class UbisysCluster(CustomCluster):
     name = "Ubisys Cluster 0xFC00"
     ep_attribute = "ubisys_cluster"
 
-    # ZCL Write Attributes Structured command ID (not supported by zigpy natively)
-    WRITE_ATTRIBUTES_STRUCTURED = 0x0F
-
     class AttributeDefs(BaseAttributeDefs):
         """Ubisys attribute definitions."""
 
@@ -52,42 +49,21 @@ class UbisysCluster(CustomCluster):
         ubisys devices require the structured write command (0x0F) for array
         attributes. Regular write_attributes sends an invalid ZCL type.
         """
-        tsn = self.endpoint.device.application.get_sequence()
-
-        # Build raw ZCL frame
-        frame = bytearray()
-        # ZCL Header
-        frame.append(0x00)  # Frame control: global, no manufacturer, client->server
-        frame.append(tsn)
-        frame.append(self.WRITE_ATTRIBUTES_STRUCTURED)
-
-        # Payload: write whole input_actions attribute as array
-        # Attribute ID (uint16 LE)
-        frame.extend(
-            self.AttributeDefs.input_actions.id.to_bytes(2, byteorder="little")
+        arr = foundation.Array(
+            type=foundation.DataTypeId.octstr,
+            value=t.LVList[t.LVBytes, t.uint16_t](actions),
         )
-        # Selector indicator: 0x00 (whole attribute, no indexes)
-        frame.append(0x00)
-        # Data Type: 0x48 (Array)
-        frame.append(0x48)
-        # Element Type: 0x41 (OCTET_STR)
-        frame.append(0x41)
-        # Element Count (uint16 LE)
-        frame.extend(len(actions).to_bytes(2, byteorder="little"))
-        # Each element as length-prefixed octet string
-        for action in actions:
-            frame.append(len(action))
-            frame.extend(action)
-
-        await self.endpoint.request(
-            cluster=self.cluster_id,
-            sequence=tsn,
-            data=bytes(frame),
-            command_id=self.WRITE_ATTRIBUTES_STRUCTURED,
+        return await self.write_attributes_structured_raw(
+            [
+                foundation.WriteAttributeStructured(
+                    attrid=self.AttributeDefs.input_actions.id,
+                    selector=foundation.Selector(depth=0),
+                    value=foundation.TypeValue(
+                        type=foundation.DataTypeId.array, value=arr
+                    ),
+                )
+            ]
         )
-
-        # Return format expected by write_attributes_safe
-        return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
 
 
 class InputMode(t.enum8):
