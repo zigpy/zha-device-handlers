@@ -206,4 +206,6 @@ class UbisysInputConfigCluster(LocalDataCluster):
                     await self._set_detached(det_attr_name, bool(value))
                     return [[foundation.WriteAttributesStatusRecord(Status.SUCCESS)]]
 
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        # All defined attributes are handled above; find_attribute raises KeyError
+        # for undefined ones, so this line is unreachable in practice.
+        raise KeyError(attributes)  # pragma: no cover
