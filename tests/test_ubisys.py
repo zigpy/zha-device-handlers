@@ -1120,6 +1120,7 @@ async def test_j1_calibration_mode(ubisys_j1, attr_name, enable):
             "write_attributes",
             mock.AsyncMock(return_value=[[0x00]]),
         ) as mock_write,
+        mock.patch("asyncio.sleep", new_callable=mock.AsyncMock),
     ):
         await cal_cluster.write_attributes({attr_name: True})
 
