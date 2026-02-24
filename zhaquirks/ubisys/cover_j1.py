@@ -39,6 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _POLL_INTERVAL_S = 2  # seconds between operational_status polls
 _MOTOR_TIMEOUT_S = 300  # 5 minutes
+_BRIEF_MOVE_DURATION_S = 5  # auto-calibration: seconds to move down before stopping
 _AC_FREQUENCY_HZ = 50  # steps are measured in full AC waves
 _SECONDS_PER_STEP = 1 / _AC_FREQUENCY_HZ
 
@@ -303,7 +304,7 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
             # Move down briefly, then stop (Step 4)
             self._set_state(CalibrationState.Moving_down)
             await wc.down_close()
-            await asyncio.sleep(5)
+            await asyncio.sleep(_BRIEF_MOVE_DURATION_S)
             await wc.stop()
             await asyncio.sleep(_POLL_INTERVAL_S)
 
