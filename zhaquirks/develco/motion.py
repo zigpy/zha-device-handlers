@@ -76,7 +76,7 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         max_value=4,
         step=1,
         translation_key="sensitivity_level",
-        fallback_name="Sensitivity level (1-4)",
+        fallback_name="Sensitivity level",
     )
     .sensor(
         attribute_name="number_of_zone_sensitivity_levels_supported",
