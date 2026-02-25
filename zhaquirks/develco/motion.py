@@ -78,13 +78,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         translation_key="sensitivity_level",
         fallback_name="Sensitivity level",
     )
-    .sensor(
-        attribute_name="number_of_zone_sensitivity_levels_supported",
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=35,
-        translation_key="sensitivity_levels_supported",
-        fallback_name="Sensitivity levels supported",
-    )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
