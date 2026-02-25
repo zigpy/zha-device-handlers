@@ -2,32 +2,13 @@
 
 from typing import Final
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
-
-
-class FrientTamperIasZone(DevelcoIasZone):
-    """Custom IAS Zone cluster for frient motion sensors with tamper support."""
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.zone_status.id:
-            # Update tamper state from zone_status bit 2
-            tamper_state = bool(value & 0b00000100)
-            super()._update_attribute(self.AttributeDefs.tamper.id, tamper_state)
-
-    class AttributeDefs(IasZone.AttributeDefs):
-        """Attribute definitions."""
-
-        tamper: Final = ZCLAttributeDef(
-            id=0xFFF2,  # Custom attribute ID
-            type=t.Bool,
-        )
 
 
 class FrientPETSensitivityIasZone(DevelcoIasZone):
@@ -54,13 +35,14 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     QuirkBuilder(FRIENT, "MOSZB-140")
     .applies_to(DEVELCO, "MOSZB-140")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
-    .replaces(FrientTamperIasZone, endpoint_id=35)
+    .replaces(DevelcoIasZone, endpoint_id=35)
     .binary_sensor(
-        attribute_name="tamper",
+        attribute_name=IasZone.AttributeDefs.zone_status.name,
         cluster_id=IasZone.cluster_id,
         endpoint_id=35,
-        entity_type="tamper",
-        translation_key="tamper",
+        device_class=BinarySensorDeviceClass.TAMPER,
+        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
+        unique_id_suffix="tamper",
         fallback_name="Tamper",
     )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
