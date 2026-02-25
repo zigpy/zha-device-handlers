@@ -45,7 +45,9 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         unique_id_suffix="tamper",
         fallback_name="Tamper",
     )
+    # This entity does not do anything
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
+    # These endpoints are duplicates of 35 and do not create useful entities
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
     .add_to_registry()
@@ -57,7 +59,9 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     .applies_to(DEVELCO, "MOSZB-141")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(DevelcoIasZone, endpoint_id=35)
+    # This entity does not do anything
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
+    # These endpoints are duplicates of 35 and do not create useful entities
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
     .add_to_registry()
@@ -78,7 +82,9 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         translation_key="sensitivity_level",
         fallback_name="Sensitivity level",
     )
+    # This entity does not do anything
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
+    # These endpoints are duplicates of 35 and do not create useful entities
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
     .add_to_registry()
