@@ -1,16 +1,22 @@
 """Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
 
+from typing import Any
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
+
 
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
+    name = "Sonoff Custom"
+    ep_attribute = "sonoff_custom"
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -18,136 +24,165 @@ class CustomSonoffCluster(CustomCluster):
         child_lock = ZCLAttributeDef(
             id=0x0000,
             type=t.Bool,
+            manufacturer_code=None,
         )
 
         open_window = ZCLAttributeDef(
             id=0x6000,
             type=t.Bool,
+            manufacturer_code=None,
         )
 
         frost_protection_temperature = ZCLAttributeDef(
             id=0x6002,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         idle_steps = ZCLAttributeDef(
             id=0x6003,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         closing_steps = ZCLAttributeDef(
             id=0x6004,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_opening_limit_voltage = ZCLAttributeDef(
             id=0x6005,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_closing_limit_voltage = ZCLAttributeDef(
             id=0x6006,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_motor_running_voltage = ZCLAttributeDef(
             id=0x6007,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_opening_degree = ZCLAttributeDef(
             id=0x600B,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         valve_closing_degree = ZCLAttributeDef(
             id=0x600C,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         external_temperature_sensor_enable = ZCLAttributeDef(
             id=0x600E,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         external_temperature_sensor_value = ZCLAttributeDef(
             id=0x600D,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         temperature_control_accuracy = ZCLAttributeDef(
             id=0x6011,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         temporary_mode = ZCLAttributeDef(
             id=0x6014,
             type=t.uint8_t,
-        )
-
-        boost_mode = ZCLAttributeDef(
-            id=0x6018,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
-
-        timer_mode = ZCLAttributeDef(
-            id=0x6019,
-            type=t.Bool,
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         temporary_mode_duration = ZCLAttributeDef(
             id=0x6015,
             type=t.uint32_t,
+            manufacturer_code=None,
         )
 
         timer_mode_target_temperature = ZCLAttributeDef(
             id=0x6016,
             type=t.int16s,
+            manufacturer_code=None,
         )
+
         smart_temperature_control = ZCLAttributeDef(
             id=0x6017,
             type=t.bitmap8,
+            manufacturer_code=None,
         )
 
     def _update_attribute(self, attrid, value):
-        """Update attribute and handle temporary mode conversion."""
+        """Update attribute and push derived mode states to the local mode cluster."""
         super()._update_attribute(attrid, value)
         if attrid == self.AttributeDefs.temporary_mode.id:
-            # Convert value to individual mode states
-            self._update_attribute(self.AttributeDefs.boost_mode.id, value == 0x00)
-            self._update_attribute(self.AttributeDefs.timer_mode.id, value == 0x01)
+            mode_cluster = self.endpoint.in_clusters.get(
+                SonoffTRVZBModeCluster.cluster_id
+            )
+            if mode_cluster is not None:
+                mode_cluster._update_attribute(
+                    SonoffTRVZBModeCluster.AttributeDefs.boost_mode.id, value == 0x00
+                )
+                mode_cluster._update_attribute(
+                    SonoffTRVZBModeCluster.AttributeDefs.timer_mode.id, value == 0x01
+                )
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
-        """Handle writing individual mode attributes by updating temporary_mode."""
-        mode_attr = self.AttributeDefs.temporary_mode.id
-        new_attributes = attributes.copy()
-        mode_attr_defs = [
-            (self.AttributeDefs.boost_mode, 0x00),
-            (self.AttributeDefs.timer_mode, 0x01),
-        ]
-        for attrid in attributes:
-            for attr_def, mode_value in mode_attr_defs:
-                if attrid in (attr_def.id, attr_def.name):
-                    new_attributes.pop(attrid)
-                    new_attributes[mode_attr] = mode_value
-                    break
-        return await super().write_attributes(new_attributes, manufacturer, **kwargs)
 
-    @property
-    def _is_manuf_specific(self):
-        return False
+class SonoffTRVZBModeCluster(LocalDataCluster):
+    """Virtual cluster exposing boost and timer mode states derived from temporary_mode."""
+
+    cluster_id = 0xFC12
+    name = "Sonoff TRVZB Mode"
+    ep_attribute = "trvzb_mode"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        boost_mode = ZCLAttributeDef(id=0x0000, type=t.Bool)
+        timer_mode = ZCLAttributeDef(id=0x0001, type=t.Bool)
+
+    _MODE_MAP = {
+        "boost_mode": 0x00,
+        "timer_mode": 0x01,
+    }
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int, Any],
+        manufacturer=None,
+        **kwargs,
+    ) -> list:
+        """Translate boost/timer mode writes to temporary_mode on the real cluster."""
+        for attr in attributes:
+            attr_name = self.find_attribute(attr).name
+            if attr_name in self._MODE_MAP:
+                temporary_mode = CustomSonoffCluster.AttributeDefs.temporary_mode.name
+                return await self.endpoint.sonoff_custom.write_attributes(
+                    {temporary_mode: self._MODE_MAP[attr_name]},
+                )
+        return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
 (
     QuirkBuilder("SONOFF", "TRVZB")
     .replaces(CustomSonoffCluster)
+    .adds(SonoffTRVZBModeCluster)
     .switch(
         CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
         # ControlModeType,
@@ -175,6 +210,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=4.0,
         max_value=35.0,
         step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="timer_mode_target_temperature",
@@ -186,22 +222,23 @@ class CustomSonoffCluster(CustomCluster):
         min_value=0,
         max_value=1440,
         step=1,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         multiplier=1 / 60,
         translation_key="temporary_mode_duration",
         fallback_name="Temporary mode duration",
     )
     .write_attr_button(
-        attribute_name=CustomSonoffCluster.AttributeDefs.boost_mode.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        attribute_value=0x00,
+        attribute_name=SonoffTRVZBModeCluster.AttributeDefs.boost_mode.name,
+        cluster_id=SonoffTRVZBModeCluster.cluster_id,
+        attribute_value=True,
         translation_key="boost_mode",
         fallback_name="Boost mode",
     )
     .write_attr_button(
-        attribute_name=CustomSonoffCluster.AttributeDefs.timer_mode.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        attribute_value=0x01,
+        attribute_name=SonoffTRVZBModeCluster.AttributeDefs.timer_mode.name,
+        cluster_id=SonoffTRVZBModeCluster.cluster_id,
+        attribute_value=True,
         translation_key="timer_mode",
         fallback_name="Timer mode",
     )
@@ -211,6 +248,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=4.0,
         max_value=35.0,
         step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="frost_protection_temperature",
