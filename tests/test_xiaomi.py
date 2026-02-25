@@ -442,7 +442,7 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 
 
 @pytest.mark.parametrize(
-    "raw_report",
+    "raw_report_hex",
     (
         # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
         "02FF4C0600100121BA0B21A813240100000000215D062058",
@@ -510,11 +510,13 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
         "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
         "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
         "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        # https://github.com/home-assistant/core/issues/163692
+        "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
     ),
 )
-def test_attribute_parsing(raw_report):
+def test_attribute_parsing(raw_report_hex):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report)
+    raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,
@@ -1997,10 +1999,10 @@ async def test_xiaomi_e1_roller_window_covering_read_redirection(
     )
 
 
-async def test_xiaomi_e1_roller_write_aware_update_attribute(
+async def test_xiaomi_e1_roller_position_updates(
     zigpy_device_from_v2_quirk,
 ):
-    """Test Aqara E1 roller AnalogOutput write-aware update_attribute method."""
+    """Test Aqara E1 roller lift position updates on read/report only."""
     device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
@@ -2009,80 +2011,69 @@ async def test_xiaomi_e1_roller_write_aware_update_attribute(
     analog_cluster = device.endpoints[1].analog_output
     analog_listener = ClusterListener(analog_cluster)
     analog_attr = AnalogOutput.AttributeDefs.present_value
-    analog_attr_max = AnalogOutput.AttributeDefs.max_present_value
 
-    # patch write command for a success response
-    patch_analog_write = mock.patch.object(
+    # patch read command for a success response
+    patch_analog_read = mock.patch.object(
         analog_cluster,
-        "_write_attributes",
-        mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-            )
-        ),
-    )
-
-    # patch write command for a fail response
-    patch_analog_write_fail = mock.patch.object(
-        analog_cluster,
-        "_write_attributes",
+        "_read_attributes",
         mock.AsyncMock(
             return_value=(
                 [
-                    foundation.WriteAttributesStatusRecord(
-                        foundation.Status.INVALID_VALUE, analog_attr.id
-                    ),
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 40),
+                    )
                 ],
             )
         ),
     )
 
-    with (
-        patch_analog_write,
-    ):
-        # test writing valid and invalid values using name & id
-        await analog_cluster.write_attributes({analog_attr.id: 50})
-        await analog_cluster.write_attributes({analog_attr.name: 60})
-        assert analog_cluster._write_attributes.call_count == 2
+    with patch_analog_read:
+        analog_listener.attribute_updates.clear()
+        window_covering_listener.attribute_updates.clear()
 
-        # confirm the two successful writes updated the analog cluster
-        assert len(analog_listener.attribute_updates) == 2
-        assert analog_listener.attribute_updates[0] == (
-            analog_attr.id,
-            50,
-        )
-        assert analog_listener.attribute_updates[1] == (
-            analog_attr.id,
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        # read events should update the WindowCovering position
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id,
             60,
         )
 
-    with (
-        patch_analog_write_fail,
-    ):
-        # test writing valid and invalid values using name & id
-        await analog_cluster.write_attributes(
-            {analog_attr_max.id: 100, analog_attr.id: 150}
-        )
-        await analog_cluster.write_attributes(
-            {analog_attr_max.name: 100, analog_attr.name: 160}
-        )
-        assert analog_cluster._write_attributes.call_count == 2
+    # report events should update the WindowCovering position
+    attr = foundation.Attribute(
+        attrid=analog_attr.id,
+        value=foundation.TypeValue(0x39, t.Single(25.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
 
-        # confirm the two failed attr writes did not update the analog cluster
-        assert len(analog_listener.attribute_updates) == 4
-
-        # confirm the two successful writes updated the analog cluster
-        assert analog_listener.attribute_updates[2] == (
-            analog_attr_max.id,
-            100,
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
         )
-        assert analog_listener.attribute_updates[3] == (
-            analog_attr_max.id,
-            100,
-        )
+    )
 
-    # confirm the write invoked update_attributes did not update the covering cluster
-    assert len(window_covering_listener.attribute_updates) == 0
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+        75,
+    )
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])

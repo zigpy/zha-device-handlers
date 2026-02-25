@@ -561,3 +561,28 @@ async def test_tuya_override_mcu_command(
 
     assert tuya_listener.attribute_updates[0][0] == 0xEF0A
     assert tuya_listener.attribute_updates[0][1] == TestEnum.B
+
+
+async def test_tuya_quirk_builder_endpoint_id(device_mock):
+    """Test TuyaQuirkBuilder endpoint_id."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .adds_endpoint(2)
+        .tuya_humidity(dp_id=1, endpoint_id=2)
+        .tuya_soil_moisture(dp_id=2)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    assert not hasattr(quirked.endpoints[1], "humidity")
+    assert hasattr(quirked.endpoints[2], "humidity")
+
+    assert hasattr(quirked.endpoints[1], "soil_moisture")
+    assert not hasattr(quirked.endpoints[2], "soil_moisture")
