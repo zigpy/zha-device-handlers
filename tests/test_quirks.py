@@ -805,10 +805,21 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             base_attr_names = {a.name for a in base_cluster.attributes.values()}
             quirk_attr_names = {a.name for a in cluster.attributes.values()}
 
-            if not base_attr_names <= quirk_attr_names:
+            # Allow base class attribute names to be superseded by manufacturer-specific
+            # attributes at the same ID. These use manufacturer_code to differentiate
+            # and do not actually conflict at the protocol level.
+            superseded_by_mfr = {
+                base_attr.name
+                for attr_id, base_attr in base_cluster.attributes.items()
+                if attr_id in cluster.attributes
+                and cluster.attributes[attr_id].name != base_attr.name
+                and isinstance(cluster.attributes[attr_id].manufacturer_code, int)
+            }
+
+            if not (base_attr_names - superseded_by_mfr) <= quirk_attr_names:
                 pytest.fail(
                     f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_attr_names - quirk_attr_names}"
+                    f" extending them: {(base_attr_names - superseded_by_mfr) - quirk_attr_names}"
                 )
 
 
