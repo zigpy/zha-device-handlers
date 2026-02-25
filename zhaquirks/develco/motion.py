@@ -2,35 +2,13 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.types import uint16_t
 from zigpy.zcl.clusters.general import BinaryInput
-from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
-
-
-class FrientOccupancySensing(CustomCluster, OccupancySensing):
-    """Custom occupancy sensing cluster for frient motion sensors."""
-
-    class AttributeDefs(OccupancySensing.AttributeDefs):
-        """Attribute definitions."""
-
-        pir_o_to_u_delay: Final = ZCLAttributeDef(
-            id=0x0010,
-            type=uint16_t,
-            access="rw",
-        )
-
-        pir_u_to_o_delay: Final = ZCLAttributeDef(
-            id=0x0011,
-            type=uint16_t,
-            access="rw",
-        )
 
 
 class FrientTamperIasZone(DevelcoIasZone):
@@ -77,9 +55,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     .applies_to(DEVELCO, "MOSZB-140")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(FrientTamperIasZone, endpoint_id=35)
-    .replaces(
-        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
-    )
     .binary_sensor(
         attribute_name="tamper",
         cluster_id=IasZone.cluster_id,
@@ -100,9 +75,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     .applies_to(DEVELCO, "MOSZB-141")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(DevelcoIasZone, endpoint_id=35)
-    .replaces(
-        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
-    )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
@@ -114,9 +86,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     QuirkBuilder(FRIENT, "MOSZB-153")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(FrientPETSensitivityIasZone, endpoint_id=35)
-    .replaces(
-        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
-    )
     .number(
         attribute_name="current_zone_sensitivity_level",
         cluster_id=IasZone.cluster_id,
