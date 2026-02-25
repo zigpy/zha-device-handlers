@@ -21,20 +21,20 @@ class ThirdRealityCluster(CustomCluster):
         temperature_offset_celsius: Final = ZCLAttributeDef(
             id=0x0031,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         humidity_offset: Final = ZCLAttributeDef(
             id=0x0032,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # intentionally not exposed as an entity
         temperature_offset_fahrenheit: Final = ZCLAttributeDef(
             id=0x0033,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 

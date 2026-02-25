@@ -165,7 +165,9 @@ async def test_giex_02_quirk(zigpy_device_from_v2_quirk, model, manuf, use_minut
 
     quirked_device = zigpy_device_from_v2_quirk(model, manuf)
     metering_cluster = quirked_device.endpoints[1].smartenergy_metering
-    assert metering_cluster.unsupported_attributes == {0x0400, "instantaneous_demand"}
+    assert metering_cluster.is_attribute_unsupported(
+        metering_cluster.AttributeDefs.instantaneous_demand
+    )
     for entity in range(6, 8):
         number_metadata: EntityMetadata = quirked_device.exposes_metadata[
             (1, zhaquirks.tuya.TUYA_CLUSTER_ID, ClusterType.Server)

@@ -18,76 +18,85 @@ class CustomSonoffCluster(CustomCluster):
         child_lock = ZCLAttributeDef(
             id=0x0000,
             type=t.Bool,
+            manufacturer_code=None,
         )
 
         open_window = ZCLAttributeDef(
             id=0x6000,
             type=t.Bool,
+            manufacturer_code=None,
         )
 
         frost_protection_temperature = ZCLAttributeDef(
             id=0x6002,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         idle_steps = ZCLAttributeDef(
             id=0x6003,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         closing_steps = ZCLAttributeDef(
             id=0x6004,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_opening_limit_voltage = ZCLAttributeDef(
             id=0x6005,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_closing_limit_voltage = ZCLAttributeDef(
             id=0x6006,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_motor_running_voltage = ZCLAttributeDef(
             id=0x6007,
             type=t.uint16_t,
             access="r",
+            manufacturer_code=None,
         )
 
         valve_opening_degree = ZCLAttributeDef(
             id=0x600B,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         valve_closing_degree = ZCLAttributeDef(
             id=0x600C,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         external_temperature_sensor_enable = ZCLAttributeDef(
             id=0x600E,
             type=t.uint8_t,
+            manufacturer_code=None,
         )
 
         external_temperature_sensor_value = ZCLAttributeDef(
             id=0x600D,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         temperature_control_accuracy = ZCLAttributeDef(
             id=0x6011,
             type=t.int16s,
+            manufacturer_code=None,
         )
-
-    @property
-    def _is_manuf_specific(self):
-        return False
 
 
 (
