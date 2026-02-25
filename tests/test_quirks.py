@@ -791,36 +791,29 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
 
             base_cluster = list(base_clusters)[0]
 
-            # Ensure the attribute IDs are extended
-            base_attr_ids = set(base_cluster.attributes)
-            quirk_attr_ids = set(cluster.attributes)
-
-            if not base_attr_ids <= quirk_attr_ids:
-                pytest.fail(
-                    f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_attr_ids - quirk_attr_ids}"
-                )
-
-            # Ensure the attribute names are extended
-            base_attr_names = {a.name for a in base_cluster.attributes.values()}
-            quirk_attr_names = {a.name for a in cluster.attributes.values()}
-
-            # Allow base class attribute names to be superseded by manufacturer-specific
-            # attributes at the same ID. These use manufacturer_code to differentiate
-            # and do not actually conflict at the protocol level.
-            superseded_by_mfr = {
-                base_attr.name
-                for attr_id, base_attr in base_cluster.attributes.items()
-                if attr_id in cluster.attributes
-                and cluster.attributes[attr_id].name != base_attr.name
-                and isinstance(cluster.attributes[attr_id].manufacturer_code, int)
-            }
-
-            if not (base_attr_names - superseded_by_mfr) <= quirk_attr_names:
-                pytest.fail(
-                    f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {(base_attr_names - superseded_by_mfr) - quirk_attr_names}"
-                )
+            # Ensure every base class attribute is preserved in the quirk cluster.
+            # For each attr_id, all attribute names from the base must still exist
+            # somewhere under that ID in the quirk's _attributes_by_id. This correctly
+            # handles manufacturer-specific attributes sharing an ID with a ZCL one
+            # (they occupy distinct keys and don't displace each other), while still
+            # catching genuine deletions or ZCL-overrides-ZCL with a different name.
+            for attr_id, by_mfr in base_cluster._attributes_by_id.items():
+                base_names_at_id = {
+                    attr_def.name
+                    for by_code in by_mfr.values()
+                    for attr_def in by_code.values()
+                }
+                quirk_names_at_id = {
+                    attr_def.name
+                    for by_code in cluster._attributes_by_id.get(attr_id, {}).values()
+                    for attr_def in by_code.values()
+                }
+                missing = base_names_at_id - quirk_names_at_id
+                if missing:
+                    pytest.fail(
+                        f"Cluster {cluster} deletes parent class's attributes instead of"
+                        f" extending them: {missing} (id=0x{attr_id:04X})"
+                    )
 
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
