@@ -49,7 +49,7 @@ from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfi
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(DevelcoIasZone, endpoint_id=35)
     .number(
-        attribute_name="current_zone_sensitivity_level",
+        attribute_name=IasZone.AttributeDefs.current_zone_sensitivity_level.name,
         cluster_id=IasZone.cluster_id,
         endpoint_id=35,
         min_value=1,
