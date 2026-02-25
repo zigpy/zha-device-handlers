@@ -21,12 +21,14 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
             id=0x0012,
             type=t.uint8_t,
             access="r",
+            manufacturer_code=None,
         )
 
         current_zone_sensitivity_level: Final = ZCLAttributeDef(
             id=0x0013,
             type=t.uint8_t,
             access="rw",
+            manufacturer_code=None,
         )
 
 
