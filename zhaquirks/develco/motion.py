@@ -4,7 +4,6 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.types import uint16_t
 from zigpy.zcl.clusters.general import BinaryInput
@@ -89,28 +88,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         translation_key="tamper",
         fallback_name="Tamper",
     )
-    .number(
-        attribute_name="pir_o_to_u_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="occupancy_delay",
-        fallback_name="Occupied to unoccupied delay",
-        unit=UnitOfTime.SECONDS,
-    )
-    .number(
-        attribute_name="pir_u_to_o_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to occupied delay",
-        unit=UnitOfTime.SECONDS,
-    )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
     .prevent_default_entity_creation(endpoint_id=41)
@@ -125,28 +102,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(
         FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
-    )
-    .number(
-        attribute_name="pir_o_to_u_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="occupancy_delay",
-        fallback_name="Occupied to unoccupied delay",
-        unit=UnitOfTime.SECONDS,
-    )
-    .number(
-        attribute_name="pir_u_to_o_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to occupied delay",
-        unit=UnitOfTime.SECONDS,
     )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
@@ -171,28 +126,6 @@ class FrientPETSensitivityIasZone(DevelcoIasZone):
         step=1,
         translation_key="sensitivity_level",
         fallback_name="Sensitivity level (1-4)",
-    )
-    .number(
-        attribute_name="pir_o_to_u_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="occupancy_delay",
-        fallback_name="Occupied to unoccupied delay",
-        unit=UnitOfTime.SECONDS,
-    )
-    .number(
-        attribute_name="pir_u_to_o_delay",
-        cluster_id=OccupancySensing.cluster_id,
-        endpoint_id=34,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to occupied delay",
-        unit=UnitOfTime.SECONDS,
     )
     .sensor(
         attribute_name="number_of_zone_sensitivity_levels_supported",
