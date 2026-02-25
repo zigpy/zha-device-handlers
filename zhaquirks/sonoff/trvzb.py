@@ -159,6 +159,7 @@ class CustomSonoffCluster(CustomCluster):
         attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
         cluster_id=CustomSonoffCluster.cluster_id,
         attribute_value=0x00,
+        unique_id_suffix="boost_mode",
         translation_key="boost_mode",
         fallback_name="Boost mode",
     )
@@ -166,6 +167,7 @@ class CustomSonoffCluster(CustomCluster):
         attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
         cluster_id=CustomSonoffCluster.cluster_id,
         attribute_value=0x01,
+        unique_id_suffix="timer_mode",
         translation_key="timer_mode",
         fallback_name="Timer mode",
     )
