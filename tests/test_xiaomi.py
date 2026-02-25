@@ -442,7 +442,7 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 
 
 @pytest.mark.parametrize(
-    "raw_report",
+    "raw_report_hex",
     (
         # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
         "02FF4C0600100121BA0B21A813240100000000215D062058",
@@ -510,11 +510,13 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
         "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
         "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
         "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        # https://github.com/home-assistant/core/issues/163692
+        "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
     ),
 )
-def test_attribute_parsing(raw_report):
+def test_attribute_parsing(raw_report_hex):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report)
+    raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,

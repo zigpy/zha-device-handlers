@@ -31,7 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -292,15 +292,11 @@ class XiaomiCluster(CustomCluster):
         attr_id, data = t.uint16_t.deserialize(data)
         attr_type, data = t.uint8_t.deserialize(data)
 
-        if (
-            attr_id
-            not in (
-                XIAOMI_AQARA_ATTRIBUTE,
-                XIAOMI_MIJA_ATTRIBUTE,
-                XIAOMI_AQARA_ATTRIBUTE_E1,
-            )
-            or attr_type != 0x42  # "Character String"
-        ):
+        if attr_id not in (
+            XIAOMI_AQARA_ATTRIBUTE,
+            XIAOMI_MIJA_ATTRIBUTE,
+            XIAOMI_AQARA_ATTRIBUTE_E1,
+        ) or attr_type not in (DataTypeId.octstr, DataTypeId.string):
             # Assume other attributes are reported correctly
             data = attr_id.serialize() + attr_type.serialize() + data
             attribute, data = foundation.Attribute.deserialize(data)
@@ -312,7 +308,7 @@ class XiaomiCluster(CustomCluster):
         val_len, data = t.uint8_t.deserialize(data)
 
         # Try every offset. Start with 0 to pass unbroken reports through.
-        for offset in (0, -1, 1):
+        for offset in (0, -1, 1, -3):
             fixed_len = val_len + offset
 
             if len(data) < fixed_len:
@@ -320,7 +316,7 @@ class XiaomiCluster(CustomCluster):
 
             val, final_data = data[:fixed_len], data[fixed_len:]
             attr_val = t.LVBytes(val)
-            attr_type = 0x41  # The data type should be "Octet String"
+            attr_type = DataTypeId.octstr  # The data type should be "Octet String"
 
             yield (
                 foundation.Attribute(

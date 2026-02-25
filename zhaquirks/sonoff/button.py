@@ -16,6 +16,7 @@ from zhaquirks.const import (
 (
     QuirkBuilder("eWeLink", "WB01")
     .also_applies_to("eWeLink", "SNZB-01P")
+    .also_applies_to("eWeLink", "CK-TLSR8656-SS5-01(7000)")
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE},

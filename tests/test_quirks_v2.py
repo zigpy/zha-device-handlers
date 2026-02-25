@@ -37,6 +37,10 @@ def test_translation_key_and_fallback_name_match() -> None:
         for entity_metadata in quirk.entity_metadata:
             if (translation_key := entity_metadata.translation_key) is None:
                 continue
+            # skip entities using translation placeholders: they intentionally share
+            # the same translation key with different fallback names
+            if entity_metadata.translation_placeholders:
+                continue
             quirk_location = f"{quirk.quirk_file}:{quirk.quirk_file_line}"
             translation_key_map[translation_key].add(
                 (quirk_location, entity_metadata.fallback_name)
