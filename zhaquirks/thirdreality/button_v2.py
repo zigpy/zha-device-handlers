@@ -70,14 +70,10 @@ class ThirdRealityButtonCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RSB22BZ")
     .replaces(ThirdRealityButtonCluster)
     .replaces(MultistateInputCluster)
-    .number(
-        attribute_name=ThirdRealityButtonCluster.AttributeDefs.cancel_bouble_click.name,
+    .switch(
+        attribute_name=ThirdRealityButtonCluster.AttributeDefs.cancel_double_click.name,
         cluster_id=ThirdRealityButtonCluster.cluster_id,
-        endpoint_id=1,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        translation_key="cancel_bouble_click",
+        translation_key="cancel_double_click",
         fallback_name="Cancel double click",
     )
     .device_automation_triggers(
