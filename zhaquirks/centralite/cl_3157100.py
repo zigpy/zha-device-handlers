@@ -26,7 +26,12 @@ class CentraLite3157100(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 513, 514, 516, 32, 2821]
         #  output_clusters=[10, 25]>
-        MODELS_INFO: [(CENTRALITE, "3157100"), ("Centralite", "3157100")],
+        MODELS_INFO: [
+            (CENTRALITE, "3157100"),
+            ("Centralite", "3157100"),
+            (CENTRALITE, "3157100-E"),
+            ("Centralite", "3157100-E"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
