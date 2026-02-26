@@ -6,6 +6,30 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
+    .applies_to(SIGNIFY, "929004608001")
+    .applies_to(SIGNIFY, "929004608101")
+    .applies_to(SIGNIFY, "929004608201")
+    .friendly_name(
+        model="Hue OmniGlow lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929004610402")
+    .friendly_name(
+        model="Hue Flux gradient lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
     .applies_to(SIGNIFY, "LCX001")
     .applies_to(SIGNIFY, "LCX002")
     .applies_to(SIGNIFY, "LCX003")
@@ -164,6 +188,61 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(PHILIPS, "1745430P7")
     .friendly_name(
         model="Hue Impress outdoor Pedestal",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCD003")
+    .friendly_name(
+        model="Hue Akari downlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1743530P7")
+    .friendly_name(
+        model="Hue Discover outdoor floodlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL008")
+    .friendly_name(
+        model="Hue Lightstrip Solo",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1746330P7")
+    .friendly_name(
+        model="Hue Appear Outdoor wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX004")
+    .friendly_name(
+        model="Hue Gradient lightstrip",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
