@@ -292,6 +292,9 @@ class XiaomiCluster(CustomCluster):
         attr_id, data = t.uint16_t.deserialize(data)
         attr_type, data = t.uint8_t.deserialize(data)
 
+        if attr_type == DataTypeId.nodata:
+            return
+
         if attr_id not in (
             XIAOMI_AQARA_ATTRIBUTE,
             XIAOMI_MIJA_ATTRIBUTE,

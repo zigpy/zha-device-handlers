@@ -516,7 +516,7 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 )
 def test_attribute_parsing(raw_report_hex):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report_hex)
+    orig_raw_report = raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,
@@ -543,7 +543,12 @@ def test_attribute_parsing(raw_report_hex):
 
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
-    assert len(raw_report) == 2 * len(reports[0])
+    assert len(raw_report) == 2 * len(reports.attribute_reports)
+
+    # Ensure the reports parse uniquely
+    assert list(cluster._interpret_attr_reports(orig_raw_report)) == [
+        tuple(reports.attribute_reports)
+    ]
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
