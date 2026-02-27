@@ -752,15 +752,10 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 missing_attrs = base_cluster_attrs_name[cluster.ep_attribute] - set(
                     cluster.attributes_by_name.keys()
                 )
-
-                # A few are expected to fail and are handled by ZHA
-                if cluster not in (
-                    zhaquirks.centralite.cl_3310S.SmartthingsRelativeHumidityCluster,
-                ):
-                    pytest.fail(
-                        f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
-                        f" does not contain all named attributes: {missing_attrs}"
-                    )
+                pytest.fail(
+                    f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
+                    f" does not contain all named attributes: {missing_attrs}"
+                )
 
             # Check if attributes match based on cluster ID
             if not (
