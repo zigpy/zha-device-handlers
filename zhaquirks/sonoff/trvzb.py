@@ -188,12 +188,14 @@ base_trvzb_quirk = (
 
 (
     base_trvzb_quirk.clone()
+    # Firmware 1.4.4 (0x00001404) introduced additional entities.
     .firmware_version_filter(max_version=0x00001404, allow_missing=False)
     .add_to_registry()
 )
 
 (
     base_trvzb_quirk.clone()
+    # Apply additional entities to firmware 1.4.4 (0x00001404) and newer.
     .firmware_version_filter(min_version=0x00001404, allow_missing=True)
     .switch(
         CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
