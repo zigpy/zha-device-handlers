@@ -186,26 +186,15 @@ base_trvzb_quirk = (
     )
 )
 
+# Firmware older than 1.4.0 (0x00001400): base entities only.
 (
-    base_trvzb_quirk.clone()
-    # Firmware 1.4.4 (0x00001404) introduced additional entities.
-    .firmware_version_filter(max_version=0x00001404, allow_missing=False)
+    base_trvzb_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(max_version=0x00001400, allow_missing=False)
     .add_to_registry()
 )
 
-(
-    base_trvzb_quirk.clone()
-    # Apply additional entities to firmware 1.4.4 (0x00001404) and newer.
-    .firmware_version_filter(min_version=0x00001404, allow_missing=True)
-    .switch(
-        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
-        # ControlModeType,
-        CustomSonoffCluster.cluster_id,
-        on_value=2,
-        off_value=0,
-        translation_key="adaptive_mode",
-        fallback_name="Adaptive mode",
-    )
+trvzb_v1400_quirk = (
+    base_trvzb_quirk.clone(omit_man_model_data=False)
     .number(
         CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
         CustomSonoffCluster.cluster_id,
@@ -245,6 +234,30 @@ base_trvzb_quirk = (
         unique_id_suffix="timer_mode",
         translation_key="timer_mode",
         fallback_name="Timer mode",
+    )
+)
+
+# Firmware 1.4.0 (0x00001400) through 1.4.3: add temporary mode entities.
+(
+    trvzb_v1400_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(
+        min_version=0x00001400, max_version=0x00001404, allow_missing=False
+    )
+    .add_to_registry()
+)
+
+# Firmware 1.4.4 (0x00001404) and newer: add adaptive mode as well.
+(
+    trvzb_v1400_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(min_version=0x00001404, allow_missing=True)
+    .switch(
+        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
+        # ControlModeType,
+        CustomSonoffCluster.cluster_id,
+        on_value=2,
+        off_value=0,
+        translation_key="adaptive_mode",
+        fallback_name="Adaptive mode",
     )
     .add_to_registry()
 )
