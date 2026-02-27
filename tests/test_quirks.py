@@ -818,6 +818,32 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                                 f" extending it"
                             )
 
+            # Ensure quirk-only attributes on standard clusters are not silently
+            # defined as non-manufacturer-specific (False/None). This catches
+            # attributes that should have a manufacturer code but were defined
+            # with manufacturer_code=None.
+            for attr_id, by_mfr in cluster._attributes_by_id.items():
+                if attr_id not in base_cluster._attributes_by_id:
+                    continue
+                base_names_at_id = {
+                    attr_def.name
+                    for by_code in base_cluster._attributes_by_id.get(
+                        attr_id, {}
+                    ).values()
+                    for attr_def in by_code.values()
+                }
+                for is_mfr, by_code in by_mfr.items():
+                    for mfr_code, quirk_attr in by_code.items():
+                        if quirk_attr.name in base_names_at_id:
+                            continue
+                        if is_mfr is False and mfr_code is None:
+                            pytest.fail(
+                                f"Cluster {cluster} defines quirk-only attribute"
+                                f" {quirk_attr.name!r} (id=0x{attr_id:04X}) as"
+                                " non-manufacturer-specific with"
+                                " manufacturer_code=None"
+                            )
+
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
 def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
