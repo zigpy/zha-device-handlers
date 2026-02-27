@@ -107,18 +107,9 @@ class CustomSonoffCluster(CustomCluster):
         )
 
 
-(
+base_trvzb_quirk = (
     QuirkBuilder("SONOFF", "TRVZB")
     .replaces(CustomSonoffCluster)
-    .switch(
-        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
-        # ControlModeType,
-        CustomSonoffCluster.cluster_id,
-        on_value=2,
-        off_value=0,
-        translation_key="adaptive_mode",
-        fallback_name="Adaptive mode",
-    )
     .switch(
         CustomSonoffCluster.AttributeDefs.child_lock.name,
         CustomSonoffCluster.cluster_id,
@@ -130,46 +121,6 @@ class CustomSonoffCluster(CustomCluster):
         CustomSonoffCluster.cluster_id,
         translation_key="open_window",
         fallback_name="Open window",
-    )
-    .number(
-        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
-        CustomSonoffCluster.cluster_id,
-        min_value=4.0,
-        max_value=35.0,
-        step=0.5,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.CELSIUS,
-        multiplier=0.01,
-        translation_key="timer_mode_target_temperature",
-        fallback_name="Timer mode target temperature",
-    )
-    .number(
-        CustomSonoffCluster.AttributeDefs.temporary_mode_duration.name,
-        CustomSonoffCluster.cluster_id,
-        min_value=0,
-        max_value=1440,
-        step=1,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        multiplier=1 / 60,
-        translation_key="temporary_mode_duration",
-        fallback_name="Temporary mode duration",
-    )
-    .write_attr_button(
-        attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        attribute_value=0x00,
-        unique_id_suffix="boost_mode",
-        translation_key="boost_mode",
-        fallback_name="Boost mode",
-    )
-    .write_attr_button(
-        attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        attribute_value=0x01,
-        unique_id_suffix="timer_mode",
-        translation_key="timer_mode",
-        fallback_name="Timer mode",
     )
     .number(
         CustomSonoffCluster.AttributeDefs.frost_protection_temperature.name,
@@ -232,6 +183,66 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         translation_key="external_temperature_sensor_value",
         fallback_name="External temperature sensor value",
+    )
+)
+
+(
+    base_trvzb_quirk.clone()
+    .firmware_version_filter(max_version=0x00001404, allow_missing=False)
+    .add_to_registry()
+)
+
+(
+    base_trvzb_quirk.clone()
+    .firmware_version_filter(min_version=0x00001404, allow_missing=True)
+    .switch(
+        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
+        # ControlModeType,
+        CustomSonoffCluster.cluster_id,
+        on_value=2,
+        off_value=0,
+        translation_key="adaptive_mode",
+        fallback_name="Adaptive mode",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=4.0,
+        max_value=35.0,
+        step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="timer_mode_target_temperature",
+        fallback_name="Timer mode target temperature",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.temporary_mode_duration.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=0,
+        max_value=1440,
+        step=1,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        multiplier=1 / 60,
+        translation_key="temporary_mode_duration",
+        fallback_name="Temporary mode duration",
+    )
+    .write_attr_button(
+        attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        attribute_value=0x00,
+        unique_id_suffix="boost_mode",
+        translation_key="boost_mode",
+        fallback_name="Boost mode",
+    )
+    .write_attr_button(
+        attribute_name=CustomSonoffCluster.AttributeDefs.temporary_mode.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        attribute_value=0x01,
+        unique_id_suffix="timer_mode",
+        translation_key="timer_mode",
+        fallback_name="Timer mode",
     )
     .add_to_registry()
 )
