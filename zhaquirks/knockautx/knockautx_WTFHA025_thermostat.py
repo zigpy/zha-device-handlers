@@ -1,4 +1,5 @@
 """Quirk for Knockautx WTFHA025 thermostat using classic architecture.
+
 It is a wall-mounted thermostat with screen and main power.
 It acts as a Zigbee router.
 This Quirk manage basic information : temp, target temp, mode Off/Manual/Auto, heating status.
@@ -111,7 +112,8 @@ class KnockautxWTFHA025ManufCluster(TuyaManufClusterAttributes):
             # KNOCKAUTX_HEATING_ATTR = 1 → Running (1)
             running_state = value  # Direct mapping!
 
-            LOGGER.info(f"🔥 Heating state: {value} ({'Active' if value else 'Idle'})")
+            status_text = 'Active' if value else 'Idle'
+            LOGGER.info("🔥 Heating state: %s (%s)", value, status_text)
 
             try:
                 thermostat_cluster = self.endpoint.in_clusters[Thermostat.cluster_id]
@@ -184,6 +186,7 @@ class KnockautxWTFHA025ThermostatCluster(TuyaThermostatCluster):
     }
 
     def map_attribute(self, attribute, value):
+        """Map standard ZCL attributes to device-specific Tuya data points."""
         if attribute == "occupied_heating_setpoint":
             # Temperature conversion:
             # Tuya expects decidedrees (e.g., 200 for 20.0°C).
