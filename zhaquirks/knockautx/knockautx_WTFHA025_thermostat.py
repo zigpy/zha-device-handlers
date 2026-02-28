@@ -113,7 +113,7 @@ class KnockautxWTFHA025ManufCluster(TuyaManufClusterAttributes):
             # KNOCKAUTX_HEATING_ATTR = 1 → Running (1)
             running_state = value  # Direct mapping!
 
-            status_text = 'Active' if value else 'Idle'
+            status_text = "Active" if value else "Idle"
             LOGGER.info("🔥 Heating state: %s (%s)", value, status_text)
 
             try:
