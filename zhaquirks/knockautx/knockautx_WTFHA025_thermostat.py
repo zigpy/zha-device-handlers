@@ -13,11 +13,12 @@ Unfortunately :
 
 import logging
 from typing import Final
+
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
-import zigpy.types as t
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -37,11 +38,11 @@ from zhaquirks.tuya import (
 LOGGER = logging.getLogger(__name__)
 
 # Mapping identified Datapoints
-KNOCKAUTX_STATE_ATTR = 0x017D       # DP 1   : System On/Off
-KNOCKAUTX_HEATING_ATTR = 0x0166     # DP 102 : Heat State (0=Idle, 1=Heating)
-KNOCKAUTX_TARGET_TEMP_ATTR = 0x027E # DP 126 : Target Temp
-KNOCKAUTX_TEMPERATURE_ATTR = 0x027F # DP 127 : Local Temp
-KNOCKAUTX_MODE_ATTR = 0x0480        # DP 128 : Mode (Manual=0 / Auto=1)
+KNOCKAUTX_STATE_ATTR = 0x017D  # DP 1   : System On/Off
+KNOCKAUTX_HEATING_ATTR = 0x0166  # DP 102 : Heat State (0=Idle, 1=Heating)
+KNOCKAUTX_TARGET_TEMP_ATTR = 0x027E  # DP 126 : Target Temp
+KNOCKAUTX_TEMPERATURE_ATTR = 0x027F  # DP 127 : Local Temp
+KNOCKAUTX_MODE_ATTR = 0x0480  # DP 128 : Mode (Manual=0 / Auto=1)
 
 
 class KnockautxWTFHA025BasicCluster(Basic):
