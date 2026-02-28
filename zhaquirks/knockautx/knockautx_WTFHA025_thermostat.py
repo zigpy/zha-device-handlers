@@ -46,7 +46,7 @@ KNOCKAUTX_MODE_ATTR = 0x0480  # DP 128 : Mode (Manual=0 / Auto=1)
 
 
 class KnockautxWTFHA025BasicCluster(Basic):
-    """Cluster Basic avec attributs spécifiques non identifiés."""
+    """Basic Cluster with unidentified specific attributes."""
 
     attributes = Basic.attributes.copy()
     attributes.update(
@@ -142,7 +142,7 @@ class KnockautxWTFHA025ManufCluster(TuyaManufClusterAttributes):
                         "mode_change", TuyaThermostatCluster.SystemMode.Auto
                     )
                 else:
-                    # TODO find a way to alert admin regarding unforseen value from the device)
+                    # TODO find a way to alert admin regarding unforeseen value from the device)
                     pass
         elif attrid == KNOCKAUTX_STATE_ATTR:
             if value == 0:  # Turn off
@@ -160,7 +160,7 @@ class KnockautxWTFHA025ManufCluster(TuyaManufClusterAttributes):
                         .get(KNOCKAUTX_MODE_ATTR)
                     )
                 except KeyError:
-                    # TODO find a way to alert admin regarding unforseen situation
+                    # TODO find a way to alert admin regarding unforeseen situation
                     mode_val = 0  # Default to manual if unknown
 
                 if mode_val == 1:
@@ -212,7 +212,7 @@ class KnockautxWTFHA025ThermostatCluster(TuyaThermostatCluster):
 
 
 class KnockautxWTFHA025(TuyaThermostat):
-    """Appareil Knockautx WTFHA025."""
+    """Knockautx WTFHA025."""
 
     signature = {
         MODELS_INFO: [("_TZE200_kafooqvr", "TS0601")],
