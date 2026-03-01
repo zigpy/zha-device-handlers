@@ -15,15 +15,7 @@ from typing import Final
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
