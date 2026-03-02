@@ -15,6 +15,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 
 class SonoffS60OnOff(CustomCluster, OnOff):
@@ -69,5 +70,11 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     .applies_to("SONOFF", "S60ZBTPG")
     .replaces(SonoffS60OnOff)
     .replaces(SonoffS60ElectricalMeasurement)
+    # firmware v2.0.2 reports instantaneous_demand as supported, always with value 0
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Metering.cluster_id,
+        unique_id_suffix="1-1794",  # no actual suffix for this
+    )
     .add_to_registry()
 )
