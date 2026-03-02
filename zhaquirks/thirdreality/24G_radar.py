@@ -11,7 +11,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 class ThirdRealityRadarCluster(CustomCluster):
     """Third Reality's 24G radar private cluster."""
 
-    cluster_id = 0xff01
+    cluster_id = 0xFF01
 
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
@@ -22,13 +22,14 @@ class ThirdRealityRadarCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         # reset the accumulated power of the plug
         senior_sensitive: Final = ZCLAttributeDef(
             id=0x0060,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+
 
 (
     QuirkBuilder("Third Reality, Inc", "3RPS01083Z")
