@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.zcl import AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import MultistateInput
 
 import zhaquirks
@@ -21,15 +22,19 @@ def test_quadzigsw(zigpy_device_from_v2_quirk, endpoint):
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
+    attr_event_listener = mock.Mock()
+    cluster.on_event(AttributeUpdatedEvent.event_type, attr_event_listener)
+
     multistate_value = MultistateInput.AttributeDefs.present_value.id
     multistate_text = MultistateInput.AttributeDefs.state_text.id
 
     # test that attribute writes are passed through with no events
     cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "test")
     assert listener.zha_send_event.call_count == 0
-    assert listener.attribute_updated.call_count == 1
-    assert listener.attribute_updated.call_args[0][0] == multistate_text
-    assert listener.attribute_updated.call_args[0][1] == "test"
+    assert len(attr_event_listener.mock_calls) == 1
+    event = attr_event_listener.mock_calls[0].args[0]
+    assert event.attribute_id == multistate_text
+    assert event.value == "test"
 
     # test that the cluster does not send events for unknown values
     cluster.update_attribute(multistate_value, 5)
