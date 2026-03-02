@@ -29,13 +29,13 @@ class SonoffS60OnOff(CustomCluster, OnOff):
             and value == t.Bool.false
         ):
             self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.active_power, 0
+                ElectricalMeasurement.AttributeDefs.active_power.id, 0
             )
             self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.rms_current, 0
+                ElectricalMeasurement.AttributeDefs.rms_current.id, 0
             )
             self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.rms_voltage,
+                ElectricalMeasurement.AttributeDefs.rms_voltage.id,
                 foundation.DataType.uint16.non_value,
             )
 
