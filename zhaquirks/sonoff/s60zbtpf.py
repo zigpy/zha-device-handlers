@@ -1,8 +1,10 @@
 """SONOFF S60ZBTPF - Smart Socket with power measurement fix.
 
 This device has a quirk where it continues to report active power consumption
-even when the socket is turned off. This quirk fixes that by setting the
-`active_power` and `rms_current` to 0 when the `on_off` state is False.
+even when the socket is turned off. This quirk fixes that by, when the
+`on_off` state becomes False, setting `active_power` and `rms_current` to 0
+and `rms_voltage` to `uint16.non_value`, and by blocking subsequent updates
+to these three attributes while the socket remains off.
 """
 
 from typing import Any
