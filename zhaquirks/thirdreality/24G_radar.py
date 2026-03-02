@@ -36,8 +36,8 @@ class ThirdRealityRadarCluster(CustomCluster):
     .switch(
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.senior_calibation.name,
-        translation_key="senior_calibation",
-        fallback_name="Senior calibation",
+        translation_key="sensor_calibation",
+        fallback_name="Sensor calibation",
     )
     .number(
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.senior_sensitive.name,
@@ -45,8 +45,8 @@ class ThirdRealityRadarCluster(CustomCluster):
         max_value=5,
         step=1,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
-        translation_key="senior_sensitive",
-        fallback_name="Senior sensitive",
+        translation_key="sensor_sensitive",
+        fallback_name="Sensor sensitive",
     )
     .add_to_registry()
 )
