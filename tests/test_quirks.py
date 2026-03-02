@@ -54,6 +54,7 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.philips
+import zhaquirks.sinope.switch
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
 
@@ -751,15 +752,10 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 missing_attrs = base_cluster_attrs_name[cluster.ep_attribute] - set(
                     cluster.attributes_by_name.keys()
                 )
-
-                # A few are expected to fail and are handled by ZHA
-                if cluster not in (
-                    zhaquirks.centralite.cl_3310S.SmartthingsRelativeHumidityCluster,
-                ):
-                    pytest.fail(
-                        f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
-                        f" does not contain all named attributes: {missing_attrs}"
-                    )
+                pytest.fail(
+                    f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
+                    f" does not contain all named attributes: {missing_attrs}"
+                )
 
             # Check if attributes match based on cluster ID
             if not (
@@ -791,25 +787,57 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
 
             base_cluster = list(base_clusters)[0]
 
-            # Ensure the attribute IDs are extended
-            base_attr_ids = set(base_cluster.attributes)
-            quirk_attr_ids = set(cluster.attributes)
+            # Ensure every base class attribute is preserved in the quirk cluster.
+            # Using _attributes_by_id correctly handles manufacturer-specific attributes
+            # sharing an ID with a ZCL attribute — they occupy distinct keys and don't
+            # displace each other, unlike the flat .attributes dict.
+            for attr_id, by_mfr in base_cluster._attributes_by_id.items():
+                for is_mfr, by_code in by_mfr.items():
+                    for mfr_code, base_attr in by_code.items():
+                        quirk_attr = (
+                            cluster._attributes_by_id.get(attr_id, {})
+                            .get(is_mfr, {})
+                            .get(mfr_code)
+                        )
+                        if quirk_attr is None or quirk_attr.name != base_attr.name:
+                            if cluster in (
+                                zhaquirks.sinope.switch.SinopeTechnologiesBasicCluster,
+                                zhaquirks.sinope.switch.SinopeTechnologiesMeteringCluster,
+                            ):
+                                continue
+                            pytest.fail(
+                                f"Cluster {cluster} deletes parent class's attribute"
+                                f" {base_attr.name!r} (id=0x{attr_id:04X},"
+                                f" is_manufacturer_specific={is_mfr},"
+                                f" manufacturer_code={mfr_code!r}) instead of"
+                                f" extending it"
+                            )
 
-            if not base_attr_ids <= quirk_attr_ids:
-                pytest.fail(
-                    f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_attr_ids - quirk_attr_ids}"
-                )
-
-            # Ensure the attribute names are extended
-            base_attr_names = {a.name for a in base_cluster.attributes.values()}
-            quirk_attr_names = {a.name for a in cluster.attributes.values()}
-
-            if not base_attr_names <= quirk_attr_names:
-                pytest.fail(
-                    f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_attr_names - quirk_attr_names}"
-                )
+            # Ensure quirk-only attributes on standard clusters are not silently
+            # defined as non-manufacturer-specific (False/None). This catches
+            # attributes that should have a manufacturer code but were defined
+            # with manufacturer_code=None.
+            for attr_id, by_mfr in cluster._attributes_by_id.items():
+                if attr_id not in base_cluster._attributes_by_id:
+                    continue
+                base_names_at_id = {
+                    attr_def.name
+                    for by_code in base_cluster._attributes_by_id.get(
+                        attr_id, {}
+                    ).values()
+                    for attr_def in by_code.values()
+                }
+                for is_mfr, by_code in by_mfr.items():
+                    for mfr_code, quirk_attr in by_code.items():
+                        if quirk_attr.name in base_names_at_id:
+                            continue
+                        if is_mfr is False and mfr_code is None:
+                            pytest.fail(
+                                f"Cluster {cluster} defines quirk-only attribute"
+                                f" {quirk_attr.name!r} (id=0x{attr_id:04X}) as"
+                                " non-manufacturer-specific with"
+                                " manufacturer_code=None"
+                            )
 
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
