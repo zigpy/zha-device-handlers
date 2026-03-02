@@ -1617,6 +1617,7 @@ base_tuya_motion = (
 # Tuya PIR motion sensor, SNZB-03
 (
     TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
+    .applies_to("_TZ3040_bb6xaihh", "TS0202")
     .replaces(MotionWithReset)
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
