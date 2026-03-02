@@ -3,14 +3,9 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig, SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.zcl.clusters.measurement import FormaldehydeConcentration
-
-from zhaquirks.tuya.builder import TuyaFormaldehydeConcentration
-from zhaquirks.develco.air_quality import DevelcoVOCMeasurement
 
 
 class ThirdRealityRadarCluster(CustomCluster):
