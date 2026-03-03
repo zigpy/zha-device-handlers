@@ -27,6 +27,8 @@ class TonggouPowerMeterCluster(CustomCluster):
     ep_attribute = "tonggou_power_meter"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Define custom attributes for voltage, current, and power extracted from DP 6."""
+
         voltage = ZCLAttributeDef(
             id=0x8001,
             type=t.Single,
