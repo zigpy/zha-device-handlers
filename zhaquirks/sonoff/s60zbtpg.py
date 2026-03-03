@@ -23,6 +23,7 @@ class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
+    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -73,21 +74,6 @@ class SonoffCluster(CustomCluster):
 
         self_test: Final = zcl_f.ZCLCommandDef(
             id=0x00, schema={"identify_time": t.uint8_t}
-        )
-
-    async def _read_attributes(
-        self,
-        attribute_ids: list[t.uint16_t],
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        **kwargs,
-    ):
-        """Read attributes ZCL foundation command."""
-        return await super()._read_attributes(
-            attribute_ids,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            **kwargs,
         )
 
     @property
