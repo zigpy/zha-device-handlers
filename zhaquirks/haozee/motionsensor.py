@@ -1,4 +1,4 @@
-"""ZHA Custom Quirk: NEO NAS-PS10B2 Human Presence Sensor (24 GHz mmWave)
+"""ZHA Custom Quirk: NEO NAS-PS10B2 Human Presence Sensor (24 GHz mmWave).
 
 Unterstützte Geräte:
   Modell-ID : TS0601
