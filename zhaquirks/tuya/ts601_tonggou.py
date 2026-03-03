@@ -1,21 +1,21 @@
 """Device handler for Tonggou TO-Q-SA1 Power Meter."""
 
-import base64
 import logging
-from zigpy.quirks import CustomCluster
-from zigpy.zcl.foundation import ZCLAttributeDef, BaseAttributeDefs
-import zigpy.types as t
 
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfFrequency,
-    UnitOfTemperature,
-    UnitOfElectricPotential,
-    UnitOfElectricCurrent,
     UnitOfPower,
+    UnitOfTemperature,
 )
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class TonggouPowerMeterCluster(CustomCluster):
                 buf = value
             else:
                 buf = bytes(value)
-            
+
             if len(buf) >= 8:
                 # Extract voltage: bytes[0:2] as big-endian, divide by 10
                 voltage = ((buf[0] << 8) | buf[1]) / 10
@@ -61,8 +61,12 @@ class TonggouPowerMeterCluster(CustomCluster):
                 # Extract power: bytes[6:8] as big-endian
                 power = (buf[6] << 8) | buf[7]
 
-                _LOGGER.warning("DP6 parsed - Voltage: %.1f V, Current: %.3f A, Power: %d W",
-                             voltage, current, power)
+                _LOGGER.warning(
+                    "DP6 parsed - Voltage: %.1f V, Current: %.3f A, Power: %d W",
+                    voltage,
+                    current,
+                    power,
+                )
 
                 # Update our custom attributes
                 super()._update_attribute(0x8001, voltage)
@@ -70,8 +74,11 @@ class TonggouPowerMeterCluster(CustomCluster):
                 super()._update_attribute(0x8003, power)
                 return
         except Exception as e:
-            _LOGGER.warning("Failed to parse composite DP 6 data: %s (value type: %s)", 
-                          e, type(value).__name__)
+            _LOGGER.warning(
+                "Failed to parse composite DP 6 data: %s (value type: %s)",
+                e,
+                type(value).__name__,
+            )
 
         super()._update_attribute(attrid, value)
 
