@@ -8,7 +8,7 @@ import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-class ThirdRealityRadarCluster(CustomCluster):
+class ThirdReality24GRadarCluster(CustomCluster):
     """Third Reality's 24G radar private cluster."""
 
     cluster_id = 0xFF01
@@ -16,15 +16,15 @@ class ThirdRealityRadarCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        # reset the accumulated power of the plug
-        senior_calibation: Final = ZCLAttributeDef(
+        # calibrate of the plug
+        sensor_calibration: Final = ZCLAttributeDef(
             id=0x0003,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
-        # reset the accumulated power of the plug
-        senior_sensitive: Final = ZCLAttributeDef(
+        # set the sensitive of the plug
+        sensor_sensitive: Final = ZCLAttributeDef(
             id=0x0060,
             type=t.uint8_t,
             is_manufacturer_specific=True,
@@ -33,19 +33,19 @@ class ThirdRealityRadarCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RPS01083Z")
-    .replaces(ThirdRealityRadarCluster)
+    .replaces(ThirdReality24GRadarCluster)
     .switch(
-        cluster_id=ThirdRealityRadarCluster.cluster_id,
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.senior_calibation.name,
-        translation_key="sensor_calibation",
-        fallback_name="Sensor calibation",
+        cluster_id=ThirdReality24GRadarCluster.cluster_id,
+        attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_calibration.name,
+        translation_key="sensor_calibration",
+        fallback_name="Sensor calibration",
     )
     .number(
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.senior_sensitive.name,
+        attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_sensitive.name,
         min_value=1,
         max_value=5,
         step=1,
-        cluster_id=ThirdRealityRadarCluster.cluster_id,
+        cluster_id=ThirdReality24GRadarCluster.cluster_id,
         translation_key="sensor_sensitive",
         fallback_name="Sensor sensitive",
     )
