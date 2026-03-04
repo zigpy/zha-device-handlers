@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import Final
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs
 from zigpy.zcl.clusters.closures import (
     ConfigStatus,
     WindowCovering,
@@ -33,44 +32,45 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.yandex import YANDEX
+from zhaquirks.yandex import (
+    YANDEX,
+    YANDEX_ATTRIBUTE_MAX_POSITION,
+    YANDEX_ATTRIBUTE_MIN_POSITION,
+    YANDEX_ATTRIBUTE_UNK_F000,
+    YANDEX_ATTRIBUTE_UNK_FFFD,
+    YANDEX_ATTRIBUTE_VELOCITY_LIFT,
+    YANDEX_MANUFACTURER_CODE_2,
+)
 
 
-class YandexWindowCovering(WindowCovering):
-    """Yandex-specific window covering cluster implementation."""
+class YandexWindowCovering(CustomCluster, WindowCovering):
+    """Yandex-flavor window covering cluster."""
 
-    cluster_id: Final[t.uint16_t] = 0x0102
-    name: Final = "Window Covering"
-    ep_attribute: Final = "window_covering"
+    manufacturer_id_override = YANDEX_MANUFACTURER_CODE_2
 
-    class AttributeDefs(BaseAttributeDefs):
+    class AttributeDefs(WindowCovering.AttributeDefs):
         """Attribute definitions."""
 
-        # Window Covering Information
         window_covering_type: Final = ZCLAttributeDef(
             id=0x0000, type=WindowCoveringType, access="r", mandatory=True
         )
         config_status: Final = ZCLAttributeDef(
             id=0x0007, type=ConfigStatus, access="r", mandatory=True
         )
-        # All subsequent attributes are mandatory if their control types are enabled
         current_position_lift_percentage: Final = ZCLAttributeDef(
             id=0x0008, type=t.uint8_t, access="rps"
         )
-        # Window Covering Settings
-        installed_open_limit_lift: Final = ZCLAttributeDef(
-            id=0x0010, type=t.uint16_t, access="r"
-        )
-        installed_closed_limit_lift: Final = ZCLAttributeDef(
-            id=0x0011, type=t.uint16_t, access="r"
-        )
-        velocity_lift: Final = ZCLAttributeDef(id=0x0014, type=t.uint16_t, access="rw")
+        velocity_lift: Final = YANDEX_ATTRIBUTE_VELOCITY_LIFT
         window_covering_mode: Final = ZCLAttributeDef(
             id=0x0017, type=WindowCoveringMode, access="rw", mandatory=True
         )
+        min_position: Final = YANDEX_ATTRIBUTE_MIN_POSITION
+        max_position: Final = YANDEX_ATTRIBUTE_MAX_POSITION
+        unknown_f000: Final = YANDEX_ATTRIBUTE_UNK_F000
+        unknown_fffd: Final = YANDEX_ATTRIBUTE_UNK_FFFD
 
-    class ServerCommandDefs(BaseCommandDefs):
-        """Command definitions."""
+    class ServerCommandDefs(WindowCovering.ServerCommandDefs):
+        """Server command definitions."""
 
         down_close: Final = ZCLCommandDef(
             id=0x00, schema={}, direction=Direction.Client_to_Server
@@ -92,7 +92,7 @@ class YandexCurtainMotor(CustomDevice):
     """Yandex curtain motor."""
 
     signature = {
-        MODELS_INFO: [(YANDEX, "YNDX-00591")],
+        MODELS_INFO: [(YANDEX, "YNDX-00591"), (YANDEX, "YNDX-00592")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=514
             # device_version=0
@@ -135,7 +135,7 @@ class YandexCurtainMotor(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     YandexWindowCovering,
-                    0x0B05,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             },

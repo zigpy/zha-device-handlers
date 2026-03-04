@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -16,7 +17,8 @@ from zigpy.zcl.foundation import (
 
 YANDEX = "Yandex"
 YANDEX_CLUSTER_ID = 0xFC03
-YANDEX_MANUFACTURER_CODE = 0x140A
+YANDEX_MANUFACTURER_CODE_1 = 0x140A
+YANDEX_MANUFACTURER_CODE_2 = 0x132F
 
 
 ### TYPES ###
@@ -68,6 +70,14 @@ class YandexType_ButtonMode(t.enum8):
     Alternative = 0x01
 
 
+class YandexType_VelocityLift(t.enum16):
+    """Curtain motor: velocity options."""
+
+    Slow = 6
+    Normal = 9
+    Fast = 12
+
+
 ### ATTRIBUTE DEFINITIONS ###
 
 
@@ -106,6 +116,40 @@ YANDEX_ATTRIBUTE_BUTTON_MODE = ZCLAttributeDef(
     name="button_mode",
     type=YandexType_ButtonMode,
     access="rw",
+)
+YANDEX_ATTRIBUTE_VELOCITY_LIFT = ZCLAttributeDef(
+    id=WindowCovering.AttributeDefs.velocity_lift.id,
+    type=YandexType_VelocityLift,
+    access="rw",
+    is_manufacturer_specific=False,
+)
+YANDEX_ATTRIBUTE_MAX_POSITION = ZCLAttributeDef(
+    id=0xF001,
+    name="max_position",
+    type=t.uint8_t,
+    access="rw",
+    is_manufacturer_specific=True,
+)
+YANDEX_ATTRIBUTE_MIN_POSITION = ZCLAttributeDef(
+    id=0xF002,
+    name="min_position",
+    type=t.uint8_t,
+    access="rw",
+    is_manufacturer_specific=True,
+)
+YANDEX_ATTRIBUTE_UNK_FFFD = ZCLAttributeDef(
+    id=0xFFFD,
+    name="unknown_fffd",
+    type=t.uint16_t,
+    access="rw",
+    is_manufacturer_specific=False,
+)
+YANDEX_ATTRIBUTE_UNK_F000 = ZCLAttributeDef(
+    id=0xF000,
+    name="unknown_f000",
+    type=t.Bool,
+    access="rw",
+    is_manufacturer_specific=True,
 )
 
 
@@ -163,7 +207,7 @@ class YandexCluster(CustomCluster):
     """Common Yandex manufacturer-specific cluster properties."""
 
     cluster_id = YANDEX_CLUSTER_ID
-    manufacturer_id_override = YANDEX_MANUFACTURER_CODE
+    manufacturer_id_override = YANDEX_MANUFACTURER_CODE_1
 
 
 class YandexClusterFull(YandexCluster):
