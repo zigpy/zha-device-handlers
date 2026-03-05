@@ -485,10 +485,10 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x06),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(
+def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_started_rotating(
     zigpy_device_from_v2_quirk, ring_direction, ring_clicks
 ):
-    """Test ring continued rotating actions generate events correctly."""
+    """Test ring continued rotating actions (after started rotating) generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
     cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
@@ -512,22 +512,87 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(
 
     cluster.handle_cluster_request(header, args)
 
-    for x in range(0, ring_clicks, -1):
-        ring_event = listener.zha_send_event.call_args[x]
+    calls = listener.zha_send_event.call_args_list
+
+    assert len(calls) == ring_clicks
+
+    expected_ring_direction_name = (
+        LEFT
+        if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left
+        else RIGHT
+    )
+
+    for x, call in enumerate(calls):
+        ring_event_action, ring_event_direction = call[0]
 
         expected_ring_action_name = (
             COMMAND_STARTED_ROTATING if x == 0 else COMMAND_CONTINUED_ROTATING
         )
 
-        assert ring_event[0] == expected_ring_action_name
+        assert ring_event_action == expected_ring_action_name        
 
-        expected_ring_direction_name = (
-            LEFT
-            if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left
-            else RIGHT
-        )
+        assert ring_event_direction[ROTATED] == expected_ring_direction_name
 
-        assert ring_event[1][ROTATED] == expected_ring_direction_name
+    assert listener.zha_send_event.call_count == ring_clicks
+
+
+@pytest.mark.parametrize(
+    "ring_direction, ring_clicks",
+    [
+        (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x01),
+        (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x01),
+        (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x02),
+        (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x03),
+        (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x09),
+        (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x06),
+    ],
+)
+def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_continued_rotating(
+    zigpy_device_from_v2_quirk, ring_direction, ring_clicks
+):
+    """Test ring continued rotating actions (after continued rotating) generate events correctly."""
+    device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
+
+    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    cluster.send_default_rsp = mock.MagicMock()
+
+    cluster.previous_rotation_event = COMMAND_STARTED_ROTATING
+    cluster.previous_rotation_direction = ring_direction
+
+    header = foundation.ZCLHeader()
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
+    header.frame_control = foundation.FrameControl.cluster()
+
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        ring_direction,
+        CandeoSceneSwitchRemoteRingActionMap.continued_rotating,
+        ring_clicks,
+    )
+
+    cluster.handle_cluster_request(header, args)
+
+    calls = listener.zha_send_event.call_args_list
+
+    assert len(calls) == ring_clicks
+
+    expected_ring_direction_name = (
+        LEFT
+        if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left
+        else RIGHT
+    )
+
+    for x, call in enumerate(calls):
+        ring_event_action, ring_event_direction = call[0]
+
+        assert ring_event_action == COMMAND_CONTINUED_ROTATING        
+
+        assert ring_event_direction[ROTATED] == expected_ring_direction_name
 
     assert listener.zha_send_event.call_count == ring_clicks
 
