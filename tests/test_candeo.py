@@ -587,7 +587,7 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_continued_
         else RIGHT
     )
 
-    for x, call in enumerate(calls):
+    for _x, call in enumerate(calls):
         ring_event_action, ring_event_direction = call[0]
 
         assert ring_event_action == COMMAND_CONTINUED_ROTATING
