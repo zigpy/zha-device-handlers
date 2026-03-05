@@ -477,6 +477,8 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(
 @pytest.mark.parametrize(
     "ring_direction, ring_clicks",
     [
+        (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x01),
+        (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x01),
         (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x02),
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x03),
         (CandeoSceneSwitchRemoteRingDirectionMap.left, 0x09),
@@ -533,7 +535,7 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(
 def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persistence(
     zigpy_device_from_v2_quirk,
 ):
-    """Test ring continued rotating actions generate events correctly."""
+    """Test ring direction and ring action persistence data set correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
     cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
