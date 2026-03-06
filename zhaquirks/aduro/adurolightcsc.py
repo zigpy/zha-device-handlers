@@ -64,7 +64,6 @@ class AdurolightFcccCluster(EventableCluster, CustomCluster):
     """Custom cluster for AduroSmart Eria FCCC manufacturer-specific events."""
 
     cluster_id = ADUROLIGHT_CLUSTER_ID
-    manufacturer_specific = True
 
     def __init__(self, *a, **kw):
         """Initialize per-instance debounce cache."""
