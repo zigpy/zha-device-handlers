@@ -1,1 +1,1 @@
-"""Module for Aurora devices."""
+"""Quirks for Elecram (ELECRAM) devices, including RAMSES ESP-based hardware."""

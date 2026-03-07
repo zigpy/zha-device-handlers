@@ -7,6 +7,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify
 
 from zhaquirks.const import (
+    DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -72,6 +73,7 @@ class RamsesESP(CustomDevice):
         ENDPOINTS: {
             10: {
                 PROFILE_ID: zha.PROFILE_ID,  # Home Automation
+                DEVICE_TYPE: 0x0000,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,  # 0x0000
                     Identify.cluster_id,  # 0x0003
@@ -88,6 +90,7 @@ class RamsesESP(CustomDevice):
         ENDPOINTS: {
             10: {
                 PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: 0x0000,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,

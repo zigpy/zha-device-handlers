@@ -1,7 +1,6 @@
 """Tests for the ELECRAM RAMSES ESP32-C6 quirk."""
 
 import zhaquirks
-import zhaquirks.elecram.ramses_esp
 from zhaquirks.elecram.ramses_esp import (
     RAMSES_RX_CLUSTER,
     RAMSES_TX_CLUSTER,
