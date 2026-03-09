@@ -383,7 +383,7 @@ async def test_zemismart_zm25el_motor_fault_report(zigpy_device_from_v2_quirk):
 
     # The quirk should have a tuya_dp_attribute for motor_fault
     # This will be stored in the tuya cluster
-    assert tuya_cluster.get("motor_fault") is False
+    assert tuya_cluster.get("motor_fault") == False
 
     # Simulate device reporting motor fault = true (fault detected)
     tuya_cluster.handle_get_data(
@@ -394,4 +394,4 @@ async def test_zemismart_zm25el_motor_fault_report(zigpy_device_from_v2_quirk):
         )
     )
 
-    assert tuya_cluster.get("motor_fault") is True
+    assert tuya_cluster.get("motor_fault") == True
