@@ -170,13 +170,13 @@ async def test_tuya_no_mcu_version(zigpy_device_from_v2_quirk):
         ),  # Local temp calibration to -9.9, dp 19
         (
             "_TZE204_5toc8efa",
-            b"\t\x1d\x02\x00\x10\x13\x02\x00\x04\xff\xff\xff\xf7",
+            b"\t\x1d\x02\x00\x10\x1b\x02\x00\x04\xff\xff\xff\xf7",
             27,
             -9,
         ),  # Local temp calibration to -9, dp 27
         (
             "_TZE200_5toc8efa",
-            b"\t\x1d\x02\x00\x10\x13\x02\x00\x04\xff\xff\xff\xf7",
+            b"\t\x1d\x02\x00\x10\x1b\x02\x00\x04\xff\xff\xff\xf7",
             27,
             -9,
         ),  # Local temp calibration to -9, dp 27
