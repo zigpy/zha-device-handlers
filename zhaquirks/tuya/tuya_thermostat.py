@@ -67,12 +67,27 @@ class PresetModeV04(t.enum8):
     Eco = 0x03
 
 
-class SensorMode(t.enum8):
+class PresetModeV05(t.enum8):
+    """Tuya preset mode v04 enum."""
+
+    Auto = 0x00
+    Manual = 0x01
+
+
+class SensorModeV01(t.enum8):
     """Tuya sensor mode enum."""
 
     Air = 0x00
     Floor = 0x01
     Both = 0x02
+
+
+class SensorModeV02(t.enum8):
+    """Tuya sensor mode v02 enum."""
+
+    Air = 0x00
+    Both = 0x01
+    Floor = 0x02
 
 
 class BacklightMode(t.enum8):
@@ -211,7 +226,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     .tuya_enum(
         dp_id=102,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -386,7 +401,7 @@ base_avatto_quirk = (
     .tuya_enum(
         dp_id=106,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -570,7 +585,7 @@ base_avatto_quirk = (
     .tuya_enum(
         dp_id=106,
         attribute_name="temperature_sensor_select",
-        enum_class=SensorMode,
+        enum_class=SensorModeV01,
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
@@ -603,6 +618,138 @@ base_avatto_quirk = (
         fallback_name="Invert relay",
     )
     .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaThermostatBseed(TuyaThermostat):
+    """Tuya local thermostat cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 4500,
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init a TuyaThermostatBseed cluster."""
+        super().__init__(*args, **kwargs)
+
+
+(
+    TuyaQuirkBuilder("_TZE204_5toc8efa", "TS0601")
+    .applies_to("_TZE200_5toc8efa", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.min_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: min(round(x // 10, -1), 150),
+    )
+    .tuya_dp(
+        dp_id=18,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: max(round(x // 10, -1), 150),
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV05,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_enum(
+        dp_id=43,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorModeV02,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_number(
+        dp_id=27,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int16s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=5,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="high_temperature_protection",
+        type=t.uint16_t,
+        multiplier=0.1,
+        min_value=10,
+        max_value=70,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="high_temperature_protection",
+        fallback_name="High temperature protection",
+    )
+    .tuya_sensor(
+        dp_id=102,
+        attribute_name="local_temperature_floor",
+        type=t.int16s,
+        multiplier=0.1,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="local_temperature_floor",
+        fallback_name="Floor temperature",
+    )
+    .adds(TuyaThermostatBseed)
     .skip_configuration()
     .add_to_registry()
 )
