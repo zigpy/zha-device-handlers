@@ -94,8 +94,8 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
     """CandeoSceneSwitchRemoteCluster: fire events corresponding to button press or ring rotation."""
 
     cluster_id: Final[t.uint16_t] = 0xFF03
-    name = "CandeoSceneSwitchRemoteCluster_Cluster"
-    ep_attribute = "CandeoSceneSwitchRemoteCluster_Cluster"
+    name = "candeo_scene_switch_remote"
+    ep_attribute = "candeo_scene_switch_remote"
 
     class ServerCommandDefs(BaseCommandDefs):
         """overwrite ServerCommandDefs."""
@@ -111,7 +111,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         await self.bind()
 
     def __init__(self, *args, **kwargs):
-        """__init___."""
+        """Init."""
         self.last_tsn = -1
         self.previous_rotation_direction = "unknown"
         self.previous_rotation_event = COMMAND_STOPPED_ROTATING
@@ -120,7 +120,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[CandeoSceneSwitchRemoteClusterCommand],
+        args: CandeoSceneSwitchRemoteClusterCommand,
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -132,85 +132,71 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         if hdr.tsn == self.last_tsn:
             return
         self.last_tsn = hdr.tsn
-        if (
-            hdr.command_id == self.ServerCommandDefs.candeo_scene_switch_remote.id
-            and args.message_type is not None
-            and args.field_1 is not None
-            and args.field_2 is not None
-            and args.field_3 is not None
-        ):
-            if (
-                args.message_type == CandeoSceneSwitchRemoteMessageType.button_press
-                and args.field_2
-                in CandeoSceneSwitchRemoteButtonNumberMap._value2member_map_
-                and args.field_3
-                in CandeoSceneSwitchRemoteButtonActionMap._value2member_map_
-            ):
-                button_number = CandeoSceneSwitchRemoteButtonNumberMap(
-                    args.field_2
-                ).name
-                button_action = CandeoSceneSwitchRemoteButtonActionMap(
-                    args.field_3
-                ).name
-                self.listener_event(
-                    ZHA_SEND_EVENT, button_action, {BUTTON: button_number}
-                )
-            elif (
-                args.message_type == CandeoSceneSwitchRemoteMessageType.ring_rotation
-                and args.field_2
-                in CandeoSceneSwitchRemoteRingActionMap._value2member_map_
-            ):
-                ring_action = CandeoSceneSwitchRemoteRingActionMap(args.field_2).name
-                if ring_action == COMMAND_STOPPED_ROTATING:
-                    if self.previous_rotation_direction != "unknown":
-                        self.listener_event(
-                            ZHA_SEND_EVENT,
-                            COMMAND_STOPPED_ROTATING,
-                            {ROTATED: self.previous_rotation_direction},
-                        )
-                    self.previous_rotation_event = COMMAND_STOPPED_ROTATING
-                elif (
-                    args.field_1
-                    in CandeoSceneSwitchRemoteRingDirectionMap._value2member_map_
-                ):
-                    ring_direction = CandeoSceneSwitchRemoteRingDirectionMap(
-                        args.field_1
-                    ).name
-                    ring_clicks = args.field_3
-                    if self.previous_rotation_event == COMMAND_STOPPED_ROTATING:
-                        self.listener_event(
-                            ZHA_SEND_EVENT,
-                            COMMAND_STARTED_ROTATING,
-                            {ROTATED: ring_direction},
-                        )
-                        self.previous_rotation_event = COMMAND_STARTED_ROTATING
-                        if ring_clicks > 1:
-                            for _x in range(1, ring_clicks):
-                                self.listener_event(
-                                    ZHA_SEND_EVENT,
-                                    COMMAND_CONTINUED_ROTATING,
-                                    {ROTATED: ring_direction},
-                                )
-                            self.previous_rotation_event = COMMAND_CONTINUED_ROTATING
-                    elif self.previous_rotation_event in {
-                        COMMAND_STARTED_ROTATING,
-                        COMMAND_CONTINUED_ROTATING,
-                    }:
-                        self.listener_event(
-                            ZHA_SEND_EVENT,
-                            COMMAND_CONTINUED_ROTATING,
-                            {ROTATED: ring_direction},
-                        )
-                        if ring_clicks > 1:
-                            for _x in range(1, ring_clicks):
-                                self.listener_event(
-                                    ZHA_SEND_EVENT,
-                                    COMMAND_CONTINUED_ROTATING,
-                                    {ROTATED: ring_direction},
-                                )
-                        self.previous_rotation_event = COMMAND_CONTINUED_ROTATING
-                    self.previous_rotation_direction = ring_direction
+        if hdr.command_id != self.ServerCommandDefs.candeo_scene_switch_remote.id:
+            return        
+        message_type = args.message_type
+        field_1, field_2, field_3 = args.field_1, args.field_2, args.field_3
+        if None in (message_type, field_1, field_2, field_3):
+            return
+        if message_type == CandeoSceneSwitchRemoteMessageType.button_press:
+            self._handle_button_press(field_2, field_3)
+        elif message_type == CandeoSceneSwitchRemoteMessageType.ring_rotation:
+            self._handle_ring_rotation(field_1, field_2, field_3)
 
+    def _handle_button_press(self, button_number_raw: int, button_action_raw: int):
+        """Handle button press events."""
+        if button_number_raw not in CandeoSceneSwitchRemoteButtonNumberMap._value2member_map_:
+            return
+        if button_action_raw not in CandeoSceneSwitchRemoteButtonActionMap._value2member_map_:
+            return
+        button_number = CandeoSceneSwitchRemoteButtonNumberMap(button_number_raw).name
+        button_action = CandeoSceneSwitchRemoteButtonActionMap(button_action_raw).name
+        self._emit_button_event(button_action, button_number)
+
+    def _handle_ring_rotation(self, ring_direction_raw: int, ring_action_raw: int, ring_clicks: int):
+        """Handle ring rotation events."""
+        if ring_action_raw not in CandeoSceneSwitchRemoteRingActionMap._value2member_map_:
+            return
+        ring_action = CandeoSceneSwitchRemoteRingActionMap(ring_action_raw).name
+        if ring_action == COMMAND_STOPPED_ROTATING:
+            self._handle_rotation_stop()
+            return
+        if ring_direction_raw not in CandeoSceneSwitchRemoteRingDirectionMap._value2member_map_:
+            return
+        ring_direction = CandeoSceneSwitchRemoteRingDirectionMap(ring_direction_raw).name
+        self._handle_rotation_motion(ring_direction, ring_clicks)
+    
+    def _handle_rotation_stop(self):
+        """Handle rotation stop events."""
+        if self.previous_rotation_direction != "unknown":
+            self._emit_rotation_event(COMMAND_STOPPED_ROTATING, self.previous_rotation_direction)
+        self.previous_rotation_event = COMMAND_STOPPED_ROTATING
+
+    def _handle_rotation_motion(self, ring_direction: str, ring_clicks: int):
+        """Handle rotation motion events."""
+        if self.previous_rotation_event == COMMAND_STOPPED_ROTATING:
+            self._emit_rotation_event(COMMAND_STARTED_ROTATING, ring_direction)
+            for _ in range(ring_clicks - 1):
+                self._emit_rotation_event(COMMAND_CONTINUED_ROTATING, ring_direction)
+            self.previous_rotation_event = (
+                COMMAND_CONTINUED_ROTATING if ring_clicks > 1 else COMMAND_STARTED_ROTATING
+            )
+        elif self.previous_rotation_event in {
+            COMMAND_STARTED_ROTATING,
+            COMMAND_CONTINUED_ROTATING,
+        }:
+            for _ in range(ring_clicks):
+                self._emit_rotation_event(COMMAND_CONTINUED_ROTATING, ring_direction)
+            self.previous_rotation_event = COMMAND_CONTINUED_ROTATING
+        self.previous_rotation_direction = ring_direction
+
+    def _emit_rotation_event(self, ring_action, ring_direction):
+        """Emit rotation event."""
+        self.listener_event(ZHA_SEND_EVENT, ring_action, {ROTATED: ring_direction})
+
+    def _emit_button_event(self, button_action, button_number):
+        """Emit button event."""
+        self.listener_event(ZHA_SEND_EVENT, button_action, {BUTTON: button_number})
 
 (
     QuirkBuilder(CANDEO, "C-ZB-SR5BR")

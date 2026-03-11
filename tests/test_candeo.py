@@ -65,28 +65,28 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk, lux_in, lux
     assert illuminance_listener.attribute_updates[0][1] == lux_out
 
 
-# candeo scene switch remote 5 button rotarty tests
+# candeo scene switch remote 5 button rotary tests
 
 
 @pytest.mark.asyncio
-async def test_CandeoSceneSwitchRemoteCluster_apply_custom_configuration(
+async def test_candeo_scene_switch_remote_apply_custom_configuration(
     zigpy_device_from_v2_quirk,
 ):
     """Test apply custom configuration is called and calls bind on the cluster."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     cluster.bind = mock.AsyncMock()
     await cluster.apply_custom_configuration()
     cluster.bind.assert_awaited_once()
 
 
-def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(
+def test_candeo_scene_switch_remote_duplicate_sequence_number(
     zigpy_device_from_v2_quirk,
 ):
     """Test duplicate sequence number ignored."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -103,7 +103,7 @@ def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(
         CandeoSceneSwitchRemoteMessageType.button_press,
         0x0,
         CandeoSceneSwitchRemoteButtonNumberMap.button_1,
-        CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+        CandeoSceneSwitchRemoteButtonActionMap.press,
     )
 
     cluster.handle_cluster_request(header, args)
@@ -113,11 +113,11 @@ def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(
     assert listener.zha_send_event.call_count == 1
 
 
-def test_CandeoSceneSwitchRemoteCluster_unknown_command_id(zigpy_device_from_v2_quirk):
+def test_candeo_scene_switch_remote_unknown_command_id(zigpy_device_from_v2_quirk):
     """Test unknown command id."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -132,13 +132,13 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_command_id(zigpy_device_from_v2_
     assert listener.zha_send_event.call_count == 0
 
 
-def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(
+def test_candeo_scene_switch_remote_missing_schema_fields(
     zigpy_device_from_v2_quirk,
 ):
     """Test missing CandeoSceneSwitchRemoteClusterCommand schema fields."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -157,13 +157,13 @@ def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(
     assert listener.zha_send_event.call_count == 0
 
 
-def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(
+def test_candeo_scene_switch_remote_unknown_message_type(
     zigpy_device_from_v2_quirk,
 ):
     """Test unknown CandeoSceneSwitchRemoteMessageType."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -312,7 +312,7 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(
         ),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combinations(
+def test_candeo_scene_switch_remote__button_number_and_button_action_combinations(
     zigpy_device_from_v2_quirk,
     button_number,
     button_action,
@@ -322,7 +322,7 @@ def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combina
     """Test button numbers and button actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -357,14 +357,14 @@ def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combina
         (CandeoSceneSwitchRemoteButtonNumberMap.button_1, 0x99),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(
+def test_candeo_scene_switch_remote_unknown_button_number_or_button_action(
     zigpy_device_from_v2_quirk, button_number, button_action
 ):
-    """Test unknown button numbers and button actiona are ignored."""
+    """Test unknown button numbers and button actions are ignored."""
 
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -395,13 +395,13 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(
         (CandeoSceneSwitchRemoteRingDirectionMap.right),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(
+def test_candeo_scene_switch_remote_ring_started_rotating(
     zigpy_device_from_v2_quirk, ring_direction
 ):
     """Test ring started rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -444,13 +444,13 @@ def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x99),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(
+def test_candeo_scene_switch_remote_unknown_ring_direction_or_ring_action(
     zigpy_device_from_v2_quirk, ring_direction, ring_action
 ):
     """Test unknown ring directions and ring actions are ignored."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -485,13 +485,13 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x06),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_started_rotating(
+def test_candeo_scene_switch_remote_ring_continued_rotating_after_started_rotating(
     zigpy_device_from_v2_quirk, ring_direction, ring_clicks
 ):
     """Test ring continued rotating actions (after started rotating) generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -547,13 +547,13 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_started_ro
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x06),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_continued_rotating(
+def test_candeo_scene_switch_remote_ring_continued_rotating_after_continued_rotating(
     zigpy_device_from_v2_quirk, ring_direction, ring_clicks
 ):
     """Test ring continued rotating actions (after continued rotating) generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -597,13 +597,13 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating_after_continued_
     assert listener.zha_send_event.call_count == ring_clicks
 
 
-def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persistence(
+def test_candeo_scene_switch_remote_ring_direction_and_ring_action_persistence(
     zigpy_device_from_v2_quirk,
 ):
     """Test ring direction and ring action persistence data set correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
@@ -708,13 +708,13 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
         (RIGHT, COMMAND_CONTINUED_ROTATING),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_stopped_rotating(
+def test_candeo_scene_switch_remote_ring_stopped_rotating(
     zigpy_device_from_v2_quirk, previous_rotation_direction, previous_rotation_event
 ):
     """Test ring stopped rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
-    cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
+    cluster = device.endpoints[1].candeo_scene_switch_remote
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
