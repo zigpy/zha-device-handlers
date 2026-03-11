@@ -366,7 +366,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         max_value=30,
         step=1,
         entity_type=EntityType.CONFIG,
-        device_class=NumberDeviceClass.HUMIDITY,
+        device_class=NumberDeviceClass.MOISTURE,
         translation_key="soil_moisture_offset",
         fallback_name="Soil moisture offset",
     )
