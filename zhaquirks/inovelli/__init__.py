@@ -1277,6 +1277,97 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
 
 
+class MMWaveControlId(t.enum8):
+    """MMWave control command IDs."""
+
+    Reset_to_factory = 0x00
+    Auto_generate_interference_area = 0x01
+    Obtain_areas = 0x02
+    Clear_interference_area = 0x03
+
+
+class InovelliVZM32SNMMWaveCluster(CustomCluster):
+    """Inovelli VZM32-SN MMWave custom cluster."""
+
+    cluster_id = 0xFC32
+    ep_attribute = "inovelli_vzm32snmmwave_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        mmwave_height_minimum_floor = ZCLAttributeDef(
+            id=0x0065,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_height_maximum_ceiling = ZCLAttributeDef(
+            id=0x0066,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_minimum_left = ZCLAttributeDef(
+            id=0x0067,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_maximum_right = ZCLAttributeDef(
+            id=0x0068,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_minimum_near = ZCLAttributeDef(
+            id=0x0069,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_maximum_far = ZCLAttributeDef(
+            id=0x006A,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_target_info_report = ZCLAttributeDef(
+            id=0x006B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_stay_life = ZCLAttributeDef(
+            id=0x006C,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_sensitivity = ZCLAttributeDef(
+            id=0x0070,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_trigger = ZCLAttributeDef(
+            id=0x0071,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_hold_time = ZCLAttributeDef(
+            id=0x0072,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_version = ZCLAttributeDef(
+            id=0x0073,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        mmwave_control_command = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "control_id": MMWaveControlId,
+            },
+            is_manufacturer_specific=True,
+        )
+
+
 class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
 

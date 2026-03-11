@@ -10,6 +10,7 @@ from typing import Any, Final
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -435,6 +436,119 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
 
 class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
     """Tuya OnOff cluster with NoManufacturerID."""
+
+
+class TuyaCoverControl(t.enum8):
+    """Tuya cover control command values."""
+
+    Open = 0x00
+    Stop = 0x01
+    Close = 0x02
+
+
+class TuyaWindowCovering(WindowCovering, TuyaLocalCluster):
+    """Tuya MCU WindowCovering cluster."""
+
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        tuya_cover_command: Final = ZCLAttributeDef(
+            id=0xEF01, type=TuyaCoverControl, is_manufacturer_specific=True
+        )
+
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
+    ):
+        """Override the default Cluster command."""
+
+        self.debug(
+            "Sending Tuya Cluster Command... Cluster Command is %x, Arguments are %s",
+            command_id,
+            args,
+        )
+
+        # up_open
+        if command_id == WindowCovering.ServerCommandDefs.up_open.id:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=self.AttributeDefs.tuya_cover_command.name,
+                attr_value=TuyaCoverControl.Open,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        # down_close
+        if command_id == WindowCovering.ServerCommandDefs.down_close.id:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=self.AttributeDefs.tuya_cover_command.name,
+                attr_value=TuyaCoverControl.Close,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        # stop
+        if command_id == WindowCovering.ServerCommandDefs.stop.id:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=self.AttributeDefs.tuya_cover_command.name,
+                attr_value=TuyaCoverControl.Stop,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        # go_to_lift_percentage
+        if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+                attr_value=args[0],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        self.warning("Unsupported command_id: %s", command_id)
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):

@@ -8,6 +8,7 @@ import pathlib
 from types import FrameType
 from typing import Any, Self
 
+from zigpy.profiles import zha
 from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -15,6 +16,7 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
@@ -38,7 +40,12 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
     TuyaPowerConfigurationCluster,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaMCUCluster,
+    TuyaOnOffNM,
+    TuyaWindowCovering,
+)
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
 
@@ -436,6 +443,49 @@ class TuyaQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
         self.adds(onoff_cfg, endpoint_id=endpoint_id)
+        return self
+
+    def tuya_cover(
+        self,
+        control_dp: int,
+        position_state_dp: int,
+        position_control_dp: int,
+        invert: bool = True,
+        cover_cfg: TuyaLocalCluster = TuyaWindowCovering,
+    ) -> Self:
+        """Add a Tuya WindowCovering Configuration.
+
+        :param control_dp: DP ID for open/stop/close control (enum).
+        :param position_state_dp: DP ID for current position reports (0-100).
+        :param position_control_dp: DP ID for setting target position (0-100).
+        :param invert: Invert position values (most Tuya covers report
+            0=closed, 100=open which is opposite to ZCL convention).
+        :param cover_cfg: Custom WindowCovering cluster class to use.
+        """
+        converter = (lambda x: 100 - x) if invert else None
+        dp_converter = (lambda x: 100 - x) if invert else None
+
+        self.tuya_dp(
+            control_dp,
+            cover_cfg.ep_attribute,
+            TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
+        )
+        self.tuya_dp(
+            position_state_dp,
+            cover_cfg.ep_attribute,
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+            converter=converter,
+            dp_converter=dp_converter,
+        )
+        self.tuya_dp(
+            position_control_dp,
+            cover_cfg.ep_attribute,
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+            converter=converter,
+            dp_converter=dp_converter,
+        )
+        self.adds(cover_cfg)
+        self.replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
         return self
 
     def tuya_humidity(
