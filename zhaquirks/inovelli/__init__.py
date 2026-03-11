@@ -1275,11 +1275,6 @@ class InovelliVZM32SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
-        relay_click_in_on_off_mode = ZCLAttributeDef(
-            id=0x0105,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
         disable_clear_notifications_double_tap = ZCLAttributeDef(
             id=0x0106,
             type=t.Bool,
