@@ -1,8 +1,9 @@
 """Xiaomi Aqara Cube T1 Pro quirk."""
+
 import logging
 
-import zigpy.types as t
 from zigpy.profiles import zha
+import zigpy.types as t
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
