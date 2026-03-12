@@ -1,9 +1,13 @@
 """Xiaomi Aqara Cube T1 Pro quirk."""
+
 import logging
 
-import zigpy.types as t
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Identify, OnOff # Добавили импорт стандартных кластеров
+import zigpy.types as t
+from zigpy.zcl.clusters.general import (  # Добавили импорт стандартных кластеров
+    Identify,
+    OnOff,
+)
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -17,10 +21,10 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    XIAOMI_SENSORS_REPLACEMENT,
     BasicCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
-    XIAOMI_SENSORS_REPLACEMENT,
 )
 from zhaquirks.xiaomi.aqara.cube_aqgl01 import (
     ACTIVATED_FACE,
@@ -87,7 +91,7 @@ class CustomCubeT1Pro(XiaomiCustomDevice):
                     BasicCluster,
                     XiaomiPowerConfiguration,
                     Identify,  # Возвращаем Identify на место
-                    OnOff,     # И OnOff тоже, для порядка
+                    OnOff,  # И OnOff тоже, для порядка
                     OppleCluster,
                     MultistateInputCluster,
                 ],
