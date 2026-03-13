@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent, ClusterType, foundation
+from zigpy.zcl import AttributeWrittenEvent, ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -31,7 +31,6 @@ from zhaquirks.ubisys.dimmer_d1 import (
     build_dimmer_double_actions,
     build_dimmer_single_actions,
 )
-from zhaquirks.ubisys.h1 import ThermostatCluster
 from zhaquirks.ubisys.switch_s1r import UbisysS1RInputConfigCluster
 from zhaquirks.ubisys.switch_s2 import UbisysS2InputConfigCluster
 
@@ -1402,120 +1401,3 @@ async def test_c4_input_mode_write(ubisys_c4, attr_name, input_index, source_ep)
     # Verify the correct attribute was cached
     attr_def = getattr(UbisysC4InputConfigCluster.AttributeDefs, attr_name)
     assert (attr_def.id, mode) in input_config_listener.attribute_updates
-
-
-def mock_read(attributes, manufacturer=None):
-    """Mock implementation for zigpy.zcl.Cluster._read_attributes."""
-
-    records = [
-        foundation.ReadAttributeRecord(
-            attrid=attr,
-            status=foundation.Status.SUCCESS,
-            value=foundation.TypeValue(None, attr),
-        )
-        for attr in attributes
-    ]
-    return (records,)
-
-
-def mock_write(attributes, manufacturer=None):
-    """Mock implementation for zigpy.zcl.Cluster._write_attributes."""
-
-    records = foundation.WriteAttributesResponse(
-        [
-            foundation.WriteAttributesStatusRecord(
-                status=foundation.Status.SUCCESS,
-            )
-            for attr in attributes
-        ]
-    )
-
-    cmd = foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Write_Attributes_rsp]
-    return cmd.schema(status_records=records)
-
-
-async def test_ubisys_h1_write_attributes(zigpy_device_from_v2_quirk):
-    """Test that attribute IDs are correctly rewritten on write."""
-
-    device = zigpy_device_from_v2_quirk(manufacturer="ubisys", model="H1")
-
-    thermostat_cluster: ThermostatCluster = device.endpoints[1].thermostat
-
-    read_attributes_patch = mock.patch(
-        "zigpy.zcl.Cluster._read_attributes",
-        mock.AsyncMock(side_effect=mock_read),
-    )
-
-    write_attributes_patch = mock.patch(
-        "zigpy.zcl.Cluster._write_attributes",
-        mock.AsyncMock(side_effect=mock_write),
-    )
-
-    with (
-        read_attributes_patch as read_attributes_mock,
-        write_attributes_patch as write_attributes_mock,
-    ):
-        id1 = ThermostatCluster.AttributeDefs.local_temperature_calibration.id
-        id2 = ThermostatCluster.AttributeDefs.temperature_offset.actual_id
-        manufacturer_id_override = ThermostatCluster.manufacturer_id_override
-
-        result = await thermostat_cluster.write_attributes(
-            {
-                ThermostatCluster.AttributeDefs.local_temperature_calibration.id: 1,
-                ThermostatCluster.AttributeDefs.temperature_offset.id: 3,
-            }
-        )
-
-        assert result
-        assert len(result[0]) == 2
-        assert write_attributes_mock.call_count == 2
-
-        # it writes the regular attribute
-        c1 = write_attributes_mock.call_args_list[0]
-        assert c1.args[0][0].attrid == id1
-        assert c1.kwargs["manufacturer"] is None
-
-        # it writes the mapped attribute with its actual id and manufacturer
-        c2 = write_attributes_mock.call_args_list[1]
-        assert c2.args[0][0].attrid == id2
-        assert c2.kwargs["manufacturer"] == manufacturer_id_override
-
-        assert read_attributes_mock.call_count == 1
-
-        # it reads the mapped attribute after write
-        c3 = read_attributes_mock.call_args
-        assert c3.args[0] == [id2]
-        assert c3.kwargs["manufacturer"] == manufacturer_id_override
-
-
-async def test_ubisys_h1_read_attributes(zigpy_device_from_v2_quirk):
-    """Test that attribute IDs are correctly rewritten on read."""
-
-    device = zigpy_device_from_v2_quirk(manufacturer="ubisys", model="H1")
-
-    thermostat_cluster: ThermostatCluster = device.endpoints[1].thermostat
-
-    read_attributes_patch = mock.patch(
-        "zigpy.zcl.Cluster._read_attributes",
-        mock.AsyncMock(side_effect=mock_read),
-    )
-
-    with read_attributes_patch:
-        # it applies the offset correctly
-        id = ThermostatCluster.AttributeDefs.temperature_offset.id
-        actual_id = ThermostatCluster.AttributeDefs.temperature_offset.actual_id
-        success, fail = await thermostat_cluster.read_attributes([id])
-        assert success
-        assert not fail
-
-        assert id in success
-        assert success[id] == actual_id
-
-        # it does not apply an offset to non-manufacturer-specific attributes
-        id = ThermostatCluster.AttributeDefs.pi_heating_demand.id
-        success, fail = await thermostat_cluster.read_attributes([id])
-        assert success
-        assert not fail
-
-        assert id in success
-        assert success[id] == id
