@@ -59,7 +59,7 @@ class ThirdRealityButtonCluster(CustomCluster):
     .replaces(ThirdRealityButtonCluster)
     .replaces(MultistateInputCluster)
     .switch(
-        attribute_name=ThirdRealityButtonCluster.AttributeDefs.cancel_double_click.name,
+        attribute_name=ThirdRealityButtonCluster.AttributeDefs.disable_double_click.name,
         cluster_id=ThirdRealityButtonCluster.cluster_id,
         translation_key="disable_double_click",
         fallback_name="Disable double click",
