@@ -217,9 +217,9 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .switch(
         ThermostatCluster.AttributeDefs.season.name,
         ThermostatCluster.cluster_id,
-        translation_key="summer_mode",
-        fallback_name="Summer Mode",
         initially_disabled=True,
+        translation_key="summer_mode",
+        fallback_name="Summer mode",
     )
     .number(
         ThermostatCluster.AttributeDefs.backup_heating_demand.name,
@@ -227,9 +227,9 @@ class ThermostatCluster(CustomCluster, Thermostat):
         min_value=0,
         max_value=100,
         unit=PERCENTAGE,
-        translation_key="backup_heating_demand",
-        fallback_name="Backup Heating Demand",
         initially_disabled=True,
+        translation_key="backup_heating_demand",
+        fallback_name="Backup heating demand",
     )
     .number(
         ThermostatCluster.AttributeDefs.alternate_backup_heating_demand.name,
@@ -237,30 +237,30 @@ class ThermostatCluster(CustomCluster, Thermostat):
         min_value=0,
         max_value=100,
         unit=PERCENTAGE,
-        translation_key="alternate_backup_heating_demand",
-        fallback_name="Alternate Backup Heating Demand",
         initially_disabled=True,
+        translation_key="alternate_backup_heating_demand",
+        fallback_name="Alternate backup heating demand",
     )
     .number(
         ThermostatCluster.AttributeDefs.proportional_gain.name,
         ThermostatCluster.cluster_id,
-        translation_key="proportional_gain",
-        fallback_name="Proportional Gain (Kp)",
         initially_disabled=True,
+        translation_key="proportional_gain",
+        fallback_name="Proportional gain (Kp)",
     )
     .number(
         ThermostatCluster.AttributeDefs.proportional_shift.name,
         ThermostatCluster.cluster_id,
-        translation_key="proportional_shift",
-        fallback_name="Proportional Shift (N)",
         initially_disabled=True,
+        translation_key="proportional_shift",
+        fallback_name="Proportional shift (N)",
     )
     .number(
         ThermostatCluster.AttributeDefs.integral_factor.name,
         ThermostatCluster.cluster_id,
-        translation_key="integral_factor",
-        fallback_name="Integral Factor",
         initially_disabled=True,
+        translation_key="integral_factor",
+        fallback_name="Integral factor",
     )
     .add_to_registry()
 )
