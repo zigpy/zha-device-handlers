@@ -18,19 +18,19 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        temperature_correction_fahrenheit: Final = ZCLAttributeDef(
+        temperature_offset_fahrenheit: Final = ZCLAttributeDef(
             id=0x0033,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
 
-        temperature_correction_celsius: Final = ZCLAttributeDef(
+        temperature_offset_celsius: Final = ZCLAttributeDef(
             id=0x0031,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
 
-        humidity_correction: Final = ZCLAttributeDef(
+        humidity_offset: Final = ZCLAttributeDef(
             id=0x0032,
             type=t.int16s,
             is_manufacturer_specific=True,
@@ -39,10 +39,11 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSM0147Z")
+    .applies_to("Third Reality, Inc", "3RSPE02065Z")
     .replaces(ThirdRealitySoilMoistureCluster)
     .replaces(SoilMoisture)
-    .number(
-        attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_correction_celsius.name,
+        .number(
+        attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_offset_celsius.name,
         cluster_id=ThirdRealitySoilMoistureCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
@@ -50,23 +51,11 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
         step=0.1,
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
-        translation_key="temperature_offset_celsius",
-        fallback_name="Celsius offset",
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
     )
     .number(
-        attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_correction_fahrenheit.name,
-        cluster_id=ThirdRealitySoilMoistureCluster.cluster_id,
-        min_value=-10000,
-        max_value=10000,
-        multiplier=0.01,
-        step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
-        translation_key="temperature_offset_fahrenheit",
-        fallback_name="Fahrenheit offset",
-    )
-    .number(
-        attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.humidity_correction.name,
+        attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.humidity_offset.name,
         cluster_id=ThirdRealitySoilMoistureCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
