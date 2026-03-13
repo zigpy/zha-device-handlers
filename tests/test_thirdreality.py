@@ -3,12 +3,15 @@
 from unittest import mock
 
 import pytest
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.thirdreality.button import MultistateInputCluster
 import zhaquirks.thirdreality.night_light
+import zhaquirks.thirdreality.three_button
 
 zhaquirks.setup()
 
@@ -74,3 +77,60 @@ async def test_third_reality_button_v2(
     assert listener.zha_send_event.call_args_list[0] == mock.call(
         expected_action, {"value": attr_value}
     )
+
+
+@pytest.mark.parametrize(
+    ("endpoint_id", "attr_value", "expected_action"),
+    [
+        (1, 1, "single"),
+        (2, 2, "double"),
+        (3, 0, "hold"),
+    ],
+)
+async def test_third_reality_three_button_v2_events(
+    zigpy_device_from_v2_quirk, endpoint_id, attr_value, expected_action
+):
+    """Test Third Reality three-button event conversion on all button endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSB01085Z",
+        cluster_ids={
+            1: {MultistateInput.cluster_id: ClusterType.Server},
+            2: {MultistateInput.cluster_id: ClusterType.Server},
+            3: {MultistateInput.cluster_id: ClusterType.Server},
+        },
+    )
+    multistate_cluster = device.endpoints[endpoint_id].in_clusters[
+        MultistateInput.cluster_id
+    ]
+
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    multistate_cluster.update_attribute(0x0055, attr_value)
+    assert listener.zha_send_event.call_count == 1
+    assert listener.zha_send_event.call_args_list[0] == mock.call(
+        expected_action, {"value": attr_value}
+    )
+
+
+async def test_third_reality_three_button_v2_ignores_unknown_press_type(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unsupported button press values do not emit events."""
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSB01085Z",
+        cluster_ids={
+            1: {MultistateInput.cluster_id: ClusterType.Server},
+            2: {MultistateInput.cluster_id: ClusterType.Server},
+            3: {MultistateInput.cluster_id: ClusterType.Server},
+        },
+    )
+    multistate_cluster = device.endpoints[1].in_clusters[MultistateInput.cluster_id]
+
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    multistate_cluster.update_attribute(0x0055, 42)
+    assert listener.zha_send_event.call_count == 0
