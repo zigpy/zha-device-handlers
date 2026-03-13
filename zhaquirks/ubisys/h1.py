@@ -3,7 +3,7 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
+from zigpy.quirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -173,6 +173,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .number(
         ThermostatCluster.AttributeDefs.remote_temperature_valid_duration.name,
         ThermostatCluster.cluster_id,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         multiplier=1 / 60,
         translation_key="external_temperature_sensor_valid_duration",
@@ -187,6 +188,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .binary_sensor(
         ThermostatCluster.AttributeDefs.open_window_state.name,
         ThermostatCluster.cluster_id,
+        device_class=BinarySensorDeviceClass.WINDOW,
         translation_key="open_window_detection_status",
         fallback_name="Open window detection status",
     )
@@ -209,6 +211,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .number(
         ThermostatCluster.AttributeDefs.open_window_timeout.name,
         ThermostatCluster.cluster_id,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         multiplier=1 / 60,
         translation_key="open_window_detection_guard_period",
