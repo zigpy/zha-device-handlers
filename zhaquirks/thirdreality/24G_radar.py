@@ -16,15 +16,15 @@ class ThirdReality24GRadarCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        # calibrate of the plug
+
         sensor_calibration: Final = ZCLAttributeDef(
             id=0x0003,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-
-        # set the sensitive of the plug
-        sensor_sensitive: Final = ZCLAttributeDef(
+        
+        
+        sensor_sensitivity: Final = ZCLAttributeDef(
             id=0x0060,
             type=t.uint8_t,
             is_manufacturer_specific=True,
@@ -41,13 +41,13 @@ class ThirdReality24GRadarCluster(CustomCluster):
         fallback_name="Sensor calibration",
     )
     .number(
-        attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_sensitive.name,
+        attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_sensitivity.name,
         min_value=1,
         max_value=5,
         step=1,
         cluster_id=ThirdReality24GRadarCluster.cluster_id,
-        translation_key="sensor_sensitive",
-        fallback_name="Sensor sensitive",
+        translation_key="sensor_sensitivity",
+        fallback_name="Sensor sensitivity",
     )
     .add_to_registry()
 )
