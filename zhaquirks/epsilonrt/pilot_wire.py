@@ -1,7 +1,6 @@
-"""
-EpsilonRT pilot wire heating module quirk.
+"""EpsilonRT pilot wire heating module quirk.
 
-This is a DIY project. The manufacturer ID (0x1234) is used for 
+This is a DIY project. The manufacturer ID (0x1234) is used for
 development and non-commercial purposes.
 
 Firmware and documentation:
@@ -19,14 +18,17 @@ EPSILONRT_MANUFACTURER_ID = 0x1234
 EPSILONRT_PILOT_WIRE_CLUSTER_ID = 0xFC00  # 64512
 EPSILONRT_PILOT_WIRE_MODEL = "ERT-MPZ-03"
 
+
 class EpsilonRTPilotWireMode(t.enum8):
     """Pilot wire mode enum (PascalCase for current ZHA compatibility)."""
+
     Off = 0x00
     Comfort = 0x01
     Eco = 0x02
     FrostProtection = 0x03
     ComfortMinus1 = 0x04
     ComfortMinus2 = 0x05
+
 
 class EpsilonRTPilotWireCluster(CustomCluster):
     """EpsilonRT manufacturer specific cluster to control Pilot Wire mode."""
@@ -38,12 +40,14 @@ class EpsilonRTPilotWireCluster(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for the Pilot Wire cluster."""
+
         pilot_wire_mode = ZCLAttributeDef(
             id=0x0000,
             type=EpsilonRTPilotWireMode,
             zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
+
 
 # Quirk Registration
 (
