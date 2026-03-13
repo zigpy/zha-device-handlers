@@ -204,6 +204,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .number(
         ThermostatCluster.AttributeDefs.open_window_detection_period.name,
         ThermostatCluster.cluster_id,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         translation_key="open_window_event_duration",
         fallback_name="Open window event duration",
