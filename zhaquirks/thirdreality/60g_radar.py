@@ -35,7 +35,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_BILLION,
-        fallback_name="Volatile organic compounds",
+        fallback_name="Volatile organic compounds parts",
     )
     .add_to_registry()
 )
