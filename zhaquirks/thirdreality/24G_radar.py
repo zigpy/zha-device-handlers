@@ -16,14 +16,12 @@ class ThirdReality24GRadarCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-
         sensor_calibration: Final = ZCLAttributeDef(
             id=0x0003,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
-        
+
         sensor_sensitivity: Final = ZCLAttributeDef(
             id=0x0060,
             type=t.uint8_t,
