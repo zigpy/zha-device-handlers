@@ -17,7 +17,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         """ubisys H1 thermostat manufacturer-specific attributes."""
 
         temperature_offset: Final = ZCLAttributeDef(
-            id=t.uint16_t(0x0010),
+            id=0x0010,
             type=t.int8s,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
@@ -25,7 +25,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         # not exposed
         default_occupied_heating_setpoint = ZCLAttributeDef(
-            id=t.uint16_t(0x0011),
+            id=0x0011,
             type=t.int16s,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
@@ -33,56 +33,56 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         # not exposed
         vacation_mode = ZCLAttributeDef(
-            id=t.uint16_t(0x0012),
+            id=0x0012,
             type=t.Bool,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         remote_temperature = ZCLAttributeDef(
-            id=t.uint16_t(0x0013),
+            id=0x0013,
             type=t.int16s,
             access=ZCLAttributeAccess.Read,
             manufacturer_code=0x10F2,
         )
 
         remote_temperature_valid_duration = ZCLAttributeDef(
-            id=t.uint16_t(0x0014),
+            id=0x0014,
             type=t.uint16_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         detect_open_window = ZCLAttributeDef(
-            id=t.uint16_t(0x0015),
+            id=0x0015,
             type=t.bitmap8,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         open_window_state = ZCLAttributeDef(
-            id=t.uint16_t(0x0016),
+            id=0x0016,
             type=t.bitmap8,
             access=ZCLAttributeAccess.Read,
             manufacturer_code=0x10F2,
         )
 
         open_window_sensitivity = ZCLAttributeDef(
-            id=t.uint16_t(0x0017),
+            id=0x0017,
             type=t.uint16_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         open_window_detection_period = ZCLAttributeDef(
-            id=t.uint16_t(0x0018),
+            id=0x0018,
             type=t.uint16_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         open_window_timeout = ZCLAttributeDef(
-            id=t.uint16_t(0x0019),
+            id=0x0019,
             type=t.uint16_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
@@ -90,7 +90,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         # not exposed
         heating_demand_lower_bound = ZCLAttributeDef(
-            id=t.uint16_t(0x001A),
+            id=0x001A,
             type=t.uint8_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
@@ -98,49 +98,49 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         # not exposed
         heating_demand_upper_bound = ZCLAttributeDef(
-            id=t.uint16_t(0x001B),
+            id=0x001B,
             type=t.uint8_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         season = ZCLAttributeDef(
-            id=t.uint16_t(0x001C),
+            id=0x001C,
             type=t.Bool,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         backup_heating_demand: Final = ZCLAttributeDef(
-            id=t.uint16_t(0x001D),
+            id=0x001D,
             type=t.uint8_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         alternate_backup_heating_demand = ZCLAttributeDef(
-            id=t.uint16_t(0x001E),
+            id=0x001E,
             type=t.uint8_t,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         proportional_gain = ZCLAttributeDef(
-            id=t.uint16_t(0x0020),
+            id=0x0020,
             type=t.int16s,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         proportional_shift = ZCLAttributeDef(
-            id=t.uint16_t(0x0021),
+            id=0x0021,
             type=t.int8s,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
 
         integral_factor = ZCLAttributeDef(
-            id=t.uint16_t(0x0022),
+            id=0x0022,
             type=t.int16s,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
