@@ -319,6 +319,17 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         )
 
         #
+        # LED behavior
+        #
+        led_disabled_night: Final = ZCLAttributeDef(
+            id=0x0203,
+            type=t.Bool,
+            zcl_type=DataTypeId.bool_,
+            access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
+        )
+
+        #
         # Spatial learning / restart (FP1E-style maintenance actions)
         #
         spatial_learning: Final = ZCLAttributeDef(
@@ -792,6 +803,14 @@ FP300_QUIRK = (
         entity_type=EntityType.CONFIG,
         translation_key="light_reporting_mode",
         fallback_name="Light reporting mode",
+    )
+    .switch(
+        attribute_name=AqaraFP300ManuCluster.AttributeDefs.led_disabled_night.name,
+        cluster_id=AqaraFP300ManuCluster.cluster_id,
+        endpoint_id=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="led_disabled_night",
+        fallback_name="LED disabled at night",
     )
     # Maintenance buttons
     .write_attr_button(
