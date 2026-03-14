@@ -2847,27 +2847,33 @@ def test_aqara_fp300_detection_range_decode(
         FP300DetectionRangeCluster.AttributeDefs.range_4_5m.id,
         FP300DetectionRangeCluster.AttributeDefs.range_5_6m.id,
     ]
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
 
     actual = [bool(dr_cluster._attr_cache.get(attr_id, False)) for attr_id in seg_ids]
     assert actual == expected_segments
 
+    expected_mask = 0
+    for idx, enabled in enumerate(expected_segments):
+        if enabled:
+            expected_mask |= 0xF << (idx * 4)
+    assert dr_cluster._attr_cache.get(mask_id) == expected_mask
+
 
 @pytest.mark.parametrize(
-    "prefix, segments, expected_mask",
+    "segments, expected_mask",
     (
-        (0x0300, [True, True, True, True, True, True], 0xFFFFFF),
-        (0x0300, [False, True, True, True, True, True], 0xFFFFF0),
-        (0x0300, [False, False, True, True, True, True], 0xFFFF00),
-        (0x0300, [False, False, False, True, True, True], 0xFFF000),
-        (0x0300, [False, False, False, False, True, True], 0xFF0000),
-        (0x0300, [False, False, False, False, False, True], 0xF00000),
-        (0x0300, [False, False, False, False, False, False], 0x000000),
-        ("not_an_int", [False, False, True, True, True, True], 0xFFFF00),
+        ([True, True, True, True, True, True], 0xFFFFFF),
+        ([False, True, True, True, True, True], 0xFFFFF0),
+        ([False, False, True, True, True, True], 0xFFFF00),
+        ([False, False, False, True, True, True], 0xFFF000),
+        ([False, False, False, False, True, True], 0xFF0000),
+        ([False, False, False, False, False, True], 0xF00000),
+        ([False, False, False, False, False, False], 0x000000),
     ),
 )
 @pytest.mark.asyncio
 async def test_aqara_fp300_detection_range_encode(
-    zigpy_device_from_v2_quirk, prefix, segments, expected_mask
+    zigpy_device_from_v2_quirk, segments, expected_mask
 ):
     """Test FP300 detection range encoding from 6 switches into raw 0x019A via write_attributes."""
 
@@ -2882,12 +2888,6 @@ async def test_aqara_fp300_detection_range_encode(
         ]
     )
 
-    # Set prefix in LocalDataCluster (same default as quirk: 0x0300)
-    dr_cluster._update_attribute(
-        FP300DetectionRangeCluster.AttributeDefs.prefix.id,
-        prefix,
-    )
-
     seg_ids = [
         FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id,
         FP300DetectionRangeCluster.AttributeDefs.range_1_2m.id,
@@ -2897,11 +2897,9 @@ async def test_aqara_fp300_detection_range_encode(
         FP300DetectionRangeCluster.AttributeDefs.range_5_6m.id,
     ]
     attr_dict = dict(zip(seg_ids, segments))
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
 
-    prefix_int = 0x0300
-    expected_bytes = prefix_int.to_bytes(2, "little") + expected_mask.to_bytes(
-        3, "little"
-    )
+    expected_bytes = b"\x00\x03" + expected_mask.to_bytes(3, "little")
 
     expected_attr_def = manu_cluster.find_attribute(
         AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
@@ -2921,3 +2919,328 @@ async def test_aqara_fp300_detection_range_encode(
         [expected],
         manufacturer=0x115F,
     )
+    assert dr_cluster._attr_cache.get(mask_id) == expected_mask
+
+
+@pytest.mark.parametrize(
+    "mask, expected_segments",
+    (
+        # 0.00m - 6.00m (all 24 quarter-meter bits set)
+        (0xFFFFFF, [True, True, True, True, True, True]),
+        # 2.00m - 6.00m (bits 8..23 set)
+        (0xFFFF00, [False, False, True, True, True, True]),
+        # 0.00m - 0.50m + 2.00m - 2.50m + 5.25m - 6.00m
+        # => bits [0,1,8,9,21,22,23]
+        (0xE00303, [True, False, True, False, False, True]),
+        # 5.75m - 6.00m only (bit 23)
+        (0x800000, [False, False, False, False, False, True]),
+        # 0.00m - 0.25m only (bit 0)
+        (0x000001, [True, False, False, False, False, False]),
+        # no range
+        (0x000000, [False, False, False, False, False, False]),
+    ),
+)
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_encode_mask(
+    zigpy_device_from_v2_quirk, mask, expected_segments
+):
+    """Test direct detection-range mask writes via LocalDataCluster number attribute."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
+    await dr_cluster.write_attributes({mask_id: mask}, manufacturer=0x115F)
+
+    expected_attr_def = manu_cluster.find_attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
+    )
+    expected = foundation.Attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id,
+        foundation.TypeValue(),
+    )
+    expected.value.type = foundation.DataType.from_python_type(
+        expected_attr_def.type
+    ).type_id
+    expected.value.value = expected_attr_def.type(
+        b"\x00\x03" + mask.to_bytes(3, "little")
+    )
+
+    manu_cluster._write_attributes.assert_awaited_with(
+        [expected],
+        manufacturer=0x115F,
+    )
+    assert dr_cluster._attr_cache.get(mask_id) == mask
+
+    seg_ids = [
+        FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id,
+        FP300DetectionRangeCluster.AttributeDefs.range_1_2m.id,
+        FP300DetectionRangeCluster.AttributeDefs.range_2_3m.id,
+        FP300DetectionRangeCluster.AttributeDefs.range_3_4m.id,
+        FP300DetectionRangeCluster.AttributeDefs.range_4_5m.id,
+        FP300DetectionRangeCluster.AttributeDefs.range_5_6m.id,
+    ]
+    actual_segments = [
+        bool(dr_cluster._attr_cache.get(attr_id, False)) for attr_id in seg_ids
+    ]
+    assert actual_segments == expected_segments
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_switch_write_preserves_granular_bits(
+    zigpy_device_from_v2_quirk,
+):
+    """Test switch write only updates touched nibble and keeps other granular mask bits."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    # Granular baseline:
+    # 0.00m-0.50m + 2.00m-2.50m + 5.25m-6.00m => bits [0,1,8,9,21,22,23]
+    initial_mask = 0xE00303
+    dr_cluster._update_from_raw(
+        t.LVBytes(b"\x00\x03" + initial_mask.to_bytes(3, "little"))
+    )
+
+    # Disable only the 2-3m switch (nibble bits 8..11).
+    target_attr = FP300DetectionRangeCluster.AttributeDefs.range_2_3m.id
+    await dr_cluster.write_attributes({target_attr: False}, manufacturer=0x115F)
+
+    expected_mask = initial_mask & ~(0xF << 8)  # keep all non-target granular bits
+
+    expected_attr_def = manu_cluster.find_attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
+    )
+    expected = foundation.Attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id,
+        foundation.TypeValue(),
+    )
+    expected.value.type = foundation.DataType.from_python_type(
+        expected_attr_def.type
+    ).type_id
+    expected.value.value = expected_attr_def.type(
+        b"\x00\x03" + expected_mask.to_bytes(3, "little")
+    )
+
+    manu_cluster._write_attributes.assert_awaited_with(
+        [expected],
+        manufacturer=0x115F,
+    )
+
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
+    assert dr_cluster._attr_cache.get(mask_id) == expected_mask
+    assert dr_cluster._attr_cache.get(target_attr) is False
+    # 0-1m and 5-6m remain enabled from the untouched granular bits.
+    assert (
+        dr_cluster._attr_cache.get(
+            FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+        )
+        is True
+    )
+    assert (
+        dr_cluster._attr_cache.get(
+            FP300DetectionRangeCluster.AttributeDefs.range_5_6m.id
+        )
+        is True
+    )
+
+
+def test_aqara_fp300_detection_range_raw_write_succeeded_edge_cases():
+    """Test raw write helper edge-cases used by FP300DetectionRangeCluster."""
+
+    raw_attr_id = AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
+
+    # Empty response list => failure.
+    assert not FP300DetectionRangeCluster._raw_write_succeeded([], raw_attr_id)
+
+    # Global success response (attrid=None) => success.
+    assert FP300DetectionRangeCluster._raw_write_succeeded(
+        [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]],
+        raw_attr_id,
+    )
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_encode_filters_unknown_attrs(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown attr name/id are ignored while valid string attr is resolved and written."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    await dr_cluster.write_attributes(
+        {
+            "unknown_attr_name": 1,  # ignored
+            0xFFFF: 1,  # ignored
+            FP300DetectionRangeCluster.AttributeDefs.range_0_1m.name: False,
+        },
+        manufacturer=0x115F,
+    )
+
+    expected_attr_def = manu_cluster.find_attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
+    )
+    expected = foundation.Attribute(
+        AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id,
+        foundation.TypeValue(),
+    )
+    expected.value.type = foundation.DataType.from_python_type(
+        expected_attr_def.type
+    ).type_id
+    # range_0_1m off (bits 0..3 cleared), all other 1m segments on.
+    expected.value.value = expected_attr_def.type(b"\x00\x03" + b"\xf0\xff\xff")
+
+    manu_cluster._write_attributes.assert_awaited_with(
+        [expected],
+        manufacturer=0x115F,
+    )
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_write_no_valid_attrs(
+    zigpy_device_from_v2_quirk,
+):
+    """Test write with only unknown attrs exits early and does not perform raw write."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    manu_cluster._write_attributes = mock.AsyncMock()
+
+    result = await dr_cluster.write_attributes(
+        {"unknown_attr_name": 1, 0xFFFF: 1},
+        manufacturer=0x115F,
+    )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    manu_cluster._write_attributes.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_write_without_manu_cluster(
+    zigpy_device_from_v2_quirk,
+):
+    """Test write failure response when manufacturer cluster is missing on endpoint."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    range_attr = FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+    device.endpoints[1].in_clusters.pop(AqaraFP300ManuCluster.cluster_id)
+
+    result = await dr_cluster.write_attributes({range_attr: False}, manufacturer=0x115F)
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert result[0][0].attrid == range_attr
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_encode_failure_keeps_local_state(
+    zigpy_device_from_v2_quirk,
+):
+    """Test failed raw write does not optimistically update local detection-range switches."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    # Initial state: all segments enabled.
+    dr_cluster._update_from_raw(t.LVBytes(bytes.fromhex("0003ffffff")))
+    target_attr = FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+    assert dr_cluster._attr_cache.get(target_attr) is True
+
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE,
+                    attrid=AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id,
+                )
+            ]
+        ]
+    )
+
+    result = await dr_cluster.write_attributes(
+        {target_attr: False}, manufacturer=0x115F
+    )
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    # Local value must stay unchanged because remote raw write failed.
+    assert dr_cluster._attr_cache.get(target_attr) is True
+
+
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_mask_write_failure_keeps_local_state(
+    zigpy_device_from_v2_quirk,
+):
+    """Test failed raw write does not optimistically update local mask or segments."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    # Initial state:
+    # 0.00m-0.50m + 2.00m-2.50m + 5.25m-6.00m => bits [0,1,8,9,21,22,23]
+    initial_mask = 0xE00303
+    dr_cluster._update_from_raw(
+        t.LVBytes(b"\x00\x03" + initial_mask.to_bytes(3, "little"))
+    )
+
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
+    range_0_1m_id = FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+    range_2_3m_id = FP300DetectionRangeCluster.AttributeDefs.range_2_3m.id
+    range_5_6m_id = FP300DetectionRangeCluster.AttributeDefs.range_5_6m.id
+
+    assert dr_cluster._attr_cache.get(mask_id) == initial_mask
+    assert dr_cluster._attr_cache.get(range_0_1m_id) is True
+    assert dr_cluster._attr_cache.get(range_2_3m_id) is True
+    assert dr_cluster._attr_cache.get(range_5_6m_id) is True
+
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE,
+                    attrid=AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id,
+                )
+            ]
+        ]
+    )
+
+    result = await dr_cluster.write_attributes({mask_id: 0x000000}, manufacturer=0x115F)
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    # Local values must stay unchanged because remote raw write failed.
+    assert dr_cluster._attr_cache.get(mask_id) == initial_mask
+    assert dr_cluster._attr_cache.get(range_0_1m_id) is True
+    assert dr_cluster._attr_cache.get(range_2_3m_id) is True
+    assert dr_cluster._attr_cache.get(range_5_6m_id) is True

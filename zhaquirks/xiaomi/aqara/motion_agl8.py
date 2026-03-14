@@ -1,5 +1,6 @@
 """Quirk for Aqara lumi.sensor_occupy.agl8."""
 
+from contextlib import suppress
 from typing import Any, Final
 
 from zigpy import types as t
@@ -14,6 +15,8 @@ from zigpy.quirks.v2.homeassistant import (
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
@@ -390,6 +393,11 @@ class FP300DetectionRangeCluster(LocalDataCluster):
     """Local cluster for detection range handling."""
 
     cluster_id = 0xFC30
+    _PREFIX_VALUE: Final = 0x0300
+    _PREFIX_BYTES: Final = _PREFIX_VALUE.to_bytes(2, "little")
+    _FULL_MASK: Final = (1 << 24) - 1
+    _SEGMENT_MASK: Final = (1 << 4) - 1
+    _RAW_ATTR_ID: Final = AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for FP300 detection range cluster."""
@@ -437,87 +445,156 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             zcl_type=DataTypeId.bool_,
             access="rwp",
         )
+        detection_range_mask: Final = ZCLAttributeDef(
+            id=0x0007,
+            type=t.uint32_t,
+            zcl_type=DataTypeId.uint32,
+            access="rwp",
+        )
+
+    _SEGMENTS: Final[tuple[tuple[int, int], ...]] = (
+        (AttributeDefs.range_0_1m.id, 0),
+        (AttributeDefs.range_1_2m.id, 4),
+        (AttributeDefs.range_2_3m.id, 8),
+        (AttributeDefs.range_3_4m.id, 12),
+        (AttributeDefs.range_4_5m.id, 16),
+        (AttributeDefs.range_5_6m.id, 20),
+    )
+    _MASK_ATTR_ID: Final = AttributeDefs.detection_range_mask.id
 
     def _update_from_raw(self, raw: t.LVBytes | bytes | bytearray | None) -> None:
         """Update local detection range from raw 0x019A buffer."""
 
-        if isinstance(raw, t.LVBytes) or isinstance(raw, (bytes, bytearray)):
+        if isinstance(raw, (t.LVBytes, bytes, bytearray)):
             data = bytes(raw)
         else:
             data = b""
 
         if len(data) >= 5:
             prefix = int.from_bytes(data[0:2], "little")
-            mask = int.from_bytes(data[2:5], "little") & ((1 << 24) - 1)
+            mask = int.from_bytes(data[2:5], "little") & self._FULL_MASK
         else:
-            prefix = 0x0300
-            mask = (1 << 24) - 1  # 0xFFFFFF
+            prefix = self._PREFIX_VALUE
+            mask = self._FULL_MASK
 
         super()._update_attribute(self.AttributeDefs.prefix.id, prefix)
+        super()._update_attribute(self._MASK_ATTR_ID, mask)
 
-        seg_defs = [
-            (self.AttributeDefs.range_0_1m.id, 0),
-            (self.AttributeDefs.range_1_2m.id, 4),
-            (self.AttributeDefs.range_2_3m.id, 8),
-            (self.AttributeDefs.range_3_4m.id, 12),
-            (self.AttributeDefs.range_4_5m.id, 16),
-            (self.AttributeDefs.range_5_6m.id, 20),
-        ]
-
-        for attr_id, start_bit in seg_defs:
-            seg_mask = ((1 << 4) - 1) << start_bit
+        for attr_id, start_bit in self._SEGMENTS:
+            seg_mask = self._SEGMENT_MASK << start_bit
             enabled = (mask & seg_mask) != 0
             super()._update_attribute(attr_id, bool(enabled))
 
-    def _build_raw(self) -> t.LVBytes:
-        """Build raw 0x019A buffer for the manufacturer cluster from local range switches."""
+    def _current_mask(self) -> int:
+        """Return current 24-bit mask from cache, defaulting to fully enabled."""
 
-        prefix = self._attr_cache.get(self.AttributeDefs.prefix.id, 0x0300)
-        try:
-            prefix_int = int(prefix) & 0xFFFF
-        except (TypeError, ValueError):
-            prefix_int = 0x0300
+        return (
+            int(self._attr_cache.get(self._MASK_ATTR_ID, self._FULL_MASK))
+            & self._FULL_MASK
+        )
 
-        seg_defs = [
-            (self.AttributeDefs.range_0_1m.id, 0),
-            (self.AttributeDefs.range_1_2m.id, 4),
-            (self.AttributeDefs.range_2_3m.id, 8),
-            (self.AttributeDefs.range_3_4m.id, 12),
-            (self.AttributeDefs.range_4_5m.id, 16),
-            (self.AttributeDefs.range_5_6m.id, 20),
-        ]
+    def _resolve_mask(self, new_attrs: dict[int, Any]) -> int:
+        """Resolve effective mask: direct mask wins; switches update only touched nibbles."""
 
-        mask = 0
-        for attr_id, start_bit in seg_defs:
-            enabled = bool(self._attr_cache.get(attr_id, True))
-            if enabled:
-                mask |= ((1 << 4) - 1) << start_bit
+        if self._MASK_ATTR_ID in new_attrs:
+            with suppress(TypeError, ValueError):
+                return int(new_attrs[self._MASK_ATTR_ID]) & self._FULL_MASK
 
-        buf = prefix_int.to_bytes(2, "little") + mask.to_bytes(3, "little")
-        return t.LVBytes(buf)
+        new_mask = self._current_mask()
+        for attr_id, start_bit in self._SEGMENTS:
+            if attr_id not in new_attrs:
+                continue
+
+            nibble_mask = self._SEGMENT_MASK << start_bit
+            if bool(new_attrs[attr_id]):
+                new_mask |= nibble_mask
+            else:
+                new_mask &= ~nibble_mask
+
+        return new_mask
+
+    def _build_raw(self, mask: int) -> t.LVBytes:
+        """Build raw 0x019A using fixed 16-bit LE prefix + resolved 24-bit mask."""
+
+        return t.LVBytes(self._PREFIX_BYTES + mask.to_bytes(3, "little"))
+
+    def _segment_attrs_from_mask(self, mask: int) -> dict[int, bool]:
+        """Build segment-switch values from a 24-bit detection-range mask."""
+
+        return {
+            attr_id: bool(mask & (self._SEGMENT_MASK << start_bit))
+            for attr_id, start_bit in self._SEGMENTS
+        }
+
+    @staticmethod
+    def _raw_write_succeeded(raw_result: Any, raw_attr_id: int) -> bool:
+        """Return True if raw write result contains a SUCCESS status for raw_attr_id."""
+
+        records = raw_result[0] if isinstance(raw_result, list) and raw_result else []
+
+        if not records:
+            return False
+
+        if len(records) == 1 and records[0].attrid is None:
+            return records[0].status == foundation.Status.SUCCESS
+
+        return any(
+            record.attrid == raw_attr_id and record.status == foundation.Status.SUCCESS
+            for record in records
+        )
 
     async def write_attributes(
         self,
-        attributes: dict[int, Any],
-        manufacturer: int | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        """Override write_attributes to also update manu cluster."""
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Write detection-range attrs by updating raw first, then local cache on success."""
 
-        res = await super().write_attributes(
-            attributes, manufacturer=manufacturer, **kwargs
-        )
+        resolved_attrs: dict[int, Any] = {}
+        for attr, value in attributes.items():
+            try:
+                attrid = self.find_attribute(attr).id
+            except KeyError:
+                continue
+            resolved_attrs[attrid] = value
 
-        raw = self._build_raw()
-
-        manu = self.endpoint.in_clusters.get(AqaraFP300ManuCluster.cluster_id)
-        if manu is not None:
-            await manu.write_attributes(
-                {AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id: raw},
-                manufacturer=manufacturer,
+        if not resolved_attrs:
+            return await super().write_attributes(
+                resolved_attrs, manufacturer=manufacturer, **kwargs
             )
 
-        return res
+        new_mask = self._resolve_mask(resolved_attrs)
+        raw = self._build_raw(new_mask)
+        target_attrs = {
+            self.AttributeDefs.prefix.id: self._PREFIX_VALUE,
+            self._MASK_ATTR_ID: new_mask,
+        }
+
+        manu = self.endpoint.in_clusters.get(AqaraFP300ManuCluster.cluster_id)
+        if manu is None:
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, attrid=attr_id
+                    )
+                    for attr_id in resolved_attrs
+                ]
+            ]
+
+        raw_result = await manu.write_attributes(
+            {AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id: raw},
+            manufacturer=manufacturer,
+        )
+
+        if not self._raw_write_succeeded(raw_result, self._RAW_ATTR_ID):
+            return raw_result
+
+        target_attrs.update(self._segment_attrs_from_mask(new_mask))
+
+        return await super().write_attributes(
+            target_attrs, manufacturer=manufacturer, **kwargs
+        )
 
 
 #
@@ -830,6 +907,18 @@ FP300_QUIRK = (
         entity_type=EntityType.CONFIG,
         translation_key="restart_device",
         fallback_name="Restart device",
+    )
+    .number(
+        attribute_name=FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.name,
+        cluster_id=FP300DetectionRangeCluster.cluster_id,
+        endpoint_id=1,
+        entity_type=EntityType.CONFIG,
+        min_value=0,
+        max_value=0xFFFFFF,
+        step=1,
+        mode="box",
+        translation_key="detection_range_mask",
+        fallback_name="Detection range mask",
     )
     # Detection range switches
     .switch(
