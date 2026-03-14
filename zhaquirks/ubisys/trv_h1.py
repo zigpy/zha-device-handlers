@@ -162,23 +162,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
     )
-    .number(
-        ThermostatCluster.AttributeDefs.remote_temperature.name,
-        ThermostatCluster.cluster_id,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="external_temperature_sensor_value",
-        fallback_name="External temperature sensor value",
-    )
-    .number(
-        ThermostatCluster.AttributeDefs.remote_temperature_valid_duration.name,
-        ThermostatCluster.cluster_id,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        multiplier=1 / 60,
-        translation_key="external_temperature_sensor_valid_duration",
-        fallback_name="External temperature sensor valid duration",
-    )
     .switch(
         ThermostatCluster.AttributeDefs.detect_open_window.name,
         ThermostatCluster.cluster_id,
