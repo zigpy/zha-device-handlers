@@ -493,7 +493,7 @@ FP300_QUIRK = (
     .replaces(AqaraFP300ManuCluster)
     .adds(XiaomiPowerConfigurationPercent)
     .adds(FP300DetectionRangeCluster)
-    # Main presence entity (mmWave)
+    # Main occupancy entity (mmWave)
     .binary_sensor(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.presence.name,
         cluster_id=AqaraFP300ManuCluster.cluster_id,
@@ -505,8 +505,8 @@ FP300_QUIRK = (
             max_interval=300,
             reportable_change=1,
         ),
-        translation_key="presence",
-        fallback_name="Presence",
+        translation_key="occupancy",
+        fallback_name="Occupancy",
     )
     # Diagnostic PIR detection
     .binary_sensor(
