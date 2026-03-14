@@ -2756,6 +2756,39 @@ def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
     assert power_listener.attribute_updates[1][1] == 200  # 100 % * 2
 
 
+def test_aqara_fp300_battery_uses_voltage_not_reported_percent(
+    zigpy_device_from_v2_quirk,
+):
+    """Test FP300 battery percentage is derived from voltage, not from reported percent."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # 290 -> 2.9V display, normalized to 2900mV for percentage curve.
+    # Reported percent=100 should be ignored by FP300 voltage-based power handling.
+    manu_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({23: 290, 24: 100}),
+    )
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == 2.9
+
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    # round((2900 - 2850) * (200 / (3000 - 2850))) = round(66.67) = 67
+    assert power_listener.attribute_updates[1][1] == 67
+
+
 @pytest.mark.parametrize(
     "raw_payload, expected_segments",
     (

@@ -21,7 +21,7 @@ from zhaquirks.xiaomi import (
     BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
     BATTERY_VOLTAGE_MV,
     XiaomiAqaraE1Cluster,
-    XiaomiPowerConfigurationPercent,
+    XiaomiPowerConfiguration,
 )
 
 # Manufacturer-specific attribute keys present in the non-standard AQARA payloads
@@ -75,6 +75,31 @@ class LightSampling(t.enum8):
     MEDIUM = 2
     HIGH = 3
     CUSTOM = 4
+
+
+class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
+    """FP300 battery handling based on voltage-derived percentage.
+
+    FP300 may report battery percentage directly, but this can stay at 100 for long
+    periods. We align with Z2M behavior and derive battery percentage from voltage.
+    """
+
+    MIN_VOLTS_MV = 2850
+    MAX_VOLTS_MV = 3000
+
+    def battery_reported(self, voltage_mv: int) -> None:
+        """Handle FP300 battery voltage units for voltage + percentage updates.
+
+        FP300 reports key 0xff01-23 in 0.01V units (e.g. 306 -> 3.06V).
+        We keep the displayed voltage behavior from the raw report but derive
+        percentage from mV to align with the configured voltage curve.
+        """
+
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
+        self._update_battery_percentage(voltage_mv * 10)
+
+    def battery_percent_reported(self, battery_percent: int) -> None:
+        """Ignore direct percentage report; use voltage-derived percentage only."""
 
 
 #
@@ -491,7 +516,7 @@ FP300_QUIRK = (
     QuirkBuilder("Aqara", "lumi.sensor_occupy.agl8")
     .friendly_name(manufacturer="Aqara", model="Presence Sensor FP300")
     .replaces(AqaraFP300ManuCluster)
-    .adds(XiaomiPowerConfigurationPercent)
+    .adds(FP300PowerConfigurationVoltage)
     .adds(FP300DetectionRangeCluster)
     # Main occupancy entity (mmWave)
     .binary_sensor(
