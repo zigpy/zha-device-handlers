@@ -1,10 +1,16 @@
-"""Quirk for LUMI lumi.motion.agl8."""
+"""Quirk for Aqara lumi.sensor_occupy.agl8."""
 
 from typing import Any, Final
 
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    EntityType,
+    UnitOfLength,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
@@ -19,6 +25,7 @@ from zhaquirks.xiaomi import (
 )
 
 # Manufacturer-specific attribute keys present in the non-standard AQARA payloads
+AQARA_MANUFACTURER_CODE: Final = 0x115F
 MANU_ATTR_BATTERY_VOLTAGE: Final = "0xff01-23"
 MANU_ATTR_BATTERY_PERCENT: Final = "0xff01-24"
 
@@ -87,7 +94,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         pir_detection: Final = ZCLAttributeDef(
@@ -95,7 +102,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         motion_sensitivity: Final = ZCLAttributeDef(
@@ -103,7 +110,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=MotionSensitivity,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         absence_delay_timer: Final = ZCLAttributeDef(
@@ -111,7 +118,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         pir_detection_interval: Final = ZCLAttributeDef(
@@ -119,7 +126,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         presence_detection_options: Final = ZCLAttributeDef(
@@ -127,15 +134,15 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=PresenceDetectionMode,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         detection_range_raw: Final = ZCLAttributeDef(
             id=0x019A,
             type=t.LVBytes,
             zcl_type=DataTypeId.octstr,
-            access="rpw",
-            is_manufacturer_specific=True,
+            access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         #
@@ -146,7 +153,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint8_t,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         ai_sensitivity_adaptive: Final = ZCLAttributeDef(
@@ -154,7 +161,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint8_t,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         #
@@ -165,7 +172,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         track_target_distance: Final = ZCLAttributeDef(
@@ -173,7 +180,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint8_t,
             zcl_type=DataTypeId.uint8,
             access="w",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         #
@@ -184,7 +191,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=TempHumiditySampling,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         temp_humidity_sampling_period: Final = ZCLAttributeDef(
@@ -192,7 +199,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         temp_reporting_interval: Final = ZCLAttributeDef(
@@ -200,7 +207,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         temp_reporting_threshold: Final = ZCLAttributeDef(
@@ -208,7 +215,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         temp_reporting_mode: Final = ZCLAttributeDef(
@@ -216,7 +223,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=ReportMode,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         humidity_reporting_interval: Final = ZCLAttributeDef(
@@ -224,7 +231,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         humidity_reporting_threshold: Final = ZCLAttributeDef(
@@ -232,7 +239,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         humidity_reporting_mode: Final = ZCLAttributeDef(
@@ -240,7 +247,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=ReportMode,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         #
@@ -251,7 +258,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=LightSampling,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         light_sampling_period: Final = ZCLAttributeDef(
@@ -259,7 +266,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         light_reporting_interval: Final = ZCLAttributeDef(
@@ -267,7 +274,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         light_reporting_threshold: Final = ZCLAttributeDef(
@@ -275,7 +282,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         light_reporting_mode: Final = ZCLAttributeDef(
@@ -283,7 +290,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=ReportMode,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         #
@@ -294,7 +301,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.uint8_t,
             zcl_type=DataTypeId.uint8,
             access="w",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         restart_device: Final = ZCLAttributeDef(
@@ -302,7 +309,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="w",
-            is_manufacturer_specific=True,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
     def _parse_aqara_attributes(self, value: Any) -> dict[str, Any]:
@@ -355,7 +362,7 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             id=0x0000,
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
-            access="rpw",
+            access="rwp",
         )
 
         range_0_1m: Final = ZCLAttributeDef(
@@ -493,13 +500,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=BinarySensorDeviceClass.OCCUPANCY,
         entity_type=EntityType.STANDARD,
-        translation_key="presence",
-        fallback_name="Presence",
         reporting_config=ReportingConfig(
             min_interval=1,
             max_interval=300,
             reportable_change=1,
         ),
+        translation_key="presence",
+        fallback_name="Presence",
     )
     # Diagnostic PIR detection
     .binary_sensor(
@@ -508,14 +515,14 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=BinarySensorDeviceClass.MOTION,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="pir_detection",
-        fallback_name="PIR detection",
         reporting_config=ReportingConfig(
             min_interval=1,
             max_interval=300,
             reportable_change=1,
         ),
         initially_disabled=True,
+        translation_key="pir_detection",
+        fallback_name="PIR detection",
     )
     # Target distance (from fp1eTargetDistance)
     .sensor(
@@ -524,7 +531,7 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="m",
+        unit=UnitOfLength.METERS,
         multiplier=0.01,  # raw = meters * 100
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="target_distance",
@@ -565,12 +572,12 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="absence_delay_timer",
-        fallback_name="Absence delay timer",
         min_value=10,
         max_value=300,
         step=5,
         unit=UnitOfTime.SECONDS,
+        translation_key="absence_delay_timer",
+        fallback_name="Absence delay timer",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.pir_detection_interval.name,
@@ -578,12 +585,12 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="pir_detection_interval",
-        fallback_name="PIR detection interval",
         min_value=2,
         max_value=300,
         step=1,
         unit=UnitOfTime.SECONDS,
+        translation_key="pir_detection_interval",
+        fallback_name="PIR detection interval",
     )
     # AI helper switches
     .switch(
@@ -618,13 +625,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="temp_humidity_sampling_period",
-        fallback_name="Temp & humidity sampling period",
         min_value=0.5,
         max_value=3600.0,
         step=0.5,
         multiplier=0.001,  # ms -> s
         unit=UnitOfTime.SECONDS,
+        translation_key="temp_humidity_sampling_period",
+        fallback_name="Temp & humidity sampling period",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.temp_reporting_interval.name,
@@ -632,13 +639,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="temp_reporting_interval",
-        fallback_name="Temperature reporting interval",
         min_value=600,
         max_value=3600,
         step=600,
         multiplier=0.001,
         unit=UnitOfTime.SECONDS,
+        translation_key="temp_reporting_interval",
+        fallback_name="Temperature reporting interval",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.temp_reporting_threshold.name,
@@ -646,13 +653,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.TEMPERATURE,
         entity_type=EntityType.CONFIG,
-        translation_key="temp_reporting_threshold",
-        fallback_name="Temperature reporting threshold",
         min_value=0.2,
         max_value=3.0,
         step=0.1,
         multiplier=0.01,
-        unit="°C",
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temp_reporting_threshold",
+        fallback_name="Temperature reporting threshold",
     )
     .enum(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.temp_reporting_mode.name,
@@ -669,13 +676,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="humidity_reporting_interval",
-        fallback_name="Humidity reporting interval",
         min_value=600,
         max_value=3600,
         step=600,
         multiplier=0.001,
         unit=UnitOfTime.SECONDS,
+        translation_key="humidity_reporting_interval",
+        fallback_name="Humidity reporting interval",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.humidity_reporting_threshold.name,
@@ -683,13 +690,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.HUMIDITY,
         entity_type=EntityType.CONFIG,
-        translation_key="humidity_reporting_threshold",
-        fallback_name="Humidity reporting threshold",
         min_value=2.0,
         max_value=20.0,
         step=0.5,
         multiplier=0.01,
-        unit="%",
+        unit=PERCENTAGE,
+        translation_key="humidity_reporting_threshold",
+        fallback_name="Humidity reporting threshold",
     )
     .enum(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.humidity_reporting_mode.name,
@@ -716,13 +723,13 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="light_sampling_period",
-        fallback_name="Light sampling period",
         min_value=0.5,
         max_value=3600.0,
         step=0.5,
         multiplier=0.001,
         unit=UnitOfTime.SECONDS,
+        translation_key="light_sampling_period",
+        fallback_name="Light sampling period",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.light_reporting_interval.name,
@@ -730,27 +737,27 @@ FP300_QUIRK = (
         endpoint_id=1,
         device_class=NumberDeviceClass.DURATION,
         entity_type=EntityType.CONFIG,
-        translation_key="light_reporting_interval",
-        fallback_name="Light reporting interval",
         min_value=20,
         max_value=3600,
         step=20,
         multiplier=0.001,
         unit=UnitOfTime.SECONDS,
+        translation_key="light_reporting_interval",
+        fallback_name="Light reporting interval",
     )
     .number(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.light_reporting_threshold.name,
         cluster_id=AqaraFP300ManuCluster.cluster_id,
         endpoint_id=1,
-        # “percentage change” – omit device_class
+        # Percentage change; omit device_class.
         entity_type=EntityType.CONFIG,
-        translation_key="light_reporting_threshold",
-        fallback_name="Light reporting threshold",
         min_value=3.0,
         max_value=20.0,
         step=0.5,
         multiplier=0.01,
-        unit="%",
+        unit=PERCENTAGE,
+        translation_key="light_reporting_threshold",
+        fallback_name="Light reporting threshold",
     )
     .enum(
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.light_reporting_mode.name,

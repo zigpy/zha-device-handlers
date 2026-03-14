@@ -2843,9 +2843,13 @@ async def test_aqara_fp300_detection_range_encode(
     manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
     dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
 
-    manu_cluster._write_attributes = mock.AsyncMock()
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
 
-    # Prefix im LocalDataCluster setzen (wie Quirk-Default: 0x0300)
+    # Set prefix in LocalDataCluster (same default as quirk: 0x0300)
     dr_cluster._update_attribute(
         FP300DetectionRangeCluster.AttributeDefs.prefix.id,
         prefix,
