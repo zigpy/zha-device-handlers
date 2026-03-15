@@ -2,7 +2,7 @@
 
 from unittest import mock
 
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 
 from tests.common import ClusterListener
@@ -16,15 +16,18 @@ from zhaquirks.sonoff.zbm5 import (
 
 zhaquirks.setup()
 
-LOCAL_CLUSTER_ID = SonoffInputConfigCluster.cluster_id
-
 
 async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     """Test Sonoff ZBM5-1C custom cluster functionality."""
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="ZBM5-1C-80/86",
-        cluster_ids={1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in"}},
+        cluster_ids={
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+            }
+        },
     )
 
     sonoff_cluster = device.endpoints[1].sonoff_cluster
@@ -59,8 +62,12 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="ZBM5-2C-80/86",
         cluster_ids={
-            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", OnOff.cluster_id: "in"},
-            2: {OnOff.cluster_id: "in"},
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Server,
+            },
+            2: {OnOff.cluster_id: ClusterType.Server},
         },
     )
 
@@ -91,9 +98,13 @@ async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="ZBM5-3C-80/86",
         cluster_ids={
-            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", OnOff.cluster_id: "in"},
-            2: {OnOff.cluster_id: "in"},
-            3: {OnOff.cluster_id: "in"},
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Server,
+            },
+            2: {OnOff.cluster_id: ClusterType.Server},
+            3: {OnOff.cluster_id: ClusterType.Server},
         },
     )
 
@@ -126,7 +137,12 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="ZBM5-1C-80/86",
-        cluster_ids={1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in"}},
+        cluster_ids={
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+            }
+        },
     )
 
     sonoff_cluster = device.endpoints[1].sonoff_cluster
