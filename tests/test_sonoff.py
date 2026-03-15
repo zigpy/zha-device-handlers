@@ -2,6 +2,8 @@
 
 from unittest import mock
 
+from zigpy.zcl.clusters.general import OnOff
+
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.sonoff.zbm5 import (
@@ -47,10 +49,7 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     assert len(sonoff_listener.attribute_updates) == 2
     assert sonoff_listener.attribute_updates[1][0] == detach_mask_attr
 
-    # Local cluster should have updates for all 3 relay states
-    # (3 from __init__ defaults + 3 from mask update)
-    assert local_listener.attribute_updates[-3][0] == relay_1_attr
-    assert local_listener.attribute_updates[-3][1] is True
+    assert local_listener.attribute_updates[0] == (relay_1_attr, True)
 
 
 async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
@@ -59,8 +58,8 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="ZBM5-2C-80/86",
         cluster_ids={
-            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", 0x0006: "in"},
-            2: {0x0006: "in"},
+            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", OnOff.cluster_id: "in"},
+            2: {OnOff.cluster_id: "in"},
         },
     )
 
@@ -70,6 +69,7 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
 
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
     relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
+    relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
 
     # Set both relay 1 and 2 as detached
     mask = SonoffDetachedRelayMask.Relay1 | SonoffDetachedRelayMask.Relay2
@@ -77,12 +77,11 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
         sonoff_cluster.AttributeDefs.detach_relay_mask.id, mask
     )
 
-    # Last 3 updates on local cluster should be the relay states
-    assert local_listener.attribute_updates[-3][0] == relay_1_attr
-    assert local_listener.attribute_updates[-3][1] is True
-    assert local_listener.attribute_updates[-2][0] == relay_2_attr
-    assert local_listener.attribute_updates[-2][1] is True
-    assert local_listener.attribute_updates[-1][1] is False
+    assert len(local_listener.attribute_updates) == 3
+    assert local_listener.attribute_updates[0] == (relay_1_attr, True)
+    assert local_listener.attribute_updates[1] == (relay_2_attr, True)
+    # Relay 3 not in mask, should remain attached
+    assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
 
 async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
@@ -91,9 +90,9 @@ async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="ZBM5-3C-80/86",
         cluster_ids={
-            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", 0x0006: "in"},
-            2: {0x0006: "in"},
-            3: {0x0006: "in"},
+            1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in", OnOff.cluster_id: "in"},
+            2: {OnOff.cluster_id: "in"},
+            3: {OnOff.cluster_id: "in"},
         },
     )
 
@@ -115,13 +114,10 @@ async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
         sonoff_cluster.AttributeDefs.detach_relay_mask.id, mask
     )
 
-    # Last 3 updates on local cluster should be all relay states
-    assert local_listener.attribute_updates[-3][0] == relay_1_attr
-    assert local_listener.attribute_updates[-3][1] is True
-    assert local_listener.attribute_updates[-2][0] == relay_2_attr
-    assert local_listener.attribute_updates[-2][1] is True
-    assert local_listener.attribute_updates[-1][0] == relay_3_attr
-    assert local_listener.attribute_updates[-1][1] is True
+    assert len(local_listener.attribute_updates) == 3
+    assert local_listener.attribute_updates[0] == (relay_1_attr, True)
+    assert local_listener.attribute_updates[1] == (relay_2_attr, True)
+    assert local_listener.attribute_updates[2] == (relay_3_attr, True)
 
 
 async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk):
