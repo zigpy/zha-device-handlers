@@ -26,8 +26,8 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
         cluster_ids={1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in"}},
     )
 
-    sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
-    local_cluster = device.endpoints[1].in_clusters[LOCAL_CLUSTER_ID]
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
     sonoff_listener = ClusterListener(sonoff_cluster)
     local_listener = ClusterListener(local_cluster)
 
@@ -63,8 +63,8 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
         },
     )
 
-    sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
-    local_cluster = device.endpoints[1].in_clusters[LOCAL_CLUSTER_ID]
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
     local_listener = ClusterListener(local_cluster)
 
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
@@ -96,8 +96,8 @@ async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
         },
     )
 
-    sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
-    local_cluster = device.endpoints[1].in_clusters[LOCAL_CLUSTER_ID]
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
     local_listener = ClusterListener(local_cluster)
 
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
@@ -128,8 +128,8 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         cluster_ids={1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in"}},
     )
 
-    sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
-    local_cluster = device.endpoints[1].in_clusters[LOCAL_CLUSTER_ID]
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
 
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.name
     detach_mask_attr_id = SonoffCluster.AttributeDefs.detach_relay_mask.id
