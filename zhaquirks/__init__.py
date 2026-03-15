@@ -147,6 +147,7 @@ class EventableCluster(CustomCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
@@ -167,8 +168,10 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _handle_attribute_report(self, event: AttributeReportedEvent) -> None:
-        """Handle attribute report event."""
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report or update event."""
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
