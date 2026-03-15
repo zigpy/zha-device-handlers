@@ -41,8 +41,8 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     sonoff_cluster.update_attribute(detach_mask_attr, SonoffDetachedRelayMask.Relay1)
 
     # SonoffCluster should have 1 update (detach_mask)
-    assert len(sonoff_listener.attribute_updates) == 2
-    assert sonoff_listener.attribute_updates[1][0] == detach_mask_attr
+    assert len(sonoff_listener.attribute_updates) == 1
+    assert sonoff_listener.attribute_updates[0][0] == detach_mask_attr
 
     assert local_listener.attribute_updates[0] == (relay_1_attr, True)
 
