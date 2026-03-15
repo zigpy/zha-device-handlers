@@ -37,6 +37,8 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     # Test relay mask conversion propagates to local cluster
     detach_mask_attr = sonoff_cluster.AttributeDefs.detach_relay_mask.id
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
+    relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
+    relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
 
     sonoff_cluster.update_attribute(detach_mask_attr, SonoffDetachedRelayMask.Relay1)
 
@@ -44,7 +46,10 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     assert len(sonoff_listener.attribute_updates) == 1
     assert sonoff_listener.attribute_updates[0][0] == detach_mask_attr
 
+    assert len(local_listener.attribute_updates) == 3
     assert local_listener.attribute_updates[0] == (relay_1_attr, True)
+    assert local_listener.attribute_updates[1] == (relay_2_attr, False)
+    assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
 
 async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
@@ -79,7 +84,6 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
     assert len(local_listener.attribute_updates) == 3
     assert local_listener.attribute_updates[0] == (relay_1_attr, True)
     assert local_listener.attribute_updates[1] == (relay_2_attr, True)
-    # Relay 3 not in mask, should remain attached
     assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
 
