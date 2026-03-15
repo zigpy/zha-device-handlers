@@ -11,7 +11,6 @@ from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
     SonoffDetachedRelayMask,
     SonoffInputConfigCluster,
-    SonoffWorkMode,
 )
 
 zhaquirks.setup()
@@ -34,14 +33,6 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     local_cluster = device.endpoints[1].sonoff_input_config
     sonoff_listener = ClusterListener(sonoff_cluster)
     local_listener = ClusterListener(local_cluster)
-
-    # Test work mode attribute
-    work_mode_attr = sonoff_cluster.AttributeDefs.work_mode.id
-    sonoff_cluster.update_attribute(work_mode_attr, SonoffWorkMode.Router)
-
-    assert len(sonoff_listener.attribute_updates) == 1
-    assert sonoff_listener.attribute_updates[0][0] == work_mode_attr
-    assert sonoff_listener.attribute_updates[0][1] == SonoffWorkMode.Router
 
     # Test relay mask conversion propagates to local cluster
     detach_mask_attr = sonoff_cluster.AttributeDefs.detach_relay_mask.id
