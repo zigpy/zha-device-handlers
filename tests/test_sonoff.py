@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 
 from tests.common import ClusterListener
@@ -135,7 +136,13 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
     detach_mask_attr_id = SonoffCluster.AttributeDefs.detach_relay_mask.id
 
     with mock.patch.object(
-        sonoff_cluster, "write_attributes", mock.AsyncMock(return_value=[[0x00]])
+        sonoff_cluster,
+        "write_attributes",
+        mock.AsyncMock(
+            return_value=[
+                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            ]
+        ),
     ) as mock_write:
         await local_cluster.write_attributes({relay_1_attr: True})
 
