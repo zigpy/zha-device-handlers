@@ -164,7 +164,6 @@ zbm_1c_quirk = (
         SonoffCluster.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         entity_platform=EntityPlatform.SENSOR,
-        initially_disabled=True,
         translation_key="work_mode",
         fallback_name="Work mode",
     )
@@ -172,7 +171,6 @@ zbm_1c_quirk = (
         SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
         SonoffInputConfigCluster.cluster_id,
         entity_type=EntityType.CONFIG,
-        initially_disabled=True,
         translation_key="detach_relay_1",
         fallback_name="Detach relay 1",
     )
@@ -193,7 +191,6 @@ zbm_2c_quirk = (
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
         SonoffInputConfigCluster.cluster_id,
         entity_type=EntityType.CONFIG,
-        initially_disabled=True,
         translation_key="detach_relay_2",
         fallback_name="Detach relay 2",
     )
@@ -214,7 +211,6 @@ zbm_3c_quirk = (
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
         SonoffInputConfigCluster.cluster_id,
         entity_type=EntityType.CONFIG,
-        initially_disabled=True,
         translation_key="detach_relay_3",
         fallback_name="Detach relay 3",
     )
