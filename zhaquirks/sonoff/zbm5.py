@@ -86,11 +86,12 @@ class SonoffInputConfigCluster(LocalDataCluster):
     def __init__(self, *args, **kwargs):
         """Init with all relays attached by default."""
         super().__init__(*args, **kwargs)
-        # TODO: This currently won't work after a HA restart due to a zigpy change,
-        #  we should just use _DEFAULT_VALUES when that's ready
+        # TODO: Use _DEFAULT_VALUES when ready, this doesn't work in all circumstances
+        # TODO: Force read of real detach_relay_mask during pairing,
+        #  so this is populated with correct values from device (using update_attribute)
         for attr_id in self._RELAY_BITS:
             if attr_id not in self._attr_cache:
-                self._update_attribute(attr_id, t.Bool.false)
+                self._update_attribute(attr_id, t.Bool.true)
 
     def update_relay_states(self, mask: int) -> None:
         """Update individual relay states from a bitmap mask."""
