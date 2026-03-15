@@ -5,6 +5,7 @@ from typing import Any, Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
@@ -54,14 +55,18 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-    def _update_attribute(
-        self, attrid: int | t.uint16_t | ZCLAttributeDef, value: Any
-    ) -> None:
-        """Update attribute and sync relay states to local config cluster."""
-        super()._update_attribute(attrid, value)
+    def __init__(self, *args, **kwargs):
+        """Init and listen for mask attribute changes."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_update)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_update)
 
-        if self.find_attribute(attrid) == self.AttributeDefs.detach_relay_mask:
-            self.endpoint.sonoff_input_config.update_relay_states(value)
+    def _handle_attribute_update(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Sync relay states to local config cluster on mask change."""
+        if event.attribute_id == self.AttributeDefs.detach_relay_mask.id:
+            self.endpoint.sonoff_input_config.update_relay_states(event.value)
 
 
 class SonoffInputConfigCluster(LocalDataCluster):
