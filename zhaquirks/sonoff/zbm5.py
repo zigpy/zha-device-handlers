@@ -92,11 +92,13 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-    def _update_attribute(self, attrid, value):
+    def _update_attribute(
+        self, attrid: int | t.uint16_t | ZCLAttributeDef, value: Any
+    ) -> None:
         """Update attribute and sync relay states to local config cluster."""
         super()._update_attribute(attrid, value)
 
-        if attrid == self.AttributeDefs.detach_relay_mask.id:
+        if self.find_attribute(attrid) == self.AttributeDefs.detach_relay_mask:
             self.endpoint.sonoff_input_config.update_relay_states(value)
 
 
@@ -134,7 +136,9 @@ class SonoffInputConfigCluster(LocalDataCluster):
             self._update_attribute(attr_id, bool(mask & bit))
 
     async def write_attributes(
-        self, attributes: dict, manufacturer=None, **kwargs
+        self,
+        attributes: dict[str | int | ZCLAttributeDef, Any],
+        **kwargs,
     ) -> list:
         """Translate per-relay writes into a mask write on real SonoffCluster."""
         mask_attr_id = SonoffCluster.AttributeDefs.detach_relay_mask.id
