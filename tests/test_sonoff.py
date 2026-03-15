@@ -2,8 +2,6 @@
 
 from unittest import mock
 
-import pytest
-
 from tests.common import ClusterListener
 import zhaquirks
 import zhaquirks.sonoff.zbm5
@@ -11,8 +9,7 @@ import zhaquirks.sonoff.zbm5
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sonoff.zbm5.zbm_1c_quirk,))
-async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk, quirk):
+async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk):
     """Test Sonoff ZBM5-1C custom cluster functionality."""
 
     device = zigpy_device_from_v2_quirk(
@@ -58,8 +55,7 @@ async def test_sonoff_zbm5_1c_cluster(zigpy_device_from_v2_quirk, quirk):
     assert sonoff_listener.attribute_updates[2][1] is True
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sonoff.zbm5.zbm_2c_quirk,))
-async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk, quirk):
+async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk):
     """Test Sonoff ZBM5-2C custom cluster functionality."""
 
     device = zigpy_device_from_v2_quirk(
@@ -94,8 +90,7 @@ async def test_sonoff_zbm5_2c_cluster(zigpy_device_from_v2_quirk, quirk):
     assert sonoff_listener.attribute_updates[2][1] is True
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sonoff.zbm5.zbm_3c_quirk,))
-async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk, quirk):
+async def test_sonoff_zbm5_3c_cluster(zigpy_device_from_v2_quirk):
     """Test Sonoff ZBM5-3C custom cluster functionality."""
 
     device = zigpy_device_from_v2_quirk(
