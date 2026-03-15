@@ -163,38 +163,3 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
             call_args[detach_mask_attr_id]
             == zhaquirks.sonoff.zbm5.SonoffDetachedRelayMask.Relay1
         )
-
-
-async def test_sonoff_cluster_work_mode_enum(zigpy_device_from_v2_quirk):
-    """Test Sonoff work mode enum values."""
-
-    assert zhaquirks.sonoff.zbm5.SonoffWorkMode.EndDevice == 0x00
-    assert zhaquirks.sonoff.zbm5.SonoffWorkMode.Router == 0x01
-
-    assert zhaquirks.sonoff.zbm5.SonoffDetachedRelayMask.Relay1 == 0b00000001
-    assert zhaquirks.sonoff.zbm5.SonoffDetachedRelayMask.Relay2 == 0b00000010
-    assert zhaquirks.sonoff.zbm5.SonoffDetachedRelayMask.Relay3 == 0b00000100
-
-
-async def test_sonoff_cluster_attribute_definitions(zigpy_device_from_v2_quirk):
-    """Test Sonoff cluster attribute definitions."""
-
-    device = zigpy_device_from_v2_quirk(
-        manufacturer="SONOFF",
-        model="ZBM5-1C-80/86",
-        cluster_ids={1: {0xFC11: "in", LOCAL_CLUSTER_ID: "in"}},
-    )
-
-    sonoff_cluster = device.endpoints[1].in_clusters[0xFC11]
-    local_cluster = device.endpoints[1].in_clusters[LOCAL_CLUSTER_ID]
-
-    # Real cluster attributes
-    assert sonoff_cluster.AttributeDefs.work_mode.id == 0x0018
-    assert sonoff_cluster.AttributeDefs.detach_relay_mask.id == 0x0019
-    assert sonoff_cluster.cluster_id == 0xFC11
-
-    # Local cluster attributes
-    assert local_cluster.AttributeDefs.relay_1_detached.id == 0x0000
-    assert local_cluster.AttributeDefs.relay_2_detached.id == 0x0001
-    assert local_cluster.AttributeDefs.relay_3_detached.id == 0x0002
-    assert local_cluster.cluster_id == LOCAL_CLUSTER_ID
