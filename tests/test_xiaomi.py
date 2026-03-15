@@ -103,6 +103,7 @@ import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_agl04
 from zhaquirks.xiaomi.aqara.motion_agl8 import (
+    AQARA_MANUFACTURER_CODE,
     AqaraFP300ManuCluster,
     FP300DetectionRangeCluster,
 )
@@ -3061,6 +3062,66 @@ async def test_aqara_fp300_detection_range_switch_write_preserves_granular_bits(
     )
 
 
+@pytest.mark.asyncio
+async def test_aqara_fp300_detection_range_concurrent_switch_writes_are_serialized(
+    zigpy_device_from_v2_quirk,
+):
+    """Test concurrent switch writes are serialized to avoid lost mask updates."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+
+    # Baseline: all ranges enabled.
+    dr_cluster._update_from_raw(t.LVBytes(bytes.fromhex("0003ffffff")))
+
+    range_0_1m_id = FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+    range_1_2m_id = FP300DetectionRangeCluster.AttributeDefs.range_1_2m.id
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
+
+    first_write_started = asyncio.Event()
+    release_first_write = asyncio.Event()
+    written_masks: list[int] = []
+
+    async def _slow_raw_write(*args, **kwargs):
+        attrs = args[0]
+        raw = bytes(attrs[0].value.value)
+        written_masks.append(int.from_bytes(raw[2:5], "little"))
+
+        if len(written_masks) == 1:
+            first_write_started.set()
+            await release_first_write.wait()
+
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    manu_cluster._write_attributes = mock.AsyncMock(side_effect=_slow_raw_write)
+
+    first_task = asyncio.create_task(
+        dr_cluster.write_attributes({range_0_1m_id: False}, manufacturer=0x115F)
+    )
+    await first_write_started.wait()
+
+    second_task = asyncio.create_task(
+        dr_cluster.write_attributes({range_1_2m_id: False}, manufacturer=0x115F)
+    )
+    await asyncio.sleep(0)
+
+    # While first raw write is still pending, second write must not start yet.
+    assert manu_cluster._write_attributes.await_count == 1
+
+    release_first_write.set()
+    await asyncio.gather(first_task, second_task)
+
+    assert manu_cluster._write_attributes.await_count == 2
+    # 1st write clears nibble 0, 2nd write then also clears nibble 1 from the
+    # updated state (no lost update).
+    assert written_masks == [0xFFFFF0, 0xFFFF00]
+    assert dr_cluster._attr_cache.get(mask_id) == 0xFFFF00
+    assert dr_cluster._attr_cache.get(range_0_1m_id) is False
+    assert dr_cluster._attr_cache.get(range_1_2m_id) is False
+
+
 def test_aqara_fp300_detection_range_raw_write_succeeded_edge_cases():
     """Test raw write helper edge-cases used by FP300DetectionRangeCluster."""
 
@@ -3141,6 +3202,28 @@ async def test_aqara_fp300_detection_range_write_no_valid_attrs(
 
     assert result[0][0].status == foundation.Status.SUCCESS
     manu_cluster._write_attributes.assert_not_awaited()
+
+
+def test_aqara_fp300_detection_range_attrs_resolve_with_aqara_manufacturer_code(
+    zigpy_device_from_v2_quirk,
+):
+    """Test local detection-range attrs resolve for the AQARA manufacturer code."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    dr_cluster = device.endpoints[1].in_clusters[FP300DetectionRangeCluster.cluster_id]
+    mask_id = FP300DetectionRangeCluster.AttributeDefs.detection_range_mask.id
+    range_0_1m_id = FP300DetectionRangeCluster.AttributeDefs.range_0_1m.id
+
+    mask_attr = dr_cluster.find_attribute(
+        mask_id, manufacturer_code=AQARA_MANUFACTURER_CODE
+    )
+    segment_attr = dr_cluster.find_attribute(
+        range_0_1m_id, manufacturer_code=AQARA_MANUFACTURER_CODE
+    )
+
+    assert mask_attr.manufacturer_code == AQARA_MANUFACTURER_CODE
+    assert segment_attr.manufacturer_code == AQARA_MANUFACTURER_CODE
 
 
 @pytest.mark.asyncio

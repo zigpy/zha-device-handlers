@@ -1,5 +1,6 @@
 """Quirk for Aqara lumi.sensor_occupy.agl8."""
 
+import asyncio
 from contextlib import suppress
 from typing import Any, Final
 
@@ -84,7 +85,10 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
     """FP300 battery handling based on voltage-derived percentage.
 
     FP300 may report battery percentage directly, but this can stay at 100 for long
-    periods. We align with Z2M behavior and derive battery percentage from voltage.
+    periods. The implementation aligns with Z2M behavior and derives battery
+    percentage from voltage.
+    This is a trade-off: the direct device percentage can be smoother, while voltage
+    can fluctuate with load/temperature but provides better progression in practice.
     """
 
     MIN_VOLTS_MV = 2850
@@ -94,15 +98,22 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
         """Handle FP300 battery voltage units for voltage + percentage updates.
 
         FP300 reports key 0xff01-23 in 0.01V units (e.g. 306 -> 3.06V).
-        We keep the displayed voltage behavior from the raw report but derive
-        percentage from mV to align with the configured voltage curve.
+        Displayed voltage follows the raw report while percentage is derived from
+        mV to align with the configured voltage curve.
         """
 
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
         self._update_battery_percentage(voltage_mv * 10)
 
     def battery_percent_reported(self, battery_percent: int) -> None:
-        """Ignore direct percentage report; use voltage-derived percentage only."""
+        """Ignore direct percentage report; use voltage-derived percentage only.
+
+        The corresponding TLV key is still parsed and mapped by the FP300 quirk,
+        but it is intentionally not used as the active battery source today.
+        This keeps compatibility if firmware behavior changes later: switching
+        back to direct percentage becomes a small policy change here, without
+        reworking TLV parsing/mapping.
+        """
 
 
 #
@@ -352,11 +363,25 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         )
 
     def _parse_aqara_attributes(self, value: Any) -> dict[str, Any]:
-        """Parse non-standard and fp300 specific attributes.
+        """Parse Aqara TLV attributes and apply FP300-specific key mapping.
 
-        Returns a mapping of attribute keys to values as extracted by the
-        parent implementation, with a couple of manufacturer-specific keys
-        renamed to common battery attribute names used in this project.
+        Design decision:
+        - The shared Xiaomi base parser should stay decode-only (generic TLV ->
+          key/value extraction).
+        - Device-specific interpretation belongs in derived classes.
+
+        FP300 logic is intentionally not added as a switch/case branch in the
+        base class, because that would couple unrelated Xiaomi devices, increase
+        regression risk, and require central changes whenever one device key's
+        semantics or firmware behavior changes.
+
+        This keeps responsibilities clear: base class = transport/parsing,
+        derived class = semantic mapping for that device.
+
+        Note: mapping keeps both battery-related TLV keys (voltage + percentage).
+        Current battery policy consumes voltage-derived
+        percentage, but retaining the mapped direct-percent key keeps future
+        firmware-policy switches simple.
         """
         attributes = super()._parse_aqara_attributes(value)
 
@@ -371,12 +396,17 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         return attributes
 
     def _update_attribute(self, attrid: int, value: Any) -> Any:
-        """Only delegate 0x019A to the FP300DetectionRangeCluster.
+        """Mirror 0x019A to local range attrs, then run normal cluster update.
 
-        If the attribute id corresponds to the raw detection-range payload we
-        forward that to the local detection-range cluster which decodes the
-        buffer into separate boolean range attributes. The result of the
-        parent implementation is returned to the caller.
+        Design decision:
+        - Forwarding to `FP300DetectionRangeCluster` is done directly here to
+          keep decode/derive behavior deterministic for report and write paths.
+        - `super()._update_attribute()` does not return a status, so there is no
+          meaningful return-value check before forwarding.
+        - Attribute*Event listeners are intentionally not used as the primary
+          bridge because runtime updates are split across different event types
+          (written vs. reported/updated). Keeping the raw->derived transform inline
+          here keeps the behavior explicit and avoids hidden listener-coupling complexity.
         """
 
         if attrid == self.AttributeDefs.detection_range_raw.id:
@@ -390,7 +420,24 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
 
 
 class FP300DetectionRangeCluster(LocalDataCluster):
-    """Local cluster for detection range handling."""
+    """Local cluster for FP300 detection-range handling.
+
+    The device exposes detection range as one manufacturer-specific raw payload
+    (0x019A, octet string with prefix + 24-bit mask). ZHA/HA benefits from a
+    clearer configuration surface (six 1 m switches + numeric mask), while all
+    writes still have to end up as that one raw attribute on the device.
+
+    Design decision:
+    - Keep device transport details in the manufacturer cluster.
+    - Keep UI-oriented virtual attributes in a dedicated LocalDataCluster.
+    - Local virtual attributes use explicit AQARA manufacturer_code to keep
+      cache keys stable on this manufacturer-specific cluster during reload.
+
+    Synthetic switch/mask attributes are intentionally not added to the
+    manufacturer cluster or handle this only via builder converters, because
+    that mixes unrelated responsibilities, makes read-modify-write behavior less
+    explicit, and is harder to reason about for cache/state synchronization.
+    """
 
     cluster_id = 0xFC30
     _PREFIX_VALUE: Final = 0x0300
@@ -407,6 +454,7 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             type=t.uint16_t,
             zcl_type=DataTypeId.uint16,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
         range_0_1m: Final = ZCLAttributeDef(
@@ -414,42 +462,49 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         range_1_2m: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         range_2_3m: Final = ZCLAttributeDef(
             id=0x0003,
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         range_3_4m: Final = ZCLAttributeDef(
             id=0x0004,
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         range_4_5m: Final = ZCLAttributeDef(
             id=0x0005,
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         range_5_6m: Final = ZCLAttributeDef(
             id=0x0006,
             type=t.Bool,
             zcl_type=DataTypeId.bool_,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
         detection_range_mask: Final = ZCLAttributeDef(
             id=0x0007,
             type=t.uint32_t,
             zcl_type=DataTypeId.uint32,
             access="rwp",
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
         )
 
     _SEGMENTS: Final[tuple[tuple[int, int], ...]] = (
@@ -462,8 +517,22 @@ class FP300DetectionRangeCluster(LocalDataCluster):
     )
     _MASK_ATTR_ID: Final = AttributeDefs.detection_range_mask.id
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # Serialize read-modify-write updates to avoid lost updates when multiple
+        # switch writes are issued concurrently.
+        self._write_mutex = asyncio.Lock()
+
     def _update_from_raw(self, raw: t.LVBytes | bytes | bytearray | None) -> None:
-        """Update local detection range from raw 0x019A buffer."""
+        """Update local detection range from raw 0x019A buffer.
+
+        The payload is interpreted as:
+        - bytes 0..1: fixed prefix, little-endian uint16
+        - bytes 2..4: detection mask, little-endian 24-bit integer
+
+        LE parsing is used to match observed device behavior and Z2M semantics.
+        """
 
         if isinstance(raw, (t.LVBytes, bytes, bytearray)):
             data = bytes(raw)
@@ -528,7 +597,12 @@ class FP300DetectionRangeCluster(LocalDataCluster):
 
     @staticmethod
     def _raw_write_succeeded(raw_result: Any, raw_attr_id: int) -> bool:
-        """Return True if raw write result contains a SUCCESS status for raw_attr_id."""
+        """Return True if raw write confirms success for the raw target attribute.
+
+        zigpy may return either:
+        - global success (one record with attrid=None), or
+        - per-attribute status records.
+        """
 
         records = raw_result[0] if isinstance(raw_result, list) and raw_result else []
 
@@ -549,7 +623,23 @@ class FP300DetectionRangeCluster(LocalDataCluster):
         manufacturer: int | UndefinedType | None = UNDEFINED,
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Write detection-range attrs by updating raw first, then local cache on success."""
+        """Write detection-range attrs by updating raw first, then local cache on success.
+
+        Writes are intentionally serialized with a mutex because the operation is a
+        read-modify-write sequence on one shared 24-bit mask.
+
+        Alternatives considered:
+        - Rejecting concurrent writes with ACTION_DENIED/INCONSISTENT avoids
+          waiting but forces callers to retry and can drop rapid UI toggles.
+        - Cancelling an in-flight write is unsafe because the Zigbee request may
+          already be in flight or queued for a sleepy device.
+
+        Unknown attributes are filtered instead of hard-failing. This mirrors
+        LocalDataCluster behavior and keeps mixed/partial writes robust.
+
+        Local virtual attrs are updated only after the raw device write succeeds.
+        This avoids optimistic cache drift when the sleepy-device write times out.
+        """
 
         resolved_attrs: dict[int, Any] = {}
         for attr, value in attributes.items():
@@ -564,37 +654,38 @@ class FP300DetectionRangeCluster(LocalDataCluster):
                 resolved_attrs, manufacturer=manufacturer, **kwargs
             )
 
-        new_mask = self._resolve_mask(resolved_attrs)
-        raw = self._build_raw(new_mask)
-        target_attrs = {
-            self.AttributeDefs.prefix.id: self._PREFIX_VALUE,
-            self._MASK_ATTR_ID: new_mask,
-        }
+        async with self._write_mutex:
+            new_mask = self._resolve_mask(resolved_attrs)
+            raw = self._build_raw(new_mask)
+            target_attrs = {
+                self.AttributeDefs.prefix.id: self._PREFIX_VALUE,
+                self._MASK_ATTR_ID: new_mask,
+            }
 
-        manu = self.endpoint.in_clusters.get(AqaraFP300ManuCluster.cluster_id)
-        if manu is None:
-            return [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        foundation.Status.FAILURE, attrid=attr_id
-                    )
-                    for attr_id in resolved_attrs
+            manu = self.endpoint.in_clusters.get(AqaraFP300ManuCluster.cluster_id)
+            if manu is None:
+                return [
+                    [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.FAILURE, attrid=attr_id
+                        )
+                        for attr_id in resolved_attrs
+                    ]
                 ]
-            ]
 
-        raw_result = await manu.write_attributes(
-            {AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id: raw},
-            manufacturer=manufacturer,
-        )
+            raw_result = await manu.write_attributes(
+                {AqaraFP300ManuCluster.AttributeDefs.detection_range_raw.id: raw},
+                manufacturer=manufacturer,
+            )
 
-        if not self._raw_write_succeeded(raw_result, self._RAW_ATTR_ID):
-            return raw_result
+            if not self._raw_write_succeeded(raw_result, self._RAW_ATTR_ID):
+                return raw_result
 
-        target_attrs.update(self._segment_attrs_from_mask(new_mask))
+            target_attrs.update(self._segment_attrs_from_mask(new_mask))
 
-        return await super().write_attributes(
-            target_attrs, manufacturer=manufacturer, **kwargs
-        )
+            return await super().write_attributes(
+                target_attrs, manufacturer=manufacturer, **kwargs
+            )
 
 
 #
