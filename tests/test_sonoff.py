@@ -146,6 +146,7 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
     ) as mock_write:
         await local_cluster.write_attributes({relay_1_attr: True})
 
-        mock_write.assert_called_once()
-        written_attrs = mock_write.call_args[0][0]
-        assert written_attrs == {detach_mask_attr_id: SonoffDetachedRelayMask.Relay1}
+        assert mock_write.call_count == 1
+        assert mock_write.call_args[0][0] == {
+            detach_mask_attr_id: SonoffDetachedRelayMask.Relay1
+        }
