@@ -5,56 +5,18 @@ from typing import Any, Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
-    BUTTON,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     COMMAND,
+    COMMAND_TOGGLE,
     ENDPOINT_ID,
     SHORT_PRESS,
-    ZHA_SEND_EVENT,
 )
-
-BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3}
-
-
-class SonoffOnOffCluster(CustomCluster, OnOff):
-    """OnOff cluster that emits button press events for toggle commands.
-
-    When the ZBM5 physical button is pressed (especially in decoupled mode),
-    the device sends toggle commands to the coordinator. This cluster intercepts
-    those commands and emits ZHA events that can trigger Home Assistant automations.
-    """
-
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list[Any],
-        *,
-        dst_addressing: t.Addressing.Group
-        | t.Addressing.IEEE
-        | t.Addressing.NWK
-        | None = None,
-    ):
-        """Handle toggle commands from the device and emit button press events."""
-        if hdr.command_id == OnOff.ServerCommandDefs.toggle.id:
-            button = BUTTONS.get(
-                self.endpoint.endpoint_id, f"button_{self.endpoint.endpoint_id}"
-            )
-            action = f"{button}_{SHORT_PRESS}"
-            event_args = {
-                BUTTON: button,
-                ENDPOINT_ID: self.endpoint.endpoint_id,
-            }
-            self.listener_event(ZHA_SEND_EVENT, action, event_args)
-
-        return super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class SonoffWorkMode(t.enum8):
@@ -161,7 +123,6 @@ zbm_1c_quirk = (
     .applies_to("SONOFF", "ZBM5-1C-120")
     .replaces(SonoffCluster)
     .adds(SonoffInputConfigCluster)
-    .replaces(SonoffOnOffCluster)
     .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
         SonoffWorkMode,
@@ -178,9 +139,7 @@ zbm_1c_quirk = (
         fallback_name="Detach relay 1",
     )
     .device_automation_triggers(
-        {
-            (SHORT_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{SHORT_PRESS}"},
-        }
+        {(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1}}
     )
 )
 zbm_1c_quirk.add_to_registry()
@@ -189,7 +148,6 @@ zbm_2c_quirk = (
     zbm_1c_quirk.clone()
     .applies_to("SONOFF", "ZBM5-2C-80/86")
     .applies_to("SONOFF", "ZBM5-2C-120")
-    .replaces(SonoffOnOffCluster, endpoint_id=2)
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
         SonoffInputConfigCluster.cluster_id,
@@ -197,9 +155,7 @@ zbm_2c_quirk = (
         fallback_name="Detach relay 2",
     )
     .device_automation_triggers(
-        {
-            (SHORT_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{SHORT_PRESS}"},
-        }
+        {(SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 2}}
     )
 )
 zbm_2c_quirk.add_to_registry()
@@ -208,7 +164,6 @@ zbm_3c_quirk = (
     zbm_2c_quirk.clone()
     .applies_to("SONOFF", "ZBM5-3C-80/86")
     .applies_to("SONOFF", "ZBM5-3C-120")
-    .replaces(SonoffOnOffCluster, endpoint_id=3)
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
         SonoffInputConfigCluster.cluster_id,
@@ -216,9 +171,7 @@ zbm_3c_quirk = (
         fallback_name="Detach relay 3",
     )
     .device_automation_triggers(
-        {
-            (SHORT_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{SHORT_PRESS}"},
-        }
+        {(SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 3}}
     )
 )
 zbm_3c_quirk.add_to_registry()
