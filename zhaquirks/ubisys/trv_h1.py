@@ -4,7 +4,12 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    EntityType,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
@@ -157,6 +162,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         min_value=-10,
         max_value=10,
         step=1,
+        mode="box",
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="local_temperature_calibration",
@@ -171,8 +177,9 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .binary_sensor(
         ThermostatCluster.AttributeDefs.open_window_state.name,
         ThermostatCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.WINDOW,
-        translation_key="open_window_detection_status",
+        # translation_key="open_window_detection_status", # TODO: device class name?
         fallback_name="Open window detection status",
     )
     .number(
@@ -181,6 +188,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
+        step=0.5,
         translation_key="open_window_detection_threshold",
         fallback_name="Open window detection threshold",
     )
@@ -189,6 +197,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         ThermostatCluster.cluster_id,
         device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
+        mode="box",
         translation_key="open_window_event_duration",
         fallback_name="Open window event duration",
     )
@@ -198,6 +207,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         multiplier=1 / 60,
+        mode="box",
         translation_key="open_window_detection_guard_period",
         fallback_name="Open window detection guard period",
     )
@@ -215,8 +225,8 @@ class ThermostatCluster(CustomCluster, Thermostat):
         max_value=100,
         unit=PERCENTAGE,
         initially_disabled=True,
-        translation_key="backup_heating_demand",
-        fallback_name="Backup heating demand",
+        translation_key="winter_backup_heating_demand",
+        fallback_name="Winter backup heating demand",
     )
     .number(
         ThermostatCluster.AttributeDefs.alternate_backup_heating_demand.name,
@@ -225,8 +235,8 @@ class ThermostatCluster(CustomCluster, Thermostat):
         max_value=100,
         unit=PERCENTAGE,
         initially_disabled=True,
-        translation_key="alternate_backup_heating_demand",
-        fallback_name="Alternate backup heating demand",
+        translation_key="summer_backup_heating_demand",
+        fallback_name="Summer backup heating demand",
     )
     .number(
         ThermostatCluster.AttributeDefs.proportional_gain.name,
