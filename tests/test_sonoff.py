@@ -89,14 +89,8 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         },
     )
 
-    sonoff_cluster = device.endpoints[1].sonoff_cluster
-    local_cluster = device.endpoints[1].sonoff_input_config
-
-    relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.name
-    detach_mask_attr_id = SonoffCluster.AttributeDefs.detach_relay_mask.id
-
     with mock.patch.object(
-        sonoff_cluster,
+        device.endpoints[1].sonoff_cluster,
         "write_attributes",
         mock.AsyncMock(
             return_value=[
@@ -104,9 +98,11 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
             ]
         ),
     ) as mock_write:
-        await local_cluster.write_attributes({relay_1_attr: True})
+        await device.endpoints[1].sonoff_input_config.write_attributes(
+            {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: True}
+        )
 
         assert mock_write.call_count == 1
         assert mock_write.call_args[0][0] == {
-            detach_mask_attr_id: SonoffDetachedRelayMask.Relay1
+            SonoffCluster.AttributeDefs.detach_relay_mask.id: SonoffDetachedRelayMask.Relay1
         }
