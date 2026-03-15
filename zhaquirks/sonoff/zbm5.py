@@ -164,7 +164,7 @@ class SonoffCluster(CustomCluster):
 zbm_1c_quirk = (
     QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
     .applies_to("SONOFF", "ZBM5-1C-120")
-    .adds(SonoffCluster)
+    .replaces(SonoffCluster)
     .replaces(SonoffOnOffCluster)
     .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
