@@ -77,7 +77,7 @@ async def test_sonoff_zbm5_relay_mask_propagation(
 
 
 async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk):
-    """Test writing relay attributes translates to mask write on SonoffCluster."""
+    """Test writing relay attributes translates to mask write and updates local state."""
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="ZBM5-1C-80/86",
@@ -89,20 +89,36 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         },
     )
 
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
+    local_listener = ClusterListener(local_cluster)
+
+    # Mock at the low level so real write_attributes runs and emits events
+    write_response = [
+        [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
+    ]
     with mock.patch.object(
-        device.endpoints[1].sonoff_cluster,
-        "write_attributes",
-        mock.AsyncMock(
-            return_value=[
-                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-            ]
-        ),
+        sonoff_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=write_response),
     ) as mock_write:
-        await device.endpoints[1].sonoff_input_config.write_attributes(
+        await local_cluster.write_attributes(
             {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: True}
         )
 
+        # Verify mask was written to device
         assert mock_write.call_count == 1
-        assert mock_write.call_args[0][0] == {
-            SonoffCluster.AttributeDefs.detach_relay_mask.id: SonoffDetachedRelayMask.Relay1
-        }
+        written_attrs = mock_write.call_args[0][0]
+        assert len(written_attrs) == 1
+        assert (
+            written_attrs[0].attrid == SonoffCluster.AttributeDefs.detach_relay_mask.id
+        )
+
+        # Verify local relay states updated via AttributeWrittenEvent
+        relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
+        relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
+        relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
+
+        assert local_listener.attribute_updates[0] == (relay_1_attr, True)
+        assert local_listener.attribute_updates[1] == (relay_2_attr, False)
+        assert local_listener.attribute_updates[2] == (relay_3_attr, False)
