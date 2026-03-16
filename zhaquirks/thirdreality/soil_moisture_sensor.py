@@ -41,7 +41,6 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RSM0147Z")
     .applies_to("Third Reality, Inc", "3RSM0347Z")
     .replaces(ThirdRealitySoilMoistureCluster)
-    .replaces(SoilMoisture)
     .number(
         attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_offset_celsius.name,
         cluster_id=ThirdRealitySoilMoistureCluster.cluster_id,
