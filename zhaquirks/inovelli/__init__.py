@@ -1000,6 +1000,16 @@ class InovelliVZM32SNCluster(InovelliCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         increased_non_neutral_output = ZCLAttributeDef(
             id=0x0019,
             type=t.Bool,
@@ -1262,11 +1272,6 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         firmware_progress_led = ZCLAttributeDef(
             id=0x0104,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
-        relay_click_in_on_off_mode = ZCLAttributeDef(
-            id=0x0105,
             type=t.Bool,
             is_manufacturer_specific=True,
         )
