@@ -32,9 +32,10 @@ class ThirdReality24GRadarCluster(CustomCluster):
 (
     QuirkBuilder("Third Reality, Inc", "3RPS01083Z")
     .replaces(ThirdReality24GRadarCluster)
-    .switch(
-        cluster_id=ThirdReality24GRadarCluster.cluster_id,
+    .write_attr_button(
         attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_calibration.name,
+        attribute_value=0x01,  # 1 sensor calibration
+        cluster_id=ThirdReality24GRadarCluster.cluster_id,
         translation_key="sensor_calibration",
         fallback_name="Sensor calibration",
     )
