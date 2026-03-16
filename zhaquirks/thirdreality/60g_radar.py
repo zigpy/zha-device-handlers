@@ -7,7 +7,6 @@ from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
 from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.zcl import foundation
 
 
 class ThirdRealityRadarCluster(CustomCluster):
@@ -36,7 +35,7 @@ class ThirdRealityRadarCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         air_threshold: Final = ZCLAttributeDef(
             id=0xF003,
             type=t.uint16_t,
