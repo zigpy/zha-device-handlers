@@ -5,9 +5,14 @@ from typing import Any, Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    ClusterType,
+)
 from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
@@ -59,13 +64,17 @@ class SonoffCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         """Init and listen for mask attribute changes."""
         super().__init__(*args, **kwargs)
-        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_update)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_update)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_mask_change)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_mask_change)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_mask_change)
 
-    def _handle_attribute_update(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    def _handle_mask_change(
+        self,
+        event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeWrittenEvent,
     ) -> None:
         """Sync relay states to local config cluster on mask change."""
+        if isinstance(event, AttributeWrittenEvent) and event.status != Status.SUCCESS:
+            return
         if event.attribute_id == self.AttributeDefs.detach_relay_mask.id:
             self.endpoint.sonoff_input_config.update_relay_states(event.value)
 
