@@ -5,7 +5,8 @@ from typing import Any, Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
@@ -129,6 +130,7 @@ zbm_1c_quirk = (
     .applies_to("SONOFF", "ZBM5-1C-120")
     .replaces(SonoffCluster)
     .adds(SonoffInputConfigCluster)
+    .adds(OnOff, cluster_type=ClusterType.Client)
     .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
         SonoffWorkMode,
@@ -154,6 +156,7 @@ zbm_2c_quirk = (
     zbm_1c_quirk.clone()
     .applies_to("SONOFF", "ZBM5-2C-80/86")
     .applies_to("SONOFF", "ZBM5-2C-120")
+    .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
         SonoffInputConfigCluster.cluster_id,
@@ -170,6 +173,7 @@ zbm_3c_quirk = (
     zbm_2c_quirk.clone()
     .applies_to("SONOFF", "ZBM5-3C-80/86")
     .applies_to("SONOFF", "ZBM5-3C-120")
+    .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
         SonoffInputConfigCluster.cluster_id,
