@@ -87,3 +87,57 @@ class GLC009P(CustomDevice):
             },
         }
     }
+
+
+class GLC009P_No242(CustomDevice):
+    """Gledopto GL-C-009P variant in Dimmer Mode (Red Indicator).
+
+    This variant lacks the GreenPower Proxy endpoint and operates strictly
+    as a dimmable light, removing the Color cluster to match the hardware's
+    physical 'Red' mode state.
+    """
+
+    signature = {
+        MODELS_INFO: [("GLEDOPTO", "GL-C-009P")],
+        ENDPOINTS: {
+            11: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    LightLink.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            11: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    # Color cluster removed to disable Kelvin/Color UI in HA
+                    LightLink.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+        }
+    }
