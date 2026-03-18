@@ -43,8 +43,8 @@ class ThirdRealityCurtainCluster(CustomCluster):
         attribute_name=ThirdRealityCurtainCluster.AttributeDefs.allow_bind.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityCurtainCluster.cluster_id,
-        translation_key="allow_bind",
-        fallback_name="Allow bind",
+        translation_key="allow_remote_binding",
+        fallback_name="Allow remote binding",
     )
     .add_to_registry()
 )
