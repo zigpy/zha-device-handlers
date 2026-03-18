@@ -631,7 +631,7 @@ class RCBO2Alarm2Payload(t.Struct):
 def _int_or_default(value: object, default: int = 0) -> int:
     """Return an int while tolerating unset cached attributes."""
 
-    return default if value is None else int(value)
+    return int(value) if isinstance(value, int) else default
 
 
 def _rcbo2_alarm1_dp_converter(
