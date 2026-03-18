@@ -489,7 +489,9 @@ async def test_write_attr_rcbo2(zigpy_device_from_v2_quirk):
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
 
-        (status,) = await tuya_cluster.write_attributes({"under_voltage_threshold": 200})
+        (status,) = await tuya_cluster.write_attributes(
+            {"under_voltage_threshold": 200}
+        )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=61184,

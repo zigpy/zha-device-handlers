@@ -692,21 +692,39 @@ class TuyaRCBO2ManufCluster(TuyaMCUCluster):
     class AttributeDefs(TuyaMCUCluster.AttributeDefs):
         """Attribute definitions."""
 
-        state: Final = ZCLAttributeDef(id=0xEF01, type=t.Bool, is_manufacturer_specific=True)
-        energy: Final = ZCLAttributeDef(id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True)
-        current: Final = ZCLAttributeDef(id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True)
-        power: Final = ZCLAttributeDef(id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True)
-        voltage: Final = ZCLAttributeDef(id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True)
+        state: Final = ZCLAttributeDef(
+            id=0xEF01, type=t.Bool, is_manufacturer_specific=True
+        )
+        energy: Final = ZCLAttributeDef(
+            id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        current: Final = ZCLAttributeDef(
+            id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        power: Final = ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        voltage: Final = ZCLAttributeDef(
+            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
+        )
         fault: Final = ZCLAttributeDef(
             id=0xEF06, type=RCBO2FaultCode, is_manufacturer_specific=True
         )
         power_outage_memory: Final = ZCLAttributeDef(
             id=0xEF07, type=RCBO2PowerOutageMemory, is_manufacturer_specific=True
         )
-        child_lock: Final = ZCLAttributeDef(id=0xEF08, type=t.Bool, is_manufacturer_specific=True)
-        leakage_test: Final = ZCLAttributeDef(id=0xEF09, type=t.Bool, is_manufacturer_specific=True)
-        temperature: Final = ZCLAttributeDef(id=0xEF0A, type=t.int16s, is_manufacturer_specific=True)
-        leakage: Final = ZCLAttributeDef(id=0xEF0B, type=t.uint32_t, is_manufacturer_specific=True)
+        child_lock: Final = ZCLAttributeDef(
+            id=0xEF08, type=t.Bool, is_manufacturer_specific=True
+        )
+        leakage_test: Final = ZCLAttributeDef(
+            id=0xEF09, type=t.Bool, is_manufacturer_specific=True
+        )
+        temperature: Final = ZCLAttributeDef(
+            id=0xEF0A, type=t.int16s, is_manufacturer_specific=True
+        )
+        leakage: Final = ZCLAttributeDef(
+            id=0xEF0B, type=t.uint32_t, is_manufacturer_specific=True
+        )
         alarm1_reserved_0: Final = ZCLAttributeDef(
             id=0xEF10, type=t.uint8_t, is_manufacturer_specific=True
         )
