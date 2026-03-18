@@ -36,8 +36,8 @@ class ThirdReality24GRadarCluster(CustomCluster):
         attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_calibration.name,
         attribute_value=0x01,  # 1 sensor calibration
         cluster_id=ThirdReality24GRadarCluster.cluster_id,
-        translation_key="sensor_calibration",
-        fallback_name="Sensor calibration",
+        translation_key="calibrate_sensor",
+        fallback_name="Calibrate sensor",
     )
     .number(
         attribute_name=ThirdReality24GRadarCluster.AttributeDefs.sensor_sensitivity.name,
