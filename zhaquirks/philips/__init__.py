@@ -43,20 +43,17 @@ SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
 
 
-class PhilipsOccupancySensing(CustomCluster):
+class PhilipsOccupancySensing(CustomCluster, OccupancySensing):
     """Philips occupancy cluster."""
-
-    cluster_id = OccupancySensing.cluster_id
-    ep_attribute = "philips_occupancy"
 
     class AttributeDefs(OccupancySensing.AttributeDefs):
         """Attribute definitions."""
 
         sensitivity: Final = ZCLAttributeDef(
-            id=0x0030, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0030, type=t.uint8_t, manufacturer_code=0x100B
         )
         sensitivity_max: Final = ZCLAttributeDef(
-            id=0x0031, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0031, type=t.uint8_t, manufacturer_code=0x100B
         )
 
 

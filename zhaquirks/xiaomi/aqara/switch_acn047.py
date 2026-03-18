@@ -74,6 +74,15 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(attrid, value)
 
 
+class T2MeteringCluster(MeteringCluster):
+    """T2 Metering cluster to fix divisor."""
+
+    _CONSTANT_ATTRIBUTES = {
+        **MeteringCluster._CONSTANT_ATTRIBUTES,
+        MeteringCluster.AttributeDefs.divisor.id: 1000000,
+    }
+
+
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
@@ -197,7 +206,7 @@ class AqaraT2Relay(XiaomiCustomDevice):
                     OnOff.cluster_id,
                     MultistateInputCluster,
                     DeviceTemperature.cluster_id,
-                    MeteringCluster,
+                    T2MeteringCluster,
                     ElectricalMeasurementCluster,
                     OppleCluster,
                 ],
