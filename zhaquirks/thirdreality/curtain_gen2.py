@@ -9,6 +9,7 @@ import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
+
 class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
     """Third Reality's Blind Gen2 private cluster."""
 
