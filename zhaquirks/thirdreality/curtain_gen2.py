@@ -4,9 +4,10 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+
 
 class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
     """Third Reality's Blind Gen2 private cluster."""
