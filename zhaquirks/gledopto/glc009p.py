@@ -28,7 +28,11 @@ from zhaquirks.const import (
 try:
     from zhaquirks.v2 import QuirkBuilder
 
-    (QuirkBuilder("GLEDOPTO", "GL-C-009P").removes(Color.cluster_id).add_to_registry())
+    (
+        QuirkBuilder("GLEDOPTO", "GL-C-009P")
+        .removes(Color.cluster_id)
+        .add_to_registry()
+    )
 except (ImportError, AttributeError):
     pass
 
