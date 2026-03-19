@@ -7,7 +7,7 @@ from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
 from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
+from zigpy.quirks.v2 import NumberDeviceClass
 
 class ThirdRealityRadarCluster(CustomCluster):
     """Third Reality's 60G radar private cluster."""
