@@ -1,4 +1,5 @@
 """Gledopto GL-C-009P quirk."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -26,13 +27,11 @@ from zhaquirks.const import (
 # Attempt to load v2 logic for future-proofing
 try:
     from zhaquirks.v2 import QuirkBuilder
-    (
-        QuirkBuilder("GLEDOPTO", "GL-C-009P")
-        .removes(Color.cluster_id)
-        .add_to_registry()
-    )
+
+    (QuirkBuilder("GLEDOPTO", "GL-C-009P").removes(Color.cluster_id).add_to_registry())
 except (ImportError, AttributeError):
     pass
+
 
 class GLC009P(CustomDevice):
     """Gledopto GL-C-009P implementation for removing Color cluster."""
