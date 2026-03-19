@@ -83,6 +83,6 @@ class ThirdRealityRadarCluster(CustomCluster):
         unit=CONCENTRATION_PARTS_PER_BILLION,
         translation_key="air_threshold",
         fallback_name="Air threshold",
-)
+    )
     .add_to_registry()
 )
