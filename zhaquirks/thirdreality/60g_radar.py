@@ -75,12 +75,14 @@ class ThirdRealityRadarCluster(CustomCluster):
     )
     .number(
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.air_threshold.name,
+        cluster_id=ThirdRealityRadarCluster.cluster_id,
         min_value=3000,
         max_value=15000,
         step=1,
-        cluster_id=ThirdRealityRadarCluster.cluster_id,
+        device_class=NumberDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+        unit=CONCENTRATION_PARTS_PER_BILLION,
         translation_key="air_threshold",
         fallback_name="Air threshold",
-    )
+)
     .add_to_registry()
 )
