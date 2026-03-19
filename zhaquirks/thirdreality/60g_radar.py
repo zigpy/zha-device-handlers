@@ -61,8 +61,8 @@ class ThirdRealityRadarCluster(CustomCluster):
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.tvoc_sensor_calibration.name,
         attribute_value=0x01,
         endpoint_id=1,
-        translation_key="tvoc_sensor_calibration",
-        fallback_name="TVOC sensor calibration",
+        translation_key="calibrate_tvoc_sensor",
+        fallback_name="Calibrate TVOC sensor",
     )
     .number(
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.sensor_sensitivity.name,
