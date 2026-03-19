@@ -50,7 +50,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         endpoint_id=1,
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.volatile_organic_compounds.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
-        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_BILLION,
         translation_key="total_volatile_organic_compounds",
