@@ -48,7 +48,7 @@ class ThirdRealityRadarCluster(CustomCluster):
     .replaces(ThirdRealityRadarCluster)
     .sensor(
         endpoint_id=1,
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.total_volatile_organic_compounds.name,
+        attribute_name=ThirdRealityRadarCluster.AttributeDefs.volatile_organic_compounds.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         state_class=SensorStateClass.MEASUREMENT,
