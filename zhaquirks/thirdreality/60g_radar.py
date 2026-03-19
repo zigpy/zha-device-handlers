@@ -18,7 +18,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         """Define the attributes of a private cluster."""
 
         # measure the value of voc
-        total_volatile_organic_compounds: Final = ZCLAttributeDef(
+        volatile_organic_compounds: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.Single,
             is_manufacturer_specific=True,
