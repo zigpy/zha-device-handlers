@@ -75,7 +75,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         max_value=6,
         step=1,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
-        translation_key="sensor_sensitivity",
+        translation_key="presence_sensor_sensitivity",
         fallback_name="Presence sensor sensitivity",
     )
     .number(
