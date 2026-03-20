@@ -347,196 +347,194 @@ def add_halo_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
     """Add shared Halo entities and cluster replacements to a builder."""
 
     return (
-        builder
-    .replaces(HaloColorCluster, endpoint_id=2)
-    .replaces(HaloStatusCluster, endpoint_id=4)
-    .replaces(HaloControlCluster, endpoint_id=4)
-    .replaces(HaloSensorsCluster, endpoint_id=4)
-    # -- IAS Zone binary sensors (extra bits from zone_status) --
-    # Tamper (EP1, zone_status bit 2)
-    .binary_sensor(
-        attribute_name=IasZone.AttributeDefs.zone_status.name,
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=1,
-        device_class=BinarySensorDeviceClass.TAMPER,
-        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
-        unique_id_suffix="tamper",
-        entity_type=EntityType.DIAGNOSTIC,
-        fallback_name="Tamper",
-    )
-    # Battery low (EP1, zone_status bit 3)
-    .binary_sensor(
-        attribute_name=IasZone.AttributeDefs.zone_status.name,
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=1,
-        device_class=BinarySensorDeviceClass.BATTERY,
-        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Battery),
-        unique_id_suffix="battery_low",
-        entity_type=EntityType.DIAGNOSTIC,
-        fallback_name="Battery low",
-    )
-    # Test mode (EP1, zone_status bit 8)
-    .binary_sensor(
-        attribute_name=IasZone.AttributeDefs.zone_status.name,
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=1,
-        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Test),
-        unique_id_suffix="test_mode",
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="test_mode",
-        fallback_name="Test mode",
-    )
-    # Mains power connected (EP1, zone_status bit 7, inverted)
-    .binary_sensor(
-        attribute_name=IasZone.AttributeDefs.zone_status.name,
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=1,
-        device_class=BinarySensorDeviceClass.PLUG,
-        attribute_converter=lambda value: not bool(value & IasZone.ZoneStatus.AC_mains),
-        unique_id_suffix="mains_power",
-        entity_type=EntityType.DIAGNOSTIC,
-        fallback_name="Mains power",
-    )
-    # -- Halo status cluster entities (EP4) --
-    # Alert state (read-only diagnostic sensor)
-    .enum(
-        attribute_name=HaloStatusCluster.AttributeDefs.device_status.name,
-        enum_class=HaloAlertState,
-        cluster_id=HaloStatusCluster.cluster_id,
-        endpoint_id=4,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        reporting_config=HALO_STATUS_REPORT_CONFIG,
-        translation_key="halo_alert_state",
-        fallback_name="Alert state",
-    )
-    # Weather alert active (derived from device_status == Weather)
-    .binary_sensor(
-        attribute_name=HaloStatusCluster.AttributeDefs.device_status.name,
-        cluster_id=HaloStatusCluster.cluster_id,
-        endpoint_id=4,
-        attribute_converter=lambda value: value == HaloAlertState.Weather,
-        unique_id_suffix="weather_alert",
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="weather_alert",
-        fallback_name="Weather alert",
-    )
-    # Room assignment (writable select)
-    .enum(
-        attribute_name=HaloStatusCluster.AttributeDefs.room.name,
-        enum_class=HaloRoom,
-        cluster_id=HaloStatusCluster.cluster_id,
-        endpoint_id=4,
-        translation_key="room",
-        fallback_name="Room",
-    )
-    # -- Halo control cluster entities (EP4) --
-    # Test result (read-only diagnostic sensor)
-    .enum(
-        attribute_name=HaloControlCluster.AttributeDefs.test_status.name,
-        enum_class=HaloTestStatus,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        reporting_config=HALO_STATUS_REPORT_CONFIG,
-        translation_key="halo_test_result",
-        fallback_name="Test result",
-    )
-    # Test in progress (derived from test_status == Running)
-    .binary_sensor(
-        attribute_name=HaloControlCluster.AttributeDefs.test_status.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        device_class=BinarySensorDeviceClass.RUNNING,
-        attribute_converter=lambda value: value == HaloTestStatus.Running,
-        unique_id_suffix="test_in_progress",
-        entity_type=EntityType.DIAGNOSTIC,
-        fallback_name="Test in progress",
-    )
-    # Hush state (read-only diagnostic sensor)
-    .enum(
-        attribute_name=HaloControlCluster.AttributeDefs.hush_status.name,
-        enum_class=HaloHushStatus,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        reporting_config=HALO_STATUS_REPORT_CONFIG,
-        translation_key="halo_hush_state",
-        fallback_name="Hush state",
-    )
-    # Hush active (derived from hush_status == Success)
-    .binary_sensor(
-        attribute_name=HaloControlCluster.AttributeDefs.hush_status.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        attribute_converter=lambda value: value == HaloHushStatus.Success,
-        unique_id_suffix="hush_active",
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="hush_active",
-        fallback_name="Hush active",
-    )
-    # Command buttons: test start/cancel
-    .command_button(
-        command_name=HaloControlCluster.ServerCommandDefs.halo_test.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        command_kwargs={"value": 0x01},
-        unique_id_suffix="start_test",
-        translation_key="start_test",
-        fallback_name="Start test",
-    )
-    .command_button(
-        command_name=HaloControlCluster.ServerCommandDefs.halo_test.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        command_kwargs={"value": 0x00},
-        unique_id_suffix="cancel_test",
-        translation_key="cancel_test",
-        fallback_name="Cancel test",
-    )
-    # Command buttons: hush start/stop
-    .command_button(
-        command_name=HaloControlCluster.ServerCommandDefs.halo_hush.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        command_kwargs={"value": 0x00},
-        unique_id_suffix="start_hush",
-        translation_key="start_hush",
-        fallback_name="Start hush",
-    )
-    .command_button(
-        command_name=HaloControlCluster.ServerCommandDefs.halo_hush.name,
-        cluster_id=HaloControlCluster.cluster_id,
-        endpoint_id=4,
-        command_kwargs={"value": 0x01},
-        unique_id_suffix="stop_hush",
-        translation_key="stop_hush",
-        fallback_name="Stop hush",
-    )
-    # -- Halo sensors cluster entities (EP4) --
-    # CO PPM reading
-    .sensor(
-        attribute_name=HaloSensorsCluster.AttributeDefs.co_ppm.name,
-        cluster_id=HaloSensorsCluster.cluster_id,
-        endpoint_id=4,
-        device_class=SensorDeviceClass.CO,
-        state_class=SensorStateClass.MEASUREMENT,
-        reporting_config=CO_PPM_REPORT_CONFIG,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="co_ppm",
-        fallback_name="CO",
-    )
+        builder.replaces(HaloColorCluster, endpoint_id=2)
+        .replaces(HaloStatusCluster, endpoint_id=4)
+        .replaces(HaloControlCluster, endpoint_id=4)
+        .replaces(HaloSensorsCluster, endpoint_id=4)
+        # -- IAS Zone binary sensors (extra bits from zone_status) --
+        # Tamper (EP1, zone_status bit 2)
+        .binary_sensor(
+            attribute_name=IasZone.AttributeDefs.zone_status.name,
+            cluster_id=IasZone.cluster_id,
+            endpoint_id=1,
+            device_class=BinarySensorDeviceClass.TAMPER,
+            attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
+            unique_id_suffix="tamper",
+            entity_type=EntityType.DIAGNOSTIC,
+            fallback_name="Tamper",
+        )
+        # Battery low (EP1, zone_status bit 3)
+        .binary_sensor(
+            attribute_name=IasZone.AttributeDefs.zone_status.name,
+            cluster_id=IasZone.cluster_id,
+            endpoint_id=1,
+            device_class=BinarySensorDeviceClass.BATTERY,
+            attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Battery),
+            unique_id_suffix="battery_low",
+            entity_type=EntityType.DIAGNOSTIC,
+            fallback_name="Battery low",
+        )
+        # Test mode (EP1, zone_status bit 8)
+        .binary_sensor(
+            attribute_name=IasZone.AttributeDefs.zone_status.name,
+            cluster_id=IasZone.cluster_id,
+            endpoint_id=1,
+            attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Test),
+            unique_id_suffix="test_mode",
+            entity_type=EntityType.DIAGNOSTIC,
+            translation_key="test_mode",
+            fallback_name="Test mode",
+        )
+        # Mains power connected (EP1, zone_status bit 7, inverted)
+        .binary_sensor(
+            attribute_name=IasZone.AttributeDefs.zone_status.name,
+            cluster_id=IasZone.cluster_id,
+            endpoint_id=1,
+            device_class=BinarySensorDeviceClass.PLUG,
+            attribute_converter=lambda value: not bool(
+                value & IasZone.ZoneStatus.AC_mains
+            ),
+            unique_id_suffix="mains_power",
+            entity_type=EntityType.DIAGNOSTIC,
+            fallback_name="Mains power",
+        )
+        # -- Halo status cluster entities (EP4) --
+        # Alert state (read-only diagnostic sensor)
+        .enum(
+            attribute_name=HaloStatusCluster.AttributeDefs.device_status.name,
+            enum_class=HaloAlertState,
+            cluster_id=HaloStatusCluster.cluster_id,
+            endpoint_id=4,
+            entity_platform=EntityPlatform.SENSOR,
+            entity_type=EntityType.DIAGNOSTIC,
+            reporting_config=HALO_STATUS_REPORT_CONFIG,
+            translation_key="halo_alert_state",
+            fallback_name="Alert state",
+        )
+        # Weather alert active (derived from device_status == Weather)
+        .binary_sensor(
+            attribute_name=HaloStatusCluster.AttributeDefs.device_status.name,
+            cluster_id=HaloStatusCluster.cluster_id,
+            endpoint_id=4,
+            attribute_converter=lambda value: value == HaloAlertState.Weather,
+            unique_id_suffix="weather_alert",
+            entity_type=EntityType.DIAGNOSTIC,
+            translation_key="weather_alert",
+            fallback_name="Weather alert",
+        )
+        # Room assignment (writable select)
+        .enum(
+            attribute_name=HaloStatusCluster.AttributeDefs.room.name,
+            enum_class=HaloRoom,
+            cluster_id=HaloStatusCluster.cluster_id,
+            endpoint_id=4,
+            translation_key="room",
+            fallback_name="Room",
+        )
+        # -- Halo control cluster entities (EP4) --
+        # Test result (read-only diagnostic sensor)
+        .enum(
+            attribute_name=HaloControlCluster.AttributeDefs.test_status.name,
+            enum_class=HaloTestStatus,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            entity_platform=EntityPlatform.SENSOR,
+            entity_type=EntityType.DIAGNOSTIC,
+            reporting_config=HALO_STATUS_REPORT_CONFIG,
+            translation_key="halo_test_result",
+            fallback_name="Test result",
+        )
+        # Test in progress (derived from test_status == Running)
+        .binary_sensor(
+            attribute_name=HaloControlCluster.AttributeDefs.test_status.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            device_class=BinarySensorDeviceClass.RUNNING,
+            attribute_converter=lambda value: value == HaloTestStatus.Running,
+            unique_id_suffix="test_in_progress",
+            entity_type=EntityType.DIAGNOSTIC,
+            fallback_name="Test in progress",
+        )
+        # Hush state (read-only diagnostic sensor)
+        .enum(
+            attribute_name=HaloControlCluster.AttributeDefs.hush_status.name,
+            enum_class=HaloHushStatus,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            entity_platform=EntityPlatform.SENSOR,
+            entity_type=EntityType.DIAGNOSTIC,
+            reporting_config=HALO_STATUS_REPORT_CONFIG,
+            translation_key="halo_hush_state",
+            fallback_name="Hush state",
+        )
+        # Hush active (derived from hush_status == Success)
+        .binary_sensor(
+            attribute_name=HaloControlCluster.AttributeDefs.hush_status.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            attribute_converter=lambda value: value == HaloHushStatus.Success,
+            unique_id_suffix="hush_active",
+            entity_type=EntityType.DIAGNOSTIC,
+            translation_key="hush_active",
+            fallback_name="Hush active",
+        )
+        # Command buttons: test start/cancel
+        .command_button(
+            command_name=HaloControlCluster.ServerCommandDefs.halo_test.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            command_kwargs={"value": 0x01},
+            unique_id_suffix="start_test",
+            translation_key="start_test",
+            fallback_name="Start test",
+        )
+        .command_button(
+            command_name=HaloControlCluster.ServerCommandDefs.halo_test.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            command_kwargs={"value": 0x00},
+            unique_id_suffix="cancel_test",
+            translation_key="cancel_test",
+            fallback_name="Cancel test",
+        )
+        # Command buttons: hush start/stop
+        .command_button(
+            command_name=HaloControlCluster.ServerCommandDefs.halo_hush.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            command_kwargs={"value": 0x00},
+            unique_id_suffix="start_hush",
+            translation_key="start_hush",
+            fallback_name="Start hush",
+        )
+        .command_button(
+            command_name=HaloControlCluster.ServerCommandDefs.halo_hush.name,
+            cluster_id=HaloControlCluster.cluster_id,
+            endpoint_id=4,
+            command_kwargs={"value": 0x01},
+            unique_id_suffix="stop_hush",
+            translation_key="stop_hush",
+            fallback_name="Stop hush",
+        )
+        # -- Halo sensors cluster entities (EP4) --
+        # CO PPM reading
+        .sensor(
+            attribute_name=HaloSensorsCluster.AttributeDefs.co_ppm.name,
+            cluster_id=HaloSensorsCluster.cluster_id,
+            endpoint_id=4,
+            device_class=SensorDeviceClass.CO,
+            state_class=SensorStateClass.MEASUREMENT,
+            reporting_config=CO_PPM_REPORT_CONFIG,
+            entity_type=EntityType.DIAGNOSTIC,
+            translation_key="co_ppm",
+            fallback_name="CO",
+        )
     )
 
 
 # -- Halo quirk (base smoke & CO detector) --
 
-(
-    add_halo_common_entities(QuirkBuilder(HALO_SMART_LABS, "halo"))
-    .add_to_registry()
-)
+(add_halo_common_entities(QuirkBuilder(HALO_SMART_LABS, "halo")).add_to_registry())
 
 
 # -- Halo+ quirk (smoke & CO detector with weather radio) --
@@ -544,8 +542,8 @@ def add_halo_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
 (
     add_halo_common_entities(
         QuirkBuilder(HALO_SMART_LABS, "halo+")
-    .applies_to(HALO_SMART_LABS, "haloWX")
-    .applies_to(HALO_SMART_LABS, "SABDA1")
+        .applies_to(HALO_SMART_LABS, "haloWX")
+        .applies_to(HALO_SMART_LABS, "SABDA1")
     )
     .replaces(HaloWeatherCluster, endpoint_id=5)
     # -- Halo weather cluster entities (EP5, Halo+ only) --
