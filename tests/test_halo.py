@@ -82,6 +82,7 @@ def test_halo_color_cluster_constant_attributes(zigpy_device_from_v2_quirk):
     expected_caps = (
         Color.ColorCapabilities.Hue_and_saturation
         | Color.ColorCapabilities.XY_attributes
+        | Color.ColorCapabilities.Color_temperature
     )
     assert (
         color_cluster._CONSTANT_ATTRIBUTES[Color.AttributeDefs.color_capabilities.id]
