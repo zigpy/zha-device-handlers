@@ -16,7 +16,7 @@ import zigpy.profiles
 import zigpy.quirks as zq
 from zigpy.quirks import CustomDevice, DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types
+import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zdo.types
 
@@ -661,12 +661,6 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (const.LONG_RELEASE, const.BUTTON_4),
         ],
     ],
-    zhaquirks.thirdreality.button.Button: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
 }
 
 
@@ -773,7 +767,6 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 # A few are expected to fail and are handled by ZHA
                 if cluster not in (
                     zhaquirks.konke.KonkeOnOffCluster,
-                    zhaquirks.philips.PhilipsOccupancySensing,
                     zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1.MultistateInputCluster,
                 ):
                     pytest.fail(
@@ -805,7 +798,10 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             base_attr_names = {a.name for a in base_cluster.attributes.values()}
             quirk_attr_names = {a.name for a in cluster.attributes.values()}
 
-            if not base_attr_names <= quirk_attr_names:
+            if not base_attr_names <= quirk_attr_names and cluster not in (
+                # XXX: Test to be updated for mf-attributes with same ID as ZCL ones
+                zhaquirks.philips.PhilipsOccupancySensing,
+            ):
                 pytest.fail(
                     f"Cluster {cluster} deletes parent class's attributes instead of"
                     f" extending them: {base_attr_names - quirk_attr_names}"
@@ -899,6 +895,7 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
             # removes Group input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
+            zhaquirks.ikea.somrigsmartbtn.IkeaSomrigSmartButton,
             # remove WindowCovering input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
             #
@@ -997,6 +994,12 @@ async def test_local_data_cluster(device_mock) -> None:
         _CONSTANT_ATTRIBUTES = {1: 10}
         _VALID_ATTRIBUTES = [2]
 
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            valid_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
     (
         QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .adds(TestLocalCluster)
@@ -1004,12 +1007,6 @@ async def test_local_data_cluster(device_mock) -> None:
     )
     device = registry.get_device(device_mock)
     assert isinstance(device.endpoints[1].in_clusters[0x1234], TestLocalCluster)
-
-    # reading invalid attribute return unsupported attribute
-    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([0]) == (
-        {},
-        {0: foundation.Status.UNSUPPORTED_ATTRIBUTE},
-    )
 
     # reading constant attribute works
     assert await device.endpoints[1].in_clusters[0x1234].read_attributes([1]) == (

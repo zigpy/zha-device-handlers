@@ -22,21 +22,21 @@ class ThirdRealityPlugCluster(CustomCluster):
         reset_total_energy: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # turn off delay
         countdown_to_turn_off: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # turn on delay
         countdown_to_turn_on: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 

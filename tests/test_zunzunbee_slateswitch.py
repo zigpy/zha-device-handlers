@@ -6,6 +6,7 @@ import pytest
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
+from tests.common import ClusterListener
 import zhaquirks
 
 zhaquirks.setup()
@@ -16,8 +17,9 @@ async def test_button_ias(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk("zunzunbee", "SSWZ8T")
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
     cluster = device.endpoints[1].ias_zone
-    listener = mock.MagicMock()
-    cluster.add_listener(listener)
+    cluster_listener = ClusterListener(cluster)
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
 
     # Define button press values (hex + long press variants)
     button_values = [
@@ -39,13 +41,12 @@ async def test_button_ias(zigpy_device_from_v2_quirk):
         0x101,
     ]
 
-    for value in button_values:
+    for i, value in enumerate(button_values):
         cluster.update_attribute(ias_zone_status_attr_id, value)
-        assert listener.attribute_updated.call_args[0][0] == ias_zone_status_attr_id
-        assert listener.attribute_updated.call_args[0][1] == value
+        assert cluster_listener.attribute_updates[i] == (ias_zone_status_attr_id, value)
 
-    assert listener.attribute_updated.call_count == len(button_values)
-    assert listener.zha_send_event.call_count == len(button_values)
+    assert len(cluster_listener.attribute_updates) == len(button_values)
+    assert zha_listener.zha_send_event.call_count == len(button_values)
 
 
 @pytest.mark.parametrize(
@@ -161,14 +162,17 @@ async def test_discard_invalid_value(zigpy_device_from_v2_quirk):
     """Test that invalid values are discarded without triggering events."""
     device = zigpy_device_from_v2_quirk("zunzunbee", "SSWZ8T")
     cluster = device.endpoints[1].ias_zone
-    listener = mock.MagicMock()
-    cluster.add_listener(listener)
+    cluster_listener = ClusterListener(cluster)
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
 
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
     invalid_value = 6  # example invalid value
     cluster.update_attribute(ias_zone_status_attr_id, invalid_value)
 
-    assert listener.attribute_updated.call_args[0][0] == ias_zone_status_attr_id
-    assert listener.attribute_updated.call_args[0][1] == invalid_value
+    assert cluster_listener.attribute_updates[0] == (
+        ias_zone_status_attr_id,
+        invalid_value,
+    )
 
-    listener.zha_send_event.assert_not_called()
+    assert len(zha_listener.zha_send_event.mock_calls) == 0

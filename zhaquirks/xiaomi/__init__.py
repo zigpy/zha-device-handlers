@@ -12,7 +12,7 @@ import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -31,7 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -153,127 +153,46 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
 class XiaomiCluster(CustomCluster):
     """Xiaomi cluster implementation."""
 
-    def _iter_parse_attr_report(
-        self, data: bytes
-    ) -> Iterator[tuple[foundation.Attribute, bytes]]:
-        """Yield all interpretations of the first attribute in a Xiaomi report."""
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
-        # Peek at the attribute report
-        attr_id, data = t.uint16_t.deserialize(data)
-        attr_type, data = t.uint8_t.deserialize(data)
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report event and dispatch Xiaomi blob data."""
+        attrid = event.attribute_id
+        value = event.value
 
-        if (
-            attr_id
-            not in (
-                XIAOMI_AQARA_ATTRIBUTE,
-                XIAOMI_MIJA_ATTRIBUTE,
-                XIAOMI_AQARA_ATTRIBUTE_E1,
-            )
-            or attr_type != 0x42  # "Character String"
-        ):
-            # Assume other attributes are reported correctly
-            data = attr_id.serialize() + attr_type.serialize() + data
-            attribute, data = foundation.Attribute.deserialize(data)
-
-            yield attribute, data
-            return
-
-        # Length of the "string" can be wrong
-        val_len, data = t.uint8_t.deserialize(data)
-
-        # Try every offset. Start with 0 to pass unbroken reports through.
-        for offset in (0, -1, 1):
-            fixed_len = val_len + offset
-
-            if len(data) < fixed_len:
-                continue
-
-            val, final_data = data[:fixed_len], data[fixed_len:]
-            attr_val = t.LVBytes(val)
-            attr_type = 0x41  # The data type should be "Octet String"
-
-            yield (
-                foundation.Attribute(
-                    attrid=attr_id,
-                    value=foundation.TypeValue(type=attr_type, value=attr_val),
-                ),
-                final_data,
-            )
-
-    def _interpret_attr_reports(
-        self, data: bytes
-    ) -> Iterable[tuple[foundation.Attribute]]:
-        """Yield all valid interprations of a Xiaomi attribute report."""
-
-        if not data:
-            yield ()
-            return
-
-        try:
-            parsed = list(self._iter_parse_attr_report(data))
-        except (KeyError, ValueError):
-            return
-
-        for attr, remaining_data in parsed:
-            for remaining_attrs in self._interpret_attr_reports(remaining_data):
-                yield (attr,) + remaining_attrs
-
-    def deserialize(self, data):
-        """Deserialize cluster data."""
-        hdr, data = foundation.ZCLHeader.deserialize(data)
-
-        # Only handle attribute reports differently
-        if (
-            hdr.frame_control.frame_type != foundation.FrameType.GLOBAL_COMMAND
-            or hdr.command_id != foundation.GeneralCommand.Report_Attributes
-        ):
-            return super().deserialize(hdr.serialize() + data)
-
-        reports = list(self._interpret_attr_reports(data))
-
-        if not reports:
-            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
-            return super().deserialize(hdr.serialize() + data)
-        elif len(reports) > 1:
-            _LOGGER.warning(
-                "Xiaomi attribute report has multiple valid interpretations: %r",
-                reports,
-            )
-
-        fixed_data = b"".join(attr.serialize() for attr in reports[0])
-
-        return super().deserialize(hdr.serialize() + fixed_data)
-
-    def _update_attribute(self, attrid, value):
         if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
             attributes = self._parse_aqara_attributes(value)
-            super()._update_attribute(attrid, value)
             if self.endpoint.device.model == "lumi.sensor_switch.aq2":
                 if value == b"\x04!\xa8C\n!\x00\x00":
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
+        elif attrid == MODEL:
+            # 0x0005 = model attribute.
+            # Xiaomi sensors send the model attribute when their reset button is
+            # pressed quickly.
+            if attrid in self.attributes:
+                attribute_name = self.attributes[attrid].name
+            else:
+                attribute_name = UNKNOWN
+
+            self.listener_event(
+                ZHA_SEND_EVENT,
+                COMMAND_ATTRIBUTE_UPDATED,
+                {
+                    ATTRIBUTE_ID: attrid,
+                    ATTRIBUTE_NAME: attribute_name,
+                    VALUE: value,
+                },
+            )
+            return
         else:
-            super()._update_attribute(attrid, value)
-            if attrid == MODEL:
-                # 0x0005 = model attribute.
-                # Xiaomi sensors send the model attribute when their reset button is
-                # pressed quickly."""
-
-                if attrid in self.attributes:
-                    attribute_name = self.attributes[attrid].name
-                else:
-                    attribute_name = UNKNOWN
-
-                self.listener_event(
-                    ZHA_SEND_EVENT,
-                    COMMAND_ATTRIBUTE_UPDATED,
-                    {
-                        ATTRIBUTE_ID: attrid,
-                        ATTRIBUTE_NAME: attribute_name,
-                        VALUE: value,
-                    },
-                )
             return
 
         _LOGGER.debug(
@@ -282,15 +201,13 @@ class XiaomiCluster(CustomCluster):
             attrid,
             attributes,
         )
+
         if BATTERY_VOLTAGE_MV in attributes:
-            # many Xiaomi devices report this, but not all quirks implement the XiaomiPowerConfiguration cluster,
-            # so we might error out if the method doesn't exist
             if hasattr(self.endpoint.power, "battery_reported") and callable(
                 self.endpoint.power.battery_reported
             ):
                 self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
             else:
-                # log a debug message if the cluster is not implemented
                 _LOGGER.debug(
                     "%s - Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used",
                     self.endpoint.device.ieee,
@@ -365,6 +282,99 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.ias_zone.update_attribute(
                 IasZone.AttributeDefs.zone_status.id, attributes[SMOKE]
             )
+
+    def _iter_parse_attr_report(
+        self, data: bytes
+    ) -> Iterator[tuple[foundation.Attribute, bytes]]:
+        """Yield all interpretations of the first attribute in a Xiaomi report."""
+
+        # Peek at the attribute report
+        attr_id, data = t.uint16_t.deserialize(data)
+        attr_type, data = t.uint8_t.deserialize(data)
+
+        # Bad parsing states sometimes eat into the attribute ID's zero octet, which can
+        # be interpreted as the `nodata` type (a single null byte). This isn't really
+        # used by real devices and can be skipped.
+        if attr_type == DataTypeId.nodata:
+            return
+
+        if attr_id not in (
+            XIAOMI_AQARA_ATTRIBUTE,
+            XIAOMI_MIJA_ATTRIBUTE,
+            XIAOMI_AQARA_ATTRIBUTE_E1,
+        ) or attr_type not in (DataTypeId.octstr, DataTypeId.string):
+            # Assume other attributes are reported correctly
+            data = attr_id.serialize() + attr_type.serialize() + data
+            attribute, data = foundation.Attribute.deserialize(data)
+
+            yield attribute, data
+            return
+
+        # Length of the "string" can be wrong
+        val_len, data = t.uint8_t.deserialize(data)
+
+        # Try every offset. Start with 0 to pass unbroken reports through.
+        for offset in (0, -1, 1, -3):
+            fixed_len = val_len + offset
+
+            if len(data) < fixed_len:
+                continue
+
+            val, final_data = data[:fixed_len], data[fixed_len:]
+            attr_val = t.LVBytes(val)
+            attr_type = DataTypeId.octstr  # The data type should be "Octet String"
+
+            yield (
+                foundation.Attribute(
+                    attrid=attr_id,
+                    value=foundation.TypeValue(type=attr_type, value=attr_val),
+                ),
+                final_data,
+            )
+
+    def _interpret_attr_reports(
+        self, data: bytes
+    ) -> Iterable[tuple[foundation.Attribute]]:
+        """Yield all valid interprations of a Xiaomi attribute report."""
+
+        if not data:
+            yield ()
+            return
+
+        try:
+            parsed = list(self._iter_parse_attr_report(data))
+        except (KeyError, ValueError):
+            return
+
+        for attr, remaining_data in parsed:
+            for remaining_attrs in self._interpret_attr_reports(remaining_data):
+                yield (attr,) + remaining_attrs
+
+    def deserialize(self, data):
+        """Deserialize cluster data."""
+        hdr, data = foundation.ZCLHeader.deserialize(data)
+
+        # Only handle attribute reports differently
+        if (
+            hdr.frame_control.frame_type != foundation.FrameType.GLOBAL_COMMAND
+            or hdr.command_id != foundation.GeneralCommand.Report_Attributes
+        ):
+            return super().deserialize(hdr.serialize() + data)
+
+        reports = list(self._interpret_attr_reports(data))
+
+        if not reports:
+            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
+            return super().deserialize(hdr.serialize() + data)
+        elif len(reports) > 1:
+            _LOGGER.warning(
+                "Xiaomi attribute report has multiple valid interpretations: %r",
+                reports,
+            )
+
+        fixed_data = b"".join(attr.serialize() for attr in reports[0])
+
+        return super().deserialize(hdr.serialize() + fixed_data)
 
     def _parse_aqara_attributes(self, value):
         """Parse non-standard attributes."""
