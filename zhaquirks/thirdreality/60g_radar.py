@@ -9,7 +9,10 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
+from zigpy.quirks.v2.homeassistant import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    CONCENTRATION_PARTS_PER_BILLION,
+)
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -47,6 +50,20 @@ class ThirdRealityRadarCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+    def _update_attribute(self, attrid, value):
+        """Override attribute updates to convert VOC from ppb to µg/m³."""
+        if attrid == self.AttributeDefs.volatile_organic_compounds.id:
+            # Convert ppb to µg/m³ using the formula: µg/m³ = ppb × (molecular_weight / 24.45)
+            # For TVOC, we typically use an average molecular weight of 100 g/mol
+            molecular_weight = 100.0  # g/mol, average for TVOC
+            ppb_value = float(value)
+            ug_per_m3_value = int(ppb_value * (molecular_weight / 24.45))
+            
+            # Update with converted value (rounded to integer)
+            super()._update_attribute(attrid, ug_per_m3_value)
+        else:
+            super()._update_attribute(attrid, value)
+
 
 (
     QuirkBuilder("Third Reality, Inc", "3RPL01084Z")
@@ -57,7 +74,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=CONCENTRATION_PARTS_PER_BILLION,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
         translation_key="total_volatile_organic_compounds",
         fallback_name="Total volatile organic compounds",
     )
@@ -82,7 +99,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.air_threshold.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         min_value=3000,
-        max_value=15000,
+        max_value=50000,
         step=1,
         device_class=NumberDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         unit=CONCENTRATION_PARTS_PER_BILLION,
