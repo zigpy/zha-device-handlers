@@ -58,7 +58,7 @@ class ThirdRealityRadarCluster(CustomCluster):
             molecular_weight = 100.0  # g/mol, average for TVOC
             ppb_value = float(value)
             ug_per_m3_value = int(ppb_value * (molecular_weight / 24.45))
-            
+
             # Update with converted value (rounded to integer)
             super()._update_attribute(attrid, ug_per_m3_value)
         else:
