@@ -88,11 +88,15 @@ def test_halo_color_cluster_constant_attributes(zigpy_device_from_v2_quirk):
         == expected_caps
     )
     assert (
-        color_cluster._CONSTANT_ATTRIBUTES[Color.AttributeDefs.color_temp_physical_min.id]
+        color_cluster._CONSTANT_ATTRIBUTES[
+            Color.AttributeDefs.color_temp_physical_min.id
+        ]
         == 153
     )
     assert (
-        color_cluster._CONSTANT_ATTRIBUTES[Color.AttributeDefs.color_temp_physical_max.id]
+        color_cluster._CONSTANT_ATTRIBUTES[
+            Color.AttributeDefs.color_temp_physical_max.id
+        ]
         == 500
     )
 

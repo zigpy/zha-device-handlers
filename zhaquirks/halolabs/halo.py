@@ -2,17 +2,12 @@
 
 from typing import Final
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import (
-    BinarySensorDeviceClass,
-)
-from zigpy.quirks.v2.homeassistant.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import (
@@ -207,7 +202,9 @@ class HaloStatusCluster(CustomCluster):
             id=0x0000, type=HaloAlertState, manufacturer_code=HALO_MANUFACTURER_CODE
         )
         room: Final = ZCLAttributeDef(
-            id=0x0002, type=HaloRoom, access="rwp",
+            id=0x0002,
+            type=HaloRoom,
+            access="rwp",
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
 
@@ -223,11 +220,13 @@ class HaloControlCluster(CustomCluster):
         """Attribute definitions."""
 
         test_status: Final = ZCLAttributeDef(
-            id=0x0000, type=HaloTestStatus,
+            id=0x0000,
+            type=HaloTestStatus,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         hush_status: Final = ZCLAttributeDef(
-            id=0x0001, type=HaloHushStatus,
+            id=0x0001,
+            type=HaloHushStatus,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
 
@@ -257,7 +256,8 @@ class HaloSensorsCluster(CustomCluster):
         """Attribute definitions."""
 
         co_ppm: Final = ZCLAttributeDef(
-            id=0x0002, type=t.int16s,
+            id=0x0002,
+            type=t.int16s,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
 
@@ -273,31 +273,40 @@ class HaloWeatherCluster(CustomCluster):
         """Attribute definitions."""
 
         weather_alert_status: Final = ZCLAttributeDef(
-            id=0x0000, type=WeatherAlertCode,
+            id=0x0000,
+            type=WeatherAlertCode,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_mute: Final = ZCLAttributeDef(
-            id=0x0001, type=t.Bool,
+            id=0x0001,
+            type=t.Bool,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_location: Final = ZCLAttributeDef(
-            id=0x0002, type=t.uint32_t, access="rwp",
+            id=0x0002,
+            type=t.uint32_t,
+            access="rwp",
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_event1: Final = ZCLAttributeDef(
-            id=0x0003, type=t.bitmap32,
+            id=0x0003,
+            type=t.bitmap32,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_event2: Final = ZCLAttributeDef(
-            id=0x0004, type=t.bitmap32,
+            id=0x0004,
+            type=t.bitmap32,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_event3: Final = ZCLAttributeDef(
-            id=0x0005, type=t.bitmap32,
+            id=0x0005,
+            type=t.bitmap32,
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
         weather_station: Final = ZCLAttributeDef(
-            id=0x0006, type=t.uint8_t, access="rwp",
+            id=0x0006,
+            type=t.uint8_t,
+            access="rwp",
             manufacturer_code=HALO_MANUFACTURER_CODE,
         )
 
