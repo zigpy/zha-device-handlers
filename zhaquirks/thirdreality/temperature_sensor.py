@@ -79,3 +79,9 @@ base_quirk = (
     .removes(PollControl.cluster_id)
     .add_to_registry()
 )
+
+(
+    base_quirk.clone()
+    .applies_to("Third Reality, Inc", "3RTHS0324Z")
+    .add_to_registry()
+)
