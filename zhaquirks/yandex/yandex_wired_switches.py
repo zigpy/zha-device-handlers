@@ -163,20 +163,20 @@ class YandexSwitchClusterWired(CustomCluster):
         enum_class=YandexType_PowerType,
         cluster_id=YandexSwitchClusterWired.cluster_id,
         translation_key="power_type",
-        fallback_name="Power Type",
+        fallback_name="Power type",
     )
     .enum(
         attribute_name=YandexSwitchClusterWired.AttributeDefs.switch_mode.name,
         enum_class=YandexType_SwitchMode,
         cluster_id=YandexSwitchClusterWired.cluster_id,
         translation_key="switch_mode",
-        fallback_name="Switch Mode",
+        fallback_name="Switch mode",
     )
     .switch(
         attribute_name=YandexSwitchClusterWired.AttributeDefs.led_indicator.name,
         cluster_id=YandexSwitchClusterWired.cluster_id,
         translation_key="led_indicator",
-        fallback_name="LED Indicator",
+        fallback_name="LED indicator",
         off_value=YandexType_LedIndicator.Disabled,
         on_value=YandexType_LedIndicator.Enabled,
     )
@@ -292,7 +292,7 @@ class YandexSwitchClusterWired(CustomCluster):
         enum_class=YandexType_PowerType,
         cluster_id=YandexSwitchClusterWired.cluster_id,
         translation_key="power_type",
-        fallback_name="Power Type",
+        fallback_name="Power type",
     )
     .enum(
         attribute_name=YandexSwitchClusterWired.AttributeDefs.switch_mode.name,
@@ -300,7 +300,7 @@ class YandexSwitchClusterWired(CustomCluster):
         cluster_id=YandexSwitchClusterWired.cluster_id,
         endpoint_id=1,
         translation_key="switch_mode",
-        fallback_name="Switch Mode",
+        fallback_name="Switch mode",
     )
     .enum(
         attribute_name=YandexSwitchClusterWired.AttributeDefs.switch_mode.name,
@@ -308,13 +308,13 @@ class YandexSwitchClusterWired(CustomCluster):
         cluster_id=YandexSwitchClusterWired.cluster_id,
         endpoint_id=2,
         translation_key="switch_mode",
-        fallback_name="Switch Mode",
+        fallback_name="Switch mode",
     )
     .switch(
         attribute_name=YandexSwitchClusterWired.AttributeDefs.led_indicator.name,
         cluster_id=YandexSwitchClusterWired.cluster_id,
         translation_key="led_indicator",
-        fallback_name="LED Indicator",
+        fallback_name="LED indicator",
         off_value=YandexType_LedIndicator.Disabled,
         on_value=YandexType_LedIndicator.Enabled,
     )
