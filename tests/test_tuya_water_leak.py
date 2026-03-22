@@ -20,16 +20,16 @@ ZCL_TUYA_RINGTONE_2 = bytes.fromhex("09 db 02 01 e6 67 04 00 01 02")
 
 
 @pytest.mark.parametrize(
-    "frame, expected_value",
+    "frame, expected_attr_id, expected_value",
     [
-        (ZCL_TUYA_WATER_PRESENCE, True),
-        (ZCL_TUYA_WATER_ABSENCE, False),
-        (ZCL_TUYA_WATER_LEAK_TRUE, True),
-        (ZCL_TUYA_WATER_LEAK_FALSE, False),
+        (ZCL_TUYA_WATER_PRESENCE, 0xEF01, True),
+        (ZCL_TUYA_WATER_ABSENCE, 0xEF01, False),
+        (ZCL_TUYA_WATER_LEAK_TRUE, 0xEF66, True),
+        (ZCL_TUYA_WATER_LEAK_FALSE, 0xEF66, False),
     ],
 )
 async def test_water_sensors_state_report(
-    zigpy_device_from_v2_quirk, frame, expected_value
+    zigpy_device_from_v2_quirk, frame, expected_attr_id, expected_value
 ):
     """Test water presence and leak sensors."""
 
@@ -41,22 +41,23 @@ async def test_water_sensors_state_report(
     tuya_cluster.handle_message(hdr, args)
 
     assert len(tuya_listener.attribute_updates) == 1
+    assert tuya_listener.attribute_updates[0][0] == expected_attr_id
     assert tuya_listener.attribute_updates[0][1] == expected_value
 
 
 @pytest.mark.parametrize(
-    "frame, expected_value",
+    "frame, expected_attr_id, expected_value",
     [
-        (ZCL_TUYA_ALARM_MODE_0, 0),
-        (ZCL_TUYA_ALARM_MODE_1, 1),
-        (ZCL_TUYA_RINGTONE_0, 0),
-        (ZCL_TUYA_RINGTONE_2, 2),
+        (ZCL_TUYA_ALARM_MODE_0, 0xEF65, 0),
+        (ZCL_TUYA_ALARM_MODE_1, 0xEF65, 1),
+        (ZCL_TUYA_RINGTONE_0, 0xEF67, 0),
+        (ZCL_TUYA_RINGTONE_2, 0xEF67, 2),
     ],
 )
 async def test_sensor_and_enum_state_report(
-    zigpy_device_from_v2_quirk, frame, expected_value
+    zigpy_device_from_v2_quirk, frame, expected_attr_id, expected_value
 ):
-    """Test battery sensor and enum attributes."""
+    """Test alarm mode and ringtone enum attributes."""
 
     dev = zigpy_device_from_v2_quirk("_TZE284_1di7ujzp", "TS0601")
     tuya_cluster = dev.endpoints[1].tuya_manufacturer
@@ -66,6 +67,7 @@ async def test_sensor_and_enum_state_report(
     tuya_cluster.handle_message(hdr, args)
 
     assert len(tuya_listener.attribute_updates) == 1
+    assert tuya_listener.attribute_updates[0][0] == expected_attr_id
     assert tuya_listener.attribute_updates[0][1] == expected_value
 
 
