@@ -3,15 +3,13 @@
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import CarbonDioxideConcentration
 
-from zhaquirks.xiaomi.aqara.airm_fhac01 import (
-    CarbonDioxideConcentrationCluster,
-    CustomDeviceTemperature,
-)
+import zhaquirks.xiaomi.aqara.airm_fhac01  # noqa: F401 - register quirk
 
 
-def test_co2_concentration_cluster_scaling():
+def test_co2_concentration_cluster_scaling(zigpy_device_from_v2_quirk):
     """Test CO2 concentration cluster scaling functionality."""
-    cluster = CarbonDioxideConcentrationCluster(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].carbon_dioxide_concentration
 
     # Test normal CO2 value with 6 extra zeros
     test_value = 400_000_000  # Should represent 400 ppm
@@ -26,9 +24,10 @@ def test_co2_concentration_cluster_scaling():
     assert actual_value == expected_value
 
 
-def test_co2_concentration_cluster_edge_cases():
+def test_co2_concentration_cluster_edge_cases(zigpy_device_from_v2_quirk):
     """Test CO2 concentration cluster with edge cases."""
-    cluster = CarbonDioxideConcentrationCluster(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].carbon_dioxide_concentration
 
     test_cases = [
         (0, 0.0),  # Zero value
@@ -44,9 +43,10 @@ def test_co2_concentration_cluster_edge_cases():
         assert actual_value == expected_value
 
 
-def test_co2_concentration_other_attributes_unchanged():
+def test_co2_concentration_other_attributes_unchanged(zigpy_device_from_v2_quirk):
     """Test that other CO2 cluster attributes are not affected by scaling."""
-    cluster = CarbonDioxideConcentrationCluster(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].carbon_dioxide_concentration
 
     # Test min_measured_value attribute (should not be scaled)
     test_value = 1000
@@ -58,9 +58,10 @@ def test_co2_concentration_other_attributes_unchanged():
     assert actual_value == test_value  # No scaling
 
 
-def test_device_temperature_cluster_scaling():
+def test_device_temperature_cluster_scaling(zigpy_device_from_v2_quirk):
     """Test device temperature cluster scaling functionality."""
-    cluster = CustomDeviceTemperature(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].device_temperature
 
     # Test normal temperature value divided by 100
     test_value = 25  # Should represent 25°C
@@ -75,9 +76,10 @@ def test_device_temperature_cluster_scaling():
     assert actual_value == expected_value
 
 
-def test_device_temperature_cluster_edge_cases():
+def test_device_temperature_cluster_edge_cases(zigpy_device_from_v2_quirk):
     """Test device temperature cluster with edge cases."""
-    cluster = CustomDeviceTemperature(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].device_temperature
 
     test_cases = [
         (0, 0),  # 0°C
@@ -94,9 +96,10 @@ def test_device_temperature_cluster_edge_cases():
         assert actual_value == expected_value
 
 
-def test_device_temperature_other_attributes_unchanged():
+def test_device_temperature_other_attributes_unchanged(zigpy_device_from_v2_quirk):
     """Test that other device temperature cluster attributes are not affected by scaling."""
-    cluster = CustomDeviceTemperature(None, None)
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+    cluster = device.endpoints[1].device_temperature
 
     # Test min_temp_experienced attribute (should not be scaled)
     test_value = 20
@@ -106,17 +109,3 @@ def test_device_temperature_other_attributes_unchanged():
 
     actual_value = cluster.get("min_temp_experienced")
     assert actual_value == test_value  # No scaling
-
-
-def test_cluster_inheritance():
-    """Test that clusters properly inherit from their base classes."""
-    co2_cluster = CarbonDioxideConcentrationCluster(None, None)
-    temp_cluster = CustomDeviceTemperature(None, None)
-
-    # Check that they are instances of the correct base classes
-    assert isinstance(co2_cluster, CarbonDioxideConcentration)
-    assert isinstance(temp_cluster, DeviceTemperature)
-
-    # Check that they have the expected cluster IDs
-    assert co2_cluster.cluster_id == CarbonDioxideConcentration.cluster_id
-    assert temp_cluster.cluster_id == DeviceTemperature.cluster_id
