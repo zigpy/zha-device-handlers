@@ -114,7 +114,7 @@ class SonoffInputConfigCluster(LocalDataCluster):
         # TODO: Use _DEFAULT_VALUES when ready, this doesn't work in all circumstances
         for attr_id in self._RELAY_BITS:
             if attr_id not in self._attr_cache:
-                self._update_attribute(attr_id, t.Bool.true)
+                self._update_attribute(attr_id, t.Bool.false)
 
     def update_relay_states(self, mask: int) -> None:
         """Update individual relay states from a bitmap mask."""
