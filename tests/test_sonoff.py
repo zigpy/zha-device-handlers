@@ -123,6 +123,19 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         assert local_listener.attribute_updates[1] == (relay_2_attr, False)
         assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
+        # Write relay_1_detached = False to test clearing a bit
+        local_listener.attribute_updates.clear()
+        await local_cluster.write_attributes(
+            {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: False}
+        )
+
+        written_attrs = mock_write.call_args[0][0]
+        assert written_attrs[0].value.value == SonoffDetachedRelayMask(0)
+
+        assert local_listener.attribute_updates[0] == (relay_1_attr, False)
+        assert local_listener.attribute_updates[1] == (relay_2_attr, False)
+        assert local_listener.attribute_updates[2] == (relay_3_attr, False)
+
 
 async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_quirk):
     """Test apply_custom_configuration reads mask and populates local relay states."""
