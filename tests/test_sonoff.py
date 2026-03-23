@@ -216,6 +216,6 @@ async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
     relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
     relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
 
-    assert local_listener.attribute_updates[-3] == (relay_1_attr, True)
-    assert local_listener.attribute_updates[-2] == (relay_2_attr, True)
-    assert local_listener.attribute_updates[-1] == (relay_3_attr, False)
+    assert local_listener.attribute_updates[0] == (relay_1_attr, True)
+    assert local_listener.attribute_updates[1] == (relay_2_attr, True)
+    assert local_listener.attribute_updates[2] == (relay_3_attr, False)
