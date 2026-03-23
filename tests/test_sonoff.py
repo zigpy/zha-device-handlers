@@ -137,6 +137,47 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
 
+async def test_sonoff_cluster_failed_write_does_not_propagate(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a failed mask write does not update local relay states."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="ZBM5-1C-80/86",
+        cluster_ids={
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
+    local_listener = ClusterListener(local_cluster)
+
+    # Mock a failed write
+    write_response = [
+        [
+            foundation.WriteAttributesStatusRecord(
+                status=foundation.Status.FAILURE,
+                attrid=SonoffCluster.AttributeDefs.detach_relay_mask.id,
+            )
+        ]
+    ]
+    with mock.patch.object(
+        sonoff_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=write_response),
+    ):
+        await local_cluster.write_attributes(
+            {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: True}
+        )
+
+    # Local relay states should not have been updated
+    assert len(local_listener.attribute_updates) == 0
+
+
 async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_quirk):
     """Test apply_custom_configuration reads mask and populates local relay states."""
     device = zigpy_device_from_v2_quirk(
