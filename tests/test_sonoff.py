@@ -122,3 +122,46 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         assert local_listener.attribute_updates[0] == (relay_1_attr, True)
         assert local_listener.attribute_updates[1] == (relay_2_attr, False)
         assert local_listener.attribute_updates[2] == (relay_3_attr, False)
+
+
+async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_quirk):
+    """Test apply_custom_configuration reads mask and populates local relay states."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="ZBM5-1C-80/86",
+        cluster_ids={
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                SonoffInputConfigCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    sonoff_cluster = device.endpoints[1].sonoff_cluster
+    local_cluster = device.endpoints[1].sonoff_input_config
+    local_listener = ClusterListener(local_cluster)
+
+    mask_attr = SonoffCluster.AttributeDefs.detach_relay_mask
+    mask = SonoffDetachedRelayMask.Relay1 | SonoffDetachedRelayMask.Relay2
+
+    # Mock raw ZCL read so the full read_attributes chain runs and fires events
+    read_response = foundation.ReadAttributeRecord(
+        attrid=mask_attr.id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(type=mask_attr.zcl_type, value=mask),
+    )
+    with mock.patch.object(
+        sonoff_cluster,
+        "_read_attributes",
+        mock.AsyncMock(return_value=[[read_response]]),
+    ):
+        await sonoff_cluster.apply_custom_configuration()
+
+    # Verify local relay states were populated from the read
+    relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
+    relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
+    relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
+
+    assert local_listener.attribute_updates[-3] == (relay_1_attr, True)
+    assert local_listener.attribute_updates[-2] == (relay_2_attr, True)
+    assert local_listener.attribute_updates[-1] == (relay_3_attr, False)
