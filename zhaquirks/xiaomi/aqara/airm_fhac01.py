@@ -3,11 +3,7 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import DeviceTemperature
-from zigpy.zcl.clusters.measurement import (
-    CarbonDioxideConcentration,
-    RelativeHumidity,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.measurement import CarbonDioxideConcentration
 
 from zhaquirks.xiaomi import LUMI
 
@@ -36,8 +32,6 @@ class CustomDeviceTemperature(CustomCluster, DeviceTemperature):
 
 (
     QuirkBuilder(LUMI, "lumi.airm.fhac01")
-    .adds(TemperatureMeasurement)
-    .adds(RelativeHumidity)
     .replaces(CarbonDioxideConcentrationCluster)
     .replaces(CustomDeviceTemperature)
     .add_to_registry()
