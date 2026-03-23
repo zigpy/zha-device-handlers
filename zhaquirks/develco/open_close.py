@@ -1,7 +1,8 @@
 """Door/Windows sensors."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
+from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 
@@ -25,5 +26,14 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     # The binary input cluster is a duplicate
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
+    .binary_sensor(
+        endpoint_id=35,
+        cluster_id=IasZone.cluster_id,
+        attribute_name=IasZone.AttributeDefs.zone_status.name,
+        device_class=BinarySensorDeviceClass.TAMPER,
+        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
+        unique_id_suffix="tamper",
+        fallback_name="Tamper",
+    )
     .add_to_registry()
 )

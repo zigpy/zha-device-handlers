@@ -25,6 +25,8 @@ BUTTON_3 = "button_3"
 BUTTON_4 = "button_4"
 BUTTON_5 = "button_5"
 BUTTON_6 = "button_6"
+BUTTON_7 = "button_7"
+BUTTON_8 = "button_8"
 CLICK_TYPE = "click_type"
 CLOSE = "close"
 CLUSTER_COMMAND = "cluster_command"
@@ -73,6 +75,9 @@ COMMAND_STORE = "store"
 COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
+COMMAND_STARTED_ROTATING = "started_rotating"
+COMMAND_CONTINUED_ROTATING = "continued_rotating"
+COMMAND_STOPPED_ROTATING = "stopped_rotating"
 DESCRIPTION = "description"
 DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"
@@ -126,6 +131,10 @@ ZONE_STATUS_CHANGE_COMMAND = 0x0000
 ZONE_STATE = 0x0000
 ZONE_TYPE = 0x0001
 ZONE_STATUS = 0x0002
+ROTARY_KNOB = "rotary_knob"
+STARTED_ROTATING = "rotary_knob_started_rotating"
+CONTINUED_ROTATING = "rotary_knob_continued_rotating"
+STOPPED_ROTATING = "rotary_knob_stopped_rotating"
 
 
 class BatterySize(t.enum8):
