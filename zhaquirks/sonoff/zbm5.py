@@ -85,6 +85,7 @@ class SonoffCluster(CustomCluster):
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Read detach_relay_mask during pairing to populate local relay states."""
+        # XXX: We should have a quirks v2 API for adding attributes to ZCL_INIT_ATTRS
         await self.read_attributes([self.AttributeDefs.detach_relay_mask.id])
 
 
@@ -111,8 +112,6 @@ class SonoffInputConfigCluster(LocalDataCluster):
         """Init with all relays attached by default."""
         super().__init__(*args, **kwargs)
         # TODO: Use _DEFAULT_VALUES when ready, this doesn't work in all circumstances
-        # TODO: Force read of real detach_relay_mask during pairing,
-        #  so this is populated with correct values from device (using update_attribute)
         for attr_id in self._RELAY_BITS:
             if attr_id not in self._attr_cache:
                 self._update_attribute(attr_id, t.Bool.true)
