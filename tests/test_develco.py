@@ -4,6 +4,8 @@ from unittest import mock
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import BinaryInput
+from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
@@ -176,4 +178,127 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert len(metering_listener.attribute_updates) == 1
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    )
+
+
+async def test_frient_keypad_emergency_updates(zigpy_device_from_v2_quirk):
+    """Test SOS button handling updates emergency attributes."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-122",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    emergency_cluster = device.endpoints[44].frient_emergency
+
+    hdr = foundation.ZCLHeader(
+        frame_control=foundation.FrameControl(
+            frame_type=foundation.FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=False,
+            direction=foundation.Direction.Client_to_Server,
+            disable_default_response=False,
+            reserved=0,
+        ),
+        tsn=1,
+        command_id=IasAce.ServerCommandDefs.emergency.id,
+    )
+
+    send_patch = mock.patch.object(ias_ace, "send_default_rsp")
+    with send_patch as send_default_rsp:
+        ias_ace.handle_message(hdr, [])
+
+    assert emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id)
+    assert emergency_cluster.get(
+        emergency_cluster.AttributeDefs.last_emergency_triggered.id
+    )
+    assert ias_ace._emergency_reset_handle is not None
+    send_default_rsp.assert_called_once()
+
+
+async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
+    """Test arm command stores the last keypad code."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-122",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    last_code_cluster = device.endpoints[44].frient_last_code
+
+    hdr = foundation.ZCLHeader(
+        frame_control=foundation.FrameControl(
+            frame_type=foundation.FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=False,
+            direction=foundation.Direction.Client_to_Server,
+            disable_default_response=True,
+            reserved=0,
+        ),
+        tsn=2,
+        command_id=IasAce.ServerCommandDefs.arm.id,
+    )
+
+    ias_ace.handle_message(hdr, [IasAce.ArmMode.Arm_All_Zones, b"1234"])
+
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
+    )
+
+
+async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk):
+    """Test panel status responses keep cached values when suppression is active."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-122",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    ias_ace._remember_panel_state(
+        IasAce.PanelStatus.Panel_Disarmed,
+        0,
+        IasAce.AudibleNotification.Default_Sound,
+        IasAce.AlarmStatus.No_Alarm,
+    )
+    ias_ace._suppress_panel_updates = True
+
+    with mock.patch.object(IasAce, "client_command", new=mock.AsyncMock()) as send:
+        await ias_ace.panel_status_changed(
+            IasAce.PanelStatus.Armed_Away,
+            10,
+            IasAce.AudibleNotification.Default_Sound,
+            IasAce.AlarmStatus.No_Alarm,
+        )
+
+    send.assert_called_once_with(
+        ias_ace.ClientCommandDefs.panel_status_changed.id,
+        IasAce.PanelStatus.Panel_Disarmed,
+        0,
+        IasAce.AudibleNotification.Default_Sound,
+        IasAce.AlarmStatus.No_Alarm,
     )
