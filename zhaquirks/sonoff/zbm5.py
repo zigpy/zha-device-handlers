@@ -165,8 +165,9 @@ zbm_1c_quirk = (
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
         SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_1",
+        translation_key="detach_relay_id",
         fallback_name="Detach relay 1",
+        translation_placeholders={"id": "1"},
     )
     .device_automation_triggers(
         {(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1}}
@@ -187,8 +188,9 @@ zbm_2c_quirk = (
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
         SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_2",
+        translation_key="detach_relay_id",
         fallback_name="Detach relay 2",
+        translation_placeholders={"id": "2"},
     )
     .device_automation_triggers(
         {(SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 2}}
@@ -209,8 +211,9 @@ zbm_3c_quirk = (
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
         SonoffInputConfigCluster.cluster_id,
-        translation_key="detach_relay_3",
+        translation_key="detach_relay_id",
         fallback_name="Detach relay 3",
+        translation_placeholders={"id": "3"},
     )
     .device_automation_triggers(
         {(SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 3}}
