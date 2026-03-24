@@ -360,7 +360,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=102,
         attribute_name="soil_moisture_offset",
-        type=t.uint16_t,
+        type=t.int8s,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
@@ -373,7 +373,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=104,
         attribute_name="temperature_offset",
-        type=t.uint16_t,
+        type=t.int8s,
         unit=UnitOfTemperature.KELVIN,
         min_value=-2,
         max_value=2,
@@ -387,7 +387,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=105,
         attribute_name="humidity_offset",
-        type=t.uint16_t,
+        type=t.int8s,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
