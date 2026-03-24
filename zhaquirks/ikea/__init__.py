@@ -59,7 +59,7 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
         super().__init__(*args, **kwargs)
-        self._last_move_direction = None
+        self._last_move_direction: int | None = None
 
     def handle_cluster_request(
         self,
