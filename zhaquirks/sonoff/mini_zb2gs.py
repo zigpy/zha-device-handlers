@@ -38,7 +38,7 @@ class SonoffCluster(CustomCluster):
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
-    """extern switch trigger type."""
+    """External switch trigger type."""
 
     Edge_trigger = 0x00
     Pulse_trigger = 0x01
@@ -47,7 +47,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 
 
 class SonoffDetachRelayType(types.enum8):
-    """detach relay type."""
+    """Detach relay type."""
 
     All_channels_disabled = 0x00
     CH1_enabled = 0x01
