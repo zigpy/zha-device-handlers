@@ -5,9 +5,8 @@ from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
+from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
 from zhaquirks.quirk_ids import SIREN_BASIC
-
-from . import DevelcoIasZone, DevelcoPowerConfiguration
 
 (
     QuirkBuilder("frient A/S", "SMSZB-120")
