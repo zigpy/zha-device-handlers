@@ -163,7 +163,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         max_value=10,
         step=1,
         mode="box",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
@@ -185,7 +185,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
     .number(
         ThermostatCluster.AttributeDefs.open_window_sensitivity.name,
         ThermostatCluster.cluster_id,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         step=0.5,
