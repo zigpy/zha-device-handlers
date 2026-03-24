@@ -29,8 +29,8 @@ class ChamberContaminationEnum(t.enum8):
 class SmokeLevelUnitEnum(t.enum8):
     """Smoke level unit."""
 
-    dB_m = 0
-    pct_ft_OBS = 1
+    dbm = 0
+    pct_ft_obs = 1
 
 
 class CustomHeimanCluster(CustomCluster):
