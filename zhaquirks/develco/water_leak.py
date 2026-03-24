@@ -5,12 +5,16 @@ from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
+from zhaquirks.quirk_ids import SIREN_BASIC
+
 from . import DevelcoIasZone, DevelcoPowerConfiguration
 
 (
     QuirkBuilder("frient A/S", "FLSZB-110")
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
+    # The device only has basic siren features, so hint that to ZHA
+    .exposes_feature(SIREN_BASIC)
     # Hide the default binary input sensor
     .prevent_default_entity_creation(
         endpoint_id=35,

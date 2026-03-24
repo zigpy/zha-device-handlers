@@ -29,6 +29,7 @@ class DevelcoIasZoneCO(DevelcoIasZone):
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoIasZoneCO, endpoint_id=46)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
+    # The device only has basic siren features, so hint that to ZHA
     .exposes_feature(SIREN_BASIC)
     # Hide the BinaryInput sensors on both endpoints (duplicated by IAS Zone)
     .prevent_default_entity_creation(
