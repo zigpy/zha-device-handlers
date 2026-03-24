@@ -312,7 +312,7 @@ def test_candeo_scene_switch_remote_unknown_message_type(
         ),
     ],
 )
-def test_candeo_scene_switch_remote__button_number_and_button_action_combinations(
+def test_candeo_scene_switch_remote_button_number_and_button_action_combinations(
     zigpy_device_from_v2_quirk,
     button_number,
     button_action,
