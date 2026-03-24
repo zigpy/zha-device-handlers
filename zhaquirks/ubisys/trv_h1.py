@@ -166,7 +166,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="local_temperature_calibration",
-        fallback_name="Local temperature offset",
+        fallback_name="Local temperature calibration",
     )
     .switch(
         ThermostatCluster.AttributeDefs.detect_open_window.name,
