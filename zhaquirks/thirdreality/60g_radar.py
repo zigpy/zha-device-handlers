@@ -69,7 +69,6 @@ class ThirdRealityRadarCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RPL01084Z")
     .replaces(ThirdRealityRadarCluster)
     .sensor(
-        endpoint_id=1,
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.volatile_organic_compounds.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
@@ -82,7 +81,6 @@ class ThirdRealityRadarCluster(CustomCluster):
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.tvoc_sensor_calibration.name,
         attribute_value=0x01,
-        endpoint_id=1,
         translation_key="calibrate_tvoc_sensor",
         fallback_name="Calibrate TVOC sensor",
     )
