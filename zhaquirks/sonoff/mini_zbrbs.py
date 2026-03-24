@@ -36,7 +36,7 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
             access="r",
         )
-        attrib_0012 = ZCLAttributeDef(  # factiry value=10
+        attrib_0012 = ZCLAttributeDef(  # factory value=10
             id=0x0012,
             type=t.int16s,
             manufacturer_code=None,
