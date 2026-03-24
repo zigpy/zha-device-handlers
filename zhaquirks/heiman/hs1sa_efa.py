@@ -123,14 +123,7 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="heartbeat_indicator",
         fallback_name="Heartbeat indicator",
     )
-    # XXX: This should be added as a siren entity in the future, needs zigpy API
-    # .enum(
-    #     CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
-    #     SmokeSirenEnum,
-    #     CustomHeimanCluster.cluster_id,
-    #     translation_key="siren_for_automation_only",
-    #     fallback_name="Siren for automation only",
-    # )
+    # XXX: siren_for_automation should be added as a siren entity, needs zigpy API
     .enum(
         CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
         ChamberContaminationEnum,
@@ -140,16 +133,6 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="chamber_contamination",
         fallback_name="Chamber contamination",
     )
-    # XXX: It doesn't make sense to have a standalone sensor for this
-    # .enum(
-    #     CustomHeimanCluster.AttributeDefs.smoke_unit.name,
-    #     SmokeLevelUnitEnum,
-    #     CustomHeimanCluster.cluster_id,
-    #     entity_platform=EntityPlatform.SENSOR,
-    #     entity_type=EntityType.DIAGNOSTIC,
-    #     translation_key="smoke_level_unit",
-    #     fallback_name="Smoke level unit",
-    # )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
         CustomHeimanCluster.cluster_id,
