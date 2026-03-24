@@ -1,7 +1,7 @@
 """Ikea module."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -66,10 +66,9 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ) -> None:
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
         """Handle cluster specific commands.
 
         Track move commands to remember direction for stop commands.
