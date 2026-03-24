@@ -460,6 +460,23 @@ def test_my_device_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
 
+**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+
+```python
+(
+    QuirkBuilder("Manufacturer", "Model")
+    .friendly_name(model="Wireless Mini Switch", manufacturer="Acme")
+    .replaces(ExistingCustomCluster)
+    .device_automation_triggers({
+        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
+        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+    })
+    .add_to_registry()
+)
+```
+
+Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, or custom filter functions.
+
 ## Code Organization
 
 Quirks are organized by manufacturer in `zhaquirks/<manufacturer>/`:

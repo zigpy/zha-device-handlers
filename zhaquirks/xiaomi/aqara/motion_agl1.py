@@ -70,7 +70,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x015B,
             type=types.uint32_t,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # Detected motion
@@ -79,7 +79,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             type=AqaraMotion,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # Distance to the detected motion in millimeters
@@ -87,7 +87,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x015F,
             type=types.uint32_t,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # The configurable detection sensitivity
@@ -96,7 +96,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             type=AqaraMotionSensitivity,
             zcl_type=DataTypeId.uint8,
             access="rw",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # Detected occupancy
@@ -105,7 +105,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             type=AqaraOccupancy,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # Trigger AI spatial learning (write 1)
@@ -113,7 +113,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0157,
             type=types.uint8_t,
             access="w",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
         # Trigger device restart (write 0)
@@ -121,7 +121,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x00E8,
             type=types.Bool,
             access="w",
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
