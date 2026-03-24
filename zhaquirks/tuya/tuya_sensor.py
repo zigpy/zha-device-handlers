@@ -374,7 +374,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=104,
         attribute_name="temperature_offset",
         type=t.int8s,
-        unit=UnitOfTemperature.KELVIN,
+        unit=UnitOfTemperature.CELSIUS,
         min_value=-2,
         max_value=2,
         step=0.1,
