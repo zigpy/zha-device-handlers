@@ -7,6 +7,7 @@ from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
+from zhaquirks.quirk_ids import SIREN_BASIC
 
 
 class DevelcoIasZoneCO(DevelcoIasZone):
@@ -28,6 +29,7 @@ class DevelcoIasZoneCO(DevelcoIasZone):
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoIasZoneCO, endpoint_id=46)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
+    .exposes_feature(SIREN_BASIC)
     # Hide the BinaryInput sensors on both endpoints (duplicated by IAS Zone)
     .prevent_default_entity_creation(
         endpoint_id=35,
