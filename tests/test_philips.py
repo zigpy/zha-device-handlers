@@ -35,7 +35,14 @@ from zhaquirks.const import (
     TURN_ON,
 )
 import zhaquirks.philips
-from zhaquirks.philips import Button, ButtonPressQueue, PhilipsRemoteCluster, PressType
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    Button,
+    ButtonPressQueue,
+    PhilipsRemoteCluster,
+    PressType,
+)
 from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
 from zhaquirks.philips.rwl022 import PhilipsRWL022
@@ -894,3 +901,39 @@ async def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk)
     # These call counts is the same, regardless of whether PhilipsRdm002LevelControl is used or not.
     assert listener.zha_send_event.call_count == 0
     assert listener.cluster_command.call_count == 2
+
+
+@pytest.mark.parametrize(
+    "manufacturer, model",
+    (
+        (PHILIPS, "ROM001"),
+        (SIGNIFY, "ROM001"),
+        (SIGNIFY, "RDM003"),
+        (SIGNIFY, "RDM005"),
+    ),
+)
+def test_rom001_signature(assert_signature_matches_quirk, manufacturer, model):
+    """Test ROM001 signature matching."""
+    signature = {
+        "ieee": "00:17:88:01:0f:bc:68:0b",
+        "manufacturer": manufacturer,
+        "model": model,
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0830",
+                "in_clusters": ["0x0000", "0x0001", "0x0003", "0x1000", "0xfc00"],
+                "out_clusters": [
+                    "0x0000",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x0019",
+                    "0x1000",
+                ],
+            }
+        },
+    }
+    assert_signature_matches_quirk(PhilipsROM001, signature)

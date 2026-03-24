@@ -21,20 +21,20 @@ class ThirdRealityCluster(CustomCluster):
         temperature_offset_celsius: Final = ZCLAttributeDef(
             id=0x0031,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         humidity_offset: Final = ZCLAttributeDef(
             id=0x0032,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
         # intentionally not exposed as an entity
         temperature_offset_fahrenheit: Final = ZCLAttributeDef(
             id=0x0033,
             type=t.int16s,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1233,
         )
 
 
@@ -48,7 +48,7 @@ base_quirk = (
         max_value=10000,
         multiplier=0.01,
         step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
