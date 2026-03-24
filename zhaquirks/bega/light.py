@@ -24,12 +24,12 @@ class LevelControlBega(CustomCluster, LevelControl):
 
         # Color temperature for "False" in Kelvin, 0xFFFF when not supported
         switchable_color_temperature_1: Final = ZCLAttributeDef(
-            id=0x4002, type=t.uint16_t_t, manufacturer_code=0x1105
+            id=0x4002, type=t.uint16_t, manufacturer_code=0x1105
         )
 
         # Color temperature for "True" in Kelvin, 0xFFFF when not supported
         switchable_color_temperature_2: Final = ZCLAttributeDef(
-            id=0x4003, type=t.uint16_t_t, manufacturer_code=0x1105
+            id=0x4003, type=t.uint16_t, manufacturer_code=0x1105
         )
 
 
