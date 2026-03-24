@@ -6,7 +6,7 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
-from . import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
+from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
 
 
 class DevelcoIasZoneCO(DevelcoIasZone):
