@@ -3,8 +3,10 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
@@ -37,7 +39,7 @@ async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
 
 
 async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_quirk):
-    """Test that an unsupported event for battery_percentage_remaining doesn't clear the cached value."""
+    """Test that reading unsupported battery_percentage_remaining doesn't clear the cached value."""
 
     device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
     power_cluster = device.endpoints[1].power
@@ -48,19 +50,17 @@ async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_q
     )
     assert power_cluster["battery_percentage_remaining"] == 120
 
-    # Simulate what happens when ZHA reads battery_percentage_remaining and
-    # the device returns unsupported
-    power_cluster.emit(
-        AttributeUnsupportedEvent.event_type,
-        AttributeUnsupportedEvent(
-            device_ieee=str(device.ieee),
-            endpoint_id=1,
-            cluster_type=ClusterType.Server,
-            cluster_id=PowerConfiguration.cluster_id,
-            attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
-            attribute_id=PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
-            manufacturer_code=None,
-        ),
+    # Mock _read_attributes to return UNSUPPORTED_ATTRIBUTE for
+    # battery_percentage_remaining, as a real device would during pairing
+    bpr_attr_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    unsupported_record = ReadAttributeRecord(
+        attrid=t.uint16_t(bpr_attr_id),
+        status=Status.UNSUPPORTED_ATTRIBUTE,
+    )
+    power_cluster._read_attributes = mock.AsyncMock(return_value=[[unsupported_record]])
+
+    await power_cluster.read_attributes(
+        [PowerConfiguration.AttributeDefs.battery_percentage_remaining.name]
     )
 
     # The cached value should be preserved
