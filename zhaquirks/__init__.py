@@ -18,7 +18,12 @@ from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUnsupportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -147,6 +152,7 @@ class EventableCluster(CustomCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
@@ -167,8 +173,10 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _handle_attribute_report(self, event: AttributeReportedEvent) -> None:
-        """Handle attribute report event."""
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report or update event."""
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
@@ -242,6 +250,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value),
             )
+
+    def emit(self, event_name: str, data=None) -> None:
+        """Suppress unsupported event for battery percentage remaining.
+
+        This attribute is computed from battery voltage by this quirk, so
+        an unsupported response from the device should not clear the cache.
+        """
+        if (
+            event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id == self.BATTERY_PERCENTAGE_REMAINING
+        ):
+            return
+        super().emit(event_name, data)
 
     def _calculate_battery_percentage(self, raw_value):
         volts = raw_value / 10

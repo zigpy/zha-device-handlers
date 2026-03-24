@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -34,6 +35,18 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+        total_cycle_times: Final = ZCLAttributeDef(
+            id=0x0003,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+
+        last_remaining_battery_percentage: Final = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSB02015Z")
@@ -61,10 +74,29 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
         endpoint_id=1,
         min_value=0,
-        max_value=3800,
+        max_value=4000,
         step=1,
         translation_key="limit_position",
         fallback_name="Limit position",
+    )
+    .number(
+        attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.total_cycle_times.name,
+        cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
+        endpoint_id=1,
+        min_value=200,
+        max_value=334,
+        step=1,
+        translation_key="total_cycle_times",
+        fallback_name="Total cycle times",
+    )
+    .sensor(
+        attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.last_remaining_battery_percentage.name,
+        cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
+        endpoint_id=1,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="last_remaining_battery_percentage",
+        fallback_name="Last remaining battery percentage",
     )
     .add_to_registry()
 )
