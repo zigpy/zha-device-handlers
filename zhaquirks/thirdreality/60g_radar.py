@@ -50,20 +50,6 @@ class ThirdRealityRadarCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    def _update_attribute(self, attrid, value):
-        """Override attribute updates to convert VOC from ppb to µg/m³."""
-        if attrid == self.AttributeDefs.volatile_organic_compounds.id:
-            # Convert ppb to µg/m³ using the formula: µg/m³ = ppb × (molecular_weight / 24.45)
-            # For TVOC, we typically use an average molecular weight of 100 g/mol
-            molecular_weight = 100.0  # g/mol, average for TVOC
-            ppb_value = float(value)
-            ug_per_m3_value = int(ppb_value * (molecular_weight / 24.45))
-
-            # Update with converted value (rounded to integer)
-            super()._update_attribute(attrid, ug_per_m3_value)
-        else:
-            super()._update_attribute(attrid, value)
-
 
 (
     QuirkBuilder("Third Reality, Inc", "3RPL01084Z")
@@ -74,6 +60,9 @@ class ThirdRealityRadarCluster(CustomCluster):
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        # Convert ppb to µg/m³: µg/m³ = ppb × (molecular_weight / 24.45)
+        # Using average TVOC molecular weight of 100 g/mol
+        attribute_converter=lambda value: round(float(value) * (100.0 / 24.45)),
         translation_key="total_volatile_organic_compounds",
         fallback_name="Total volatile organic compounds",
     )
