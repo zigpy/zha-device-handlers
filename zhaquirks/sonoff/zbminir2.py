@@ -4,7 +4,16 @@ from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+
+class SonoffExternalSwitchTriggerType(types.enum8):
+    """External switch trigger type."""
+
+    Edge_trigger = 0x00
+    Pulse_trigger = 0x01
+    Normally_off_follow_trigger = 0x02
+    Normally_on_follow_trigger = 0x82
 
 
 class SonoffCluster(CustomCluster):
@@ -17,7 +26,8 @@ class SonoffCluster(CustomCluster):
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
-            type=t.uint8_t,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
         detach_relay = ZCLAttributeDef(
@@ -35,15 +45,6 @@ class SonoffCluster(CustomCluster):
             type=t.Bool,
             manufacturer_code=None,
         )
-
-
-class SonoffExternalSwitchTriggerType(types.enum8):
-    """extern switch trigger type."""
-
-    Edge_trigger = 0x00
-    Pulse_trigger = 0x01
-    Normally_off_follow_trigger = 0x02
-    Normally_on_follow_trigger = 0x82
 
 
 (

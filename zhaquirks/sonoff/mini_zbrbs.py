@@ -3,7 +3,29 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+
+class SonoffCoverCalibrationStatus(t.enum8):
+    """Cover calibration status."""
+
+    not_calibrated = 0x00
+    calibrated = 0x01
+
+
+class SonoffMotorState(t.enum8):
+    """Motor state (can be different from cover state)."""
+
+    stopped = 0x00
+    opening = 0x01
+    closing = 0x02
+
+
+class SonoffExternalSwitchTriggerType(t.enum8):
+    """External switch trigger type."""
+
+    edge_trigger = 0x00
+    pulse_trigger = 0x01
 
 
 class SonoffCluster(CustomCluster):
@@ -16,17 +38,20 @@ class SonoffCluster(CustomCluster):
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
-            type=t.uint8_t,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
         cover_calibrated = ZCLAttributeDef(
             id=0x5012,
-            type=t.uint8_t,
+            type=SonoffCoverCalibrationStatus,
+            zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
         motor_state = ZCLAttributeDef(
             id=0x5013,
-            type=t.uint8_t,
+            type=SonoffMotorState,
+            zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
             access="r",
         )
@@ -51,28 +76,6 @@ class SonoffCluster(CustomCluster):
             type=t.uint16_t,
             manufacturer_code=None,
         )
-
-
-class SonoffCoverCalibrationStatus(t.enum8):
-    """Cover calibration status."""
-
-    not_calibrated = 0x00
-    calibrated = 0x01
-
-
-class SonoffMotorState(t.enum8):
-    """Motor state (can be different from cover state)."""
-
-    stopped = 0x00
-    opening = 0x01
-    closing = 0x02
-
-
-class SonoffExternalSwitchTriggerType(t.enum8):
-    """External switch trigger type."""
-
-    edge_trigger = 0x00
-    pulse_trigger = 0x01
 
 
 (
