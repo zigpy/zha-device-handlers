@@ -140,15 +140,16 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="chamber_contamination",
         fallback_name="Chamber contamination",
     )
-    .enum(
-        CustomHeimanCluster.AttributeDefs.smoke_unit.name,
-        SmokeLevelUnitEnum,
-        CustomHeimanCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="smoke_level_unit",
-        fallback_name="Smoke level unit",
-    )
+    # XXX: It doesn't make sense to have a standalone sensor for this
+    # .enum(
+    #     CustomHeimanCluster.AttributeDefs.smoke_unit.name,
+    #     SmokeLevelUnitEnum,
+    #     CustomHeimanCluster.cluster_id,
+    #     entity_platform=EntityPlatform.SENSOR,
+    #     entity_type=EntityType.DIAGNOSTIC,
+    #     translation_key="smoke_level_unit",
+    #     fallback_name="Smoke level unit",
+    # )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
         CustomHeimanCluster.cluster_id,
