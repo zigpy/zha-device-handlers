@@ -63,7 +63,7 @@ class DevelcoIasZoneCO(DevelcoIasZone):
         endpoint_id=35,
         cluster_id=IasWd.cluster_id,
         new_primary=False,
-        new_entity_category=EntityType.DIAGNOSTIC,
+        new_entity_category=EntityType.CONFIG,
     )
     .add_to_registry()
 )
