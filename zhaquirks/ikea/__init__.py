@@ -95,6 +95,8 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
             self.listener_event(ZHA_SEND_EVENT, event, [])
             self._last_move_direction = None
 
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+
 
 class ShortcutV1Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 1."""
