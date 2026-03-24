@@ -179,7 +179,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         ThermostatCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.WINDOW,
-        # translation_key="open_window_detection_status", # TODO: device class name?
+        translation_key="open_window_detection_status",
         fallback_name="Open window detection status",
     )
     .number(
