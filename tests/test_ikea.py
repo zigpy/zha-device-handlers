@@ -3,12 +3,13 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
 
@@ -288,37 +289,38 @@ async def test_double_power_config_firmware(
     ],
 )
 async def test_bilresa_direction_tracking(
-    move_cmd, move_mode, stop_cmd, expected_event
+    zigpy_device_from_v2_quirk, move_cmd, move_mode, stop_cmd, expected_event
 ):
     """Test Bilresa remote direction tracking for long press releases."""
-    from zhaquirks.ikea import IkeaBilresaLevelControl
+    device = zigpy_device_from_v2_quirk(
+        IKEA,
+        "09B9",
+        cluster_ids={1: {LevelControl.cluster_id: ClusterType.Server}},
+    )
 
-    # Create a mock endpoint
-    class MockEndpoint:
-        def __init__(self):
-            self.device = None
-            self.endpoint_id = 1
+    level_cluster = device.endpoints[1].in_clusters[LevelControl.cluster_id]
+    assert isinstance(level_cluster, IkeaBilresaLevelControl)
 
-    endpoint = MockEndpoint()
-    level_cluster = IkeaBilresaLevelControl(endpoint, is_server=False)
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
 
-    # Mock listener_event to capture event calls
-    with mock.patch.object(level_cluster, "listener_event") as mock_listener:
-        # Send move command if provided
-        if move_cmd is not None:
-            hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
-            level_cluster.handle_cluster_request(hdr_move, [move_mode, 83])
+    # Send move command if provided
+    if move_cmd is not None:
+        hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
+        level_cluster.handle_cluster_request(hdr_move, [move_mode, 83])
 
-        # Send stop command
-        hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=stop_cmd)
-        level_cluster.handle_cluster_request(hdr_stop, [])
+    # Send stop command
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=stop_cmd)
+    level_cluster.handle_cluster_request(hdr_stop, [])
 
-        # Verify expected event
-        if expected_event is None:
-            mock_listener.assert_not_called()
-        else:
-            mock_listener.assert_called_once()
-            args = mock_listener.call_args[0]
-            assert args[0] == "zha_send_event"
-            assert args[1] == expected_event
-            assert args[2] == []
+    # Verify expected directional release event
+    if expected_event is None:
+        listener.zha_send_event.assert_not_called()
+    else:
+        # Find the directional release event among all fired events
+        release_calls = [
+            c
+            for c in listener.zha_send_event.call_args_list
+            if c == mock.call(expected_event, [])
+        ]
+        assert len(release_calls) == 1
