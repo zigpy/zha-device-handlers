@@ -10,6 +10,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.quirk_ids import BEGA_LIGHT_SWITCHABLE_WHITE
+
 
 class LevelControlBega(CustomCluster, LevelControl):
     """Bega LevelControl cluster with custom attributes."""
@@ -35,9 +37,14 @@ class LevelControlBega(CustomCluster, LevelControl):
 
 (
     QuirkBuilder()
+    # Color temperature is not available on all of these lights, but the attributes are
     .applies_to("BEGA Gantenbrink-Leuchten KG", "Smart Dimmable Light")
     .applies_to("BEGA Gantenbrink-Leuchten KG", "Smart Dimmable Light Boost")
+    # To add custom attributes
     .replaces(LevelControlBega)
+    # Expose a feature to match the ZHA entity against
+    .exposes_feature(BEGA_LIGHT_SWITCHABLE_WHITE)
+    # To prevent non-functional binary sensor from being created
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=OnOff.cluster_id,
