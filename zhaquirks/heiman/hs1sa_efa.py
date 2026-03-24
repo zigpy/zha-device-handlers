@@ -190,6 +190,7 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="remote_test",
         fallback_name="Remote test",
     )
+    # XXX: The unit depends on the smoke_unit attribute, so we can't use one at all
     .sensor(
         CustomHeimanCluster.AttributeDefs.smoke_level.name,
         CustomHeimanCluster.cluster_id,
