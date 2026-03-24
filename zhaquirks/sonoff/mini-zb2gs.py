@@ -63,41 +63,41 @@ class SonoffDetachRelayType(types.enum8):
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
-        endpoint_id=1,
     )
     .enum(
         SonoffCluster.AttributeDefs.detach_relay.name,
         SonoffDetachRelayType,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         translation_key="detach_relay",
         fallback_name="Detach relay",
-        endpoint_id=1,
     )
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
         SonoffCluster.cluster_id,
+        endpoint_id=2,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
-        endpoint_id=2,
     )
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         off_value=9,
         on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
-        endpoint_id=1,
     )
     .switch(
         SonoffCluster.AttributeDefs.network_led.name,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         translation_key="network_led",
         fallback_name="Network LED",
-        endpoint_id=1,
     )
     .add_to_registry()
 )
