@@ -8,6 +8,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.quirk_ids import SIREN_BASIC
+
 
 class SmokeSirenEnum(t.enum8):
     """Smoke siren type."""
@@ -115,8 +117,14 @@ class CustomHeimanCluster(CustomCluster):
 
 (
     QuirkBuilder("HEIMAN", "HS1SA-EF-3.0")
-    .removes(IasWd.cluster_id)
     .replaces(CustomHeimanCluster)
+    .exposes_feature(SIREN_BASIC)
+    .change_entity_metadata(
+        endpoint_id=1,
+        cluster_id=IasWd.cluster_id,
+        new_primary=False,
+        new_entity_category=EntityType.CONFIG,
+    )
     .switch(
         CustomHeimanCluster.AttributeDefs.heartbeat_indicator.name,
         CustomHeimanCluster.cluster_id,
