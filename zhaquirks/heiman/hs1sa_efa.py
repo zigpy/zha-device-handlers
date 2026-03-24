@@ -123,13 +123,14 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="heartbeat_indicator",
         fallback_name="Heartbeat indicator",
     )
-    .enum(
-        CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
-        SmokeSirenEnum,
-        CustomHeimanCluster.cluster_id,
-        translation_key="siren_for_automation_only",
-        fallback_name="Siren for automation only",
-    )
+    # XXX: This should be added as a siren entity in the future, needs zigpy API
+    # .enum(
+    #     CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
+    #     SmokeSirenEnum,
+    #     CustomHeimanCluster.cluster_id,
+    #     translation_key="siren_for_automation_only",
+    #     fallback_name="Siren for automation only",
+    # )
     .enum(
         CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
         ChamberContaminationEnum,
