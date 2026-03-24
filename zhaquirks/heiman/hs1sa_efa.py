@@ -139,7 +139,7 @@ class CustomHeimanCluster(CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=2, max_interval=0, reportable_change=1
         ),
-        translation_key="self_test",
+        translation_key="self_test_state",
         fallback_name="Self-test",
     )
     .binary_sensor(
