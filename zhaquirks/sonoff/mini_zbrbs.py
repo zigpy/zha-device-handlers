@@ -91,7 +91,7 @@ class SonoffExternalSwitchTriggerType(t.enum8):
         SonoffCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="cover_calibrated",
+        translation_key="calibrated",
         fallback_name="Calibrated",
     )
     .enum(
