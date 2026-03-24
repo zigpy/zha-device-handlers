@@ -30,6 +30,11 @@ class SonoffCluster(CustomCluster):
             type=t.int16s,
             manufacturer_code=None,
         )
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
@@ -62,10 +67,14 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     .switch(
         SonoffCluster.AttributeDefs.detach_relay.name,
         SonoffCluster.cluster_id,
-        off_value=0,
-        on_value=1,
         translation_key="detach_relay",
         fallback_name="Detach relay",
+    )
+    .switch(
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
+        translation_key="network_led",
+        fallback_name="Network LED",
     )
     .add_to_registry()
 )
