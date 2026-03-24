@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
+from zigpy.zcl import AttributeUnsupportedEvent
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
@@ -78,20 +78,15 @@ async def test_power_config_other_unsupported_events_pass_through(
     listener = mock.MagicMock()
     power_cluster.on_event(AttributeUnsupportedEvent.event_type, listener)
 
-    # Emit an unsupported event for a different attribute (battery_voltage)
-    event = AttributeUnsupportedEvent(
-        device_ieee=str(device.ieee),
-        endpoint_id=1,
-        cluster_type=ClusterType.Server,
-        cluster_id=PowerConfiguration.cluster_id,
-        attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
-        attribute_id=PowerConfiguration.AttributeDefs.battery_voltage.id,
-        manufacturer_code=None,
+    # Mark a different attribute (battery_voltage) as unsupported
+    power_cluster.add_unsupported_attribute(
+        PowerConfiguration.AttributeDefs.battery_voltage.name
     )
-    power_cluster.emit(AttributeUnsupportedEvent.event_type, event)
 
     # The event should have reached the listener
-    listener.assert_called_once_with(event)
+    listener.assert_called_once()
+    event = listener.call_args[0][0]
+    assert event.attribute_id == PowerConfiguration.AttributeDefs.battery_voltage.id
 
 
 async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk):
