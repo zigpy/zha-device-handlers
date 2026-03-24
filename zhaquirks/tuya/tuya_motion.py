@@ -1324,6 +1324,8 @@ base_tuya_motion = (
 # Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
+    .applies_to("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)")
+    .applies_to("HOBEIAN", "CK-BL702-MWS-01(7016)")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
