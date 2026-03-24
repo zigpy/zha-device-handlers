@@ -4,37 +4,7 @@ from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-
-class SonoffCluster(CustomCluster):
-    """Custom Sonoff cluster."""
-
-    cluster_id = 0xFC11
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Attribute definitions."""
-
-        external_trigger_mode = ZCLAttributeDef(
-            id=0x0016,
-            type=t.uint8_t,
-            manufacturer_code=None,
-        )
-        detach_relay = ZCLAttributeDef(
-            id=0x0019,
-            type=t.bitmap8,
-            manufacturer_code=None,
-        )
-        turbo_mode = ZCLAttributeDef(
-            id=0x0012,
-            type=t.int16s,
-            manufacturer_code=None,
-        )
-        network_led = ZCLAttributeDef(
-            id=0x0001,
-            type=t.Bool,
-            manufacturer_code=None,
-        )
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
@@ -53,6 +23,38 @@ class SonoffDetachRelayType(types.enum8):
     CH1_enabled = 0x01
     CH2_enabled = 0x02
     All_channels_enabled = 0x03
+
+
+class SonoffCluster(CustomCluster):
+    """Custom Sonoff cluster."""
+
+    cluster_id = 0xFC11
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        external_trigger_mode = ZCLAttributeDef(
+            id=0x0016,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=DataTypeId.uint8,
+            manufacturer_code=None,
+        )
+        detach_relay = ZCLAttributeDef(
+            id=0x0019,
+            type=SonoffDetachRelayType,
+            zcl_type=DataTypeId.map8,
+            manufacturer_code=None,
+        )
+        turbo_mode = ZCLAttributeDef(
+            id=0x0012,
+            type=t.int16s,
+            manufacturer_code=None,
+        )
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
 
 
 (
