@@ -20,3 +20,6 @@ DANFOSS_ALLY_THERMOSTAT = "danfoss.ally_thermostat"  # Thermostatic Radiator Val
 
 # Hint to poll SmartEnergy summation delivered and received attributes
 SE_POLL_SUMMATION = "se_poll_summation"
+
+# Hint to expose a basic siren entity
+SIREN_BASIC = "siren_basic"
