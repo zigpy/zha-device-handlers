@@ -629,7 +629,7 @@ class TuyaThermostatBseed(TuyaThermostat):
     _CONSTANT_ATTRIBUTES = {
         Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
         Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 4500,
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only,
     }
 
 
