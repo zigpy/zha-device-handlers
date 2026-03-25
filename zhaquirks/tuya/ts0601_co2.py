@@ -26,7 +26,7 @@ class AlarmRingtone(t.enum8):
 
     volume_low = 0x00
     volume_high = 0x01
-    OFF = 0x02
+    off = 0x02
 
 
 class BatteryState(t.enum8):
