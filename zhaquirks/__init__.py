@@ -82,16 +82,14 @@ class LocalDataCluster(CustomCluster):
 
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
-        result = super().get(key)
-        if result is not None:
-            return result
         try:
             attr_def = self.find_attribute(key)
         except KeyError:
             return default
-        if attr_def.id in self._DEFAULT_VALUES:
-            return self._DEFAULT_VALUES[attr_def.id]
-        return default
+        result = super().get(key)
+        if result is not None:
+            return result
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
 
     async def bind(self):
         """Prevent bind."""
