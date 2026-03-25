@@ -292,6 +292,12 @@ class XiaomiCluster(CustomCluster):
         attr_id, data = t.uint16_t.deserialize(data)
         attr_type, data = t.uint8_t.deserialize(data)
 
+        # Bad parsing states sometimes eat into the attribute ID's zero octet, which can
+        # be interpreted as the `nodata` type (a single null byte). This isn't really
+        # used by real devices and can be skipped.
+        if attr_type == DataTypeId.nodata:
+            return
+
         if attr_id not in (
             XIAOMI_AQARA_ATTRIBUTE,
             XIAOMI_MIJA_ATTRIBUTE,

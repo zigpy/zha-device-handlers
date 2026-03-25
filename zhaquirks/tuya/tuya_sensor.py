@@ -24,6 +24,14 @@ class TuyaTempUnitConvert(t.enum8):
     Fahrenheit = 0x01
 
 
+class TuyaSoilLightLevel(t.enum8):
+    """Tuya soil sensor light level enum."""
+
+    Low = 0x00
+    Normal = 0x02
+    High = 0x04
+
+
 class TuyaNousTempHumiAlarm(t.enum8):
     """Tuya temperature and humidity alarm enum."""
 
@@ -264,6 +272,33 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_nt4pquef", "TS0601")  # SG502Z
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="light_level",
+        enum_class=TuyaSoilLightLevel,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="light_level",
+        fallback_name="Light level",
+    )
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .tuya_battery(dp_id=15)
     .skip_configuration()
     .add_to_registry()
 )
