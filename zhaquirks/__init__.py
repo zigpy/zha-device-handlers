@@ -91,7 +91,7 @@ class LocalDataCluster(CustomCluster):
             return result
         return self._DEFAULT_VALUES.get(attr_def.id, default)
 
-    async def bind(self):
+    async def bind(self, **kwargs):
         """Prevent bind."""
         self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
