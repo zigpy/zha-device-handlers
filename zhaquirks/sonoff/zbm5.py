@@ -108,13 +108,11 @@ class SonoffInputConfigCluster(LocalDataCluster):
         AttributeDefs.relay_3_detached.id: SonoffDetachedRelayMask.Relay3,
     }
 
-    def __init__(self, *args, **kwargs):
-        """Init with all relays attached by default."""
-        super().__init__(*args, **kwargs)
-        # TODO: Use _DEFAULT_VALUES when ready, this doesn't work in all circumstances
-        for attr_id in self._RELAY_BITS:
-            if attr_id not in self._attr_cache:
-                self._update_attribute(attr_id, t.Bool.false)
+    _DEFAULT_VALUES = {
+        AttributeDefs.relay_1_detached.id: t.Bool.false,
+        AttributeDefs.relay_2_detached.id: t.Bool.false,
+        AttributeDefs.relay_3_detached.id: t.Bool.false,
+    }
 
     def update_relay_states(self, mask: int) -> None:
         """Update individual relay states from a bitmap mask."""
