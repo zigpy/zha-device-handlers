@@ -110,7 +110,6 @@ class IkeaSomrigSmartButton(CustomDevice):
                     Basic.cluster_id,
                     PowerConfig1AAACluster,
                     Identify.cluster_id,
-                    Groups.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
@@ -132,7 +131,6 @@ class IkeaSomrigSmartButton(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    Groups.cluster_id,
                     ShortcutV2Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
