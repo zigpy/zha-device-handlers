@@ -696,7 +696,6 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     _DEFAULT_VALUES = {
         ElectricalMeasurement.AttributeDefs.active_power.id: 0,
         ElectricalMeasurement.AttributeDefs.rms_voltage.id: 0,
-        ElectricalMeasurement.AttributeDefs.total_active_power.id: 0,
     }
 
     def __init__(self, *args, **kwargs):
