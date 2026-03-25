@@ -98,20 +98,19 @@ class ShellyRainCluster(CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
-        translation_key="wind_speed",
-        fallback_name="Wind Speed",
+        fallback_name="Wind speed",
     )
     .sensor(
         attribute_name="wind_direction",
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
         unit=DEGREE,
+        device_class=SensorDeviceClass.WIND_DIRECTION,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
-        translation_key="wind_direction",
-        fallback_name="Wind Direction",
+        fallback_name="Wind direction",
     )
     .sensor(
         attribute_name="gust_speed",
@@ -124,7 +123,7 @@ class ShellyRainCluster(CustomCluster):
             min_interval=10, max_interval=900, reportable_change=1
         ),
         translation_key="gust_speed",
-        fallback_name="Gust Speed",
+        fallback_name="Gust speed",
     )
     .sensor(
         attribute_name="uv_index",
@@ -135,7 +134,7 @@ class ShellyRainCluster(CustomCluster):
             min_interval=10, max_interval=900, reportable_change=1
         ),
         translation_key="uv_index",
-        fallback_name="UV Index",
+        fallback_name="UV index",
     )
     .sensor(
         attribute_name="precipitation",
@@ -147,7 +146,6 @@ class ShellyRainCluster(CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
-        translation_key="precipitation",
         fallback_name="Precipitation",
     )
     .binary_sensor(
@@ -157,8 +155,8 @@ class ShellyRainCluster(CustomCluster):
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
-        translation_key="rain_status",
-        fallback_name="Rain Detected",
+        translation_key="rain_detected",
+        fallback_name="Rain detected",
     )
     .add_to_registry()
 )
