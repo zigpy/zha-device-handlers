@@ -4,14 +4,10 @@ from __future__ import annotations
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
-    BinarySensorDeviceClass,
-    QuirkBuilder,
-    ReportingConfig,
-    SensorDeviceClass,
-    SensorStateClass,
-    homeassistant,
-)
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
+from zigpy.quirks.v2.homeassistant import DEGREE, UnitOfPrecipitationDepth, UnitOfSpeed
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 from zigpy.zcl import foundation
 
 
@@ -96,7 +92,7 @@ class ShellyRainCluster(CustomCluster):
         attribute_name="wind_speed",
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
-        unit=homeassistant.UnitOfSpeed.METERS_PER_SECOND,
+        unit=UnitOfSpeed.METERS_PER_SECOND,
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
@@ -109,7 +105,7 @@ class ShellyRainCluster(CustomCluster):
         attribute_name="wind_direction",
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
-        unit=homeassistant.DEGREE,
+        unit=DEGREE,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
@@ -121,7 +117,7 @@ class ShellyRainCluster(CustomCluster):
         attribute_name="gust_speed",
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
-        unit=homeassistant.UnitOfSpeed.METERS_PER_SECOND,
+        unit=UnitOfSpeed.METERS_PER_SECOND,
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
@@ -145,7 +141,7 @@ class ShellyRainCluster(CustomCluster):
         attribute_name="precipitation",
         cluster_id=ShellyRainCluster.cluster_id,
         divisor=10,
-        unit=homeassistant.UnitOfPrecipitationDepth.MILLIMETERS,
+        unit=UnitOfPrecipitationDepth.MILLIMETERS,
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
         reporting_config=ReportingConfig(
