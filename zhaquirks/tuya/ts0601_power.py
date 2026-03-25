@@ -52,7 +52,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     _CONSTANT_ATTRIBUTES = {
         ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
         ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
-        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
         ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
     }
 
