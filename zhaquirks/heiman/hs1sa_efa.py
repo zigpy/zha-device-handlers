@@ -116,7 +116,9 @@ class CustomHeimanCluster(CustomCluster):
 
 
 (
-    QuirkBuilder("HEIMAN", "HS1SA-EF-3.0")
+    QuirkBuilder()
+    .applies_to("HEIMAN", "HS1SA-EF-3.0")
+    .applies_to("HEIMAN", "HS1SA-E-PLUS")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
