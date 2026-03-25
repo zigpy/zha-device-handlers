@@ -1,4 +1,4 @@
-"""Sonoff ZBMINIR2 - Zigbee Switch."""
+"""Sonoff MINI-ZB2GS - Zigbee Switch."""
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
@@ -16,6 +16,15 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     Normally_on_follow_trigger = 0x82
 
 
+class SonoffDetachRelayType(types.enum8):
+    """Detach relay type."""
+
+    All_channels_disabled = 0x00
+    CH1_enabled = 0x01
+    CH2_enabled = 0x02
+    All_channels_enabled = 0x03
+
+
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
@@ -31,8 +40,9 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
         detach_relay = ZCLAttributeDef(
-            id=0x0017,
-            type=t.Bool,
+            id=0x0019,
+            type=SonoffDetachRelayType,
+            zcl_type=DataTypeId.map8,
             manufacturer_code=None,
         )
         turbo_mode = ZCLAttributeDef(
@@ -48,32 +58,46 @@ class SonoffCluster(CustomCluster):
 
 
 (
-    QuirkBuilder("SONOFF", "ZBMINIR2")
-    .replaces(SonoffCluster)
+    QuirkBuilder("SONOFF", "MINI-ZB2GS")
+    .replaces(SonoffCluster, endpoint_id=1)
+    .replaces(SonoffCluster, endpoint_id=2)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="external_trigger_mode",
+        fallback_name="External trigger mode",
+    )
+    .enum(
+        SonoffCluster.AttributeDefs.detach_relay.name,
+        SonoffDetachRelayType,
+        SonoffCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="detach_relay",
+        fallback_name="Detach relay",
+    )
+    .enum(
+        SonoffCluster.AttributeDefs.external_trigger_mode.name,
+        SonoffExternalSwitchTriggerType,
+        SonoffCluster.cluster_id,
+        endpoint_id=2,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
     )
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         off_value=9,
         on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
     )
     .switch(
-        SonoffCluster.AttributeDefs.detach_relay.name,
-        SonoffCluster.cluster_id,
-        translation_key="detach_relay",
-        fallback_name="Detach relay",
-    )
-    .switch(
         SonoffCluster.AttributeDefs.network_led.name,
         SonoffCluster.cluster_id,
+        endpoint_id=1,
         translation_key="network_led",
         fallback_name="Network LED",
     )

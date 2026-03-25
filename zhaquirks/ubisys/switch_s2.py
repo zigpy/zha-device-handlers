@@ -50,7 +50,7 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
         input_mode_2: Final = ZCLAttributeDef(id=0x0002, type=InputMode)
         detached_2: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
 
-    _ATTRIBUTE_DEFAULTS: dict[int, Any] = {
+    _DEFAULT_VALUES: dict[int, Any] = {
         AttributeDefs.input_mode_1.id: InputMode.Toggle,
         AttributeDefs.detached_1.id: t.Bool.false,
         AttributeDefs.input_mode_2.id: InputMode.Toggle,
