@@ -56,9 +56,6 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
-    # remove manufacturer id for cluster
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -72,22 +69,24 @@ class ZosungIRControl(CustomCluster):
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={"data": Bytes},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         IRLearn: Final = foundation.ZCLCommandDef(
             id=0x01,
             schema={"on_off": t.Bool},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         IRSend: Final = foundation.ZCLCommandDef(
             id=0x02,
             schema={"code": t.CharacterString},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Read attributes ZCL foundation command."""
         if (
             self.AttributeDefs.last_learned_ir_code.id in attributes
@@ -160,9 +159,6 @@ class ZosungIRTransmit(CustomCluster):
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
-    # remove manufacturer id for cluster
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     current_position = 0
     msg_length = 0
     ir_msg = []
@@ -181,7 +177,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_01: Final = foundation.ZCLCommandDef(
             id=0x01,
@@ -195,7 +191,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_02: Final = foundation.ZCLCommandDef(
             id=0x02,
@@ -204,7 +200,7 @@ class ZosungIRTransmit(CustomCluster):
                 "position": t.uint32_t,
                 "maxlen": t.uint8_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_03: Final = foundation.ZCLCommandDef(
             id=0x03,
@@ -215,7 +211,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_manufacturer_specific=False,
         )
         receive_ir_frame_04: Final = foundation.ZCLCommandDef(
             id=0x04,
@@ -224,7 +219,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero1": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -232,7 +227,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     class ClientCommandDefs(BaseCommandDefs):
@@ -247,7 +242,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_manufacturer_specific=False,
         )
         resp_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -255,7 +249,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     def handle_cluster_request(

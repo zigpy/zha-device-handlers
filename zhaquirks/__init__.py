@@ -16,8 +16,14 @@ import zigpy.device
 import zigpy.endpoint
 from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
-from zigpy.zcl import foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUnsupportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -108,7 +114,24 @@ class LocalDataCluster(CustomCluster):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
+        """Convert attributes dict to list of Attribute records."""
+        records = []
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            record = foundation.Attribute(
+                attrid=attr_def.id, value=foundation.TypeValue()
+            )
+            record.value.value = attr_def.type(value)
+            records.append(record)
+        return records
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Prevent remote writes."""
         msg = "writing attributes for LocalDataCluster"
         self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
@@ -119,11 +142,17 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
@@ -144,21 +173,17 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid in self.attributes:
-            attribute_name = self.attributes[attrid].name
-        else:
-            attribute_name = UNKNOWN
-
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report or update event."""
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
             {
-                ATTRIBUTE_ID: attrid,
-                ATTRIBUTE_NAME: attribute_name,
-                VALUE: value,
+                ATTRIBUTE_ID: event.attribute_id,
+                ATTRIBUTE_NAME: event.attribute_name or UNKNOWN,
+                VALUE: event.value,
             },
         )
 
@@ -225,6 +250,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value),
             )
+
+    def emit(self, event_name: str, data=None) -> None:
+        """Suppress unsupported event for battery percentage remaining.
+
+        This attribute is computed from battery voltage by this quirk, so
+        an unsupported response from the device should not clear the cache.
+        """
+        if (
+            event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id == self.BATTERY_PERCENTAGE_REMAINING
+        ):
+            return
+        super().emit(event_name, data)
 
     def _calculate_battery_percentage(self, raw_value):
         volts = raw_value / 10
@@ -352,10 +391,17 @@ class OccupancyOnEvent(_Occupancy):
 class OccupancyWithReset(_Occupancy):
     """Self reset Occupancy cluster and send event on motion bus."""
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
-        if attrid == OCCUPANCY_STATE and value == ON:
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report/update event."""
+        if event.attribute_id == OCCUPANCY_STATE and event.value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
