@@ -193,3 +193,58 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCD003")
+    .friendly_name(
+        model="Hue Akari downlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1743530P7")
+    .friendly_name(
+        model="Hue Discover outdoor floodlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL008")
+    .friendly_name(
+        model="Hue Lightstrip Solo",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1746330P7")
+    .friendly_name(
+        model="Hue Appear Outdoor wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX004")
+    .friendly_name(
+        model="Hue Gradient lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)

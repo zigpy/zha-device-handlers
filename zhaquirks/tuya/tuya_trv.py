@@ -402,6 +402,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE200_yqgbrdyo", "TS0601")
     .applies_to("_TZE284_p3dbf6qs", "TS0601")
     .applies_to("_TZE200_rxq4iti9", "TS0601")
+    .applies_to("_TZE200_d3z1ukqw", "TS0601")
     .applies_to("_TZE200_hvaxb2tc", "TS0601")
     .applies_to("_TZE284_o3x45p96", "TS0601")
     .applies_to("_TZE284_c6wv4xyo", "TS0601")
@@ -697,17 +698,17 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
                     TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
                     TuyaPresetMode.Off: Thermostat.SystemMode.Off,
                 }[x],
-                dp_converter=lambda x: {
-                    Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
-                    Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
-                    Thermostat.SystemMode.Off: TuyaPresetMode.Off,
-                }[x],
             ),
             DPToAttributeMapping(
                 ep_attribute=TuyaMCUCluster.ep_attribute,
                 attribute_name="preset_mode",
             ),
         ],
+        dp_converter=lambda x, _: {
+            Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
+            Thermostat.SystemMode.Off: TuyaPresetMode.Off,
+        }[x],
     )
     .tuya_attribute(
         dp_id=2,
