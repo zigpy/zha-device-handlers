@@ -992,6 +992,7 @@ async def test_local_data_cluster(device_mock) -> None:
 
         cluster_id = 0x1234
         _CONSTANT_ATTRIBUTES = {1: 10}
+        _DEFAULT_VALUES = {3: 42}
         _VALID_ATTRIBUTES = [2]
 
         class AttributeDefs(foundation.BaseAttributeDefs):
@@ -999,6 +1000,7 @@ async def test_local_data_cluster(device_mock) -> None:
 
             constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
             valid_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+            default_attr = foundation.ZCLAttributeDef(id=3, type=t.uint8_t)
 
     (
         QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -1006,16 +1008,33 @@ async def test_local_data_cluster(device_mock) -> None:
         .add_to_registry()
     )
     device = registry.get_device(device_mock)
-    assert isinstance(device.endpoints[1].in_clusters[0x1234], TestLocalCluster)
+    cluster = device.endpoints[1].in_clusters[0x1234]
+    assert isinstance(cluster, TestLocalCluster)
 
     # reading constant attribute works
-    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([1]) == (
-        {1: 10},
-        {},
-    )
+    assert await cluster.read_attributes([1]) == ({1: 10}, {})
 
     # reading valid attribute returns None with success status
-    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([2]) == (
-        {2: None},
-        {},
-    )
+    assert await cluster.read_attributes([2]) == ({2: None}, {})
+
+    # reading default value attribute returns the default
+    assert await cluster.read_attributes([3]) == ({3: 42}, {})
+
+    # get() returns default value when no cached value exists
+    assert cluster.get(3) == 42
+    assert cluster.get("default_attr") == 42
+
+    # get() returns cached value over default value
+    cluster._update_attribute(3, 99)
+    assert await cluster.read_attributes([3]) == ({3: 99}, {})
+    assert cluster.get(3) == 99
+    assert cluster.get("default_attr") == 99
+
+    # get() returns constant attribute
+    assert cluster.get(1) == 10
+    assert cluster.get("constant_attr") == 10
+
+    # get() returns provided default for unknown attributes
+    assert cluster.get(0xFF, 123) == 123
+    # valid attribute with no cached value and no default value returns None
+    assert cluster.get(2) is None
