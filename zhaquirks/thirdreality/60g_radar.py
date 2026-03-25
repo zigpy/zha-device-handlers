@@ -9,10 +9,7 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.quirks.v2.homeassistant import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-    CONCENTRATION_PARTS_PER_BILLION,
-)
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -57,12 +54,9 @@ class ThirdRealityRadarCluster(CustomCluster):
     .sensor(
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.volatile_organic_compounds.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
-        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        # Convert ppb to µg/m³: µg/m³ = ppb × (molecular_weight / 24.45)
-        # Using average TVOC molecular weight of 100 g/mol
-        attribute_converter=lambda value: round(float(value) * (100.0 / 24.45)),
+        unit=CONCENTRATION_PARTS_PER_BILLION,
         translation_key="total_volatile_organic_compounds",
         fallback_name="Total volatile organic compounds",
     )
