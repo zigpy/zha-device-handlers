@@ -64,6 +64,8 @@ zhaquirks.setup()
         ("_TZE204_uxllnywp", "TS0601", ZCL_TUYA_MOTION_V5),
         ("_TZE200_gjldowol", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_2aaelwxk", "TS0225", ZCL_TUYA_MOTION),
+        ("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)", ZCL_TUYA_MOTION),
+        ("HOBEIAN", "CK-BL702-MWS-01(7016)", ZCL_TUYA_MOTION),
         ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),

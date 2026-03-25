@@ -131,7 +131,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_offset",

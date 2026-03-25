@@ -209,7 +209,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-1.0,
         max_value=-0.2,
         step=0.2,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_control_accuracy",

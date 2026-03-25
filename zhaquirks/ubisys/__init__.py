@@ -106,7 +106,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
 
     Subclass and override class constants to customize for different devices:
     - BIND_CLUSTERS: Cluster IDs to bind/unbind for detached mode
-    - _ATTRIBUTE_DEFAULTS: {attr_id: default_value} for init cache population
+    - _DEFAULT_VALUES: {attr_id: default_value} for attribute defaults
     - _INPUT_MODE_CONFIG: (attr_name, input_index, source_ep) per input
     - _DETACHED_CONFIG: (attr_name, input_ep, output_ep) per input
     """
@@ -123,7 +123,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
         input_mode: Final = ZCLAttributeDef(id=0x0000, type=InputMode)
         detached: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
 
-    _ATTRIBUTE_DEFAULTS: dict[int, Any] = {
+    _DEFAULT_VALUES: dict[int, Any] = {
         AttributeDefs.input_mode.id: InputMode.Toggle,
         AttributeDefs.detached.id: t.Bool.false,
     }
@@ -133,13 +133,6 @@ class UbisysInputConfigCluster(LocalDataCluster):
 
     # (attr_name, input_ep, output_ep) per input — empty tuple to disable
     _DETACHED_CONFIG: tuple[tuple[str, int, int], ...] = (("detached", 2, 1),)
-
-    def __init__(self, *args, **kwargs):
-        """Init with defaults from _ATTRIBUTE_DEFAULTS."""
-        super().__init__(*args, **kwargs)
-        for attr_id, default in self._ATTRIBUTE_DEFAULTS.items():
-            if attr_id not in self._attr_cache:
-                self._update_attribute(attr_id, default)
 
     def _build_all_actions(
         self, override_attr_name: str, override_mode: InputMode
@@ -155,7 +148,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
                 mode = override_mode
             else:
                 attr_def = self.find_attribute(attr_name)
-                mode = InputMode(self._attr_cache.get(attr_def.id, InputMode.Toggle))
+                mode = InputMode(self.get(attr_def.id, InputMode.Toggle))
             actions.extend(build_onoff_actions(input_index, source_ep, mode))
         return actions
 
