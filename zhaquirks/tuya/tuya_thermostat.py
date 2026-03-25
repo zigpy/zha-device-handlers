@@ -126,6 +126,16 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
 
 
+class TuyaThermostatExtendedLimits(TuyaThermostat):
+    """Tuya local thermostat cluster with extended temperature limits up to 45C."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 4500,
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only,
+    }
+
+
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
@@ -140,7 +150,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
 
     def handle_mcu_version_response(
         self,
-        payload: TuyaMCUCluster.MCUVersion,  # type:ignore[valid-type]
+        payload: TuyaMCUCluster.MCUVersion,  # type: ignore[valid-type]
     ) -> foundation.Status:
         """Handle MCU version response."""
         return foundation.Status.SUCCESS
@@ -604,5 +614,118 @@ base_avatto_quirk = (
     )
     .adds(TuyaThermostat)
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+moes_base_quirk = (
+    TuyaQuirkBuilder()
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="manual_mode",
+        translation_key="manual_mode",
+        on_value=0,
+        off_value=1,
+        fallback_name="Manual mode",
+    )
+    .tuya_switch(
+        dp_id=3,
+        attribute_name="schedule_mode",
+        on_value=0,
+        off_value=1,
+        translation_key="schedule_mode",
+        fallback_name="Schedule mode",
+    )
+    .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_enum(
+        dp_id=43,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorMode,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .tuya_number(
+        dp_id=28,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-30,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .adds(TuyaThermostatExtendedLimits)
+    .skip_configuration()
+)
+
+(
+    moes_base_quirk.clone()
+    .applies_to("_TZE204_aoclfnxz", "TS0601")
+    .applies_to("_TZE204_xalsoe3m", "TS0601")
+    .applies_to("_TZE204_u9bfwha0", "TS0601")
+    .applies_to("_TZE200_ztvwu4nk", "TS0601")
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=18,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_number(
+        dp_id=20,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=5,
+        step=1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.min_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
     .add_to_registry()
 )
