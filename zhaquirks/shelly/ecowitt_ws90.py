@@ -8,7 +8,7 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import DEGREE, UnitOfPrecipitationDepth, UnitOfSpeed
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ShellyWindCluster(CustomCluster):
@@ -18,22 +18,22 @@ class ShellyWindCluster(CustomCluster):
     name = "Shelly Wind Cluster"
     ep_attribute = "shelly_wind_cluster"
 
-    class AttributeDefs(foundation.BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Wind cluster attribute definitions."""
 
-        wind_speed = foundation.ZCLAttributeDef(
+        wind_speed = ZCLAttributeDef(
             id=0x0000,
             type=types.uint16_t,
             access="rp",
             manufacturer_code=0x1490,
         )
-        wind_direction = foundation.ZCLAttributeDef(
+        wind_direction = ZCLAttributeDef(
             id=0x0004,
             type=types.uint16_t,
             access="rp",
             manufacturer_code=0x1490,
         )
-        gust_speed = foundation.ZCLAttributeDef(
+        gust_speed = ZCLAttributeDef(
             id=0x0007,
             type=types.uint16_t,
             access="rp",
@@ -48,10 +48,10 @@ class ShellyUVCluster(CustomCluster):
     name = "Shelly UV Cluster"
     ep_attribute = "shelly_uv_cluster"
 
-    class AttributeDefs(foundation.BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """UV cluster attribute definitions."""
 
-        uv_index = foundation.ZCLAttributeDef(
+        uv_index = ZCLAttributeDef(
             id=0x0000,
             type=types.uint8_t,
             access="rp",
@@ -66,16 +66,16 @@ class ShellyRainCluster(CustomCluster):
     name = "Shelly Rain Cluster"
     ep_attribute = "shelly_rain_cluster"
 
-    class AttributeDefs(foundation.BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Rain cluster attribute definitions."""
 
-        rain_status = foundation.ZCLAttributeDef(
+        rain_status = ZCLAttributeDef(
             id=0x0000,
             type=types.Bool,
             access="rp",
             manufacturer_code=0x1490,
         )
-        precipitation = foundation.ZCLAttributeDef(
+        precipitation = ZCLAttributeDef(
             id=0x0001,
             type=types.uint24_t,
             access="rp",
