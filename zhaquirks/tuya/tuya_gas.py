@@ -102,7 +102,6 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
     .tuya_binary_sensor(
         dp_id=12,
         attribute_name="lifecycle",
-        entity_type=EntityType.DIAGNOSTIC,
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="lifecycle",
         fallback_name="Lifecycle",
