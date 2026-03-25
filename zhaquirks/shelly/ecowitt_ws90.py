@@ -14,7 +14,7 @@ from zigpy.quirks.v2 import (
 )
 from zigpy.zcl import foundation
 
-from zhaquirks.shelly import SHELLY, SHELLY_MANUFACTURER_CODE
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 
 
 class ShellyWindCluster(CustomCluster):
@@ -93,7 +93,7 @@ class ShellyRainCluster(CustomCluster):
 
 
 (
-    QuirkBuilder(SHELLY, "Ecowitt WS90")
+    QuirkBuilder("Shelly", "Ecowitt WS90")
     .replaces(ShellyWindCluster)
     .replaces(ShellyUVCluster)
     .replaces(ShellyRainCluster)
