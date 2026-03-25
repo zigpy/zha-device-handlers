@@ -148,7 +148,7 @@ class UbisysInputConfigCluster(LocalDataCluster):
                 mode = override_mode
             else:
                 attr_def = self.find_attribute(attr_name)
-                mode = InputMode(self._attr_cache.get(attr_def.id, InputMode.Toggle))
+                mode = InputMode(self.get(attr_def.id, InputMode.Toggle))
             actions.extend(build_onoff_actions(input_index, source_ep, mode))
         return actions
 
