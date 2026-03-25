@@ -89,7 +89,7 @@ class ShellyRainCluster(CustomCluster):
     .replaces(ShellyUVCluster)
     .replaces(ShellyRainCluster)
     .sensor(
-        attribute_name="wind_speed",
+        attribute_name=ShellyWindCluster.AttributeDefs.wind_speed.name,
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
         unit=UnitOfSpeed.METERS_PER_SECOND,
@@ -101,7 +101,7 @@ class ShellyRainCluster(CustomCluster):
         fallback_name="Wind speed",
     )
     .sensor(
-        attribute_name="wind_direction",
+        attribute_name=ShellyWindCluster.AttributeDefs.wind_direction.name,
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
         unit=DEGREE,
@@ -113,7 +113,7 @@ class ShellyRainCluster(CustomCluster):
         fallback_name="Wind direction",
     )
     .sensor(
-        attribute_name="gust_speed",
+        attribute_name=ShellyWindCluster.AttributeDefs.gust_speed.name,
         cluster_id=ShellyWindCluster.cluster_id,
         divisor=10,
         unit=UnitOfSpeed.METERS_PER_SECOND,
@@ -126,7 +126,7 @@ class ShellyRainCluster(CustomCluster):
         fallback_name="Gust speed",
     )
     .sensor(
-        attribute_name="uv_index",
+        attribute_name=ShellyUVCluster.AttributeDefs.uv_index.name,
         cluster_id=ShellyUVCluster.cluster_id,
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
@@ -137,7 +137,7 @@ class ShellyRainCluster(CustomCluster):
         fallback_name="UV index",
     )
     .sensor(
-        attribute_name="precipitation",
+        attribute_name=ShellyRainCluster.AttributeDefs.precipitation.name,
         cluster_id=ShellyRainCluster.cluster_id,
         divisor=10,
         unit=UnitOfPrecipitationDepth.MILLIMETERS,
@@ -149,7 +149,7 @@ class ShellyRainCluster(CustomCluster):
         fallback_name="Precipitation",
     )
     .binary_sensor(
-        attribute_name="rain_status",
+        attribute_name=ShellyRainCluster.AttributeDefs.rain_status.name,
         cluster_id=ShellyRainCluster.cluster_id,
         device_class=BinarySensorDeviceClass.MOISTURE,
         reporting_config=ReportingConfig(
