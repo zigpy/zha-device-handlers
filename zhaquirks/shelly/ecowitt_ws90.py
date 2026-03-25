@@ -104,11 +104,11 @@ class ShellyRainCluster(CustomCluster):
         unit=homeassistant.UnitOfSpeed.METERS_PER_SECOND,
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="wind_speed",
-        fallback_name="Wind Speed",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="wind_speed",
+        fallback_name="Wind Speed",
     )
     .sensor(
         attribute_name="wind_direction",
@@ -116,11 +116,11 @@ class ShellyRainCluster(CustomCluster):
         divisor=10,
         unit=homeassistant.DEGREE,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="wind_direction",
-        fallback_name="Wind Direction",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="wind_direction",
+        fallback_name="Wind Direction",
     )
     .sensor(
         attribute_name="gust_speed",
@@ -129,22 +129,22 @@ class ShellyRainCluster(CustomCluster):
         unit=homeassistant.UnitOfSpeed.METERS_PER_SECOND,
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="gust_speed",
-        fallback_name="Gust Speed",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="gust_speed",
+        fallback_name="Gust Speed",
     )
     .sensor(
         attribute_name="uv_index",
         cluster_id=ShellyUVCluster.cluster_id,
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="uv_index",
-        fallback_name="UV Index",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="uv_index",
+        fallback_name="UV Index",
     )
     .sensor(
         attribute_name="precipitation",
@@ -153,21 +153,21 @@ class ShellyRainCluster(CustomCluster):
         unit=homeassistant.UnitOfPrecipitationDepth.MILLIMETERS,
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        translation_key="precipitation",
-        fallback_name="Precipitation",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="precipitation",
+        fallback_name="Precipitation",
     )
     .binary_sensor(
         attribute_name="rain_status",
         cluster_id=ShellyRainCluster.cluster_id,
         device_class=BinarySensorDeviceClass.MOISTURE,
-        translation_key="rain_status",
-        fallback_name="Rain Detected",
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=1
         ),
+        translation_key="rain_status",
+        fallback_name="Rain Detected",
     )
     .add_to_registry()
 )
