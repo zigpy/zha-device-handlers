@@ -224,7 +224,6 @@ tuya_gas_alarm_base = (
     .tuya_binary_sensor(
         dp_id=11,
         attribute_name="fault_alarm",
-        entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="fault_alarm",
         fallback_name="Fault alarm",
