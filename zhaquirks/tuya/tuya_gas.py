@@ -81,6 +81,36 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
 )
 
 
+# NOUS E9 gas detector - simple gas alarm with preheat, fault, and lifecycle
+(
+    TuyaQuirkBuilder("_TZE204_qvxrkeif", "TS0601")
+    .tuya_gas(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="preheat",
+        fallback_name="Preheat",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="lifecycle",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="lifecycle",
+        fallback_name="Lifecycle",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 tuya_gas_alarm_base = (
     TuyaQuirkBuilder()
     .tuya_ias(
