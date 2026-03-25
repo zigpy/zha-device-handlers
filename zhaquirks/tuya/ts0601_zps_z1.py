@@ -13,32 +13,37 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
+
 class PresenceState(t.enum8):
     """ZPS-Z1 DP1 presence state."""
-    absence      = 0x00
-    presence     = 0x01
+
+    absence = 0x00
+    presence = 0x01
     sensor_close = 0x02
 
 
 class AutoCalibrationState(t.enum8):
     """ZPS-Z1 DP103 auto-calibration state."""
-    standby  = 0x00
-    start    = 0x01
+
+    standby = 0x00
+    start = 0x01
     learning = 0x02
-    success  = 0x03
-    fail     = 0x04
-    cancel   = 0x05
+    success = 0x03
+    fail = 0x04
+    cancel = 0x05
 
 
 class SensitivityPreset(t.enum8):
     """ZPS-Z1 DP112 sensitivity preset."""
-    high   = 0x00
+
+    high = 0x00
     medium = 0x01
-    low    = 0x02
+    low = 0x02
     custom = 0x03
 
 
 # ── Custom Tuya MCU cluster ───────────────────────────────────────────────────
+
 
 class ZpsZ1ManufCluster(TuyaMCUCluster):
     """ZPS-Z1 custom Tuya MCU cluster mapping all DPs to named attributes."""
@@ -47,43 +52,43 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         """ZPS-Z1 datapoint attribute definitions."""
 
         presence_state: Final = ZCLAttributeDef(
-            id=0x0001,          # DP 1
+            id=0x0001,  # DP 1
             type=PresenceState,
             access="rp",
             is_manufacturer_specific=True,
         )
         detection_range: Final = ZCLAttributeDef(
-            id=0x0002,          # DP 2
+            id=0x0002,  # DP 2
             type=t.uint32_t,
             access="rwp",
             is_manufacturer_specific=True,
         )
         illuminance: Final = ZCLAttributeDef(
-            id=0x0065,          # DP 101 (0x65)
+            id=0x0065,  # DP 101 (0x65)
             type=t.uint32_t,
             access="rp",
             is_manufacturer_specific=True,
         )
         auto_calibration: Final = ZCLAttributeDef(
-            id=0x0067,          # DP 103 (0x67)
+            id=0x0067,  # DP 103 (0x67)
             type=AutoCalibrationState,
             access="rwp",
             is_manufacturer_specific=True,
         )
         sensitivity_preset: Final = ZCLAttributeDef(
-            id=0x0070,          # DP 112 (0x70)
+            id=0x0070,  # DP 112 (0x70)
             type=SensitivityPreset,
             access="rwp",
             is_manufacturer_specific=True,
         )
         presence_clear_cooldown: Final = ZCLAttributeDef(
-            id=0x0077,          # DP 119 (0x77)
+            id=0x0077,  # DP 119 (0x77)
             type=t.uint32_t,
             access="rwp",
             is_manufacturer_specific=True,
         )
         led_indicator: Final = ZCLAttributeDef(
-            id=0x007B,          # DP 123 (0x7B)
+            id=0x007B,  # DP 123 (0x7B)
             type=t.Bool,
             access="rwp",
             is_manufacturer_specific=True,
@@ -124,8 +129,8 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
     }
 
     data_point_handlers = {
-        1:   "_dp_2_attr_update",
-        2:   "_dp_2_attr_update",
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
         101: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
         112: "_dp_2_attr_update",
@@ -136,11 +141,11 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
 
 # ── Quirk registration ────────────────────────────────────────────────────────
 
+
 (
     QuirkBuilder("_TZE284_ft7qqpx3", "TS0601")
     .adds(ZpsZ1ManufCluster)
     .skip_configuration()
-
     # DP1 — occupancy binary sensor (true/false for automations)
     .binary_sensor(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.presence_state.name,
@@ -152,7 +157,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         translation_key="occupancy",
         attribute_initialized_from_cache=False,
     )
-
     # DP1 — presence_state enum sensor (all 3 states visible)
     .enum(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.presence_state.name,
@@ -164,7 +168,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         fallback_name="Presence state",
         translation_key="presence_state",
     )
-
     # DP101 — illuminance sensor (lux)
     .sensor(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.illuminance.name,
@@ -173,7 +176,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         fallback_name="Illuminance",
         translation_key="illuminance",
     )
-
     # DP2 — detection_range number (0–500 cm)
     .number(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.detection_range.name,
@@ -186,7 +188,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         translation_key="detection_range",
         entity_type=EntityType.CONFIG,
     )
-
     # DP119 — presence_clear_cooldown number (2–60 s)
     .number(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.presence_clear_cooldown.name,
@@ -199,7 +200,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         translation_key="presence_clear_cooldown",
         entity_type=EntityType.CONFIG,
     )
-
     # DP103 — auto_calibration select
     .enum(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.auto_calibration.name,
@@ -211,7 +211,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         fallback_name="Auto calibration",
         translation_key="auto_calibration",
     )
-
     # DP112 — sensitivity_preset select
     .enum(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.sensitivity_preset.name,
@@ -223,7 +222,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         fallback_name="Sensitivity preset",
         translation_key="sensitivity_preset",
     )
-
     # DP123 — led_indicator switch
     .switch(
         attribute_name=ZpsZ1ManufCluster.AttributeDefs.led_indicator.name,
@@ -233,6 +231,5 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         translation_key="led_indicator",
         entity_type=EntityType.CONFIG,
     )
-
     .add_to_registry()
 )
