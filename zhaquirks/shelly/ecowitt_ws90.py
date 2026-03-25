@@ -14,8 +14,6 @@ from zigpy.quirks.v2 import (
 )
 from zigpy.zcl import foundation
 
-from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
-
 
 class ShellyWindCluster(CustomCluster):
     """Wind measurement cluster for Shelly WS90."""
@@ -23,7 +21,7 @@ class ShellyWindCluster(CustomCluster):
     cluster_id = 0xFC01
     name = "Shelly Wind Cluster"
     ep_attribute = "shelly_wind_cluster"
-    manufacturer_code = SHELLY_MANUFACTURER_CODE
+    manufacturer_code = 0x1490
 
     class AttributeDefs(foundation.BaseAttributeDefs):
         """Wind cluster attribute definitions."""
@@ -32,19 +30,19 @@ class ShellyWindCluster(CustomCluster):
             id=0x0000,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
         wind_direction = foundation.ZCLAttributeDef(
             id=0x0004,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
         gust_speed = foundation.ZCLAttributeDef(
             id=0x0007,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
 
 
@@ -54,7 +52,7 @@ class ShellyUVCluster(CustomCluster):
     cluster_id = 0xFC02
     name = "Shelly UV Cluster"
     ep_attribute = "shelly_uv_cluster"
-    manufacturer_code = SHELLY_MANUFACTURER_CODE
+    manufacturer_code = 0x1490
 
     class AttributeDefs(foundation.BaseAttributeDefs):
         """UV cluster attribute definitions."""
@@ -63,7 +61,7 @@ class ShellyUVCluster(CustomCluster):
             id=0x0000,
             type=types.uint8_t,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
 
 
@@ -73,7 +71,7 @@ class ShellyRainCluster(CustomCluster):
     cluster_id = 0xFC03
     name = "Shelly Rain Cluster"
     ep_attribute = "shelly_rain_cluster"
-    manufacturer_code = SHELLY_MANUFACTURER_CODE
+    manufacturer_code = 0x1490
 
     class AttributeDefs(foundation.BaseAttributeDefs):
         """Rain cluster attribute definitions."""
@@ -82,13 +80,13 @@ class ShellyRainCluster(CustomCluster):
             id=0x0000,
             type=types.Bool,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
         precipitation = foundation.ZCLAttributeDef(
             id=0x0001,
             type=types.uint24_t,
             access="rp",
-            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+            manufacturer_code=0x1490,
         )
 
 
