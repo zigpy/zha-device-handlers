@@ -15,7 +15,7 @@ import zigpy.endpoint
 import zigpy.profiles
 import zigpy.quirks as zq
 from zigpy.quirks import CustomDevice, DeviceRegistry
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zdo.types
@@ -1038,3 +1038,25 @@ async def test_local_data_cluster(device_mock) -> None:
     assert cluster.get(0xFF, 123) == 123
     # valid attribute with no cached value and no default value returns None
     assert cluster.get(2) is None
+
+    # bind/unbind/configure_reporting are no-ops that return success
+    assert await cluster.bind() == (foundation.Status.SUCCESS,)
+    assert await cluster.unbind() == (foundation.Status.SUCCESS,)
+
+    configure_rsp = await cluster.configure_reporting(
+        cluster.AttributeDefs.constant_attr, 0, 300, 1
+    )
+    assert (
+        configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
+    )
+
+    configure_rsp = await cluster.configure_reporting_multiple(
+        {
+            cluster.AttributeDefs.constant_attr: ReportingConfig(
+                min_interval=0, max_interval=300, reportable_change=1
+            ),
+        }
+    )
+    assert (
+        configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
+    )
