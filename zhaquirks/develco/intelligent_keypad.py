@@ -430,7 +430,7 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
     .applies_to("Develco Products A/S", "KEPZB-110")
     .applies_to("frient A/S", "KEPZB-112")
     .applies_to("Develco Products A/S", "KEPZB-112")
-    .applies_to("frient A/S", "KEPZB-122")
+    .applies_to("frient A/S", "KEPZB-120")
     .applies_to("Develco Products A/S", "KEPZB-120")
     .applies_to("frient A/S", "KEPZB-122")
     .applies_to("Develco Products A/S", "KEPZB-122")
