@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
@@ -22,7 +23,6 @@ from zhaquirks.const import (
     LONG_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks import LocalDataCluster
 
 MANUFACTURER_CODE = 0x1015
 
