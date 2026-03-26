@@ -10,11 +10,11 @@ from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+import zhaquirks
 from zhaquirks.develco.intelligent_keypad import (
     MANUFACTURER_CODE,
     parse_emergency_timestamp,
 )
-import zhaquirks
 
 zhaquirks.setup()
 
@@ -265,9 +265,7 @@ async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
         [IasAce.ArmMode.Arm_All_Zones, b"1234"],
     )
 
-    assert (
-        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
-    )
+    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
 
 
 async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk):
@@ -519,22 +517,16 @@ async def test_frient_keypad_store_last_code_variants(zigpy_device_from_v2_quirk
     last_code_cluster = device.endpoints[44].frient_last_code
 
     ias_ace._store_last_code({"arm_disarm_code": "2468"})
-    assert (
-        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "2468"
-    )
+    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "2468"
 
     class CodePayload:
         arm_disarm_code = b"1357"
 
     ias_ace._store_last_code(CodePayload())
-    assert (
-        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
-    )
+    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
 
     ias_ace._store_last_code([])
-    assert (
-        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
-    )
+    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
 
 
 async def test_frient_keypad_emergency_reschedule(zigpy_device_from_v2_quirk):
@@ -562,8 +554,9 @@ async def test_frient_keypad_emergency_reschedule(zigpy_device_from_v2_quirk):
     new_handle = mock.Mock()
     loop.call_later.return_value = new_handle
 
-    with mock.patch("asyncio.get_running_loop", side_effect=RuntimeError), mock.patch(
-        "asyncio.get_event_loop", return_value=loop
+    with (
+        mock.patch("asyncio.get_running_loop", side_effect=RuntimeError),
+        mock.patch("asyncio.get_event_loop", return_value=loop),
     ):
         ias_ace._track_emergency_trigger()
 
