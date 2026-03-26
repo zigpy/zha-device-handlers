@@ -67,7 +67,7 @@ class FrientAccelerationMeasurement(CustomCluster):
         attribute_name=IasZone.AttributeDefs.zone_status.name,
         cluster_id=IasZone.cluster_id,
         endpoint_id=45,
-        device_class=BinarySensorDeviceClass.MOTION,
+        device_class=BinarySensorDeviceClass.MOVING,
         attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Alarm_1),
         unique_id_suffix="movement",
         entity_type=EntityType.STANDARD,

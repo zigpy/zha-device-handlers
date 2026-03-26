@@ -190,12 +190,9 @@ class UbisysJ1CalibrationCluster(LocalDataCluster):
         exit_calibration_mode: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
         calibration_state: Final = ZCLAttributeDef(id=0x0004, type=CalibrationState)
 
-    def __init__(self, *args, **kwargs):
-        """Init with calibration state set to Idle."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.AttributeDefs.calibration_state, CalibrationState.Idle
-        )
+    _DEFAULT_VALUES = {
+        AttributeDefs.calibration_state.id: CalibrationState.Idle,
+    }
 
     def _set_state(self, state: CalibrationState) -> None:
         """Update the calibration state attribute."""
