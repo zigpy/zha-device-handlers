@@ -22,6 +22,7 @@ from zhaquirks.const import (
     LONG_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks import LocalDataCluster
 
 MANUFACTURER_CODE = 0x1015
 
@@ -99,10 +100,10 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         )
         self._update_attribute(self.AttributeDefs.pin_length.id, 4)
 
-    def handle_message(
+    def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: list[Any],
+        args: Any,
         *,
         dst_addressing: Optional[
             Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
@@ -140,7 +141,11 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
                 self.send_default_rsp(hdr, foundation.Status.SUCCESS)
             return
 
-        return super().handle_message(hdr, args)
+        return super().handle_cluster_request(
+            hdr,
+            args,
+            dst_addressing=dst_addressing,
+        )
 
     def _track_emergency_trigger(self) -> None:
         """Update emergency attributes and schedule an auto-reset."""
@@ -280,7 +285,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             **kwargs,
         )
 
-    def _store_last_code(self, args: list[Any]) -> None:
+    def _store_last_code(self, args: Any) -> None:
         """Cache the last arm/disarm code (RFID tag) sent by the keypad."""
         if not args:
             return
@@ -310,7 +315,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
 
     async def write_attributes(
         self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, int],
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
@@ -339,7 +344,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         elif self.AttributeDefs.pin_length.name in attributes:
             pin_length = attributes.pop(self.AttributeDefs.pin_length.name)
 
-        attributes_to_write: dict[str, int] = {}
+        attributes_to_write: dict[str, Any] = {}
         if auto_arm_mode is not None:
             self._update_attribute(self.AttributeDefs.auto_arm_mode.id, auto_arm_mode)
             attributes_to_write[self.AttributeDefs.auto_arm_mode.name] = auto_arm_mode
@@ -369,7 +374,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class FrientKeypadLastCodeCluster(CustomCluster):
+class FrientKeypadLastCodeCluster(LocalDataCluster):
     """Virtual cluster to expose the last code as a sensor-friendly attribute."""
 
     cluster_id = 0xFC4D
@@ -381,12 +386,12 @@ class FrientKeypadLastCodeCluster(CustomCluster):
         last_code: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.CharacterString,
-            access="rw",
+            access="r",
             is_manufacturer_specific=True,
         )
 
 
-class FrientKeypadEmergencyCluster(CustomCluster):
+class FrientKeypadEmergencyCluster(LocalDataCluster):
     """Virtual cluster to expose emergency state and timestamps."""
 
     cluster_id = 0xFC4E
@@ -488,7 +493,6 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         cluster_id=FrientKeypadEmergencyCluster.cluster_id,
         cluster_type=ClusterType.Server,
         attribute_name=FrientKeypadEmergencyCluster.AttributeDefs.emergency.name,
-        device_class=BinarySensorDeviceClass.GAS,
         fallback_name="Emergency",
         translation_key="emergency",
         unique_id_suffix="emergency",
@@ -509,9 +513,9 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         attribute_name=FrientKeypadLastCodeCluster.AttributeDefs.last_code.name,
         fallback_name="Last code",
         translation_key="last_code",
-        device_class=SensorDeviceClass.ENUM,
         unique_id_suffix="last_code",
         entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
     )
     .sensor(
         endpoint_id=44,

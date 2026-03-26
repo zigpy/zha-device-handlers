@@ -9,6 +9,7 @@ from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+from zhaquirks.develco.intelligent_keypad import MANUFACTURER_CODE
 import zhaquirks
 
 zhaquirks.setup()
@@ -214,7 +215,7 @@ async def test_frient_keypad_emergency_updates(zigpy_device_from_v2_quirk):
 
     send_patch = mock.patch.object(ias_ace, "send_default_rsp")
     with send_patch as send_default_rsp:
-        ias_ace.handle_message(hdr, [])
+        ias_ace.handle_cluster_request(hdr, [])
 
     assert emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id)
     assert emergency_cluster.get(
@@ -255,9 +256,14 @@ async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
         command_id=IasAce.ServerCommandDefs.arm.id,
     )
 
-    ias_ace.handle_message(hdr, [IasAce.ArmMode.Arm_All_Zones, b"1234"])
+    ias_ace.handle_cluster_request(
+        hdr,
+        [IasAce.ArmMode.Arm_All_Zones, b"1234"],
+    )
 
-    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
+    )
 
 
 async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk):
@@ -333,7 +339,7 @@ async def test_frient_keypad_emergency_resets(zigpy_device_from_v2_quirk):
         command_id=IasAce.ServerCommandDefs.emergency.id,
     )
 
-    ias_ace.handle_message(hdr, [])
+    ias_ace.handle_cluster_request(hdr, [])
     assert emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id)
 
     ias_ace._reset_emergency_flag()
@@ -364,3 +370,105 @@ async def test_frient_keypad_arm_response_suppression(zigpy_device_from_v2_quirk
 
         await ias_ace.arm_response(IasAce.ArmNotification.All_Zones_Armed)
         assert ias_ace._suppress_panel_updates is False
+
+
+async def test_frient_keypad_write_attributes_manufacturer(zigpy_device_from_v2_quirk):
+    """Test keypad attributes are written with the manufacturer code."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    write_status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[write_status]),
+    ) as write_mock:
+        await ias_ace.write_attributes(
+            {
+                ias_ace.AttributeDefs.auto_arm_mode.id: (
+                    ias_ace.AutoArmMode.Auto_Arm_in_Away_Mode
+                ),
+                ias_ace.AttributeDefs.auto_disarm.id: True,
+                ias_ace.AttributeDefs.auto_arm_disarm.id: (
+                    ias_ace.AutoArmDisarm.Auto_Arm_Disarm_Using_Pin
+                ),
+                ias_ace.AttributeDefs.pin_length.id: 6,
+            }
+        )
+
+    assert write_mock.call_count == 1
+    call_args = write_mock.call_args
+    assert call_args.args[0] == {
+        ias_ace.AttributeDefs.auto_arm_mode.name: (
+            ias_ace.AutoArmMode.Auto_Arm_in_Away_Mode
+        ),
+        ias_ace.AttributeDefs.auto_disarm.name: True,
+        ias_ace.AttributeDefs.auto_arm_disarm.name: (
+            ias_ace.AutoArmDisarm.Auto_Arm_Disarm_Using_Pin
+        ),
+        ias_ace.AttributeDefs.pin_length.name: 6,
+    }
+    assert call_args.kwargs["manufacturer"] == MANUFACTURER_CODE
+
+    assert (
+        ias_ace.get(ias_ace.AttributeDefs.auto_arm_mode.id)
+        == ias_ace.AutoArmMode.Auto_Arm_in_Away_Mode
+    )
+    assert ias_ace.get(ias_ace.AttributeDefs.auto_disarm.id) is True
+    assert (
+        ias_ace.get(ias_ace.AttributeDefs.auto_arm_disarm.id)
+        == ias_ace.AutoArmDisarm.Auto_Arm_Disarm_Using_Pin
+    )
+    assert ias_ace.get(ias_ace.AttributeDefs.pin_length.id) == 6
+
+
+async def test_frient_keypad_write_attributes_mixed(zigpy_device_from_v2_quirk):
+    """Test mixed keypad writes split manufacturer and standard attributes."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    write_status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[write_status]),
+    ) as write_mock:
+        await ias_ace.write_attributes(
+            {
+                ias_ace.AttributeDefs.auto_disarm.name: False,
+                0xFFFD: 2,
+            }
+        )
+
+    assert write_mock.call_count == 2
+    first_call = write_mock.call_args_list[0]
+    second_call = write_mock.call_args_list[1]
+
+    assert first_call.args[0] == {ias_ace.AttributeDefs.auto_disarm.name: False}
+    assert first_call.kwargs["manufacturer"] == MANUFACTURER_CODE
+    assert second_call.args[0] == {0xFFFD: 2}
+    assert "manufacturer" not in second_call.kwargs
