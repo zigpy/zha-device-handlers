@@ -36,6 +36,8 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
     }
 
     class AttributeDefs(IasAce.AttributeDefs):
+        """Manufacturer-specific IAS ACE attributes for keypad configuration."""
+
         auto_arm_mode: Final = ZCLAttributeDef(
             id=0x8005,
             type=t.enum8,
@@ -62,12 +64,16 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         )
 
     class AutoArmMode(t.enum8):
+        """Keypad auto-arm mode values."""
+
         No_Auto_Arm = 0x00
         Auto_Arm_in_Away_Mode = 0x01
         Auto_Arm_in_Night_Mode = 0x02
         Auto_Arm_in_Home_Mode = 0x03
 
     class AutoArmDisarm(t.enum8):
+        """Keypad auto arm/disarm modes."""
+        
         Disabled = 0x00
         Auto_Arm_Disarm_Using_Rfid = 0x01
         Auto_Arm_Disarm_Using_Pin = 0x02
