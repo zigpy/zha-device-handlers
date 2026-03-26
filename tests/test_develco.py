@@ -185,7 +185,7 @@ async def test_frient_keypad_emergency_updates(zigpy_device_from_v2_quirk):
     """Test SOS button handling updates emergency attributes."""
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
-        "KEPZB-122",
+        "KEPZB-112",
         endpoint_ids=[1, 44],
         cluster_ids={
             44: {
@@ -228,7 +228,7 @@ async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
     """Test arm command stores the last keypad code."""
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
-        "KEPZB-122",
+        "KEPZB-112",
         endpoint_ids=[1, 44],
         cluster_ids={
             44: {
@@ -266,7 +266,7 @@ async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk
     """Test panel status responses keep cached values when suppression is active."""
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
-        "KEPZB-122",
+        "KEPZB-112",
         endpoint_ids=[1, 44],
         cluster_ids={
             44: {
@@ -302,3 +302,67 @@ async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk
         IasAce.AudibleNotification.Default_Sound,
         IasAce.AlarmStatus.No_Alarm,
     )
+
+
+async def test_frient_keypad_emergency_resets(zigpy_device_from_v2_quirk):
+    """Test emergency reset clears the emergency flag."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    emergency_cluster = device.endpoints[44].frient_emergency
+
+    hdr = foundation.ZCLHeader(
+        frame_control=foundation.FrameControl(
+            frame_type=foundation.FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=False,
+            direction=foundation.Direction.Client_to_Server,
+            disable_default_response=True,
+            reserved=0,
+        ),
+        tsn=3,
+        command_id=IasAce.ServerCommandDefs.emergency.id,
+    )
+
+    ias_ace.handle_message(hdr, [])
+    assert emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id)
+
+    ias_ace._reset_emergency_flag()
+    assert not emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id)
+
+
+async def test_frient_keypad_arm_response_suppression(zigpy_device_from_v2_quirk):
+    """Test arm response toggles suppression flag."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+
+    with mock.patch.object(IasAce, "client_command", new=mock.AsyncMock()):
+        await ias_ace.arm_response(IasAce.ArmNotification.Invalid_Arm_Disarm_Code)
+        assert ias_ace._suppress_panel_updates is True
+
+        await ias_ace.arm_response(IasAce.ArmNotification.All_Zones_Armed)
+        assert ias_ace._suppress_panel_updates is False
