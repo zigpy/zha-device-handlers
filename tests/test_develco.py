@@ -257,9 +257,7 @@ async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
 
     ias_ace.handle_message(hdr, [IasAce.ArmMode.Arm_All_Zones, b"1234"])
 
-    assert (
-        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
-    )
+    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
 
 
 async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk):

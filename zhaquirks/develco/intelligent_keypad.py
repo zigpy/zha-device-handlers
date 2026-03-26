@@ -1,13 +1,13 @@
 """Intelligent keypad."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Final, Optional, Union
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder, SensorDeviceClass
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+import zigpy.types as t
 from zigpy.types import Addressing
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import BinaryInput
@@ -84,9 +84,13 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         self._have_cache = False
         self._suppress_panel_updates = False
         self._emergency_reset_handle: Optional[asyncio.TimerHandle] = None
-        self._update_attribute(self.AttributeDefs.auto_arm_mode.id, self.AutoArmMode.No_Auto_Arm)
+        self._update_attribute(
+            self.AttributeDefs.auto_arm_mode.id, self.AutoArmMode.No_Auto_Arm
+        )
         self._update_attribute(self.AttributeDefs.auto_disarm.id, False)
-        self._update_attribute(self.AttributeDefs.auto_arm_disarm.id, self.AutoArmDisarm.Disabled)
+        self._update_attribute(
+            self.AttributeDefs.auto_arm_disarm.id, self.AutoArmDisarm.Disabled
+        )
         self._update_attribute(self.AttributeDefs.pin_length.id, 4)
 
     def handle_message(
@@ -144,7 +148,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         )
         emergency_cluster._update_attribute(
             emergency_cluster.AttributeDefs.last_emergency_triggered.id,
-            datetime.now(timezone.utc).isoformat(),
+            datetime.now(UTC).isoformat(),
         )
 
         if self._emergency_reset_handle is not None:
@@ -297,6 +301,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
                 last_code_cluster.AttributeDefs.last_code.id,
                 tag,
             )
+
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, int],
@@ -339,9 +344,9 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             self._update_attribute(
                 self.AttributeDefs.auto_arm_disarm.id, auto_arm_disarm
             )
-            attributes_to_write[
-                self.AttributeDefs.auto_arm_disarm.name
-            ] = auto_arm_disarm
+            attributes_to_write[self.AttributeDefs.auto_arm_disarm.name] = (
+                auto_arm_disarm
+            )
         if pin_length is not None:
             self._update_attribute(self.AttributeDefs.pin_length.id, pin_length)
             attributes_to_write[self.AttributeDefs.pin_length.name] = pin_length
@@ -410,14 +415,15 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         return None
 
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
 
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
 
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
 
 (
     QuirkBuilder("frient A/S", "KEPZB-110")
