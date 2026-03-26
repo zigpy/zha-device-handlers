@@ -1,5 +1,6 @@
 """Tests for Develco/Frient."""
 
+from datetime import UTC, datetime
 from unittest import mock
 
 import zigpy.types as t
@@ -9,8 +10,11 @@ from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+from zhaquirks.develco.intelligent_keypad import (
+    MANUFACTURER_CODE,
+    parse_emergency_timestamp,
+)
 import zhaquirks
-from zhaquirks.develco.intelligent_keypad import MANUFACTURER_CODE
 
 zhaquirks.setup()
 
@@ -261,7 +265,9 @@ async def test_frient_keypad_last_code_updates(zigpy_device_from_v2_quirk):
         [IasAce.ArmMode.Arm_All_Zones, b"1234"],
     )
 
-    assert last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1234"
+    )
 
 
 async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk):
@@ -470,3 +476,98 @@ async def test_frient_keypad_write_attributes_mixed(zigpy_device_from_v2_quirk):
     assert first_call.kwargs["manufacturer"] == MANUFACTURER_CODE
     assert second_call.args[0] == {0xFFFD: 2}
     assert "manufacturer" not in second_call.kwargs
+
+
+def test_parse_emergency_timestamp_variants():
+    """Test emergency timestamp parsing handles empty, valid, and invalid values."""
+    assert parse_emergency_timestamp(None) is None
+    assert parse_emergency_timestamp("") is None
+
+    naive = datetime(2024, 1, 1, 12, 0, 0)
+    parsed = parse_emergency_timestamp(naive)
+    assert parsed is not None
+    assert parsed.tzinfo is not None
+
+    aware = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+    assert parse_emergency_timestamp(aware) == aware
+
+    iso_value = "2024-02-03T04:05:06+00:00"
+    parsed_iso = parse_emergency_timestamp(iso_value)
+    assert parsed_iso is not None
+    assert parsed_iso.isoformat() == iso_value
+
+    assert parse_emergency_timestamp("not-a-date") is None
+
+
+async def test_frient_keypad_store_last_code_variants(zigpy_device_from_v2_quirk):
+    """Test keypad stores last code from multiple argument formats."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    last_code_cluster = device.endpoints[44].frient_last_code
+
+    ias_ace._store_last_code({"arm_disarm_code": "2468"})
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "2468"
+    )
+
+    class CodePayload:
+        arm_disarm_code = b"1357"
+
+    ias_ace._store_last_code(CodePayload())
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
+    )
+
+    ias_ace._store_last_code([])
+    assert (
+        last_code_cluster.get(last_code_cluster.AttributeDefs.last_code.id) == "1357"
+    )
+
+
+async def test_frient_keypad_emergency_reschedule(zigpy_device_from_v2_quirk):
+    """Test emergency trigger cancels existing timer and schedules a new one."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].ias_ace
+    emergency_cluster = device.endpoints[44].frient_emergency
+
+    old_handle = mock.Mock()
+    ias_ace._emergency_reset_handle = old_handle
+    loop = mock.Mock()
+    new_handle = mock.Mock()
+    loop.call_later.return_value = new_handle
+
+    with mock.patch("asyncio.get_running_loop", side_effect=RuntimeError), mock.patch(
+        "asyncio.get_event_loop", return_value=loop
+    ):
+        ias_ace._track_emergency_trigger()
+
+    old_handle.cancel.assert_called_once()
+    loop.call_later.assert_called_once()
+    assert ias_ace._emergency_reset_handle == new_handle
+    assert emergency_cluster.get(emergency_cluster.AttributeDefs.emergency.id) is True
