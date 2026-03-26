@@ -73,7 +73,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
 
     class AutoArmDisarm(t.enum8):
         """Keypad auto arm/disarm modes."""
-        
+
         Disabled = 0x00
         Auto_Arm_Disarm_Using_Rfid = 0x01
         Auto_Arm_Disarm_Using_Pin = 0x02
