@@ -3,11 +3,16 @@
 from unittest import mock
 
 import zigpy.types as t
+import zigpy.quirks
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import DeviceTemperature, OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.quirks.v2 import EntityPlatform
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.power_plug import VendorOnOff
 
 zhaquirks.setup()
 
@@ -177,3 +182,120 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+async def test_frient_power_plug_defaults(zigpy_device_from_v2_quirk):
+    """Test power plug initializes mode values."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    assert isinstance(on_off, VendorOnOff)
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 0
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 0
+
+
+async def test_frient_power_plug_safe_mode_writes(zigpy_device_from_v2_quirk):
+    """Test mode writes invoke manufacturer safe-mode commands."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            2: {
+                OnOff.cluster_id: ClusterType.Server,
+                DeviceTemperature.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    on_off = device.endpoints[2].on_off
+
+    with mock.patch.object(
+        VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+    ) as send_safe_mode:
+        await on_off.write_attributes(
+            {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
+        )
+        send_safe_mode.assert_called_once_with(0x01, 5)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 5
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(
+            {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
+        )
+        send_safe_mode.assert_called_once_with(0x00, 7)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 7
+
+
+def _get_power_plug_entry():
+    entries = zigpy.quirks.DEVICE_REGISTRY.registry_v2.get(
+        ("frient A/S", "SPLZB-131"),
+        [],
+    )
+    assert entries, "Power plug quirk not registered in v2 registry"
+    return entries[0]
+
+
+def test_frient_power_plug_entity_metadata() -> None:
+    """Test power plug entity metadata is registered as expected."""
+    entry = _get_power_plug_entry()
+
+    mode_on = next(
+        meta for meta in entry.entity_metadata if meta.translation_key == "mode_on"
+    )
+    assert mode_on.entity_platform is EntityPlatform.NUMBER
+    assert mode_on.cluster_id == OnOff.cluster_id
+    assert mode_on.endpoint_id == 2
+    assert mode_on.unique_id_suffix == "mode_on"
+
+    mode_off = next(
+        meta for meta in entry.entity_metadata if meta.translation_key == "mode_off"
+    )
+    assert mode_off.entity_platform is EntityPlatform.NUMBER
+    assert mode_off.cluster_id == OnOff.cluster_id
+    assert mode_off.endpoint_id == 2
+    assert mode_off.unique_id_suffix == "mode_off"
+
+    dev_temp = next(
+        meta
+        for meta in entry.entity_metadata
+        if meta.translation_key == "device_temperature"
+    )
+    assert dev_temp.entity_platform is EntityPlatform.SENSOR
+    assert dev_temp.cluster_id == DeviceTemperature.cluster_id
+    assert dev_temp.endpoint_id == 2
+    if hasattr(dev_temp, "divisor"):
+        assert dev_temp.divisor == 1
+
+    return_to_state = next(
+        meta
+        for meta in entry.entity_metadata
+        if meta.translation_key == "return_to_state"
+    )
+    assert return_to_state.entity_platform is EntityPlatform.BINARY_SENSOR
+    assert return_to_state.cluster_id == OnOff.cluster_id
+    assert return_to_state.endpoint_id == 2
+
+
+def test_frient_power_plug_prevents_default_entities() -> None:
+    """Test power plug prevents default entities for temp and power clusters."""
+    entry = _get_power_plug_entry()
+
+    prevented = list(entry.disabled_default_entities)
+    assert prevented, "No disabled default entity metadata found"
+
+    def _matches(item, cluster_id):
+        return (
+            getattr(item, "cluster_id", None) == cluster_id
+            and getattr(item, "endpoint_id", None) == 2
+        )
+
+    assert any(_matches(item, DeviceTemperature.cluster_id) for item in prevented)
+    assert any(_matches(item, ElectricalMeasurement.cluster_id) for item in prevented)
