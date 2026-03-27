@@ -25,6 +25,7 @@ class VendorOnOff(CustomCluster, OnOff):
     """OnOff with manufacturer-specific commands."""
 
     def __init__(self, *args, **kwargs) -> None:
+        """Seed attributes so entities start with a defined value."""
         super().__init__(*args, **kwargs)
         # Set defaults so HA shows 0 until a value is written.
         self._update_attribute(self.AttributeDefs.mode_on_value.id, 0)
@@ -65,44 +66,55 @@ class VendorOnOff(CustomCluster, OnOff):
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
+        attributes_copy = dict(attributes)
         mode_value = None
 
-        if self.AttributeDefs.mode_on_value.id in attributes:
-            mode_value = attributes.pop(self.AttributeDefs.mode_on_value.id)
+        if self.AttributeDefs.mode_on_value.id in attributes_copy:
+            mode_value = attributes_copy.pop(self.AttributeDefs.mode_on_value.id)
             await self._send_safe_mode(0x01, mode_value)
             self._update_attribute(self.AttributeDefs.mode_on_value.id, mode_value)
-        elif self.AttributeDefs.mode_off_value.id in attributes:
-            mode_value = attributes.pop(self.AttributeDefs.mode_off_value.id)
+        elif self.AttributeDefs.mode_off_value.id in attributes_copy:
+            mode_value = attributes_copy.pop(self.AttributeDefs.mode_off_value.id)
             await self._send_safe_mode(0x00, mode_value)
             self._update_attribute(self.AttributeDefs.mode_off_value.id, mode_value)
-        elif self.AttributeDefs.mode_on_value.name in attributes:
-            mode_value = attributes.pop(self.AttributeDefs.mode_on_value.name)
+        elif self.AttributeDefs.mode_on_value.name in attributes_copy:
+            mode_value = attributes_copy.pop(self.AttributeDefs.mode_on_value.name)
             await self._send_safe_mode(0x01, mode_value)
             self._update_attribute(self.AttributeDefs.mode_on_value.id, mode_value)
-        elif self.AttributeDefs.mode_off_value.name in attributes:
-            mode_value = attributes.pop(self.AttributeDefs.mode_off_value.name)
+        elif self.AttributeDefs.mode_off_value.name in attributes_copy:
+            mode_value = attributes_copy.pop(self.AttributeDefs.mode_off_value.name)
             await self._send_safe_mode(0x00, mode_value)
             self._update_attribute(self.AttributeDefs.mode_off_value.id, mode_value)
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if attributes_copy:
+            return await super().write_attributes(attributes_copy, **kwargs)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 (
     QuirkBuilder("frient A/S", "SPLZB-141")
     .applies_to("Develco Products A/S", "SPLZB-131")
-    .applies_to("Develco Products A/S", "SPLZB-132")
     .applies_to("frient A/S", "SPLZB-131")
+    .applies_to("Develco Products A/S", "SPLZB-132")
     .applies_to("frient A/S", "SPLZB-132")
+    .applies_to("Develco Products A/S", "SPLZB-134")
     .applies_to("frient A/S", "SPLZB-134")
+    .applies_to("Develco Products A/S", "SPLZB-137")
     .applies_to("frient A/S", "SPLZB-137")
+    .applies_to("Develco Products A/S", "SPLZB-141")
+    .applies_to("Develco Products A/S", "SPLZB-142")
     .applies_to("frient A/S", "SPLZB-142")
+    .applies_to("Develco Products A/S", "SPLZB-144")
     .applies_to("frient A/S", "SPLZB-144")
+    .applies_to("Develco Products A/S", "SPLZB-147")
     .applies_to("frient A/S", "SPLZB-147")
+    .applies_to("Develco Products A/S", "SMRZB-143")
     .applies_to("frient A/S", "SMRZB-143")
+    .applies_to("Develco Products A/S", "SMRZB-153")
     .applies_to("frient A/S", "SMRZB-153")
+    .applies_to("Develco Products A/S", "SMRZB-332")
     .applies_to("frient A/S", "SMRZB-332")
+    .applies_to("Develco Products A/S", "SMRZB-342")
     .applies_to("frient A/S", "SMRZB-342")
     .replaces(VendorOnOff, endpoint_id=2)
     .prevent_default_entity_creation(

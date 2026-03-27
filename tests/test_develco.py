@@ -12,7 +12,7 @@ from zigpy.quirks.v2 import EntityPlatform
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.develco.power_plug import VendorOnOff
+from zhaquirks.develco.power_plug import MANUFACTURER_CODE, VendorOnOff
 
 zhaquirks.setup()
 
@@ -216,22 +216,128 @@ async def test_frient_power_plug_safe_mode_writes(zigpy_device_from_v2_quirk):
 
     on_off = device.endpoints[2].on_off
 
+    attrs_on = {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
+    attrs_off = {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
+    attrs_on_name = {VendorOnOff.AttributeDefs.mode_on_value.name: 9}
+    attrs_off_id = {VendorOnOff.AttributeDefs.mode_off_value.id: 11}
+
     with mock.patch.object(
         VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
     ) as send_safe_mode:
-        await on_off.write_attributes(
-            {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
-        )
+        await on_off.write_attributes(attrs_on)
         send_safe_mode.assert_called_once_with(0x01, 5)
         assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 5
+        assert attrs_on == {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
 
         send_safe_mode.reset_mock()
 
-        await on_off.write_attributes(
-            {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
-        )
+        await on_off.write_attributes(attrs_off)
         send_safe_mode.assert_called_once_with(0x00, 7)
         assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 7
+        assert attrs_off == {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(attrs_on_name)
+        send_safe_mode.assert_called_once_with(0x01, 9)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 9
+        assert attrs_on_name == {VendorOnOff.AttributeDefs.mode_on_value.name: 9}
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(attrs_off_id)
+        send_safe_mode.assert_called_once_with(0x00, 11)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 11
+        assert attrs_off_id == {VendorOnOff.AttributeDefs.mode_off_value.id: 11}
+
+
+async def test_frient_power_plug_send_safe_mode_request(zigpy_device_from_v2_quirk):
+    """Test safe mode command uses manufacturer code and no reply."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+
+    with mock.patch.object(on_off, "request", new=mock.AsyncMock()) as request_mock:
+        await on_off._send_safe_mode(0x01, 4)
+
+    request_mock.assert_called_once()
+    call_args = request_mock.call_args
+    assert call_args.args[0] is False
+    assert call_args.args[1] == 0x01
+    assert call_args.kwargs["manufacturer"] == MANUFACTURER_CODE
+    assert call_args.kwargs["expect_reply"] is False
+    assert call_args.kwargs["mode"] == 4
+
+
+async def test_frient_power_plug_write_attributes_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test non-vendor writes pass kwargs through to base implementation."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[status]),
+    ) as write_mock:
+        result = await on_off.write_attributes(
+            {OnOff.AttributeDefs.on_off.id: 1},
+            timeout=3,
+        )
+
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {OnOff.AttributeDefs.on_off.id: 1}
+    assert write_mock.call_args.kwargs["timeout"] == 3
+    assert result == [status]
+
+
+async def test_frient_power_plug_write_attributes_mixed(
+    zigpy_device_from_v2_quirk,
+):
+    """Test vendor and standard writes can be combined without mutation."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    attrs = {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 4,
+        OnOff.AttributeDefs.on_off.id: 0,
+    }
+
+    with mock.patch.object(
+        VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+    ) as send_safe_mode, mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[status]),
+    ) as write_mock:
+        result = await on_off.write_attributes(attrs, priority=2)
+
+    send_safe_mode.assert_called_once_with(0x01, 4)
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {OnOff.AttributeDefs.on_off.id: 0}
+    assert write_mock.call_args.kwargs["priority"] == 2
+    assert result == [status]
+    assert attrs == {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 4,
+        OnOff.AttributeDefs.on_off.id: 0,
+    }
 
 
 def _get_power_plug_entry():
