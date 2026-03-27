@@ -43,25 +43,25 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             id=0x8005,
             type=t.enum8,
             access="w",
-            manufacturer_code=0x1015,
+            manufacturer_code=MANUFACTURER_CODE,
         )
         auto_disarm: Final = ZCLAttributeDef(
             id=0x8004,
             type=t.Bool,
             access="w",
-            manufacturer_code=0x1015,
+            manufacturer_code=MANUFACTURER_CODE,
         )
         auto_arm_disarm: Final = ZCLAttributeDef(
             id=0x8003,
             type=t.enum8,
             access="w",
-            manufacturer_code=0x1015,
+            manufacturer_code=MANUFACTURER_CODE,
         )
         pin_length: Final = ZCLAttributeDef(
             id=0x8006,
             type=t.uint8_t,
             access="w",
-            manufacturer_code=0x1015,
+            manufacturer_code=MANUFACTURER_CODE,
         )
 
     class AutoArmMode(t.enum8):
@@ -319,30 +319,35 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
+        attributes_copy = dict(attributes)
         auto_arm_mode = None
         auto_disarm = None
         auto_arm_disarm = None
         pin_length = None
 
-        if self.AttributeDefs.auto_arm_mode.id in attributes:
-            auto_arm_mode = attributes.pop(self.AttributeDefs.auto_arm_mode.id)
-        elif self.AttributeDefs.auto_arm_mode.name in attributes:
-            auto_arm_mode = attributes.pop(self.AttributeDefs.auto_arm_mode.name)
+        if self.AttributeDefs.auto_arm_mode.id in attributes_copy:
+            auto_arm_mode = attributes_copy.pop(self.AttributeDefs.auto_arm_mode.id)
+        elif self.AttributeDefs.auto_arm_mode.name in attributes_copy:
+            auto_arm_mode = attributes_copy.pop(self.AttributeDefs.auto_arm_mode.name)
 
-        if self.AttributeDefs.auto_disarm.id in attributes:
-            auto_disarm = attributes.pop(self.AttributeDefs.auto_disarm.id)
-        elif self.AttributeDefs.auto_disarm.name in attributes:
-            auto_disarm = attributes.pop(self.AttributeDefs.auto_disarm.name)
+        if self.AttributeDefs.auto_disarm.id in attributes_copy:
+            auto_disarm = attributes_copy.pop(self.AttributeDefs.auto_disarm.id)
+        elif self.AttributeDefs.auto_disarm.name in attributes_copy:
+            auto_disarm = attributes_copy.pop(self.AttributeDefs.auto_disarm.name)
 
-        if self.AttributeDefs.auto_arm_disarm.id in attributes:
-            auto_arm_disarm = attributes.pop(self.AttributeDefs.auto_arm_disarm.id)
-        elif self.AttributeDefs.auto_arm_disarm.name in attributes:
-            auto_arm_disarm = attributes.pop(self.AttributeDefs.auto_arm_disarm.name)
+        if self.AttributeDefs.auto_arm_disarm.id in attributes_copy:
+            auto_arm_disarm = attributes_copy.pop(
+                self.AttributeDefs.auto_arm_disarm.id
+            )
+        elif self.AttributeDefs.auto_arm_disarm.name in attributes_copy:
+            auto_arm_disarm = attributes_copy.pop(
+                self.AttributeDefs.auto_arm_disarm.name
+            )
 
-        if self.AttributeDefs.pin_length.id in attributes:
-            pin_length = attributes.pop(self.AttributeDefs.pin_length.id)
-        elif self.AttributeDefs.pin_length.name in attributes:
-            pin_length = attributes.pop(self.AttributeDefs.pin_length.name)
+        if self.AttributeDefs.pin_length.id in attributes_copy:
+            pin_length = attributes_copy.pop(self.AttributeDefs.pin_length.id)
+        elif self.AttributeDefs.pin_length.name in attributes_copy:
+            pin_length = attributes_copy.pop(self.AttributeDefs.pin_length.name)
 
         attributes_to_write: dict[str, Any] = {}
         if auto_arm_mode is not None:
@@ -362,14 +367,21 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             self._update_attribute(self.AttributeDefs.pin_length.id, pin_length)
             attributes_to_write[self.AttributeDefs.pin_length.name] = pin_length
 
+        results: list[list[foundation.WriteAttributesStatusRecord]] = []
         if attributes_to_write:
-            await super().write_attributes(
-                attributes_to_write,
-                manufacturer=MANUFACTURER_CODE,
+            results.extend(
+                await super().write_attributes(
+                    attributes_to_write,
+                    manufacturer=MANUFACTURER_CODE,
+                    **kwargs,
+                )
             )
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if attributes_copy:
+            results.extend(await super().write_attributes(attributes_copy, **kwargs))
+
+        if results:
+            return results
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
@@ -390,6 +402,11 @@ class FrientKeypadLastCodeCluster(LocalDataCluster):
             is_manufacturer_specific=True,
         )
 
+    def __init__(self, *args, **kwargs):
+        """Seed attributes so entities start with a defined value."""
+        super().__init__(*args, **kwargs)
+        # Start with an empty string so reads never return UNSUPPORTED_ATTRIBUTE.
+        self._update_attribute(self.AttributeDefs.last_code.id, "")
 
 class FrientKeypadEmergencyCluster(LocalDataCluster):
     """Virtual cluster to expose emergency state and timestamps."""
