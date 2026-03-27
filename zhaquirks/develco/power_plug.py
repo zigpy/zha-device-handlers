@@ -6,16 +6,15 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     EntityType,
     QuirkBuilder,
+    ReportingConfig,
     SensorDeviceClass,
     SensorStateClass,
-    ReportingConfig,
 )
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 MANUFACTURER_CODE = 0x1015
@@ -91,6 +90,7 @@ class VendorOnOff(CustomCluster, OnOff):
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
+
 (
     QuirkBuilder("frient A/S", "SPLZB-141")
     .applies_to("Develco Products A/S", "SPLZB-131")
@@ -120,7 +120,7 @@ class VendorOnOff(CustomCluster, OnOff):
     .prevent_default_entity_creation(
         endpoint_id=2,
         cluster_id=DeviceTemperature.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "DeviceTemperature"
+        function=lambda entity: entity.__class__.__name__ == "DeviceTemperature",
     )
     .prevent_default_entity_creation(
         endpoint_id=2,

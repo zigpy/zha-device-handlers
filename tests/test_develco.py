@@ -2,13 +2,13 @@
 
 from unittest import mock
 
-import zigpy.types as t
 import zigpy.quirks
+from zigpy.quirks.v2 import EntityPlatform
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import DeviceTemperature, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.quirks.v2 import EntityPlatform
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -321,12 +321,15 @@ async def test_frient_power_plug_write_attributes_mixed(
         OnOff.AttributeDefs.on_off.id: 0,
     }
 
-    with mock.patch.object(
-        VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
-    ) as send_safe_mode, mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
-        new=mock.AsyncMock(return_value=[status]),
-    ) as write_mock:
+    with (
+        mock.patch.object(
+            VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+        ) as send_safe_mode,
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(return_value=[status]),
+        ) as write_mock,
+    ):
         result = await on_off.write_attributes(attrs, priority=2)
 
     send_safe_mode.assert_called_once_with(0x01, 4)
