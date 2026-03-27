@@ -336,9 +336,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             auto_disarm = attributes_copy.pop(self.AttributeDefs.auto_disarm.name)
 
         if self.AttributeDefs.auto_arm_disarm.id in attributes_copy:
-            auto_arm_disarm = attributes_copy.pop(
-                self.AttributeDefs.auto_arm_disarm.id
-            )
+            auto_arm_disarm = attributes_copy.pop(self.AttributeDefs.auto_arm_disarm.id)
         elif self.AttributeDefs.auto_arm_disarm.name in attributes_copy:
             auto_arm_disarm = attributes_copy.pop(
                 self.AttributeDefs.auto_arm_disarm.name
@@ -407,6 +405,7 @@ class FrientKeypadLastCodeCluster(LocalDataCluster):
         super().__init__(*args, **kwargs)
         # Start with an empty string so reads never return UNSUPPORTED_ATTRIBUTE.
         self._update_attribute(self.AttributeDefs.last_code.id, "")
+
 
 class FrientKeypadEmergencyCluster(LocalDataCluster):
     """Virtual cluster to expose emergency state and timestamps."""
