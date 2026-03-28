@@ -1,0 +1,3 @@
+"""HOBEIAN quirks."""
+
+HOBEIAN = "HOBEIAN"
