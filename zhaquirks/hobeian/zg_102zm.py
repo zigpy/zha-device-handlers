@@ -1,8 +1,8 @@
 """HOBEIAN ZG-102ZM door and vibration sensor."""
 
-import zigpy.types as t
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import BatterySize
