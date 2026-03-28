@@ -53,6 +53,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unique_id_suffix="1-1280",
         new_entity_registry_enabled_default=False,
     )
-    .skip_configuration()
+    .tuya_enchantment(read_attr_spell=True)
     .add_to_registry()
 )
