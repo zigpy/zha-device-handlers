@@ -3,7 +3,6 @@
 from unittest import mock
 
 import zigpy.types as t
-import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
@@ -230,9 +229,7 @@ async def test_humidity_power_config_battery_percent_unsupported(
     )
 
     power = device.endpoints[38].power
-    (records,) = await power.read_attributes_raw(
-        [power.BATTERY_PERCENTAGE_REMAINING]
-    )
+    (records,) = await power.read_attributes_raw([power.BATTERY_PERCENTAGE_REMAINING])
 
     assert len(records) == 1
     record = records[0]
@@ -266,7 +263,7 @@ async def test_humidity_power_config_read_attributes_passthrough(
         "zigpy.quirks.CustomCluster.read_attributes_raw",
         new=mock.AsyncMock(return_value=([passthrough_record],)),
     ) as read_mock:
-        records, = await power.read_attributes_raw(
+        (records,) = await power.read_attributes_raw(
             [power.BATTERY_PERCENTAGE_REMAINING, battery_voltage_id]
         )
 

@@ -3,18 +3,13 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
-    QuirkBuilder,
-    NumberDeviceClass,
-)
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-from zigpy.quirks.v2.homeassistant import  UnitOfTemperature
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import (
-    BaseAttributeDefs,
-    ZCLAttributeDef,
-)
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.foundation import ZCLAttributeDef
+
 from zhaquirks.develco import DevelcoPowerConfiguration
 
 
@@ -53,13 +48,14 @@ class HumidityPowerConfiguration(DevelcoPowerConfiguration):
             local_records.append(record)
 
         if attr_list:
-            records, = await super().read_attributes_raw(
+            (records,) = await super().read_attributes_raw(
                 attr_list, manufacturer=manufacturer, **kwargs
             )
             records.extend(local_records)
             return (records,)
 
         return (local_records,)
+
 
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     """Temperature Measurement Cluster with calibration attribute."""
@@ -80,7 +76,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             access="rw",
             manufacturer_code=0x1015,
         )
-    
+
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, int],
@@ -106,10 +102,8 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             self._raw_measured_value = value
             if value == 0x8000:
                 return super()._update_attribute(attrid, value)
-            offset = self._attr_cache.get(
-                self.AttributeDefs.temperature_offset.id, 0
-            )
-            return super()._update_attribute(attrid, value + offset*100)
+            offset = self._attr_cache.get(self.AttributeDefs.temperature_offset.id, 0)
+            return super()._update_attribute(attrid, value + offset * 100)
 
         if attrid == self.AttributeDefs.temperature_offset.id:
             result = super()._update_attribute(attrid, value)
@@ -119,11 +113,12 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             ):
                 super()._update_attribute(
                     self.AttributeDefs.measured_value.id,
-                    self._raw_measured_value + value*100,
+                    self._raw_measured_value + value * 100,
                 )
             return result
 
         return super()._update_attribute(attrid, value)
+
 
 class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     """Relative Humidity Cluster with calibration attribute."""
@@ -170,10 +165,8 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             self._raw_measured_value = value
             if value == 0x8000:
                 return super()._update_attribute(attrid, value)
-            offset = self._attr_cache.get(
-                self.AttributeDefs.humidity_offset.id, 0
-            )
-            return super()._update_attribute(attrid, value + offset*100)
+            offset = self._attr_cache.get(self.AttributeDefs.humidity_offset.id, 0)
+            return super()._update_attribute(attrid, value + offset * 100)
 
         if attrid == self.AttributeDefs.humidity_offset.id:
             result = super()._update_attribute(attrid, value)
@@ -183,11 +176,12 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             ):
                 super()._update_attribute(
                     self.AttributeDefs.measured_value.id,
-                    self._raw_measured_value + value*100,
+                    self._raw_measured_value + value * 100,
                 )
             return result
 
         return super()._update_attribute(attrid, value)
+
 
 (
     QuirkBuilder("frient A/S", "HMSZB-120")
