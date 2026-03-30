@@ -52,34 +52,47 @@ class NimlyDoorLock(CustomCluster, DoorLock):
         )
 
 
+# Bitmap layout of attribute 0x0100 (nimly_last_lock_unlock_source).
+#
+# The bitmap32 value encodes operation event data as four bytes.
+# Interpreted as a little-endian 32-bit integer:
+#
+#   Bits 0-15  (byte 0-1): user slot number (0-999)
+#   Bits 16-23 (byte 2):   action (0x01 = lock, 0x02 = unlock)
+#   Bits 24-31 (byte 3):   source (0x00 = zigbee, 0x02 = keypad, ...)
+#
+# Example: 0x02020003
+#   source = 0x02 (keypad), action = 0x02 (unlock), user = 3
+
+_SOURCES: dict[int, str] = {
+    0x00: "zigbee",
+    0x02: "keypad",
+    0x03: "fingerprint",
+    0x04: "rfid",
+    0x0A: "auto",
+}
+
+_ACTIONS: dict[int, str] = {
+    0x01: "lock",
+    0x02: "unlock",
+}
+
+
 def last_action_source_converter(value: int) -> str:
-    """Extract last action source value."""
-    value_hex = hex(value)[2:].zfill(8)
-    sources = {
-        "00": "zigbee",
-        "02": "keypad",
-        "03": "fingerprint",
-        "04": "rfid",
-        "0a": "self",
-    }
-    return sources.get(value_hex[0:2])
+    """Extract the source that triggered the lock operation."""
+    source_byte = (value >> 24) & 0xFF
+    return _SOURCES.get(source_byte, "unknown")
 
 
 def last_action_converter(value: int) -> str:
-    """Extract last action value."""
-    value_hex = hex(value)[2:].zfill(8)
-    actions = {
-        "01": "lock",
-        "02": "unlock",
-    }
-    return actions.get(value_hex[2:4])
+    """Extract whether the operation was a lock or unlock."""
+    action_byte = (value >> 16) & 0xFF
+    return _ACTIONS.get(action_byte, "unknown")
 
 
 def last_action_user_converter(value: int) -> int:
-    """Extract last action user value."""
-    value_hex = hex(value)[2:].zfill(8)
-    user_id = int(value_hex[4:8], 16)
-    return user_id
+    """Extract the user slot number (0-999)."""
+    return value & 0xFFFF
 
 
 (
@@ -153,6 +166,7 @@ def last_action_user_converter(value: int) -> int:
     .applies_to(NIMLY, "NimlyCode")
     .applies_to(NIMLY, "NimlyTouch")
     .applies_to(NIMLY, "NimlyIn")
+    .applies_to(NIMLY, "NimlyShared")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
     .replaces(DoublingPowerConfigurationCluster, endpoint_id=11)
     .replaces(NimlyDoorLock, endpoint_id=11)
