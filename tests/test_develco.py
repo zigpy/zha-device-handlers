@@ -385,7 +385,9 @@ async def test_frient_power_plug_write_attributes_multiple_vendor(
         VendorOnOff.AttributeDefs.mode_on_value.id: 12,
         VendorOnOff.AttributeDefs.mode_off_value: 34,
     }
-    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
 
 
 def _get_power_plug_entry():

@@ -79,7 +79,9 @@ class VendorOnOff(CustomCluster, OnOff):
             return found, value
 
         has_mode_on, mode_on_value = _pop_attr_value(self.AttributeDefs.mode_on_value)
-        has_mode_off, mode_off_value = _pop_attr_value(self.AttributeDefs.mode_off_value)
+        has_mode_off, mode_off_value = _pop_attr_value(
+            self.AttributeDefs.mode_off_value
+        )
         handled_vendor_attr = has_mode_on or has_mode_off
 
         if has_mode_on:
