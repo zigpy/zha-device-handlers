@@ -39,7 +39,7 @@ class VendorOnOff(CustomCluster, OnOff):
         mode_on_value: Final = ZCLAttributeDef(id=0x8102, type=t.uint8_t, access="w")
         mode_off_value: Final = ZCLAttributeDef(id=0x8103, type=t.uint8_t, access="w")
         return_to_state: Final = ZCLAttributeDef(
-            id=0x8101, type=t.Bool, access="r", manufacturer_code=MANUFACTURER_CODE
+            id=0x8101, type=t.Bool, access="rp", manufacturer_code=MANUFACTURER_CODE
         )
 
     async def _send_safe_mode(self, command_id: int, mode_value: int) -> None:
@@ -66,29 +66,37 @@ class VendorOnOff(CustomCluster, OnOff):
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
         attributes_copy = dict(attributes)
-        mode_value = None
 
-        if self.AttributeDefs.mode_on_value.id in attributes_copy:
-            mode_value = attributes_copy.pop(self.AttributeDefs.mode_on_value.id)
-            await self._send_safe_mode(0x01, mode_value)
-            self._update_attribute(self.AttributeDefs.mode_on_value.id, mode_value)
-        elif self.AttributeDefs.mode_off_value.id in attributes_copy:
-            mode_value = attributes_copy.pop(self.AttributeDefs.mode_off_value.id)
-            await self._send_safe_mode(0x00, mode_value)
-            self._update_attribute(self.AttributeDefs.mode_off_value.id, mode_value)
-        elif self.AttributeDefs.mode_on_value.name in attributes_copy:
-            mode_value = attributes_copy.pop(self.AttributeDefs.mode_on_value.name)
-            await self._send_safe_mode(0x01, mode_value)
-            self._update_attribute(self.AttributeDefs.mode_on_value.id, mode_value)
-        elif self.AttributeDefs.mode_off_value.name in attributes_copy:
-            mode_value = attributes_copy.pop(self.AttributeDefs.mode_off_value.name)
-            await self._send_safe_mode(0x00, mode_value)
-            self._update_attribute(self.AttributeDefs.mode_off_value.id, mode_value)
+        def _pop_attr_value(
+            attr_def: foundation.ZCLAttributeDef,
+        ) -> tuple[bool, int | None]:
+            value = None
+            found = False
+            for key in (attr_def.id, attr_def.name, attr_def):
+                if key in attributes_copy:
+                    value = attributes_copy.pop(key)
+                    found = True
+            return found, value
+
+        has_mode_on, mode_on_value = _pop_attr_value(self.AttributeDefs.mode_on_value)
+        has_mode_off, mode_off_value = _pop_attr_value(self.AttributeDefs.mode_off_value)
+        handled_vendor_attr = has_mode_on or has_mode_off
+
+        if has_mode_on:
+            await self._send_safe_mode(0x01, mode_on_value)
+            self._update_attribute(self.AttributeDefs.mode_on_value.id, mode_on_value)
+
+        if has_mode_off:
+            await self._send_safe_mode(0x00, mode_off_value)
+            self._update_attribute(self.AttributeDefs.mode_off_value.id, mode_off_value)
 
         if attributes_copy:
             return await super().write_attributes(attributes_copy, **kwargs)
 
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+        if handled_vendor_attr:
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+        return await super().write_attributes(attributes_copy, **kwargs)
 
 
 (

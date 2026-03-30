@@ -343,6 +343,51 @@ async def test_frient_power_plug_write_attributes_mixed(
     }
 
 
+async def test_frient_power_plug_write_attributes_multiple_vendor(
+    zigpy_device_from_v2_quirk,
+):
+    """Test multiple vendor mode writes are processed together."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    attrs = {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 12,
+        VendorOnOff.AttributeDefs.mode_off_value: 34,
+    }
+
+    with (
+        mock.patch.object(
+            VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+        ) as send_safe_mode,
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(),
+        ) as write_mock,
+    ):
+        result = await on_off.write_attributes(attrs)
+
+    send_safe_mode.assert_has_calls(
+        [
+            mock.call(0x01, 12),
+            mock.call(0x00, 34),
+        ],
+        any_order=False,
+    )
+    write_mock.assert_not_called()
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 12
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 34
+    assert attrs == {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 12,
+        VendorOnOff.AttributeDefs.mode_off_value: 34,
+    }
+    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+
 def _get_power_plug_entry():
     entries = zigpy.quirks.DEVICE_REGISTRY.registry_v2.get(
         ("frient A/S", "SPLZB-131"),
