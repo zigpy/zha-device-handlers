@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.develco.humidity import (
-    HMSZB120PowerConfiguration,
+    HumidityPowerConfiguration,
     RelativeHumidityCustom,
     TemperatureMeasurementCustom,
 )
@@ -197,7 +197,7 @@ async def test_HMSZB_120_power_config_battery_percent(zigpy_device_from_v2_quirk
     )
 
     power = device.endpoints[38].power
-    assert isinstance(power, HMSZB120PowerConfiguration)
+    assert isinstance(power, HumidityPowerConfiguration)
 
     power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
     expected = power._calculate_battery_percentage(28)
@@ -218,7 +218,7 @@ async def test_HMSZB_120_power_config_battery_percent(zigpy_device_from_v2_quirk
     assert record.value.value == expected
 
 
-async def test_hmszb120_power_config_battery_percent_unsupported(
+async def test_humidity_power_config_battery_percent_unsupported(
     zigpy_device_from_v2_quirk,
 ):
     """Test battery percent remains unsupported without cached voltage."""
@@ -240,7 +240,7 @@ async def test_hmszb120_power_config_battery_percent_unsupported(
     assert record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE
 
 
-async def test_hmszb120_power_config_read_attributes_passthrough(
+async def test_humidity_power_config_read_attributes_passthrough(
     zigpy_device_from_v2_quirk,
 ):
     """Test read_attributes_raw delegates remaining attributes to base."""
@@ -278,7 +278,7 @@ async def test_hmszb120_power_config_read_attributes_passthrough(
     }
 
 
-async def test_hmszb120_power_config_read_attributes_name_and_attrdef(
+async def test_humidity_power_config_read_attributes_name_and_attrdef(
     zigpy_device_from_v2_quirk,
 ):
     """Test power config reads name and ZCLAttributeDef inputs."""
@@ -319,7 +319,7 @@ async def test_hmszb120_power_config_read_attributes_name_and_attrdef(
     }
 
 
-async def test_hmszb120_temperature_offset_write_attributes(
+async def test_humidity_temperature_offset_write_attributes(
     zigpy_device_from_v2_quirk,
 ):
     """Test temperature offset writes are handled locally."""
@@ -353,7 +353,7 @@ async def test_hmszb120_temperature_offset_write_attributes(
     write_mock.assert_not_called()
 
 
-async def test_hmszb120_temperature_offset_passthrough(
+async def test_humidity_temperature_offset_passthrough(
     zigpy_device_from_v2_quirk,
 ):
     """Test non-offset temperature writes pass through to base."""
@@ -385,7 +385,7 @@ async def test_hmszb120_temperature_offset_passthrough(
     assert result == [status]
 
 
-async def test_hmszb120_temperature_offset_updates_measured_value(
+async def test_humidity_temperature_offset_updates_measured_value(
     zigpy_device_from_v2_quirk,
 ):
     """Test temperature offset adjusts cached measured value."""
@@ -406,7 +406,7 @@ async def test_hmszb120_temperature_offset_updates_measured_value(
     assert temp.get(measured_id) == 2500
 
 
-async def test_hmszb120_temperature_invalid_does_not_apply_offset(
+async def test_humidity_temperature_invalid_does_not_apply_offset(
     zigpy_device_from_v2_quirk,
 ):
     """Test invalid temperature sentinel is not adjusted by offset."""
@@ -427,7 +427,7 @@ async def test_hmszb120_temperature_invalid_does_not_apply_offset(
     assert temp.get(measured_id) == 0x8000
 
 
-async def test_hmszb120_temperature_offset_without_measured_value(
+async def test_humidity_temperature_offset_without_measured_value(
     zigpy_device_from_v2_quirk,
 ):
     """Test offset write does not touch measured value when unset."""
@@ -447,7 +447,7 @@ async def test_hmszb120_temperature_offset_without_measured_value(
     assert temp.get(measured_id) is None
 
 
-async def test_hmszb120_humidity_offset_write_attributes(
+async def test_humidity_offset_write_attributes(
     zigpy_device_from_v2_quirk,
 ):
     """Test humidity offset writes are handled locally."""
@@ -481,7 +481,7 @@ async def test_hmszb120_humidity_offset_write_attributes(
     write_mock.assert_not_called()
 
 
-async def test_hmszb120_humidity_offset_passthrough(
+async def test_humidity_offset_passthrough(
     zigpy_device_from_v2_quirk,
 ):
     """Test non-offset humidity writes pass through to base."""
@@ -513,7 +513,7 @@ async def test_hmszb120_humidity_offset_passthrough(
     assert result == [status]
 
 
-async def test_hmszb120_humidity_offset_updates_measured_value(
+async def test_humidity_offset_updates_measured_value(
     zigpy_device_from_v2_quirk,
 ):
     """Test humidity offset adjusts cached measured value."""
@@ -534,7 +534,7 @@ async def test_hmszb120_humidity_offset_updates_measured_value(
     assert humidity.get(measured_id) == 4300
 
 
-async def test_hmszb120_humidity_invalid_does_not_apply_offset(
+async def test_humidity_invalid_does_not_apply_offset(
     zigpy_device_from_v2_quirk,
 ):
     """Test invalid humidity sentinel is not adjusted by offset."""
@@ -555,7 +555,7 @@ async def test_hmszb120_humidity_invalid_does_not_apply_offset(
     assert humidity.get(measured_id) == 0x8000
 
 
-async def test_hmszb120_humidity_offset_without_measured_value(
+async def test_humidity_offset_without_measured_value(
     zigpy_device_from_v2_quirk,
 ):
     """Test offset write does not touch measured value when unset."""

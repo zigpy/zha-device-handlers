@@ -18,7 +18,7 @@ from zigpy.zcl.foundation import (
 from zhaquirks.develco import DevelcoPowerConfiguration
 
 
-class HMSZB120PowerConfiguration(DevelcoPowerConfiguration):
+class HumidityPowerConfiguration(DevelcoPowerConfiguration):
     """PowerConfiguration that derives percent from voltage only."""
 
     MIN_VOLTS = 2.3
@@ -191,8 +191,11 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
 
 (
     QuirkBuilder("frient A/S", "HMSZB-120")
+    .applies_to("Develco Products A/S", "HMSZB-120")
+    .applies_to("frient A/S", "HMSZB-110")
+    .applies_to("Develco Products A/S", "HMSZB-110")
     .replaces(TemperatureMeasurementCustom, endpoint_id=38)
-    .replaces(HMSZB120PowerConfiguration, endpoint_id=38)
+    .replaces(HumidityPowerConfiguration, endpoint_id=38)
     .replaces(RelativeHumidityCustom, endpoint_id=38)
     .number(
         attribute_name=TemperatureMeasurementCustom.AttributeDefs.temperature_offset.name,
