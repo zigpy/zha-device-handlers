@@ -280,6 +280,47 @@ async def test_aqszb110_power_config_read_attributes_passthrough(
     }
 
 
+async def test_aqszb110_power_config_read_attributes_name_and_attrdef(
+    zigpy_device_from_v2_quirk,
+):
+    """Test power config reads name and ZCLAttributeDef inputs."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "AQSZB-110",
+        endpoint_ids=[38],
+        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    )
+
+    power = device.endpoints[38].power
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
+
+    battery_pct_name = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
+    )
+    battery_voltage_def = PowerConfiguration.AttributeDefs.battery_voltage
+    passthrough_record = foundation.ReadAttributeRecord(
+        battery_voltage_def.id,
+        foundation.Status.SUCCESS,
+        foundation.TypeValue(),
+    )
+    passthrough_record.value.value = 28
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(return_value=([passthrough_record],)),
+    ) as read_mock:
+        (records,) = await power.read_attributes_raw(
+            [battery_pct_name, battery_voltage_def]
+        )
+
+    read_mock.assert_called_once()
+    assert read_mock.call_args.args[0] == [battery_voltage_def.id]
+    assert {record.attrid for record in records} == {
+        power.BATTERY_PERCENTAGE_REMAINING,
+        battery_voltage_def.id,
+    }
+
+
 async def test_air_quality_temperature_offset_write_attributes(
     zigpy_device_from_v2_quirk,
 ):
@@ -388,6 +429,26 @@ async def test_air_quality_temperature_invalid_does_not_apply_offset(
     assert temp.get(measured_id) == 0x8000
 
 
+async def test_air_quality_temperature_offset_without_measured_value(
+    zigpy_device_from_v2_quirk,
+):
+    """Test offset write does not touch measured value when unset."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "AQSZB-110",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    measured_id = TemperatureMeasurement.AttributeDefs.measured_value.id
+    offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
+
+    assert temp.get(measured_id) is None
+    temp.update_attribute(offset_id, 2)
+    assert temp.get(measured_id) is None
+
+
 async def test_air_quality_humidity_offset_write_attributes(
     zigpy_device_from_v2_quirk,
 ):
@@ -494,6 +555,26 @@ async def test_air_quality_humidity_invalid_does_not_apply_offset(
     humidity.update_attribute(offset_id, 1)
 
     assert humidity.get(measured_id) == 0x8000
+
+
+async def test_air_quality_humidity_offset_without_measured_value(
+    zigpy_device_from_v2_quirk,
+):
+    """Test offset write does not touch measured value when unset."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "AQSZB-110",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    measured_id = RelativeHumidity.AttributeDefs.measured_value.id
+    offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
+
+    assert humidity.get(measured_id) is None
+    humidity.update_attribute(offset_id, 2)
+    assert humidity.get(measured_id) is None
 
 
 def test_air_quality_measured_value_converter():

@@ -32,11 +32,19 @@ class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
 
     async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Return battery percent from cached voltage instead of reading 0x0021."""
-        attr_list = list(attributes)
+        attr_list = []
+        requested_percent = False
+        for attr in attributes:
+            attr_def = self.find_attribute(attr)
+            if attr_def is None:
+                continue
+            if attr_def.id == self.BATTERY_PERCENTAGE_REMAINING:
+                requested_percent = True
+            else:
+                attr_list.append(attr_def.id)
         local_records = []
 
-        if self.BATTERY_PERCENTAGE_REMAINING in attr_list:
-            attr_list.remove(self.BATTERY_PERCENTAGE_REMAINING)
+        if requested_percent:
             attr_def = self.find_attribute(self.BATTERY_PERCENTAGE_REMAINING)
             record = foundation.ReadAttributeRecord(
                 attr_def.id,
