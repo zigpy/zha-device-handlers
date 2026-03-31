@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.general import OnOff
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, TRIPLE_PRESS
+from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
@@ -225,16 +225,16 @@ async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
 
 @pytest.mark.parametrize("endpoint_id", [1, 2, 3, 4])
 @pytest.mark.parametrize(
-    ("value", "expected_action"),
+    ("value", "expected_command"),
     [
-        (1, SHORT_PRESS),
-        (2, DOUBLE_PRESS),
-        (3, LONG_PRESS),
-        (4, TRIPLE_PRESS),
+        (1, COMMAND_SINGLE),
+        (2, COMMAND_DOUBLE),
+        (3, COMMAND_HOLD),
+        (4, COMMAND_TRIPLE),
     ],
 )
 async def test_snzb01m_button_events(
-    zigpy_device_from_v2_quirk, endpoint_id, value, expected_action
+    zigpy_device_from_v2_quirk, endpoint_id, value, expected_command
 ):
     """Correct events are emitted for each endpoint and action."""
 
@@ -247,7 +247,7 @@ async def test_snzb01m_button_events(
         SonoffButtonCluster.AttributeDefs.key_action_event.id, value
     )
     assert listener.zha_send_event.call_count == 1
-    listener.zha_send_event.assert_called_with(expected_action, {})
+    listener.zha_send_event.assert_called_with(expected_command, {"value": value})
 
 
 async def test_snzb01m_invalid_attribute_update(zigpy_device_from_v2_quirk):
