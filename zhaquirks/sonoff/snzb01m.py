@@ -20,7 +20,6 @@ from zhaquirks.const import (
     LONG_PRESS,
     SHORT_PRESS,
     TRIPLE_PRESS,
-    VALUE,
     ZHA_SEND_EVENT,
 )
 
@@ -66,7 +65,7 @@ class SonoffButtonCluster(CustomCluster):
         if attrid == self.AttributeDefs.key_action_event.id:
             action = ACTION_MAP.get(value)
             if action:
-                self.listener_event(ZHA_SEND_EVENT, action, {VALUE: value})
+                self.listener_event(ZHA_SEND_EVENT, action, {})
 
 
 (

@@ -247,7 +247,7 @@ async def test_snzb01m_button_events(
         SonoffButtonCluster.AttributeDefs.key_action_event.id, value
     )
     assert listener.zha_send_event.call_count == 1
-    listener.zha_send_event.assert_called_with(expected_command, {"value": value})
+    listener.zha_send_event.assert_called_with(expected_command, {})
 
 
 async def test_snzb01m_invalid_attribute_update(zigpy_device_from_v2_quirk):
