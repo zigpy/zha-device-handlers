@@ -25,6 +25,12 @@ class ManufacturerMetering(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
+        current_summation: Final = ZCLAttributeDef(
+            id=0x0301,
+            type=t.uint48_t,
+            access="w",
+            is_manufacturer_specific=True,
+        )
 
 
 (
@@ -42,6 +48,14 @@ class ManufacturerMetering(CustomCluster):
         mode="box",
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
+    )
+    .write_attr_button(
+        attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
+        attribute_value=0,
+        cluster_id=ManufacturerMetering.cluster_id,
+        endpoint_id=2,
+        translation_key="reset_summation_delivered",
+        fallback_name="Reset summation delivered",
     )
     .add_to_registry()
 )
