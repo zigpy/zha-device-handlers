@@ -237,6 +237,33 @@ async def test_humidity_power_config_battery_percent_unsupported(
     assert record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE
 
 
+async def test_humidity_power_config_unknown_attribute(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown attributes return unsupported records."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    )
+
+    power = device.endpoints[38].power
+    unknown_attr = 0xFFFF
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(),
+    ) as read_mock:
+        (records,) = await power.read_attributes_raw([unknown_attr])
+
+    read_mock.assert_not_called()
+    assert len(records) == 1
+    record = records[0]
+    assert record.attrid == unknown_attr
+    assert record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
 async def test_humidity_power_config_read_attributes_passthrough(
     zigpy_device_from_v2_quirk,
 ):
@@ -330,6 +357,7 @@ async def test_humidity_temperature_offset_write_attributes(
     temp = device.endpoints[38].temperature
     offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
     offset_name = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.name
+    offset_def = TemperatureMeasurementCustom.AttributeDefs.temperature_offset
 
     with mock.patch(
         "zigpy.quirks.CustomCluster.write_attributes",
@@ -343,6 +371,12 @@ async def test_humidity_temperature_offset_write_attributes(
 
         result = await temp.write_attributes({offset_name: 3})
         assert temp.get(offset_id) == 3
+        assert result == [
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+
+        result = await temp.write_attributes({offset_def: 4})
+        assert temp.get(offset_id) == 4
         assert result == [
             [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
         ]
@@ -458,6 +492,7 @@ async def test_humidity_offset_write_attributes(
     humidity = device.endpoints[38].humidity
     offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
     offset_name = RelativeHumidityCustom.AttributeDefs.humidity_offset.name
+    offset_def = RelativeHumidityCustom.AttributeDefs.humidity_offset
 
     with mock.patch(
         "zigpy.quirks.CustomCluster.write_attributes",
@@ -471,6 +506,12 @@ async def test_humidity_offset_write_attributes(
 
         result = await humidity.write_attributes({offset_name: 6})
         assert humidity.get(offset_id) == 6
+        assert result == [
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+
+        result = await humidity.write_attributes({offset_def: 7})
+        assert humidity.get(offset_id) == 7
         assert result == [
             [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
         ]

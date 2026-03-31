@@ -3,8 +3,8 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
@@ -23,28 +23,46 @@ class HumidityPowerConfiguration(DevelcoPowerConfiguration):
         """Return battery percent from cached voltage instead of reading 0x0021."""
         attr_list = []
         requested_percent = False
+        local_records = []
         for attr in attributes:
-            attr_def = self.find_attribute(attr)
-            if attr_def is None:
+            try:
+                attr_def = self.find_attribute(attr)
+            except KeyError:
+                # Unknown attribute: return an UNSUPPORTED_ATTRIBUTE record.
+                local_records.append(
+                    foundation.ReadAttributeRecord(
+                        attr,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
                 continue
             if attr_def.id == self.BATTERY_PERCENTAGE_REMAINING:
                 requested_percent = True
             else:
                 attr_list.append(attr_def.id)
-        local_records = []
-
         if requested_percent:
-            attr_def = self.find_attribute(self.BATTERY_PERCENTAGE_REMAINING)
-            record = foundation.ReadAttributeRecord(
-                attr_def.id,
-                foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                foundation.TypeValue(),
-            )
-            voltage = self._attr_cache.get(self.BATTERY_VOLTAGE_ATTR)
-            if voltage not in (None, 0, 255):
-                percent = self._calculate_battery_percentage(voltage)
-                record.value.value = attr_def.type(percent)
-                record.status = foundation.Status.SUCCESS
+            try:
+                attr_def = self.find_attribute(self.BATTERY_PERCENTAGE_REMAINING)
+            except KeyError:
+                # If the percentage attribute definition is missing, still
+                # respond with UNSUPPORTED_ATTRIBUTE instead of raising.
+                record = foundation.ReadAttributeRecord(
+                    self.BATTERY_PERCENTAGE_REMAINING,
+                    foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                    foundation.TypeValue(),
+                )
+            else:
+                record = foundation.ReadAttributeRecord(
+                    attr_def.id,
+                    foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                    foundation.TypeValue(),
+                )
+                voltage = self._attr_cache.get(self.BATTERY_VOLTAGE_ATTR)
+                if voltage not in (None, 0, 255):
+                    percent = self._calculate_battery_percentage(voltage)
+                    record.value.value = attr_def.type(percent)
+                    record.status = foundation.Status.SUCCESS
             local_records.append(record)
 
         if attr_list:
@@ -85,13 +103,17 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
         offset = None
+        offset_attr_id = self.AttributeDefs.temperature_offset.id
 
-        if self.AttributeDefs.temperature_offset.id in attributes:
-            offset = attributes.pop(self.AttributeDefs.temperature_offset.id)
-            self._update_attribute(self.AttributeDefs.temperature_offset.id, offset)
-        elif self.AttributeDefs.temperature_offset.name in attributes:
-            offset = attributes.pop(self.AttributeDefs.temperature_offset.name)
-            self._update_attribute(self.AttributeDefs.temperature_offset.id, offset)
+        for attr_key, value in list(attributes.items()):
+            attr_def = self.find_attribute(attr_key)
+            if attr_def is None or attr_def.id != offset_attr_id:
+                continue
+            offset = value
+            attributes.pop(attr_key)
+
+        if offset is not None:
+            self._update_attribute(offset_attr_id, offset)
 
         if attributes:
             return await super().write_attributes(attributes, **kwargs)
@@ -149,13 +171,17 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
         offset = None
+        offset_attr_id = self.AttributeDefs.humidity_offset.id
 
-        if self.AttributeDefs.humidity_offset.id in attributes:
-            offset = attributes.pop(self.AttributeDefs.humidity_offset.id)
-            self._update_attribute(self.AttributeDefs.humidity_offset.id, offset)
-        elif self.AttributeDefs.humidity_offset.name in attributes:
-            offset = attributes.pop(self.AttributeDefs.humidity_offset.name)
-            self._update_attribute(self.AttributeDefs.humidity_offset.id, offset)
+        for attr_key, value in list(attributes.items()):
+            attr_def = self.find_attribute(attr_key)
+            if attr_def is None or attr_def.id != offset_attr_id:
+                continue
+            offset = value
+            attributes.pop(attr_key)
+
+        if offset is not None:
+            self._update_attribute(offset_attr_id, offset)
 
         if attributes:
             return await super().write_attributes(attributes, **kwargs)
@@ -212,7 +238,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         min_value=-10,
         max_value=10,
         step=1,
-        unit=NumberDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
         translation_key="humidity_offset",
         fallback_name="Humidity offset",
         unique_id_suffix="humidity_offset",
