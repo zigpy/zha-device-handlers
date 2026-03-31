@@ -11,7 +11,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 class ThirdRealityRadarCluster(CustomCluster):
     """Third Reality's air quality sensor private cluster."""
 
-    cluster_id = 0x042e
+    cluster_id = 0x042E
 
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
@@ -21,6 +21,7 @@ class ThirdRealityRadarCluster(CustomCluster):
             type=t.Single,
             is_manufacturer_specific=True,
         )
+
 
 (
     QuirkBuilder("Third Reality, Inc", "3RAQ1096Z")
