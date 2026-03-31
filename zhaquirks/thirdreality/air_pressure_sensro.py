@@ -2,7 +2,8 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import AnalogInput, PressureMeasurement
+from zigpy.zcl.clusters.general import AnalogInput
+from zigpy.zcl.clusters.measurement import PressureMeasurement
 
 
 class CustomAnalogInputCluster(CustomCluster, AnalogInput):
