@@ -1,6 +1,6 @@
 """Develco Air Quality Sensor."""
 
-from typing import Any, Final
+from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
@@ -8,7 +8,6 @@ from zigpy.quirks.v2 import (
     ReportingConfig,
     SensorDeviceClass,
     SensorStateClass,
-    EntityType,
     NumberDeviceClass,
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
@@ -112,6 +111,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     """Temperature Measurement Cluster with calibration attribute."""
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize state for temperature offset handling."""
         super().__init__(*args, **kwargs)
         self._raw_measured_value: int | None = None
         # Set defaults so HA shows 0 until a value is written.
@@ -120,7 +120,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     class AttributeDefs(TemperatureMeasurement.AttributeDefs):
         """Attribute Definitions."""
 
-        # A value in 0.01ºC offset to fix up incorrect values from sensor
+        # A value in 1ºC offset to fix up incorrect values from sensor
         temperature_offset: Final = ZCLAttributeDef(
             id=0x8888,
             type=t.int16s,
@@ -176,6 +176,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     """Relative Humidity Cluster with calibration attribute."""
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize state for humidity offset handling."""
         super().__init__(*args, **kwargs)
         self._raw_measured_value: int | None = None
         # Set defaults so HA shows 0 until a value is written.
@@ -184,10 +185,10 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     class AttributeDefs(RelativeHumidity.AttributeDefs):
         """Attribute Definitions."""
 
-        # A value in 0.01%RH offset to fix up incorrect values from sensor
+        # A value in 1%RH offset to fix up incorrect values from sensor
         humidity_offset: Final = ZCLAttributeDef(
             id=0x0010,
-            type=t.uint16_t,
+            type=t.t.int16s,
             access="rw",
             manufacturer_code=0x1015,
         )
@@ -237,7 +238,8 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         return super()._update_attribute(attrid, value)
 
 def measured_value_converter(value: int) -> int:
-    new_value = None if value == 0xFFFF else value
+    """Ignore invalid value sent after initiation"""
+    new_value = value if value < 0xFFFF else None
     return new_value
 
 def value_to_caqi(value: int) -> str:
@@ -283,7 +285,7 @@ def value_to_caqi(value: int) -> str:
         attribute_converter=value_to_caqi,
         device_class=SensorDeviceClass.ENUM,
         unit=None,  # No unit for enum values
-        fallback_name="CAQI Index",
+        fallback_name="CAQI",
         unique_id_suffix="caqi_index",
     )
     .number(
