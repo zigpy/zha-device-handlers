@@ -366,7 +366,9 @@ async def test_air_quality_temperature_offset_write_attributes(
         "zigpy.quirks.CustomCluster.write_attributes",
         new=mock.AsyncMock(),
     ) as write_mock:
-        result = await temp.write_attributes({offset_id: 2})
+        attrs = {offset_id: 2}
+        result = await temp.write_attributes(attrs)
+        assert attrs == {offset_id: 2}
         assert temp.get(offset_id) == 2
         assert result == [
             [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
@@ -411,6 +413,10 @@ async def test_air_quality_temperature_offset_passthrough(
     ) as write_mock:
         result = await temp.write_attributes(attrs, timeout=5)
 
+    assert attrs == {
+        TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id: 1,
+        TemperatureMeasurement.AttributeDefs.measured_value.id: 2250,
+    }
     write_mock.assert_called_once()
     assert write_mock.call_args.args[0] == {
         TemperatureMeasurement.AttributeDefs.measured_value.id: 2250
@@ -501,7 +507,9 @@ async def test_air_quality_humidity_offset_write_attributes(
         "zigpy.quirks.CustomCluster.write_attributes",
         new=mock.AsyncMock(),
     ) as write_mock:
-        result = await humidity.write_attributes({offset_id: 5})
+        attrs = {offset_id: 5}
+        result = await humidity.write_attributes(attrs)
+        assert attrs == {offset_id: 5}
         assert humidity.get(offset_id) == 5
         assert result == [
             [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
@@ -546,6 +554,10 @@ async def test_air_quality_humidity_offset_passthrough(
     ) as write_mock:
         result = await humidity.write_attributes(attrs, priority=1)
 
+    assert attrs == {
+        RelativeHumidityCustom.AttributeDefs.humidity_offset.id: 2,
+        RelativeHumidity.AttributeDefs.measured_value.id: 4500,
+    }
     write_mock.assert_called_once()
     assert write_mock.call_args.args[0] == {
         RelativeHumidity.AttributeDefs.measured_value.id: 4500

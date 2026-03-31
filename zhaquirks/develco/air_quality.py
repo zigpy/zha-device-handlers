@@ -160,19 +160,23 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         """Translate mode writes into manufacturer-specific commands."""
         offset = None
         offset_attr_id = self.AttributeDefs.temperature_offset.id
+        remaining = dict(attributes)
 
-        for attr_key, value in list(attributes.items()):
-            attr_def = self.find_attribute(attr_key)
+        for attr_key, value in attributes.items():
+            try:
+                attr_def = self.find_attribute(attr_key)
+            except KeyError:
+                continue
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
-            attributes.pop(attr_key)
+            remaining.pop(attr_key, None)
 
         if offset is not None:
             self._update_attribute(offset_attr_id, offset)
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if remaining:
+            return await super().write_attributes(remaining, **kwargs)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
@@ -215,7 +219,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         # A value in 1%RH offset to fix up incorrect values from sensor
         humidity_offset: Final = ZCLAttributeDef(
             id=0x0010,
-            type=t.t.int16s,
+            type=t.int16s,
             access="rw",
             manufacturer_code=0x1015,
         )
@@ -228,19 +232,23 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         """Translate mode writes into manufacturer-specific commands."""
         offset = None
         offset_attr_id = self.AttributeDefs.humidity_offset.id
+        remaining = dict(attributes)
 
-        for attr_key, value in list(attributes.items()):
-            attr_def = self.find_attribute(attr_key)
+        for attr_key, value in attributes.items():
+            try:
+                attr_def = self.find_attribute(attr_key)
+            except KeyError:
+                continue
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
-            attributes.pop(attr_key)
+            remaining.pop(attr_key, None)
 
         if offset is not None:
             self._update_attribute(offset_attr_id, offset)
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if remaining:
+            return await super().write_attributes(remaining, **kwargs)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
@@ -267,7 +275,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         return super()._update_attribute(attrid, value)
 
 
-def measured_value_converter(value: int) -> int:
+def measured_value_converter(value: int) -> int | None:
     """Ignore invalid value sent after initiation."""
     new_value = value if value < 0xFFFF else None
     return new_value
