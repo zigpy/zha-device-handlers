@@ -268,7 +268,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
 
 
 def measured_value_converter(value: int) -> int:
-    """Ignore invalid value sent after initiation"""
+    """Ignore invalid value sent after initiation."""
     new_value = value if value < 0xFFFF else None
     return new_value
 
