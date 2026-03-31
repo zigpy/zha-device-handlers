@@ -92,10 +92,12 @@ Firmware version filtering is useful when different firmware versions need diffe
 Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
-- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
+- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster that doesn't exist on the device. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
 - `.removes(cluster_id, endpoint_id=1, cluster_type=ClusterType.Server)` - Remove a cluster
-- `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace cluster with custom implementation
+- `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace an existing cluster with a custom implementation (removes the old cluster first, then adds the new one)
 - `.replace_cluster_occurrences(cluster_class, replace_server=True, replace_client=True)` - Replace across all endpoints
+
+Use `.replaces()` when the cluster already exists on the device (e.g., replacing a standard cluster with a custom implementation). Use `.adds()` when the cluster doesn't exist in the device's endpoint descriptors. Note: `.adds()` happens to work even if the cluster already exists (it overwrites the dict entry), but `.replaces()` is semantically correct and should be preferred.
 
 `cluster_type` can be `ClusterType.Server` (in_clusters) or `ClusterType.Client` (out_clusters).
 
@@ -265,7 +267,42 @@ The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must 
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
 - `.device_class(custom_device_class)` - Use a custom device class (e.g., `CustomDeviceV2` subclass for special request handling)
 - `.skip_configuration()` - Skip attribute reporting configuration
+- `.clone(omit_man_model_data=True)` - Clone the QuirkBuilder for reuse. By default omits manufacturer/model so you can add new ones with `.applies_to()`. Pass `omit_man_model_data=False` to keep the original manufacturer/model (useful for firmware-version-split quirks for the same device).
 - `.add_to_registry()` - **Required** - Registers the quirk
+
+**Reusing QuirkBuilder with `.clone()`:**
+
+Store a base QuirkBuilder in a variable (without calling `.add_to_registry()`), then `.clone()` it for variants.
+
+For different device models sharing a base, create the base with `QuirkBuilder()` (no manufacturer/model) and add `.applies_to()` on each clone:
+```python
+base_quirk = (
+    QuirkBuilder()
+    .replaces(CustomCluster)
+    .device_automation_triggers({...})
+)
+base_quirk.clone().applies_to("Manufacturer", "ModelA").add_to_registry()
+base_quirk.clone().applies_to("Manufacturer", "ModelB").add_to_registry()
+```
+
+For firmware-split variants of the same device, pass `omit_man_model_data=False` to keep the original manufacturer/model:
+```python
+base_quirk = (
+    QuirkBuilder("Manufacturer", "Model")
+    .replaces(CustomCluster)
+)
+(
+    base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(max_version=0x1000, allow_missing=True)
+    .add_to_registry()
+)
+(
+    base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(min_version=0x1000, allow_missing=False)
+    .adds(OnOff, endpoint_id=2)
+    .add_to_registry()
+)
+```
 
 ```python
 # Example: Show user-friendly name instead of model code
@@ -433,6 +470,19 @@ Key base classes in `zhaquirks/__init__.py`:
 - `LocalDataCluster`: Prevents remote calls, responds locally
 - `EventableCluster`: Converts cluster requests to events
 
+**Emitting button events with `ZHA_SEND_EVENT`:**
+
+When a custom cluster emits button/action events, use `COMMAND_*` constants (`COMMAND_SINGLE`, `COMMAND_DOUBLE`, `COMMAND_HOLD`, `COMMAND_TRIPLE`) as the action string, not press-type constants (`SHORT_PRESS`, etc.). Press-type constants are for the `device_automation_triggers` UI key (first element of the trigger tuple).
+
+```python
+# In _update_attribute:
+self.listener_event(ZHA_SEND_EVENT, COMMAND_SINGLE, {})
+
+# In device_automation_triggers:
+#   (UI action,   UI subtype): {COMMAND: event_command}
+    (SHORT_PRESS, BUTTON_1):   {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 1}
+```
+
 ## Entity Creation Rules
 
 When adding entities with v2 quirks:
@@ -453,14 +503,11 @@ quirked = zigpy_device_from_quirk(quirk_class)
 
 # For v2 quirks
 quirked = zigpy_device_from_v2_quirk(model, manufacturer)
-
-# Verify signature matches quirk (useful for v1 quirks)
-def test_my_device_signature(assert_signature_matches_quirk):
-    signature = {...}  # From HA device page "Zigbee Device Signature"
-    assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
 
-**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+Signature match tests (`assert_signature_matches_quirk`) exist for legacy v1 quirks but are no longer needed for new quirks. Do not add new signature match tests.
+
+**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Adding `.applies_to()` to an existing quirk to support an additional device model also does not need a test. Example:
 
 ```python
 (
