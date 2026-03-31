@@ -30,6 +30,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
     IlluminanceMeasurement,
     OccupancySensing,
     PressureMeasurement,
@@ -38,6 +39,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
@@ -442,81 +444,468 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 
 
 @pytest.mark.parametrize(
-    "raw_report_hex",
+    ("raw_report_hex", "attributes"),
     (
         # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
-        "02FF4C0600100121BA0B21A813240100000000215D062058",
-        "02FF4C0600100021EC0B21A8012400000000002182002063",
-        "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
-        "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
-        "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
-        "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
-        "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+        (
+            "02FF4C0600100121BA0B21A813240100000000215D062058",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3002)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1629)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(88)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100021EC0B21A8012400000000002182002063",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.false),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3052)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(130)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(99)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121110D0328130421A8430521F60006240600030000082108140A21E51F")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B03281C0421A84305212B01062403000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328190421A8430521100106240400040000082109140A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328180421A8430521100106240600050000082109140A213C50")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281D0421A84305212F01062407000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
         # https://community.hubitat.com/t/xiaomi-aqara-zigbee-device-drivers-possibly-may-no-longer-be-maintained/631/print
-        "01FF42090421A8130A212759",
         (
-            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923"
-            "000000009B210000"
+            "01FF42090421A8130A212759",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0421A8130A212759")),
+                    ),
+                ),
+            ],
         ),
-        "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
-        "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
         (
-            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000"
-            "962300000000"
+            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("6410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000")),
+                    ),
+                ),
+            ],
         ),
         (
-            "01FF42270328240521170007270000000000000000082117010921000A0A2130C064200065"
-            "20336621FA00"
+            "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C0600100121B30B21A8012400000000002195002056",
-        "02FF4C0600100121B30B21A8012400000000002195002057",
+        (
+            "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B03281C0421A81305213A0006240000000000082104020A210367641001")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42270328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002056",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(86)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002057",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(87)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
         # puddly's logs
-        "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
-        "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
-        "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
-        "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
         (
-            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F0100"
-            "0A2157DE"
+            "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B03280C0421A84305215401062401000000000A2178E0")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C06001001213C0C21A81324010000000021D1052061",
         (
-            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B032816"
-            "0421A83105214400062401000000000A217CBE6410000B210900"
+            "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03280A0421A8330521E801062401000000000A214444641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328170421A8130521500006240100000000082105140A214761")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328130421A81305214400062401000000000A217CBE6410000B210400")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C06001001213C0C21A81324010000000021D1052061",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3132)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1489)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(97)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B0328160421A83105214400062401000000000A217CBE6410000B210900",
+            [
+                Attribute(
+                    attrid=0x0005,
+                    value=TypeValue(
+                        type=DataTypeId.string,
+                        value=t.CharacterString('lumi.sensor_motion.aq2'),
+                    ),
+                ),
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328160421A83105214400062401000000000A217CBE6410000B210900")),
+                    ),
+                ),
+            ],
         ),
         # GH Issue #811
         (
-            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A"
-            "078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000"
+            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1491#issuecomment-489032272
         (
-            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A216535982128"
-            "00992125009A252900FFFFDC04"
+            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1411#issuecomment-485724957
         (
-            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20"
-            "006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000"
+            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1588
         (
-            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F3982128"
-            "00992100009A25AFFE5B016904"
+            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1069
-        "02FF4C0600100121D10B21A801240000000000216E002050",
-        "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
-        "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
-        "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
-        "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        (
+            "02FF4C0600100121D10B21A801240000000000216E002050",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3025)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(110)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(80)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328150421A8130521A200062403000000000A210000641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B0328140421A84305219A00062401000000000A21C841641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B0328150421A83305213B00062401000000000A219FF8641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328130421A81305219200062401000000000A21C96B641000")),
+                    ),
+                ),
+            ],
+        ),
         # https://github.com/home-assistant/core/issues/163692
-        "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
+        (
+            "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
+            [
+                Attribute(
+                    attrid=0x00F7,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03283B05210900092100010A219F580B20000C20010D23200E00001123010000006520416620806720236920026A21451E6B2000")),
+                    ),
+                ),
+            ],
+        ),
+        # https://github.com/home-assistant/core/issues/164251
+        (
+            "01ff42210121e50b0328180421a81305212000062401000000000a215b946410000b211c00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328180421A81305212000062401000000000A215B946410000B211C00")),
+                    ),
+                ),
+            ],
+        ),
     ),
-)
-def test_attribute_parsing(raw_report_hex):
+)  # fmt: off
+def test_attribute_parsing(raw_report_hex, attributes):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report_hex)
+    orig_raw_report = raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,
@@ -530,7 +919,7 @@ def test_attribute_parsing(raw_report_hex):
     # Keep track of all the data encoded in the attribute report
     parsed_chunks = []
 
-    for report in reports[0]:
+    for report in reports.attribute_reports:
         # This shouldn't throw an error
         cluster._update_attribute(report.attrid, report.value.value)
 
@@ -543,7 +932,14 @@ def test_attribute_parsing(raw_report_hex):
 
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
-    assert len(raw_report) == 2 * len(reports[0])
+    assert len(raw_report) == 2 * len(reports.attribute_reports)
+
+    assert reports.attribute_reports == attributes
+
+    # Ensure the reports parse uniquely
+    assert list(cluster._interpret_attr_reports(orig_raw_report)) == [
+        tuple(reports.attribute_reports)
+    ]
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
@@ -2318,3 +2714,18 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
+    """Test Aqara air monitor CO2 and temperature attribute scaling."""
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+
+    co2 = device.endpoints[1].carbon_dioxide_concentration
+    co2._update_attribute(
+        CarbonDioxideConcentration.AttributeDefs.measured_value.id, 400_000_000
+    )
+    assert co2.get("measured_value") == 400.0
+
+    temp = device.endpoints[1].device_temperature
+    temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
+    assert temp.get("current_temperature") == 2500
