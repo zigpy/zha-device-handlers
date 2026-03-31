@@ -33,7 +33,7 @@ class ThirdRealityLightCluster(CustomCluster):
         attribute_value=0x01,
         cluster_id=ThirdRealityLightCluster.cluster_id,
         translation_key="allow_remote_binding",
-        fallback_name="Allow remote bind",
+        fallback_name="Allow remote binding",
     )
     .add_to_registry()
 )
