@@ -70,10 +70,10 @@ class SonoffButtonCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-01M")
-    .adds(SonoffButtonCluster, endpoint_id=1)
-    .adds(SonoffButtonCluster, endpoint_id=2)
-    .adds(SonoffButtonCluster, endpoint_id=3)
-    .adds(SonoffButtonCluster, endpoint_id=4)
+    .replaces(SonoffButtonCluster, endpoint_id=1)
+    .replaces(SonoffButtonCluster, endpoint_id=2)
+    .replaces(SonoffButtonCluster, endpoint_id=3)
+    .replaces(SonoffButtonCluster, endpoint_id=4)
     .device_automation_triggers(
         {
             # (SHORT_PRESS, "button_1"): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 1},
