@@ -15,6 +15,13 @@ from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
 
 
+class Season(t.enum8):
+    """Season mode for heating demand backup presets."""
+
+    Winter = 0x00
+    Summer = 0x01
+
+
 class ThermostatCluster(CustomCluster, Thermostat):
     """ubisys H1 thermostat cluster."""
 
@@ -111,7 +118,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         season = ZCLAttributeDef(
             id=0x001C,
-            type=t.Bool,
+            type=Season,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )
