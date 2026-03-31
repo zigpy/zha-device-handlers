@@ -9,10 +9,14 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION, PERCENTAGE, UnitOfTemperature
+from zigpy.quirks.v2.homeassistant import (
+    CONCENTRATION_PARTS_PER_BILLION,
+    PERCENTAGE,
+    UnitOfTemperature,
+)
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import (
     ZCL_CLUSTER_REVISION_ATTR,
     ZCL_REPORTING_STATUS_ATTR,
@@ -21,6 +25,7 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks.develco import DevelcoPowerConfiguration
+
 
 class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
     """PowerConfiguration that derives percent from voltage only."""
@@ -75,13 +80,14 @@ class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
             local_records.append(record)
 
         if attr_list:
-            records, = await super().read_attributes_raw(
+            (records,) = await super().read_attributes_raw(
                 attr_list, manufacturer=manufacturer, **kwargs
             )
             records.extend(local_records)
             return (records,)
 
         return (local_records,)
+
 
 class DevelcoVOCMeasurement(CustomCluster):
     """Develco VOC cluster definition."""
@@ -124,6 +130,7 @@ class DevelcoVOCMeasurement(CustomCluster):
         cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
         reporting_status: Final = ZCL_REPORTING_STATUS_ATTR
 
+
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     """Temperature Measurement Cluster with calibration attribute."""
 
@@ -144,7 +151,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             access="rw",
             manufacturer_code=0x1015,
         )
-    
+
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, int],
@@ -174,10 +181,8 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             self._raw_measured_value = value
             if value == 0x8000:
                 return super()._update_attribute(attrid, value)
-            offset = self._attr_cache.get(
-                self.AttributeDefs.temperature_offset.id, 0
-            )
-            return super()._update_attribute(attrid, value + offset*100)
+            offset = self._attr_cache.get(self.AttributeDefs.temperature_offset.id, 0)
+            return super()._update_attribute(attrid, value + offset * 100)
 
         if attrid == self.AttributeDefs.temperature_offset.id:
             result = super()._update_attribute(attrid, value)
@@ -187,11 +192,12 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             ):
                 super()._update_attribute(
                     self.AttributeDefs.measured_value.id,
-                    self._raw_measured_value + value*100,
+                    self._raw_measured_value + value * 100,
                 )
             return result
 
         return super()._update_attribute(attrid, value)
+
 
 class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     """Relative Humidity Cluster with calibration attribute."""
@@ -244,7 +250,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             if value == 0x8000:
                 return super()._update_attribute(attrid, value)
             offset = self._attr_cache.get(self.AttributeDefs.humidity_offset.id, 0)
-            return super()._update_attribute(attrid, value + offset*100)
+            return super()._update_attribute(attrid, value + offset * 100)
 
         if attrid == self.AttributeDefs.humidity_offset.id:
             result = super()._update_attribute(attrid, value)
@@ -260,10 +266,12 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
 
         return super()._update_attribute(attrid, value)
 
+
 def measured_value_converter(value: int) -> int:
     """Ignore invalid value sent after initiation"""
     new_value = value if value < 0xFFFF else None
     return new_value
+
 
 def value_to_caqi(value: int) -> str:
     """Convert raw VOC value to CAQI (0-5500 scale)."""
@@ -277,6 +285,7 @@ def value_to_caqi(value: int) -> str:
         return "Poor"
     else:
         return "Bad"
+
 
 (
     QuirkBuilder("frient A/S", "AQSZB-110")
