@@ -16,7 +16,7 @@ class ThirdRealityRadarCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        voc_Index: Final = ZCLAttributeDef(
+        voc_index: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.Single,
             is_manufacturer_specific=True,
@@ -26,7 +26,7 @@ class ThirdRealityRadarCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RAQ1096Z")
     .replaces(ThirdRealityRadarCluster)
     .sensor(
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.voc_Index.name,
+        attribute_name=ThirdRealityRadarCluster.AttributeDefs.voc_index.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
