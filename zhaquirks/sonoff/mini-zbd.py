@@ -6,6 +6,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+
 class SonoffExternalSwitchTriggerType(types.enum8):
     """External switch trigger type."""
 
@@ -13,6 +14,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     Pulse_trigger = 0x01
     Normally_off_follow_trigger = 0x02
     Normally_on_follow_trigger = 0x82
+
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -43,8 +45,6 @@ class SonoffCluster(CustomCluster):
             type=t.Bool,
             manufacturer_code=None,
         )
-
-
 
 
 (
