@@ -11,7 +11,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks import MotionWithReset
+from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -1324,6 +1325,8 @@ base_tuya_motion = (
 # Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
+    .applies_to("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)")
+    .applies_to("HOBEIAN", "CK-BL702-MWS-01(7016)")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -1609,6 +1612,17 @@ base_tuya_motion = (
         translation_key="breath_detection_max",
         fallback_name="Breath detection max",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR motion sensor, SNZB-03
+(
+    TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
+    .applies_to("_TZ3040_bb6xaihh", "TS0202")
+    .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )

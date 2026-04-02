@@ -16,7 +16,14 @@ XIAOMI_AQARA_VIBRATION_AQ1 = (
 DANFOSS_ALLY_THERMOSTAT = "danfoss.ally_thermostat"  # Thermostatic Radiator Valves based on Danfoss Ally with custom clusters
 
 
+# BEGA
+BEGA_LIGHT_SWITCHABLE_WHITE = "bega.light_switchable_white"  # Adjustable color temp
+
+
 # Exposed features
 
 # Hint to poll SmartEnergy summation delivered and received attributes
 SE_POLL_SUMMATION = "se_poll_summation"
+
+# Hint to expose a basic siren entity
+SIREN_BASIC = "siren_basic"
