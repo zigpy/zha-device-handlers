@@ -33,6 +33,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX001")
     .applies_to(SIGNIFY, "LCX002")
     .applies_to(SIGNIFY, "LCX003")
+    .applies_to(SIGNIFY, "LCX004")
     .applies_to(SIGNIFY, "LCX005")
     .applies_to(SIGNIFY, "LCX006")
     .friendly_name(
@@ -51,6 +52,19 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX017")
     .friendly_name(
         model="Hue Festavia gradient light string",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX024") # 91ft
+    .applies_to(SIGNIFY, "LCX025") # 45ft
+    .applies_to(SIGNIFY, "LCX026") # Likely model for 22ft
+    .friendly_name(
+        model="Hue Festavia globe outdoor string lights",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
