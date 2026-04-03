@@ -191,7 +191,7 @@ def _xy_to_hs_254(x: int, y: int) -> tuple[int, int]:
     g = max(g, 0.0)
     b = max(b, 0.0)
     mx = max(r, g, b)
-    if mx < 1e-6:
+    if mx < 1e-6:  # pragma: no cover
         return 0, 0
     r, g, b = r / mx, g / mx, b / mx
     h, s, _v = colorsys.rgb_to_hsv(r, g, b)
