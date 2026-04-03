@@ -1,6 +1,5 @@
 """AwoX remote controller quirk."""
 
-from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
@@ -40,11 +39,13 @@ from zhaquirks.const import (
 AWOX_CLUSTER_ID_1 = 65360
 AWOX_CLUSTER_ID_2 = 65361
 
+
 class AwoxLevelControlCluster(CustomCluster, LevelControl):
     """AwoX Custom Level Control Cluster for processing manufacturer specific commands."""
 
     class ServerCommandDefs(LevelControl.ServerCommandDefs):
         """Server command definitions."""
+
         awox_refresh = ZCLCommandDef(
             id=0x10,
             schema={
@@ -54,11 +55,13 @@ class AwoxLevelControlCluster(CustomCluster, LevelControl):
             is_manufacturer_specific=False,
         )
 
+
 class AwoxColorCluster(CustomCluster, Color):
     """AwoX Custom Color Cluster for processing manufacturer specific commands."""
 
     class ServerCommandDefs(Color.ServerCommandDefs):
         """Server command definitions."""
+
         awox_color = ZCLCommandDef(
             id=0x30,
             schema={
@@ -69,6 +72,7 @@ class AwoxColorCluster(CustomCluster, Color):
             },
             is_manufacturer_specific=False,
         )
+
 
 class Awox33952Remote(CustomDevice):
     """AwoX 33952 Remote controller."""
