@@ -4,15 +4,10 @@ from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 from zigpy.zcl.clusters.general import OnOff
-from zhaquirks.const import (
-    BUTTON,
-    COMMAND,
-    COMMAND_TOGGLE,
-    ENDPOINT_ID,
-    SHORT_PRESS,
-)
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.const import BUTTON, COMMAND, COMMAND_TOGGLE, ENDPOINT_ID, SHORT_PRESS
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
