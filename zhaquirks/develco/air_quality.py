@@ -72,7 +72,7 @@ class DevelcoVOCMeasurement(CustomCluster):
         attribute_name=DevelcoVOCMeasurement.AttributeDefs.measured_value.name,
         cluster_id=DevelcoVOCMeasurement.cluster_id,
         endpoint_id=38,
-        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_BILLION,
         fallback_name="VOC level",

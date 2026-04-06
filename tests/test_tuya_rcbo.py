@@ -256,7 +256,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
         ),
         (
             [],
-            b'\x01\x04\x00\x00\x06n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
+            b'\x01\x04\x00\x00\x05n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
             "electrical_measurement",
             {
                 "rms_extreme_over_voltage": 2850,

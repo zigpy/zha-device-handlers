@@ -288,6 +288,7 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_vm1gyrso", "TS0601"),
+            ("_TZE204_1v1dxkck", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
