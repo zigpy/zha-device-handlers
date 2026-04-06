@@ -2687,9 +2687,7 @@ async def test_h2_switch(zigpy_device_from_v2_quirk):
 
     # verify _update_attribute with a different attrid does NOT fire a power event
     powermeasurement_cluster.update_attribute(0x0001, 99)
-    assert (
-        len(powermeasurement_listener.attribute_updates) == 2
-    )  # attr update, but no ZHA_SEND_EVENT
+    assert ( len(powermeasurement_listener.attribute_updates) == 2 )  # attr update, but no ZHA_SEND_EVENT
 
     # verify bind() runs without error (exercises the async bind + configure_reporting path)
     await powermeasurement_cluster.bind()
