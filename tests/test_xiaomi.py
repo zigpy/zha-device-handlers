@@ -2712,9 +2712,7 @@ async def test_h2_switch_single_gang_eu(zigpy_device_from_v2_quirk):
 @mock.patch("zigpy.zcl.Cluster.configure_reporting", mock.AsyncMock(return_value=None))
 async def test_h2_switch_us_single_channel(zigpy_device_from_v2_quirk):
     """Test Aqara H2 switch quirk (lumi.switch.agl004 - US 2-button 1-channel)."""
-    device = zigpy_device_from_v2_quirk(
-        AQARA, "lumi.switch.agl004", endpoint_ids=[1, 21]
-    )
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.agl004", endpoint_ids=[1, 21])
 
     assert 21 in device.endpoints
     assert PowerMeasurementCluster.cluster_id in device.endpoints[21].in_clusters
@@ -2728,9 +2726,7 @@ async def test_h2_switch_us_single_channel(zigpy_device_from_v2_quirk):
 @mock.patch("zigpy.zcl.Cluster.configure_reporting", mock.AsyncMock(return_value=None))
 async def test_h2_switch_us_dual_channel(zigpy_device_from_v2_quirk):
     """Test Aqara H2 switch quirk (lumi.switch.agl005 - US 2-button 2-channel)."""
-    device = zigpy_device_from_v2_quirk(
-        AQARA, "lumi.switch.agl005", endpoint_ids=[1, 21]
-    )
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.agl005", endpoint_ids=[1, 21])
 
     assert 21 in device.endpoints
     assert PowerMeasurementCluster.cluster_id in device.endpoints[21].in_clusters
@@ -2744,9 +2740,7 @@ async def test_h2_switch_us_dual_channel(zigpy_device_from_v2_quirk):
 @mock.patch("zigpy.zcl.Cluster.configure_reporting", mock.AsyncMock(return_value=None))
 async def test_h2_switch_us_triple_channel(zigpy_device_from_v2_quirk):
     """Test Aqara H2 switch quirk (lumi.switch.agl006 - US 4-button 3-channel)."""
-    device = zigpy_device_from_v2_quirk(
-        AQARA, "lumi.switch.agl006", endpoint_ids=[1, 21]
-    )
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.agl006", endpoint_ids=[1, 21])
 
     assert 21 in device.endpoints
     assert PowerMeasurementCluster.cluster_id in device.endpoints[21].in_clusters
