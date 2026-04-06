@@ -180,10 +180,17 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
 
 
-async def test_handle_get_data_soil_sensor(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE284_o9ofysmo", "TS0601"),
+        ("Arteco", "ZS-304Z"),
+    ],
+)
+async def test_handle_get_data_soil_sensor(zigpy_device_from_v2_quirk, model, manuf):
     """Test handle_get_data for Arteco ZS-304Z soil sensor."""
 
-    quirked = zigpy_device_from_v2_quirk("_TZE284_o9ofysmo", "TS0601")
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
     ep = quirked.endpoints[1]
 
     assert ep.tuya_manufacturer is not None

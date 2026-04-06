@@ -375,6 +375,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 (
     TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")  # Arteco ZS-304Z
+    .applies_to("Arteco", "ZS-304Z")
     .tuya_sensor(
         dp_id=3,
         type=t.uint16_t,
