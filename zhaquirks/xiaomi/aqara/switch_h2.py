@@ -1,4 +1,4 @@
-"""Aqara H2 (EU) rocker switch quirks. Also see opple_switch.py for similar switches."""
+"""Aqara H2 rocker switch quirks. Also see opple_switch.py for similar switches."""
 
 from zigpy import types
 from zigpy.profiles import zha
@@ -323,6 +323,252 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
             (COMMAND_SINGLE, BUTTON_2): {COMMAND: COMMAND_4_SINGLE},
             (COMMAND_DOUBLE, BUTTON_2): {COMMAND: COMMAND_4_DOUBLE},
             (COMMAND_RELEASE, BUTTON_2): {COMMAND: COMMAND_4_RELEASE},
+        }
+    )
+    .add_to_registry()
+)
+
+# 2 button, 1 channel US/Global variant
+(
+    QuirkBuilder("Aqara", "lumi.switch.agl004")
+    .adds_endpoint(1, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds(Identify, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=4)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=1)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=4)
+    .replaces(PowerMeasurementCluster, endpoint_id=21)
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.flip_led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="flip_led_indicator",
+        fallback_name="Flip LED indicator",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.power_on_mode.name,
+        AqaraPowerOnMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="power_on_mode",
+        fallback_name="Power on mode",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="operation_mode",
+        fallback_name="Operation mode",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="lock_relay",
+        fallback_name="Lock relay",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.multi_click.name,
+        AqaraManuSpecificCluster.cluster_id,
+        off_value=1,
+        on_value=2,
+        endpoint_id=4,
+        translation_key="multi_click_wireless",
+        fallback_name="Multi click (wireless)",
+    )
+    .device_automation_triggers(
+        {
+            (COMMAND_SINGLE, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+            (COMMAND_HOLD, BUTTON_2): {COMMAND: COMMAND_4_HOLD},
+            (COMMAND_SINGLE, BUTTON_2): {COMMAND: COMMAND_4_SINGLE},
+            (COMMAND_DOUBLE, BUTTON_2): {COMMAND: COMMAND_4_DOUBLE},
+            (COMMAND_RELEASE, BUTTON_2): {COMMAND: COMMAND_4_RELEASE},
+        }
+    )
+    .add_to_registry()
+)
+
+# 2 button 2 channel US/Global variant
+(
+    QuirkBuilder("Aqara", "lumi.switch.agl005")
+    .adds_endpoint(1, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds(Identify, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=2)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=1)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=2)
+    .replaces(PowerMeasurementCluster, endpoint_id=21)
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.flip_led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="flip_led_indicator",
+        fallback_name="Flip LED indicator",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.power_on_mode.name,
+        AqaraPowerOnMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="power_on_mode",
+        fallback_name="Power on mode",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="operation_mode_top",
+        fallback_name="Operation mode (top)",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="operation_mode_bottom",
+        fallback_name="Operation mode (bottom)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="lock_relay_top",
+        fallback_name="Lock relay (top)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="lock_relay_bottom",
+        fallback_name="Lock relay (bottom)",
+    )
+    .device_automation_triggers(
+        {
+            (COMMAND_SINGLE, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+            (COMMAND_SINGLE, BUTTON_2): {COMMAND: COMMAND_4_SINGLE},
+        }
+    )
+    .add_to_registry()
+)
+
+# 4 button, 3 channel US/Global variant
+(
+    QuirkBuilder("Aqara", "lumi.switch.agl006")
+    .adds_endpoint(1, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds_endpoint(3, device_type=zha.DeviceType.ON_OFF_SWITCH)
+    .adds(Identify, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=1)
+    .replaces(MultistateInputCluster, endpoint_id=2)
+    .replaces(MultistateInputCluster, endpoint_id=3)
+    .replaces(MultistateInputCluster, endpoint_id=4)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=1)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=2)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=3)
+    .replaces(AqaraManuSpecificCluster, endpoint_id=4)
+    .replaces(PowerMeasurementCluster, endpoint_id=21)
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.flip_led_indicator.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="flip_led_indicator",
+        fallback_name="Flip LED indicator",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.power_on_mode.name,
+        AqaraPowerOnMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="power_on_mode",
+        fallback_name="Power on mode",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="operation_mode_top",
+        fallback_name="Operation mode (top)",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="operation_mode_middle",
+        fallback_name="Operation mode (middle)",
+    )
+    .enum(
+        AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraOperationMode,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=3,
+        translation_key="operation_mode_bottom",
+        fallback_name="Operation mode (bottom)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="lock_relay_top",
+        fallback_name="Lock relay (top)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=2,
+        translation_key="lock_relay_middle",
+        fallback_name="Lock relay (middle)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
+        AqaraManuSpecificCluster.cluster_id,
+        endpoint_id=3,
+        translation_key="lock_relay_bottom",
+        fallback_name="Lock relay (bottom)",
+    )
+    .switch(
+        AqaraManuSpecificCluster.AttributeDefs.multi_click.name,
+        AqaraManuSpecificCluster.cluster_id,
+        off_value=1,
+        on_value=2,
+        endpoint_id=4,
+        translation_key="multi_click_wireless",
+        fallback_name="Multi click (wireless)",
+    )
+    .device_automation_triggers(
+        {
+            (COMMAND_SINGLE, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+            (COMMAND_SINGLE, BUTTON_2): {COMMAND: COMMAND_4_SINGLE},
+            (COMMAND_SINGLE, BUTTON_3): {COMMAND: COMMAND_4_SINGLE},
+            (COMMAND_HOLD, BUTTON_4): {COMMAND: COMMAND_4_HOLD},
+            (COMMAND_SINGLE, BUTTON_4): {COMMAND: COMMAND_4_SINGLE},
+            (COMMAND_DOUBLE, BUTTON_4): {COMMAND: COMMAND_4_DOUBLE},
+            (COMMAND_RELEASE, BUTTON_4): {COMMAND: COMMAND_4_RELEASE},
         }
     )
     .add_to_registry()
