@@ -7,9 +7,8 @@ from typing import Any, Union
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import OccupancySensing
 import zigpy.types as t
+from zigpy.zcl import foundation
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 
@@ -26,6 +25,7 @@ CMD_START_LEARNING_NOW = 0xFD
 
 class SpatialLearningState(t.enum8):
     """Spatial learning state enum."""
+
     Idle = 0x00
     Learning = 0x01
     Success = 0x02
@@ -87,12 +87,7 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
 
     # Virtual attributes for zone enabling (0x1000 - 0x1007)
     # These effectively map to bits 0-7 of ATTR_SONOFF_ZONE_ENABLE (0x2016)
-    attributes.update(
-        {
-            0x1000 + i: (f"zone_{i}_enable", t.Bool)
-            for i in range(8)
-        }
-    )
+    attributes.update({0x1000 + i: (f"zone_{i}_enable", t.Bool) for i in range(8)})
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -117,7 +112,9 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
         **kwargs,
     ):
         """Override request to handle virtual start_learning_now."""
-        if not general_command and (command_id == CMD_START_LEARNING_NOW or command_id == "start_learning_now"):
+        if not general_command and (
+            command_id == CMD_START_LEARNING_NOW or command_id == "start_learning_now"
+        ):
             # 0, timestamp_ms (little endian handled by uint64 type)
             timestamp_ms = int(time.time() * 1000)
             args = (0, timestamp_ms)
@@ -331,11 +328,10 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
                         new_mask &= ~0x03
                 elif idx == 1 and 0 in virtual_updates:
                     continue
+                elif state:
+                    new_mask |= 1 << idx
                 else:
-                    if state:
-                        new_mask |= (1 << idx)
-                    else:
-                        new_mask &= ~(1 << idx)
+                    new_mask &= ~(1 << idx)
 
             real_attributes[ATTR_SONOFF_ZONE_ENABLE] = new_mask
 
@@ -349,7 +345,7 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
 
         # Perform the actual write
         res = await super().write_attributes(real_attributes, manufacturer)
-        
+
         # Normalize response records.
         if isinstance(res, list):
             if res and isinstance(res[0], list):
@@ -363,13 +359,13 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
 
         # Check if the bitmap write was successful
         bitmap_status = foundation.Status.SUCCESS
-        
+
         for record in records:
             if isinstance(record, foundation.WriteAttributesStatusRecord):
                 if record.attrid == ATTR_SONOFF_ZONE_ENABLE:
                     bitmap_status = record.status
                     break
-        
+
         # Generate records for virtual updates
         if virtual_updates:
             for idx in virtual_updates:
@@ -398,7 +394,6 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
 SONOFF_SNZB06P24 = (
     QuirkBuilder("SONOFF", "SNZB-06P24")
     .replaces(SonoffSNZB06P24FC11Cluster)
-    
     # Illumination Offset (Cluster 0xFC11, Attr 0x2018)
     .number(
         attribute_name="illumination_offset",
@@ -410,7 +405,6 @@ SONOFF_SNZB06P24 = (
         translation_key="illumination_offset",
         fallback_name="Illumination offset",
     )
-
     # Fine-tune Sensitivity (Cluster 0xFC11, Attr 0x2021)
     .number(
         attribute_name="fine_tune_sensitivity",
@@ -422,17 +416,15 @@ SONOFF_SNZB06P24 = (
         translation_key="fine_tune_sensitivity",
         fallback_name="Fine-tune Sensitivity",
     )
-    
     # Spatial Learning Button
     # Cmd 0x04, SubCmd=0 (Start), Sequence=timestamp_ms
     .command_button(
         command_name="start_learning_now",
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        command_args=(), 
+        command_args=(),
         translation_key="spatial_learning",
         fallback_name="Start spatial learning",
     )
-    
     # Spatial Learning UI State (virtual)
     .enum(
         attribute_name="spatial_learning_ui_state",
@@ -452,7 +444,6 @@ SONOFF_SNZB06P24 = (
         translation_key="spatial_learning_countdown",
         fallback_name="Spatial learning countdown",
     )
-    
     # Zone 1-7 Enable (Switches) - Zone 1 combines 0-50cm + 50-100cm
     .switch(
         attribute_name="zone_0_enable",
@@ -503,6 +494,5 @@ SONOFF_SNZB06P24 = (
         translation_key="zone_7_enable",
         fallback_name="Zone 7 (3.5m-4m)",
     )
-    
     .add_to_registry()
 )
