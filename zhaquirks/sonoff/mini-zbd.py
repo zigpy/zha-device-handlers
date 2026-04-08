@@ -60,6 +60,8 @@ class SonoffCluster(CustomCluster):
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
         SonoffCluster.cluster_id,
+        off_value=9,
+        on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
     )
