@@ -4,27 +4,27 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
+    PowerConfiguration,
+    Scenes,
 )
 
 from zhaquirks.const import (
-    COMMAND,
+    BUTTON,
     CLUSTER_ID,
-    ENDPOINT_ID,
+    COMMAND,
+    COMMAND_TOGGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    DOUBLE_PRESS,
-    LONG_PRESS,
     SHORT_PRESS,
-    BUTTON,
-    COMMAND_TOGGLE
 )
 
 
