@@ -159,13 +159,17 @@ async def test_adeo_ldsenk08_write_attributes_normalizes_sensitivity_by_name(
 
     with mock.patch(
         "zigpy.quirks.CustomCluster.write_attributes",
-        new=mock.AsyncMock(return_value=[[mock.sentinel.ok]]),
+        new=mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        ),
     ) as patched_super:
         result = await cluster.write_attributes(
             {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "high"}
         )
 
-    assert result == [[mock.sentinel.ok]]
+    assert result[0][0].status == foundation.Status.SUCCESS
     patched_super.assert_awaited_once_with(
         {IasZone.AttributeDefs.current_zone_sensitivity_level.name: 2},
         manufacturer=None,
@@ -187,11 +191,15 @@ async def test_adeo_ldsenk08_write_attributes_normalizes_sensitivity_by_id(
 
     with mock.patch(
         "zigpy.quirks.CustomCluster.write_attributes",
-        new=mock.AsyncMock(return_value=[[mock.sentinel.ok]]),
+        new=mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        ),
     ) as patched_super:
         result = await cluster.write_attributes({sensitivity_id: 4})
 
-    assert result == [[mock.sentinel.ok]]
+    assert result[0][0].status == foundation.Status.SUCCESS
     patched_super.assert_awaited_once_with({sensitivity_id: 4}, manufacturer=None)
 
 
@@ -216,3 +224,67 @@ async def test_adeo_ldsenk08_write_attributes_passthrough_non_sensitivity(
 
     assert result == [[mock.sentinel.ok]]
     patched_super.assert_awaited_once_with({zone_status_id: 1}, manufacturer=None)
+
+
+@pytest.mark.asyncio
+async def test_adeo_ldsenk08_write_attributes_queues_sensitivity_on_failure(
+    zigpy_device_from_v2_quirk,
+):
+    """Test failed sensitivity writes are queued and acknowledged."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(side_effect=TimeoutError),
+    ) as patched_super:
+        result = await cluster.write_attributes(
+            {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "high"}
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert cluster._pending_sensitivity_level == 2
+    patched_super.assert_awaited_once_with(
+        {IasZone.AttributeDefs.current_zone_sensitivity_level.name: 2},
+        manufacturer=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_adeo_ldsenk08_apply_pending_sensitivity_on_wake(
+    zigpy_device_from_v2_quirk,
+):
+    """Test pending sensitivity is retried when an IAS command is received."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+    cluster._pending_sensitivity_level = 3
+    cluster.send_default_rsp = mock.MagicMock()
+    cluster.create_catching_task = mock.MagicMock(side_effect=lambda coro: coro.close())
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        ),
+    ) as patched_super:
+        header = foundation.ZCLHeader()
+        header.command_id = IasZone.ClientCommandDefs.status_change_notification.id
+        header.frame_control = foundation.FrameControl.cluster()
+        cluster.handle_cluster_request(header, [0x01])
+        await cluster._apply_pending_sensitivity()
+
+    cluster.create_catching_task.assert_called_once()
+    patched_super.assert_awaited_with(
+        {IasZone.AttributeDefs.current_zone_sensitivity_level.id: 3}
+    )
+    assert cluster._pending_sensitivity_level is None

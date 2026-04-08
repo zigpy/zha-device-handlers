@@ -29,6 +29,11 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
     SENSITIVITY_MIN = 0
     SENSITIVITY_MAX = 4
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize cluster state."""
+        super().__init__(*args, **kwargs)
+        self._pending_sensitivity_level: int | None = None
+
     @classmethod
     def _normalize_sensitivity(cls, value: Any) -> int:
         """Normalize sensitivity value accepted by this sensor."""
@@ -48,27 +53,76 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
             raise ValueError(msg)
         return normalized_value
 
+    @staticmethod
+    def _write_succeeded(
+        result: list[list[foundation.WriteAttributesStatusRecord]],
+    ) -> bool:
+        """Return True if all write status records are successful."""
+        return all(
+            record.status == foundation.Status.SUCCESS
+            for group in result
+            for record in group
+        )
+
+    async def _apply_pending_sensitivity(self) -> None:
+        """Retry a queued sensitivity write when the device is awake."""
+        if self._pending_sensitivity_level is None:
+            return
+
+        pending_sensitivity = self._pending_sensitivity_level
+        result = await super().write_attributes(
+            {self.SENSITIVITY_ATTRIBUTE_ID: pending_sensitivity}
+        )
+        if self._write_succeeded(result):
+            self._pending_sensitivity_level = None
+
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         manufacturer: int | t.uint16_t | None = None,
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Write attributes with sensitivity normalization."""
+        """Write attributes with sensitivity normalization and wake retry support."""
         normalized_attributes = {}
+        normalized_sensitivity: int | None = None
         for attr, value in attributes.items():
             attr_id = attr.id if isinstance(attr, foundation.ZCLAttributeDef) else attr
             if (
                 isinstance(attr_id, str)
                 and attr_id == IasZone.AttributeDefs.current_zone_sensitivity_level.name
             ) or attr_id == self.SENSITIVITY_ATTRIBUTE_ID:
-                normalized_attributes[attr] = self._normalize_sensitivity(value)
+                normalized_sensitivity = self._normalize_sensitivity(value)
+                normalized_attributes[attr] = normalized_sensitivity
             else:
                 normalized_attributes[attr] = value
 
-        return await super().write_attributes(
-            normalized_attributes, manufacturer=manufacturer, **kwargs
-        )
+        try:
+            result = await super().write_attributes(
+                normalized_attributes, manufacturer=manufacturer, **kwargs
+            )
+        except Exception:
+            if normalized_sensitivity is not None and len(normalized_attributes) == 1:
+                self._pending_sensitivity_level = normalized_sensitivity
+                self.update_attribute(
+                    self.SENSITIVITY_ATTRIBUTE_ID, normalized_sensitivity
+                )
+                return [
+                    [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+                ]
+            raise
+
+        if (
+            normalized_sensitivity is not None
+            and len(normalized_attributes) == 1
+            and not self._write_succeeded(result)
+        ):
+            self._pending_sensitivity_level = normalized_sensitivity
+            self.update_attribute(self.SENSITIVITY_ATTRIBUTE_ID, normalized_sensitivity)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+        if normalized_sensitivity is not None and self._write_succeeded(result):
+            self._pending_sensitivity_level = None
+        return result
 
     def handle_cluster_request(
         self,
@@ -80,6 +134,9 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
         ) = None,
     ) -> None:
         """Handle a cluster command received on this cluster."""
+        if self._pending_sensitivity_level is not None:
+            self.create_catching_task(self._apply_pending_sensitivity())
+
         if hdr.command_id == self.STATUS_CHANGE_COMMAND_ID and args:
             try:
                 zone_status = int(args[0])
