@@ -1,4 +1,4 @@
-"""ZHA Quirk for Shelly BLU Button Tough 1 ZB"""
+"""ZHA Quirk for Shelly BLU Button Tough 1 ZB."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -29,7 +29,7 @@ from zhaquirks.const import (
 
 
 class ShellyBluButtonTough1(CustomDevice):
-    """Shelly BLU Button Tough 1 ZB"""
+    """Shelly BLU Button Tough 1 ZB."""
 
     signature = {
         "models_info": [
