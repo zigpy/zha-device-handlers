@@ -1,6 +1,8 @@
 import logging
-from zigpy.profiles import zha, zgp
-from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota, GreenPowerProxy
+
+from zigpy.profiles import zgp, zha
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -9,16 +11,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TuyaSwitch,
-    TuyaData,
-)
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    TuyaOnOffNM,
-    MoesSwitchManufCluster,
-)
-from zigpy.types import LVBytes, CharacterString
+from zhaquirks.tuya import TuyaData, TuyaSwitch
+from zhaquirks.tuya.mcu import DPToAttributeMapping, MoesSwitchManufCluster, TuyaOnOffNM
 
 
 class RawBytes(TuyaData):
@@ -38,99 +32,107 @@ _LOGGER = logging.getLogger(__name__)
 
 class CustomMoesSwitchManufCluster_1G(MoesSwitchManufCluster):
     dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
-    dp_to_attribute.update({
-        105: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_1",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-    })
+    dp_to_attribute.update(
+        {
+            105: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_1",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+        }
+    )
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
 
 
 class CustomMoesSwitchManufCluster_2G(MoesSwitchManufCluster):
     dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
-    dp_to_attribute.update({
-        105: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_1",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        106: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_2",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-    })
+    dp_to_attribute.update(
+        {
+            105: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_1",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            106: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_2",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+        }
+    )
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
 
 
 class CustomMoesSwitchManufCluster_3G(MoesSwitchManufCluster):
     dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
-    dp_to_attribute.update({
-        105: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_1",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        106: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_2",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        107: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_3",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-    })
+    dp_to_attribute.update(
+        {
+            105: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_1",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            106: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_2",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            107: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_3",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+        }
+    )
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
 
 
 class CustomMoesSwitchManufCluster_4G(MoesSwitchManufCluster):
     dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
-    dp_to_attribute.update({
-        105: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_1",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        106: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_2",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        107: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_3",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-        108: DPToAttributeMapping(
-            ep_attribute="tuya_mcu",
-            attribute_name="name_update_4",
-            converter=lambda x: x.decode("utf-8"),
-            dp_converter=lambda x: RawBytes(x.encode("utf-8")),
-            endpoint_id=1,
-        ),
-    })
+    dp_to_attribute.update(
+        {
+            105: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_1",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            106: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_2",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            107: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_3",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+            108: DPToAttributeMapping(
+                ep_attribute="tuya_mcu",
+                attribute_name="name_update_4",
+                converter=lambda x: x.decode("utf-8"),
+                dp_converter=lambda x: RawBytes(x.encode("utf-8")),
+                endpoint_id=1,
+            ),
+        }
+    )
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
 
 
