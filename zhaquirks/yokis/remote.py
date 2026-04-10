@@ -1,21 +1,27 @@
 """Modules for Yokis remote"""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.zcl import foundation
-
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
     Identify,
+    LevelControl,
     OnOff,
-    LevelControl
+    PowerConfiguration,
 )
-from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    BUTTON_5,
+    BUTTON_6,
+    BUTTON_7,
+    BUTTON_8,
     CLUSTER_ID,
     COMMAND,
     COMMAND_TOGGLE,
@@ -27,39 +33,30 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    BUTTON_1,
-    BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
-    BUTTON_5,
-    BUTTON_6,
-    BUTTON_7,
-    BUTTON_8
 )
-
 from zhaquirks.yokis import (
     YOKIS,
+    YokisChannelCluster,
     YokisDeviceCluster,
+    YokisDimmerCluster,
     YokisInputCluster,
     YokisLightControlCluster,
-    YokisDimmerCluster,
-    YokisWindowCoveringCluster,
-    YokisChannelCluster,
     YokisPilotWireCluster,
-    YokisTemperatureMeasurementCluster
+    YokisTemperatureMeasurementCluster,
+    YokisWindowCoveringCluster,
 )
 
 """Quirk for Yokis TLM1-UP and TLC1-UP"""
 
-class TLM1_TLC1_UP(CustomDevice):
 
+class TLM1_TLC1_UP(CustomDevice):
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLC1-UP"),
             (YOKIS, "TLM1-UP"),
             (YOKIS, "TLM1T503-UP"),
             (YOKIS, "TLM1TNO-UP"),
-            (YOKIS, "TLM1TDK-UP")
+            (YOKIS, "TLM1TDK-UP"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
@@ -76,19 +73,19 @@ class TLM1_TLC1_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=9 profile=260 device_type=6
@@ -102,13 +99,11 @@ class TLM1_TLC1_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
-        }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+        },
     }
 
     replacement = {
@@ -123,19 +118,19 @@ class TLM1_TLC1_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             9: {
@@ -145,15 +140,13 @@ class TLM1_TLC1_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -165,13 +158,13 @@ class TLM1_TLC1_UP(CustomDevice):
 
 """Quirk for Yokis TLM2-UP"""
 
-class TLM2_UP(CustomDevice):
 
+class TLM2_UP(CustomDevice):
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLM2-UP"),
             (YOKIS, "TLM2T503-UP"),
-            (YOKIS, "TLM2TNO-UP")
+            (YOKIS, "TLM2TNO-UP"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
@@ -188,19 +181,19 @@ class TLM2_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=6
@@ -217,19 +210,19 @@ class TLM2_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=9 profile=260 device_type=6
@@ -243,13 +236,11 @@ class TLM2_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
-        }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+        },
     }
 
     replacement = {
@@ -264,19 +255,19 @@ class TLM2_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             2: {
@@ -289,19 +280,19 @@ class TLM2_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             9: {
@@ -311,15 +302,13 @@ class TLM2_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -330,21 +319,21 @@ class TLM2_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 2,
-        }
+        },
     }
 
 
 """Quirk for Yokis TLM4-UP and GALET4-UP"""
 
-class TLM4_GALET4_UP(CustomDevice):
 
+class TLM4_GALET4_UP(CustomDevice):
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLM4-UP"),
             (YOKIS, "TLM4T503-UP"),
             (YOKIS, "GALET4-UP"),
             (YOKIS, "TLM4TNO-UP"),
-            (YOKIS, "TLM4TDK-UP")
+            (YOKIS, "TLM4TDK-UP"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
@@ -361,19 +350,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=6
@@ -390,19 +379,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=6
@@ -419,19 +408,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=4 profile=260 device_type=6
@@ -448,19 +437,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=9 profile=260 device_type=6
@@ -474,13 +463,11 @@ class TLM4_GALET4_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
-        }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+        },
     }
 
     replacement = {
@@ -495,19 +482,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             2: {
@@ -520,19 +507,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             3: {
@@ -545,19 +532,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             4: {
@@ -570,19 +557,19 @@ class TLM4_GALET4_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             9: {
@@ -592,15 +579,13 @@ class TLM4_GALET4_UP(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    YokisTemperatureMeasurementCluster.cluster_id
+                    YokisTemperatureMeasurementCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id
-                ],
-            }
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -621,20 +606,20 @@ class TLM4_GALET4_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 4,
-        }
+        },
     }
-    
-    
+
+
 """Quirk for Yokis TLC2-UP, MONITOR2-UP, E2BP-UP and E2BPA-UP"""
 
-class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
 
+class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLC2-UP"),
             (YOKIS, "MONITOR2-UP"),
             (YOKIS, "E2BP-UP"),
-            (YOKIS, "E2BPA-UP")
+            (YOKIS, "E2BPA-UP"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
@@ -651,19 +636,19 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=6
@@ -680,22 +665,22 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
-        }
+            },
+        },
     }
 
     replacement = {
@@ -710,19 +695,19 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             2: {
@@ -735,24 +720,24 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -763,20 +748,16 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 2,
-        }
+        },
     }
 
 
 """Quirk for Yokis TLC4-UP, E4BP-UP and E4BPX-UP"""
 
-class TLC4_E4BP_E4BPX_UP(CustomDevice):
 
+class TLC4_E4BP_E4BPX_UP(CustomDevice):
     signature = {
-        MODELS_INFO: [
-            (YOKIS, "TLC4-UP"),
-            (YOKIS, "E4BP-UP"),
-            (YOKIS, "E4BPX-UP")
-        ],
+        MODELS_INFO: [(YOKIS, "TLC4-UP"), (YOKIS, "E4BP-UP"), (YOKIS, "E4BPX-UP")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
             # device_version=1
@@ -792,19 +773,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=6
@@ -821,19 +802,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=6
@@ -850,19 +831,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=4 profile=260 device_type=6
@@ -879,22 +860,22 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
-        }
+            },
+        },
     }
 
     replacement = {
@@ -909,19 +890,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             2: {
@@ -934,19 +915,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             3: {
@@ -959,19 +940,19 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             4: {
@@ -984,24 +965,24 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -1022,19 +1003,16 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 4,
-        }
+        },
     }
-    
-    
+
+
 """Quirk for Yokis TLC8-UP and MONITOR-UP"""
 
-class TLC8_MONITOR_UP(CustomDevice):
 
+class TLC8_MONITOR_UP(CustomDevice):
     signature = {
-        MODELS_INFO: [
-            (YOKIS, "TLC8-UP"),
-            (YOKIS, "MONITOR-UP")
-        ],
+        MODELS_INFO: [(YOKIS, "TLC8-UP"), (YOKIS, "MONITOR-UP")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
             # device_version=1
@@ -1050,19 +1028,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=6
@@ -1079,19 +1057,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=6
@@ -1108,19 +1086,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=4 profile=260 device_type=6
@@ -1137,19 +1115,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=5 profile=260 device_type=6
@@ -1166,19 +1144,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=6 profile=260 device_type=6
@@ -1195,19 +1173,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=7 profile=260 device_type=6
@@ -1224,19 +1202,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=8 profile=260 device_type=6
@@ -1253,22 +1231,22 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
-        }
+            },
+        },
     }
 
     replacement = {
@@ -1283,19 +1261,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             2: {
@@ -1308,19 +1286,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             3: {
@@ -1333,19 +1311,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             4: {
@@ -1358,19 +1336,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             5: {
@@ -1383,19 +1361,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             6: {
@@ -1408,19 +1386,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             7: {
@@ -1433,19 +1411,19 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
             },
             8: {
@@ -1458,24 +1436,24 @@ class TLC8_MONITOR_UP(CustomDevice):
                     LightLink.cluster_id,
                     YokisDeviceCluster.cluster_id,
                     YokisInputCluster.cluster_id,
-                    YokisChannelCluster.cluster_id
+                    YokisChannelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id, 
+                    LevelControl.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                     YokisInputCluster.cluster_id,
                     YokisLightControlCluster.cluster_id,
                     YokisDimmerCluster.cluster_id,
                     YokisWindowCoveringCluster.cluster_id,
-                    YokisPilotWireCluster.cluster_id
+                    YokisPilotWireCluster.cluster_id,
                 ],
-            }
+            },
         }
     }
-    
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_TOGGLE,
@@ -1516,6 +1494,5 @@ class TLC8_MONITOR_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 8,
-        }
+        },
     }
-    
