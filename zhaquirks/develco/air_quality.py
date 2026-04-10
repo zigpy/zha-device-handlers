@@ -79,6 +79,8 @@ class DevelcoVOCMeasurement(CustomCluster):
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     """Temperature Measurement Cluster with calibration attribute."""
 
+    INVALID_MEASURED_VALUES = frozenset({0x8000, -32768})
+
     def __init__(self, *args, **kwargs) -> None:
         """Initialize state for temperature offset handling."""
         super().__init__(*args, **kwargs)
@@ -102,7 +104,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         attributes: dict[str | int | foundation.ZCLAttributeDef, int],
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Translate mode writes into manufacturer-specific commands."""
+        """Handle temperature offset writes locally and pass through others."""
         offset = None
         offset_attr_id = self.AttributeDefs.temperature_offset.id
         remaining = dict(attributes)
@@ -128,7 +130,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
             self._raw_measured_value = value
-            if value == 0x8000:
+            if value in self.INVALID_MEASURED_VALUES:
                 return super()._update_attribute(attrid, value)
             offset = self._attr_cache.get(self.AttributeDefs.temperature_offset.id, 0)
             return super()._update_attribute(attrid, value + offset * 100)
@@ -137,7 +139,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             result = super()._update_attribute(attrid, value)
             if (
                 getattr(self, "_raw_measured_value", None) is not None
-                and self._raw_measured_value != 0x8000
+                and self._raw_measured_value not in self.INVALID_MEASURED_VALUES
             ):
                 super()._update_attribute(
                     self.AttributeDefs.measured_value.id,
@@ -174,7 +176,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         attributes: dict[str | int | foundation.ZCLAttributeDef, int],
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Translate mode writes into manufacturer-specific commands."""
+        """Handle humidity offset writes locally and pass through others."""
         offset = None
         offset_attr_id = self.AttributeDefs.humidity_offset.id
         remaining = dict(attributes)
@@ -200,7 +202,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
             self._raw_measured_value = value
-            if value == 0x8000:
+            if value == 0xFFFF:
                 return super()._update_attribute(attrid, value)
             offset = self._attr_cache.get(self.AttributeDefs.humidity_offset.id, 0)
             return super()._update_attribute(attrid, value + offset * 100)
@@ -209,7 +211,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             result = super()._update_attribute(attrid, value)
             if (
                 getattr(self, "_raw_measured_value", None) is not None
-                and self._raw_measured_value != 0x8000
+                and self._raw_measured_value != 0xFFFF
             ):
                 super()._update_attribute(
                     self.AttributeDefs.measured_value.id,
@@ -226,8 +228,11 @@ def measured_value_converter(value: int) -> int | None:
     return new_value
 
 
-def value_to_caqi(value: int) -> str:
+def value_to_caqi(value: int) -> str | None:
     """Convert raw VOC value to CAQI (0-5500 scale)."""
+    if measured_value_converter(value) is None:
+        return None
+
     if value < 66:
         return "Excellent"
     elif value < 221:

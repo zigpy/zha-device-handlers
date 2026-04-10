@@ -312,8 +312,10 @@ async def test_air_quality_temperature_offset_updates_measured_value(
     assert temp.get(measured_id) == 2500
 
 
+@pytest.mark.parametrize("invalid_value", [0x8000, -32768])
 async def test_air_quality_temperature_invalid_does_not_apply_offset(
     zigpy_device_from_v2_quirk,
+    invalid_value,
 ):
     """Test invalid temperature sentinel is not adjusted by offset."""
     device = zigpy_device_from_v2_quirk(
@@ -327,10 +329,10 @@ async def test_air_quality_temperature_invalid_does_not_apply_offset(
     measured_id = TemperatureMeasurement.AttributeDefs.measured_value.id
     offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
 
-    temp.update_attribute(measured_id, 0x8000)
+    temp.update_attribute(measured_id, invalid_value)
     temp.update_attribute(offset_id, 1)
 
-    assert temp.get(measured_id) == 0x8000
+    assert temp.get(measured_id) == invalid_value
 
 
 async def test_air_quality_temperature_offset_without_measured_value(
@@ -468,10 +470,10 @@ async def test_air_quality_humidity_invalid_does_not_apply_offset(
     measured_id = RelativeHumidity.AttributeDefs.measured_value.id
     offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
 
-    humidity.update_attribute(measured_id, 0x8000)
+    humidity.update_attribute(measured_id, 0xFFFF)
     humidity.update_attribute(offset_id, 1)
 
-    assert humidity.get(measured_id) == 0x8000
+    assert humidity.get(measured_id) == 0xFFFF
 
 
 async def test_air_quality_humidity_offset_without_measured_value(
@@ -503,6 +505,7 @@ def test_air_quality_measured_value_converter():
 @pytest.mark.parametrize(
     "value,expected",
     [
+        (0xFFFF, None),
         (65, "Excellent"),
         (66, "Good"),
         (220, "Good"),
