@@ -215,7 +215,7 @@ async def test_yokis_device_automation_triggers(quirk, expected_triggers):
     # Check device_automation_triggers presence in the quirk
     assert hasattr(quirk, "device_automation_triggers")
 
-    # Check if all trigger informations are set
+    # Check if all trigger information are set
     for trigger_name, trigger_info in expected_triggers.items():
         assert trigger_name in quirk.device_automation_triggers
         assert quirk.device_automation_triggers[trigger_name] == trigger_info
