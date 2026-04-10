@@ -52,19 +52,19 @@ class ThirdRealityRadarCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         presence_detect_sensitivity_level: Final = ZCLAttributeDef(
             id=0xF005,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         presence_hold_time_level: Final = ZCLAttributeDef(
             id=0xF006,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         tvoc_alert_enable: Final = ZCLAttributeDef(
             id=0xF007,
             type=t.uint8_t,
@@ -143,7 +143,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         force_inverted=False,
         translation_key="tvoc_alert_enable",
-        fallback_name="TVOC alert enable", 
+        fallback_name="TVOC alert enable",
     )
     .add_to_registry()
 )
