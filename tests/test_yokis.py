@@ -22,7 +22,8 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.yokis.remote import (
-    TLC2_MONITOR2_E2BP_E2BPA_UP,
+    E2BPA_UP,
+    TLC2_MONITOR2_E2BP_UP,
     TLC4_E4BP_E4BPX_UP,
     TLC8_MONITOR_UP,
     TLM1_TLC1_UP,
@@ -39,9 +40,10 @@ zhaquirks.setup()
         (TLM1_TLC1_UP, [1]),
         (TLM2_UP, [1, 2]),
         (TLM4_GALET4_UP, [1, 2, 3, 4]),
-        (TLC2_MONITOR2_E2BP_E2BPA_UP, [1, 2]),
+        (TLC2_MONITOR2_E2BP_UP, [1, 2]),
         (TLC4_E4BP_E4BPX_UP, [1, 2, 3, 4]),
         (TLC8_MONITOR_UP, [1, 2, 3, 4, 5, 6, 7, 8]),
+        (E2BPA_UP, [1, 2]),
     ),
 )
 async def test_yokis_remote_button(zigpy_device_from_quirk, quirk, endpoints):
@@ -123,7 +125,7 @@ async def test_yokis_remote_button(zigpy_device_from_quirk, quirk, endpoints):
             },
         ),
         (
-            TLC2_MONITOR2_E2BP_E2BPA_UP,
+            TLC2_MONITOR2_E2BP_UP,
             {
                 (SHORT_PRESS, BUTTON_1): {
                     COMMAND: COMMAND_TOGGLE,
@@ -204,6 +206,21 @@ async def test_yokis_remote_button(zigpy_device_from_quirk, quirk, endpoints):
                     COMMAND: COMMAND_TOGGLE,
                     CLUSTER_ID: OnOff.cluster_id,
                     ENDPOINT_ID: 8,
+                },
+            },
+        ),
+        (
+            E2BPA_UP,
+            {
+                (SHORT_PRESS, BUTTON_1): {
+                    COMMAND: COMMAND_TOGGLE,
+                    CLUSTER_ID: OnOff.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                (SHORT_PRESS, BUTTON_2): {
+                    COMMAND: COMMAND_TOGGLE,
+                    CLUSTER_ID: OnOff.cluster_id,
+                    ENDPOINT_ID: 2,
                 },
             },
         ),

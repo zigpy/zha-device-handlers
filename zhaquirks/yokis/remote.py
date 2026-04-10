@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.general import (
     Identify,
     LevelControl,
     OnOff,
+    Ota,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -608,15 +609,14 @@ class TLM4_GALET4_UP(CustomDevice):
     }
 
 
-class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
-    """Quirk for Yokis TLC2-UP, MONITOR2-UP, E2BP-UP and E2BPA-UP."""
+class TLC2_MONITOR2_E2BP_UP(CustomDevice):
+    """Quirk for Yokis TLC2-UP, MONITOR2-UP and E2BP-UP."""
 
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLC2-UP"),
             (YOKIS, "MONITOR2-UP"),
             (YOKIS, "E2BP-UP"),
-            (YOKIS, "E2BPA-UP"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
@@ -1489,5 +1489,145 @@ class TLC8_MONITOR_UP(CustomDevice):
             COMMAND: COMMAND_TOGGLE,
             CLUSTER_ID: OnOff.cluster_id,
             ENDPOINT_ID: 8,
+        },
+    }
+
+
+class E2BPA_UP(CustomDevice):
+    """Quirk for E2BPA-UP."""
+
+    signature = {
+        MODELS_INFO: [(YOKIS, "E2BPA-UP")],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=6
+            # device_version=1
+            # input_clusters=[0, 1, 3, 1000, 64513, 64514, 64521]
+            # output_clusters=[3, 6, 8, 19, 258, 1000, 64514, 64518, 64519, 64520, 64522]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    LightLink.cluster_id,
+                    YokisDeviceCluster.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisChannelCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisLightControlCluster.cluster_id,
+                    YokisDimmerCluster.cluster_id,
+                    YokisWindowCoveringCluster.cluster_id,
+                    YokisPilotWireCluster.cluster_id,
+                ],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=6
+            # device_version=1
+            # input_clusters=[0, 1, 3, 1000, 64513, 64514, 64521]
+            # output_clusters=[3, 6, 8, 19, 258, 1000, 64514, 64518, 64519, 64520, 64522]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    LightLink.cluster_id,
+                    YokisDeviceCluster.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisChannelCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisLightControlCluster.cluster_id,
+                    YokisDimmerCluster.cluster_id,
+                    YokisWindowCoveringCluster.cluster_id,
+                    YokisPilotWireCluster.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    LightLink.cluster_id,
+                    YokisDeviceCluster.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisChannelCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisLightControlCluster.cluster_id,
+                    YokisDimmerCluster.cluster_id,
+                    YokisWindowCoveringCluster.cluster_id,
+                    YokisPilotWireCluster.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    LightLink.cluster_id,
+                    YokisDeviceCluster.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisChannelCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                    YokisInputCluster.cluster_id,
+                    YokisLightControlCluster.cluster_id,
+                    YokisDimmerCluster.cluster_id,
+                    YokisWindowCoveringCluster.cluster_id,
+                    YokisPilotWireCluster.cluster_id,
+                ],
+            },
+        }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: 1,
+        },
+        (SHORT_PRESS, BUTTON_2): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: 2,
         },
     }
