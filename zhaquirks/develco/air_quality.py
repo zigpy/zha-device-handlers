@@ -28,65 +28,10 @@ from zhaquirks.develco import DevelcoPowerConfiguration
 
 
 class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
-    """PowerConfiguration that derives percent from voltage only."""
+    """PowerConfiguration with device-specific voltage bounds."""
 
     MIN_VOLTS = 2.3
     MAX_VOLTS = 3.0
-
-    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
-        """Return battery percent from cached voltage instead of reading 0x0021."""
-        attr_list = []
-        requested_percent = False
-        local_records = []
-        for attr in attributes:
-            try:
-                attr_def = self.find_attribute(attr)
-            except KeyError:
-                # Unknown attribute: return an UNSUPPORTED_ATTRIBUTE record.
-                local_records.append(
-                    foundation.ReadAttributeRecord(
-                        attr,
-                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                        foundation.TypeValue(),
-                    )
-                )
-                continue
-            if attr_def.id == self.BATTERY_PERCENTAGE_REMAINING:
-                requested_percent = True
-            else:
-                attr_list.append(attr_def.id)
-        if requested_percent:
-            try:
-                attr_def = self.find_attribute(self.BATTERY_PERCENTAGE_REMAINING)
-            except KeyError:
-                # If the percentage attribute definition is missing, still
-                # respond with UNSUPPORTED_ATTRIBUTE instead of raising.
-                record = foundation.ReadAttributeRecord(
-                    self.BATTERY_PERCENTAGE_REMAINING,
-                    foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                    foundation.TypeValue(),
-                )
-            else:
-                record = foundation.ReadAttributeRecord(
-                    attr_def.id,
-                    foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                    foundation.TypeValue(),
-                )
-                voltage = self._attr_cache.get(self.BATTERY_VOLTAGE_ATTR)
-                if voltage not in (None, 0, 255):
-                    percent = self._calculate_battery_percentage(voltage)
-                    record.value.value = attr_def.type(percent)
-                    record.status = foundation.Status.SUCCESS
-            local_records.append(record)
-
-        if attr_list:
-            (records,) = await super().read_attributes_raw(
-                attr_list, manufacturer=manufacturer, **kwargs
-            )
-            records.extend(local_records)
-            return (records,)
-
-        return (local_records,)
 
 
 class DevelcoVOCMeasurement(CustomCluster):
