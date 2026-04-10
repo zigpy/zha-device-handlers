@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import pytest
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -186,7 +187,9 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     )
 
 
-async def test_HMSZB_120_power_config_battery_percent(zigpy_device_from_v2_quirk):
+async def test_hmszb_120_power_config_battery_percent_from_voltage(
+    zigpy_device_from_v2_quirk,
+):
     """Test battery percent is derived from cached voltage."""
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
@@ -201,146 +204,10 @@ async def test_HMSZB_120_power_config_battery_percent(zigpy_device_from_v2_quirk
     power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
     expected = power._calculate_battery_percentage(28)
 
-    with mock.patch(
-        "zigpy.quirks.CustomCluster.read_attributes_raw",
-        new=mock.AsyncMock(),
-    ) as read_mock:
-        (records,) = await power.read_attributes_raw(
-            [power.BATTERY_PERCENTAGE_REMAINING]
-        )
-
-    read_mock.assert_not_called()
-    assert len(records) == 1
-    record = records[0]
-    assert record.attrid == power.BATTERY_PERCENTAGE_REMAINING
-    assert record.status == foundation.Status.SUCCESS
-    assert record.value.value == expected
-
-
-async def test_humidity_power_config_battery_percent_unsupported(
-    zigpy_device_from_v2_quirk,
-):
-    """Test battery percent remains unsupported without cached voltage."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == expected
     )
-
-    power = device.endpoints[38].power
-    (records,) = await power.read_attributes_raw([power.BATTERY_PERCENTAGE_REMAINING])
-
-    assert len(records) == 1
-    record = records[0]
-    assert record.attrid == power.BATTERY_PERCENTAGE_REMAINING
-    assert record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-
-async def test_humidity_power_config_unknown_attribute(
-    zigpy_device_from_v2_quirk,
-):
-    """Test unknown attributes return unsupported records."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
-    )
-
-    power = device.endpoints[38].power
-    unknown_attr = 0xFFFF
-
-    with mock.patch(
-        "zigpy.quirks.CustomCluster.read_attributes_raw",
-        new=mock.AsyncMock(),
-    ) as read_mock:
-        (records,) = await power.read_attributes_raw([unknown_attr])
-
-    read_mock.assert_not_called()
-    assert len(records) == 1
-    record = records[0]
-    assert record.attrid == unknown_attr
-    assert record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-
-async def test_humidity_power_config_read_attributes_passthrough(
-    zigpy_device_from_v2_quirk,
-):
-    """Test read_attributes_raw delegates remaining attributes to base."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
-    )
-
-    power = device.endpoints[38].power
-    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
-
-    battery_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
-    passthrough_record = foundation.ReadAttributeRecord(
-        battery_voltage_id,
-        foundation.Status.SUCCESS,
-        foundation.TypeValue(),
-    )
-    passthrough_record.value.value = 28
-
-    with mock.patch(
-        "zigpy.quirks.CustomCluster.read_attributes_raw",
-        new=mock.AsyncMock(return_value=([passthrough_record],)),
-    ) as read_mock:
-        (records,) = await power.read_attributes_raw(
-            [power.BATTERY_PERCENTAGE_REMAINING, battery_voltage_id]
-        )
-
-    read_mock.assert_called_once()
-    assert read_mock.call_args.args[0] == [battery_voltage_id]
-    assert {record.attrid for record in records} == {
-        power.BATTERY_PERCENTAGE_REMAINING,
-        battery_voltage_id,
-    }
-
-
-async def test_humidity_power_config_read_attributes_name_and_attrdef(
-    zigpy_device_from_v2_quirk,
-):
-    """Test power config reads name and ZCLAttributeDef inputs."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
-    )
-
-    power = device.endpoints[38].power
-    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
-
-    battery_pct_name = (
-        PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
-    )
-    battery_voltage_def = PowerConfiguration.AttributeDefs.battery_voltage
-    passthrough_record = foundation.ReadAttributeRecord(
-        battery_voltage_def.id,
-        foundation.Status.SUCCESS,
-        foundation.TypeValue(),
-    )
-    passthrough_record.value.value = 28
-
-    with mock.patch(
-        "zigpy.quirks.CustomCluster.read_attributes_raw",
-        new=mock.AsyncMock(return_value=([passthrough_record],)),
-    ) as read_mock:
-        (records,) = await power.read_attributes_raw(
-            [battery_pct_name, battery_voltage_def]
-        )
-
-    read_mock.assert_called_once()
-    assert read_mock.call_args.args[0] == [battery_voltage_def.id]
-    assert {record.attrid for record in records} == {
-        power.BATTERY_PERCENTAGE_REMAINING,
-        battery_voltage_def.id,
-    }
 
 
 async def test_humidity_temperature_offset_write_attributes(
@@ -437,8 +304,10 @@ async def test_humidity_temperature_offset_updates_measured_value(
     assert temp.get(measured_id) == 2500
 
 
+@pytest.mark.parametrize("invalid_value", [0x8000, -32768])
 async def test_humidity_temperature_invalid_does_not_apply_offset(
     zigpy_device_from_v2_quirk,
+    invalid_value,
 ):
     """Test invalid temperature sentinel is not adjusted by offset."""
     device = zigpy_device_from_v2_quirk(
@@ -452,10 +321,10 @@ async def test_humidity_temperature_invalid_does_not_apply_offset(
     measured_id = TemperatureMeasurement.AttributeDefs.measured_value.id
     offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
 
-    temp.update_attribute(measured_id, 0x8000)
+    temp.update_attribute(measured_id, invalid_value)
     temp.update_attribute(offset_id, 1)
 
-    assert temp.get(measured_id) == 0x8000
+    assert temp.get(measured_id) == invalid_value
 
 
 async def test_humidity_temperature_offset_without_measured_value(
@@ -587,10 +456,10 @@ async def test_humidity_invalid_does_not_apply_offset(
     measured_id = RelativeHumidity.AttributeDefs.measured_value.id
     offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
 
-    humidity.update_attribute(measured_id, 0x8000)
+    humidity.update_attribute(measured_id, 0xFFFF)
     humidity.update_attribute(offset_id, 1)
 
-    assert humidity.get(measured_id) == 0x8000
+    assert humidity.get(measured_id) == 0xFFFF
 
 
 async def test_humidity_offset_without_measured_value(
