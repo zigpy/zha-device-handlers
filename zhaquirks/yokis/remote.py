@@ -1,4 +1,4 @@
-"""Modules for Yokis remote"""
+"""Modules for Yokis remote."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -46,10 +46,10 @@ from zhaquirks.yokis import (
     YokisWindowCoveringCluster,
 )
 
-"""Quirk for Yokis TLM1-UP and TLC1-UP"""
-
 
 class TLM1_TLC1_UP(CustomDevice):
+    """Quirk for Yokis TLM1-UP and TLC1-UP."""
+
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLC1-UP"),
@@ -156,10 +156,9 @@ class TLM1_TLC1_UP(CustomDevice):
     }
 
 
-"""Quirk for Yokis TLM2-UP"""
-
-
 class TLM2_UP(CustomDevice):
+    """Quirk for Yokis TLM2-UP."""
+
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLM2-UP"),
@@ -323,10 +322,9 @@ class TLM2_UP(CustomDevice):
     }
 
 
-"""Quirk for Yokis TLM4-UP and GALET4-UP"""
-
-
 class TLM4_GALET4_UP(CustomDevice):
+    """Quirk for Yokis TLM4-UP and GALET4-UP."""
+
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLM4-UP"),
@@ -610,10 +608,9 @@ class TLM4_GALET4_UP(CustomDevice):
     }
 
 
-"""Quirk for Yokis TLC2-UP, MONITOR2-UP, E2BP-UP and E2BPA-UP"""
-
-
 class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
+    """Quirk for Yokis TLC2-UP, MONITOR2-UP, E2BP-UP and E2BPA-UP."""
+
     signature = {
         MODELS_INFO: [
             (YOKIS, "TLC2-UP"),
@@ -752,10 +749,9 @@ class TLC2_MONITOR2_E2BP_E2BPA_UP(CustomDevice):
     }
 
 
-"""Quirk for Yokis TLC4-UP, E4BP-UP and E4BPX-UP"""
-
-
 class TLC4_E4BP_E4BPX_UP(CustomDevice):
+    """Quirk for Yokis TLC4-UP, E4BP-UP and E4BPX-UP."""
+
     signature = {
         MODELS_INFO: [(YOKIS, "TLC4-UP"), (YOKIS, "E4BP-UP"), (YOKIS, "E4BPX-UP")],
         ENDPOINTS: {
@@ -1007,10 +1003,9 @@ class TLC4_E4BP_E4BPX_UP(CustomDevice):
     }
 
 
-"""Quirk for Yokis TLC8-UP and MONITOR-UP"""
-
-
 class TLC8_MONITOR_UP(CustomDevice):
+    """Quirk for Yokis TLC8-UP and MONITOR-UP."""
+
     signature = {
         MODELS_INFO: [(YOKIS, "TLC8-UP"), (YOKIS, "MONITOR-UP")],
         ENDPOINTS: {
