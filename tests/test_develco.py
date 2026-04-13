@@ -215,6 +215,4 @@ def test_wiszb_138_tamper_attribute_converter() -> None:
 
     assert converter(IasZone.ZoneStatus.Tamper) is True
     assert converter(IasZone.ZoneStatus.Alarm_1) is False
-    assert (
-        converter(IasZone.ZoneStatus.Tamper | IasZone.ZoneStatus.Alarm_1) is True
-    )
+    assert converter(IasZone.ZoneStatus.Tamper | IasZone.ZoneStatus.Alarm_1) is True

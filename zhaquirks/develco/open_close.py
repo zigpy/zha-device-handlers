@@ -6,11 +6,11 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.develco import DevelcoIasZone
 
-
 (
     QuirkBuilder("frient A/S", "WISZB-131")
     .applies_to("Develco Products A/S", "WISZB-121")
     .applies_to("frient A/S", "WISZB-121")
+    .applies_to("Develco Products A/S", "WISZB-131")
     .replaces(DevelcoIasZone, endpoint_id=35)
     # The binary input cluster is a duplicate
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
