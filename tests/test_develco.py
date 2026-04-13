@@ -251,6 +251,70 @@ async def test_humidity_temperature_offset_write_attributes(
     write_mock.assert_not_called()
 
 
+async def test_humidity_temperature_offset_read_attributes_local(
+    zigpy_device_from_v2_quirk,
+):
+    """Test temperature offset reads are served from local cache."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
+    offset_name = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.name
+
+    temp.update_attribute(offset_id, 3)
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(),
+    ) as read_mock:
+        (records,) = await temp.read_attributes_raw([offset_name])
+
+    read_mock.assert_not_called()
+    assert len(records) == 1
+    assert records[0].attrid == offset_id
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 3
+
+
+async def test_humidity_temperature_offset_read_attributes_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test non-offset reads are delegated while offset reads stay local."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    offset_id = TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id
+    measured_id = TemperatureMeasurement.AttributeDefs.measured_value.id
+
+    temp.update_attribute(offset_id, 4)
+    delegated_record = foundation.ReadAttributeRecord(
+        measured_id,
+        foundation.Status.SUCCESS,
+        foundation.TypeValue(),
+    )
+    delegated_record.value.value = 2300
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(return_value=([delegated_record],)),
+    ) as read_mock:
+        (records,) = await temp.read_attributes_raw([offset_id, measured_id])
+
+    read_mock.assert_called_once()
+    assert read_mock.call_args.args[0] == [measured_id]
+    assert {record.attrid for record in records} == {offset_id, measured_id}
+
+
 async def test_humidity_temperature_offset_passthrough(
     zigpy_device_from_v2_quirk,
 ):
@@ -275,6 +339,10 @@ async def test_humidity_temperature_offset_passthrough(
     ) as write_mock:
         result = await temp.write_attributes(attrs, timeout=5)
 
+    assert attrs == {
+        TemperatureMeasurementCustom.AttributeDefs.temperature_offset.id: 1,
+        TemperatureMeasurement.AttributeDefs.measured_value.id: 2250,
+    }
     write_mock.assert_called_once()
     assert write_mock.call_args.args[0] == {
         TemperatureMeasurement.AttributeDefs.measured_value.id: 2250
@@ -388,6 +456,70 @@ async def test_humidity_offset_write_attributes(
     write_mock.assert_not_called()
 
 
+async def test_humidity_offset_read_attributes_local(
+    zigpy_device_from_v2_quirk,
+):
+    """Test humidity offset reads are served from local cache."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
+    offset_name = RelativeHumidityCustom.AttributeDefs.humidity_offset.name
+
+    humidity.update_attribute(offset_id, 6)
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(),
+    ) as read_mock:
+        (records,) = await humidity.read_attributes_raw([offset_name])
+
+    read_mock.assert_not_called()
+    assert len(records) == 1
+    assert records[0].attrid == offset_id
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 6
+
+
+async def test_humidity_offset_read_attributes_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test non-offset reads are delegated while offset reads stay local."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    offset_id = RelativeHumidityCustom.AttributeDefs.humidity_offset.id
+    measured_id = RelativeHumidity.AttributeDefs.measured_value.id
+
+    humidity.update_attribute(offset_id, 7)
+    delegated_record = foundation.ReadAttributeRecord(
+        measured_id,
+        foundation.Status.SUCCESS,
+        foundation.TypeValue(),
+    )
+    delegated_record.value.value = 4000
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(return_value=([delegated_record],)),
+    ) as read_mock:
+        (records,) = await humidity.read_attributes_raw([offset_id, measured_id])
+
+    read_mock.assert_called_once()
+    assert read_mock.call_args.args[0] == [measured_id]
+    assert {record.attrid for record in records} == {offset_id, measured_id}
+
+
 async def test_humidity_offset_passthrough(
     zigpy_device_from_v2_quirk,
 ):
@@ -412,6 +544,10 @@ async def test_humidity_offset_passthrough(
     ) as write_mock:
         result = await humidity.write_attributes(attrs, priority=1)
 
+    assert attrs == {
+        RelativeHumidityCustom.AttributeDefs.humidity_offset.id: 2,
+        RelativeHumidity.AttributeDefs.measured_value.id: 4500,
+    }
     write_mock.assert_called_once()
     assert write_mock.call_args.args[0] == {
         RelativeHumidity.AttributeDefs.measured_value.id: 4500

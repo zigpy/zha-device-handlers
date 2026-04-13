@@ -51,21 +51,107 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         """Handle temperature offset writes locally and pass through others."""
         offset = None
         offset_attr_id = self.AttributeDefs.temperature_offset.id
+        remaining = dict(attributes)
 
-        for attr_key, value in list(attributes.items()):
-            attr_def = self.find_attribute(attr_key)
+        for attr_key, value in attributes.items():
+            try:
+                attr_def = self.find_attribute(attr_key)
+            except KeyError:
+                continue
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
-            attributes.pop(attr_key)
+            remaining.pop(attr_key, None)
 
         if offset is not None:
             self._update_attribute(offset_attr_id, offset)
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if remaining:
+            return await super().write_attributes(remaining, **kwargs)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
+        """Return cached humidity offset locally and delegate others."""
+        offset_attr_id = self.AttributeDefs.humidity_offset.id
+        delegated = []
+        local_records = []
+
+        for attr in attributes:
+            try:
+                attr_def = self.find_attribute(attr)
+            except KeyError:
+                local_records.append(
+                    foundation.ReadAttributeRecord(
+                        attr,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
+                continue
+
+            if attr_def.id != offset_attr_id:
+                delegated.append(attr_def.id)
+                continue
+
+            record = foundation.ReadAttributeRecord(
+                offset_attr_id,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(),
+            )
+            cached = self._attr_cache.get(offset_attr_id, 0)
+            record.value.value = attr_def.type(cached)
+            local_records.append(record)
+
+        if delegated:
+            (records,) = await super().read_attributes_raw(
+                delegated, manufacturer=manufacturer, **kwargs
+            )
+            records.extend(local_records)
+            return (records,)
+
+        return (local_records,)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
+        """Return cached temperature offset locally and delegate others."""
+        offset_attr_id = self.AttributeDefs.temperature_offset.id
+        delegated = []
+        local_records = []
+
+        for attr in attributes:
+            try:
+                attr_def = self.find_attribute(attr)
+            except KeyError:
+                local_records.append(
+                    foundation.ReadAttributeRecord(
+                        attr,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
+                continue
+
+            if attr_def.id != offset_attr_id:
+                delegated.append(attr_def.id)
+                continue
+
+            record = foundation.ReadAttributeRecord(
+                offset_attr_id,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(),
+            )
+            cached = self._attr_cache.get(offset_attr_id, 0)
+            record.value.value = attr_def.type(cached)
+            local_records.append(record)
+
+        if delegated:
+            (records,) = await super().read_attributes_raw(
+                delegated, manufacturer=manufacturer, **kwargs
+            )
+            records.extend(local_records)
+            return (records,)
+
+        return (local_records,)
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
@@ -119,21 +205,66 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         """Handle humidity offset writes locally and pass through others."""
         offset = None
         offset_attr_id = self.AttributeDefs.humidity_offset.id
+        remaining = dict(attributes)
 
-        for attr_key, value in list(attributes.items()):
-            attr_def = self.find_attribute(attr_key)
+        for attr_key, value in attributes.items():
+            try:
+                attr_def = self.find_attribute(attr_key)
+            except KeyError:
+                continue
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
-            attributes.pop(attr_key)
+            remaining.pop(attr_key, None)
 
         if offset is not None:
             self._update_attribute(offset_attr_id, offset)
 
-        if attributes:
-            return await super().write_attributes(attributes, **kwargs)
+        if remaining:
+            return await super().write_attributes(remaining, **kwargs)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
+        """Return cached humidity offset locally and delegate others."""
+        offset_attr_id = self.AttributeDefs.humidity_offset.id
+        delegated = []
+        local_records = []
+
+        for attr in attributes:
+            try:
+                attr_def = self.find_attribute(attr)
+            except KeyError:
+                local_records.append(
+                    foundation.ReadAttributeRecord(
+                        attr,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
+                continue
+
+            if attr_def.id != offset_attr_id:
+                delegated.append(attr_def.id)
+                continue
+
+            record = foundation.ReadAttributeRecord(
+                offset_attr_id,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(),
+            )
+            cached = self._attr_cache.get(offset_attr_id, 0)
+            record.value.value = attr_def.type(cached)
+            local_records.append(record)
+
+        if delegated:
+            (records,) = await super().read_attributes_raw(
+                delegated, manufacturer=manufacturer, **kwargs
+            )
+            records.extend(local_records)
+            return (records,)
+
+        return (local_records,)
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
