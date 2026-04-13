@@ -281,6 +281,34 @@ async def test_humidity_temperature_offset_read_attributes_local(
     assert records[0].value.value == 3
 
 
+async def test_humidity_temperature_offset_read_attributes_attrdef(
+    zigpy_device_from_v2_quirk,
+):
+    """Test temperature offset reads support ZCLAttributeDef input."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    offset_def = TemperatureMeasurementCustom.AttributeDefs.temperature_offset
+    temp.update_attribute(offset_def.id, 5)
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(),
+    ) as read_mock:
+        (records,) = await temp.read_attributes_raw([offset_def])
+
+    read_mock.assert_not_called()
+    assert len(records) == 1
+    assert records[0].attrid == offset_def.id
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 5
+
+
 async def test_humidity_temperature_offset_read_attributes_passthrough(
     zigpy_device_from_v2_quirk,
 ):
@@ -486,6 +514,34 @@ async def test_humidity_offset_read_attributes_local(
     assert records[0].value.value == 6
 
 
+async def test_humidity_offset_read_attributes_attrdef(
+    zigpy_device_from_v2_quirk,
+):
+    """Test humidity offset reads support ZCLAttributeDef input."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    offset_def = RelativeHumidityCustom.AttributeDefs.humidity_offset
+    humidity.update_attribute(offset_def.id, 8)
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.read_attributes_raw",
+        new=mock.AsyncMock(),
+    ) as read_mock:
+        (records,) = await humidity.read_attributes_raw([offset_def])
+
+    read_mock.assert_not_called()
+    assert len(records) == 1
+    assert records[0].attrid == offset_def.id
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 8
+
+
 async def test_humidity_offset_read_attributes_passthrough(
     zigpy_device_from_v2_quirk,
 ):
@@ -616,3 +672,125 @@ async def test_humidity_offset_without_measured_value(
     assert humidity.get(measured_id) is None
     humidity.update_attribute(offset_id, 2)
     assert humidity.get(measured_id) is None
+
+
+async def test_humidity_temperature_unknown_write_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown temperature writes pass through unchanged."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[status]),
+    ) as write_mock:
+        result = await temp.write_attributes({0xAAAB: 1})
+
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {0xAAAB: 1}
+    assert result == [status]
+
+
+async def test_humidity_temperature_unknown_read_unsupported(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown temperature reads return unsupported records."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    (records,) = await temp.read_attributes_raw([0xAAAB])
+
+    assert len(records) == 1
+    assert records[0].attrid == 0xAAAB
+    assert records[0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+async def test_humidity_temperature_unknown_update_attribute(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown temperature attributes use default update handling."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+    )
+
+    temp = device.endpoints[38].temperature
+    temp.update_attribute(0xAAAB, 12)
+
+    assert temp._attr_cache[0xAAAB] == 12
+
+
+async def test_humidity_unknown_write_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown humidity writes pass through unchanged."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[status]),
+    ) as write_mock:
+        result = await humidity.write_attributes({0xAAAB: 2})
+
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {0xAAAB: 2}
+    assert result == [status]
+
+
+async def test_humidity_unknown_read_unsupported(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown humidity reads return unsupported records."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    (records,) = await humidity.read_attributes_raw([0xAAAB])
+
+    assert len(records) == 1
+    assert records[0].attrid == 0xAAAB
+    assert records[0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+async def test_humidity_unknown_update_attribute(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unknown humidity attributes use default update handling."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
+    )
+
+    humidity = device.endpoints[38].humidity
+    humidity.update_attribute(0xAAAB, 34)
+
+    assert humidity._attr_cache[0xAAAB] == 34

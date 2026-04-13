@@ -54,10 +54,12 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         remaining = dict(attributes)
 
         for attr_key, value in attributes.items():
-            try:
-                attr_def = self.find_attribute(attr_key)
-            except KeyError:
-                continue
+            if isinstance(attr_key, foundation.ZCLAttributeDef):
+                attr_def = attr_key
+            elif isinstance(attr_key, str):
+                attr_def = self.attributes_by_name.get(attr_key)
+            else:
+                attr_def = self.attributes.get(attr_key)
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
@@ -78,9 +80,14 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         local_records = []
 
         for attr in attributes:
-            try:
-                attr_def = self.find_attribute(attr)
-            except KeyError:
+            if isinstance(attr, foundation.ZCLAttributeDef):
+                attr_def = attr
+            elif isinstance(attr, str):
+                attr_def = self.attributes_by_name.get(attr)
+            else:
+                attr_def = self.attributes.get(attr)
+
+            if attr_def is None:
                 local_records.append(
                     foundation.ReadAttributeRecord(
                         attr,
@@ -167,10 +174,12 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         remaining = dict(attributes)
 
         for attr_key, value in attributes.items():
-            try:
-                attr_def = self.find_attribute(attr_key)
-            except KeyError:
-                continue
+            if isinstance(attr_key, foundation.ZCLAttributeDef):
+                attr_def = attr_key
+            elif isinstance(attr_key, str):
+                attr_def = self.attributes_by_name.get(attr_key)
+            else:
+                attr_def = self.attributes.get(attr_key)
             if attr_def is None or attr_def.id != offset_attr_id:
                 continue
             offset = value
@@ -191,9 +200,14 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
         local_records = []
 
         for attr in attributes:
-            try:
-                attr_def = self.find_attribute(attr)
-            except KeyError:
+            if isinstance(attr, foundation.ZCLAttributeDef):
+                attr_def = attr
+            elif isinstance(attr, str):
+                attr_def = self.attributes_by_name.get(attr)
+            else:
+                attr_def = self.attributes.get(attr)
+
+            if attr_def is None:
                 local_records.append(
                     foundation.ReadAttributeRecord(
                         attr,
