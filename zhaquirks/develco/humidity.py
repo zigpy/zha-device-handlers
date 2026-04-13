@@ -72,47 +72,6 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
-        """Return cached humidity offset locally and delegate others."""
-        offset_attr_id = self.AttributeDefs.humidity_offset.id
-        delegated = []
-        local_records = []
-
-        for attr in attributes:
-            try:
-                attr_def = self.find_attribute(attr)
-            except KeyError:
-                local_records.append(
-                    foundation.ReadAttributeRecord(
-                        attr,
-                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
-                        foundation.TypeValue(),
-                    )
-                )
-                continue
-
-            if attr_def.id != offset_attr_id:
-                delegated.append(attr_def.id)
-                continue
-
-            record = foundation.ReadAttributeRecord(
-                offset_attr_id,
-                foundation.Status.SUCCESS,
-                foundation.TypeValue(),
-            )
-            cached = self._attr_cache.get(offset_attr_id, 0)
-            record.value.value = attr_def.type(cached)
-            local_records.append(record)
-
-        if delegated:
-            (records,) = await super().read_attributes_raw(
-                delegated, manufacturer=manufacturer, **kwargs
-            )
-            records.extend(local_records)
-            return (records,)
-
-        return (local_records,)
-
-    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Return cached temperature offset locally and delegate others."""
         offset_attr_id = self.AttributeDefs.temperature_offset.id
         delegated = []
