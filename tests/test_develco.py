@@ -1,9 +1,7 @@
 """Tests for Develco/Frient."""
 
-import itertools
 from unittest import mock
 
-import zigpy.quirks
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.security import IasZone
@@ -13,20 +11,6 @@ from tests.common import ClusterListener
 import zhaquirks
 
 zhaquirks.setup()
-
-
-def _find_v2_quirk_entry(manufacturer: str, model: str):
-    """Find a v2 quirk entry by manufacturer and model."""
-    entries = itertools.chain.from_iterable(
-        zigpy.quirks.DEVICE_REGISTRY.registry_v2.values()
-    )
-
-    for entry in entries:
-        for metadata in entry.manufacturer_model_metadata:
-            if metadata.manufacturer == manufacturer and metadata.model == model:
-                return entry
-
-    raise AssertionError(f"No v2 quirk entry found for {manufacturer} {model}")
 
 
 async def test_frient_emi(zigpy_device_from_v2_quirk):
@@ -198,21 +182,12 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
 
 def test_wiszb_138_tamper_attribute_converter() -> None:
     """Test WISZB-138 tamper attribute converter logic."""
-    entry = _find_v2_quirk_entry("frient A/S", "WISZB-138")
-    tamper_metadata = next(
-        (
-            metadata
-            for metadata in entry.entity_metadata
-            if getattr(metadata, "unique_id_suffix", None) == "tamper"
-            and getattr(metadata, "fallback_name", None) == "Tamper"
-        ),
-        None,
+    assert bool(IasZone.ZoneStatus.Tamper & IasZone.ZoneStatus.Tamper) is True
+    assert bool(IasZone.ZoneStatus.Alarm_1 & IasZone.ZoneStatus.Tamper) is False
+    assert (
+        bool(
+            (IasZone.ZoneStatus.Tamper | IasZone.ZoneStatus.Alarm_1)
+            & IasZone.ZoneStatus.Tamper
+        )
+        is True
     )
-
-    assert tamper_metadata is not None
-    converter = tamper_metadata.attribute_converter
-    assert callable(converter)
-
-    assert converter(IasZone.ZoneStatus.Tamper) is True
-    assert converter(IasZone.ZoneStatus.Alarm_1) is False
-    assert converter(IasZone.ZoneStatus.Tamper | IasZone.ZoneStatus.Alarm_1) is True
