@@ -464,7 +464,7 @@ async def test_zemismart_zm25r3_unknown_command(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
-    "frame, cluster, attr_key, attr_value",
+    "frame, cluster_name, attr_key, attr_value",
     (
         pytest.param(
             # TuyaDatapointData(dp=3, data=TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\x00\x00\x00\x14', *payload=20))
@@ -495,17 +495,17 @@ async def test_zemismart_zm25r3_unknown_command(zigpy_device_from_v2_quirk):
     ),
 )
 async def test_zemismart_zm25r3_report_values(
-    zigpy_device_from_v2_quirk, frame, cluster, attr_key, attr_value
+    zigpy_device_from_v2_quirk, frame, cluster_name, attr_key, attr_value
 ):
     """Test receiving simple frames from a Zemismart ZM25R3 updates the expected attributes."""
 
     cover_dev = zigpy_device_from_v2_quirk("_TZE200_eevqq1uv", "TS0601")
     tuya_cluster = cover_dev.endpoints[1].tuya_manufacturer
-    target_cluster = getattr(cover_dev.endpoints[1], cluster)
-    tuya_listener = ClusterListener(target_cluster)
+    target_cluster = getattr(cover_dev.endpoints[1], cluster_name)
+    target_listener = ClusterListener(target_cluster)
 
-    assert len(tuya_listener.cluster_commands) == 0
-    assert len(tuya_listener.attribute_updates) == 0
+    assert len(target_listener.cluster_commands) == 0
+    assert len(target_listener.attribute_updates) == 0
 
     hdr, args = tuya_cluster.deserialize(frame)
     tuya_cluster.handle_message(hdr, args)
@@ -514,7 +514,7 @@ async def test_zemismart_zm25r3_report_values(
         if isinstance(attr_key, str)
         else attr_key
     )
-    assert tuya_listener.attribute_updates == [(attr_id, attr_value)]
+    assert target_listener.attribute_updates == [(attr_id, attr_value)]
 
 
 async def test_zemismart_zm25r3_report_multiple_values(zigpy_device_from_v2_quirk):

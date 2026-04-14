@@ -91,9 +91,9 @@ TUYA_DP_TYPE_FAULT = 0x0500
 # 0x05  control_back       enum    Configures motor direction
 # 0x06  situation_set      enum    Configures if 100% equals to fully closed or fully open (untested)
 # 0x07  fault              bitmap  Anything but 0 means something went wrong (untested)
-# 13    ?                  value   Battery charge percentage
-# 16    border             enum    set open limit, set close limit, clear open, clear close, clear both
-# 20    click control      enum    move up/open a small step, move down/close
+# 0x0D  ?                  value   Battery charge percentage
+# 0x10  border             enum    set open limit, set close limit, clear open, clear close, clear both
+# 0x14  click control      enum    move up/open a small step, move down/close
 TUYA_DP_ID_CONTROL = 0x01
 TUYA_DP_ID_PERCENT_CONTROL = 0x02
 TUYA_DP_ID_PERCENT_STATE = 0x03
