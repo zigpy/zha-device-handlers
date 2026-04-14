@@ -80,7 +80,7 @@ TUYA_DP_TYPE_ENUM = 0x0400
 TUYA_DP_TYPE_FAULT = 0x0500
 # ---------------------------------------------------------
 # Value for dp_identifier. These are device type and potentially device specific.
-# The ones we use here appear to be consistent for all covers we support.
+# The ones we use here are common for some Tuya cover variants, but are not universal.
 # https://developer.tuya.com/en/docs/iot/f?id=K9gf46o5mtfyc
 # ---------------------------------------------------------
 # ID    Name               Type    Description
@@ -99,9 +99,9 @@ TUYA_DP_ID_PERCENT_CONTROL = 0x02
 TUYA_DP_ID_PERCENT_STATE = 0x03
 TUYA_DP_ID_DIRECTION_CHANGE = 0x05
 TUYA_DP_ID_COVER_INVERTED = 0x06
-TUYA_DP_ID_BATTERY_PERCENT = 13
-TUYA_DP_ID_LIMIT_SETTINGS = 16
-TUYA_DP_ID_SMALL_STEP = 20
+TUYA_DP_ID_BATTERY_PERCENT = 0x0D
+TUYA_DP_ID_LIMIT_SETTINGS = 0x10
+TUYA_DP_ID_SMALL_STEP = 0x14
 # ---------------------------------------------------------
 # Window Cover Server Commands
 # ---------------------------------------------------------
