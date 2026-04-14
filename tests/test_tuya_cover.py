@@ -28,7 +28,7 @@ class AnyTSNTuyaFrame:
     Most tests only receive a single packet and can match against sequence number 1. Some commands
     (e.g. go_to_lift_percentage) write to multiple DPs so we don't want to depend on the sequence
     numbers in the responses. The sequence number is in byte indexes 1 & 4 of the frame, in the ZCL
-    frame control and the first byte of the payload
+    frame header and the first byte of the payload.
     """
 
     def __init__(self, frame: bytes) -> None:
