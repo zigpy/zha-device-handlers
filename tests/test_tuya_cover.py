@@ -14,7 +14,6 @@ from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
 from zhaquirks.tuya.ts0601_cover import (
     BorderSetting,
     MotorDirection,
-    MotorStatus,
     SmallStep,
     TuyaMoesCover0601,
 )
@@ -468,14 +467,6 @@ async def test_zemismart_zm25r3_unknown_command(zigpy_device_from_v2_quirk):
     "frame, cluster, attr_key, attr_value",
     (
         pytest.param(
-            # DP 1, motor_status: closing
-            b"\x09\x00\x02\x00\x00\x01\x02\x00\x04\x00\x00\x00\x02",
-            "window_covering",
-            "tuya_cover_command",
-            MotorStatus.Closing,
-            id="motor_status_closing",
-        ),
-        pytest.param(
             # TuyaDatapointData(dp=3, data=TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\x00\x00\x00\x14', *payload=20))
             b"\x09\x00\x02\x00\x00\x03\x02\x00\x04\x00\x00\x00\x14",
             "window_covering",
@@ -544,11 +535,12 @@ async def test_zemismart_zm25r3_report_multiple_values(zigpy_device_from_v2_quir
     tuya_cluster.handle_message(hdr, args)
 
     # Ignore DP 1 & 7.
-    # DP 1 should be interpreted as a motor status when received, but the existing quirk builder
-    # infrastructure maps DPs to the same attribute for both reading and writing, so it ends up
-    # being interpreted as a tuya_cover_command attribute update, which doesn't seem that useful
-    # to test.
-    # DP 7 is in the packet but I don't know what it's for, just ignore it
+    # DP 1 should be interpreted as a motor status when received (e.g. opening, stopped, closing),
+    # but the existing quirk builder infrastructure maps DPs to the same attribute for both reading
+    # and writing, so it ends up being interpreted as a tuya_cover_command attribute update, which
+    # doesn't seem that useful to test. It would be more logical to map it to a separate, read only
+    # 'motor_status' attribute but it's not really noticeable to HA users so just ignore it.
+    # DP 7 is in the packet but I don't know what it's for, ignore it too.
 
     # DP 3 is position
     assert (

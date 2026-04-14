@@ -636,18 +636,6 @@ class TuyaCloneCover0601(TuyaWindowCover):
     }
 
 
-class MotorStatus(t.enum8):
-    """Window cover motor states enum.
-
-    Uses the same Tuya data point to send a command and receive the status, so needs the same
-    values as WINDOW_COVER_COMMAND_UPOPEN etc.
-    """
-
-    Opening = 0
-    Stopped = 1
-    Closing = 2
-
-
 class MotorDirection(t.enum8):
     """Motor direction values."""
 
