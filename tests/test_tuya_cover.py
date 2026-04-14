@@ -23,12 +23,11 @@ zhaquirks.setup()
 
 
 class AnyTSNTuyaFrame:
-    """Match a Tuya DP frame, ignoring the two TSN sequence numbers in the payload.
+    """Match a Tuya DP frame, but ignore the two sequence numbers it contains.
 
     Most tests only receive a single packet and can match against sequence number 1. Some commands
     (e.g. go_to_lift_percentage) write to multiple DPs so we don't want to depend on the sequence
-    numbers in the responses. The sequence number is in byte indexes 1 & 4 of the frame, in the ZCL
-    frame header and the first byte of the payload.
+    numbers in the responses.
     """
 
     def __init__(self, frame: bytes) -> None:
@@ -36,7 +35,7 @@ class AnyTSNTuyaFrame:
         self._frame = frame
 
     def __eq__(self, other: object) -> bool:
-        """Compare with byte array, ignoring TSN sequence numbers at index 1 & 4 of the payload."""
+        """Compare with byte array, ignoring sequence numbers at index 1 & 4."""
         if not isinstance(other, (bytes, bytearray)):
             return NotImplemented
         return (
@@ -261,7 +260,7 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
-    "commandName, commandId, args, expected_frame",
+    "command_name, command_id, args, expected_frame",
     (
         # Window cover open, close, stop commands are 0, 1 & 2 respectively
         # Expected frame is a set_value command for data point 1, with an enum value of 0 for open,
@@ -280,7 +279,7 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     ),
 )
 async def test_zemismart_zm25r3_cover_commands(
-    zigpy_device_from_v2_quirk, commandName, commandId, args, expected_frame
+    zigpy_device_from_v2_quirk, command_name, command_id, args, expected_frame
 ):
     """Test cluster move commands send the correct frames for Zemismart ZM25R3."""
 
@@ -291,7 +290,7 @@ async def test_zemismart_zm25r3_cover_commands(
 
     assert len(tuya_listener.cluster_commands) == 0
     assert len(tuya_listener.attribute_updates) == 0
-    assert cover_cluster.server_commands[commandId].name == commandName
+    assert cover_cluster.server_commands[command_id].name == command_name
 
     with mock.patch.object(
         tuya_cluster.endpoint,
@@ -301,7 +300,7 @@ async def test_zemismart_zm25r3_cover_commands(
     ) as m1:
         # This is how HA calls the command (in zha/zigbee/device.py.) If we need to support kwargs
         # it needs to call convert_to_zcl_values as well.
-        method = getattr(cover_cluster, commandName)
+        method = getattr(cover_cluster, command_name)
         rsp = await method(*(args or []))
 
         await wait_for_zigpy_tasks()
