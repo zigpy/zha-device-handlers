@@ -2663,6 +2663,88 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
 
 
+async def test_h1_knob_rotation_event(zigpy_device_from_v2_quirk):
+    """Test Aqara H1 knob emits zha_events derived from rotation attribute reports."""
+    from zhaquirks.xiaomi.aqara.remote_h1_knob import (
+        ROTATION_DIRECTION,
+        KnobAction,
+        KnobManuSpecificCluster,
+    )
+
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.rkba01")
+
+    # quirk adds endpoints 71 and 72 with KnobManuSpecificCluster
+    assert 71 in device.endpoints
+    assert 72 in device.endpoints
+    cluster = device.endpoints[71].opple_cluster
+    assert isinstance(cluster, KnobManuSpecificCluster)
+
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    attrs = KnobManuSpecificCluster.AttributeDefs
+    hdr = foundation.ZCLHeader.general(
+        manufacturer=0x115F,
+        tsn=1,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+    )
+    schema = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema
+
+    def make_report(action: KnobAction, angle: float, angle_delta: float):
+        return schema(
+            attribute_reports=[
+                Attribute(
+                    attrid=attrs.rotation_angle.id,
+                    value=TypeValue(type=DataTypeId.single, value=t.Single(angle)),
+                ),
+                Attribute(
+                    attrid=attrs.rotation_angle_delta.id,
+                    value=TypeValue(
+                        type=DataTypeId.single, value=t.Single(angle_delta)
+                    ),
+                ),
+                Attribute(
+                    attrid=attrs.action.id,
+                    value=TypeValue(type=DataTypeId.uint8, value=t.uint8_t(action)),
+                ),
+            ]
+        )
+
+    # stop_rotation: delta attrs are dropped, direction derived from final angle
+    cluster.handle_cluster_general_request(
+        hdr, make_report(KnobAction.stop_rotation, -42.5, 0.0)
+    )
+    listener.zha_send_event.assert_called_once()
+    command, event_args = listener.zha_send_event.call_args.args
+    assert command == "stop_rotation"
+    assert event_args["action"] == KnobAction.stop_rotation
+    assert event_args["rotation_angle"] == pytest.approx(-42.5)
+    assert event_args[ROTATION_DIRECTION] == -1
+    assert "rotation_angle_delta" not in event_args
+
+    # in-progress rotation: delta kept, no derived direction
+    listener.reset_mock()
+    cluster.handle_cluster_general_request(
+        hdr, make_report(KnobAction.rotation, 20.0, 5.0)
+    )
+    command, event_args = listener.zha_send_event.call_args.args
+    assert command == "rotation"
+    assert event_args["rotation_angle_delta"] == pytest.approx(5.0)
+    assert ROTATION_DIRECTION not in event_args
+
+    # hold_stop_rotation with positive angle -> direction = 1
+    listener.reset_mock()
+    cluster.handle_cluster_general_request(
+        hdr, make_report(KnobAction.hold_stop_rotation, 10.0, 3.0)
+    )
+    command, event_args = listener.zha_send_event.call_args.args
+    assert command == "hold_stop_rotation"
+    assert event_args[ROTATION_DIRECTION] == 1
+    assert "rotation_angle_delta" not in event_args
+
+
 @pytest.mark.parametrize("endpoint", [(1), (2)])
 def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     """Test Aqara T1M ceiling light quirk adds missing endpoints."""
