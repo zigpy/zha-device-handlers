@@ -54,7 +54,9 @@ def _name_dp_mapping(attribute_name: str) -> DPToAttributeMapping:
 class ScreenSwitchManufCluster1G(MoesSwitchManufCluster):
     """Custom Moes cluster with single-gang screen name support."""
 
-    dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        MoesSwitchManufCluster.dp_to_attribute.copy()
+    )
     dp_to_attribute.update(
         {
             105: _name_dp_mapping("name_update_1"),
@@ -66,7 +68,9 @@ class ScreenSwitchManufCluster1G(MoesSwitchManufCluster):
 class ScreenSwitchManufCluster2G(MoesSwitchManufCluster):
     """Custom Moes cluster with dual-gang screen name support."""
 
-    dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        MoesSwitchManufCluster.dp_to_attribute.copy()
+    )
     dp_to_attribute.update(
         {
             105: _name_dp_mapping("name_update_1"),
@@ -79,7 +83,9 @@ class ScreenSwitchManufCluster2G(MoesSwitchManufCluster):
 class ScreenSwitchManufCluster3G(MoesSwitchManufCluster):
     """Custom Moes cluster with triple-gang screen name support."""
 
-    dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        MoesSwitchManufCluster.dp_to_attribute.copy()
+    )
     dp_to_attribute.update(
         {
             105: _name_dp_mapping("name_update_1"),
@@ -93,7 +99,9 @@ class ScreenSwitchManufCluster3G(MoesSwitchManufCluster):
 class ScreenSwitchManufCluster4G(MoesSwitchManufCluster):
     """Custom Moes cluster with quadruple-gang screen name support."""
 
-    dp_to_attribute = MoesSwitchManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        MoesSwitchManufCluster.dp_to_attribute.copy()
+    )
     dp_to_attribute.update(
         {
             105: _name_dp_mapping("name_update_1"),
