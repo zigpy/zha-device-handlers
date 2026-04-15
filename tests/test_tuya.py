@@ -317,29 +317,29 @@ def test_ts0121_signature(assert_signature_matches_quirk):
                 "manufacturer": "_TZE28C1000000_a2teqi5u",
                 "model": "TS0601",
                 "endpoints": {
-                        "1": {
-                            "profile_id": 260,
-                            "device_type": "0x0051",
-                            "in_clusters": [
-                                "0x0000",
-                                "0xe000",
-                                "0xeb00",
+                    "1": {
+                        "profile_id": 260,
+                        "device_type": "0x0051",
+                        "in_clusters": [
+                            "0x0000",
+                            "0xe000",
+                            "0xeb00",
                             "0xed00",
                             "0x0004",
                             "0x0005",
-                                "0x0003",
-                                "0xef00",
-                            ],
-                            "out_clusters": ["0x000a", "0x0019"],
-                        },
-                        "242": {
-                            "profile_id": 41440,
-                            "device_type": "0x0061",
-                            "in_clusters": [],
-                            "out_clusters": ["0x0021"],
-                        },
+                            "0x0003",
+                            "0xef00",
+                        ],
+                        "out_clusters": ["0x000a", "0x0019"],
+                    },
+                    "242": {
+                        "profile_id": 41440,
+                        "device_type": "0x0061",
+                        "in_clusters": [],
+                        "out_clusters": ["0x0021"],
                     },
                 },
+            },
         ),
         (
             zhaquirks.tuya.ts0601_screen_switch.TuyaDualScreenSwitchTZE204EF00,
@@ -347,25 +347,25 @@ def test_ts0121_signature(assert_signature_matches_quirk):
                 "manufacturer": "_TZE204_3ctwoaip",
                 "model": "TS0601",
                 "endpoints": {
-                        "1": {
-                            "profile_id": 260,
-                            "device_type": "0x0051",
-                            "in_clusters": [
-                                "0x0004",
-                                "0x0005",
-                                "0xef00",
-                                "0x0000",
-                            ],
-                            "out_clusters": ["0x0019", "0x000a"],
-                        },
-                        "242": {
-                            "profile_id": 41440,
-                            "device_type": "0x0061",
-                            "in_clusters": [],
-                            "out_clusters": ["0x0021"],
-                        },
+                    "1": {
+                        "profile_id": 260,
+                        "device_type": "0x0051",
+                        "in_clusters": [
+                            "0x0004",
+                            "0x0005",
+                            "0xef00",
+                            "0x0000",
+                        ],
+                        "out_clusters": ["0x0019", "0x000a"],
+                    },
+                    "242": {
+                        "profile_id": 41440,
+                        "device_type": "0x0061",
+                        "in_clusters": [],
+                        "out_clusters": ["0x0021"],
                     },
                 },
+            },
         ),
         (
             zhaquirks.tuya.ts0601_screen_switch.TuyaQuadrupleScreenSwitchTZE28C1000000,
@@ -373,29 +373,29 @@ def test_ts0121_signature(assert_signature_matches_quirk):
                 "manufacturer": "_TZE28C1000000_xibaabmu",
                 "model": "TS0601",
                 "endpoints": {
-                        "1": {
-                            "profile_id": 260,
-                            "device_type": "0x0051",
-                            "in_clusters": [
-                                "0x0000",
-                                "0xe000",
-                                "0xeb00",
+                    "1": {
+                        "profile_id": 260,
+                        "device_type": "0x0051",
+                        "in_clusters": [
+                            "0x0000",
+                            "0xe000",
+                            "0xeb00",
                             "0xed00",
                             "0x0004",
                             "0x0005",
-                                "0x0003",
-                                "0xef00",
-                            ],
-                            "out_clusters": ["0x000a", "0x0019"],
-                        },
-                        "242": {
-                            "profile_id": 41440,
-                            "device_type": "0x0061",
-                            "in_clusters": [],
-                            "out_clusters": ["0x0021"],
-                        },
+                            "0x0003",
+                            "0xef00",
+                        ],
+                        "out_clusters": ["0x000a", "0x0019"],
+                    },
+                    "242": {
+                        "profile_id": 41440,
+                        "device_type": "0x0061",
+                        "in_clusters": [],
+                        "out_clusters": ["0x0021"],
                     },
                 },
+            },
         ),
     ),
 )
