@@ -7,8 +7,8 @@ import pytest
 import zigpy.types as t
 from zigpy.zcl import AttributeUnsupportedEvent
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.foundation import ReadAttributeRecord, Status
 import zigpy.zcl.foundation as f
+from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
