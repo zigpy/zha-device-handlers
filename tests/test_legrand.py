@@ -436,12 +436,12 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: LegrandMode.Switch}, manufacturer=0xFC40)
+    await mode_cluster.write_attributes({0: LegrandMode.Switch}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     try:
         mode_cluster._write_attributes.assert_awaited_with(
             [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([3, 0])))],
-            manufacturer=0xFC40,
+            manufacturer=0x1021,
         )
     except AssertionError as e:
         logging.warning(
@@ -454,12 +454,12 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: LegrandMode.Auto}, manufacturer=0xFC40)
+    await mode_cluster.write_attributes({0: LegrandMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     try:
         mode_cluster._write_attributes.assert_awaited_with(
             [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([4, 0])))],
-            manufacturer=0xFC40,
+            manufacturer=0x1021,
         )
     except AssertionError as e:
         logging.warning(
@@ -473,13 +473,13 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
         ]
     )
     await mode_cluster.write_attributes(
-        {"mode": LegrandMode.Switch}, manufacturer=0xFC40
+        {"mode": LegrandMode.Switch}, manufacturer=0x1021
     )
     mode_cluster._write_attributes.assert_awaited_once()
     try:
         mode_cluster._write_attributes.assert_awaited_with(
             [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([3, 0])))],
-            manufacturer=0xFC40,
+            manufacturer=0x1021,
         )
     except AssertionError as e:
         logging.warning(
@@ -492,12 +492,12 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({"mode": LegrandMode.Auto}, manufacturer=0xFC40)
+    await mode_cluster.write_attributes({"mode": LegrandMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     try:
         mode_cluster._write_attributes.assert_awaited_with(
             [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([4, 0])))],
-            manufacturer=0xFC40,
+            manufacturer=0x1021,
         )
     except AssertionError as e:
         logging.warning(
