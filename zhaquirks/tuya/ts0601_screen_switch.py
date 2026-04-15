@@ -27,6 +27,7 @@ class RawBytes(TuyaData):
     """Raw bytes helper for Tuya string payloads."""
 
     def __init__(self, value: bytes):
+        """Init raw byte payload."""
         self.raw = value
 
     def serialize(self) -> bytes:
