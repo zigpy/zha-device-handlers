@@ -1,10 +1,9 @@
-"""Sonoff SNZB-02D - Zigbee LCD smart temperature humidity sensor."""
+"""Sonoff SNZB-02D、SNZB02DR2 - Zigbee LCD smart temperature humidity sensor."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 
@@ -19,7 +18,6 @@ class CustomSonoffCluster(CustomCluster):
     """Sonoff custom cluster."""
 
     cluster_id = 0xFC11
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -27,42 +25,50 @@ class CustomSonoffCluster(CustomCluster):
         comfort_temperature_max = ZCLAttributeDef(
             id=0x0003,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         comfort_temperature_min = ZCLAttributeDef(
             id=0x0004,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         comfort_humidity_min = ZCLAttributeDef(
             id=0x0005,
             type=t.uint16_t,
+            manufacturer_code=None,
         )
 
         comfort_humidity_max = ZCLAttributeDef(
             id=0x0006,
             type=t.uint16_t,
+            manufacturer_code=None,
         )
 
         temperature_unit = ZCLAttributeDef(
             id=0x0007,
             type=TemperatureUnit,
             zcl_type=DataTypeId.uint16,
+            manufacturer_code=None,
         )
 
         temperature_offset = ZCLAttributeDef(
             id=0x2003,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
         humidity_offset = ZCLAttributeDef(
             id=0x2004,
             type=t.int16s,
+            manufacturer_code=None,
         )
 
 
 (
     QuirkBuilder("SONOFF", "SNZB-02D")
+    .applies_to("SONOFF", "SNZB-02DR2")
     .replaces(CustomSonoffCluster)
     .number(
         CustomSonoffCluster.AttributeDefs.comfort_temperature_min.name,
@@ -125,7 +131,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_offset",

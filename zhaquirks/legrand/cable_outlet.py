@@ -5,6 +5,8 @@ from typing import Any
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -75,7 +77,7 @@ class LegrandCableOutletCluster(CustomCluster):
         pilot_wire_mode = ZCLAttributeDef(
             id=0x00,
             type=PilotWireMode,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1021,
         )
 
     class ServerCommandDefs(BaseCommandDefs):
@@ -84,15 +86,15 @@ class LegrandCableOutletCluster(CustomCluster):
         set_pilot_wire_mode = ZCLCommandDef(
             id=0x00,
             schema={"mode": PilotWireMode},
-            is_manufacturer_specific=True,
+            manufacturer_code=0x1021,
         )
 
     async def write_attributes(
         self,
-        attributes: dict[str | int, Any],
-        manufacturer: int | None = None,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
         **kwargs,
-    ) -> list:
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Write attributes to the cluster."""
 
         attrs = {}
@@ -101,7 +103,9 @@ class LegrandCableOutletCluster(CustomCluster):
             if attr_def == LegrandCableOutletCluster.AttributeDefs.pilot_wire_mode:
                 await self.set_pilot_wire_mode(value, manufacturer=manufacturer)
                 await super().read_attributes([attr], manufacturer=manufacturer)
-        return await super().write_attributes(attrs, manufacturer)
+        return await super().write_attributes(
+            attrs, manufacturer=manufacturer, **kwargs
+        )
 
 
 (
