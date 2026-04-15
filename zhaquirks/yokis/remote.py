@@ -21,10 +21,10 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("YOKIS", "TLC1-UP")
-    .also_applies_to("YOKIS", "TLM1-UP")
-    .also_applies_to("YOKIS", "TLM1T503-UP")
-    .also_applies_to("YOKIS", "TLM1TNO-UP")
-    .also_applies_to("YOKIS", "TLM1TDK-UP")
+    .applies_to("YOKIS", "TLM1-UP")
+    .applies_to("YOKIS", "TLM1T503-UP")
+    .applies_to("YOKIS", "TLM1TNO-UP")
+    .applies_to("YOKIS", "TLM1TDK-UP")
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {
@@ -39,13 +39,13 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("YOKIS", "TLC2-UP")
-    .also_applies_to("YOKIS", "TLM2-UP")
-    .also_applies_to("YOKIS", "TLM2T503-UP")
-    .also_applies_to("YOKIS", "E2BP-UP")
-    .also_applies_to("YOKIS", "MONITOR2-UP")
-    .also_applies_to("YOKIS", "TLM2TNO-UP")
-    .also_applies_to("YOKIS", "E2BPA-UP")
-    .also_applies_to("YOKIS", "A2BP-UP")
+    .applies_to("YOKIS", "TLM2-UP")
+    .applies_to("YOKIS", "TLM2T503-UP")
+    .applies_to("YOKIS", "E2BP-UP")
+    .applies_to("YOKIS", "MONITOR2-UP")
+    .applies_to("YOKIS", "TLM2TNO-UP")
+    .applies_to("YOKIS", "E2BPA-UP")
+    .applies_to("YOKIS", "A2BP-UP")
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {
@@ -65,13 +65,13 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("YOKIS", "TLC4-UP")
-    .also_applies_to("YOKIS", "TLM4-UP")
-    .also_applies_to("YOKIS", "TLM4T503-UP")
-    .also_applies_to("YOKIS", "E4BP-UP")
-    .also_applies_to("YOKIS", "E4BPX-UP")
-    .also_applies_to("YOKIS", "GALET4-UP")
-    .also_applies_to("YOKIS", "TLM4TNO-UP")
-    .also_applies_to("YOKIS", "TLM4TDK-UP")
+    .applies_to("YOKIS", "TLM4-UP")
+    .applies_to("YOKIS", "TLM4T503-UP")
+    .applies_to("YOKIS", "E4BP-UP")
+    .applies_to("YOKIS", "E4BPX-UP")
+    .applies_to("YOKIS", "GALET4-UP")
+    .applies_to("YOKIS", "TLM4TNO-UP")
+    .applies_to("YOKIS", "TLM4TDK-UP")
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {
@@ -101,7 +101,7 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("YOKIS", "TLC8-UP")
-    .also_applies_to("YOKIS", "MONITOR-UP")
+    .applies_to("YOKIS", "MONITOR-UP")
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON_1): {
