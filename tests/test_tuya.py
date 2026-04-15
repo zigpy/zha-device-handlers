@@ -399,7 +399,9 @@ def test_ts0121_signature(assert_signature_matches_quirk):
         ),
     ),
 )
-def test_ts0601_screen_switch_signatures(assert_signature_matches_quirk, quirk, signature):
+def test_ts0601_screen_switch_signatures(
+    assert_signature_matches_quirk, quirk, signature
+):
     """Test TS0601 screen switch signatures are matched to their quirks."""
 
     assert_signature_matches_quirk(quirk, signature)

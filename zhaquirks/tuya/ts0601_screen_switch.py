@@ -1,6 +1,6 @@
 """Tuya TS0601 screen switch quirks."""
 
-from zigpy.profiles import zha, zgp
+from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -20,11 +20,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaData, TuyaSwitch
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    MoesSwitchManufCluster,
-    TuyaOnOffNM,
-)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, MoesSwitchManufCluster, TuyaOnOffNM
 
 
 class RawBytes(TuyaData):
@@ -108,7 +104,9 @@ class ScreenSwitchManufCluster4G(MoesSwitchManufCluster):
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
 
 
-def _signature(models_info: list[tuple[str, str]], input_clusters: list[int] | None = None):
+def _signature(
+    models_info: list[tuple[str, str]], input_clusters: list[int] | None = None
+):
     """Build the base signature for screen switches."""
     if input_clusters is None:
         input_clusters = [
