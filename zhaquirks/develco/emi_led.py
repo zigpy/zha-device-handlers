@@ -49,6 +49,19 @@ class ManufacturerMetering(CustomCluster):
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
     )
+    .number(
+        # Allow a user to set the current summation value, so it can show the same value as the physical meter.
+        attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
+        cluster_id=ManufacturerMetering.cluster_id,
+        endpoint_id=2,
+        min_value=0,
+        max_value=281474976710655,
+        step=1,
+        unit="Wh",
+        mode="box",
+        translation_key="current_summation",
+        fallback_name="Current summation",
+    )
     .write_attr_button(
         attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
         attribute_value=0,
