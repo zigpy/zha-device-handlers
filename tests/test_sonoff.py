@@ -272,4 +272,3 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
 
     cluster.update_attribute(0x0001, 1)
     assert listener.zha_send_event.call_count == 0
-
