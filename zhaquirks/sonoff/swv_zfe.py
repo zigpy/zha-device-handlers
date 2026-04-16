@@ -263,6 +263,7 @@ class SWVZFECluster(CustomCluster):
         min_value=-180,
         max_value=180,
         step=1,
+        mode="box",
         translation_key="longitude",
         fallback_name="Longitude",
     )
@@ -272,6 +273,7 @@ class SWVZFECluster(CustomCluster):
         min_value=-90,
         max_value=90,
         step=1,
+        mode="box",
         translation_key="latitude",
         fallback_name="Latitude",
     )
