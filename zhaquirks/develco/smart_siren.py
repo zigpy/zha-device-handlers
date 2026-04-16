@@ -218,9 +218,10 @@ BASE_SIREN_QUIRK = (
         cluster_id=IasZone.cluster_id,
         attribute_name=IasZone.AttributeDefs.zone_status.name,
         device_class=BinarySensorDeviceClass.POWER,
+        # AC mains bit is 0 when on mains power, 1 when on battery, so we need to invert it for correct reporting
         attribute_converter=lambda value: not bool(value & IasZone.ZoneStatus.AC_mains),
         unique_id_suffix="power",
-        fallback_name="Power",
+        fallback_name="AC Power",
     )
 )
 

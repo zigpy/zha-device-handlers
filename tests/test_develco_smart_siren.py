@@ -15,7 +15,12 @@ def _get_siren_cluster(zigpy_device_from_v2_quirk):
         manufacturer="frient A/S",
         model="SIRZB-110",
         endpoint_ids=[43],
-        cluster_ids={43: {IasWd.cluster_id: ClusterType.Server}},
+        cluster_ids={
+            43: {
+                IasWd.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            }
+        },
     )
     return device.endpoints[43].ias_wd
 
@@ -284,7 +289,12 @@ async def test_frient_ias_wd_metadata_entities_present(zigpy_device_from_v2_quir
         manufacturer="frient A/S",
         model="SIRZB-110",
         endpoint_ids=[43],
-        cluster_ids={43: {IasWd.cluster_id: ClusterType.Server}},
+        cluster_ids={
+            43: {
+                IasWd.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            }
+        },
     )
 
     metadata = device.exposes_metadata[(43, IasWd.cluster_id, ClusterType.Server)]
@@ -297,12 +307,17 @@ async def test_frient_ias_wd_metadata_entities_present(zigpy_device_from_v2_quir
 
 
 def test_power_binary_sensor_attribute_converter(zigpy_device_from_v2_quirk):
-    """Test power entity converter reports battery when AC mains flag is unset."""
+    """Test power entity converter with inverted IAS AC_mains bit semantics."""
     device = zigpy_device_from_v2_quirk(
         manufacturer="frient A/S",
         model="SIRZB-110",
         endpoint_ids=[43],
-        cluster_ids={43: {IasWd.cluster_id: ClusterType.Server}},
+        cluster_ids={
+            43: {
+                IasWd.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            }
+        },
     )
 
     metadata = device.exposes_metadata[(43, IasZone.cluster_id, ClusterType.Server)]
@@ -311,9 +326,9 @@ def test_power_binary_sensor_attribute_converter(zigpy_device_from_v2_quirk):
     )
     converter = power_meta.attribute_converter
 
-    # AC mains present -> not on battery backup.
+    # IAS AC_mains bit set indicates battery operation, so AC power must be False.
     assert converter(IasZone.ZoneStatus.AC_mains) is False
-    # AC mains absent -> on battery backup.
+    # IAS AC_mains bit unset indicates mains power, so AC power must be True.
     assert converter(IasZone.ZoneStatus.Alarm_1) is True
-    # AC mains should still win when combined with other flags.
+    # IAS AC_mains bit still wins when combined with other zone status flags.
     assert converter(IasZone.ZoneStatus.AC_mains | IasZone.ZoneStatus.Alarm_1) is False
