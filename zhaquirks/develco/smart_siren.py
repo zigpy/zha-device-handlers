@@ -17,6 +17,8 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.develco import DEVELCO, FRIENT
+
 
 class FrientIasWd(IasWd):
     """IAS WD cluster wrapper with local squawk volume setting."""
@@ -224,8 +226,10 @@ BASE_SIREN_QUIRK = (
 (
     # Devices with tamper
     BASE_SIREN_QUIRK.clone()
-    .applies_to("frient A/S", "SIRZB-110")
-    .applies_to("frient A/S", "SIRZB-112")
+    .applies_to(FRIENT, "SIRZB-110")
+    .applies_to(FRIENT, "SIRZB-112")
+    .applies_to(DEVELCO, "SIRZB-110")
+    .applies_to(DEVELCO, "SIRZB-112")
     # Create a tamper sensor
     .binary_sensor(
         endpoint_id=43,
@@ -241,5 +245,8 @@ BASE_SIREN_QUIRK = (
 
 (
     # Device without tamper
-    BASE_SIREN_QUIRK.clone().applies_to("frient A/S", "SIRZB-111").add_to_registry()
+    BASE_SIREN_QUIRK.clone()
+    .applies_to(FRIENT, "SIRZB-111")
+    .applies_to(DEVELCO, "SIRZB-111")
+    .add_to_registry()
 )

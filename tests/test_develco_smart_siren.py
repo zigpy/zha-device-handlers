@@ -138,7 +138,9 @@ async def test_frient_ias_wd_read_attributes_raw_remote_only_delegates(
         "read_attributes_raw",
         new=mock.AsyncMock(return_value=([remote_record],)),
     ) as m:
-        (records,) = await ias_wd.read_attributes_raw([remote_attr_id], manufacturer=0x1234)
+        (records,) = await ias_wd.read_attributes_raw(
+            [remote_attr_id], manufacturer=0x1234
+        )
 
     m.assert_called_once()
     assert m.call_args.args[0] == [remote_attr_id]
@@ -159,7 +161,9 @@ async def test_frient_ias_wd_write_attributes_local_only(zigpy_device_from_v2_qu
         )
 
     m.assert_not_called()
-    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
     assert ias_wd.get(local_attr_id) == IasWd.Squawk.SquawkLevel.Medium_level_sound
 
 
@@ -204,7 +208,9 @@ async def test_frient_ias_wd_write_attributes_local_only_attrdef_key(
         )
 
     m.assert_not_called()
-    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
     assert ias_wd.get(local_attr_def.id) == IasWd.Squawk.SquawkLevel.Low_level_sound
 
 
@@ -214,9 +220,11 @@ async def test_frient_ias_wd_write_attributes_unknown_key_raises(
     """Test unknown attributes fail early with a clear error."""
     ias_wd = _get_siren_cluster(zigpy_device_from_v2_quirk)
 
-    with mock.patch.object(IasWd, "write_attributes", new=mock.AsyncMock()) as m:
-        with pytest.raises(KeyError, match="Unknown attribute"):
-            await ias_wd.write_attributes({"does_not_exist": 1})
+    with (
+        mock.patch.object(IasWd, "write_attributes", new=mock.AsyncMock()) as m,
+        pytest.raises(KeyError, match="Unknown attribute"),
+    ):
+        await ias_wd.write_attributes({"does_not_exist": 1})
 
     m.assert_not_called()
 
@@ -229,7 +237,9 @@ async def test_frient_ias_wd_write_attributes_empty_returns_success(
 
     result = await ias_wd.write_attributes({})
 
-    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
 
 
 async def test_frient_ias_wd_squawk_uses_cached_level(zigpy_device_from_v2_quirk):
@@ -239,7 +249,9 @@ async def test_frient_ias_wd_squawk_uses_cached_level(zigpy_device_from_v2_quirk
 
     ias_wd.update_attribute(local_attr_id, IasWd.Squawk.SquawkLevel.High_level_sound)
 
-    with mock.patch.object(ias_wd, "command", new=mock.AsyncMock(return_value="ok")) as m:
+    with mock.patch.object(
+        ias_wd, "command", new=mock.AsyncMock(return_value="ok")
+    ) as m:
         result = await ias_wd.squawk(0x10)
 
     m.assert_called_once()
@@ -255,7 +267,9 @@ async def test_frient_ias_wd_squawk_uses_default_level_when_unset(
     """Test squawk command falls back to default level when cache is unset."""
     ias_wd = _get_siren_cluster(zigpy_device_from_v2_quirk)
 
-    with mock.patch.object(ias_wd, "command", new=mock.AsyncMock(return_value="ok")) as m:
+    with mock.patch.object(
+        ias_wd, "command", new=mock.AsyncMock(return_value="ok")
+    ) as m:
         result = await ias_wd.squawk(0x00)
 
     m.assert_called_once()
