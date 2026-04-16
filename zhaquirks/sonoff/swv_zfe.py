@@ -2,7 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
+from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTime, UnitOfVolume
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
@@ -173,6 +173,7 @@ class SWVZFECluster(CustomCluster):
         SWVZFECluster.cluster_id,
         attribute_converter=swvzfe_water_shortage,
         device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.STANDARD,
         unique_id_suffix="water_shortage",
         fallback_name="Water shortage",
     )
@@ -181,6 +182,7 @@ class SWVZFECluster(CustomCluster):
         SWVZFECluster.cluster_id,
         attribute_converter=swvzfe_water_leakage,
         device_class=BinarySensorDeviceClass.MOISTURE,
+        entity_type=EntityType.STANDARD,
         unique_id_suffix="water_leakage",
         fallback_name="Water leakage",
     )
@@ -197,6 +199,7 @@ class SWVZFECluster(CustomCluster):
         SWVZFECluster.cluster_id,
         attribute_converter=swvzfe_fail_safe,
         device_class=BinarySensorDeviceClass.SAFETY,
+        entity_type=EntityType.STANDARD,
         unique_id_suffix="fail_safe",
         fallback_name="Fail safe",
     )
