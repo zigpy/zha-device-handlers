@@ -190,7 +190,7 @@ class SWVZFECluster(CustomCluster):
         attribute_converter=swvzfe_frost_protection,
         unique_id_suffix="frost_protection",
         translation_key="frost_protection",
-        fallback_name="Frost protection active",
+        fallback_name="Frost protection",
     )
     .binary_sensor(
         SWVZFECluster.AttributeDefs.valve_abnormal_state.name,
