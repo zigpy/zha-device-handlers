@@ -85,7 +85,7 @@ class FrientIasWd(CustomCluster, IasWd):
             **kwargs,
         )
         remote_records = list(remote_result[0])
-        return (remote_records + local_records,)
+        return (remote_records + local_records, *remote_result[1:])
 
     async def write_attributes(
         self,

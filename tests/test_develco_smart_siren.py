@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.security import IasWd
+from zigpy.zcl.clusters.security import IasWd, IasZone
 
 from zhaquirks.develco.smart_siren import FrientIasWd
 
@@ -294,3 +294,26 @@ async def test_frient_ias_wd_metadata_entities_present(zigpy_device_from_v2_quir
     assert "squawk_volume" in translation_keys
     assert "squawk_armed" in translation_keys
     assert "squawk_disarmed" in translation_keys
+
+
+def test_power_binary_sensor_attribute_converter(zigpy_device_from_v2_quirk):
+    """Test power entity converter reports battery when AC mains flag is unset."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="frient A/S",
+        model="SIRZB-110",
+        endpoint_ids=[43],
+        cluster_ids={43: {IasWd.cluster_id: ClusterType.Server}},
+    )
+
+    metadata = device.exposes_metadata[(43, IasZone.cluster_id, ClusterType.Server)]
+    power_meta = next(
+        entity for entity in metadata if entity.unique_id_suffix == "power"
+    )
+    converter = power_meta.attribute_converter
+
+    # AC mains present -> not on battery backup.
+    assert converter(IasZone.ZoneStatus.AC_mains) is False
+    # AC mains absent -> on battery backup.
+    assert converter(IasZone.ZoneStatus.Alarm_1) is True
+    # AC mains should still win when combined with other flags.
+    assert converter(IasZone.ZoneStatus.AC_mains | IasZone.ZoneStatus.Alarm_1) is False
