@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     EntityType,
     QuirkBuilder,
@@ -20,7 +21,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from zhaquirks.develco import DEVELCO, FRIENT
 
 
-class FrientIasWd(IasWd):
+class FrientIasWd(CustomCluster, IasWd):
     """IAS WD cluster wrapper with local squawk volume setting."""
 
     class AttributeDefs(IasWd.AttributeDefs):
