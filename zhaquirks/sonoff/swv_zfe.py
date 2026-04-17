@@ -84,7 +84,9 @@ def swvzfe_normalize_valve_alarm_settings(
     try:
         payload = SWVZFEValveAlarmSettingsPayload(value)
     except TypeError as exc:
-        raise ValueError("valve_alarm_settings must be an iterable of four bytes") from exc
+        raise ValueError(
+            "valve_alarm_settings must be an iterable of four bytes"
+        ) from exc
 
     if len(payload) != 4:
         raise ValueError(
@@ -92,7 +94,10 @@ def swvzfe_normalize_valve_alarm_settings(
         )
 
     return SWVZFEValveAlarmSettingsPayload(
-        [_swvzfe_uint8(item, f"valve_alarm_settings[{idx}]") for idx, item in enumerate(payload)]
+        [
+            _swvzfe_uint8(item, f"valve_alarm_settings[{idx}]")
+            for idx, item in enumerate(payload)
+        ]
     )
 
 
@@ -621,9 +626,7 @@ class SWVZFEValveAlarmConfigCluster(LocalDataCluster):
             enable_water_shortage_auto_close=bool(
                 settings["enable_water_shortage_auto_close"]
             ),
-            enable_water_leak_auto_close=bool(
-                settings["enable_water_leak_auto_close"]
-            ),
+            enable_water_leak_auto_close=bool(settings["enable_water_leak_auto_close"]),
             alarm_water_shortage_duration=int(
                 settings["alarm_water_shortage_duration"]
             ),

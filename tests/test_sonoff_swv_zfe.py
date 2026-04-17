@@ -380,7 +380,9 @@ def test_swvzfe_cluster_deserialize_repairs_duplicate_array_type_in_multi_record
 
     assert hdr.command_id == foundation.GeneralCommand.Read_Attributes_rsp
     assert len(response.status_records) == 2
-    assert response.status_records[0].attrid == SWVZFECluster.AttributeDefs.child_lock.id
+    assert (
+        response.status_records[0].attrid == SWVZFECluster.AttributeDefs.child_lock.id
+    )
     assert bool(response.status_records[0].value.value) is False
     assert (
         response.status_records[1].attrid
