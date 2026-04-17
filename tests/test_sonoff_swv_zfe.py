@@ -370,9 +370,7 @@ async def test_swvzfe_valve_alarm_settings_numeric_write_updates_payload(
         mock.AsyncMock(return_value=write_response),
     ) as mock_write:
         await local_cluster.write_attributes(
-            {
-                SWVZFEValveAlarmConfigCluster.AttributeDefs.set_frost_temperature.name: 6
-            }
+            {SWVZFEValveAlarmConfigCluster.AttributeDefs.set_frost_temperature.name: 6}
         )
 
     written = mock_write.call_args[0][0][0]
@@ -535,7 +533,10 @@ def test_swvzfe_repair_valve_alarm_settings_read_response_ignores_other_commands
 
     swvzfe_cluster = device.endpoints[1].swvzfe_cluster
 
-    assert swvzfe_cluster._repair_valve_alarm_settings_read_response(b"\x00\x01\x00") is None
+    assert (
+        swvzfe_cluster._repair_valve_alarm_settings_read_response(b"\x00\x01\x00")
+        is None
+    )
 
 
 def test_swvzfe_repair_valve_alarm_settings_read_response_ignores_well_formed_payloads(
@@ -670,7 +671,10 @@ async def test_swvzfe_cluster_write_attributes_supports_mixed_writes(
         )
 
     assert mock_write.await_count == 2
-    assert mock_write.await_args_list[0].args[0][0].attrid == SWVZFECluster.AttributeDefs.child_lock.id
+    assert (
+        mock_write.await_args_list[0].args[0][0].attrid
+        == SWVZFECluster.AttributeDefs.child_lock.id
+    )
     assert (
         mock_write.await_args_list[1].args[0][0].attrid
         == SWVZFECluster.AttributeDefs.valve_alarm_settings.id
@@ -756,7 +760,8 @@ async def test_swvzfe_cluster_write_attributes_emits_unsupported_event(
         )
 
     assert any(
-        call.args[0] == AttributeUnsupportedEvent.event_type for call in emit.call_args_list
+        call.args[0] == AttributeUnsupportedEvent.event_type
+        for call in emit.call_args_list
     )
 
 
