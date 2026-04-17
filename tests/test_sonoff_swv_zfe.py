@@ -3,7 +3,7 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import AttributeUnsupportedEvent, ClusterType, foundation
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -99,6 +99,100 @@ def test_swvzfe_normalize_valve_alarm_settings_rejects_bad_length() -> None:
         swvzfe_normalize_valve_alarm_settings([1, 2, 3])
 
 
+def test_swvzfe_normalize_valve_alarm_settings_accepts_foundation_array() -> None:
+    """The helper should coerce decoded ZCL Array values into the payload type."""
+    payload = swvzfe_normalize_valve_alarm_settings(
+        foundation.Array(
+            type=foundation.DataTypeId.uint8,
+            value=[1, 2, 3, 4],
+        )
+    )
+
+    assert isinstance(payload, SWVZFEValveAlarmSettingsPayload)
+    assert list(payload) == [1, 2, 3, 4]
+
+
+def test_swvzfe_valve_alarm_settings_payload_accepts_foundation_array() -> None:
+    """The payload wrapper should also unwrap decoded ZCL Array values directly."""
+    payload = SWVZFEValveAlarmSettingsPayload(
+        foundation.Array(
+            type=foundation.DataTypeId.uint8,
+            value=[1, 2, 3, 4],
+        )
+    )
+
+    assert list(payload) == [1, 2, 3, 4]
+
+
+@pytest.mark.parametrize(
+    ("value", "match"),
+    [
+        (None, "cannot be None"),
+        (object(), "iterable of four bytes"),
+        ([1, "bad", 3, 4], "must be an integer"),
+        ([1, 2, 3, 256], "range 0..255"),
+    ],
+    ids=["none", "non-iterable", "non-integer-item", "out-of-range-item"],
+)
+def test_swvzfe_normalize_valve_alarm_settings_rejects_invalid_values(
+    value, match: str
+) -> None:
+    """The helper should reject malformed packed alarm payloads."""
+    with pytest.raises(ValueError, match=match):
+        swvzfe_normalize_valve_alarm_settings(value)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        (
+            {"extra_enable_bits": "bad"},
+            "extra_enable_bits must be an integer",
+        ),
+        (
+            {"alarm_water_shortage_duration": -1},
+            "alarm_water_shortage_duration must be in the range 0..255",
+        ),
+    ],
+    ids=["bad-extra-enable-bits", "bad-duration"],
+)
+def test_swvzfe_pack_valve_alarm_settings_rejects_invalid_values(
+    kwargs, match: str
+) -> None:
+    """Packing should enforce uint8 validation on all numeric fields."""
+    valid_kwargs = {
+        "enable_alarm_water_shortage": True,
+        "enable_alarm_water_leak": False,
+        "enable_frost_protection": True,
+        "enable_water_shortage_auto_close": False,
+        "enable_water_leak_auto_close": True,
+        "alarm_water_shortage_duration": 7,
+        "alarm_water_leak_duration": 2,
+        "set_frost_temperature": 3,
+        "extra_enable_bits": 0,
+    }
+    valid_kwargs.update(kwargs)
+
+    with pytest.raises(ValueError, match=match):
+        swvzfe_pack_valve_alarm_settings(**valid_kwargs)
+
+
+def test_swvzfe_pack_valve_alarm_settings_rejects_non_integer_object() -> None:
+    """Packing should reject values that cannot be coerced to integers at all."""
+    with pytest.raises(ValueError, match="extra_enable_bits must be an integer"):
+        swvzfe_pack_valve_alarm_settings(
+            enable_alarm_water_shortage=True,
+            enable_alarm_water_leak=False,
+            enable_frost_protection=True,
+            enable_water_shortage_auto_close=False,
+            enable_water_leak_auto_close=True,
+            alarm_water_shortage_duration=7,
+            alarm_water_leak_duration=2,
+            set_frost_temperature=3,
+            extra_enable_bits=object(),
+        )
+
+
 @pytest.mark.parametrize(
     "model",
     ["SWV-ZFE", "SWV-ZNE", "SWV-ZNU", "SWV-ZFU"],
@@ -149,6 +243,49 @@ async def test_swvzfe_valve_alarm_settings_propagation(zigpy_device_from_v2_quir
     assert local_cluster.get("alarm_water_shortage_duration") == 8
     assert local_cluster.get("alarm_water_leak_duration") == 3
     assert local_cluster.get("set_frost_temperature") == 4
+
+
+async def test_swvzfe_non_alarm_attribute_update_does_not_propagate(
+    zigpy_device_from_v2_quirk,
+):
+    """Only valve_alarm_settings updates should drive the local config cluster."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    local_cluster = device.endpoints[1].swvzfe_valve_alarm_config
+    local_listener = ClusterListener(local_cluster)
+
+    swvzfe_cluster.update_attribute(SWVZFECluster.AttributeDefs.child_lock.id, True)
+
+    assert local_listener.attribute_updates == []
+    assert local_cluster.get("enable_alarm_water_shortage") is None
+
+
+async def test_swvzfe_invalid_alarm_payload_logs_warning(zigpy_device_from_v2_quirk):
+    """Invalid 0x5020 payloads should be ignored after logging a warning."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    local_cluster = device.endpoints[1].swvzfe_valve_alarm_config
+    local_listener = ClusterListener(local_cluster)
+
+    with mock.patch.object(swvzfe_cluster, "warning") as warning:
+        swvzfe_cluster.update_attribute(
+            SWVZFECluster.AttributeDefs.valve_alarm_settings.id,
+            [1, 2, 3],
+        )
+
+    assert local_listener.attribute_updates == []
+    assert local_cluster.get("enable_alarm_water_shortage") is None
+    warning.assert_called_once()
 
 
 async def test_swvzfe_valve_alarm_settings_write_attributes_logic(
@@ -204,6 +341,68 @@ async def test_swvzfe_valve_alarm_settings_write_attributes_logic(
     assert local_cluster.get("alarm_water_shortage_duration") == 5
     assert local_cluster.get("alarm_water_leak_duration") == 2
     assert local_cluster.get("set_frost_temperature") == 1
+
+
+async def test_swvzfe_valve_alarm_settings_numeric_write_updates_payload(
+    zigpy_device_from_v2_quirk,
+):
+    """Numeric local writes should be repacked into the device payload."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    local_cluster = device.endpoints[1].swvzfe_valve_alarm_config
+
+    swvzfe_cluster.update_attribute(
+        SWVZFECluster.AttributeDefs.valve_alarm_settings.id,
+        SWVZFEValveAlarmSettingsPayload([0x05, 5, 2, 1]),
+    )
+
+    write_response = [
+        [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
+    ]
+    with mock.patch.object(
+        swvzfe_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=write_response),
+    ) as mock_write:
+        await local_cluster.write_attributes(
+            {
+                SWVZFEValveAlarmConfigCluster.AttributeDefs.set_frost_temperature.name: 6
+            }
+        )
+
+    written = mock_write.call_args[0][0][0]
+    assert list(written.value.value.value) == [0x05, 5, 2, 6]
+
+
+async def test_swvzfe_valve_alarm_settings_numeric_write_rejects_invalid_value(
+    zigpy_device_from_v2_quirk,
+):
+    """Numeric local writes should enforce uint8 validation."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    local_cluster = device.endpoints[1].swvzfe_valve_alarm_config
+
+    swvzfe_cluster.update_attribute(
+        SWVZFECluster.AttributeDefs.valve_alarm_settings.id,
+        SWVZFEValveAlarmSettingsPayload([0x05, 5, 2, 1]),
+    )
+
+    with pytest.raises(ValueError, match="set_frost_temperature must be in the range"):
+        await local_cluster.write_attributes(
+            {
+                SWVZFEValveAlarmConfigCluster.AttributeDefs.set_frost_temperature.name: 256
+            }
+        )
 
 
 async def test_swvzfe_valve_alarm_settings_failed_write_does_not_propagate(
@@ -309,6 +508,56 @@ async def test_swvzfe_cluster_apply_custom_configuration_ignores_read_failure(
         await swvzfe_cluster.apply_custom_configuration()
 
 
+def test_swvzfe_repair_valve_alarm_settings_read_response_handles_bad_header(
+    zigpy_device_from_v2_quirk,
+):
+    """Malformed frames should be ignored by the repair helper."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+
+    assert swvzfe_cluster._repair_valve_alarm_settings_read_response(b"\xff") is None
+
+
+def test_swvzfe_repair_valve_alarm_settings_read_response_ignores_other_commands(
+    zigpy_device_from_v2_quirk,
+):
+    """Only read attribute responses should be considered for repair."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+
+    assert swvzfe_cluster._repair_valve_alarm_settings_read_response(b"\x00\x01\x00") is None
+
+
+def test_swvzfe_repair_valve_alarm_settings_read_response_ignores_well_formed_payloads(
+    zigpy_device_from_v2_quirk,
+):
+    """The repair helper should no-op when the duplicated array marker is absent."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+
+    assert (
+        swvzfe_cluster._repair_valve_alarm_settings_read_response(
+            b"\x18\x01\x01\x00\x00\x00\x10\x00"
+        )
+        is None
+    )
+
+
 def test_swvzfe_cluster_deserialize_logs_raw_frame_on_parse_failure(
     zigpy_device_from_v2_quirk,
 ):
@@ -390,6 +639,125 @@ def test_swvzfe_cluster_deserialize_repairs_duplicate_array_type_in_multi_record
     )
     assert response.status_records[1].value.type == foundation.DataTypeId.uint8
     assert list(response.status_records[1].value.value) == [0, 0, 0, 0]
+
+
+async def test_swvzfe_cluster_write_attributes_supports_mixed_writes(
+    zigpy_device_from_v2_quirk,
+):
+    """Child-lock and packed alarm writes should both be forwarded in one call."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    write_response = [
+        [foundation.Status.SUCCESS],
+        [[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]],
+    ]
+
+    with mock.patch.object(
+        swvzfe_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(side_effect=write_response),
+    ) as mock_write:
+        await swvzfe_cluster.write_attributes(
+            {
+                SWVZFECluster.AttributeDefs.child_lock.name: True,
+                SWVZFECluster.AttributeDefs.valve_alarm_settings.name: [1, 2, 3, 4],
+            }
+        )
+
+    assert mock_write.await_count == 2
+    assert mock_write.await_args_list[0].args[0][0].attrid == SWVZFECluster.AttributeDefs.child_lock.id
+    assert (
+        mock_write.await_args_list[1].args[0][0].attrid
+        == SWVZFECluster.AttributeDefs.valve_alarm_settings.id
+    )
+
+
+async def test_swvzfe_cluster_write_attributes_handles_empty_status_list(
+    zigpy_device_from_v2_quirk,
+):
+    """An empty raw status list should be normalized to a success record."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+
+    with mock.patch.object(
+        swvzfe_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=[[]]),
+    ):
+        result = await swvzfe_cluster.write_attributes(
+            {SWVZFECluster.AttributeDefs.valve_alarm_settings.name: [1, 2, 3, 4]}
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert result[0][0].attrid == SWVZFECluster.AttributeDefs.valve_alarm_settings.id
+
+
+async def test_swvzfe_cluster_write_attributes_handles_scalar_status(
+    zigpy_device_from_v2_quirk,
+):
+    """A scalar raw status should be converted into a status record."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+
+    with mock.patch.object(
+        swvzfe_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=[foundation.Status.SUCCESS]),
+    ):
+        result = await swvzfe_cluster.write_attributes(
+            {SWVZFECluster.AttributeDefs.valve_alarm_settings.name: [1, 2, 3, 4]}
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert result[0][0].attrid == SWVZFECluster.AttributeDefs.valve_alarm_settings.id
+
+
+async def test_swvzfe_cluster_write_attributes_emits_unsupported_event(
+    zigpy_device_from_v2_quirk,
+):
+    """Unsupported attribute writes should emit the unsupported event."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    swvzfe_cluster = device.endpoints[1].swvzfe_cluster
+    unsupported = foundation.WriteAttributesStatusRecord(
+        status=foundation.Status.UNSUPPORTED_ATTRIBUTE,
+        attrid=SWVZFECluster.AttributeDefs.valve_alarm_settings.id,
+    )
+
+    with (
+        mock.patch.object(
+            swvzfe_cluster,
+            "write_attributes_raw",
+            mock.AsyncMock(return_value=[[unsupported]]),
+        ),
+        mock.patch.object(swvzfe_cluster, "emit", wraps=swvzfe_cluster.emit) as emit,
+    ):
+        await swvzfe_cluster.write_attributes(
+            {SWVZFECluster.AttributeDefs.valve_alarm_settings.name: [1, 2, 3, 4]}
+        )
+
+    assert any(
+        call.args[0] == AttributeUnsupportedEvent.event_type for call in emit.call_args_list
+    )
 
 
 async def test_swvzfe_valve_alarm_settings_write_attributes_lazy_initializes(
