@@ -32,7 +32,6 @@ from zhaquirks.xiaomi import (
 )
 
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
-
 XIAOMI_SYSTEM_MODE_MAP = {
     0: Thermostat.SystemMode.Off,
     1: Thermostat.SystemMode.Heat,
@@ -126,22 +125,27 @@ class ThermostatCluster(CustomCluster, Thermostat):
         ):
             self.debug("Passing 'system_mode' read to Xiaomi cluster")
 
-            if ZCL_SYSTEM_MODE in attributes:
-                remaining_attributes.remove(ZCL_SYSTEM_MODE)
-            if (
-                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
-                in attributes
-            ):
-                remaining_attributes.remove(
-                    AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+            xiaomi_key = AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id
+            forward_system_mode = False
+            for attr in [
+                ZCL_SYSTEM_MODE,
+                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name,
+            ]:
+                if attr in remaining_attributes:
+                    remaining_attributes.remove(attr)
+                    forward_system_mode = True
+            # Forward only once!
+            if forward_system_mode:
+                (
+                    successful_r,
+                    failed_r,
+                ) = await self.endpoint.opple_cluster.read_attributes(
+                    [xiaomi_key], **kwargs
                 )
 
-            successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
-                [ZCL_SYSTEM_MODE], **kwargs
-            )
             # convert Xiaomi system_mode to ZCL attribute
-            if ZCL_SYSTEM_MODE in successful_r:
-                mapped_value = XIAOMI_SYSTEM_MODE_MAP[successful_r.pop(ZCL_SYSTEM_MODE)]
+            if xiaomi_key in successful_r:
+                mapped_value = XIAOMI_SYSTEM_MODE_MAP[successful_r.pop(xiaomi_key)]
                 successful_r[ZCL_SYSTEM_MODE] = mapped_value
                 # Update the thermostat cluster's cache
                 self._update_attribute(ZCL_SYSTEM_MODE, mapped_value)
@@ -177,12 +181,14 @@ class ThermostatCluster(CustomCluster, Thermostat):
             )
 
         # write system_mode to Xiaomi cluster if applicable
+        xiaomi_key = AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id
+        xiaomi_manufacturer_code = 0x115F
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
-                {ZCL_SYSTEM_MODE: min(int(system_mode_value), 1)}, **kwargs
+                {xiaomi_key: min(int(system_mode_value), 1)},
+                manufacturer=xiaomi_manufacturer_code,
             )
-            # Update the thermostat cluster's cache
             self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
 
         # write remaining attributes to thermostat cluster
