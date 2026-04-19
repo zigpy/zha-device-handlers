@@ -27,7 +27,6 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
 
     cluster_id = SMRT_THINGS_REL_HUM_CLSTR
     name = "Smartthings Relative Humidity Measurement"
-    ep_attribute = "humidity"
 
     class AttributeDefs(BaseAttributeDefs):
         """Cluster attributes."""
