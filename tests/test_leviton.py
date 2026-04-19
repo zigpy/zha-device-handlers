@@ -7,7 +7,10 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl
 import zigpy.zdo.types as zdo_t
 
+import zhaquirks
 from zhaquirks.leviton.dimmer import LevitonLevelControl
+
+zhaquirks.setup()
 
 Default_Response = foundation.GENERAL_COMMANDS[
     foundation.GeneralCommand.Default_Response
