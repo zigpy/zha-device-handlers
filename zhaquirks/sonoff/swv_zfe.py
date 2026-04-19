@@ -22,6 +22,7 @@ from zigpy.zcl import (
     AttributeWrittenEvent,
     foundation,
 )
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
@@ -199,6 +200,28 @@ def swvzfe_fail_safe(x: int | None) -> bool | None:
     if x is None:
         return None
     return bool(x & 0x08)
+
+
+def swvzfe_on_with_timed_off_from_ds(value: int) -> int:
+    """Convert ZCL deciseconds to this device's seconds-based timer values."""
+    return max(0, int(value) // 10)
+
+
+class SWVZFEOnOffCluster(CustomCluster, OnOff):
+    """OnOff cluster with SWV-ZF* timer scaling compatibility."""
+
+    async def command(self, command, *args, **kwargs):
+        """Normalize on_with_timed_off args to the device's expected units."""
+        if command == OnOff.ServerCommandDefs.on_with_timed_off.id and len(args) >= 3:
+            command_args = (
+                args[0],
+                swvzfe_on_with_timed_off_from_ds(args[1]),
+                swvzfe_on_with_timed_off_from_ds(args[2]),
+                *args[3:],
+            )
+            return await super().command(command, *command_args, **kwargs)
+
+        return await super().command(command, *args, **kwargs)
 
 
 class SWVZFECluster(CustomCluster):
@@ -390,12 +413,17 @@ class SWVZFECluster(CustomCluster):
             )
 
     async def apply_custom_configuration(self, *args, **kwargs):
-        """Read the packed alarm settings during pairing to populate entities."""
+        """Read private attrs during pairing to populate entities."""
         try:
-            await self.read_attributes([self.AttributeDefs.valve_alarm_settings.id])
+            await self.read_attributes(
+                [
+                    self.AttributeDefs.valve_alarm_settings.id,
+                    self.AttributeDefs.valve_abnormal_state.id,
+                ]
+            )
         except Exception as exc:
             self.warning(
-                "Unable to read valve_alarm_settings during configuration: %s; continuing without initialization",
+                "Unable to read SWV-ZF* private attrs during configuration: %s; continuing without initialization",
                 exc,
             )
 
@@ -646,6 +674,7 @@ class SWVZFEValveAlarmConfigCluster(LocalDataCluster):
     .applies_to("SONOFF", "SWV-ZNE")
     .applies_to("SONOFF", "SWV-ZNU")
     .applies_to("SONOFF", "SWV-ZFU")
+    .replaces(SWVZFEOnOffCluster)
     .replaces(SWVZFECluster)
     .adds(SWVZFEValveAlarmConfigCluster)
     # Child lock - prevent accidental physical operation of the valve
@@ -698,6 +727,30 @@ class SWVZFEValveAlarmConfigCluster(LocalDataCluster):
         entity_type=EntityType.CONFIG,
         translation_key="enable_water_leak_auto_close",
         fallback_name="Water leak auto-close",
+    )
+    .number(
+        OnOff.AttributeDefs.on_time.name,
+        OnOff.cluster_id,
+        min_value=0,
+        max_value=86400,
+        step=1,
+        mode="box",
+        entity_type=EntityType.CONFIG,
+        unit=UnitOfTime.SECONDS,
+        translation_key="on_time",
+        fallback_name="On time",
+    )
+    .number(
+        OnOff.AttributeDefs.off_wait_time.name,
+        OnOff.cluster_id,
+        min_value=0,
+        max_value=86400,
+        step=1,
+        mode="box",
+        entity_type=EntityType.CONFIG,
+        unit=UnitOfTime.SECONDS,
+        translation_key="off_wait_time",
+        fallback_name="Off wait time",
     )
     .number(
         SWVZFEValveAlarmConfigCluster.AttributeDefs.alarm_water_shortage_duration.name,

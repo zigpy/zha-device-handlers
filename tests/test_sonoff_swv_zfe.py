@@ -4,11 +4,13 @@ from unittest import mock
 
 import pytest
 from zigpy.zcl import AttributeUnsupportedEvent, ClusterType, foundation
+from zigpy.zcl.clusters.general import OnOff
 
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.sonoff.swv_zfe import (
     SWVZFECluster,
+    SWVZFEOnOffCluster,
     SWVZFEValveAlarmConfigCluster,
     SWVZFEValveAlarmSettingsPayload,
     swvzfe_be_swap,
@@ -16,6 +18,7 @@ from zhaquirks.sonoff.swv_zfe import (
     swvzfe_fail_safe,
     swvzfe_frost_protection,
     swvzfe_normalize_valve_alarm_settings,
+    swvzfe_on_with_timed_off_from_ds,
     swvzfe_pack_valve_alarm_settings,
     swvzfe_water_leakage,
     swvzfe_water_shortage,
@@ -64,6 +67,15 @@ def test_swvzfe_converters_handle_none() -> None:
     assert swvzfe_water_leakage(None) is None
     assert swvzfe_frost_protection(None) is None
     assert swvzfe_fail_safe(None) is None
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(0, 0), (9, 0), (10, 1), (59, 5), (600, 60)],
+)
+def test_swvzfe_on_with_timed_off_from_ds(value: int, expected: int) -> None:
+    """Timed-off values should be converted from deciseconds to seconds."""
+    assert swvzfe_on_with_timed_off_from_ds(value) == expected
 
 
 def test_swvzfe_valve_alarm_settings_pack_decode() -> None:
@@ -210,10 +222,47 @@ def test_swvzfe_quirk_applies(zigpy_device_from_v2_quirk, model: str) -> None:
         device.endpoints[1].swvzfe_cluster,
         SWVZFECluster,
     )
+    assert isinstance(device.endpoints[1].on_off, SWVZFEOnOffCluster)
     assert isinstance(
         device.endpoints[1].swvzfe_valve_alarm_config,
         SWVZFEValveAlarmConfigCluster,
     )
+
+
+async def test_swvzfe_onoff_cluster_scales_on_with_timed_off_command(
+    zigpy_device_from_v2_quirk,
+):
+    """SWV-ZF* expects on_with_timed_off timers in seconds, not deciseconds."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SWV-ZFE",
+        cluster_ids={1: {SWVZFECluster.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[1].on_off
+    command_response = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Default_Response
+    ].schema(
+        command_id=OnOff.ServerCommandDefs.on_with_timed_off.id,
+        status=foundation.Status.SUCCESS,
+    )
+
+    with mock.patch(
+        "zhaquirks.sonoff.swv_zfe.CustomCluster.command",
+        mock.AsyncMock(return_value=command_response),
+    ) as mock_command:
+        await on_off.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0,
+            600,
+            120,
+        )
+
+    assert mock_command.await_count == 1
+    assert (
+        mock_command.await_args.args[0] == OnOff.ServerCommandDefs.on_with_timed_off.id
+    )
+    assert mock_command.await_args.args[1:] == (0, 60, 12)
 
 
 async def test_swvzfe_valve_alarm_settings_propagation(zigpy_device_from_v2_quirk):
@@ -472,8 +521,14 @@ async def test_swvzfe_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
         swvzfe_cluster,
         "_read_attributes",
         mock.AsyncMock(return_value=[[read_response]]),
-    ):
+    ) as mock_read_attributes:
         await swvzfe_cluster.apply_custom_configuration()
+
+    assert mock_read_attributes.await_count == 1
+    assert set(mock_read_attributes.await_args.args[0]) == {
+        SWVZFECluster.AttributeDefs.valve_alarm_settings.id,
+        SWVZFECluster.AttributeDefs.valve_abnormal_state.id,
+    }
 
     assert len(local_listener.attribute_updates) == 8
     assert local_cluster.get("enable_alarm_water_shortage") is True
