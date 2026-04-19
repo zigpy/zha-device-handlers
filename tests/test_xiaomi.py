@@ -40,6 +40,7 @@ from zigpy.zcl.clusters.measurement import (
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
+from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
@@ -2665,13 +2666,21 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
 async def test_h1_knob_rotation_event(zigpy_device_from_v2_quirk):
     """Test Aqara H1 knob emits zha_events derived from rotation attribute reports."""
+    from zhaquirks.const import LEFT, RIGHT, ROTATED
     from zhaquirks.xiaomi.aqara.remote_h1_knob import (
-        ROTATION_DIRECTION,
         KnobAction,
         KnobManuSpecificCluster,
     )
 
     device = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.rkba01")
+
+    # node descriptor should mark the device as a battery end device
+    # (the device advertises MainsPowered, which the quirk clears)
+    assert device.node_desc.logical_type == LogicalType.EndDevice
+    assert not (
+        device.node_desc.mac_capability_flags
+        & NodeDescriptor.MACCapabilityFlags.MainsPowered
+    )
 
     # quirk adds endpoints 71 and 72 with KnobManuSpecificCluster
     assert 71 in device.endpoints
@@ -2712,36 +2721,36 @@ async def test_h1_knob_rotation_event(zigpy_device_from_v2_quirk):
             ]
         )
 
-    # stop_rotation: delta attrs are dropped, direction derived from final angle
+    # StopRotation: delta attrs are dropped, direction derived from final angle
     cluster.handle_cluster_general_request(
-        hdr, make_report(KnobAction.stop_rotation, -42.5, 0.0)
+        hdr, make_report(KnobAction.StopRotation, -42.5, 0.0)
     )
     listener.zha_send_event.assert_called_once()
     command, event_args = listener.zha_send_event.call_args.args
-    assert command == "stop_rotation"
-    assert event_args["action"] == KnobAction.stop_rotation
+    assert command == "stopped_rotating"
+    assert event_args["action"] == KnobAction.StopRotation
     assert event_args["rotation_angle"] == pytest.approx(-42.5)
-    assert event_args[ROTATION_DIRECTION] == -1
+    assert event_args[ROTATED] == LEFT
     assert "rotation_angle_delta" not in event_args
 
-    # in-progress rotation: delta kept, no derived direction
+    # in-progress rotation: delta kept, direction derived from signed delta
     listener.reset_mock()
     cluster.handle_cluster_general_request(
-        hdr, make_report(KnobAction.rotation, 20.0, 5.0)
+        hdr, make_report(KnobAction.Rotation, 20.0, -5.0)
     )
     command, event_args = listener.zha_send_event.call_args.args
-    assert command == "rotation"
-    assert event_args["rotation_angle_delta"] == pytest.approx(5.0)
-    assert ROTATION_DIRECTION not in event_args
+    assert command == "continued_rotating"
+    assert event_args["rotation_angle_delta"] == pytest.approx(-5.0)
+    assert event_args[ROTATED] == LEFT
 
-    # hold_stop_rotation with positive angle -> direction = 1
+    # HoldStopRotation with positive angle -> RIGHT
     listener.reset_mock()
     cluster.handle_cluster_general_request(
-        hdr, make_report(KnobAction.hold_stop_rotation, 10.0, 3.0)
+        hdr, make_report(KnobAction.HoldStopRotation, 10.0, 3.0)
     )
     command, event_args = listener.zha_send_event.call_args.args
-    assert command == "hold_stop_rotation"
-    assert event_args[ROTATION_DIRECTION] == 1
+    assert command == "hold_stopped_rotating"
+    assert event_args[ROTATED] == RIGHT
     assert "rotation_angle_delta" not in event_args
 
 

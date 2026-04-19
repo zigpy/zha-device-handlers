@@ -1,6 +1,5 @@
 """Aqara H1 Smart Knob (wireless)."""
 
-import math
 from typing import Any
 
 from zigpy import types as t
@@ -16,14 +15,22 @@ from zhaquirks.const import (
     ARGS,
     BUTTON,
     COMMAND,
+    COMMAND_CONTINUED_ROTATING,
     COMMAND_OFF,
+    COMMAND_STARTED_ROTATING,
+    COMMAND_STOPPED_ROTATING,
     COMMAND_TOGGLE,
+    CONTINUED_ROTATING,
     DOUBLE_PRESS,
     ENDPOINT_ID,
+    LEFT,
     LONG_PRESS,
     LONG_RELEASE,
+    RIGHT,
     ROTATED,
     SHORT_PRESS,
+    STARTED_ROTATING,
+    STOPPED_ROTATING_WITH_DIRECTION,
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
@@ -57,27 +64,43 @@ H1_KNOB_NODE_DESCRIPTOR = NodeDescriptor(
     descriptor_capability_field=NodeDescriptor.DescriptorCapability.NONE,
 )
 
-ROTATION_DIRECTION = "rotation_direction"
+# "Pressed rotation": the device reports these while the knob is being rotated
+# with the button held down. No standard constants exist in zhaquirks.const, so
+# we define local ones mirroring the non-held naming convention.
+HOLD_STARTED_ROTATING = "rotary_knob_hold_started_rotating"
+HOLD_CONTINUED_ROTATING = "rotary_knob_hold_continued_rotating"
+HOLD_STOPPED_ROTATING_WITH_DIRECTION = (
+    "rotary_knob_hold_stopped_rotating_with_direction"
+)
 
-ROTATE_LEFT = "rotate_left"
-ROTATE_RIGHT = "rotate_right"
-HOLD_ROTATE_LEFT = "hold_rotate_left"
-HOLD_ROTATE_RIGHT = "hold_rotate_right"
-
-STOP_ROTATION = "stop_rotation"
-HOLD_STOP_ROTATION = "hold_stop_rotation"
+COMMAND_HOLD_STARTED_ROTATING = "hold_started_rotating"
+COMMAND_HOLD_CONTINUED_ROTATING = "hold_continued_rotating"
+COMMAND_HOLD_STOPPED_ROTATING = "hold_stopped_rotating"
 
 
 class KnobAction(t.enum8):
     """Aqara H1 knob rotation action."""
 
-    off = 0x00
-    start_rotation = 0x01
-    rotation = 0x02
-    stop_rotation = 0x03
-    hold_start_rotation = 0x81
-    hold_rotation = 0x82
-    hold_stop_rotation = 0x83
+    Off = 0x00
+    StartRotation = 0x01
+    Rotation = 0x02
+    StopRotation = 0x03
+    HoldStartRotation = 0x81
+    HoldRotation = 0x82
+    HoldStopRotation = 0x83
+
+
+# Map raw KnobAction to the zha_event command string we emit.
+KNOB_ACTION_COMMANDS: dict[KnobAction, str] = {
+    KnobAction.StartRotation: COMMAND_STARTED_ROTATING,
+    KnobAction.Rotation: COMMAND_CONTINUED_ROTATING,
+    KnobAction.StopRotation: COMMAND_STOPPED_ROTATING,
+    KnobAction.HoldStartRotation: COMMAND_HOLD_STARTED_ROTATING,
+    KnobAction.HoldRotation: COMMAND_HOLD_CONTINUED_ROTATING,
+    KnobAction.HoldStopRotation: COMMAND_HOLD_STOPPED_ROTATING,
+}
+
+_STOP_ACTIONS = {KnobAction.StopRotation, KnobAction.HoldStopRotation}
 
 
 class KnobManuSpecificCluster(XiaomiAqaraE1Cluster):
@@ -166,20 +189,37 @@ class KnobManuSpecificCluster(XiaomiAqaraE1Cluster):
         if action is None:
             return
 
-        # Delta attributes are stale on stop events; drop them and derive direction
-        # from the (signed) final rotation_angle instead.
-        if action in (KnobAction.stop_rotation, KnobAction.hold_stop_rotation):
+        command = KNOB_ACTION_COMMANDS.get(action)
+        if command is None:
+            return
+
+        # Delta attributes are stale on stop events; drop them and derive the
+        # direction from the signed final `rotation_angle`. For in-progress
+        # events use the signed delta (which reflects the most recent motion).
+        angle = event_args.get(
+            KnobManuSpecificCluster.AttributeDefs.rotation_angle.name, 0
+        )
+        if action in _STOP_ACTIONS:
             for key in list(event_args):
                 if key.endswith("_delta"):
                     del event_args[key]
-            event_args[ROTATION_DIRECTION] = math.copysign(
-                1,
-                event_args.get(
-                    KnobManuSpecificCluster.AttributeDefs.rotation_angle.name, 0
-                ),
+            direction_source = angle
+        else:
+            direction_source = event_args.get(
+                KnobManuSpecificCluster.AttributeDefs.rotation_angle_delta.name,
+                angle,
             )
 
-        self.listener_event(ZHA_SEND_EVENT, action.name, event_args)
+        if direction_source < 0:
+            event_args[ROTATED] = LEFT
+        else:
+            event_args[ROTATED] = RIGHT
+
+        self.listener_event(ZHA_SEND_EVENT, command, event_args)
+
+
+def _rotation_trigger(command: str, direction: str) -> dict[str, Any]:
+    return {COMMAND: command, ARGS: {ROTATED: direction}}
 
 
 (
@@ -202,29 +242,48 @@ class KnobManuSpecificCluster(XiaomiAqaraE1Cluster):
     )
     .device_automation_triggers(
         {
-            # operation_mode == event
+            # button presses (operation_mode == event)
             (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
             (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
             (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
             (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_1_RELEASE},
-            (ROTATED, BUTTON): {COMMAND: STOP_ROTATION},
-            (ROTATE_LEFT, BUTTON): {
-                COMMAND: STOP_ROTATION,
-                ARGS: {ROTATION_DIRECTION: -1},
-            },
-            (ROTATE_RIGHT, BUTTON): {
-                COMMAND: STOP_ROTATION,
-                ARGS: {ROTATION_DIRECTION: 1},
-            },
-            (HOLD_ROTATE_LEFT, BUTTON): {
-                COMMAND: HOLD_STOP_ROTATION,
-                ARGS: {ROTATION_DIRECTION: -1},
-            },
-            (HOLD_ROTATE_RIGHT, BUTTON): {
-                COMMAND: HOLD_STOP_ROTATION,
-                ARGS: {ROTATION_DIRECTION: 1},
-            },
-            # operation_mode == command (single press does not emit an event)
+            # free rotation
+            (STARTED_ROTATING, LEFT): _rotation_trigger(COMMAND_STARTED_ROTATING, LEFT),
+            (STARTED_ROTATING, RIGHT): _rotation_trigger(
+                COMMAND_STARTED_ROTATING, RIGHT
+            ),
+            (CONTINUED_ROTATING, LEFT): _rotation_trigger(
+                COMMAND_CONTINUED_ROTATING, LEFT
+            ),
+            (CONTINUED_ROTATING, RIGHT): _rotation_trigger(
+                COMMAND_CONTINUED_ROTATING, RIGHT
+            ),
+            (STOPPED_ROTATING_WITH_DIRECTION, LEFT): _rotation_trigger(
+                COMMAND_STOPPED_ROTATING, LEFT
+            ),
+            (STOPPED_ROTATING_WITH_DIRECTION, RIGHT): _rotation_trigger(
+                COMMAND_STOPPED_ROTATING, RIGHT
+            ),
+            # rotation while button is held
+            (HOLD_STARTED_ROTATING, LEFT): _rotation_trigger(
+                COMMAND_HOLD_STARTED_ROTATING, LEFT
+            ),
+            (HOLD_STARTED_ROTATING, RIGHT): _rotation_trigger(
+                COMMAND_HOLD_STARTED_ROTATING, RIGHT
+            ),
+            (HOLD_CONTINUED_ROTATING, LEFT): _rotation_trigger(
+                COMMAND_HOLD_CONTINUED_ROTATING, LEFT
+            ),
+            (HOLD_CONTINUED_ROTATING, RIGHT): _rotation_trigger(
+                COMMAND_HOLD_CONTINUED_ROTATING, RIGHT
+            ),
+            (HOLD_STOPPED_ROTATING_WITH_DIRECTION, LEFT): _rotation_trigger(
+                COMMAND_HOLD_STOPPED_ROTATING, LEFT
+            ),
+            (HOLD_STOPPED_ROTATING_WITH_DIRECTION, RIGHT): _rotation_trigger(
+                COMMAND_HOLD_STOPPED_ROTATING, RIGHT
+            ),
+            # alt button presses (operation_mode == command; single does not emit an event)
             (ALT_DOUBLE_PRESS, BUTTON): {
                 COMMAND: COMMAND_TOGGLE,
                 ENDPOINT_ID: 1,
