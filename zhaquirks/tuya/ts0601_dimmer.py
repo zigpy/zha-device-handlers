@@ -11,7 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
@@ -155,6 +155,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
             ("_TZE200_y8yjulon", "TS0601"),
             ("_TZE204_n9ctkb6j", "TS0601"),  # BSEED
             ("_TZE204_vevc4c6g", "TS0601"),  # BSEED
+            ("_TZE284_m1cvyneb", "TS0601"),  # BSEED
             ("_TZE204_5cuocqty", "TS0601"),  # Avatto ZDMS16-1
             ("_TZE204_nqqylykc", "TS0601"),  # Avatto ZDMS16-1
         ],
@@ -171,6 +172,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaLevelControlManufCluster.cluster_id,
+                    TUYA_CLUSTER_ED00_ID,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
