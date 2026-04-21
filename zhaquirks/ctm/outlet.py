@@ -19,16 +19,6 @@ from zhaquirks.ctm import (
     .replaces(CTMOnOffCluster)
     .replaces(CTMCooktopGuardCluster, cluster_type=ClusterType.Client)
     .replaces(CTMDiagnosticsCluster)
-    # .sensor(
-    #     cluster_id=CTMCooktopGuardCluster.cluster_id,
-    #     cluster_type=ClusterType.Client,
-    #     endpoint_id=1,
-    #     attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_paired_with_address.name,
-    #     translation_key="cooktop_guard_sensor_address",
-    #     fallback_name="Cooktop guard sensor address",
-    #     entity_type=EntityType.DIAGNOSTIC,
-    #     initially_disabled=True,
-    # )
     .sensor(
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
