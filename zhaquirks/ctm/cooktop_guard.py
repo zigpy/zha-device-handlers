@@ -2,6 +2,7 @@
 
 from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import EntityPlatform, UnitOfTemperature
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 
 from zhaquirks.ctm import (
@@ -52,6 +53,8 @@ from zhaquirks.ctm import (
         attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_battery_alarm.name,
         translation_key="battery_alarm",
         fallback_name="Battery alarm",
+        device_class=BinarySensorDeviceClass.BATTERY,
+        attribute_converter=bool,
         entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
@@ -65,6 +68,8 @@ from zhaquirks.ctm import (
         attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_cooktop_active.name,
         translation_key="cooktop_active",
         fallback_name="Cooktop active",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        attribute_converter=bool,
         entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
