@@ -2,7 +2,7 @@
 
 from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import EntityPlatform, UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 
 from zhaquirks.ctm import (
     CTM_MANUF_NAME,
@@ -23,7 +23,7 @@ from zhaquirks.ctm import (
         attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_cooktop_temperature.name,
         translation_key="cooktop_temperature",
         fallback_name="Cooktop temperature",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=SensorDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         reporting_config=ReportingConfig(
             min_interval=0,
