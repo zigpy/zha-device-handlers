@@ -416,3 +416,32 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Zigbee air quality sensor (CO2, temperature, humidity, VOC, formaldehyde)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_airbox.html
+(
+    TuyaQuirkBuilder("_TZE284_8b9zpaav", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18, scale=10)
+    .tuya_humidity(dp_id=19)
+    .tuya_voc(dp_id=21)
+    .tuya_formaldehyde(dp_id=22)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# PM2.5 air quality sensor (CO2, temperature, humidity, PM2.5, VOC, formaldehyde)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/PM2.5_airbox.html
+(
+    TuyaQuirkBuilder("_TZE284_it9utkro", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18, scale=10)
+    .tuya_humidity(dp_id=19, scale=10)
+    .tuya_pm25(dp_id=20)
+    .tuya_voc(dp_id=21)
+    .tuya_formaldehyde(dp_id=22)
+    .skip_configuration()
+    .add_to_registry()
+)
