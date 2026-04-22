@@ -403,3 +403,16 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Illuminance, temperature & humidity sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_illuminance_temperature_humidity_sensor_2.html
+(
+    TuyaQuirkBuilder("_TZE200_rbbx5mfq", "TS0601")
+    .applies_to("_TZE204_rbbx5mfq", "TS0601")
+    .tuya_illuminance(dp_id=2)
+    .tuya_temperature(dp_id=6, scale=10)
+    .tuya_humidity(dp_id=7, scale=10)
+    .skip_configuration()
+    .add_to_registry()
+)
