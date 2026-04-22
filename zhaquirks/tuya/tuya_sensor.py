@@ -390,3 +390,16 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Contact, temperature and humidity sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_contact_temperature_humidity_sensor.html
+(
+    TuyaQuirkBuilder("_TZE200_nvups4nh", "TS0601")
+    .tuya_contact(dp_id=1)
+    .tuya_battery(dp_id=2)
+    .tuya_temperature(dp_id=7, scale=10)
+    .tuya_humidity(dp_id=8)
+    .skip_configuration()
+    .add_to_registry()
+)
