@@ -3,7 +3,13 @@
 import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    LIGHT_LUX,
+    PERCENTAGE,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -404,23 +410,38 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=103,
         attribute_name="soil_sampling",
         type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
         entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="soil_sampling",
         fallback_name="Soil sampling interval",
     )
     .tuya_number(
         dp_id=104,
-        attribute_name="soil_calibration",
+        attribute_name="soil_moisture_calibration",
         type=t.int16s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="soil_calibration",
-        fallback_name="Soil calibration",
+        device_class=NumberDeviceClass.MOISTURE,
+        translation_key="soil_moisture_calibration",
+        fallback_name="Soil moisture calibration",
     )
     .tuya_number(
         dp_id=105,
         attribute_name="humidity_calibration",
         type=t.int16s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
         entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.HUMIDITY,
         translation_key="humidity_calibration",
         fallback_name="Humidity calibration",
     )
@@ -428,7 +449,12 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=106,
         attribute_name="illuminance_calibration",
         type=t.int16s,
+        unit=LIGHT_LUX,
+        min_value=-1000,
+        max_value=1000,
+        step=1,
         entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.ILLUMINANCE,
         translation_key="illuminance_calibration",
         fallback_name="Illuminance calibration",
     )
@@ -436,9 +462,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=107,
         attribute_name="temperature_calibration",
         type=t.int16s,
+        unit=UnitOfTemperature.CELSIUS,
         multiplier=0.1,
         step=0.1,
+        min_value=-2,
+        max_value=2,
         entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         translation_key="temperature_calibration",
         fallback_name="Temperature calibration",
     )
@@ -446,7 +476,12 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=110,
         attribute_name="soil_warning",
         type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
         entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.MOISTURE,
         translation_key="soil_warning",
         fallback_name="Soil warning threshold",
     )
