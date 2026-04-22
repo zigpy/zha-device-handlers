@@ -814,3 +814,24 @@ class TuyaLiquidState(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Air pressure sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/_TZE204_w2vunxzm.html
+(
+    TuyaQuirkBuilder("_TZE204_w2vunxzm", "TS0601")
+    .tuya_sensor(
+        dp_id=101,
+        attribute_name="pressure",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.PRESSURE,
+        unit="hPa",
+        entity_type=EntityType.STANDARD,
+        translation_key="pressure",
+        fallback_name="Pressure",
+    )
+    .tuya_temperature(dp_id=8, scale=100)
+    .skip_configuration()
+    .add_to_registry()
+)
