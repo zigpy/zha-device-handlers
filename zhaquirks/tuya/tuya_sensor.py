@@ -769,3 +769,48 @@ class TuyaRainwaterStatus(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class TuyaLiquidState(t.enum8):
+    """Tuya liquid level state enum."""
+
+    Normal = 0x00
+    Low = 0x01
+    High = 0x02
+
+
+# Water level sensor (ME202WZ)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ME202WZ.html
+(
+    TuyaQuirkBuilder("_TZE284_mxujdmxo", "TS0601")
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="liquid_state",
+        enum_class=TuyaLiquidState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_state",
+        fallback_name="Liquid state",
+    )
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="liquid_depth",
+        type=t.uint32_t,
+        divisor=100,
+        unit="m",
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_depth",
+        fallback_name="Liquid depth",
+    )
+    .tuya_sensor(
+        dp_id=22,
+        attribute_name="liquid_level_percent",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_level_percent",
+        fallback_name="Liquid level ratio",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
