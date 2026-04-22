@@ -489,3 +489,23 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Temperature and humidity sensor (RSH-HS06)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/RSH-HS06.html
+(
+    TuyaQuirkBuilder("_TZE200_ysm4dsb1", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_battery(dp_id=4)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
