@@ -604,3 +604,50 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class TuyaAirQuality(t.enum8):
+    """Tuya air quality enum."""
+
+    Excellent = 0x00
+    Moderate = 0x01
+    Poor = 0x02
+
+
+class TuyaAlarmRingtone(t.enum8):
+    """Tuya alarm ringtone enum."""
+
+    Melody1 = 0x00
+    Melody2 = 0x01
+    Off = 0x02
+
+
+# Multifunctional CO2 detector (ZR360CDB)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZR360CDB.html
+(
+    TuyaQuirkBuilder("_TZE200_pl31aqf5", "TS0601")
+    .applies_to("_TZE200_xpvamyfz", "TS0601")
+    .applies_to("_TZE284_xpvamyfz", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18)
+    .tuya_humidity(dp_id=19)
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="air_quality",
+        enum_class=TuyaAirQuality,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="air_quality",
+        fallback_name="Air quality",
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="alarm_ringtone",
+        enum_class=TuyaAlarmRingtone,
+        entity_type=EntityType.CONFIG,
+        translation_key="alarm_ringtone",
+        fallback_name="Alarm ringtone",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
