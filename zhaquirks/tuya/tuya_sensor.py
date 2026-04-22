@@ -445,3 +445,25 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Temperature & humidity sensor with external probe
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZY-ZTH03PRO.html
+(
+    TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="external_temperature",
+        type=t.int16s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.STANDARD,
+        translation_key="external_temperature",
+        fallback_name="External temperature",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
