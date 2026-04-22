@@ -509,3 +509,98 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Soil moisture sensor (ZS-301Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-301Z.html
+(
+    TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")
+    .applies_to("_TZE284_xc3vwx5a", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (ZS-300Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-300Z.html
+(
+    TuyaQuirkBuilder("_TZE284_k7p2q5d9", "TS0601")
+    .applies_to("_TZE284_65gzcss7", "TS0601")
+    .applies_to("_TZE284_0ints6wl", "TS0601")
+    .applies_to("_TZE284_yzr43ayq", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (CS-201Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/CS-201Z.html
+(
+    TuyaQuirkBuilder("_TZE200_npj9bug3", "TS0601")
+    .applies_to("_TZE200_wrmhp6b3", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=109)
+    .tuya_battery(dp_id=15)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (ZG-303Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-303Z.html
+(
+    TuyaQuirkBuilder("_TZE200_wqashyqo", "TS0601")
+    .tuya_soil_moisture(dp_id=107)
+    .tuya_temperature(dp_id=103, scale=10)
+    .tuya_humidity(dp_id=109)
+    .tuya_battery(dp_id=108)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil fertility sensor (ZS-300TF)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-300TF.html
+(
+    TuyaQuirkBuilder("_TZE284_hdml1aav", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .tuya_sensor(
+        dp_id=112,
+        attribute_name="soil_fertility",
+        type=t.uint16_t,
+        entity_type=EntityType.STANDARD,
+        translation_key="soil_fertility",
+        fallback_name="Soil fertility",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
