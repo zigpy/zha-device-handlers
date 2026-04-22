@@ -651,3 +651,92 @@ class TuyaAlarmRingtone(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class TuyaSensitivityLevel(t.enum8):
+    """Tuya sensitivity level enum."""
+
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
+
+
+# Vibration sensor (ZG-103Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-103Z.html
+(
+    TuyaQuirkBuilder("_TZE200_iba1ckek", "TS0601")
+    .applies_to("_TZE200_hggxgsjj", "TS0601")
+    .applies_to("_TZE200_yjryxpot", "TS0601")
+    .applies_to("_TZE200_afycb3cg", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=7,
+        attribute_name="tilt",
+        translation_key="tilt",
+        fallback_name="Tilt",
+    )
+    .tuya_battery(dp_id=105)
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="sensitivity",
+        enum_class=TuyaSensitivityLevel,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Vibration sensor (ZG-102ZM)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-102ZM.html
+(
+    TuyaQuirkBuilder("_TZE200_wzk0x7fq", "TS0601")
+    .applies_to("_TZE200_jfw0a4aa", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_contact(dp_id=101)
+    .tuya_battery(dp_id=4)
+    .tuya_number(
+        dp_id=6,
+        attribute_name="sensitivity",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Vibration sensor (TZE284_4cqhd2ha)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TZE284_4cqhd2ha.html
+(
+    TuyaQuirkBuilder("_TZE284_4cqhd2ha", "TS0601")
+    .applies_to("_TZE200_8ply8mjj", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="sensitivity",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="buzzer_mute",
+        entity_type=EntityType.CONFIG,
+        translation_key="buzzer_mute",
+        fallback_name="Buzzer mute",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
