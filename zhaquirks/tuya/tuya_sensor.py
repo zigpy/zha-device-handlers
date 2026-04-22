@@ -104,6 +104,12 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
     .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .applies_to("_TZE200_t3xd7l44", "TS0601")
+    .applies_to("_TZE284_kdqrazmy", "TS0601")
+    .applies_to("_TZE200_dikkika5", "TS0601")
+    .applies_to("_TZE200_3xfjp0ag", "TS0601")
+    .applies_to("_TZE200_ehhrv2e3", "TS0601")
+    .applies_to("_TZE200_lhqtjwax", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
