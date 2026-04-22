@@ -467,3 +467,25 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Temperature & humidity sensor with external probe (variant)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TZ-ZT01_GA4.html
+(
+    TuyaQuirkBuilder("_TZE284_8se38w3c", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="temperature_probe",
+        type=t.int16s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_probe",
+        fallback_name="Temperature probe",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
