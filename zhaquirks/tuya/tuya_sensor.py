@@ -740,3 +740,32 @@ class TuyaSensitivityLevel(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class TuyaRainwaterStatus(t.enum8):
+    """Tuya rainwater status enum."""
+
+    Clear = 0x00
+    Raining = 0x01
+
+
+# Rainwater detection sensor (ZG-223Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-223Z.html
+(
+    TuyaQuirkBuilder("_TZE200_jsaqgakf", "TS0601")
+    .applies_to("_TZE200_u6x1zyv2", "TS0601")
+    .applies_to("_TZE200_2pddnnrk", "TS0601")
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="rainwater",
+        enum_class=TuyaRainwaterStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="rainwater",
+        fallback_name="Rainwater",
+    )
+    .tuya_illuminance(dp_id=102)
+    .tuya_battery(dp_id=104)
+    .skip_configuration()
+    .add_to_registry()
+)
