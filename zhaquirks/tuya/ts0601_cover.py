@@ -930,3 +930,47 @@ class MotorDirectionNormalReversed(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Pro Line Zigbee curtain motor (ZM79E-DT)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZM79E-DT.html
+(
+    TuyaQuirkBuilder("_TZE200_ax8a8ahx", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="opening_mode",
+        enum_class=OpeningMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="opening_mode",
+        fallback_name="Opening mode",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motor_side",
+        enum_class=MotorSide,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_side",
+        fallback_name="Motor side",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor (BX82-TYZ1)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/BX82-TYZ1.html
+(
+    TuyaQuirkBuilder("_TZE204_2rvvqjoa", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
