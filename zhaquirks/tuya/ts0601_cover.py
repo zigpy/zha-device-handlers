@@ -832,3 +832,52 @@ class MotorSide(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class CoverMotorDirection(t.enum8):
+    """Cover motor direction values."""
+
+    Forward = 0x00
+    Back = 0x01
+
+
+class MotorWorkingMode(t.enum8):
+    """Motor working mode values."""
+
+    Continuous = 0x00
+    Intermittently = 0x01
+
+
+# Cover motor with direction, fault, and stroke limits
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_8.html
+(
+    TuyaQuirkBuilder("_TZE204_r0jdjrvi", "TS0601")
+    .applies_to("_TZE200_g5xqosu7", "TS0601")
+    .applies_to("_TZE204_g5xqosu7", "TS0601")
+    .applies_to("_TZE284_fzo2pocs", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_enum(
+        dp_id=106,
+        attribute_name="motor_working_mode",
+        enum_class=MotorWorkingMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_working_mode",
+        fallback_name="Motor working mode",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
