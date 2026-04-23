@@ -974,3 +974,77 @@ class MotorDirectionNormalReversed(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Cover motor with battery, direction, fault, and border settings
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_3.html
+(
+    TuyaQuirkBuilder("_TZE200_eevqq1uv", "TS0601")
+    .applies_to("_TZE204_ejh6owwz", "TS0601")
+    .applies_to("_TZE200_68nvbi09", "TS0601")
+    .applies_to("_TZE200_vexa5o82", "TS0601")
+    .applies_to("_TZE200_sfqyhvpv", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=13)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
