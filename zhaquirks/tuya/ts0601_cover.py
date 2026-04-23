@@ -1,6 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
+from zigpy.quirks.v2 import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
@@ -773,6 +774,50 @@ class BorderSetting(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_eegnwoyw", "TS0601")
     .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class OpeningMode(t.enum8):
+    """Opening mode values."""
+
+    Tilt = 0x00
+    Lift = 0x01
+
+
+class MotorSide(t.enum8):
+    """Motor side values."""
+
+    Left = 0x00
+    Right = 0x01
+
+
+# Cover motor with battery, illuminance, opening mode
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_6.html
+(
+    TuyaQuirkBuilder("_TZE200_cpbo62rn", "TS0601")
+    .applies_to("_TZE200_libht6ua", "TS0601")
+    .applies_to("_TZE284_libht6ua", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_battery(dp_id=13)
+    .tuya_illuminance(dp_id=104)
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="opening_mode",
+        enum_class=OpeningMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="opening_mode",
+        fallback_name="Opening mode",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motor_side",
+        enum_class=MotorSide,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_side",
+        fallback_name="Motor side",
+    )
     .skip_configuration()
     .add_to_registry()
 )
