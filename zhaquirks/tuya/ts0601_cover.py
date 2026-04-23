@@ -881,3 +881,52 @@ class MotorWorkingMode(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class MotorDirectionNormalReversed(t.enum8):
+    """Motor direction normal/reversed values."""
+
+    Normal = 0x00
+    Reversed = 0x01
+
+
+# Cover motor with battery and motor direction
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_9.html
+(
+    TuyaQuirkBuilder("_TZE200_p2qzzazi", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=101)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor with motor direction
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_10.html
+(
+    TuyaQuirkBuilder("_TZE200_clm4gdw4", "TS0601")
+    .applies_to("_TZE200_2vfxweng", "TS0601")
+    .applies_to("_TZE200_gnw1rril", "TS0601")
+    .applies_to("_TZE204_ycke4deo", "TS0601")
+    .applies_to("_TZE284_koxaopnk", "TS0601")
+    .applies_to("_TZE284_clm4gdw4", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
