@@ -821,3 +821,14 @@ class MotorSide(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Cover motor with battery
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_7.html
+(
+    TuyaQuirkBuilder("_TZE200_zvo63cmo", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=101)
+    .skip_configuration()
+    .add_to_registry()
+)
