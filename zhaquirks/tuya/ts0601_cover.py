@@ -766,3 +766,13 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Curtain motor with fixed speed
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_2.html
+(
+    TuyaQuirkBuilder("_TZE200_eegnwoyw", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .skip_configuration()
+    .add_to_registry()
+)
