@@ -155,7 +155,6 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
             ("_TZE200_y8yjulon", "TS0601"),
             ("_TZE204_n9ctkb6j", "TS0601"),  # BSEED
             ("_TZE204_vevc4c6g", "TS0601"),  # BSEED
-            ("_TZE284_m1cvyneb", "TS0601"),  # BSEED
             ("_TZE204_5cuocqty", "TS0601"),  # Avatto ZDMS16-1
             ("_TZE204_nqqylykc", "TS0601"),  # Avatto ZDMS16-1
         ],
@@ -163,6 +162,65 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
             # device_version=1
             # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster,
+                    TuyaOnOffNM,
+                    TuyaInWallLevelControlNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
+    """Tuya touch switch device with ED00 cluster."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE284_m1cvyneb", "TS0601"),  # BSEED
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
+            # device_version=1
+            # input_clusters=[0, 4, 5, 61184, 60928]
             # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
