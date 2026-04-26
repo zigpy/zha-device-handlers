@@ -14,21 +14,21 @@ from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
 
 class OperationMode(t.enum8):
-    """Manual or Scheduled operation"""
+    """Manual or Scheduled operation."""
 
     Scheduled = 0x00
     Manual = 0x01
 
 
 class HeatingStatus(t.enum8):
-    """Is the device calling for heat or not"""
+    """Is the device calling for heat or not."""
 
     Heating = 0x00
     Idle = 0x01
 
 
 class SensorMode(t.enum8):
-    """Which sensors to use for thermal management"""
+    """Which sensors to use for thermal management."""
 
     IN = 0x00
     AL = 0x01
