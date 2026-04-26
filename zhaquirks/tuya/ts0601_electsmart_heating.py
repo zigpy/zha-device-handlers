@@ -28,6 +28,7 @@ class SensorMode(t.enum8):
     AL = 0x01
     OU = 0x02
 
+
 class ElectSmartTuyaThermostat(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
@@ -177,7 +178,9 @@ class ElectSmartTuyaThermostat(Thermostat, TuyaAttributesCluster):
         dp_id=36,
         ep_attribute=ElectSmartTuyaThermostat.ep_attribute,
         attribute_name=ElectSmartTuyaThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: RunningState.Heat_State_On if x == HeatingStatus.Heating else RunningState.Idle,
+        converter=lambda x: RunningState.Heat_State_On
+        if x == HeatingStatus.Heating
+        else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=39,
