@@ -150,7 +150,9 @@ async def test_io_module_polarity_uses_standard_attribute_id(
         BinaryInput,
         "write_attributes",
         new=mock.AsyncMock(
-            return_value=[[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
         ),
     ) as write_mock:
         await input_cluster.write_attributes({"polarity": True})
@@ -170,7 +172,9 @@ async def test_io_module_on_with_timed_off_settings_are_local_on_outputs(
         BinaryInput,
         "write_attributes",
         new=mock.AsyncMock(
-            return_value=[[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
         ),
     ) as write_mock:
         result = await output_settings_cluster.write_attributes(
@@ -180,14 +184,22 @@ async def test_io_module_on_with_timed_off_settings_are_local_on_outputs(
             }
         )
 
-    assert result == [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
     write_mock.assert_not_awaited()
-    assert output_settings_cluster.get(
-        FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.id
-    ) == 30
-    assert output_settings_cluster.get(
-        FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.id
-    ) == 5
+    assert (
+        output_settings_cluster.get(
+            FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.id
+        )
+        == 30
+    )
+    assert (
+        output_settings_cluster.get(
+            FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.id
+        )
+        == 5
+    )
 
 
 async def test_io_module_read_attributes_raw_local_only_does_not_delegate(
@@ -256,13 +268,15 @@ async def test_io_module_write_attributes_unknown_key_raises(
     device = _get_io_module_device(zigpy_device_from_v2_quirk)
     input_cluster = device.endpoints[0x70].binary_input
 
-    with mock.patch.object(
-        BinaryInput,
-        "write_attributes",
-        new=mock.AsyncMock(),
-    ) as write_mock:
-        with pytest.raises(KeyError, match="Unknown attribute"):
-            await input_cluster.write_attributes({"does_not_exist": 1})
+    with (
+        mock.patch.object(
+            BinaryInput,
+            "write_attributes",
+            new=mock.AsyncMock(),
+        ) as write_mock,
+        pytest.raises(KeyError, match="Unknown attribute"),
+    ):
+        await input_cluster.write_attributes({"does_not_exist": 1})
 
     write_mock.assert_not_awaited()
 
@@ -298,8 +312,7 @@ async def test_io_module_nonzero_on_time_uses_on_with_timed_off_command(
 
     command_mock.assert_awaited_once()
     assert (
-        command_mock.await_args.args[0]
-        == OnOff.ServerCommandDefs.on_with_timed_off.id
+        command_mock.await_args.args[0] == OnOff.ServerCommandDefs.on_with_timed_off.id
     )
     assert command_mock.await_args.kwargs["on_time"] == 30
     assert command_mock.await_args.kwargs["off_wait_time"] == 5
@@ -312,7 +325,6 @@ async def test_io_module_output_timed_settings_are_shared_for_any_linked_input(
     device = _get_io_module_device(zigpy_device_from_v2_quirk)
     input_1_cluster = device.endpoints[0x70].binary_input
     input_2_cluster = device.endpoints[0x71].binary_input
-    output_cluster = device.endpoints[0x74].on_off
     output_settings_cluster = device.endpoints[0x74].binary_input
 
     await input_1_cluster.write_attributes({"linked_output": LinkedOutput.output_1})
@@ -362,11 +374,15 @@ async def test_output_entity_on_uses_on_with_timed_off_when_configured(
         3,
     )
 
-    with mock.patch.object(OnOff, "command", new=mock.AsyncMock(return_value="ok")) as command_mock:
+    with mock.patch.object(
+        OnOff, "command", new=mock.AsyncMock(return_value="ok")
+    ) as command_mock:
         await output_cluster.command(OnOff.ServerCommandDefs.on.id)
 
     command_mock.assert_awaited_once()
-    assert command_mock.await_args.args[0] == OnOff.ServerCommandDefs.on_with_timed_off.id
+    assert (
+        command_mock.await_args.args[0] == OnOff.ServerCommandDefs.on_with_timed_off.id
+    )
     assert command_mock.await_args.kwargs["on_time"] == 25
     assert command_mock.await_args.kwargs["off_wait_time"] == 3
 
@@ -388,7 +404,9 @@ async def test_output_entity_repeated_on_uses_command_only_behavior(
         3,
     )
 
-    with mock.patch.object(OnOff, "command", new=mock.AsyncMock(return_value="ok")) as command_mock:
+    with mock.patch.object(
+        OnOff, "command", new=mock.AsyncMock(return_value="ok")
+    ) as command_mock:
         await output_cluster.command(OnOff.ServerCommandDefs.on.id)
         await output_cluster.command(OnOff.ServerCommandDefs.on.id)
 
@@ -402,7 +420,9 @@ async def test_output_entity_off_passthrough(
     device = _get_io_module_device(zigpy_device_from_v2_quirk)
     output_cluster = device.endpoints[0x74].on_off
 
-    with mock.patch.object(OnOff, "command", new=mock.AsyncMock(return_value="ok")) as command_mock:
+    with mock.patch.object(
+        OnOff, "command", new=mock.AsyncMock(return_value="ok")
+    ) as command_mock:
         await output_cluster.command(OnOff.ServerCommandDefs.off.id)
 
     command_mock.assert_awaited_once()
