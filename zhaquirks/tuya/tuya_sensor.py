@@ -380,7 +380,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         step=0.1,
         multiplier=10,
         entity_type=EntityType.CONFIG,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
     )
@@ -408,7 +408,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         endpoint_id=1,
         entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.MOISTURE,
-        initially_disabled=False,
         attribute_initialized_from_cache=False,
         fallback_name="Moisture",
     )
