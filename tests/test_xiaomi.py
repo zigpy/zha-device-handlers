@@ -30,6 +30,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
     IlluminanceMeasurement,
     OccupancySensing,
     PressureMeasurement,
@@ -2713,3 +2714,18 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
+    """Test Aqara air monitor CO2 and temperature attribute scaling."""
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+
+    co2 = device.endpoints[1].carbon_dioxide_concentration
+    co2._update_attribute(
+        CarbonDioxideConcentration.AttributeDefs.measured_value.id, 400_000_000
+    )
+    assert co2.get("measured_value") == 400.0
+
+    temp = device.endpoints[1].device_temperature
+    temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
+    assert temp.get("current_temperature") == 2500
