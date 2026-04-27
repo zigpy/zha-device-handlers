@@ -5,12 +5,15 @@ from typing import Any
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo import types as zdo_t
+
+from zhaquirks.develco import DEVELCO, FRIENT
 
 
 class LinkedOutput(t.enum8):
@@ -334,7 +337,8 @@ class FrientOnOffOutput(CustomCluster, OnOff):
 
 
 (
-    QuirkBuilder("frient A/S", "IOMZB-110")
+    QuirkBuilder(FRIENT, "IOMZB-110")
+    .applies_to(DEVELCO, "IOMZB-110")
     # Replace all input and output BinaryInput clusters with custom behavior/attributes.
     .replaces(FrientBinaryInput, endpoint_id=112)
     .replaces(FrientBinaryInput, endpoint_id=113)
@@ -474,6 +478,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         multiplier=0.1,
         min_value=0,
         max_value=65535,
+        unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out1_on_with_timed_off_on_time",
@@ -487,6 +492,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         multiplier=0.1,
         min_value=0,
         max_value=65535,
+        unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out1_on_with_timed_off_off_wait_time",
@@ -500,6 +506,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         multiplier=0.1,
         min_value=0,
         max_value=65535,
+        unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out2_on_with_timed_off_on_time",
@@ -513,6 +520,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         multiplier=0.1,
         min_value=0,
         max_value=65535,
+        unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out2_on_with_timed_off_off_wait_time",
