@@ -477,13 +477,13 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         endpoint_id=116,
         multiplier=0.1,
         min_value=0,
-        max_value=65535,
+        max_value=6553.5,
         unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out1_on_with_timed_off_on_time",
         translation_key="frient_out_1_on_with_timed_off_on_time",
-        fallback_name="Config Output 1 On Time",
+        fallback_name="Output 1 on time",
     )
     .number(
         attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.name,
@@ -491,13 +491,13 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         endpoint_id=116,
         multiplier=0.1,
         min_value=0,
-        max_value=65535,
+        max_value=6553.5,
         unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out1_on_with_timed_off_off_wait_time",
         translation_key="frient_out_1_on_with_timed_off_off_wait_time",
-        fallback_name="Config Output 1 Off Wait Time",
+        fallback_name="Output 1 off wait time",
     )
     .number(
         attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.name,
@@ -505,13 +505,13 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         endpoint_id=117,
         multiplier=0.1,
         min_value=0,
-        max_value=65535,
+        max_value=6553.5,
         unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out2_on_with_timed_off_on_time",
         translation_key="frient_out_2_on_with_timed_off_on_time",
-        fallback_name="Config Output 2 On Time",
+        fallback_name="Output 2 on time",
     )
     .number(
         attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.name,
@@ -519,13 +519,13 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         endpoint_id=117,
         multiplier=0.1,
         min_value=0,
-        max_value=65535,
+        max_value=6553.5,
         unit=UnitOfTime.SECONDS,
         step=1,
         mode="box",
         unique_id_suffix="out2_on_with_timed_off_off_wait_time",
         translation_key="frient_out_2_on_with_timed_off_off_wait_time",
-        fallback_name="Config Output 2 Off Wait Time",
+        fallback_name="Output 2 off wait time",
     )
     .add_to_registry()
 )
