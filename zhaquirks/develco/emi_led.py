@@ -60,7 +60,7 @@ class ManufacturerMetering(CustomCluster):
         unit="Wh",
         mode="box",
         translation_key="current_summation",
-        fallback_name="Current summation",
+        fallback_name="Current summation delivered",
     )
     .write_attr_button(
         attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
