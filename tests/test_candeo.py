@@ -3,8 +3,10 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+import asyncio
+from zigpy.zcl import foundation, ClusterType
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.general import Basic, OnOff
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -18,6 +20,10 @@ from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
     CandeoSceneSwitchRemoteRingActionMap,
     CandeoSceneSwitchRemoteRingDirectionMap,
 )
+from zhaquirks.candeo.kinetic_rf_to_zigbee_gateway import (
+    CandeoActionsWindow,
+    CandeoActionsDetection,
+)
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -27,6 +33,9 @@ from zhaquirks.const import (
     BUTTON_CENTRE,
     COMMAND_CONTINUED_ROTATING,
     COMMAND_DOUBLE,
+    COMMAND_TRIPLE,
+    COMMAND_QUAD,
+    COMMAND_QUIN,
     COMMAND_HOLD,
     COMMAND_PRESS,
     COMMAND_RELEASE,
@@ -66,8 +75,6 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk, lux_in, lux
 
 
 # candeo scene switch remote 5 button rotary tests
-
-
 @pytest.mark.asyncio
 async def test_candeo_scene_switch_remote_apply_custom_configuration(
     zigpy_device_from_v2_quirk,
@@ -744,4 +751,181 @@ def test_candeo_scene_switch_remote_ring_stopped_rotating(
 
     assert ring_event[1][ROTATED] == previous_rotation_direction
 
+    assert listener.zha_send_event.call_count == 1
+
+
+# candeo kinetic rf to zigbee gateway tests
+@pytest.mark.parametrize(
+    "endpoint, clicks, expected",
+    [
+        (endpoint, clicks, expected)
+        for endpoint in range(1, 11)
+        for clicks, expected in [
+            (1, COMMAND_PRESS),
+            (2, COMMAND_DOUBLE),
+            (3, COMMAND_TRIPLE),
+            (4, COMMAND_QUAD),
+            (5, COMMAND_QUIN),
+        ]
+    ],
+)
+def test_kinetic_rf_to_zigbee_gateway_generate_clicks(
+    zigpy_device_from_v2_quirk,
+    endpoint,
+    clicks,
+    expected,
+):
+    """Test all the endpoints with different click patterns."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
+            }
+            for ep_id in range(1, 11)
+        },
+    )
+
+    basic = device.endpoints[endpoint].candeo_basic
+    basic._update_attribute(basic.AttributeDefs.actions_detection.id, CandeoActionsDetection.single_double_triple_quadruple_quintuple)
+    basic._update_attribute(basic.AttributeDefs.actions_window.id, CandeoActionsWindow.wait_500_ms)
+
+    cluster = device.endpoints[endpoint].candeo_onoff
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    assert cluster.endpoint.endpoint_id == endpoint
+
+    loop = cluster._get_loop()
+
+    for _ in range(clicks):
+        cluster._update_attribute(cluster.AttributeDefs.action.id, 1)
+        loop.run_until_complete(asyncio.sleep(0.15))
+        assert listener.zha_send_event.call_count == 0
+
+    loop.run_until_complete(asyncio.sleep(0.7))
+
+    assert listener.zha_send_event.called
+
+    args, _ = listener.zha_send_event.call_args
+
+    assert args[0] == expected
+    assert args[1] == {}
+    assert listener.zha_send_event.call_count == 1
+
+def test_kinetic_rf_to_zigbee_gateway_invalid_clicks(
+    zigpy_device_from_v2_quirk
+):
+    """Test invalid click amount."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
+            }
+            for ep_id in range(1, 11)
+        },
+    )
+
+    basic = device.endpoints[1].candeo_basic
+    basic._update_attribute(basic.AttributeDefs.actions_detection.id, CandeoActionsDetection.single_double_triple_quadruple_quintuple)
+    basic._update_attribute(basic.AttributeDefs.actions_window.id, CandeoActionsWindow.wait_500_ms)
+
+    cluster = device.endpoints[1].candeo_onoff
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    assert cluster.endpoint.endpoint_id == 1
+
+    loop = cluster._get_loop()
+
+    for _ in range(12):
+        cluster._update_attribute(cluster.AttributeDefs.action.id, 1)
+        loop.run_until_complete(asyncio.sleep(0.15))
+        assert listener.zha_send_event.call_count == 0
+
+    loop.run_until_complete(asyncio.sleep(0.7))
+
+    assert not listener.zha_send_event.called
+
+def test_kinetic_rf_to_zigbee_gateway_single_click(
+    zigpy_device_from_v2_quirk
+):
+    """Test single click."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
+            }
+            for ep_id in range(1, 11)
+        },
+    )
+
+    basic = device.endpoints[1].candeo_basic
+    basic._update_attribute(basic.AttributeDefs.actions_detection.id, CandeoActionsDetection.single)
+    basic._update_attribute(basic.AttributeDefs.actions_window.id, CandeoActionsWindow.wait_500_ms)
+
+    cluster = device.endpoints[1].candeo_onoff
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    assert cluster.endpoint.endpoint_id == 1
+
+    loop = cluster._get_loop()
+
+    cluster._update_attribute(cluster.AttributeDefs.action.id, 1)
+    
+    loop.run_until_complete(asyncio.sleep(0.1))
+
+    assert listener.zha_send_event.called
+    args, _ = listener.zha_send_event.call_args
+    assert args[0] == COMMAND_PRESS
+    assert args[1] == {}
+    assert listener.zha_send_event.call_count == 1
+
+def test_kinetic_rf_to_zigbee_gateway_clicks_exceed_detection_suppressed(
+    zigpy_device_from_v2_quirk
+):
+    """Test clicks above detection threshold should NOT fire events."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
+            }
+            for ep_id in range(1, 11)
+        },
+    )
+
+    basic = device.endpoints[1].candeo_basic
+    basic._update_attribute(basic.AttributeDefs.actions_detection.id, CandeoActionsDetection.single)
+    basic._update_attribute(basic.AttributeDefs.actions_window.id, CandeoActionsWindow.wait_500_ms)
+
+    cluster = device.endpoints[1].candeo_onoff
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    assert cluster.endpoint.endpoint_id == 1
+
+    loop = cluster._get_loop()
+
+    for _ in range(3):
+        cluster._update_attribute(cluster.AttributeDefs.action.id, 1)
+        loop.run_until_complete(asyncio.sleep(0.15))
+
+    loop.run_until_complete(asyncio.sleep(0.7))
+
+    assert listener.zha_send_event.called
+    args, _ = listener.zha_send_event.call_args
+    assert args[0] == COMMAND_PRESS
+    assert args[1] == {}
     assert listener.zha_send_event.call_count == 1
