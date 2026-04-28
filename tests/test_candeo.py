@@ -14,6 +14,7 @@ from zhaquirks.candeo import CANDEO
 from zhaquirks.candeo.kinetic_rf_to_zigbee_gateway import (
     CandeoActionsDetection,
     CandeoActionsWindow,
+    CandeoBasicCluster,
 )
 from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
     CandeoSceneSwitchRemoteButtonActionMap,
@@ -988,12 +989,14 @@ def test_kinetic_rf_to_zigbee_gateway_get_preferences_no_basic_cluster_returns_n
         cluster_ids={
             1: {
                 OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
             }
         },
     )
 
+    device.endpoints[1].in_clusters.pop(CandeoBasicCluster.cluster_id, None)
+
     cluster = device.endpoints[1].candeo_onoff
 
-    cluster.get_preferences()
-
-    assert True
+    result = cluster.get_preferences()
+    assert result is None
