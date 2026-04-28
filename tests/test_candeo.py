@@ -950,3 +950,28 @@ def test_kinetic_rf_to_zigbee_gateway_single_detection_does_not_coalesce_clicks(
         assert event == COMMAND_PRESS
 
         assert extra == {}
+
+@pytest.mark.asyncio
+async def test_kinetic_rf_to_zigbee_gateway_apply_custom_configuration(
+    zigpy_device_from_v2_quirk,
+):
+    """Test apply_custom_configuration writes attributes once and sets configured flag."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                Basic.cluster_id: ClusterType.Server,
+            }
+            for ep_id in range(1, 11)
+        },
+    )
+    cluster = device.endpoints[1].candeo_basic
+    cluster.write_attributes = mock.AsyncMock()
+    await cluster.apply_custom_configuration()
+    cluster.write_attributes.assert_awaited_once_with(cluster.attr_config)
+    assert cluster._configured is True
+    cluster.write_attributes.reset_mock()
+    await cluster.apply_custom_configuration()
+    cluster.write_attributes.assert_not_called()
