@@ -1,12 +1,12 @@
 """Candeo c-rfzb-hub kinetic rf to zigbee gateway."""
 
 import asyncio
+from typing import Optional
 
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Scenes
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
-from typing import Optional
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.candeo import CANDEO
