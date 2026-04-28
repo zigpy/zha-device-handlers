@@ -6,6 +6,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Scenes
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
+from typing import Optional
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.candeo import CANDEO
@@ -230,8 +231,8 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
         """__init___."""
         self._timer_handle = None
         self._click_count = 0
-        self._actions_window = None
-        self._actions_detection = None
+        self._actions_window: Optional[CandeoActionsWindow] = None
+        self._actions_detection: Optional[CandeoActionsDetection] = None
         super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
@@ -240,36 +241,39 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
         if attrid == self.AttributeDefs.action.id:
             self._click_count += 1
             self.get_preferences()
-            if int(self._actions_detection) > 1:
+            window = int(self._actions_window or CandeoActionsWindow.wait_500_ms)
+            detection = int(self._actions_detection or CandeoActionsDetection.single)
+            if detection > 1:
                 if self._timer_handle:
                     self._timer_handle.cancel()
                 self._timer_handle = self._get_loop().call_later(
-                    self._actions_window / 1000, self.action_detection
+                    window / 1000, self.action_detection
                 )
             else:
                 self.action_detection()
 
     def action_detection(self):
-        """Action detection."""
+        """Detect the actions based on click count."""
         self.get_preferences()
         self._timer_handle = None
         click_count = self._click_count
-        if click_count <= int(self._actions_detection):
+        detection = int(self._actions_detection or CandeoActionsDetection.single)
+        if click_count <= detection:
             button_action = CandeoButtonActions._value2member_map_.get(click_count)
             if button_action:
                 self.listener_event(ZHA_SEND_EVENT, button_action.name, {})
         self._click_count = 0
 
     def get_preferences(self):
-        """Get preferences."""
+        """Get saved preferences from the basic cluster."""
         cluster = self.endpoint.in_clusters.get(CandeoBasicCluster.cluster_id)
         if cluster is None:
             return
-        self._actions_window = int(
+        self._actions_window = (
             cluster._attr_cache.get(CandeoBasicCluster.AttributeDefs.actions_window.id)
             or CandeoActionsWindow.wait_500_ms
         )
-        self._actions_detection = int(
+        self._actions_detection = (
             cluster._attr_cache.get(
                 CandeoBasicCluster.AttributeDefs.actions_detection.id
             )
