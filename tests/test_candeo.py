@@ -976,3 +976,24 @@ async def test_kinetic_rf_to_zigbee_gateway_apply_custom_configuration(
     cluster.write_attributes.reset_mock()
     await cluster.apply_custom_configuration()
     cluster.write_attributes.assert_not_called()
+
+
+def test_kinetic_rf_to_zigbee_gateway_get_preferences_no_basic_cluster_returns_none(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that get_preferences returns safely when no basic cluster is available."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-RFZB-HUB",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    cluster = device.endpoints[1].candeo_onoff
+
+    cluster.get_preferences()
+
+    assert True
