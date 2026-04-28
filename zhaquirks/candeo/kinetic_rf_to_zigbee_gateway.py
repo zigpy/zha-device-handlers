@@ -1,16 +1,14 @@
 """Candeo c-rfzb-hub kinetic rf to zigbee gateway."""
+
 import asyncio
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Identify, OnOff, Basic, Groups, Scenes
-from zhaquirks import LocalDataCluster
-
 import zigpy.types as t
-
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Scenes
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.candeo import CANDEO
-
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -24,16 +22,16 @@ from zhaquirks.const import (
     BUTTON_10,
     COMMAND,
     COMMAND_DOUBLE,
-    COMMAND_TRIPLE,
+    COMMAND_PRESS,
     COMMAND_QUAD,
     COMMAND_QUIN,
-    COMMAND_PRESS,
-    ENDPOINT_ID,
-    SHORT_PRESS,
+    COMMAND_TRIPLE,
     DOUBLE_PRESS,
-    TRIPLE_PRESS,
+    ENDPOINT_ID,
     QUADRUPLE_PRESS,
     QUINTUPLE_PRESS,
+    SHORT_PRESS,
+    TRIPLE_PRESS,
     ZHA_SEND_EVENT,
 )
 
@@ -49,6 +47,7 @@ BUTTON_MAP = {
     9: BUTTON_9,
     10: BUTTON_10,
 }
+
 
 def generate_device_automation_triggers(ep_ids):
     """Generate automation triggers."""
@@ -72,6 +71,7 @@ def generate_device_automation_triggers(ep_ids):
             }
     return triggers
 
+
 def generate_enums(enum_attributes, ep_id):
     """Generate enums for configuration preferences."""
     for attribute_name, enum_class, cluster_id in enum_attributes:
@@ -84,6 +84,7 @@ def generate_enums(enum_attributes, ep_id):
             "translation_key": f"button_{ep_id}_{attribute_name}",
             "fallback_name": f"Button {ep_id} {attribute_name.replace('_', ' ')}",
         }
+
 
 def quirk_setup(quirk_base, endpoints):
     """Dynamically build the quirk to suit the device variant."""
@@ -112,7 +113,9 @@ def quirk_setup(quirk_base, endpoints):
             quirk.enum(**enum_kwargs)
         for cluster_id in CLUSTERS_TO_REMOVE:
             quirk.removes(cluster_id=cluster_id, endpoint_id=ep_id)
-        quirk.prevent_default_entity_creation(endpoint_id=ep_id, cluster_id=CandeoOnOffCluster.cluster_id)
+        quirk.prevent_default_entity_creation(
+            endpoint_id=ep_id, cluster_id=CandeoOnOffCluster.cluster_id
+        )
     return quirk
 
 
@@ -153,13 +156,15 @@ class CandeoButtonActions(t.enum8):
     double = 2
     triple = 3
     quadruple = 4
-    quintuple = 5  
+    quintuple = 5
 
 
 class CandeoBasicCluster(Basic, LocalDataCluster):
     """Candeo Basic Cluster."""
+
     name = "candeo_basic"
     ep_attribute = "candeo_basic"
+
     class AttributeDefs(Basic.AttributeDefs):
         """Attribute Definitions."""
 
@@ -175,17 +180,17 @@ class CandeoBasicCluster(Basic, LocalDataCluster):
             zcl_type=DataTypeId.uint16,
             access="rw",
         )
-    
+
     _CONSTANT_ATTRIBUTES = {}
-    
+
     _VALID_ATTRIBUTES = {
         AttributeDefs.actions_detection.id,
-        AttributeDefs.actions_window.id
+        AttributeDefs.actions_window.id,
     }
-    
+
     attr_config = {
-        AttributeDefs.actions_detection.id: CandeoActionsDetection.single, 
-        AttributeDefs.actions_window.id: CandeoActionsWindow.wait_500_ms 
+        AttributeDefs.actions_detection.id: CandeoActionsDetection.single,
+        AttributeDefs.actions_window.id: CandeoActionsWindow.wait_500_ms,
     }
 
     def __init__(self, *args, **kwargs):
@@ -202,17 +207,14 @@ class CandeoBasicCluster(Basic, LocalDataCluster):
 
 class CandeoOnOffCluster(OnOff, LocalDataCluster):
     """Candeo OnOff Cluster."""
+
     name = "candeo_onoff"
     ep_attribute = "candeo_onoff"
+
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute Definitions."""
 
-        action = ZCLAttributeDef(
-            id=0x0000,
-            type=t.Bool,
-            access="rp",
-            mandatory=True
-        )
+        action = ZCLAttributeDef(id=0x0000, type=t.Bool, access="rp", mandatory=True)
 
     def _get_loop(self):
         """Get a loop if not already available."""
@@ -224,7 +226,6 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
 
         return self._candeo_loop
 
-    
     def __init__(self, *args, **kwargs):
         """__init___."""
         self._timer_handle = None
@@ -242,22 +243,21 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
             if int(self._actions_detection) > 1:
                 if self._timer_handle:
                     self._timer_handle.cancel()
-                self._timer_handle = self._get_loop().call_later(self._actions_window / 1000, self.action_detection)
+                self._timer_handle = self._get_loop().call_later(
+                    self._actions_window / 1000, self.action_detection
+                )
             else:
                 self.action_detection()
 
     def action_detection(self):
-        """Action detection."""        
+        """Action detection."""
         self.get_preferences()
         self._timer_handle = None
         click_count = self._click_count
         if click_count <= int(self._actions_detection):
             button_action = CandeoButtonActions._value2member_map_.get(click_count)
             if button_action:
-                self.listener_event(
-                    ZHA_SEND_EVENT,
-                    button_action.name, {}
-                )
+                self.listener_event(ZHA_SEND_EVENT, button_action.name, {})
         self._click_count = 0
 
     def get_preferences(self):
@@ -265,8 +265,16 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
         cluster = self.endpoint.in_clusters.get(CandeoBasicCluster.cluster_id)
         if cluster is None:
             return
-        self._actions_window = int(cluster._attr_cache.get(CandeoBasicCluster.AttributeDefs.actions_window.id) or CandeoActionsWindow.wait_500_ms)
-        self._actions_detection = int(cluster._attr_cache.get(CandeoBasicCluster.AttributeDefs.actions_detection.id) or CandeoActionsDetection.single)
+        self._actions_window = int(
+            cluster._attr_cache.get(CandeoBasicCluster.AttributeDefs.actions_window.id)
+            or CandeoActionsWindow.wait_500_ms
+        )
+        self._actions_detection = int(
+            cluster._attr_cache.get(
+                CandeoBasicCluster.AttributeDefs.actions_detection.id
+            )
+            or CandeoActionsDetection.single
+        )
 
 
 quirk_base = (
@@ -275,8 +283,4 @@ quirk_base = (
     .replace_cluster_occurrences(CandeoBasicCluster)
 )
 
-(
-    quirk_setup(quirk_base, 10)
-    .applies_to(CANDEO, "C-RFZB-HUB")
-    .add_to_registry()
-)
+(quirk_setup(quirk_base, 10).applies_to(CANDEO, "C-RFZB-HUB").add_to_registry())
