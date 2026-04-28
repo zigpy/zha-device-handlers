@@ -87,9 +87,7 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
                 data=zcl_frame,
                 expect_reply=False,
             )
-            self._update_attribute(
-                self.attributes_by_name[stored_attr].id, stored_val
-            )
+            self._update_attribute(self.attributes_by_name[stored_attr].id, stored_val)
             # Gegenseitige Aktualisierung
             if attr_id == 0xEF0B:
                 self._update_attribute(
