@@ -14,7 +14,7 @@ from zhaquirks.candeo import CANDEO
 from zhaquirks.candeo.kinetic_rf_to_zigbee_gateway import (
     CandeoActionsDetection,
     CandeoActionsWindow,
-    CandeoBasicCluster,
+    CandeoOnOffCluster,
 )
 from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
     CandeoSceneSwitchRemoteButtonActionMap,
@@ -982,21 +982,12 @@ async def test_kinetic_rf_to_zigbee_gateway_apply_custom_configuration(
 def test_kinetic_rf_to_zigbee_gateway_get_preferences_no_basic_cluster_returns_none(
     zigpy_device_from_v2_quirk,
 ):
-    """Test that get_preferences returns safely when no basic cluster is available."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer=CANDEO,
-        model="C-RFZB-HUB",
-        cluster_ids={
-            1: {
-                OnOff.cluster_id: ClusterType.Server,
-                Basic.cluster_id: ClusterType.Server,
-            }
-        },
-    )
+    """Test get_preferences returns safely when Basic cluster is missing."""
+    cluster = CandeoOnOffCluster()
+    cluster.endpoint = mock.MagicMock()
+    cluster.endpoint.in_clusters = {}
 
-    device.endpoints[1].in_clusters.pop(CandeoBasicCluster.cluster_id, None)
+    cluster.get_preferences()
 
-    cluster = device.endpoints[1].candeo_onoff
-
-    result = cluster.get_preferences()
-    assert result is None
+    assert cluster._actions_window is None
+    assert cluster._actions_detection is None
