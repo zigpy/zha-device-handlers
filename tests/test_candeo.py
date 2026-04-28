@@ -903,10 +903,10 @@ def test_kinetic_rf_to_zigbee_gateway_single_click(zigpy_device_from_v2_quirk):
     assert listener.zha_send_event.call_count == 1
 
 
-def test_kinetic_rf_to_zigbee_gateway_clicks_exceed_detection_suppressed(
+def test_kinetic_rf_to_zigbee_gateway_clicks_exceed_detection_count(
     zigpy_device_from_v2_quirk,
 ):
-    """Test clicks above detection threshold should NOT fire events."""
+    """Test clicks above detection count should discard extra clicks."""
     device = zigpy_device_from_v2_quirk(
         manufacturer=CANDEO,
         model="C-RFZB-HUB",
@@ -937,12 +937,9 @@ def test_kinetic_rf_to_zigbee_gateway_clicks_exceed_detection_suppressed(
 
     for _ in range(3):
         cluster._update_attribute(cluster.AttributeDefs.action.id, 1)
-        loop.run_until_complete(asyncio.sleep(0.15))
 
-    loop.run_until_complete(asyncio.sleep(0.7))
+    loop.run_until_complete(asyncio.sleep(0.55))
 
     assert listener.zha_send_event.called
-    args, _ = listener.zha_send_event.call_args
-    assert args[0] == COMMAND_PRESS
-    assert args[1] == {}
     assert listener.zha_send_event.call_count == 1
+    listener.zha_send_event.assert_called_once_with(COMMAND_PRESS, {})
