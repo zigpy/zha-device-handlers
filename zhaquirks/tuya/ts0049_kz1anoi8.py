@@ -37,6 +37,7 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
         only_cache: bool = False,
         manufacturer: Optional[int] = None,
     ):
+        """Write attributes, routing irrigation timer writes to Cluster 0xE001 / Command 0xFE."""
         e001_attrs = {}
         other_attrs = {}
 
