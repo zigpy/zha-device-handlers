@@ -951,6 +951,7 @@ def test_kinetic_rf_to_zigbee_gateway_single_detection_does_not_coalesce_clicks(
 
         assert extra == {}
 
+
 @pytest.mark.asyncio
 async def test_kinetic_rf_to_zigbee_gateway_apply_custom_configuration(
     zigpy_device_from_v2_quirk,
