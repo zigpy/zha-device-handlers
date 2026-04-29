@@ -412,9 +412,10 @@ base_tuya_motion = (
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        min_value=0.1,
+        min_value=0,
         max_value=10,
         step=0.1,
+        multiplier=0.1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
     )
