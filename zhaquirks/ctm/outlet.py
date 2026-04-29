@@ -20,32 +20,32 @@ from zhaquirks.ctm import (
     .replaces(CTMCooktopGuardCluster, cluster_type=ClusterType.Client)
     .replaces(CTMDiagnosticsCluster)
     .sensor(
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
+        entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="reboot_counter",
         fallback_name="Reboot counter",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
     )
     .sensor(
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_click_counter.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_click_counter.name,
+        entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
         translation_key="button_click_counter",
         fallback_name="Button click counter",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
     )
     .sensor(
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_ms_click_duration.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_ms_click_duration.name,
-        translation_key="button_click_duration",
-        fallback_name="Button click duration",
         unit=UnitOfTime.MILLISECONDS,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
+        translation_key="button_click_duration",
+        fallback_name="Button click duration",
     )
     .add_to_registry()
 )
