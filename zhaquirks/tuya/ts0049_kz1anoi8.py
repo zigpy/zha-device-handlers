@@ -59,7 +59,7 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
 
         results = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
-        for attr, value in e001_attrs.items():
+        for value in e001_attrs.values():
             sec = max(0, min(86400, int(value)))
             payload = bytes(
                 [
