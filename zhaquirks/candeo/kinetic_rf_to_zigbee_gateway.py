@@ -81,7 +81,7 @@ def generate_enums(enum_attributes, ep_id):
             "enum_class": enum_class,
             "cluster_id": cluster_id,
             "endpoint_id": ep_id,
-            "unique_id_suffix": f"button_{ep_id}_{attribute_name}_",
+            "unique_id_suffix": f"button_{ep_id}_{attribute_name}",
             "translation_key": f"button_{ep_id}_{attribute_name}",
             "fallback_name": f"Button {ep_id} {attribute_name.replace('_', ' ')}",
         }
@@ -96,14 +96,14 @@ def quirk_setup(quirk_base, endpoints):
     ]
     ENUM_ATTRIBUTES = [
         (
-            CandeoBasicCluster.AttributeDefs.actions_detection.name,
+            CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_detection.name,
             CandeoActionsDetection,
-            CandeoBasicCluster.cluster_id,
+            CandeoKineticRFGatewayBasicCluster.cluster_id,
         ),
         (
-            CandeoBasicCluster.AttributeDefs.actions_window.name,
+            CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_window.name,
             CandeoActionsWindow,
-            CandeoBasicCluster.cluster_id,
+            CandeoKineticRFGatewayBasicCluster.cluster_id,
         ),
     ]
     quirk = quirk_base.clone()
@@ -115,7 +115,7 @@ def quirk_setup(quirk_base, endpoints):
         for cluster_id in CLUSTERS_TO_REMOVE:
             quirk.removes(cluster_id=cluster_id, endpoint_id=ep_id)
         quirk.prevent_default_entity_creation(
-            endpoint_id=ep_id, cluster_id=CandeoOnOffCluster.cluster_id
+            endpoint_id=ep_id, cluster_id=CandeoKineticRFGatewayOnOffCluster.cluster_id
         )
     return quirk
 
@@ -160,7 +160,7 @@ class CandeoButtonActions(t.enum8):
     quintuple = 5
 
 
-class CandeoBasicCluster(Basic, LocalDataCluster):
+class CandeoKineticRFGatewayBasicCluster(Basic, LocalDataCluster):
     """Candeo Basic Cluster."""
 
     name = "candeo_basic"
@@ -174,12 +174,14 @@ class CandeoBasicCluster(Basic, LocalDataCluster):
             type=CandeoActionsDetection,
             zcl_type=DataTypeId.uint8,
             access="rw",
+            is_manufacturer_specific=True,
         )
         actions_window = ZCLAttributeDef(
             id=0x8804,
             type=CandeoActionsWindow,
             zcl_type=DataTypeId.uint16,
             access="rw",
+            is_manufacturer_specific=True,
         )
 
     _CONSTANT_ATTRIBUTES = {}
@@ -206,7 +208,7 @@ class CandeoBasicCluster(Basic, LocalDataCluster):
             self._configured = True
 
 
-class CandeoOnOffCluster(OnOff, LocalDataCluster):
+class CandeoKineticRFGatewayOnOffCluster(OnOff, LocalDataCluster):
     """Candeo OnOff Cluster."""
 
     name = "candeo_onoff"
@@ -266,16 +268,16 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
 
     def get_preferences(self):
         """Get saved preferences from the basic cluster."""
-        cluster = self.endpoint.in_clusters.get(CandeoBasicCluster.cluster_id)
+        cluster = self.endpoint.in_clusters.get(CandeoKineticRFGatewayBasicCluster.cluster_id)
         if cluster is None:
             return
         self._actions_window = (
-            cluster._attr_cache.get(CandeoBasicCluster.AttributeDefs.actions_window.id)
+            cluster._attr_cache.get(CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_window.id)
             or CandeoActionsWindow.wait_500_ms
         )
         self._actions_detection = (
             cluster._attr_cache.get(
-                CandeoBasicCluster.AttributeDefs.actions_detection.id
+                CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_detection.id
             )
             or CandeoActionsDetection.single
         )
@@ -283,8 +285,8 @@ class CandeoOnOffCluster(OnOff, LocalDataCluster):
 
 quirk_base = (
     QuirkBuilder()
-    .replace_cluster_occurrences(CandeoOnOffCluster)
-    .replace_cluster_occurrences(CandeoBasicCluster)
+    .replace_cluster_occurrences(CandeoKineticRFGatewayOnOffCluster)
+    .replace_cluster_occurrences(CandeoKineticRFGatewayBasicCluster)
 )
 
 (quirk_setup(quirk_base, 10).applies_to(CANDEO, "C-RFZB-HUB").add_to_registry())
