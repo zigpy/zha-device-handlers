@@ -1,3 +1,0 @@
-"""HOBEIAN quirks."""
-
-HOBEIAN = "HOBEIAN"
