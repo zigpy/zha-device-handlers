@@ -111,12 +111,13 @@ async def test_non_timer_attr_uses_super(water_valve):
     tuya_cluster = water_valve.endpoints[1].tuya_manufacturer
     success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
-    with mock.patch.object(
-        tuya_cluster.endpoint.device, "request", return_value=None
-    ), mock.patch(
-        "zhaquirks.tuya.mcu.TuyaMCUCluster.write_attributes",
-        return_value=success,
-    ) as super_mock:
+    with (
+        mock.patch.object(tuya_cluster.endpoint.device, "request", return_value=None),
+        mock.patch(
+            "zhaquirks.tuya.mcu.TuyaMCUCluster.write_attributes",
+            return_value=success,
+        ) as super_mock,
+    ):
         # 0x0000 is not the irrigation_time attr id, so it goes to other_attrs
         await tuya_cluster.write_attributes({0x0000: 1})
         await wait_for_zigpy_tasks()
