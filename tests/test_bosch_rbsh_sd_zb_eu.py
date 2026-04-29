@@ -1,5 +1,6 @@
 """Tests for the Bosch RBSH-SD-ZB-EU / BSD-2 smoke detector quirk."""
 
+import asyncio
 from unittest import mock
 
 import pytest
@@ -22,6 +23,20 @@ from zhaquirks.bosch.rbsh_sd_zb_eu import (
     BoschAlarmMode,
     BoschIasZoneCluster,
 )
+
+
+async def _drain_broadcast_followups(cluster: BoschIasZoneCluster) -> None:
+    """Await every pending broadcast follow-up task on ``cluster``.
+
+    The quirk fires the second broadcast frame from a background task so the
+    caller (HA, scripts, automations) does not block 4 s on every toggle.
+    Tests need to wait for that task before asserting on broadcast counts /
+    sleep calls / final wire frames.
+    """
+    pending = list(cluster._pending_broadcast_followups)
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+
 
 zhaquirks.setup()
 
@@ -284,6 +299,9 @@ async def test_broadcast_true_emits_two_zigbee_broadcasts_with_arm_payload(
         ) as mock_sleep,
     ):
         await bosch_bsd2_cluster.write_attributes({attr_name: True})
+        # The duplicate frame fires from a background task; let it complete
+        # before we assert on the broadcast count.
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     # Unicast control_alarm must NOT be used for broadcast writes.
     mock_unicast.assert_not_called()
@@ -313,6 +331,7 @@ async def test_broadcast_false_emits_stop_broadcasts(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": False})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     assert _mocked_app_broadcast.broadcast.await_count == 2
     for call in _mocked_app_broadcast.broadcast.await_args_list:
@@ -337,10 +356,42 @@ async def test_broadcast_frame_matches_herdsman_wire_format(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": True})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     frame = _mocked_app_broadcast.broadcast.await_args_list[0].kwargs["data"]
     # TSN 0x42 comes from the fixture's get_sequence mock.
     assert frame.hex() == "1509124280" + "01" + "f0"
+
+
+async def test_broadcast_returns_before_duplicate_frame_is_sent(
+    bosch_bsd2_cluster, _mocked_app_broadcast
+):
+    """``write_attributes`` must return after the first broadcast, not after the second.
+
+    The duplicate fires from a background task ~4 s later. Blocking the caller
+    for 4 s would freeze HA scripts/automations and risk service-call timeouts,
+    so we verify the synchronous portion only emits the first frame and leaves
+    the second pending in ``_pending_broadcast_followups``.
+    """
+    with (
+        mock.patch.object(bosch_bsd2_cluster, "control_alarm", mock.AsyncMock()),
+        mock.patch(
+            "zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()
+        ) as mock_sleep,
+    ):
+        await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": True})
+
+        # First frame is inline; second is scheduled but not yet awaited.
+        assert _mocked_app_broadcast.broadcast.await_count == 1
+        mock_sleep.assert_not_awaited()
+        assert len(bosch_bsd2_cluster._pending_broadcast_followups) == 1
+
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
+
+        # Once we let the follow-up run, the second frame goes out.
+        assert _mocked_app_broadcast.broadcast.await_count == 2
+        mock_sleep.assert_awaited_once_with(INTER_BROADCAST_DELAY_S)
+        assert not bosch_bsd2_cluster._pending_broadcast_followups
 
 
 async def test_broadcast_on_primes_cache_locally(
@@ -352,6 +403,7 @@ async def test_broadcast_on_primes_cache_locally(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": True})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     assert bosch_bsd2_cluster._attr_cache[BROADCAST_BURGLAR_ALARM_ATTR_ID] == 1
     assert bosch_bsd2_cluster._attr_cache[BROADCAST_SMOKE_ALARM_ATTR_ID] == 0
@@ -368,6 +420,7 @@ async def test_broadcast_arm_mirrors_sibling_off(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_smoke_alarm": True})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     assert bosch_bsd2_cluster._attr_cache[BROADCAST_SMOKE_ALARM_ATTR_ID] == 1
     assert bosch_bsd2_cluster._attr_cache[BROADCAST_BURGLAR_ALARM_ATTR_ID] == 0
@@ -385,6 +438,7 @@ async def test_broadcast_state_syncs_across_every_live_bsd2(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": True})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     for cluster in (bosch_bsd2_cluster, peer_a, peer_b):
         assert cluster._attr_cache[BROADCAST_BURGLAR_ALARM_ATTR_ID] == 1
@@ -409,6 +463,7 @@ async def test_broadcast_off_syncs_across_mesh_but_leaves_sibling(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": False})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     for cluster in (bosch_bsd2_cluster, peer):
         assert cluster._attr_cache[BROADCAST_BURGLAR_ALARM_ATTR_ID] == 0
@@ -460,6 +515,110 @@ async def test_broadcast_does_not_affect_manual_cache(
         mock.patch("zhaquirks.bosch.rbsh_sd_zb_eu.asyncio.sleep", mock.AsyncMock()),
     ):
         await bosch_bsd2_cluster.write_attributes({"broadcast_burglar_alarm": True})
+        await _drain_broadcast_followups(bosch_bsd2_cluster)
 
     assert bosch_bsd2_cluster._attr_cache[MANUAL_BURGLAR_ALARM_ATTR_ID] == 0
     assert bosch_bsd2_cluster._attr_cache[MANUAL_SMOKE_ALARM_ATTR_ID] == 0
+
+
+# --- read_attributes_raw cache-only short-circuit -------------------------
+
+
+async def test_read_synthetic_attribute_is_served_from_cache(bosch_bsd2_cluster):
+    """Reading a synthetic id never hits the wire and reflects the cached state."""
+    bosch_bsd2_cluster._update_attribute(MANUAL_BURGLAR_ALARM_ATTR_ID, 1)
+
+    with mock.patch.object(
+        IasZone,
+        "read_attributes_raw",
+        mock.AsyncMock(side_effect=AssertionError("must not be called")),
+    ) as mock_super:
+        result = await bosch_bsd2_cluster.read_attributes_raw(
+            [MANUAL_BURGLAR_ALARM_ATTR_ID]
+        )
+
+    mock_super.assert_not_called()
+    records = result[0]
+    assert len(records) == 1
+    record = records[0]
+    assert record.attrid == MANUAL_BURGLAR_ALARM_ATTR_ID
+    assert record.status == foundation.Status.SUCCESS
+    assert record.value.value == 1
+
+
+async def test_read_real_attribute_forwards_to_super(bosch_bsd2_cluster):
+    """Real IasZone attribute reads are forwarded to the base cluster unchanged."""
+    real_attr_id = IasZone.AttributeDefs.zone_status.id
+    fake_record = foundation.ReadAttributeRecord(
+        attrid=real_attr_id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(),
+    )
+    fake_record.value.value = 0
+
+    with mock.patch.object(
+        IasZone,
+        "read_attributes_raw",
+        mock.AsyncMock(return_value=([fake_record],)),
+    ) as mock_super:
+        result = await bosch_bsd2_cluster.read_attributes_raw(
+            [real_attr_id], manufacturer=BOSCH_MANUFACTURER_CODE
+        )
+
+    mock_super.assert_awaited_once()
+    forwarded_ids = mock_super.await_args.args[0]
+    assert list(forwarded_ids) == [real_attr_id]
+    assert mock_super.await_args.kwargs["manufacturer"] == BOSCH_MANUFACTURER_CODE
+    assert result[0] == [fake_record]
+
+
+async def test_read_mixed_attributes_serves_synthetic_from_cache_and_forwards_real(
+    bosch_bsd2_cluster,
+):
+    """A mixed read must split: synthetic from cache, real to super, then merge."""
+    bosch_bsd2_cluster._update_attribute(BROADCAST_SMOKE_ALARM_ATTR_ID, 1)
+    real_attr_id = IasZone.AttributeDefs.zone_status.id
+    fake_record = foundation.ReadAttributeRecord(
+        attrid=real_attr_id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(),
+    )
+    fake_record.value.value = 0
+
+    with mock.patch.object(
+        IasZone,
+        "read_attributes_raw",
+        mock.AsyncMock(return_value=([fake_record],)),
+    ) as mock_super:
+        result = await bosch_bsd2_cluster.read_attributes_raw(
+            [BROADCAST_SMOKE_ALARM_ATTR_ID, real_attr_id]
+        )
+
+    # Only the real id should reach the wire.
+    forwarded_ids = list(mock_super.await_args.args[0])
+    assert forwarded_ids == [real_attr_id]
+
+    record_by_id = {rec.attrid: rec for rec in result[0]}
+    assert set(record_by_id) == {BROADCAST_SMOKE_ALARM_ATTR_ID, real_attr_id}
+    assert record_by_id[BROADCAST_SMOKE_ALARM_ATTR_ID].value.value == 1
+    assert (
+        record_by_id[BROADCAST_SMOKE_ALARM_ATTR_ID].status == foundation.Status.SUCCESS
+    )
+    assert record_by_id[real_attr_id] is fake_record
+
+
+async def test_read_real_attribute_propagates_whole_batch_failure(bosch_bsd2_cluster):
+    """If the radio reports a global error, every real id mirrors that status."""
+    real_attr_id = IasZone.AttributeDefs.zone_status.id
+
+    with mock.patch.object(
+        IasZone,
+        "read_attributes_raw",
+        mock.AsyncMock(return_value=(foundation.Status.FAILURE,)),
+    ):
+        result = await bosch_bsd2_cluster.read_attributes_raw([real_attr_id])
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].attrid == real_attr_id
+    assert records[0].status == foundation.Status.FAILURE

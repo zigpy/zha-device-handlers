@@ -18,7 +18,11 @@ quirk surfaces *synthetic* manufacturer-specific attributes on the IAS
 Zone cluster and translates writes to them into ``control_alarm`` frames.
 The attributes do not exist on the wire; their values live only in the
 zigpy cluster cache and are primed to ``0`` when the cluster is
-constructed. That gives HA four ordinary switch entities per detector:
+constructed. Reads of these synthetic ids are served straight from the
+cache - the quirk's ``read_attributes_raw`` override never forwards them
+to the device, so HA's entity-refresh polling does not generate
+unsupported-attribute traffic. That gives HA four ordinary switch
+entities per detector:
 
     switch.<device>_manual_smoke_alarm       unicast arm - this device only
     switch.<device>_manual_burglar_alarm     unicast arm - this device only
@@ -29,9 +33,12 @@ The ``manual_*`` switches send a normal unicast ``control_alarm`` to the
 specific device. The ``broadcast_*`` switches emit the same frame as a
 Zigbee broadcast (destination ``0xFFFF`` / endpoint ``0xFF``) reaching
 every BSD-2 on the mesh, including sleepy battery-powered ones, matching
-zigbee2mqtt's ``broadcast_alarms`` feature. Because Bosch's firmware and
-herdsman send the broadcast twice with a 4-second gap so sleepy detectors
-that miss the first packet still arm on the second, so does this quirk.
+zigbee2mqtt's ``broadcast_alarms`` feature. Bosch's firmware and herdsman
+send the broadcast twice with a 4-second gap so sleepy detectors that
+miss the first packet still arm on the second; this quirk does the same.
+The first broadcast and the cache/mesh-state update happen synchronously,
+the duplicate is fired from a background task so HA scripts and
+automations do not block for 4 s on every toggle.
 
 Semantics:
 
@@ -61,6 +68,7 @@ import weakref
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
@@ -180,6 +188,10 @@ class BoschIasZoneCluster(CustomCluster, IasZone):
         """Prime the synthetic attribute cache so every switch defaults to off."""
         super().__init__(*args, **kwargs)
         _LIVE_CLUSTERS.add(self)
+        # Background follow-up tasks for the second broadcast frame. We track
+        # them so the cluster (and tests) can observe / await completion; each
+        # task removes itself once it finishes.
+        self._pending_broadcast_followups: set[asyncio.Task[None]] = set()
         for attr_id in _SYNTHETIC_ATTR_IDS:
             self._update_attribute(attr_id, 0)
 
@@ -198,6 +210,56 @@ class BoschIasZoneCluster(CustomCluster, IasZone):
         if attr_id in _SYNTHETIC_ATTR_IDS:
             return attr_id
         return None
+
+    async def read_attributes_raw(
+        self,
+        attributes: list[int],
+        manufacturer: int | None = None,
+        **kwargs: Any,
+    ) -> tuple[list[foundation.ReadAttributeRecord]]:
+        """Serve synthetic attribute reads from the local cache.
+
+        These ids only exist client-side - they back the four HA switch
+        entities and have no on-wire counterpart. Forwarding a read for them
+        would generate ``UNSUPPORTED_ATTRIBUTE`` traffic, log noise, and
+        contradict the cache-only contract documented at the top of this
+        module. Real IasZone attribute ids are forwarded to the base cluster
+        unchanged so the rest of the on-wire surface keeps working.
+        """
+        synthetic_ids = [int(a) for a in attributes if int(a) in _SYNTHETIC_ATTR_IDS]
+        real_ids = [a for a in attributes if int(a) not in _SYNTHETIC_ATTR_IDS]
+
+        records: list[foundation.ReadAttributeRecord] = []
+        for attr_id in synthetic_ids:
+            record = foundation.ReadAttributeRecord(
+                attrid=attr_id,
+                status=foundation.Status.SUCCESS,
+                value=foundation.TypeValue(),
+            )
+            # ``_attr_cache`` is primed in ``__init__`` so a missing key here
+            # would be a logic bug - fall back to ``0`` (off) defensively.
+            record.value.value = self._attr_cache.get(attr_id, 0)
+            records.append(record)
+
+        if real_ids:
+            result = await super().read_attributes_raw(
+                real_ids, manufacturer=manufacturer, **kwargs
+            )
+            if isinstance(result[0], list):
+                records.extend(result[0])
+            else:
+                # Whole-batch failure status from the radio: synthesize a
+                # matching record per real id. Synthetic ids are unaffected,
+                # they were already served from cache above.
+                for raw_id in real_ids:
+                    rec = foundation.ReadAttributeRecord(
+                        attrid=int(raw_id),
+                        status=result[0],
+                        value=foundation.TypeValue(),
+                    )
+                    records.append(rec)
+
+        return (records,)
 
     async def _broadcast_control_alarm(self, alarm_mode: int, timeout: int) -> None:
         """Emit a single ``control_alarm`` frame as a mesh-wide Zigbee broadcast."""
@@ -228,14 +290,28 @@ class BoschIasZoneCluster(CustomCluster, IasZone):
             broadcast_address=t.BroadcastAddress.ALL_DEVICES,
         )
 
+    async def _emit_duplicate_broadcast(self, alarm_mode: int, timeout: int) -> None:
+        """Wait ``INTER_BROADCAST_DELAY_S`` then send the second broadcast frame.
+
+        Sleepy BSD-2 end-devices may miss the first packet during a poll-cycle
+        gap; firing the same frame ~4 s later closes that window. Failures are
+        swallowed because the user's intent is already reflected in the cache
+        and the first broadcast has already been sent.
+        """
+        await asyncio.sleep(INTER_BROADCAST_DELAY_S)
+        try:
+            await self._broadcast_control_alarm(alarm_mode, timeout)
+        except Exception as err:  # pragma: no cover - defensive
+            self.warning("Bosch broadcast follow-up failed: %s", err)
+
     async def write_attributes(
         self,
-        attributes: dict[str | int | ZCLAttributeDef, Any],
-        manufacturer: int | None = None,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
         **kwargs: Any,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Route writes of synthetic attrs to unicast or broadcast control_alarm frames."""
-        remaining: dict[str | int | ZCLAttributeDef, Any] = {}
+        remaining: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
         synthetic_writes: list[tuple[int, bool]] = []
 
         for attr, value in attributes.items():
@@ -250,12 +326,20 @@ class BoschIasZoneCluster(CustomCluster, IasZone):
             alarm_timeout = ALARM_TIMEOUT_SECONDS if on else 0
 
             if attr_id in _BROADCAST_ATTR_IDS:
-                # Send twice 4 s apart to match Bosch firmware / z2m so sleepy
-                # BSD-2s that miss the first broadcast still pick up the second.
-                await self._broadcast_control_alarm(alarm_mode, alarm_timeout)
-                await asyncio.sleep(INTER_BROADCAST_DELAY_S)
+                # Bosch firmware / z2m send the broadcast twice with a 4 s gap
+                # so sleepy BSD-2s that miss the first packet still arm on the
+                # second. Send the first frame inline, sync the cache + mesh
+                # state immediately so HA's switch reflects user intent right
+                # away, and schedule the duplicate in a background task so the
+                # caller (a script, automation, or service call) is not held
+                # for ~4 s on every toggle.
                 await self._broadcast_control_alarm(alarm_mode, alarm_timeout)
                 _sync_broadcast_state_across_mesh(attr_id, 1 if on else 0)
+                followup = asyncio.create_task(
+                    self._emit_duplicate_broadcast(alarm_mode, alarm_timeout)
+                )
+                self._pending_broadcast_followups.add(followup)
+                followup.add_done_callback(self._pending_broadcast_followups.discard)
             else:
                 await self.control_alarm(alarm_mode, alarm_timeout)
                 self._update_attribute(attr_id, 1 if on else 0)
