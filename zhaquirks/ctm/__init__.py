@@ -109,7 +109,7 @@ class CTMDiagnosticsCluster(CustomCluster):
 class CTMCooktopGuardCluster(CustomCluster):
     """CTM Lyng custom cooktop guard cluster."""
 
-    name = "CtmCooktopGuard"
+    name = "CTMCooktopGuard"
     cluster_id = 0xFFC9
     ep_attribute = "ctm_cooktop_guard"
 
