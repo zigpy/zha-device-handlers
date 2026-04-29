@@ -993,6 +993,7 @@ def test_kinetic_rf_to_zigbee_gateway_get_preferences_no_basic_cluster_returns_n
     assert cluster._actions_window is None
     assert cluster._actions_detection is None
 
+
 def test_kinetic_rf_to_zigbee_gateway_generate_device_automation_triggers_invalid_endpoint():
     """Test invalid endpoint raises ValueError."""
     with pytest.raises(ValueError, match="Unsupported button endpoint: 99"):
