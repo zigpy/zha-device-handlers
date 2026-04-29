@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
+    DataTypeId,
     ZCLAttributeDef,
     ZCLCommandDef,
 )
@@ -118,6 +119,7 @@ class CTMCooktopGuardCluster(CustomCluster):
         ctm_alarm_status: Final = ZCLAttributeDef(
             id=0x0001,
             type=AlarmStatus,
+            zcl_type=DataTypeId.uint8,
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
@@ -232,6 +234,7 @@ class CTMCooktopGuardCluster(CustomCluster):
         ctm_relay_sensor_alarm: Final = ZCLAttributeDef(
             id=0x0105,
             type=AlarmStatus,
+            zcl_type=DataTypeId.uint8,
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
