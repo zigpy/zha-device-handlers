@@ -231,6 +231,44 @@ async def test_updated_motion_timeout_is_used_on_next_event(ts0202_cluster):
     mock_loop.call_later.assert_called_once_with(30, ts0202_cluster._turn_off)
 
 
+async def test_writing_motion_timeout_during_active_motion_reschedules_timer_live(
+    ts0202_cluster,
+):
+    """Changing ``motion_timeout`` while motion is active must cancel + reschedule the timer.
+
+    The Number entity advertises the timeout as live-configurable - if the
+    user shortens the value mid-detection we must not wait until the *next*
+    motion event for it to take effect. Cancel the in-flight clear timer
+    and arm a new one with the new delay measured from now.
+    """
+    old_timer = mock.MagicMock()
+    ts0202_cluster._timer_handle = old_timer
+    new_timer = mock.MagicMock()
+
+    with mock.patch.object(ts0202_cluster, "_loop") as mock_loop:
+        mock_loop.call_later.return_value = new_timer
+        await ts0202_cluster.write_attributes({"motion_timeout": 20})
+
+    old_timer.cancel.assert_called_once()
+    mock_loop.call_later.assert_called_once_with(20, ts0202_cluster._turn_off)
+    assert ts0202_cluster._timer_handle is new_timer
+    assert ts0202_cluster.reset_s == 20
+
+
+async def test_writing_motion_timeout_with_no_active_motion_does_not_arm_timer(
+    ts0202_cluster,
+):
+    """No active motion = no timer, and a write must not start one (only update reset_s)."""
+    assert ts0202_cluster._timer_handle is None
+
+    with mock.patch.object(ts0202_cluster, "_loop") as mock_loop:
+        await ts0202_cluster.write_attributes({"motion_timeout": 60})
+
+    mock_loop.call_later.assert_not_called()
+    assert ts0202_cluster._timer_handle is None
+    assert ts0202_cluster.reset_s == 60
+
+
 def _captured_forwarded_attrs(mocked_super: mock.AsyncMock) -> dict:
     """Pull the ``attributes`` dict out of the patched ``super().write_attributes`` call."""
     mocked_super.assert_awaited_once()
@@ -270,6 +308,43 @@ async def test_mixed_write_splits_local_and_remote(ts0202_cluster):
     assert "motion_timeout" not in forwarded
     assert MOTION_TIMEOUT_ATTR_ID not in forwarded
     assert forwarded == {IasZone.AttributeDefs.zone_id.id: 0x02}
+
+
+async def test_write_motion_timeout_via_zcl_attribute_def_descriptor(ts0202_cluster):
+    """Writing by ``ZCLAttributeDef`` descriptor (a key shape zigpy callers use) must route local."""
+    endpoint_request = mock.AsyncMock()
+    ts0202_cluster._endpoint.request = endpoint_request
+
+    descriptor = TS0202MotionCluster.AttributeDefs.motion_timeout
+    await ts0202_cluster.write_attributes({descriptor: 60})
+
+    assert ts0202_cluster.reset_s == 60
+    assert ts0202_cluster._attr_cache[MOTION_TIMEOUT_ATTR_ID] == 60
+    endpoint_request.assert_not_awaited()
+
+
+async def test_remote_writes_forward_manufacturer_and_kwargs_unchanged(ts0202_cluster):
+    """The override must pass ``manufacturer`` + arbitrary kwargs through to ``super``.
+
+    The canonical zhaquirks ``write_attributes`` signature accepts
+    ``manufacturer: int | UndefinedType | None = UNDEFINED`` plus ``**kwargs``
+    so callers and zigpy's internal plumbing can forward any extra options
+    (e.g. ``manufacturer_code``, ``update_cache``). This regresses the
+    pre-fix behavior of forcing ``manufacturer=None`` and dropping kwargs.
+    """
+    with mock.patch.object(
+        IasZone, "write_attributes", new=mock.AsyncMock(return_value=[[]])
+    ) as mocked_super:
+        await ts0202_cluster.write_attributes(
+            {IasZone.AttributeDefs.zone_id.id: 0x05},
+            manufacturer=0x1209,
+            update_cache=False,
+        )
+
+    mocked_super.assert_awaited_once()
+    call = mocked_super.await_args
+    assert call.kwargs.get("manufacturer") == 0x1209
+    assert call.kwargs.get("update_cache") is False
 
 
 async def test_is_motion_timeout_key_classifier(ts0202_cluster):

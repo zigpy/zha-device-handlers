@@ -38,6 +38,7 @@ from typing import Any, Final
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.security import IasZone
@@ -72,9 +73,12 @@ class TS0202MotionCluster(MotionWithReset):
       attribute reports, since these TS0202 clones mix the two paths across
       firmware revisions.
     * Exposes a synthetic, writable ``motion_timeout`` attribute (seconds)
-      that backs a Number entity. Writing it updates the auto-clear timer
-      live; no Zigbee frames are sent to the device since this firmware has
-      no runtime-configurable keep_time.
+      that backs a Number entity. Writing it updates the auto-clear delay
+      used for subsequent motion events and, when motion is currently
+      active, cancels the running auto-clear timer and reschedules it with
+      the new value so the change takes effect immediately. No Zigbee
+      frames are sent to the device since this firmware has no
+      runtime-configurable keep_time.
     """
 
     class AttributeDefs(IasZone.AttributeDefs):
@@ -116,18 +120,22 @@ class TS0202MotionCluster(MotionWithReset):
 
     async def write_attributes(
         self,
-        attributes: dict[str | int, Any],
-        manufacturer: int | None = None,
-    ) -> list:
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs: Any,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Intercept writes to the synthetic ``motion_timeout`` attribute.
 
         The Number entity calls ``write_attributes({"motion_timeout": N})``.
         Since the firmware has no runtime-configurable keep_time, we keep the
-        value quirk-local: clamp + cache + use it on the next motion event.
-        Any other attribute writes fall through to the device unchanged.
+        value quirk-local: clamp + cache + use it on every subsequent motion
+        event, and - if motion is currently active - reschedule the running
+        auto-clear timer so the change takes effect live. Any other
+        attribute writes fall through to the device unchanged with the
+        caller's ``manufacturer`` and ``kwargs`` preserved.
         """
-        local: dict[str | int, Any] = {}
-        remote: dict[str | int, Any] = {}
+        local: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
+        remote: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
         for key, value in attributes.items():
             if self._is_motion_timeout_key(key):
                 local[key] = value
@@ -141,6 +149,13 @@ class TS0202MotionCluster(MotionWithReset):
             )
             self.reset_s = clamped
             self._update_attribute(MOTION_TIMEOUT_ATTR_ID, clamped)
+            # If a clear-timer is currently running (motion is active), the
+            # docstring promises a "live" update, so cancel and reschedule
+            # with the new value from now. If no timer is pending, the new
+            # value is simply picked up on the next motion event.
+            if self._timer_handle is not None:
+                self._timer_handle.cancel()
+                self._timer_handle = self._loop.call_later(clamped, self._turn_off)
             self.debug(
                 "%s - motion_timeout set to %ss (was request for %s)",
                 self.endpoint.device.ieee,
@@ -149,7 +164,9 @@ class TS0202MotionCluster(MotionWithReset):
             )
 
         if remote:
-            return await super().write_attributes(remote, manufacturer=manufacturer)
+            return await super().write_attributes(
+                remote, manufacturer=manufacturer, **kwargs
+            )
 
         return [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
