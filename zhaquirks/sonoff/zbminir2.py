@@ -1,4 +1,4 @@
-"""Sonoff ZBMINIR2 - Zigbee Switch."""
+"""Sonoff ZBMINIR2 and MINI-ZBD - Zigbee Switches."""
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
@@ -52,6 +52,7 @@ class SonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "ZBMINIR2")
+    .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
     .prevent_default_entity_creation(
         cluster_id=OnOff.cluster_id,
