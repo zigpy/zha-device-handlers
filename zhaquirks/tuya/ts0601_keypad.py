@@ -48,6 +48,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.security import IasAce, IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, PowerConfigurationCluster
 from zhaquirks.const import (
@@ -72,62 +73,61 @@ ARM_HOME = "arm_home"
 PANIC = "panic"
 EMERGENCY = "emergency"
 
+# Tuya DP IDs (see module docstring)
+BATTERY_PERCENTAGE_DP_ID = 3
+ANTI_REMOVE_ALARM_DP_ID = 24
+DISARMED_DP_ID = 26
+ARMED_DP_ID = 27
+ARMED_HOME_DP_ID = 28
+SOS_DP_ID = 29
+ARM_DELAY_TIME_DP_ID = 103
+KEYPAD_BEEPS_DP_ID = 104
+QUICK_SOS_DP_ID = 105
+QUICK_DISARM_DP_ID = 106
+QUICK_ARM_DP_ID = 107
+ADMIN_CODE_DP_ID = 108
+USER_CODE_DP_ID = 109
+ARM_DELAY_BEEPS_DP_ID = 111
+
 
 class TuyaKeypadManufCluster(TuyaMCUCluster):
     """Tuya keypad manufacturer cluster."""
 
-    BATTERY_PERCENTAGE_DP_ID = 3
-    ANTI_REMOVE_ALARM_DP_ID = 24
-    DISARMED_DP_ID = 26
-    ARMED_DP_ID = 27
-    ARMED_HOME_DP_ID = 28
-    SOS_DP_ID = 29
-    ARM_DELAY_TIME_DP_ID = 103
-    KEYPAD_BEEPS_DP_ID = 104
-    QUICK_SOS_DP_ID = 105
-    QUICK_DISARM_DP_ID = 106
-    QUICK_ARM_DP_ID = 107
-    ADMIN_CODE_DP_ID = 108
-    USER_CODE_DP_ID = 109
-    ARM_DELAY_BEEPS_DP_ID = 111
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Tuya keypad attribute definitions."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            TuyaMCUCluster.cluster_id + ARM_DELAY_TIME_DP_ID: (
-                "arm_delay_time",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + ARM_DELAY_BEEPS_DP_ID: (
-                "arm_delay_beeps",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + KEYPAD_BEEPS_DP_ID: (
-                "keypad_beeps",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + QUICK_DISARM_DP_ID: (
-                "quick_disarm",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + QUICK_ARM_DP_ID: (
-                "quick_arm",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + QUICK_SOS_DP_ID: (
-                "quick_sos",
-                t.uint8_t,
-            ),
-            TuyaMCUCluster.cluster_id + ADMIN_CODE_DP_ID: (
-                "admin_code",
-                t.CharacterString,
-            ),
-            TuyaMCUCluster.cluster_id + USER_CODE_DP_ID: (
-                "user_code",
-                t.CharacterString,
-            ),
-        }
-    )
+        arm_delay_time = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + ARM_DELAY_TIME_DP_ID,
+            type=t.uint8_t,
+        )
+        arm_delay_beeps = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + ARM_DELAY_BEEPS_DP_ID,
+            type=t.uint8_t,
+        )
+        keypad_beeps = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + KEYPAD_BEEPS_DP_ID,
+            type=t.uint8_t,
+        )
+        quick_disarm = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + QUICK_DISARM_DP_ID,
+            type=t.uint8_t,
+        )
+        quick_arm = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + QUICK_ARM_DP_ID,
+            type=t.uint8_t,
+        )
+        quick_sos = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + QUICK_SOS_DP_ID,
+            type=t.uint8_t,
+        )
+        admin_code = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + ADMIN_CODE_DP_ID,
+            type=t.CharacterString,
+        )
+        user_code = ZCLAttributeDef(
+            id=TuyaMCUCluster.cluster_id + USER_CODE_DP_ID,
+            type=t.CharacterString,
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         BATTERY_PERCENTAGE_DP_ID: DPToAttributeMapping(
@@ -187,10 +187,21 @@ class TuyaKeypadManufCluster(TuyaMCUCluster):
 
     def _dp_2_event(self, datapoint: TuyaDatapointData) -> None:
         """Convert arm/disarm/SOS datapoints to ZHA events and IAS ACE commands."""
+        # Update tamper zone_status on IAS Zone cluster: always reflect current
+        # state (set on trigger, clear on release). Note: ZHA masks the Tamper
+        # bit out of the IAS Zone binary sensor state, so we use Alarm_1 here.
+        if datapoint.dp == ANTI_REMOVE_ALARM_DP_ID:
+            zone_status = IasZone.ZoneStatus.Alarm_1 if datapoint.data.payload else 0
+            self.endpoint.ias_zone._update_attribute(
+                IasZone.AttributeDefs.zone_status.id, zone_status
+            )
+            # Anti-remove fires on both trigger and release; only emit
+            # alarm/zha events when the tamper switch transitions to True.
+            if not datapoint.data.payload:
+                return
+
         zone_id = 0
-        user_code = self._attr_cache.get(
-            self.attributes_by_name["user_code"].id, "1234"
-        )
+        user_code = self._attr_cache.get(self.attributes_by_name["user_code"].id, "")
 
         # Fire IAS ACE event via internal bus
         ias_ace = self.DP_TO_IAS_ACE.get(datapoint.dp)
@@ -202,17 +213,6 @@ class TuyaKeypadManufCluster(TuyaMCUCluster):
                 )
             else:
                 self.endpoint.device.ias_bus.listener_event(event_name)
-
-        # Update tamper zone_status on IAS Zone cluster
-        if datapoint.dp == self.ANTI_REMOVE_ALARM_DP_ID:
-            zone_status = (
-                IasZone.ZoneStatus.Alarm_1 | IasZone.ZoneStatus.Tamper
-                if datapoint.data.payload
-                else 0
-            )
-            self.endpoint.ias_zone._update_attribute(
-                IasZone.AttributeDefs.zone_status.id, zone_status
-            )
 
         # Fire zha_event for HA automations
         action = self.DP_TO_ACTION.get(datapoint.dp)
@@ -274,10 +274,16 @@ class TuyaAlarmControlPanelCluster(TuyaLocalCluster, IasAce):
 
 
 class TuyaIasZoneTamper(TuyaLocalCluster, IasZone):
-    """IAS Zone cluster for tamper/anti-remove detection."""
+    """IAS Zone cluster for tamper/anti-remove detection.
+
+    Uses ``Standard_CIE`` zone_type so HA presents the entity as a generic
+    IAS Zone — not a contact/opening sensor. ZHA's IAS Zone binary sensor
+    masks the Tamper bit out of the alarm state (only Alarm_1 / Alarm_2
+    drive entity state), so anti-remove is signalled via Alarm_1.
+    """
 
     _CONSTANT_ATTRIBUTES = {
-        IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Contact_Switch,
+        IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Standard_CIE,
     }
 
 

@@ -1,5 +1,7 @@
 """Tests for Tuya TS0601 keypad quirk."""
 
+from unittest.mock import call
+
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -7,6 +9,7 @@ from zigpy.zcl.clusters.security import IasAce, IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.const import ZHA_SEND_EVENT
 from zhaquirks.tuya.ts0601_keypad import (
     TuyaAlarmControlPanelCluster,
     TuyaIasZoneTamper,
@@ -130,11 +133,12 @@ class TestTuyaKeypadAlarmEvents:
         status = _send_tuya_command(ep, ZCL_TUYA_ARM_AWAY)
         assert status == foundation.Status.SUCCESS
 
-        # IAS ACE arm command should be fired
+        # IAS ACE arm command should be fired with empty user_code
+        # (DP 109 has not been received yet).
         assert len(ace_listener.cluster_commands) == 1
         assert ace_listener.cluster_commands[0][2] == [
             IasAce.ArmMode.Arm_All_Zones,
-            "1234",
+            "",
             0,
         ]
 
@@ -149,7 +153,7 @@ class TestTuyaKeypadAlarmEvents:
         assert len(ace_listener.cluster_commands) == 1
         assert ace_listener.cluster_commands[0][2] == [
             IasAce.ArmMode.Disarm,
-            "1234",
+            "",
             0,
         ]
 
@@ -164,7 +168,7 @@ class TestTuyaKeypadAlarmEvents:
         assert len(ace_listener.cluster_commands) == 1
         assert ace_listener.cluster_commands[0][2] == [
             IasAce.ArmMode.Arm_Day_Home_Only,
-            "1234",
+            "",
             0,
         ]
 
@@ -196,7 +200,11 @@ class TestTuyaKeypadAlarmEvents:
         )
 
     def test_tamper_sets_zone_status(self, keypad_device):
-        """Test that tamper/anti-remove sets and clears IAS Zone zone_status."""
+        """Test that tamper/anti-remove sets and clears IAS Zone zone_status.
+
+        ZHA's IAS Zone binary sensor masks the Tamper bit out of the alarm
+        state, so anti-remove is signalled via Alarm_1 only.
+        """
         ep = keypad_device.endpoints[1]
         zone_listener = ClusterListener(ep.ias_zone)
         zone_status_id = IasZone.AttributeDefs.zone_status.id
@@ -209,9 +217,7 @@ class TestTuyaKeypadAlarmEvents:
             u for u in zone_listener.attribute_updates if u[0] == zone_status_id
         ]
         assert len(tamper_updates) == 1
-        assert tamper_updates[0][1] == (
-            IasZone.ZoneStatus.Alarm_1 | IasZone.ZoneStatus.Tamper
-        )
+        assert tamper_updates[0][1] == IasZone.ZoneStatus.Alarm_1
 
         # Tamper cleared
         status = _send_tuya_command(ep, ZCL_TUYA_TAMPER_CLEAR)
@@ -222,6 +228,22 @@ class TestTuyaKeypadAlarmEvents:
         ]
         assert len(tamper_updates) == 2
         assert tamper_updates[1][1] == 0
+
+    def test_tamper_clear_does_not_fire_alarm_events(self, keypad_device):
+        """Test DP 24 release only updates zone_status, no alarm events.
+
+        Neither IAS ACE emergency nor zha_event ``emergency`` should fire
+        when the anti-remove switch transitions back to False.
+        """
+        ep = keypad_device.endpoints[1]
+        ace_listener = ClusterListener(ep.ias_ace)
+
+        status = _send_tuya_command(ep, ZCL_TUYA_TAMPER_CLEAR)
+        assert status == foundation.Status.SUCCESS
+
+        # No IAS ACE command, no zha_event. Otherwise we'd fire spurious
+        # panic/emergency every time the tamper switch reports "released".
+        assert ace_listener.cluster_commands == []
 
     def test_arm_uses_cached_user_code(self, keypad_device):
         """Test that arm events use the cached user code from DP 109."""
@@ -240,6 +262,44 @@ class TestTuyaKeypadAlarmEvents:
             "5678",
             0,
         ]
+
+
+class TestTuyaKeypadZhaEvents:
+    """Test that DP events emit the expected zha_event payloads."""
+
+    @pytest.mark.parametrize(
+        ("frame", "action"),
+        [
+            (ZCL_TUYA_ARM_AWAY, "arm_away"),
+            (ZCL_TUYA_DISARM, "disarm"),
+            (ZCL_TUYA_ARM_HOME, "arm_home"),
+            (ZCL_TUYA_PANIC, "panic"),
+            (ZCL_TUYA_EMERGENCY, "emergency"),
+        ],
+    )
+    def test_dp_emits_zha_event(self, keypad_device, mocker, frame, action):
+        """Each event-DP fires ZHA_SEND_EVENT with the matching action."""
+        ep = keypad_device.endpoints[1]
+        spy = mocker.spy(ep.tuya_manufacturer, "listener_event")
+
+        _send_tuya_command(ep, frame)
+
+        assert call(ZHA_SEND_EVENT, action, {}) in spy.call_args_list
+
+    def test_tamper_clear_does_not_emit_zha_event(self, keypad_device, mocker):
+        """Test DP 24 release does not emit a zha_event ``emergency``.
+
+        Otherwise panic automations would fire every time tamper recovers.
+        """
+        ep = keypad_device.endpoints[1]
+        spy = mocker.spy(ep.tuya_manufacturer, "listener_event")
+
+        _send_tuya_command(ep, ZCL_TUYA_TAMPER_CLEAR)
+
+        zha_events = [
+            c for c in spy.call_args_list if c.args and c.args[0] == ZHA_SEND_EVENT
+        ]
+        assert zha_events == []
 
 
 class TestTuyaKeypadModelsInfo:
