@@ -394,7 +394,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
             schema={
                 "mode": AutoOverride,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=LEGRAND_MANUFACTURER_CODE,
         )
 
     async def turn_off(self, manufacturer=None, expect_reply=False, tsn=None):
