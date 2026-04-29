@@ -1,6 +1,6 @@
 """Tests for Tuya TS0601 keypad quirk."""
 
-from unittest.mock import call
+from unittest import mock
 
 import pytest
 from zigpy.zcl import foundation
@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.security import IasAce, IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.const import ZHA_SEND_EVENT
 from zhaquirks.tuya.ts0601_keypad import (
     TuyaAlarmControlPanelCluster,
     TuyaIasZoneTamper,
@@ -277,29 +276,28 @@ class TestTuyaKeypadZhaEvents:
             (ZCL_TUYA_EMERGENCY, "emergency"),
         ],
     )
-    def test_dp_emits_zha_event(self, keypad_device, mocker, frame, action):
+    def test_dp_emits_zha_event(self, keypad_device, frame, action):
         """Each event-DP fires ZHA_SEND_EVENT with the matching action."""
         ep = keypad_device.endpoints[1]
-        spy = mocker.spy(ep.tuya_manufacturer, "listener_event")
+        listener = mock.MagicMock()
+        ep.tuya_manufacturer.add_listener(listener)
 
         _send_tuya_command(ep, frame)
 
-        assert call(ZHA_SEND_EVENT, action, {}) in spy.call_args_list
+        assert listener.zha_send_event.call_args_list == [mock.call(action, {})]
 
-    def test_tamper_clear_does_not_emit_zha_event(self, keypad_device, mocker):
+    def test_tamper_clear_does_not_emit_zha_event(self, keypad_device):
         """Test DP 24 release does not emit a zha_event ``emergency``.
 
         Otherwise panic automations would fire every time tamper recovers.
         """
         ep = keypad_device.endpoints[1]
-        spy = mocker.spy(ep.tuya_manufacturer, "listener_event")
+        listener = mock.MagicMock()
+        ep.tuya_manufacturer.add_listener(listener)
 
         _send_tuya_command(ep, ZCL_TUYA_TAMPER_CLEAR)
 
-        zha_events = [
-            c for c in spy.call_args_list if c.args and c.args[0] == ZHA_SEND_EVENT
-        ]
-        assert zha_events == []
+        listener.zha_send_event.assert_not_called()
 
 
 class TestTuyaKeypadModelsInfo:
