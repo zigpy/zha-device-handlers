@@ -268,11 +268,15 @@ class CandeoKineticRFGatewayOnOffCluster(OnOff, LocalDataCluster):
 
     def get_preferences(self):
         """Get saved preferences from the basic cluster."""
-        cluster = self.endpoint.in_clusters.get(CandeoKineticRFGatewayBasicCluster.cluster_id)
+        cluster = self.endpoint.in_clusters.get(
+            CandeoKineticRFGatewayBasicCluster.cluster_id
+        )
         if cluster is None:
             return
         self._actions_window = (
-            cluster._attr_cache.get(CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_window.id)
+            cluster._attr_cache.get(
+                CandeoKineticRFGatewayBasicCluster.AttributeDefs.actions_window.id
+            )
             or CandeoActionsWindow.wait_500_ms
         )
         self._actions_detection = (
