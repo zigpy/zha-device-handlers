@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.zcl import foundation
 
 from tests.common import wait_for_zigpy_tasks
 import zhaquirks
@@ -73,3 +74,51 @@ async def test_irrigation_time_clamped(water_valve):
 
     data = m.call_args.kwargs["data"]
     assert int.from_bytes(data[4:8], "big") == 86400
+
+
+async def test_irrigation_time_int_key(water_valve):
+    """Test write_attributes with integer attribute ID key."""
+    tuya_cluster = water_valve.endpoints[1].tuya_manufacturer
+    attr_id = tuya_cluster.attributes_by_name["irrigation_time"].id
+
+    with mock.patch.object(
+        tuya_cluster.endpoint.device, "request", return_value=None
+    ) as m:
+        await tuya_cluster.write_attributes({attr_id: 60})
+        await wait_for_zigpy_tasks()
+
+    data = m.call_args.kwargs["data"]
+    assert int.from_bytes(data[4:8], "big") == 60
+
+
+async def test_irrigation_time_zcl_attr_def_key(water_valve):
+    """Test write_attributes with ZCLAttributeDef key."""
+    tuya_cluster = water_valve.endpoints[1].tuya_manufacturer
+    attr_def = tuya_cluster.attributes_by_name["irrigation_time"]
+
+    with mock.patch.object(
+        tuya_cluster.endpoint.device, "request", return_value=None
+    ) as m:
+        await tuya_cluster.write_attributes({attr_def: 120})
+        await wait_for_zigpy_tasks()
+
+    data = m.call_args.kwargs["data"]
+    assert int.from_bytes(data[4:8], "big") == 120
+
+
+async def test_non_timer_attr_uses_super(water_valve):
+    """Test that non-timer attributes are forwarded to the base class."""
+    tuya_cluster = water_valve.endpoints[1].tuya_manufacturer
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        tuya_cluster.endpoint.device, "request", return_value=None
+    ), mock.patch(
+        "zhaquirks.tuya.mcu.TuyaMCUCluster.write_attributes",
+        return_value=success,
+    ) as super_mock:
+        # 0x0000 is not the irrigation_time attr id, so it goes to other_attrs
+        await tuya_cluster.write_attributes({0x0000: 1})
+        await wait_for_zigpy_tasks()
+
+    assert super_mock.called
