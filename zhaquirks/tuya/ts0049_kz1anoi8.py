@@ -1,10 +1,10 @@
-"""Tuya TS0049 (_TZ3000_kz1anoi8) water valve with configurable irrigation timer.
+"""Tuya TS0049 (_TZ3000_kz1anoi8) battery-powered water valve.
 
 Protocol notes (reverse-engineered):
-  - On/Off:  Standard ZCL OnOff cluster (0x0006), DP 1 reported via 0xEF00
-  - Timer:   Cluster 0xE001 (TUYA_CLUSTER_E001_ID), Command 0xFE
+  - On/Off:  Standard ZCL OnOff cluster (0x0006)
+  - Timer:   Cluster 0xE001, Command 0xFE
              Payload: [DP=11, val_b3, val_b2, val_b1, val_b0]  (5 bytes, Big-Endian)
-             Valid range: 0 – 86400 seconds (0 = kein Auto-Aus)
+             Valid range: 0 - 86400 seconds (0 = no auto-off, valve stays open)
              Persistent: the device stores the value until changed.
 
 Tuya DP mapping:
@@ -14,9 +14,12 @@ Tuya DP mapping:
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any
 
 import zigpy.types as t
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.zcl import foundation
+from zigpy.zcl.foundation import UNDEFINED, UndefinedType
 
 from zhaquirks.tuya import TUYA_CLUSTER_E001_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -26,51 +29,41 @@ from zhaquirks.tuya.mcu import TuyaMCUCluster
 class TuyaWaterValveCluster(TuyaMCUCluster):
     """Tuya Water Valve MCU Cluster for _TZ3000_kz1anoi8.
 
-    0xEF0B (irrigation_time):     Eingabe in Minuten, sendet Minuten * 60 Sekunden
-    0xEF0C (irrigation_time_sec): Eingabe in Sekunden, sendet direkt
+    Intercepts writes to ``irrigation_time`` (attr 0xEF0B) and sends them via
+    Cluster 0xE001 / Command 0xFE with Big-Endian 4-byte encoding - the only
+    protocol this device accepts for DP 11.
+    Value 0 disables the auto-off timer (valve stays open indefinitely).
     """
 
     async def write_attributes(
         self,
-        attributes: dict,
-        allow_cache: bool = False,
-        only_cache: bool = False,
-        manufacturer: Optional[int] = None,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs: Any,
     ):
         """Write attributes, routing irrigation timer writes to Cluster 0xE001 / Command 0xFE."""
         e001_attrs = {}
         other_attrs = {}
 
         for attr, value in attributes.items():
-            attr_id = (
-                self.attributes_by_name[attr].id if isinstance(attr, str) else attr
-            )
-            if attr_id in (0xEF0B, 0xEF0C):
+            if isinstance(attr, str):
+                attr_id = self.attributes_by_name[attr].id
+            elif isinstance(attr, foundation.ZCLAttributeDef):
+                attr_id = attr.id
+            else:
+                attr_id = attr
+            if attr_id == 0xEF0B:
                 e001_attrs[attr] = value
             else:
                 other_attrs[attr] = value
 
-        results = [{}, {}]
+        results = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         for attr, value in e001_attrs.items():
-            attr_id = (
-                self.attributes_by_name[attr].id if isinstance(attr, str) else attr
-            )
-            if attr_id == 0xEF0B:
-                # Minuten-Feld: Umrechnung in Sekunden
-                minutes = max(0, min(1440, int(value)))
-                sec = minutes * 60
-                stored_attr = "irrigation_time"
-                stored_val = minutes
-            else:
-                # Sekunden-Feld: direkt senden
-                sec = max(0, min(86400, int(value)))
-                stored_attr = "irrigation_time_sec"
-                stored_val = sec
-
+            sec = max(0, min(86400, int(value)))
             payload = bytes(
                 [
-                    11,
+                    11,  # DP 11 = irrigation time
                     (sec >> 24) & 0xFF,
                     (sec >> 16) & 0xFF,
                     (sec >> 8) & 0xFF,
@@ -88,23 +81,15 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
                 data=zcl_frame,
                 expect_reply=False,
             )
-            self._update_attribute(self.attributes_by_name[stored_attr].id, stored_val)
-            # Gegenseitige Aktualisierung
-            if attr_id == 0xEF0B:
-                self._update_attribute(
-                    self.attributes_by_name["irrigation_time_sec"].id, sec
-                )
-            else:
-                self._update_attribute(
-                    self.attributes_by_name["irrigation_time"].id, sec // 60
-                )
+            self._update_attribute(
+                self.attributes_by_name["irrigation_time"].id, sec
+            )
 
         if other_attrs:
             results = await super().write_attributes(
                 other_attrs,
-                allow_cache=allow_cache,
-                only_cache=only_cache,
                 manufacturer=manufacturer,
+                **kwargs,
             )
 
         return results
@@ -117,22 +102,11 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
         type=t.uint32_t,
         attribute_name="irrigation_time",
         min_value=0,
-        max_value=1440,
-        step=1,
-        unit="min",
-        translation_key="irrigation_time",
-        fallback_name="Bewässerungszeit",
-    )
-    .tuya_number(
-        dp_id=12,
-        type=t.uint32_t,
-        attribute_name="irrigation_time_sec",
-        min_value=0,
         max_value=86400,
         step=1,
-        unit="s",
-        translation_key="irrigation_time_sec",
-        fallback_name="Bewässerungszeit (Sek.)",
+        unit=UnitOfTime.SECONDS,
+        translation_key="irrigation_time",
+        fallback_name="Irrigation Time",
     )
     .add_to_registry(replacement_cluster=TuyaWaterValveCluster)
 )
