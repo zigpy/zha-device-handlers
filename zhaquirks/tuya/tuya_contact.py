@@ -1,5 +1,8 @@
 """Tuya contact sensors."""
 
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import OnOff
+
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -20,5 +23,20 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
     .tuya_battery(dp_id=3, battery_type=BatterySize.AAA, battery_qty=2)
     .tuya_vibration(dp_id=10)
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+# TS0203: Standard Zigbee IAS Zone contact sensor (no Tuya MCU cluster).
+# The On/Off output (client) cluster is intended for binding to lights, but
+# ZHA creates a spurious "Opening" binary sensor from it. Suppress only that
+# entity so any future legitimate entity from this cluster is unaffected.
+(
+    QuirkBuilder("_TZ3000_au1rjicn", "TS0203")
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.device_class == "opening",
+    )
     .add_to_registry()
 )
