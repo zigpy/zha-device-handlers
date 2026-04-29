@@ -220,7 +220,7 @@ class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
             # device_version=1
-            # input_clusters=[0, 4, 5, 61184, 60928]
+            # input_clusters=[0, 4, 5, 61184, 60672]
             # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
