@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
-import zigpy.types as t
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import UNDEFINED, UndefinedType
 
@@ -81,9 +81,7 @@ class TuyaWaterValveCluster(TuyaMCUCluster):
                 data=zcl_frame,
                 expect_reply=False,
             )
-            self._update_attribute(
-                self.attributes_by_name["irrigation_time"].id, sec
-            )
+            self._update_attribute(self.attributes_by_name["irrigation_time"].id, sec)
 
         if other_attrs:
             results = await super().write_attributes(
