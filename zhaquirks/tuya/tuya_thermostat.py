@@ -618,6 +618,10 @@ base_avatto_quirk = (
 )
 
 
+# Moes BHT-002 family. DP map cross-referenced with Z2M:
+# https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/src/lib/legacy.ts (`dataPoints.moes*`)
+# Setpoints/limits are sent as raw whole degrees on the wire; calibration
+# uses DP 27 (not 28 — DP 28 is `connecteTempCalibration`, an unrelated device).
 moes_base_quirk = (
     TuyaQuirkBuilder()
     .tuya_dp(
@@ -650,6 +654,49 @@ moes_base_quirk = (
         fallback_name="Schedule mode",
     )
     .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_dp(
+        dp_id=18,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_number(
+        dp_id=20,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=5,
+        step=1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.min_heat_setpoint_limit.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_number(
+        dp_id=27,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-30,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_dp(
         dp_id=36,
         ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
         attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.running_state.name,
@@ -668,64 +715,34 @@ moes_base_quirk = (
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
-    .tuya_number(
-        dp_id=28,
-        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature_calibration.name,
-        type=t.int32s,
-        min_value=-30,
-        max_value=30,
-        unit=UnitOfTemperature.CELSIUS,
-        step=0.1,
-        translation_key="local_temperature_calibration",
-        fallback_name="Local temperature calibration",
-    )
     .adds(TuyaThermostatExtendedLimits)
     .skip_configuration()
 )
 
+# DP 24 (local_temperature) reports tenths of a degree on these models.
 (
     moes_base_quirk.clone()
     .applies_to("_TZE204_aoclfnxz", "TS0601")
-    .applies_to("_TZE204_xalsoe3m", "TS0601")
     .applies_to("_TZE204_u9bfwha0", "TS0601")
-    .applies_to("_TZE200_ztvwu4nk", "TS0601")
-    .tuya_dp(
-        dp_id=16,
-        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
-        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.occupied_heating_setpoint.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
     .tuya_dp(
         dp_id=24,
         ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
         attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
+    .add_to_registry()
+)
+
+# DP 24 (local_temperature) reports whole degrees on this model — see
+# https://github.com/Koenkk/zigbee2mqtt/issues/11980
+(
+    moes_base_quirk.clone()
+    .applies_to("_TZE200_ztvwu4nk", "TS0601")
     .tuya_dp(
-        dp_id=18,
+        dp_id=24,
         ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
-        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.max_heat_setpoint_limit.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
-    )
-    .tuya_number(
-        dp_id=20,
-        attribute_name="deadzone_temperature",
-        type=t.uint16_t,
-        unit=UnitOfTemperature.CELSIUS,
-        min_value=0,
-        max_value=5,
-        step=1,
-        translation_key="deadzone_temperature",
-        fallback_name="Deadzone temperature",
-    )
-    .tuya_dp(
-        dp_id=26,
-        ep_attribute=TuyaThermostatExtendedLimits.ep_attribute,
-        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.min_heat_setpoint_limit.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
+        attribute_name=TuyaThermostatExtendedLimits.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 100,
     )
     .add_to_registry()
 )
