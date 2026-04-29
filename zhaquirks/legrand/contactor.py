@@ -298,6 +298,7 @@ class LegrandContactorAutoStatus(Enum):
     Auto = 0x02
     ManualOn = 0x03
 
+
 class LegrandContactorAutoOnOff(CustomCluster):
     """Legrand Auto OnOff cluster.
 
