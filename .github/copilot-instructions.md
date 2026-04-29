@@ -200,11 +200,39 @@ from zigpy.quirks.v2 import ReportingConfig
     step=1,                           # Optional: step increment
     unit=UnitOfTime.SECONDS,          # Optional: unit constant
     mode="box",                       # Optional: "box" for text input, "slider" for slider
-    multiplier=1,                     # Optional: multiply value before writing to device
+    multiplier=1,                     # Optional: scale between HA value and raw attribute (default 1)
     device_class=NumberDeviceClass.DURATION,  # Optional: HA device class
     translation_key="turn_on_delay",
     fallback_name="Turn on delay",
 )
+```
+
+**Number `multiplier` semantics:** Defined on the entity by ZHA. HA Core is a pure pass-through — it does no scaling itself. The conversion is:
+- Display: `native_value = raw_attr_value * multiplier`
+- Write: `raw_attr_value = int(ha_value / multiplier)`
+
+If the device's underlying attribute is an integer representing a fractional unit (e.g., tenths of a degree stored as `int32s`), pair fractional `step` with the matching `multiplier` so HA values are scaled correctly. Without it (default `multiplier=1`), `int()` silently truncates fractional input on write and raw values are displayed unscaled.
+
+```python
+# Calibration where the device stores tenths of a degree as int32s.
+# HA range -9.9..9.9 °C ↔ raw attribute value -99..99
+.number(
+    attribute_name="local_temperature_calibration",
+    cluster_id=Thermostat.cluster_id,
+    type=t.int32s,
+    min_value=-9.9,
+    max_value=9.9,
+    step=0.1,
+    multiplier=0.1,   # required: pairs with step=0.1
+    unit=UnitOfTemperature.CELSIUS,
+    translation_key="local_temperature_calibration",
+    fallback_name="Local temperature calibration",
+)
+```
+
+`min_value`/`max_value` are HA-side values (after the multiplier), not raw attribute values. Confirm the device's raw value range and pick HA-side limits accordingly.
+
+```python
 
 # Enum as SELECT (dropdown, default) - user can change value
 .enum(
