@@ -262,12 +262,12 @@ class AutoStatus(t.enum8):
     NOTE: Oddly enough this status does not seem to reflect all the states.
 
     One may had expected the following states:
-    Zigby Forced Off
+    Zigbee Forced Off
     Manually Forced Off
     Auto Off
     Auto On
     Manually Forced On
-    Zigby Forced On
+    Zigbee Forced On
 
     or:
     Forced Off
@@ -297,14 +297,6 @@ class LegrandContactorAutoStatus(Enum):
     ForcedOn = 0x01
     Auto = 0x02
     ManualOn = 0x03
-
-
-class LegrandContactorSwitchStatus(Enum):
-    """Switch status values for UI display."""
-
-    Off = 0x00
-    On = 0x01
-
 
 class LegrandContactorAutoOnOff(CustomCluster):
     """Legrand Auto OnOff cluster.
