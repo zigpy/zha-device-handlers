@@ -427,6 +427,7 @@ base_tuya_motion = (
         min_value=5,
         max_value=1500,
         step=5,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
