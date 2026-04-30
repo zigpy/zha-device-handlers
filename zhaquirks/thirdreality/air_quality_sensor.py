@@ -29,9 +29,8 @@ class ThirdRealityRadarCluster(CustomCluster):
     .sensor(
         attribute_name=ThirdRealityRadarCluster.AttributeDefs.voc_index.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
-        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+        device_class=SensorDeviceClass.AQI,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="aqi",
         translation_key="voc_index",
         fallback_name="VOC index",
     )
