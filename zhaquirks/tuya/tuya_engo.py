@@ -1,19 +1,15 @@
 """ZHA quirk for Engo EONE-230W and E40-230 / E40-230W TS0601 thermostats."""
 
+from zigpy.quirks.v2 import EntityType
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
-from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
-
-
 # ---------- ENUMS ----------
+
 
 class EngoSensorChoose(t.enum8):
     Internal = 0x00
@@ -35,12 +31,12 @@ class EngoSensorError(t.enum8):
 
 # ---------- CLUSTER ----------
 
+
 class EngoThermostat(Thermostat, TuyaAttributesCluster):
     """Local thermostat cluster for Engo devices."""
 
     _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id:
-            Thermostat.ControlSequenceOfOperation.Heating_Only
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
     }
 
     def __init__(self, *args, **kwargs):
@@ -52,17 +48,15 @@ class EngoThermostat(Thermostat, TuyaAttributesCluster):
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.pi_heating_demand.id
-        )
+        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
 
 # ---------- COMMON BUILDER ----------
 
+
 def base_builder(ieee):
     return (
         TuyaQuirkBuilder(ieee, "TS0601")
-
         # DP 1: ON/OFF -> HVAC mode
         .tuya_dp(
             dp_id=1,
@@ -73,7 +67,6 @@ def base_builder(ieee):
             ),
             dp_converter=lambda x: x != Thermostat.SystemMode.Off,
         )
-
         # DP 16: target temp (deci°C -> centi°C)
         .tuya_dp(
             dp_id=16,
@@ -82,7 +75,6 @@ def base_builder(ieee):
             converter=lambda x: x * 10,
             dp_converter=lambda x: x // 10,
         )
-
         # DP 24: room temp
         .tuya_dp(
             dp_id=24,
@@ -90,7 +82,6 @@ def base_builder(ieee):
             attribute_name=EngoThermostat.AttributeDefs.local_temperature.name,
             converter=lambda x: x * 10,
         )
-
         # DP 3: running state
         .tuya_dp(
             dp_id=3,
@@ -101,7 +92,6 @@ def base_builder(ieee):
                 2: RunningState.Idle,
             }.get(x, RunningState.Idle),
         )
-
         # DP 40: child lock
         .tuya_switch(
             dp_id=40,
@@ -109,7 +99,6 @@ def base_builder(ieee):
             translation_key="child_lock",
             fallback_name="Child lock",
         )
-
         # DP 44: backlight
         .tuya_number(
             dp_id=44,
@@ -121,7 +110,6 @@ def base_builder(ieee):
             translation_key="backlight",
             fallback_name="Backlight",
         )
-
         # DP 120: sensor error
         .tuya_enum(
             dp_id=120,
@@ -131,7 +119,6 @@ def base_builder(ieee):
             translation_key="sensor_error",
             fallback_name="Sensor error",
         )
-
         .adds(EngoThermostat)
         .skip_configuration()
     )
@@ -141,7 +128,6 @@ def base_builder(ieee):
 
 (
     base_builder("_TZE204_ca3i8m8p")
-
     # DP 34: humidity (only on EONE)
     .tuya_sensor(
         dp_id=34,
@@ -153,14 +139,10 @@ def base_builder(ieee):
         translation_key="humidity",
         fallback_name="Humidity",
     )
-
     .add_to_registry()
 )
 
 
 # ---------- DEVICE 2: E40 (no humidity by default) ----------
 
-(
-    base_builder("_TZE204_glk6viwg")
-    .add_to_registry()
-)
+(base_builder("_TZE204_glk6viwg").add_to_registry())
