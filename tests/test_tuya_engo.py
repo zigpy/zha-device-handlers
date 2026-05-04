@@ -26,9 +26,9 @@ def test_engo_thermostat_entities(zigpy_device_from_v2_quirk):
         == Thermostat.ControlSequenceOfOperation.Heating_Only
     )
 
-    eone_quirk = zigpy.quirks.DEVICE_REGISTRY.registry_v2[("_TZE204_ca3i8m8p", "TS0601")][
-        0
-    ]
+    eone_quirk = zigpy.quirks.DEVICE_REGISTRY.registry_v2[
+        ("_TZE204_ca3i8m8p", "TS0601")
+    ][0]
     humidity_entities = [
         entity
         for entity in eone_quirk.entity_metadata
@@ -51,7 +51,9 @@ def test_engo_e40_has_no_humidity_sensor(zigpy_device_from_v2_quirk):
     assert ep.thermostat is not None
     assert isinstance(ep.thermostat, Thermostat)
 
-    e40_quirk = zigpy.quirks.DEVICE_REGISTRY.registry_v2[("_TZE204_glk6viwg", "TS0601")][
-        0
-    ]
-    assert all(entity.translation_key != "humidity" for entity in e40_quirk.entity_metadata)
+    e40_quirk = zigpy.quirks.DEVICE_REGISTRY.registry_v2[
+        ("_TZE204_glk6viwg", "TS0601")
+    ][0]
+    assert all(
+        entity.translation_key != "humidity" for entity in e40_quirk.entity_metadata
+    )
