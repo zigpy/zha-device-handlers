@@ -12,18 +12,24 @@ from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
 
 class EngoSensorChoose(t.enum8):
+    """Sensor selection mode."""
+
     Internal = 0x00
     All = 0x01
     External = 0x02
 
 
 class EngoRelayMode(t.enum8):
+    """Relay wiring mode."""
+
     NO = 0x00
     NC = 0x01
     OFF = 0x02
 
 
 class EngoSensorError(t.enum8):
+    """Sensor error state."""
+
     Normal = 0x00
     E1 = 0x01
     E2 = 0x02
@@ -40,6 +46,8 @@ class EngoThermostat(Thermostat, TuyaAttributesCluster):
     }
 
     def __init__(self, *args, **kwargs):
+        """Initialize unsupported thermostat attributes."""
+
         super().__init__(*args, **kwargs)
 
         self.add_unsupported_attribute(
@@ -55,6 +63,8 @@ class EngoThermostat(Thermostat, TuyaAttributesCluster):
 
 
 def base_builder(ieee):
+    """Build the shared Engo Tuya quirk definition."""
+
     return (
         TuyaQuirkBuilder(ieee, "TS0601")
         # DP 1: ON/OFF -> HVAC mode
