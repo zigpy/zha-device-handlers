@@ -5,6 +5,7 @@ MotionCluster for binary_sensor entity.
 
 Data paths observed:
 - IAS Zone attr 0x002D on EP2→dst EP1: value=1 vibration, value=2 triple-tap
+    -> removed the implementation because it was redundant and seemed to disturb the other two paths
 - manuSpecificLumi attr 0x0118 (280) on EP2: value=1 vibration
 - MultistateInput presentValue on EP2: value=1 triple-tap
 
