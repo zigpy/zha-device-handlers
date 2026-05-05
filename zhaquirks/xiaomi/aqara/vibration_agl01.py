@@ -129,15 +129,6 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 70
 
-    def __init__(self, *args, **kwargs):
-        """Initialize MotionCluster."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.motion_bus.add_listener(self)
-
-    def motion_event(self):
-        """Handle motion event."""
-        super().motion_event()
-
 
 class VibrationAGL01(XiaomiCustomDevice):
     """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01."""
