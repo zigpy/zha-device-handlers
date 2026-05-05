@@ -1,4 +1,4 @@
-"""Xiaomi aqara smart motion sensor device. DJT11LM."""
+"""Xiaomi Aqara vibration sensor device. DJT11LM."""
 
 import math
 from typing import Final
@@ -68,7 +68,7 @@ MEASUREMENT_TYPE = {
 
 
 class VibrationAQ1(XiaomiQuickInitDevice):
-    """Xiaomi aqara smart motion sensor device."""
+    """Xiaomi Aqara vibration sensor device."""
 
     quirk_id = XIAOMI_AQARA_VIBRATION_AQ1
 
