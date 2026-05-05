@@ -7,6 +7,9 @@ Data paths observed:
 - IAS Zone attr 0x002D on EP2→dst EP1: value=1 vibration, value=2 triple-tap
 - manuSpecificLumi attr 0x0118 (280) on EP2: value=1 vibration
 - MultistateInput presentValue on EP2: value=1 triple-tap
+
+Author: @mengwong. Originally shared as GitHub Gist https://gist.github.com/mengwong/b3ca949249405f99f03dce270d3029f5 
+in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4205558840
 """
 
 from zigpy.profiles import zha
