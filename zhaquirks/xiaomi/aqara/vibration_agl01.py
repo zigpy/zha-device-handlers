@@ -8,13 +8,13 @@ Data paths observed:
 - manuSpecificLumi attr 0x0118 (280) on EP2: value=1 vibration
 - MultistateInput presentValue on EP2: value=1 triple-tap
 
-Author: @mengwong. Originally shared as GitHub Gist https://gist.github.com/mengwong/b3ca949249405f99f03dce270d3029f5 
+Author: @mengwong. Originally shared as GitHub Gist https://gist.github.com/mengwong/b3ca949249405f99f03dce270d3029f5
 in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4205558840
 """
 
 from zigpy.profiles import zha
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -69,9 +69,9 @@ class VibrationIasZoneCluster(CustomCluster, IasZone):
     cluster_id = IasZone.cluster_id
 
     class AttributeDefs(IasZone.AttributeDefs):
-        vibration_status = ZCLAttributeDef(
-            id=0x002D, type=t.uint16_t
-        )
+        """Attribute definitions."""
+
+        vibration_status = ZCLAttributeDef(id=0x002D, type=t.uint16_t)
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -92,9 +92,11 @@ class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
     """
 
     attributes = XiaomiAqaraE1Cluster.attributes.copy()
-    attributes.update({
-        XIAOMI_VIBRATION_ATTR: ("vibration_detected", t.uint8_t, True),
-    })
+    attributes.update(
+        {
+            XIAOMI_VIBRATION_ATTR: ("vibration_detected", t.uint8_t, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -128,10 +130,12 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     reset_s = 70
 
     def __init__(self, *args, **kwargs):
+        """Initialize MotionCluster."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.motion_bus.add_listener(self)
 
     def motion_event(self):
+        """Handle motion event."""
         super().motion_event()
 
 
@@ -139,6 +143,7 @@ class VibrationAGL01(XiaomiCustomDevice):
     """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize VibrationAGL01."""
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
@@ -149,22 +154,22 @@ class VibrationAGL01(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: 0x0402,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,              # 0x0000
+                    Basic.cluster_id,  # 0x0000
                     PowerConfiguration.cluster_id,  # 0x0001
-                    Identify.cluster_id,           # 0x0003
-                    IasZone.cluster_id,            # 0x0500
+                    Identify.cluster_id,  # 0x0003
+                    IasZone.cluster_id,  # 0x0500
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,           # 0x0003
-                    Ota.cluster_id,                # 0x0019
+                    Identify.cluster_id,  # 0x0003
+                    Ota.cluster_id,  # 0x0019
                 ],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: 0x0402,
                 INPUT_CLUSTERS: [
-                    MultistateInput.cluster_id,    # 0x0012
-                    IasZone.cluster_id,            # 0x0500
+                    MultistateInput.cluster_id,  # 0x0012
+                    IasZone.cluster_id,  # 0x0500
                 ],
                 OUTPUT_CLUSTERS: [],
             },
