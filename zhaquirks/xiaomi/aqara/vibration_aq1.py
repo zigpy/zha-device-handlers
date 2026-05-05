@@ -1,4 +1,4 @@
-"""Xiaomi aqara smart motion sensor device."""
+"""Xiaomi aqara smart motion sensor device. DJT11LM"""
 
 import math
 from typing import Final
