@@ -178,7 +178,6 @@ class VibrationAGL01(XiaomiCustomDevice):
                     XiaomiAqaraE1Cluster,
                     Identify.cluster_id,
                     MotionCluster,
-                    VibrationIasZoneCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -191,7 +190,6 @@ class VibrationAGL01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     VibrationMultistateInput,
                     XiaomiVibrationCluster,
-                    VibrationIasZoneCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
