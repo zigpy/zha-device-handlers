@@ -13,6 +13,8 @@ Author: @mengwong. Originally shared as GitHub Gist https://gist.github.com/meng
 in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4205558840
 """
 
+from typing import Final
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
@@ -23,10 +25,14 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -48,7 +54,7 @@ from zhaquirks.xiaomi import (
 VIBRATION = "vibration"
 TRIPLE_TAP = "triple_tap"
 
-# Xiaomi manufacturer attribute for vibration
+# Xiaomi manufacturer attribute ID for vibration
 XIAOMI_VIBRATION_ATTR = 0x0118  # Decimal 280
 
 
@@ -58,12 +64,12 @@ class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
     From Z2M logs: cluster 'manuSpecificLumi', data '{"280":1}' from endpoint 2.
     """
 
-    attributes = XiaomiAqaraE1Cluster.attributes.copy()
-    attributes.update(
-        {
-            XIAOMI_VIBRATION_ATTR: ("vibration_detected", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        vibration_detected: Final = ZCLAttributeDef(
+            id=XIAOMI_VIBRATION_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -110,7 +116,7 @@ class VibrationAGL01(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0x0402,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,  # 0x0000
                     PowerConfiguration.cluster_id,  # 0x0001
@@ -124,7 +130,7 @@ class VibrationAGL01(XiaomiCustomDevice):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0x0402,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,  # 0x0012
                     IasZone.cluster_id,  # 0x0500
@@ -138,7 +144,7 @@ class VibrationAGL01(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0x0402,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
@@ -153,7 +159,7 @@ class VibrationAGL01(XiaomiCustomDevice):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0x0402,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     VibrationMultistateInput,
                     XiaomiVibrationCluster,
@@ -164,6 +170,14 @@ class VibrationAGL01(XiaomiCustomDevice):
     }
 
     device_automation_triggers = {
-        (VIBRATION, VIBRATION): {"type": VIBRATION, "subtype": VIBRATION},
-        (TRIPLE_TAP, TRIPLE_TAP): {"type": TRIPLE_TAP, "subtype": TRIPLE_TAP},
+        (VIBRATION, VIBRATION): {
+            COMMAND: VIBRATION,
+            CLUSTER_ID: XiaomiAqaraE1Cluster.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        (TRIPLE_TAP, TRIPLE_TAP): {
+            COMMAND: TRIPLE_TAP,
+            CLUSTER_ID: MultistateInput.cluster_id,
+            ENDPOINT_ID: 2,
+        },
     }
