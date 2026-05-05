@@ -53,6 +53,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MANUFACTURER,
     MODEL,
+    MOTION_EVENT,
     NODE_DESCRIPTOR,
     OFF,
     ON,
@@ -112,7 +113,7 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
-from zhaquirks.xiaomi.aqara.vibration_agl01 import VibrationAGL01
+from zhaquirks.xiaomi.aqara.vibration_agl01 import XIAOMI_VIBRATION_ATTR, VibrationAGL01
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
@@ -2759,7 +2760,7 @@ async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_quirk):
     motion_listener = mock.MagicMock()
     device.motion_bus.add_listener(motion_listener)
 
-    cluster._update_attribute(0x0118, 1)
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 1)
 
     motion_listener.motion_event.assert_called_once()
     listener.zha_send_event.assert_called_once_with("vibration", {"value": 1})
@@ -2778,8 +2779,8 @@ async def test_xiaomi_vibration_cluster_no_event_for_other_values(
     motion_listener = mock.MagicMock()
     device.motion_bus.add_listener(motion_listener)
 
-    cluster._update_attribute(0x0118, 0)
-    cluster._update_attribute(0x0118, 2)
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 0)
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 2)
 
     motion_listener.motion_event.assert_not_called()
     listener.zha_send_event.assert_not_called()
@@ -2868,7 +2869,7 @@ async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_quirk):
     motion_listener = ClusterListener(motion_cluster)
 
     with mock.patch.object(motion_cluster, "reset_s", 0):
-        device.motion_bus.listener_event("motion_event")
+        device.motion_bus.listener_event(MOTION_EVENT)
 
     assert len(motion_listener.cluster_commands) == 1
     assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
@@ -2891,8 +2892,8 @@ async def test_vibration_motion_cluster_repeated_events_reset_timer(
     motion_listener = ClusterListener(motion_cluster)
 
     with mock.patch.object(motion_cluster, "reset_s", 0):
-        device.motion_bus.listener_event("motion_event")
-        device.motion_bus.listener_event("motion_event")
+        device.motion_bus.listener_event(MOTION_EVENT)
+        device.motion_bus.listener_event(MOTION_EVENT)
 
     assert len(motion_listener.cluster_commands) == 2
     assert motion_listener.cluster_commands[0][2][0] == ON
