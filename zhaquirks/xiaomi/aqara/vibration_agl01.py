@@ -123,8 +123,12 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 70
 
-    def send_event(self, event, *args):
-        self.listener_event(ZHA_SEND_EVENT, event, *args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.motion_bus.add_listener(self)
+
+    def motion_event(self):
+        super().motion_event()
 
 
 class VibrationAGL01(XiaomiCustomDevice):
