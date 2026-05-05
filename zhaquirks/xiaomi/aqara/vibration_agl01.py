@@ -49,41 +49,8 @@ from zhaquirks.xiaomi import (
 VIBRATION = "vibration"
 TRIPLE_TAP = "triple_tap"
 
-# IAS Zone attribute 0x002D: 1=vibration, 2=triple-tap
-IAS_VIBRATION_ATTR = 0x002D
-IAS_VIBRATION_VALUE = 1
-IAS_TRIPLE_TAP_VALUE = 2
-
 # Xiaomi manufacturer attribute for vibration
 XIAOMI_VIBRATION_ATTR = 0x0118  # Decimal 280
-
-
-class VibrationIasZoneCluster(CustomCluster, IasZone):
-    """IAS Zone cluster that handles agl01 proprietary vibration attributes.
-
-    The agl01 reports via attr 0x002D on IAS Zone (EP2→dst EP1):
-      value=1: vibration
-      value=2: triple-tap
-    """
-
-    cluster_id = IasZone.cluster_id
-
-    class AttributeDefs(IasZone.AttributeDefs):
-        """Attribute definitions."""
-
-        vibration_status = ZCLAttributeDef(id=0x002D, type=t.uint16_t)
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == IAS_VIBRATION_ATTR:
-            if value == IAS_VIBRATION_VALUE:
-                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
-                self.listener_event(ZHA_SEND_EVENT, VIBRATION, {"value": value})
-            elif value == IAS_TRIPLE_TAP_VALUE:
-                # the triple tap is also considered a vibration event, so trigger that as well
-                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
-                self.listener_event(ZHA_SEND_EVENT, TRIPLE_TAP, {"value": value})
-
 
 class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
     """Xiaomi manufacturer cluster on EP2 for vibration detection.
