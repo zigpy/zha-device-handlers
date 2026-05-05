@@ -80,6 +80,8 @@ class VibrationIasZoneCluster(CustomCluster, IasZone):
                 self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
                 self.listener_event(ZHA_SEND_EVENT, VIBRATION, {"value": value})
             elif value == IAS_TRIPLE_TAP_VALUE:
+                # the triple tap is also considered a vibration event, so trigger that as well
+                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
                 self.listener_event(ZHA_SEND_EVENT, TRIPLE_TAP, {"value": value})
 
 
@@ -111,6 +113,8 @@ class VibrationMultistateInput(EventableCluster, MultistateInput):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == MultistateInput.AttributeDefs.present_value.id and value == 1:
+            # the triple tap is also considered a vibration event, so trigger that as well
+            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
             self.listener_event(ZHA_SEND_EVENT, TRIPLE_TAP, {"value": value})
 
 
