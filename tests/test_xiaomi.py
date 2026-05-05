@@ -97,12 +97,6 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
-import zhaquirks.xiaomi.aqara.vibration_agl01
-from zhaquirks.xiaomi.aqara.vibration_agl01 import (
-    VibrationAGL01,
-    VibrationMultistateInput,
-    XiaomiVibrationCluster,
-)
 import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.magnet_aq2
 import zhaquirks.xiaomi.aqara.motion_ac02
@@ -118,6 +112,8 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+import zhaquirks.xiaomi.aqara.vibration_agl01
+from zhaquirks.xiaomi.aqara.vibration_agl01 import VibrationAGL01
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
@@ -2770,7 +2766,9 @@ async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_quirk):
     listener.zha_send_event.assert_called_once_with("vibration", {"value": 1})
 
 
-async def test_xiaomi_vibration_cluster_no_event_for_other_values(zigpy_device_from_quirk):
+async def test_xiaomi_vibration_cluster_no_event_for_other_values(
+    zigpy_device_from_quirk,
+):
     """Test XiaomiVibrationCluster does not fire for attr 0x0118 with value != 1."""
     device = zigpy_device_from_quirk(VibrationAGL01)
 
@@ -2834,9 +2832,7 @@ async def test_vibration_multistate_input_no_event_for_other_values(
     "trigger",
     [
         # vibration via XiaomiVibrationCluster (attr 0x0118)
-        lambda device: device.endpoints[2].opple_cluster._update_attribute(
-            0x0118, 1
-        ),
+        lambda device: device.endpoints[2].opple_cluster._update_attribute(0x0118, 1),
         # triple_tap via VibrationMultistateInput (present_value=1)
         lambda device: device.endpoints[2].multistate_input._update_attribute(
             MultistateInput.AttributeDefs.present_value.id, 1

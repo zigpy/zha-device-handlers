@@ -13,7 +13,6 @@ in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4
 """
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -23,7 +22,6 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
@@ -51,6 +49,7 @@ TRIPLE_TAP = "triple_tap"
 
 # Xiaomi manufacturer attribute for vibration
 XIAOMI_VIBRATION_ATTR = 0x0118  # Decimal 280
+
 
 class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
     """Xiaomi manufacturer cluster on EP2 for vibration detection.
