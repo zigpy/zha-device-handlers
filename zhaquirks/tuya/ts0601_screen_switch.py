@@ -1,290 +1,102 @@
-"""Tuya TS0601 screen switch quirks."""
+"""Tuya TS0601 Zemismart screen switch quirks."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    Ota,
-    Scenes,
-    Time,
+from typing import Any
+
+from zigpy.quirks.v2.homeassistant import EntityType
+import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
+
+from zhaquirks.tuya import TuyaCommand, TuyaDatapointData
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+SCREEN_SWITCH_SIGNATURES: tuple[tuple[str, int], ...] = (
+    ("_TZE284_lnyz4a6v", 1),
+    ("_TZE284_1tnysxwl", 1),
+    ("_TZE284_dmckrsxg", 2),
+    ("_TZE284_a2teqi5u", 2),
+    ("_TZE28C1000000_a2teqi5u", 2),
+    ("_TZE204_3ctwoaip", 2),
+    ("_TZE284_e4pf6l87", 3),
+    ("_TZE284_xvywzhmi", 3),
+    ("_TZE284_y4jqpry8", 4),
+    ("_TZE284_xibaabmu", 4),
+    ("_TZE28C1000000_xibaabmu", 4),
 )
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.tuya import TuyaData, TuyaSwitch
-from zhaquirks.tuya.mcu import DPToAttributeMapping, MoesSwitchManufCluster, TuyaOnOffNM
+
+class ScreenSwitchTuyaCluster(TuyaMCUCluster):
+    """Tuya MCU cluster with string datapoint write support."""
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Defer attribute writes to Tuya set_data commands."""
+        records = self._write_attr_records(attributes)
+
+        for record in records:
+            attr_name = self.attributes[record.attrid].name
+            attr_value = record.value.value
+            self.debug("write_attributes --> record: %s", record)
+
+            for dp in self.get_dp_mapping(self.endpoint.endpoint_id, attr_name):
+                value = attr_value
+
+                if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
+                    value = attr_to_dp_converter(value)
+
+                self.create_catching_task(
+                    self.command(
+                        self.mcu_write_command,
+                        TuyaCommand(
+                            status=0,
+                            tsn=self.endpoint.device.application.get_sequence(),
+                            datapoints=[TuyaDatapointData(dp, value)],
+                        ),
+                        expect_reply=False,
+                        manufacturer=manufacturer,
+                    )
+                )
+
+            self._update_attribute(record.attrid, attr_value)
+
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class RawBytes(TuyaData):
-    """Raw bytes helper for Tuya string payloads."""
-
-    def __init__(self, value: bytes):
-        """Init raw byte payload."""
-        self.raw = value
-
-    def serialize(self) -> bytes:
-        """Serialize raw bytes with Tuya string header."""
-        length = len(self.raw)
-        return b"\x00" + length.to_bytes(2, "big") + self.raw
-
-    def __repr__(self) -> str:
-        """Represent raw bytes."""
-        return f"<RawBytes {self.raw!r}>"
+def _screen_name(value: str) -> str:
+    """Convert a screen name to the device-supported length."""
+    return value[:12]
 
 
-def _name_dp_mapping(attribute_name: str) -> DPToAttributeMapping:
-    """Create a DP mapping for screen name updates."""
-    return DPToAttributeMapping(
-        ep_attribute="tuya_mcu",
-        attribute_name=attribute_name,
-        converter=lambda value: value.decode("utf-8"),
-        dp_converter=lambda value: RawBytes(value.encode("utf-8")),
-        endpoint_id=1,
+def _builder(manufacturer: str, gang_count: int) -> TuyaQuirkBuilder:
+    """Build a screen switch quirk for a Zemismart TS0601 variant."""
+    builder = TuyaQuirkBuilder(manufacturer, "TS0601")
+
+    for gang in range(1, gang_count + 1):
+        builder.tuya_switch(
+            dp_id=gang,
+            attribute_name=f"state_l{gang}",
+            entity_type=EntityType.STANDARD,
+            translation_key=f"state_l{gang}",
+            fallback_name=f"Switch {gang}",
+        )
+        builder.tuya_dp_attribute(
+            dp_id=104 + gang,
+            attribute_name=f"name_l{gang}",
+            type=t.CharacterString,
+            access=foundation.ZCLAttributeAccess.Read
+            | foundation.ZCLAttributeAccess.Write,
+            dp_converter=_screen_name,
+        )
+
+    return builder.skip_configuration().tuya_enchantment(data_query_spell=True)
+
+
+for _manufacturer, _gang_count in SCREEN_SWITCH_SIGNATURES:
+    _builder(_manufacturer, _gang_count).add_to_registry(
+        replacement_cluster=ScreenSwitchTuyaCluster
     )
-
-
-class ScreenSwitchManufCluster1G(MoesSwitchManufCluster):
-    """Custom Moes cluster with single-gang screen name support."""
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = (
-        MoesSwitchManufCluster.dp_to_attribute.copy()
-    )
-    dp_to_attribute.update(
-        {
-            105: _name_dp_mapping("name_update_1"),
-        }
-    )
-    data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
-
-
-class ScreenSwitchManufCluster2G(MoesSwitchManufCluster):
-    """Custom Moes cluster with dual-gang screen name support."""
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = (
-        MoesSwitchManufCluster.dp_to_attribute.copy()
-    )
-    dp_to_attribute.update(
-        {
-            105: _name_dp_mapping("name_update_1"),
-            106: _name_dp_mapping("name_update_2"),
-        }
-    )
-    data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
-
-
-class ScreenSwitchManufCluster3G(MoesSwitchManufCluster):
-    """Custom Moes cluster with triple-gang screen name support."""
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = (
-        MoesSwitchManufCluster.dp_to_attribute.copy()
-    )
-    dp_to_attribute.update(
-        {
-            105: _name_dp_mapping("name_update_1"),
-            106: _name_dp_mapping("name_update_2"),
-            107: _name_dp_mapping("name_update_3"),
-        }
-    )
-    data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
-
-
-class ScreenSwitchManufCluster4G(MoesSwitchManufCluster):
-    """Custom Moes cluster with quadruple-gang screen name support."""
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = (
-        MoesSwitchManufCluster.dp_to_attribute.copy()
-    )
-    dp_to_attribute.update(
-        {
-            105: _name_dp_mapping("name_update_1"),
-            106: _name_dp_mapping("name_update_2"),
-            107: _name_dp_mapping("name_update_3"),
-            108: _name_dp_mapping("name_update_4"),
-        }
-    )
-    data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
-
-
-def _signature(
-    models_info: list[tuple[str, str]], input_clusters: list[int] | None = None
-):
-    """Build the base signature for screen switches."""
-    if input_clusters is None:
-        input_clusters = [
-            Basic.cluster_id,
-            Groups.cluster_id,
-            Scenes.cluster_id,
-            MoesSwitchManufCluster.cluster_id,
-            0xED00,
-        ]
-
-    return {
-        MODELS_INFO: models_info,
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: input_clusters,
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
-def _replacement(manufacturer_cluster: type[MoesSwitchManufCluster], channels: int):
-    """Build the replacement definition for screen switches."""
-    endpoints = {
-        1: {
-            PROFILE_ID: zha.PROFILE_ID,
-            DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-            INPUT_CLUSTERS: [
-                Basic.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                manufacturer_cluster,
-                TuyaOnOffNM,
-            ],
-            OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-        },
-        242: {
-            PROFILE_ID: zgp.PROFILE_ID,
-            DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-            INPUT_CLUSTERS: [],
-            OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-        },
-    }
-
-    for endpoint_id in range(2, channels + 1):
-        endpoints[endpoint_id] = {
-            PROFILE_ID: zha.PROFILE_ID,
-            DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-            INPUT_CLUSTERS: [TuyaOnOffNM],
-            OUTPUT_CLUSTERS: [],
-        }
-
-    return {ENDPOINTS: endpoints}
-
-
-def _tze28c1000000_signature(models_info: list[tuple[str, str]]):
-    """Signature variant for TZE28C1000000 devices."""
-    return _signature(
-        models_info,
-        [
-            Basic.cluster_id,
-            0xE000,
-            0xEB00,
-            0xED00,
-            Groups.cluster_id,
-            Scenes.cluster_id,
-            Identify.cluster_id,
-            0xEF00,
-        ],
-    )
-
-
-def _tze204_ef00_signature(models_info: list[tuple[str, str]]):
-    """Signature variant for EF00-only TZE204 devices."""
-    return _signature(
-        models_info,
-        [
-            Groups.cluster_id,
-            Scenes.cluster_id,
-            0xEF00,
-            Basic.cluster_id,
-        ],
-    )
-
-
-class TuyaSingleScreenSwitchGP(TuyaSwitch):
-    """Tuya single channel screen switch."""
-
-    signature = _signature(
-        [
-            ("_TZE284_lnyz4a6v", "TS0601"),
-            ("_TZE284_1tnysxwl", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster1G, 1)
-
-
-class TuyaDualScreenSwitchGP(TuyaSwitch):
-    """Tuya dual channel screen switch."""
-
-    signature = _signature(
-        [
-            ("_TZE284_dmckrsxg", "TS0601"),
-            ("_TZE284_a2teqi5u", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster2G, 2)
-
-
-class TuyaDualScreenSwitchTZE28C1000000(TuyaSwitch):
-    """Tuya dual channel screen switch with TZE28C1000000 signature."""
-
-    signature = _tze28c1000000_signature(
-        [
-            ("_TZE28C1000000_a2teqi5u", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster2G, 2)
-
-
-class TuyaDualScreenSwitchTZE204EF00(TuyaSwitch):
-    """Tuya dual channel screen switch with EF00-only TZE204 signature."""
-
-    signature = _tze204_ef00_signature(
-        [
-            ("_TZE204_3ctwoaip", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster2G, 2)
-
-
-class TuyaTripleScreenSwitchGP(TuyaSwitch):
-    """Tuya triple channel screen switch."""
-
-    signature = _signature(
-        [
-            ("_TZE284_e4pf6l87", "TS0601"),
-            ("_TZE284_xvywzhmi", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster3G, 3)
-
-
-class TuyaQuadrupleScreenSwitchGP(TuyaSwitch):
-    """Tuya quadruple channel screen switch."""
-
-    signature = _signature(
-        [
-            ("_TZE284_y4jqpry8", "TS0601"),
-            ("_TZE284_xibaabmu", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster4G, 4)
-
-
-class TuyaQuadrupleScreenSwitchTZE28C1000000(TuyaSwitch):
-    """Tuya quadruple channel screen switch with TZE28C1000000 signature."""
-
-    signature = _tze28c1000000_signature(
-        [
-            ("_TZE28C1000000_xibaabmu", "TS0601"),
-        ]
-    )
-    replacement = _replacement(ScreenSwitchManufCluster4G, 4)
