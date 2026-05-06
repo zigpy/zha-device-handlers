@@ -63,7 +63,9 @@ def test_sbtzb110_button_state_enum():
 def test_sbtzb110_custom_onoff_cluster_metadata():
     """Test the custom OnOff cluster keeps the expected manufacturer attributes."""
     assert CustomOnOff.cluster_id == OnOff.cluster_id
-    assert CustomOnOff.AttributeDefs.button_press_action_delay.manufacturer_code == 0x1015
+    assert (
+        CustomOnOff.AttributeDefs.button_press_action_delay.manufacturer_code == 0x1015
+    )
     assert CustomOnOff.AttributeDefs.button_press_blink_led.manufacturer_code == 0x1015
     assert BinaryInput.cluster_id == 0x000F
     assert ClusterType.Client.name == "Client"
