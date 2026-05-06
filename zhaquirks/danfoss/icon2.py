@@ -312,7 +312,8 @@ for _ep in range(1, 17):
             enum_class=DanfossRoomFloorSensorMode,
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
-            fallback_name=f"Zone {_ep} floor sensor mode",
+            translation_key="room_floor_sensor_mode",
+            fallback_name="Floor sensor mode",
             entity_type=EntityType.CONFIG,
         )
         .enum(
@@ -320,7 +321,8 @@ for _ep in range(1, 17):
             enum_class=DanfossScheduleTypeUsed,
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
-            fallback_name=f"Zone {_ep} schedule",
+            translation_key="schedule_type_used",
+            fallback_name="Schedule",
             entity_type=EntityType.CONFIG,
         )
         .switch(
@@ -329,7 +331,8 @@ for _ep in range(1, 17):
             endpoint_id=_ep,
             on_value=DanfossPreHeat.enable,
             off_value=DanfossPreHeat.disable,
-            fallback_name=f"Zone {_ep} pre-heat",
+            translation_key="icon2_pre_heat",
+            fallback_name="Pre-heat",
             entity_type=EntityType.CONFIG,
         )
     )
