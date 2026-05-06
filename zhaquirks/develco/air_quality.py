@@ -9,14 +9,8 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.quirks.v2.homeassistant import (
-    CONCENTRATION_PARTS_PER_BILLION,
-    PERCENTAGE,
-    UnitOfTemperature,
-)
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import (
     ZCL_CLUSTER_REVISION_ATTR,
     ZCL_REPORTING_STATUS_ATTR,
@@ -76,152 +70,6 @@ class DevelcoVOCMeasurement(CustomCluster):
         reporting_status: Final = ZCL_REPORTING_STATUS_ATTR
 
 
-class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
-    """Temperature Measurement Cluster with calibration attribute."""
-
-    INVALID_MEASURED_VALUES = frozenset({0x8000, -32768})
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize state for temperature offset handling."""
-        super().__init__(*args, **kwargs)
-        self._raw_measured_value: int | None = None
-        # Set defaults so HA shows 0 until a value is written.
-        self._update_attribute(self.AttributeDefs.temperature_offset.id, 0)
-
-    class AttributeDefs(TemperatureMeasurement.AttributeDefs):
-        """Attribute Definitions."""
-
-        # A value in 1ºC offset to fix up incorrect values from sensor
-        temperature_offset: Final = ZCLAttributeDef(
-            id=0x8888,
-            type=t.int16s,
-            access="rw",
-            manufacturer_code=0x1015,
-        )
-
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, int],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Handle temperature offset writes locally and pass through others."""
-        offset = None
-        offset_attr_id = self.AttributeDefs.temperature_offset.id
-        remaining = dict(attributes)
-
-        for attr_key, value in attributes.items():
-            try:
-                attr_def = self.find_attribute(attr_key)
-            except KeyError:
-                continue
-            if attr_def is None or attr_def.id != offset_attr_id:
-                continue
-            offset = value
-            remaining.pop(attr_key, None)
-
-        if offset is not None:
-            self._update_attribute(offset_attr_id, offset)
-
-        if remaining:
-            return await super().write_attributes(remaining, **kwargs)
-
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.AttributeDefs.measured_value.id:
-            self._raw_measured_value = value
-            if value in self.INVALID_MEASURED_VALUES:
-                return super()._update_attribute(attrid, value)
-            offset = self._attr_cache.get(self.AttributeDefs.temperature_offset.id, 0)
-            return super()._update_attribute(attrid, value + offset * 100)
-
-        if attrid == self.AttributeDefs.temperature_offset.id:
-            result = super()._update_attribute(attrid, value)
-            if (
-                getattr(self, "_raw_measured_value", None) is not None
-                and self._raw_measured_value not in self.INVALID_MEASURED_VALUES
-            ):
-                super()._update_attribute(
-                    self.AttributeDefs.measured_value.id,
-                    self._raw_measured_value + value * 100,
-                )
-            return result
-
-        return super()._update_attribute(attrid, value)
-
-
-class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
-    """Relative Humidity Cluster with calibration attribute."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize state for humidity offset handling."""
-        super().__init__(*args, **kwargs)
-        self._raw_measured_value: int | None = None
-        # Set defaults so HA shows 0 until a value is written.
-        self._update_attribute(self.AttributeDefs.humidity_offset.id, 0)
-
-    class AttributeDefs(RelativeHumidity.AttributeDefs):
-        """Attribute Definitions."""
-
-        # A value in 1%RH offset to fix up incorrect values from sensor
-        humidity_offset: Final = ZCLAttributeDef(
-            id=0x0010,
-            type=t.int16s,
-            access="rw",
-            manufacturer_code=0x1015,
-        )
-
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, int],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Handle humidity offset writes locally and pass through others."""
-        offset = None
-        offset_attr_id = self.AttributeDefs.humidity_offset.id
-        remaining = dict(attributes)
-
-        for attr_key, value in attributes.items():
-            try:
-                attr_def = self.find_attribute(attr_key)
-            except KeyError:
-                continue
-            if attr_def is None or attr_def.id != offset_attr_id:
-                continue
-            offset = value
-            remaining.pop(attr_key, None)
-
-        if offset is not None:
-            self._update_attribute(offset_attr_id, offset)
-
-        if remaining:
-            return await super().write_attributes(remaining, **kwargs)
-
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.AttributeDefs.measured_value.id:
-            self._raw_measured_value = value
-            if value == 0xFFFF:
-                return super()._update_attribute(attrid, value)
-            offset = self._attr_cache.get(self.AttributeDefs.humidity_offset.id, 0)
-            return super()._update_attribute(attrid, value + offset * 100)
-
-        if attrid == self.AttributeDefs.humidity_offset.id:
-            result = super()._update_attribute(attrid, value)
-            if (
-                getattr(self, "_raw_measured_value", None) is not None
-                and self._raw_measured_value != 0xFFFF
-            ):
-                super()._update_attribute(
-                    self.AttributeDefs.measured_value.id,
-                    self._raw_measured_value + value * 100,
-                )
-            return result
-
-        return super()._update_attribute(attrid, value)
-
-
 def measured_value_converter(value: int) -> int | None:
     """Ignore invalid value sent after initiation."""
     new_value = value if value < 0xFFFF else None
@@ -250,8 +98,6 @@ def value_to_caqi(value: int) -> str | None:
     .applies_to("Develco Products A/S", "AQSZB-110")
     .replaces(DevelcoVOCMeasurement, endpoint_id=38)
     .replaces(AQSZB110PowerConfiguration, endpoint_id=38)
-    .replaces(TemperatureMeasurementCustom, endpoint_id=38)
-    .replaces(RelativeHumidityCustom, endpoint_id=38)
     .sensor(
         attribute_name=DevelcoVOCMeasurement.AttributeDefs.measured_value.name,
         cluster_id=DevelcoVOCMeasurement.cluster_id,
@@ -277,30 +123,6 @@ def value_to_caqi(value: int) -> str | None:
         unit=None,  # No unit for enum values
         fallback_name="CAQI",
         unique_id_suffix="caqi_index",
-    )
-    .number(
-        attribute_name=TemperatureMeasurementCustom.AttributeDefs.temperature_offset.name,
-        cluster_id=TemperatureMeasurement.cluster_id,
-        endpoint_id=38,
-        min_value=-10,
-        max_value=10,
-        step=1,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="temperature_offset",
-        fallback_name="Temperature offset",
-        unique_id_suffix="temperature_offset",
-    )
-    .number(
-        attribute_name=RelativeHumidityCustom.AttributeDefs.humidity_offset.name,
-        cluster_id=RelativeHumidity.cluster_id,
-        endpoint_id=38,
-        min_value=-10,
-        max_value=10,
-        step=1,
-        unit=PERCENTAGE,
-        translation_key="humidity_offset",
-        fallback_name="Humidity offset",
-        unique_id_suffix="humidity_offset",
     )
     .add_to_registry()
 )
