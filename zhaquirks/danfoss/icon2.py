@@ -139,148 +139,139 @@ class DanfossIconForcedHeatingCooling(t.enum8):
 
 
 # ---------------------------------------------------------------------------
-# Extend Thermostat.attributes with Danfoss zone manufacturer attributes.
-#
-# Using .replaces() per zone endpoint crashes with KeyError when the device
-# has fewer than 16 zones, because zigpy tries to remove the original cluster
-# from each endpoint before adding the replacement. Extending the base class
-# attributes dict avoids this: entity declarations already skip missing
-# endpoints gracefully, so no replacement is needed.
+# Custom Thermostat cluster for zone endpoints (1–16).
+# Inherits all standard Thermostat attributes and adds Danfoss zone-specific
+# manufacturer attributes. Using a subclass instead of patching the global
+# Thermostat class avoids breaking other quirks that also subclass Thermostat.
 # ---------------------------------------------------------------------------
 
-Thermostat.attributes = Thermostat.attributes.copy()
-Thermostat.attributes.update(
-    {
-        0x4100: ZCLAttributeDef(
-            "room_status_code",
+
+class DanfossZoneThermostatCluster(CustomCluster, Thermostat):
+    """Thermostat cluster for Danfoss Icon2 zone endpoints."""
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute definitions including Danfoss zone manufacturer attributes."""
+
+        room_status_code: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4100,
             type=DanfossRoomStatusCode,
             access="rp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4110: ZCLAttributeDef(
-            "output_status",
+        )
+        output_status: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4110,
             type=DanfossOutputStatus,
             access="rp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4120: ZCLAttributeDef(
-            "room_floor_sensor_mode",
+        )
+        room_floor_sensor_mode: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4120,
             type=DanfossRoomFloorSensorMode,
             access="rwp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4121: ZCLAttributeDef(
-            "floor_min_setpoint",
+        )
+        floor_min_setpoint: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4121,
             type=t.int16s,
             access="rwp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4122: ZCLAttributeDef(
-            "floor_max_setpoint",
+        )
+        floor_max_setpoint: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4122,
             type=t.int16s,
             access="rwp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4130: ZCLAttributeDef(
-            "schedule_type_used",
+        )
+        schedule_type_used: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4130,
             type=DanfossScheduleTypeUsed,
             access="rwp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x4131: ZCLAttributeDef(
-            "icon2_pre_heat",
+        )
+        icon2_pre_heat: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4131,
             type=DanfossPreHeat,
             access="rwp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-        0x414F: ZCLAttributeDef(
-            "icon2_pre_heat_status",
+        )
+        icon2_pre_heat_status: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x414F,
             type=DanfossPreHeatStatus,
             access="rp",
             manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-        ),
-    }
-)
-# zigpy keeps a parallel name→def dict that must be rebuilt after patching attributes
-Thermostat.attributes_by_name = {
-    attr_def.name: attr_def
-    for attr_def in Thermostat.attributes.values()
-    if attr_def.name is not None
-}
+        )
 
 
 # ---------------------------------------------------------------------------
-# Custom cluster: diagnostic on endpoint 232 (main controller)
-# heat_supply_request (0x4031) is the key attribute: it indicates the pump
-# relay is active and the boiler/heat source is being called.
+# Custom Diagnostic cluster for endpoint 232 (main controller).
+# heat_supply_request (0x4031) drives the pump/boiler relay output.
 # ---------------------------------------------------------------------------
 
 
 class DanfossMainDiagnosticCluster(CustomCluster, Diagnostic):
     """Diagnostic cluster on endpoint 232 with Danfoss system-level attributes."""
 
-    attributes = Diagnostic.attributes.copy()
-    attributes.update(
-        {
-            0x4000: ZCLAttributeDef(
-                "system_status_code",
-                type=DanfossSystemStatusCode,
-                access="rp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4031: ZCLAttributeDef(
-                "heat_supply_request",
-                type=DanfossHeatSupplyRequest,
-                access="rwp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4100: ZCLAttributeDef(
-                "system_status_flags",
-                type=t.bitmap16,
-                access="rp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4200: ZCLAttributeDef(
-                "system_status_water",
-                type=DanfossSystemStatusWater,
-                access="rp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4201: ZCLAttributeDef(
-                "multimaster_role",
-                type=DanfossMultimasterRole,
-                access="rp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4210: ZCLAttributeDef(
-                "icon_application",
-                type=t.uint8_t,
-                access="rp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4220: ZCLAttributeDef(
-                "icon_forced_heating_cooling",
-                type=DanfossIconForcedHeatingCooling,
-                access="rwp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-            0x4300: ZCLAttributeDef(
-                "system_string_4300",
-                type=t.CharacterString,
-                access="rwp",
-                manufacturer_code=DANFOSS_MANUFACTURER_CODE,
-            ),
-        }
-    )
+    class AttributeDefs(Diagnostic.AttributeDefs):
+        """Attribute definitions including Danfoss system-level manufacturer attributes."""
+
+        system_status_code: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4000,
+            type=DanfossSystemStatusCode,
+            access="rp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        heat_supply_request: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4031,
+            type=DanfossHeatSupplyRequest,
+            access="rwp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        system_status_flags: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4100,
+            type=t.bitmap16,
+            access="rp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        system_status_water: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4200,
+            type=DanfossSystemStatusWater,
+            access="rp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        multimaster_role: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4201,
+            type=DanfossMultimasterRole,
+            access="rp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        icon_application: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4210,
+            type=t.uint8_t,
+            access="rp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        icon_forced_heating_cooling: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4220,
+            type=DanfossIconForcedHeatingCooling,
+            access="rwp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
+        system_string_4300: ZCLAttributeDef = ZCLAttributeDef(
+            id=0x4300,
+            type=t.CharacterString,
+            access="rwp",
+            manufacturer_code=DANFOSS_MANUFACTURER_CODE,
+        )
 
 
 # ---------------------------------------------------------------------------
 # QuirkV2 builder registration
 #
-# Zone endpoints (1–16): no .replaces() — attributes are injected into the
-# base Thermostat class above. Entity declarations are registered for all 16
-# possible zone endpoints; ZHA silently ignores endpoints that don't exist on
-# the actual device, so a 4-zone unit will only get entities for endpoints 1–4.
+# Zone endpoints (1–16): .replaces() swaps in DanfossZoneThermostatCluster so
+# that ZHA can discover the manufacturer-specific zone attributes. Entity
+# declarations are registered for all 16 possible zone endpoints; ZHA silently
+# ignores endpoints that don't exist on the actual device, so a 4-zone unit
+# will only get entities for endpoints 1–4.
 #
 # Endpoint 232 is the main controller. .replaces() is safe here because
 # endpoint 232 always exists on the Icon2.
@@ -291,12 +282,12 @@ _builder = QuirkBuilder("Danfoss", "0x0210")
 # Zone endpoints 1–16
 for _ep in range(1, 17):
     _builder = (
-        _builder.binary_sensor(
+        _builder.replaces(DanfossZoneThermostatCluster, endpoint_id=_ep)
+        .binary_sensor(
             attribute_name="output_status",
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
             device_class=BinarySensorDeviceClass.HEAT,
-            translation_key="output_status",
             fallback_name=f"Zone {_ep} heating",
         )
         .binary_sensor(
@@ -304,7 +295,6 @@ for _ep in range(1, 17):
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
             device_class=BinarySensorDeviceClass.HEAT,
-            translation_key="icon2_pre_heat_status",
             fallback_name=f"Zone {_ep} pre-heat active",
             entity_type=EntityType.DIAGNOSTIC,
         )
@@ -313,7 +303,6 @@ for _ep in range(1, 17):
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
             state_class=SensorStateClass.MEASUREMENT,
-            translation_key="room_status_code",
             fallback_name=f"Zone {_ep} room status",
             entity_type=EntityType.DIAGNOSTIC,
         )
@@ -322,7 +311,6 @@ for _ep in range(1, 17):
             enum_class=DanfossRoomFloorSensorMode,
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
-            translation_key="room_floor_sensor_mode",
             fallback_name=f"Zone {_ep} floor sensor mode",
             entity_type=EntityType.CONFIG,
         )
@@ -331,7 +319,6 @@ for _ep in range(1, 17):
             enum_class=DanfossScheduleTypeUsed,
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
-            translation_key="schedule_type_used",
             fallback_name=f"Zone {_ep} schedule",
             entity_type=EntityType.CONFIG,
         )
@@ -341,7 +328,6 @@ for _ep in range(1, 17):
             endpoint_id=_ep,
             on_value=DanfossPreHeat.enable,
             off_value=DanfossPreHeat.disable,
-            translation_key="icon2_pre_heat",
             fallback_name=f"Zone {_ep} pre-heat",
             entity_type=EntityType.CONFIG,
         )
