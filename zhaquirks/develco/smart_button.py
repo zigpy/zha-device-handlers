@@ -4,20 +4,11 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
-from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import (
-    ZCL_CLUSTER_REVISION_ATTR,
-    ZCL_REPORTING_STATUS_ATTR,
-    BaseAttributeDefs,
-    ZCLAttributeDef,
-)
-
-from zhaquirks.develco import DEVELCO, FRIENT
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 
 class CustomOnOff(CustomCluster, OnOff):
@@ -59,6 +50,7 @@ class ButtonState(t.enum8):
 
 (
     QuirkBuilder("frient A/S", "SBTZB-110")
+    .applies_to("Develco Products A/S", "SBTZB-110")
     .replaces(CustomOnOff, endpoint_id=32, cluster_type=ClusterType.Client)
     .prevent_default_entity_creation(
         endpoint_id=32,
