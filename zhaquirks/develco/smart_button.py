@@ -10,11 +10,22 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
+
+
+class LedColors(t.enum8):
+    """LED color options."""
+
+    OFF = 0
+    RED = 1
+    GREEN = 2
+    YELLOW = 3
+
 
 class CustomOnOff(CustomCluster, OnOff):
     """Custom OnOff cluster to prevent entity creation."""
 
-    cluster_id = 0x0006
+    cluster_id = OnOff.cluster_id
 
     class AttributeDefs(OnOff.AttributeDefs):
         """Add manufacturer specific attributes for button configuration."""
@@ -27,18 +38,10 @@ class CustomOnOff(CustomCluster, OnOff):
         )
         button_press_blink_led: Final = ZCLAttributeDef(
             id=0x8002,
-            type=t.enum8,
+            type=LedColors,
             access="rw",
             manufacturer_code=0x1015,
         )
-
-    class LedColors(t.enum8):
-        """LED color options."""
-
-        OFF = 0
-        RED = 1
-        GREEN = 2
-        YELLOW = 3
 
 
 class ButtonState(t.enum8):
@@ -78,7 +81,7 @@ class ButtonState(t.enum8):
     )
     .enum(
         attribute_name=CustomOnOff.AttributeDefs.button_press_blink_led.name,
-        enum_class=CustomOnOff.LedColors,
+        enum_class=LedColors,
         cluster_id=CustomOnOff.cluster_id,
         cluster_type=ClusterType.Client,
         endpoint_id=32,
@@ -95,6 +98,15 @@ class ButtonState(t.enum8):
         entity_type=EntityType.STANDARD,
         translation_key="button_state",
         fallback_name="Button state",
+    )
+    .device_automation_triggers(
+        {
+            (COMMAND_CLICK, BUTTON): {
+                ENDPOINT_ID: 32,
+                CLUSTER_ID: int(OnOff.cluster_id),
+                COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+        }
     )
     .add_to_registry()
 )

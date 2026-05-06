@@ -18,13 +18,14 @@ def _get_smart_button_quirk():
     for quirk in itertools.chain.from_iterable(
         zigpy.quirks.DEVICE_REGISTRY.registry_v2.values()
     ):
-        if (
-            "frient A/S",
-            "SBTZB-110",
-        ) in {
+        manufacturer_models = {
             (metadata.manufacturer, metadata.model)
             for metadata in quirk.manufacturer_model_metadata
-        }:
+        }
+        if ("frient A/S", "SBTZB-110") in manufacturer_models or (
+            "Develco Products A/S",
+            "SBTZB-110",
+        ) in manufacturer_models:
             return quirk
 
     raise AssertionError("smart_button quirk not registered")
@@ -35,6 +36,10 @@ def test_sbtzb110_quirk_metadata():
     quirk = _get_smart_button_quirk()
 
     assert ("frient A/S", "SBTZB-110") in {
+        (metadata.manufacturer, metadata.model)
+        for metadata in quirk.manufacturer_model_metadata
+    }
+    assert ("Develco Products A/S", "SBTZB-110") in {
         (metadata.manufacturer, metadata.model)
         for metadata in quirk.manufacturer_model_metadata
     }
