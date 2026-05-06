@@ -303,7 +303,8 @@ for _ep in range(1, 17):
             cluster_id=Thermostat.cluster_id,
             endpoint_id=_ep,
             state_class=SensorStateClass.MEASUREMENT,
-            fallback_name=f"Zone {_ep} room status",
+            translation_key="room_status_code",
+            fallback_name="Room status",
             entity_type=EntityType.DIAGNOSTIC,
         )
         .enum(
