@@ -43,11 +43,8 @@ from zhaquirks.xiaomi import (
     OnOffCluster,
     XiaomiCustomDevice,
 )
-from zhaquirks.xiaomi.aqara.opple_switch import (
-    BOTH_BUTTONS,
-    OppleSwitchCluster,
-)
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
+from zhaquirks.xiaomi.aqara.opple_switch import BOTH_BUTTONS, OppleSwitchCluster
 
 
 # Helper functions for trigger definitions
@@ -78,8 +75,8 @@ _REPLACEMENT_INPUT_BASE = [
     OppleSwitchCluster,
 ]
 
-class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
 
+class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
@@ -95,8 +92,7 @@ class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
                 INPUT_CLUSTERS: _REPLACEMENT_INPUT_BASE,
                 OUTPUT_CLUSTERS: [],
             },
-            3: {
-            },
+            3: {},
             # Button 1 endpoint
             41: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -178,7 +174,8 @@ _EP1_INPUT_BASE = [DeviceTemperature.cluster_id] + _COMMON_INPUT_CLUSTERS
 
 _EP1_FULL = {
     **_EP1_COMMON_BASE,
-    INPUT_CLUSTERS: _EP1_INPUT_BASE + [
+    INPUT_CLUSTERS: _EP1_INPUT_BASE
+    + [
         MultistateInputCluster.cluster_id,
         OppleSwitchCluster.cluster_id,
     ],
@@ -186,7 +183,8 @@ _EP1_FULL = {
 
 _EP1_SLIM = {
     **_EP1_COMMON_BASE,
-    INPUT_CLUSTERS: _EP1_INPUT_BASE + [
+    INPUT_CLUSTERS: _EP1_INPUT_BASE
+    + [
         Alarms.cluster_id,
     ],
 }
@@ -198,7 +196,8 @@ _EP2_SLIM = {
 
 _EP2_FULL = {
     **_EP2_SLIM,
-    INPUT_CLUSTERS: _EP2_SLIM[INPUT_CLUSTERS] + [
+    INPUT_CLUSTERS: _EP2_SLIM[INPUT_CLUSTERS]
+    + [
         MultistateInputCluster.cluster_id,
         OppleSwitchCluster.cluster_id,
     ],
@@ -300,6 +299,3 @@ class AqaraE1DoubleRockerSwitchWithNeutral_Mixed(
             2: _EP2_FULL,
         },
     }
-
-
-
