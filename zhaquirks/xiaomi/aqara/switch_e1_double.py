@@ -43,11 +43,8 @@ from zhaquirks.xiaomi import (
     OnOffCluster,
     XiaomiCustomDevice,
 )
-from zhaquirks.xiaomi.aqara.opple_switch import (
-    BOTH_BUTTONS,
-    OppleSwitchCluster,
-)
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
+from zhaquirks.xiaomi.aqara.opple_switch import BOTH_BUTTONS, OppleSwitchCluster
 
 
 # Helper functions for trigger definitions
@@ -79,6 +76,7 @@ _REPLACEMENT_INPUT_BASE = [
 ]
 
 class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
+    """Aqara E1 Double Rocker Switch (with neutral) base class."""
 
     replacement = {
         ENDPOINTS: {
