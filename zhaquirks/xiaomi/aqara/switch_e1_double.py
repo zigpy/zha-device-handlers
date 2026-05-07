@@ -79,8 +79,6 @@ _REPLACEMENT_INPUT_BASE = [
 class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     """Aqara E1 Double Rocker Switch (with neutral) base class."""
 
-
-class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
