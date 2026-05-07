@@ -1,7 +1,9 @@
 """Tests for Develco/Frient."""
 
+import itertools
 from unittest import mock
 
+import zigpy.quirks
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -10,6 +12,39 @@ from tests.common import ClusterListener
 import zhaquirks
 
 zhaquirks.setup()
+
+
+def _get_emi_led_quirk_entry():
+    """Return the registered EMIZB-141 quirk entry."""
+    for quirk in itertools.chain.from_iterable(
+        zigpy.quirks.DEVICE_REGISTRY.registry_v2.values()
+    ):
+        if ("frient A/S", "EMIZB-141") in {
+            (metadata.manufacturer, metadata.model)
+            for metadata in quirk.manufacturer_model_metadata
+        }:
+            return quirk
+
+    raise AssertionError("EMIZB-141 quirk not registered")
+
+
+def test_frient_emi_v2_metadata_current_summation():
+    """Test EMIZB-141 exposes current summation and reset button metadata."""
+    quirk = _get_emi_led_quirk_entry()
+
+    entity_map = {
+        entity_metadata.translation_key: entity_metadata
+        for entity_metadata in quirk.entity_metadata
+        if entity_metadata.translation_key is not None
+    }
+
+    assert (
+        entity_map["current_summation"].fallback_name == "Current summation delivered"
+    )
+    assert (
+        entity_map["reset_summation_delivered"].fallback_name
+        == "Reset summation delivered"
+    )
 
 
 async def test_frient_emi(zigpy_device_from_v2_quirk):
@@ -127,6 +162,43 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.manufacturer is None
         assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
         assert attr_data == b"\x00\x00%d\x00\x00\x00\x00\x00"
+
+
+async def test_frient_emi_current_summation_write_request(zigpy_device_from_v2_quirk):
+    """Test EMIZB-141 forwards current summation write as a mfg-specific write."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
+
+    manufacturer_cluster = device.endpoints[2].in_clusters[0xFD10]
+    current_summation_attr_id = manufacturer_cluster.AttributeDefs.current_summation.id
+
+    request_patch = mock.patch("zigpy.device.Device.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await manufacturer_cluster.write_attributes({current_summation_attr_id: 1234})
+
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[0] == ()
+        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
+        assert (
+            request_mock.call_args[1]["data"]
+            == b"\x04\xd2\x04\x01\x02\x01\x03%\xd2\x04\x00\x00\x00\x00"
+        )
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args[1]["data"]
+        )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 1
+        assert zcl_header.manufacturer == 1234
+        assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
+        assert attr_data == b"\x01\x03%\xd2\x04\x00\x00\x00\x00"
 
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
