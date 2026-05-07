@@ -75,8 +75,10 @@ _REPLACEMENT_INPUT_BASE = [
     OppleSwitchCluster,
 ]
 
+
 class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     """Aqara E1 Double Rocker Switch (with neutral) base class."""
+
 
 class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     replacement = {
