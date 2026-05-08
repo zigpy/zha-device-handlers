@@ -1,10 +1,11 @@
 """ZHA Quirk (v2) for Stello STLO-23 water heater control.
 
 Adds manufacturer attributes:
-- 0x4001: Outdoor temperature (°C or °F, read/write)
-- 0x4008: Instant power (W)
-- 0x4009: Cumulative energy (Wh)
-- 0x4105: Peak demand event icon (uint16, read/write)
+- 0x0001: uint8_t = 50, maybe high temp Celsius (rwp)
+- 0x0003: uint16_t = 1200 ??? (rwp)
+- 0x0005: uint8_t Current temperature, Celsius (rp)
+- 0x0006: uint8_t = 1 ??? (rwp)
+- 0x0007: uint8_t = 49, maybe low temp Celsius (rwp)
 """
 
 from zigpy.quirks import CustomCluster
@@ -12,7 +13,7 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 STELLO_MANUFACTURER_ID = 4759
 
@@ -28,7 +29,7 @@ class STLO23TemperatureCluster(CustomCluster):
     cluster_id = 0xFC02
     ep_attribute = "stlo23_temperature_cluster"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Vendor-specific attributes.
 
         - 0x0001: uint8_t = 50, maybe high temp Celsius (rwp)
@@ -93,9 +94,11 @@ class STLO23TemperatureCluster(CustomCluster):
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=0,
         reporting_config=ReportingConfig(
-            min_interval=5, max_interval=300, reportable_change=1
+            min_interval=60, max_interval=300, reportable_change=1
         ),
+        translation_key="temperature",
         fallback_name="Temperature",
     )
     .add_to_registry()
