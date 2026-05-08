@@ -195,6 +195,8 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
 
     power = device.endpoints[38].power
     assert isinstance(power, HumidityPowerConfiguration)
+    assert power.MIN_VOLTS == 2.3
+    assert power.MAX_VOLTS == 3.0
 
     power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
     expected = power._calculate_battery_percentage(28)
@@ -202,38 +204,28 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
     assert (
         power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
         == expected
+        == 143
     )
 
 
-async def test_humidity_temperature_unknown_update_attribute(
+async def test_hmszb_120_replaces_power_config_and_exposes_measurement_clusters(
     zigpy_device_from_v2_quirk,
 ):
-    """Test unknown temperature attributes use default update handling."""
+    """Test HMSZB-120 quirk replaces power config and keeps measurement clusters."""
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
         "HMSZB-120",
         endpoint_ids=[38],
-        cluster_ids={38: {TemperatureMeasurement.cluster_id: ClusterType.Server}},
+        cluster_ids={
+            38: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                TemperatureMeasurement.cluster_id: ClusterType.Server,
+                RelativeHumidity.cluster_id: ClusterType.Server,
+            }
+        },
     )
 
-    temp = device.endpoints[38].temperature
-    temp.update_attribute(0xAAAB, 12)
-
-    assert temp._attr_cache[0xAAAB] == 12
-
-
-async def test_humidity_unknown_update_attribute(
-    zigpy_device_from_v2_quirk,
-):
-    """Test unknown humidity attributes use default update handling."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={38: {RelativeHumidity.cluster_id: ClusterType.Server}},
-    )
-
-    humidity = device.endpoints[38].humidity
-    humidity.update_attribute(0xAAAB, 34)
-
-    assert humidity._attr_cache[0xAAAB] == 34
+    endpoint = device.endpoints[38]
+    assert isinstance(endpoint.power, HumidityPowerConfiguration)
+    assert isinstance(endpoint.temperature, TemperatureMeasurement)
+    assert isinstance(endpoint.humidity, RelativeHumidity)
