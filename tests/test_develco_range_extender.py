@@ -91,6 +91,7 @@ def test_rexzb_110_minimal_quirk():
 
     assert quirk.entity_metadata == ()
 
+
 def test_power_binary_sensor_attribute_converter(zigpy_device_from_v2_quirk):
     """Test power entity converter with inverted IAS AC_mains bit semantics."""
     device = zigpy_device_from_v2_quirk(
