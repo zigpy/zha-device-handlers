@@ -28,12 +28,12 @@ class SunricherPIRBasicCluster(CustomCluster, Basic):
             type=t.uint8_t,
             manufacturer_code=SUNRICHER_MANUFACTURER_CODE,
         )
-        pwm_output_percentage: Final = ZCLAttributeDef(
+        pwm_output_level: Final = ZCLAttributeDef(
             id=0x8909,
             type=t.uint8_t,
             manufacturer_code=SUNRICHER_MANUFACTURER_CODE,
         )
-        linearity_error_ratio_lux: Final = ZCLAttributeDef(
+        linearity_error_ratio: Final = ZCLAttributeDef(
             id=0x890D,
             type=t.uint16_t,
             manufacturer_code=SUNRICHER_MANUFACTURER_CODE,
@@ -66,22 +66,21 @@ class SunricherPIRBasicCluster(CustomCluster, Basic):
         fallback_name="Motion sensor sensitivity",
     )
     .number(
-        SunricherPIRBasicCluster.AttributeDefs.pwm_output_percentage.name,
+        SunricherPIRBasicCluster.AttributeDefs.pwm_output_level.name,
         SunricherPIRBasicCluster.cluster_id,
         min_value=0,
         max_value=254,
-        unit="%",
         entity_type=EntityType.CONFIG,
-        translation_key="pwm_output_percentage",
-        fallback_name="PWM output percentage",
+        translation_key="pwm_output_level",
+        fallback_name="PWM output level",
     )
     .number(
-        SunricherPIRBasicCluster.AttributeDefs.linearity_error_ratio_lux.name,
+        SunricherPIRBasicCluster.AttributeDefs.linearity_error_ratio.name,
         SunricherPIRBasicCluster.cluster_id,
         min_value=100,
         max_value=10000,
         entity_type=EntityType.CONFIG,
-        translation_key="linearity_error_ratio_lux",
+        translation_key="linearity_error_ratio",
         fallback_name="Linearity error ratio coefficient",
     )
     .add_to_registry()
