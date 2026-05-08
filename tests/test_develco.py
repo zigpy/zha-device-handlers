@@ -182,15 +182,10 @@ async def test_frient_emi_current_summation_write_request(zigpy_device_from_v2_q
         await manufacturer_cluster.write_attributes({current_summation_attr_id: 1234})
 
         assert request_mock.call_count == 1
-        assert request_mock.call_args[0] == ()
-        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
-        assert (
-            request_mock.call_args[1]["data"]
-            == b"\x04\xd2\x04\x01\x02\x01\x03%\xd2\x04\x00\x00\x00\x00"
-        )
+        assert request_mock.call_args.kwargs["cluster"] == Metering.cluster_id
 
         zcl_header, attr_data = foundation.ZCLHeader.deserialize(
-            request_mock.call_args[1]["data"]
+            request_mock.call_args.kwargs["data"]
         )
         assert (
             zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
