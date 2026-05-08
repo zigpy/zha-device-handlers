@@ -28,10 +28,8 @@ class RangeExtenderPowerConfiguration(DevelcoPowerConfiguration):
 
 
 # REXZB-111: expose battery percentage (calculated from battery_voltage)
-# and a diagnostic binary sensor that reports whether the device actually
-# has a battery. The binary sensor uses `battery_voltage` value: values of
-# 0 or 255 (and missing) mean "no battery" on many devices, otherwise a
-# battery is present.
+# and diagnostic binary sensors derived from `IasZone.zone_status` for
+# AC power state and battery-low status.
 (
     QuirkBuilder("frient A/S", "REXZB-111")
     .prevent_default_entity_creation(
