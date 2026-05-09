@@ -1385,9 +1385,14 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
         Commands 0x01-0x03 (set_{interference,detection,stay}_area) match
         Z2M's zigbee-herdsman-converters inovelli.ts definitions for the
         same cluster (setInterferenceArea / setDetectionArea / setStayArea).
-        Each command defines one of the device's four configurable areas,
-        identified by area_id (0-3), with min/max bounds in millimeters on
-        the x (width), y (depth), and z (height) axes.
+        Each command defines one of the device's four configurable areas.
+        The wire-level area_id is 0-indexed (0..3) per inovelli.ts, while the
+        corresponding report payloads (report_interference_area /
+        report_detection_area / report_stay_area in ClientCommandDefs) expose
+        the same areas as fields named area_1..area_4 to match Inovelli's
+        user-facing 1-indexed labeling. Mapping: area_id=0 -> area_1, ...,
+        area_id=3 -> area_4. Bounds are in millimeters on the x (width),
+        y (depth), and z (height) axes.
 
         Note: firmware v1.00 has a reported bug on set_stay_area where the
         x_min and x_max parameters are swapped and sign-inverted on write

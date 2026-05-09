@@ -114,15 +114,13 @@ def test_vzm32_mmwave_report_stay_area_roundtrip():
 def test_vzm32_mmwave_report_target_info_variable_length():
     """report_target_info (client 0x01) reads a list of 10-byte target structs."""
     report_target = InovelliVZM32SNMMWaveCluster.ClientCommandDefs.report_target_info.with_compiled_schema().schema
-    # The compiled schema wraps t.List[MMWaveTarget] in an AnonymousList class.
-    targets_type = next(f.type for f in report_target.fields if f.name == "targets")
-    targets = targets_type(
-        [
+    instance = report_target(
+        target_num=2,
+        targets=[
             MMWaveTarget(x=100, y=200, z=-50, dop=5, target_id=1),
             MMWaveTarget(x=-100, y=300, z=0, dop=-3, target_id=2),
-        ]
+        ],
     )
-    instance = report_target(target_num=2, targets=targets)
     raw = instance.serialize()
     # 1 byte target_num + 2 targets * 10 bytes
     assert len(raw) == 1 + 2 * 10
