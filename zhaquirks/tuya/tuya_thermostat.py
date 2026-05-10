@@ -178,7 +178,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
 # Supports most features, except the schedule function and temperature calibration.
 (
     TuyaQuirkBuilder("_TZE204_tagezcph", "TS0601")
-    .applies_to("_TZE204_tagezcph", "TS0601")
     # System mode (on/off) - DP 1
     .tuya_dp(
         dp_id=1,
