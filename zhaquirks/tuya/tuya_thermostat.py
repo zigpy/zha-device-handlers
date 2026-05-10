@@ -1,31 +1,22 @@
 """Tuya TS0601 Thermostat."""
 
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfTemperature,
+)
+from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, NumberDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.types import t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
-   from zhaquirks.builder import (
-       BinarySensorDeviceClass,
-       EntityType,
-       NumberDeviceClass,
-       SensorDeviceClass,
-       SensorStateClass,
-   )
-
-   from zigpy.quirks.v2.homeassistant import (
-       UnitOfElectricCurrent,
-       UnitOfElectricPotential,
-       UnitOfEnergy,
-       UnitOfPower,
-       UnitOfTemperature,
-   )
-
-   from zigpy.types import t
-   from zigpy.zcl import foundation
-   from zigpy.zcl.clusters.hvac import RunningState, Thermostat
-
-
-   # Tuya‑specific helpers
-   from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
-   from zhaquirks.tuya.builder import TuyaQuirkBuilder
-   from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
+# Tuya‑specific helpers
+from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
 
 class RunningMode(t.enum8):
@@ -98,15 +89,17 @@ class SensorModeV01(t.enum8):
     Floor = 0x01
     Both = 0x02
 
+
 # duplicate of existing SensorModeV01,
 # the values disagree with each other but are used for
 # _TZE204_tagezcph/TS0601 specifically.
 class SensorModeV02(t.enum8):
     """Tuya sensor mode V02 enum."""
 
-    IN = 0x00 # only internal
-    AL = 0x01 # both (all?)
-    OU = 0x02 # only floor
+    IN = 0x00  # only internal
+    AL = 0x01  # both (all?)
+    OU = 0x02  # only floor
+
 
 class BacklightMode(t.enum8):
     """Tuya backlight mode enum."""
@@ -332,7 +325,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="sensor",
         fallback_name="Sensor",
     )
-
     .tuya_switch(
         dp_id=39,
         attribute_name="child_lock",
@@ -345,7 +337,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="eco_mode",
         fallback_name="Eco mode",
     )
-
     .adds(TuyaThermostat)
     .skip_configuration()
     .add_to_registry()
