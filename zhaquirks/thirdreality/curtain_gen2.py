@@ -74,7 +74,7 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
         endpoint_id=1,
         min_value=0,
-        max_value=4000,
+        max_value=4100,
         step=1,
         translation_key="limit_position",
         fallback_name="Limit position",
