@@ -749,6 +749,21 @@ class TuyaThermostatBseed(TuyaThermostat):
         fallback_name="Floor temperature",
     )
     .adds(TuyaThermostatBseed)
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="pi_heating_demand",
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="setpoint_change_source",
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="timestamp",
+    )
     .skip_configuration()
     .add_to_registry()
 )
