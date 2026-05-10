@@ -98,17 +98,15 @@ class SensorModeV01(t.enum8):
     Floor = 0x01
     Both = 0x02
 
-
 # duplicate of existing SensorModeV01,
 # the values disagree with each other but are used for
 # _TZE204_tagezcph/TS0601 specifically.
 class SensorModeV02(t.enum8):
     """Tuya sensor mode V02 enum."""
 
-    IN = 0x00  # only internal
-    AL = 0x01  # both (all?)
-    OU = 0x02  # only floor
-
+    IN = 0x00 # only internal
+    AL = 0x01 # both (all?)
+    OU = 0x02 # only floor
 
 class BacklightMode(t.enum8):
     """Tuya backlight mode enum."""
@@ -188,6 +186,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
 # Supports most features, except the schedule function and temperature calibration.
 (
     TuyaQuirkBuilder("_TZE204_tagezcph", "TS0601")
+    .applies_to("_TZE204_tagezcph", "TS0601")
     # System mode (on/off) - DP 1
     .tuya_dp(
         dp_id=1,
@@ -246,7 +245,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         step=1.0,
         multiplier=0.1,
         translation_key="min_temperature",
-        fallback_name="Min temperature",
+        fallback_name="Minimum temperature",
     )
     .tuya_number(
         dp_id=19,
@@ -259,7 +258,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         step=1.0,
         multiplier=0.1,
         translation_key="max_temperature",
-        fallback_name="Max temperature",
+        fallback_name="Maximum temperature",
     )
     .tuya_number(
         dp_id=111,
@@ -333,6 +332,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="sensor",
         fallback_name="Sensor",
     )
+
     .tuya_switch(
         dp_id=39,
         attribute_name="child_lock",
@@ -345,6 +345,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="eco_mode",
         fallback_name="Eco mode",
     )
+
     .adds(TuyaThermostat)
     .skip_configuration()
     .add_to_registry()
