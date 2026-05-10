@@ -1,10 +1,6 @@
 """Tuya TS0601 Thermostat."""
 
-from zigpy.quirks.v2 import (
-    BinarySensorDeviceClass, 
-    EntityType,
-    NumberDeviceClass
-)
+from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, NumberDeviceClass
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -24,6 +20,7 @@ from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
 class RunningMode(t.enum8):
     """Tuya running mode enum."""
+
     Heat = 0x00
     Cool = 0x01
 
@@ -91,15 +88,17 @@ class SensorModeV01(t.enum8):
     Floor = 0x01
     Both = 0x02
 
+
 # duplicate of existing SensorModeV01,
 # the values disagree with each other but are used for
 # _TZE204_tagezcph/TS0601 specifically.
 class SensorModeV02(t.enum8):
     """Tuya sensor mode V02 enum."""
 
-    IN = 0x00 # only internal
-    AL = 0x01 # both (all?)
-    OU = 0x02 # only floor
+    IN = 0x00  # only internal
+    AL = 0x01  # both (all?)
+    OU = 0x02  # only floor
+
 
 class BacklightMode(t.enum8):
     """Tuya backlight mode enum."""
@@ -325,7 +324,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="sensor",
         fallback_name="Sensor",
     )
-
     .tuya_switch(
         dp_id=39,
         attribute_name="child_lock",
@@ -338,7 +336,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="eco_mode",
         fallback_name="Eco mode",
     )
-
     .adds(TuyaThermostat)
     .skip_configuration()
     .add_to_registry()
