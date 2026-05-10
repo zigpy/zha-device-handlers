@@ -1,6 +1,6 @@
 """Tuya TS0601 Thermostat."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
+from zigpy.quirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -708,6 +708,7 @@ class TuyaThermostatBseed(TuyaThermostat):
         type=t.int16s,
         min_value=-9,
         max_value=9,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
@@ -718,6 +719,7 @@ class TuyaThermostatBseed(TuyaThermostat):
         type=t.uint16_t,
         min_value=0,
         max_value=5,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="deadzone_temperature",
         fallback_name="Deadzone temperature",
@@ -730,6 +732,7 @@ class TuyaThermostatBseed(TuyaThermostat):
         min_value=10,
         max_value=70,
         step=1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="high_temperature_protection",
         fallback_name="High temperature protection",
