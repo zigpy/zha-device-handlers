@@ -1,14 +1,17 @@
 """Quirk for Aqara aqara.toilet.acn002."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any, Final
+
 from zigpy import types
+from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 
 TOILET_ATTR = 0xFFF1
 TOILET_ATTR_NAME = "toilet_attr"
@@ -16,28 +19,82 @@ LOGGER = logging.getLogger(__name__)
 
 # (Aqara_ID, ZCL_ID, Name, Type, Access)
 TOILET_REGISTRY = [
-    [0x04030055, 0, "lid_switch", types.uint8_t, "rwp"],          # 座盖开合 (翻开/合上)
-    [0x04040055, 0, "seat_switch", types.uint8_t, "rwp"],         # 座圈开合 (翻起/放下)
-    [0x04200055, 0, "night_light", types.uint8_t, "rwp"],         # 夜灯开关
-    [0x0E2F0055, 0, "seat_temp", types.uint32_t_be, "rwp"],       # 座圈加热 (常温、31度、33度、35度、37度、39度)
-    [0x0E300055, 0, "cleaning_mode", types.uint32_t_be, "rwp"],   # 清洗模式 (停止、臀洗、臀洗移动、妇洗、妇洗移动、儿童洗)
-    [0x0E340055, 0, "nozzle_position", types.uint32_t_be, "rwp"], # 清洗位置 (后、较后、中、较前、前)
-    [0x0E330055, 0, "water_pressure", types.uint32_t_be, "rwp"],  # 清洗强度 (弱、较弱、中、较强、强)
-    [0x0E320055, 0, "water_temp", types.uint32_t_be, "rwp"],      # 清洗水温 (常温、31度、33度、35度、37度、39度)
-    [0x0E350055, 0, "dryer_temp", types.uint32_t_be, "rwp"],      # 烘干风温 (关闭、常温、低档、中低档、中档、中高档、高档)
-    [0x0E270055, 0, "nozzle_clean", types.uint32_t_be, "rwp"],    # 喷嘴清洁 (关、自动、手动)
-    [0x04010055, 0, "stop_button", types.uint8_t, "w"],           # 停止
-    [0x04070055, 0, "flush_big", types.uint8_t, "w"],             # 大冲
-    [0x04020055, 0, "flush_small", types.uint8_t, "w"],           # 小冲
-    [0x04190055, 0, "foam_shield", types.uint8_t, "w"],           # 释放防溅泡沫
-    [0x03010055, 0, "occupancy_status", types.Bool, "rp"],        # 占用传感器 ID
+    [0x04030055, 0, "lid_switch", types.uint8_t, "rwp"],  # 座盖开合 (翻开/合上)
+    [0x04040055, 0, "seat_switch", types.uint8_t, "rwp"],  # 座圈开合 (翻起/放下)
+    [0x04200055, 0, "night_light", types.uint8_t, "rwp"],  # 夜灯开关
+    [
+        0x0E2F0055,
+        0,
+        "seat_temp",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 座圈加热 (常温、31度、33度、35度、37度、39度)
+    [
+        0x0E300055,
+        0,
+        "cleaning_mode",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 清洗模式 (停止、臀洗、臀洗移动、妇洗、妇洗移动、儿童洗)
+    [
+        0x0E340055,
+        0,
+        "nozzle_position",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 清洗位置 (后、较后、中、较前、前)
+    [
+        0x0E330055,
+        0,
+        "water_pressure",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 清洗强度 (弱、较弱、中、较强、强)
+    [
+        0x0E320055,
+        0,
+        "water_temp",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 清洗水温 (常温、31度、33度、35度、37度、39度)
+    [
+        0x0E350055,
+        0,
+        "dryer_temp",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 烘干风温 (关闭、常温、低档、中低档、中档、中高档、高档)
+    [
+        0x0E270055,
+        0,
+        "nozzle_clean",
+        types.uint32_t_be,
+        "rwp",
+    ],  # 喷嘴清洁 (关、自动、手动)
+    [0x04010055, 0, "stop_button", types.uint8_t, "w"],  # 停止
+    [0x04070055, 0, "flush_big", types.uint8_t, "w"],  # 大冲
+    [0x04020055, 0, "flush_small", types.uint8_t, "w"],  # 小冲
+    [0x04190055, 0, "foam_shield", types.uint8_t, "w"],  # 释放防溅泡沫
+    [0x03010055, 0, "occupancy_status", types.Bool, "rp"],  # 占用传感器 ID
     [0x041A0055, 0, "foot_sensor_switch", types.uint8_t, "rwp"],  # 脚部感应开关
     [0x041F0055, 0, "auto_flush_after_leave", types.uint8_t, "rwp"],  # 离座自动冲水开关
-    [0x04220055, 0, "beeper_switch", types.uint8_t, "rwp"],       # 设备提示音开关
-    [0x04240055, 0, "child_seat_mode", types.uint8_t, "rwp"],     # 使用儿童马桶圈开关
-    [0x04250055, 0, "pre_mist_switch", types.uint8_t, "rwp"],     # 落座自动润壁开关
-    [0x04420055, 0, "auto_foam_on_sit", types.uint8_t, "rwp"],    # 着座自动释放防溅泡沫开关
-    [0x04430055, 0, "auto_foam_on_leave", types.uint8_t, "rwp"],  # 离座自动释放防溅泡沫开关
+    [0x04220055, 0, "beeper_switch", types.uint8_t, "rwp"],  # 设备提示音开关
+    [0x04240055, 0, "child_seat_mode", types.uint8_t, "rwp"],  # 使用儿童马桶圈开关
+    [0x04250055, 0, "pre_mist_switch", types.uint8_t, "rwp"],  # 落座自动润壁开关
+    [
+        0x04420055,
+        0,
+        "auto_foam_on_sit",
+        types.uint8_t,
+        "rwp",
+    ],  # 着座自动释放防溅泡沫开关
+    [
+        0x04430055,
+        0,
+        "auto_foam_on_leave",
+        types.uint8_t,
+        "rwp",
+    ],  # 离座自动释放防溅泡沫开关
 ]
 
 AQARA_TO_ZCL: dict[int, int] = {}
@@ -113,10 +170,17 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
-        toilet_attr: Final = ZCLAttributeDef(id=TOILET_ATTR, type=types.LVBytes, manufacturer_code=0x115F)
-    
+
+        toilet_attr: Final = ZCLAttributeDef(
+            id=TOILET_ATTR, type=types.LVBytes, manufacturer_code=0x115F
+        )
+
     for _, zcl_id, attr_name, attr_type, attr_access in TOILET_REGISTRY:
-        setattr(AttributeDefs, attr_name, ZCLAttributeDef(id=zcl_id, type=attr_type, access=attr_access))
+        setattr(
+            AttributeDefs,
+            attr_name,
+            ZCLAttributeDef(id=zcl_id, type=attr_type, access=attr_access),
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -133,11 +197,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Handle attribute report/update event to parse toilet attribute."""
         if event.attribute_id == TOILET_ATTR:
             self._parse_toilet_attribute(event.value)
-        elif event.attribute_id == 0x00ff:
-            pass
-        elif event.attribute_id == 0x0007:
-            pass
-        elif event.attribute_id == 0x00f7:
+        elif (
+            event.attribute_id == 0x00FF
+            or event.attribute_id == 0x0007
+            or event.attribute_id == 0x00F7
+        ):
             pass
 
     def _update_toilet_attribute(self, attrid: int, value: Any) -> None:
@@ -225,7 +289,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 (
     QuirkBuilder("Aqara", "aqara.toilet.acn002")
     .applies_to(None, "aqara.toilet.acn002")
-    .applies_to(None, "lumi.sen_gas.hrcn01")  # The reason for adding lumi.sen_gas.hrcn01 is that the model number reported by a toilet is exactly this
+    .applies_to(
+        None, "lumi.sen_gas.hrcn01"
+    )  # The reason for adding lumi.sen_gas.hrcn01 is that the model number reported by a toilet is exactly this
     .friendly_name(
         manufacturer="Aqara",
         model="aqara.toilet.acn002",
@@ -261,17 +327,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.cluster_id,
         translation_key="auto_flush_after_leave",
         fallback_name="离座自动冲水",
-        off_value = 1,
-        on_value = 0,
+        off_value=1,
+        on_value=0,
     )
     .switch(
         OppleCluster.AttributeDefs.beeper_switch.name,
         OppleCluster.cluster_id,
         translation_key="beeper_switch",
         fallback_name="设备提示音",
-        off_value = 1,
-        on_value = 0,
-        
+        off_value=1,
+        on_value=0,
     )
     .switch(
         OppleCluster.AttributeDefs.child_seat_mode.name,
@@ -302,28 +367,28 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         1,
         OppleCluster.cluster_id,
         translation_key="stop_button",
-        fallback_name="停止"
+        fallback_name="停止",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.flush_big.name,
         1,
         OppleCluster.cluster_id,
         translation_key="flush_big",
-        fallback_name="大冲"
+        fallback_name="大冲",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.flush_small.name,
         1,
         OppleCluster.cluster_id,
         translation_key="flush_small",
-        fallback_name="小冲"
+        fallback_name="小冲",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.foam_shield.name,
         0,
         OppleCluster.cluster_id,
         translation_key="foam_shield",
-        fallback_name="释放防溅泡沫"
+        fallback_name="释放防溅泡沫",
     )
     .enum(
         OppleCluster.AttributeDefs.seat_temp.name,
