@@ -273,17 +273,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.cluster_id,
         translation_key="auto_flush_after_leave",
         fallback_name="Auto Flush After Leave",
-        off_value = 1,
-        on_value = 0,
+        off_value=1,
+        on_value=0,
     )
     .switch(
         OppleCluster.AttributeDefs.beeper_switch.name,
         OppleCluster.cluster_id,
         translation_key="beeper_switch",
         fallback_name="Beeper Switch",
-        off_value = 1,
-        on_value = 0,
-        
+        off_value=1,
+        on_value=0,
     )
     .switch(
         OppleCluster.AttributeDefs.child_seat_mode.name,
@@ -314,28 +313,28 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         1,
         OppleCluster.cluster_id,
         translation_key="stop_button",
-        fallback_name="Stop"
+        fallback_name="Stop",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.flush_big.name,
         1,
         OppleCluster.cluster_id,
         translation_key="flush_big",
-        fallback_name="Flush Big"
+        fallback_name="Flush Big",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.flush_small.name,
         1,
         OppleCluster.cluster_id,
         translation_key="flush_small",
-        fallback_name="Flush Small"
+        fallback_name="Flush Small",
     )
     .write_attr_button(
         OppleCluster.AttributeDefs.foam_shield.name,
         0,
         OppleCluster.cluster_id,
         translation_key="foam_shield",
-        fallback_name="Foam Shield"
+        fallback_name="Foam Shield",
     )
     .enum(
         OppleCluster.AttributeDefs.seat_temp.name,
