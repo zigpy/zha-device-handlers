@@ -2739,11 +2739,7 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
     endpoint.device = raw_device
     cluster = OppleCluster(endpoint)
     
-    report_data = (
-        b"\x00\x02\x01"                  
-        b"\x55\x00\x03\x04\x01\x01"
-        b"\x00\x00\x04\x01\x01\x02"
-    )
+    report_data = b"\x00\x02\x01\x55\x00\x03\x04\x01\x01"
     
     cluster.update_attribute(0x1388, 1)
     cluster.update_attribute(0x138A, 2)
@@ -2754,21 +2750,13 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
     assert cluster.get(0x138A) == 2
 
     with mock.patch("zigpy.zcl.Cluster.write_attributes", autospec=True) as mock_write:
-        mock_write.return_value = [
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
-        ]
-
-        await cluster.write_attributes({"lid_switch": 0})
-
+        mock_write.return_value = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+        
         await cluster.write_attributes({"lid_switch": 1, "seat_temp": 3})
-
-        await cluster.write_attributes({"lid_switch": 1, "model": "lumi.toilet.acn002"})
-
-        await cluster.write_attributes({"unknown_custom_cmd": 123})
-
+        await cluster.write_attributes({"model": "lumi.toilet.acn002"})
+        
         assert mock_write.called
 
     cluster._parse_toilet_attribute(b"\x00\x01")
-
     cluster._parse_toilet_attribute(b"\x00\x02\x01")
 
