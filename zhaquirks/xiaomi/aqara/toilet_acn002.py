@@ -1,14 +1,17 @@
 """Quirk for Aqara aqara.toilet.acn002."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any, Final
+
 from zigpy import types
+from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 
 TOILET_ATTR = 0xFFF1
 TOILET_ATTR_NAME = "toilet_attr"
@@ -113,10 +116,17 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
-        toilet_attr: Final = ZCLAttributeDef(id=TOILET_ATTR, type=types.LVBytes, manufacturer_code=0x115F)
-    
+
+        toilet_attr: Final = ZCLAttributeDef(
+            id=TOILET_ATTR, type=types.LVBytes, manufacturer_code=0x115F
+        )
+
     for _, zcl_id, attr_name, attr_type, attr_access in TOILET_REGISTRY:
-        setattr(AttributeDefs, attr_name, ZCLAttributeDef(id=zcl_id, type=attr_type, access=attr_access))
+        setattr(
+            AttributeDefs,
+            attr_name,
+            ZCLAttributeDef(id=zcl_id, type=attr_type, access=attr_access),
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -133,11 +143,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Handle attribute report/update event to parse toilet attribute."""
         if event.attribute_id == TOILET_ATTR:
             self._parse_toilet_attribute(event.value)
-        elif event.attribute_id == 0x00ff:
-            pass
-        elif event.attribute_id == 0x0007:
-            pass
-        elif event.attribute_id == 0x00f7:
+        elif (
+            event.attribute_id == 0x00FF
+            or event.attribute_id == 0x0007
+            or event.attribute_id == 0x00F7
+        ):
             pass
 
     def _update_toilet_attribute(self, attrid: int, value: Any) -> None:
@@ -225,7 +235,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 (
     QuirkBuilder("Aqara", "aqara.toilet.acn002")
     .applies_to(None, "aqara.toilet.acn002")
-    .applies_to(None, "lumi.sen_gas.hrcn01")  # The reason for adding lumi.sen_gas.hrcn01 is that the model number reported by a toilet is exactly this
+    .applies_to(
+        None, "lumi.sen_gas.hrcn01"
+    )  # The reason for adding lumi.sen_gas.hrcn01 is that the model number reported by a toilet is exactly this
     .friendly_name(
         manufacturer="Aqara",
         model="aqara.toilet.acn002",
