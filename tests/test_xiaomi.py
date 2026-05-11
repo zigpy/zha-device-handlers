@@ -2734,16 +2734,16 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
 
 async def test_aqara_toilet_acn002_full_coverage(raw_device):
     """Full coverage test for Aqara Toilet ACN002 OppleCluster."""
-    
+
     endpoint = mock.MagicMock()
     endpoint.device = raw_device
     cluster = OppleCluster(endpoint)
-    
+
     report_data = (
-        b"\x00\x02\x01"                  # Header: protocol 0, msg_type 2, seq 1
-        b"\x04\x03\x00\x55\x01\x01"      # attr 1
-        b"\x01\x04\x00\x00\x01\x02"      # attr 2
-        b"\xFF\xFF\xFF\xFF\x01\x00"      # unknown attr
+        b"\x00\x02\x01"  # Header: protocol 0, msg_type 2, seq 1
+        b"\x04\x03\x00\x55\x01\x01"  # attr 1
+        b"\x01\x04\x00\x00\x01\x02"  # attr 2
+        b"\xff\xff\xff\xff\x01\x00"  # unknown attr
     )
     cluster._parse_toilet_attribute(report_data)
 
@@ -2756,22 +2756,15 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
         ]
 
         await cluster.write_attributes({"lid_switch": 0})
-        
-        await cluster.write_attributes({
-            "lid_switch": 1,
-            "seat_temp": 3
-        })
-        
-        await cluster.write_attributes({
-            "lid_switch": 1,
-            "model": "lumi.toilet.acn002" 
-        })
-        
+
+        await cluster.write_attributes({"lid_switch": 1, "seat_temp": 3})
+
+        await cluster.write_attributes({"lid_switch": 1, "model": "lumi.toilet.acn002"})
+
         await cluster.write_attributes({"unknown_custom_cmd": 123})
 
         assert mock_write.called
 
-    cluster._parse_toilet_attribute(b"\x00\x01") 
-    
-    cluster._parse_toilet_attribute(b"\x00\x02\x01")
+    cluster._parse_toilet_attribute(b"\x00\x01")
 
+    cluster._parse_toilet_attribute(b"\x00\x02\x01")
