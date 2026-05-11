@@ -112,10 +112,10 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+from zhaquirks.xiaomi.aqara.toilet_acn002 import OppleCluster
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
-from zhaquirks.xiaomi.aqara.toilet_acn002 import OppleCluster
 
 zhaquirks.setup()
 
@@ -2746,13 +2746,15 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
         b"\xFF\xFF\xFF\xFF\x01\x00"      # unknown attr
     )
     cluster._parse_toilet_attribute(report_data)
-    
+
     assert cluster.get(0x1388) == 1
     assert cluster.get(0x138A) == 2
 
     with mock.patch("zigpy.zcl.Cluster.write_attributes", autospec=True) as mock_write:
-        mock_write.return_value = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-        
+        mock_write.return_value = [
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+
         await cluster.write_attributes({"lid_switch": 0})
         
         await cluster.write_attributes({
