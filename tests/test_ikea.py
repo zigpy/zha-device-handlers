@@ -334,9 +334,7 @@ async def test_bilresa_direction_tracking(
         (0, None),  # unrecognised param — no double-press event emitted
     ],
 )
-async def test_bilresa_double_press(
-    zigpy_device_from_v2_quirk, param1, expected_event
-):
+async def test_bilresa_double_press(zigpy_device_from_v2_quirk, param1, expected_event):
     """Test IkeaBilresaScenesCluster emits the correct event on double-press."""
     device = zigpy_device_from_v2_quirk(
         IKEA,
