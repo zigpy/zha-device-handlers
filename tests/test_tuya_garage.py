@@ -50,7 +50,9 @@ zhaquirks.setup()
         ),  # Set 1, dp 1
     ],
 )
-async def test_handle_get_data(zigpy_device_from_v2_quirk, manuf, model, msg, attr, value):
+async def test_handle_get_data(
+    zigpy_device_from_v2_quirk, manuf, model, msg, attr, value
+):
     """Test handle_get_data for multiple attributes."""
 
     quirked = zigpy_device_from_v2_quirk(manuf, model)
