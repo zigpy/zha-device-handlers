@@ -157,8 +157,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Handle attribute report/update event to parse toilet attribute."""
         if event.attribute_id == TOILET_ATTR:
             self._parse_toilet_attribute(event.value)
-        elif event.attribute_id in (0x00FF, 0x0007, 0x00F7):
-            pass
 
     def _update_toilet_attribute(self, attrid: int, value: Any) -> None:
         zcl_attr_def = self.attributes.get(AQARA_TO_ZCL[attrid])
