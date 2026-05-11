@@ -2734,7 +2734,7 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
 
 async def test_aqara_toilet_acn002_full_coverage(raw_device):
     """Full coverage test for Aqara Toilet ACN002 OppleCluster."""
-    
+
     endpoint = mock.MagicMock()
     endpoint.device = raw_device
     cluster = OppleCluster(endpoint)
@@ -2743,9 +2743,9 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
     
     cluster.update_attribute(0x1388, 1)
     cluster.update_attribute(0x138A, 2)
-    
+
     cluster._parse_toilet_attribute(report_data)
-    
+
     assert cluster.get(0x1388) == 1
     assert cluster.get(0x138A) == 2
 
@@ -2759,4 +2759,3 @@ async def test_aqara_toilet_acn002_full_coverage(raw_device):
 
     cluster._parse_toilet_attribute(b"\x00\x01")
     cluster._parse_toilet_attribute(b"\x00\x02\x01")
-
