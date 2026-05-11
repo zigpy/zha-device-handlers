@@ -53,6 +53,30 @@ class ScenesCluster(CustomCluster, Scenes):
         )
 
 
+class IkeaBilresaScenesCluster(ScenesCluster):
+    """Scenes cluster for BILRESA: emits distinct events for double-press up/down.
+
+    Replaces PARAMS-based matching (broken in ZHA's device trigger layer) with
+    named synthetic commands that match the no-params pattern used by long_release.
+    """
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Emit double_press_dim_up or double_press_dim_down on press command."""
+        if hdr.command_id == 0x0007 and args:  # press
+            param1 = args[0]
+            if param1 == 256:
+                self.listener_event(ZHA_SEND_EVENT, "double_press_dim_up", [])
+            elif param1 == 257:
+                self.listener_event(ZHA_SEND_EVENT, "double_press_dim_down", [])
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+
+
 class IkeaBilresaLevelControl(CustomCluster, LevelControl):
     """Custom LevelControl cluster for IKEA remotes to track direction."""
 
@@ -79,6 +103,8 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
         ):
             move_mode = args[0]
             self._last_move_direction = move_mode
+            event = "move_up_press" if move_mode == 0 else "move_down_press"
+            self.listener_event(ZHA_SEND_EVENT, event, [])
         elif (
             hdr.command_id
             in (
