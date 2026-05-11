@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from zigpy.profiles import zha
+from zigpy.device import ResponseKey
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 SHELLY_MANUFACTURER_CODE = 0x1490
@@ -96,12 +97,21 @@ class ShellyWiFiSetupCluster(CustomCluster):
 class ShellyCustomProfileDevice(CustomDeviceV2):
     """Handle Shelly responses sent on their custom endpoint profile."""
 
-    def custom_profile_packet_received(self, packet: t.ZigbeePacket) -> None:
-        """Treat Shelly's custom profile packets as standard ZCL packets."""
+    def _parse_packet_header(
+        self, packet: t.ZigbeePacket
+    ) -> tuple[foundation.ZCLHeader, ResponseKey] | tuple[None, None]:
+        """Parse Shelly custom-profile packets as ZCL for normal zigpy matching."""
         if packet.profile_id != SHELLY_WIFI_SETUP_PROFILE_ID:
-            return super().custom_profile_packet_received(packet)
+            return super()._parse_packet_header(packet)
 
-        self.packet_received(packet.replace(profile_id=zha.PROFILE_ID))
+        hdr, _ = foundation.ZCLHeader.deserialize(packet.data.serialize())
+        rsp_key = ResponseKey(
+            endpoint_id=packet.src_ep,
+            cluster_id=packet.cluster_id,
+            direction=hdr.frame_control.direction,
+            tsn=hdr.tsn,
+        )
+        return hdr, rsp_key
 
 
 (

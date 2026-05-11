@@ -3,8 +3,10 @@
 import asyncio
 
 import pytest
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 from zhaquirks.shelly.wifi import (
@@ -122,3 +124,42 @@ def test_shelly_wifi_custom_profile_packet_processed(
     asyncio.run(deliver_packet())
 
     assert cluster.get("status") == "got ip"
+
+
+@pytest.mark.parametrize("model", ["1PM", "2PM"])
+def test_shelly_wifi_standard_profile_packet_delegated(
+    zigpy_device_from_v2_quirk, model
+) -> None:
+    """Ensure standard ZHA profile packets fall through to normal zigpy parsing."""
+
+    quirked = zigpy_device_from_v2_quirk(
+        "Shelly",
+        model,
+        endpoint_ids=[1, SHELLY_WIFI_SETUP_ENDPOINT_ID],
+        cluster_ids={
+            SHELLY_WIFI_SETUP_ENDPOINT_ID: {
+                SHELLY_WIFI_SETUP_CLUSTER_ID: ClusterType.Server,
+            }
+        },
+    )
+
+    # Standard ZHA profile packet should delegate to super()
+    zha_packet = t.ZigbeePacket(
+        profile_id=zha.PROFILE_ID,
+        cluster_id=Basic.cluster_id,
+        src_ep=1,
+        dst_ep=1,
+        data=t.SerializableBytes(
+            _attribute_report_data(
+                Basic.AttributeDefs.model,
+                t.CharacterString("1PM"),
+            )
+        ),
+    )
+
+    hdr, rsp_key = quirked._parse_packet_header(zha_packet)
+
+    assert hdr is not None
+    assert rsp_key is not None
+    assert rsp_key.endpoint_id == 1
+    assert rsp_key.cluster_id == Basic.cluster_id
