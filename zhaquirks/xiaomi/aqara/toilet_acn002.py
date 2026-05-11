@@ -53,6 +53,7 @@ for item in TOILET_REGISTRY:
 
 
 class SeatTemp(types.enum32_be):
+    """Seat temperature setting."""
     Off = 0
     Temp_31C = 1
     Temp_33C = 2
@@ -62,6 +63,7 @@ class SeatTemp(types.enum32_be):
 
 
 class CleaningMode(types.enum32_be):
+    """Cleaning mode."""
     Stop = 0
     Rear = 1
     Rear_Moving = 2
@@ -71,6 +73,7 @@ class CleaningMode(types.enum32_be):
 
 
 class NozzlePosition(types.enum32_be):
+    """Nozzle position."""
     Back = 0
     Slightly_Back = 1
     Middle = 2
@@ -79,6 +82,7 @@ class NozzlePosition(types.enum32_be):
 
 
 class WaterPressure(types.enum32_be):
+    """Water pressure."""
     Weak = 0
     Slightly_Weak = 1
     Middle = 2
@@ -87,6 +91,7 @@ class WaterPressure(types.enum32_be):
 
 
 class WaterTemp(types.enum32_be):
+    """Water temperature."""
     Off = 0
     Temp_31C = 1
     Temp_33C = 2
@@ -96,6 +101,7 @@ class WaterTemp(types.enum32_be):
 
 
 class DryerTemp(types.enum32_be):
+    """Dryer temperature."""
     Off = 0
     Normal = 1
     Low = 2
@@ -106,6 +112,7 @@ class DryerTemp(types.enum32_be):
 
 
 class NozzleClean(types.enum32_be):
+    """Nozzle cleaning mode."""
     Off = 0
     Auto = 1
     Manual = 2
@@ -143,11 +150,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Handle attribute report/update event to parse toilet attribute."""
         if event.attribute_id == TOILET_ATTR:
             self._parse_toilet_attribute(event.value)
-        elif (
-            event.attribute_id == 0x00FF
-            or event.attribute_id == 0x0007
-            or event.attribute_id == 0x00F7
-        ):
+        elif event.attribute_id in (0x00FF, 0x0007, 0x00F7):
             pass
 
     def _update_toilet_attribute(self, attrid: int, value: Any) -> None:
