@@ -54,6 +54,7 @@ for item in TOILET_REGISTRY:
 
 class SeatTemp(types.enum32_be):
     """Seat temperature setting."""
+
     Off = 0
     Temp_31C = 1
     Temp_33C = 2
@@ -64,6 +65,7 @@ class SeatTemp(types.enum32_be):
 
 class CleaningMode(types.enum32_be):
     """Cleaning mode."""
+
     Stop = 0
     Rear = 1
     Rear_Moving = 2
@@ -74,6 +76,7 @@ class CleaningMode(types.enum32_be):
 
 class NozzlePosition(types.enum32_be):
     """Nozzle position."""
+
     Back = 0
     Slightly_Back = 1
     Middle = 2
@@ -83,6 +86,7 @@ class NozzlePosition(types.enum32_be):
 
 class WaterPressure(types.enum32_be):
     """Water pressure."""
+
     Weak = 0
     Slightly_Weak = 1
     Middle = 2
@@ -92,6 +96,7 @@ class WaterPressure(types.enum32_be):
 
 class WaterTemp(types.enum32_be):
     """Water temperature."""
+
     Off = 0
     Temp_31C = 1
     Temp_33C = 2
@@ -102,6 +107,7 @@ class WaterTemp(types.enum32_be):
 
 class DryerTemp(types.enum32_be):
     """Dryer temperature."""
+
     Off = 0
     Normal = 1
     Low = 2
@@ -113,6 +119,7 @@ class DryerTemp(types.enum32_be):
 
 class NozzleClean(types.enum32_be):
     """Nozzle cleaning mode."""
+
     Off = 0
     Auto = 1
     Manual = 2
