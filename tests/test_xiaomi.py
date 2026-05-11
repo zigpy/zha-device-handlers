@@ -112,10 +112,10 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+from zhaquirks.xiaomi.aqara.toilet_acn002 import OppleCluster
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
-from zhaquirks.xiaomi.aqara.toilet_acn002 import OppleCluster
 
 zhaquirks.setup()
 
@@ -2734,25 +2734,26 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
 
 async def test_aqara_toilet_acn002_opple_cluster(raw_device):
     """Test OppleCluster parsing and writing logic for Aqara Toilet ACN002."""
-    
+
     endpoint = mock.MagicMock()
     endpoint.device = raw_device
     cluster = OppleCluster(endpoint)
-    
+
     report_data = b"\x00\x02\x01" + b"\x04\x03\x00\x55" + b"\x01\x01"
-    
+
     cluster._parse_toilet_attribute(report_data)
-    
+
     assert cluster.get(0x1388) == 1
 
     with mock.patch("zigpy.zcl.Cluster.write_attributes", autospec=True) as mock_write:
-        mock_write.return_value = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-        
+        mock_write.return_value = [
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+
         await cluster.write_attributes({"lid_switch": 0})
-        
+
         args, kwargs = mock_write.call_args
         written_attrs = args[1]
-        
+
         assert "toilet_attr" in written_attrs
         assert b"\x04\x03\x00\x55" in written_attrs["toilet_attr"]
-
