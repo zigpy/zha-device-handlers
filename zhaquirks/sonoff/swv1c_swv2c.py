@@ -2,31 +2,33 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
-    QuirkBuilder, 
+    QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,  # Sensor device class
-    SensorStateClass    # Sensor state class (for line charts)
+    SensorStateClass,  # Sensor state class (for line charts)
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+
 # Import unit constants (duration/volume)
 from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ValveState(t.enum8):
     """Water valve state (8-bit value, bit-defined)."""
+
     # Basic states (single bit)
-    Normal = 0                    # 000 (no abnormal condition)
-    Water_Shortage = 1 << 0       # 001 (bit0: water shortage)
-    Water_Leakage = 1 << 1        # 010 (bit1: water leakage)
-    Anti_Frost_Alarm = 1 << 2     # 100 (bit2: anti-frost alarm)
+    Normal = 0  # 000 (no abnormal condition)
+    Water_Shortage = 1 << 0  # 001 (bit0: water shortage)
+    Water_Leakage = 1 << 1  # 010 (bit1: water leakage)
+    Anti_Frost_Alarm = 1 << 2  # 100 (bit2: anti-frost alarm)
     Water_Shortage_Channel_2 = 1 << 4  # bit4: channel 2 water shortage
     # Combined states (multiple bits triggered at the same time)
     Water_Shortage_And_Leakage = Water_Shortage | Water_Leakage  # 011
     Water_Shortage_And_Frost = Water_Shortage | Anti_Frost_Alarm  # 101
-    Water_Leakage_And_Frost = Water_Leakage | Anti_Frost_Alarm    # 110
-    All_Alarms = Water_Shortage | Water_Leakage | Anti_Frost_Alarm # 111
+    Water_Leakage_And_Frost = Water_Leakage | Anti_Frost_Alarm  # 110
+    All_Alarms = Water_Shortage | Water_Leakage | Anti_Frost_Alarm  # 111
 
 
 class CustomSonoffCluster(CustomCluster):
@@ -60,7 +62,7 @@ class CustomSonoffCluster(CustomCluster):
     QuirkBuilder("SONOFF", "SWV-ZFU")
     .also_applies_to("SONOFF", "SWV-ZFE")
     .replaces(CustomSonoffCluster)
-     # Water leak sensor (bit1)
+    # Water leak sensor (bit1)
     .binary_sensor(
         CustomSonoffCluster.AttributeDefs.water_valve_state.name,
         CustomSonoffCluster.cluster_id,
@@ -124,7 +126,9 @@ class CustomSonoffCluster(CustomCluster):
     .also_applies_to("SONOFF", "SWV-ZF2U")
     .also_applies_to("SONOFF", "SWV-ZF2E")
     .replaces(CustomSonoffCluster)
-    .replaces(CustomSonoffCluster, endpoint_id=2)   # Endpoint 2 also uses the custom cluster
+    .replaces(
+        CustomSonoffCluster, endpoint_id=2
+    )  # Endpoint 2 also uses the custom cluster
     # Water leak sensor (bit1)
     .binary_sensor(
         CustomSonoffCluster.AttributeDefs.water_valve_state.name,
@@ -200,13 +204,13 @@ class CustomSonoffCluster(CustomCluster):
     QuirkBuilder("SONOFF", "SWV-ZNU")
     .also_applies_to("SONOFF", "SWV-ZNE")
     .replaces(CustomSonoffCluster)
-        # Add water usage duration sensor
+    # Add water usage duration sensor
     .sensor(
         attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
         cluster_id=CustomSonoffCluster.cluster_id,
         device_class=SensorDeviceClass.DURATION,  # Duration sensor
-        state_class=SensorStateClass.MEASUREMENT, # Key: measurement value, supports line charts
-        unit=UnitOfTime.MINUTES,                  # Unit: minutes
+        state_class=SensorStateClass.MEASUREMENT,  # Key: measurement value, supports line charts
+        unit=UnitOfTime.MINUTES,  # Unit: minutes
         unique_id_suffix="water_usage_duration",
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=1
