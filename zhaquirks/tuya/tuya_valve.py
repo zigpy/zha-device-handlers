@@ -134,7 +134,7 @@ class TuyaValveStatus(t.enum8):
         type=t.uint32_t,
         translation_key="target_valve_position",
         fallback_name="Target valve position",
-    ) #target valve position in percentage, 0-100. step 10%
+    )  # target valve position in percentage, 0-100. step 10%
     .tuya_number(
         dp_id=102,
         attribute_name="valve_current_position",
@@ -145,7 +145,7 @@ class TuyaValveStatus(t.enum8):
         type=t.uint32_t,
         translation_key="current_valve_position",
         fallback_name="Current valve position",
-    ) #current valve position in percentage, 0-100. step 10%
+    )  # current valve position in percentage, 0-100. step 10%
     .skip_configuration()
     .add_to_registry()
 )
