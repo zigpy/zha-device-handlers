@@ -116,6 +116,40 @@ class TuyaValveStatus(t.enum8):
     .add_to_registry()
 )
 
+(
+    TuyaQuirkBuilder("_TZE200_wt9agwf3", "TS0601")
+    .tuya_switch(
+        dp_id=1,
+        translation_key="valve_on_off",
+        entity_type=EntityType.STANDARD,
+        fallback_name="Valve",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="valve_position",
+        min_value=0,
+        max_value=100,
+        unit=PERCENTAGE,
+        step=10,
+        type=t.uint32_t,
+        translation_key="target_valve_position",
+        fallback_name="Target valve position",
+    ) #target valve position in percentage, 0-100. step 10%
+    .tuya_number(
+        dp_id=102,
+        attribute_name="valve_current_position",
+        min_value=0,
+        max_value=100,
+        unit=PERCENTAGE,
+        step=10,
+        type=t.uint32_t,
+        translation_key="current_valve_position",
+        fallback_name="Current valve position",
+    ) #current valve position in percentage, 0-100. step 10%
+    .skip_configuration()
+    .add_to_registry()
+)
+
 
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
