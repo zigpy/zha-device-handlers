@@ -20,6 +20,7 @@ class ExternalProbeTempCluster(TuyaLocalCluster, TemperatureMeasurement):
     """Virtual cluster for the external temperature probe on DP 5."""
 
     def __init__(self, *args, **kwargs):
+        """Init and inject initial state to avoid unsupported attribute error."""
         super().__init__(*args, **kwargs)
         # Söödame andurile kohe algväärtuse 0, et ZHA ei märgiks seda "unsupported" (toetamata) anduriks!
         self._update_attribute(self.attributes_by_name["measured_value"].id, 0)
