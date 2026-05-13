@@ -106,28 +106,31 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
         transition timer at 5 s (see read_attributes).
         """
         if command_id == WindowCovering.ServerCommandDefs.up_open.id:
-            self._is_moving = True
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {AnalogOutput.AttributeDefs.present_value.name: 100.0}
             )
+            if res[0].status == foundation.Status.SUCCESS:
+                self._is_moving = True
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
 
         if command_id == WindowCovering.ServerCommandDefs.down_close.id:
-            self._is_moving = True
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {AnalogOutput.AttributeDefs.present_value.name: 0.0}
             )
+            if res[0].status == foundation.Status.SUCCESS:
+                self._is_moving = True
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
 
         if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
-            self._is_moving = True
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {AnalogOutput.AttributeDefs.present_value.name: float(100 - args[0])}
             )
+            if res[0].status == foundation.Status.SUCCESS:
+                self._is_moving = True
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
@@ -141,9 +144,10 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
                 tsn=tsn,
                 **kwargs,
             )
-            # Clear only after the stop is acknowledged: a failed send leaves
-            # the curtain moving and reads should stay suppressed.
-            self._is_moving = False
+            # Only clear when the stop actually succeeded: a NACK'd or failed
+            # stop leaves the curtain moving and reads should stay suppressed.
+            if getattr(result, "status", None) == foundation.Status.SUCCESS:
+                self._is_moving = False
             return result
 
         return foundation.GENERAL_COMMANDS[

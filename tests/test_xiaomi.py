@@ -2596,6 +2596,64 @@ async def test_aqara_aq2_roller_command_stop(zigpy_device_from_v2_quirk):
         )
 
 
+async def test_aqara_aq2_roller_failed_command_leaves_flag_clear(
+    zigpy_device_from_v2_quirk,
+):
+    """A failed movement-command write must not leave _is_moving set."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.FAILURE,
+                        attrid=AnalogOutput.AttributeDefs.present_value.id,
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_write:
+        await window_covering_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 50
+        )
+        assert window_covering_cluster._is_moving is False
+
+
+async def test_aqara_aq2_roller_failed_stop_keeps_flag_set(zigpy_device_from_v2_quirk):
+    """A NACK'd stop must leave _is_moving set so reads remain suppressed."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+    window_covering_cluster = device.endpoints[1].window_covering
+
+    patch_request = mock.patch.object(
+        window_covering_cluster,
+        "request",
+        mock.AsyncMock(
+            return_value=foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(
+                command_id=WindowCovering.ServerCommandDefs.stop.id,
+                status=foundation.Status.FAILURE,
+            )
+        ),
+    )
+
+    with patch_request:
+        # simulate a curtain that is currently moving
+        window_covering_cluster._is_moving = True
+
+        await window_covering_cluster.stop()
+
+        # stop NACK'd → curtain is still moving, flag must stay set
+        assert window_covering_cluster._is_moving is True
+
+
 @pytest.mark.parametrize(
     "read_status, expected_updates",
     [
