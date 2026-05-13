@@ -112,10 +112,16 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
-from zhaquirks.xiaomi.aqara.toilet_acn002 import OppleCluster
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
+from zhaquirks.xiaomi.aqara.toilet_acn002 import (
+    OppleCluster,
+    SeatTemp,
+    CleaningMode,
+    TOILET_ATTR,
+    AQARA_TO_ZCL,
+)
 
 zhaquirks.setup()
 
@@ -2731,33 +2737,65 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
 
+WRITE_TEST_DATA = [
+    ("lid_switch", 1, b"\x00\x02\x01\x04\x03\x00U\x01\x01"),
+    ("night_light", 0, b"\x00\x02\x01\x04\x20\x00U\x01\x00"),
+    ("seat_temp", SeatTemp.Temp_35C, b"\x00\x02\x01\x0e/\x00U\x04\x00\x00\x00\x03"),
+    ("cleaning_mode", CleaningMode.Female, b"\x00\x02\x01\x0e0\x00U\x04\x00\x00\x00\x03"),
+    ("flush_big", 1, b"\x00\x02\x01\x04\x07\x00U\x01\x01"),
+]
+@pytest.mark.parametrize("attribute, value, expected_bytes", WRITE_TEST_DATA)
+async def test_aqara_toilet_write_attrs(
+    zigpy_device_from_v2_quirk, attribute, value, expected_bytes
+):
+    """Test Aqara toilet attr writing."""
+    
+    device = zigpy_device_from_v2_quirk("Aqara", "aqara.toilet.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    )
+    
+    opple_cluster._send_sequence = 0 
 
-async def test_aqara_toilet_acn002_full_coverage(raw_device):
-    """Full coverage test for Aqara Toilet ACN002 OppleCluster."""
+    await opple_cluster.write_attributes({attribute: value})
 
-    endpoint = mock.MagicMock()
-    endpoint.device = raw_device
-    cluster = OppleCluster(endpoint)
+    assert opple_cluster._write_attributes.called
+    call_args = opple_cluster._write_attributes.call_args
+    
+    written_attr = call_args.args[0][0]
+    assert written_attr.attrid == TOILET_ATTR
+    assert written_attr.value.value[3:] == expected_bytes[3:]
 
-    report_data = b"\x00\x02\x01\x55\x00\x03\x04\x01\x01"
+REPORT_TEST_DATA = [
+    (b"\x1c_\x11\x01\n\xf1\xffA\t\x00\x02\x01\x04\x03\x00U\x01\x01", 0x1388, 1),
+    (b"\x1c_\x11\x02\n\xf1\xffA\x0c\x00\x02\x01\x0e\x2f\x00U\x04\x00\x00\x00\x04", 0x138B, 4),
+    (b"\x1c_\x11\x03\n\xf1\xffA\t\x00\x02\x01\x03\x01\x00U\x01\x01", 0x1396, True),
+]
+@pytest.mark.parametrize("bytes_received, expected_zcl_id, expected_value", REPORT_TEST_DATA)
+async def test_aqara_toilet_attr_reports(
+    zigpy_device_from_v2_quirk, bytes_received, expected_zcl_id, expected_value
+):
+    device = zigpy_device_from_v2_quirk("Aqara", "aqara.toilet.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
 
-    cluster.update_attribute(0x1388, 1)
-    cluster.update_attribute(0x138A, 2)
+    updates = []
+    class ClusterListener:
+        def attribute_updated(self, attr_id, value, *args):
+            updates.append((attr_id, value))
+        def __getattr__(self, name):
+            return lambda *args, **kwargs: None
 
-    cluster._parse_toilet_attribute(report_data)
+    opple_cluster.add_listener(ClusterListener())
 
-    assert cluster.get(0x1388) == 1
-    assert cluster.get(0x138A) == 2
+    hdr, data = opple_cluster.deserialize(bytes_received)
+    opple_cluster.handle_message(hdr, data)
 
-    with mock.patch("zigpy.zcl.Cluster.write_attributes", autospec=True) as mock_write:
-        mock_write.return_value = [
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
-        ]
-
-        await cluster.write_attributes({"lid_switch": 1, "seat_temp": 3})
-        await cluster.write_attributes({"model": "lumi.toilet.acn002"})
-
-        assert mock_write.called
-
-    cluster._parse_toilet_attribute(b"\x00\x01")
-    cluster._parse_toilet_attribute(b"\x00\x02\x01")
+    await asyncio.sleep(0)
+    assert any(
+        upd[0] == expected_zcl_id and (
+            upd[1] == expected_value or
+            (isinstance(upd[1], int) and int(upd[1]) == int(expected_value))
+        )
+        for upd in updates
+    ), f"Failed to find update. Received: {updates}"
