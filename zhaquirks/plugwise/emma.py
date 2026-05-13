@@ -43,7 +43,7 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig as EntityReportingConf
 from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
@@ -360,6 +360,25 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         attribute_initialized_from_cache=False,
         translation_key="product_url",
         fallback_name="Product URL",
+    )
+    # ── Identify: replace the auto Button (sends the ZCL Identify command)
+    # with a write-attribute button. Emma firmware reacts to writes on the
+    # identify_time attribute (0x0000) and ignores the Identify command, so
+    # pressing the standard button does nothing. This pair hides the default
+    # button and adds one that writes 10 seconds into identify_time, which the
+    # firmware reads back and uses to drive the e-paper identify indicator.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Identify.cluster_id,
+        function=lambda entity: type(entity).__name__ == "IdentifyButton",
+    )
+    .write_attr_button(
+        attribute_name=Identify.AttributeDefs.identify_time.name,
+        attribute_value=10,
+        cluster_id=Identify.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="identify",
+        fallback_name="Identify",
     )
     # ── Enable RSSI / LQI by default (auto-discovered, normally disabled) ─
     .change_entity_metadata(
