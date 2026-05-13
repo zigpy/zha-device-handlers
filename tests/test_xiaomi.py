@@ -2788,6 +2788,7 @@ REPORT_TEST_DATA = [
 async def test_aqara_toilet_attr_reports(
     zigpy_device_from_v2_quirk, bytes_received, expected_zcl_id, expected_value
 ):
+    """Test that Aqara toilet attribute reports are correctly parsed and dispatched."""
     device = zigpy_device_from_v2_quirk("Aqara", "aqara.toilet.acn002")
     opple_cluster = device.endpoints[1].opple_cluster
 
