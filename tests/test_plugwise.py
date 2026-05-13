@@ -376,3 +376,29 @@ async def test_humidity_forces_exact_intervals(zigpy_device_from_v2_quirk):
         assert sent_records[0].min_interval == 1
         assert sent_records[0].max_interval == 870
         assert sent_records[0].reportable_change == 100  # in range 10..300
+
+
+async def test_humidity_passes_through_non_measured_value(zigpy_device_from_v2_quirk):
+    """Verify EmmaHumidityCluster does not rewrite other attributes' reporting."""
+    device = zigpy_device_from_v2_quirk(manufacturer="Plugwise", model="170-01")
+    cluster = device.endpoints[1].humidity
+    tolerance_attr_id = 0x0003  # RelativeHumidity.AttributeDefs.tolerance.id
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (
+            [
+                foundation.ConfigureReportingResponseRecord(
+                    status=foundation.Status.SUCCESS,
+                    direction=foundation.ReportingDirection.SendReports,
+                    attrid=tolerance_attr_id,
+                )
+            ],
+        )
+        await cluster.configure_reporting(tolerance_attr_id, 30, 900, 5)
+
+        sent_records = request_mock.call_args.args[3]
+        assert sent_records[0].attrid == tolerance_attr_id
+        assert sent_records[0].min_interval == 30
+        assert sent_records[0].max_interval == 900
+        assert sent_records[0].reportable_change == 5
