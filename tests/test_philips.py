@@ -899,7 +899,7 @@ async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     # SHORT_PRESS, one HOLD, one LONG_RELEASE.
     assert listener.zha_send_event.call_count == 3
 
-    # one for each frame received, except for the one we balckhole, so 4 - 1
+    # one for each frame received, except for the one we blackhole, so 4 - 1
     assert listener.cluster_command.call_count == 3
 
 
