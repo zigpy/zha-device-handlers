@@ -680,6 +680,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+        dimming_algorithm = ZCLAttributeDef(
+            id=0x001B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         button_delay = ZCLAttributeDef(
             id=0x0032,
             type=t.uint8_t,
@@ -880,6 +885,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+        aux_detection_level = ZCLAttributeDef(
+            id=0x007C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         binding_off_to_on_sync_level = ZCLAttributeDef(
             id=0x007D,
             type=t.Bool,
@@ -907,6 +917,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         led_color_for_bound_control = ZCLAttributeDef(
             id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dumb_detection_level = ZCLAttributeDef(
+            id=0x00A5,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
