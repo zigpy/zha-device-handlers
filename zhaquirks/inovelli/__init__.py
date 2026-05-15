@@ -146,12 +146,12 @@ class InovelliCluster(CustomCluster):
         )
         power_type = ZCLAttributeDef(
             id=0x0015,
-            type=t.uint8_t,
+            type=t.Bool,
             is_manufacturer_specific=True,
         )
         internal_temp_monitor = ZCLAttributeDef(
             id=0x0020,
-            type=t.uint8_t,
+            type=t.int8s,
             is_manufacturer_specific=True,
         )
         overheated = ZCLAttributeDef(
@@ -317,7 +317,7 @@ class InovelliVZM30SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -647,7 +647,7 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -677,6 +677,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         leading_or_trailing_edge = ZCLAttributeDef(
             id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_algorithm = ZCLAttributeDef(
+            id=0x001B,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -880,6 +885,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+        aux_detection_level = ZCLAttributeDef(
+            id=0x007C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         binding_off_to_on_sync_level = ZCLAttributeDef(
             id=0x007D,
             type=t.Bool,
@@ -907,6 +917,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         led_color_for_bound_control = ZCLAttributeDef(
             id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dumb_detection_level = ZCLAttributeDef(
+            id=0x00A5,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -987,7 +1002,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -997,6 +1012,16 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         switch_type = ZCLAttributeDef(
             id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -1265,16 +1290,20 @@ class InovelliVZM32SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
-        relay_click_in_on_off_mode = ZCLAttributeDef(
-            id=0x0105,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
         disable_clear_notifications_double_tap = ZCLAttributeDef(
             id=0x0106,
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+
+
+class MMWaveControlId(t.enum8):
+    """MMWave control command IDs."""
+
+    Reset_to_factory = 0x00
+    Auto_generate_interference_area = 0x01
+    Obtain_areas = 0x02
+    Clear_interference_area = 0x03
 
 
 class InovelliVZM32SNMMWaveCluster(CustomCluster):
@@ -1353,26 +1382,9 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
         mmwave_control_command = ZCLCommandDef(
             id=0x00,
             schema={
-                "control_id": t.uint8_t,
+                "control_id": MMWaveControlId,
             },
             is_manufacturer_specific=True,
-        )
-
-    def handle_cluster_request(
-        self,
-        hdr: ZCLHeader,
-        args: list[Any],
-        *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
-        """Handle a cluster request."""
-        _LOGGER.debug(
-            "%s: handle_cluster_request - Command: %s Data: %s",
-            self.name,
-            hdr.command_id,
-            args,
         )
 
 
