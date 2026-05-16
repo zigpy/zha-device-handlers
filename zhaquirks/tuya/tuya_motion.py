@@ -1619,6 +1619,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # Mercator Ikuü TS0601 motion sensor (_TZE200_agumlajc)
 class LightControlMode(t.enum8):
     """Enum for the light control mode setting (dp_id=105)."""
