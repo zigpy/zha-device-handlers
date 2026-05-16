@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import LocalDataCluster, OccupancyOnEvent, _Motion
 from zhaquirks.const import (
@@ -127,20 +128,19 @@ class TerncyRawCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "Terncy Raw cluster"
 
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "click_event",
-            {"count": t.uint8_t, "state": t.uint8_t},
-            False,
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        click_event = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={"count": t.uint8_t, "state": t.uint8_t},
             is_manufacturer_specific=True,
-        ),
-        0x04: foundation.ZCLCommandDef(
-            "motion_event",
-            {"param1": t.uint8_t, "param2": t.uint8_t, "state": t.uint8_t},
-            False,
+        )
+        motion_event = foundation.ZCLCommandDef(
+            id=0x04,
+            schema={"param1": t.uint8_t, "param2": t.uint8_t, "state": t.uint8_t},
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""

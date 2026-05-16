@@ -1,9 +1,12 @@
 """Texas Instruments Z-Stack router device."""
 
+from typing import Final
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import (
     DEVICE_TYPE,
@@ -18,8 +21,12 @@ from zhaquirks import (
 class BasicCluster(CustomCluster, Basic):
     """Texas Instruments Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes[0x1337] = ("transmit_power", t.int8s, False)
+    class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
+
+        transmit_power: Final = ZCLAttributeDef(
+            id=0x1337, type=t.int8s, is_manufacturer_specific=True
+        )
 
 
 class TiRouter(CustomDevice):

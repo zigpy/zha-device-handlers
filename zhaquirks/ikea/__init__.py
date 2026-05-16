@@ -1,14 +1,16 @@
 """Ikea module."""
 
 import logging
+from typing import Any
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
-from zhaquirks.const import BatterySize
+from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +20,6 @@ WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
 IKEA_SHORTCUT_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
 IKEA_MATTER_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
-COMMAND_SHORTCUT_V1 = "shortcut_v1_events"
 
 # PowerConfiguration cluster attributes
 BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
@@ -32,31 +33,69 @@ BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name[
 class ScenesCluster(CustomCluster, Scenes):
     """Ikea Scenes cluster."""
 
-    server_commands = Scenes.server_commands.copy()
-    server_commands.update(
-        {
-            0x0007: foundation.ZCLCommandDef(
-                "press",
-                {"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
-                False,
-                is_manufacturer_specific=True,
-            ),
-            0x0008: foundation.ZCLCommandDef(
-                "hold",
-                {"param1": t.int16s, "param2": t.int8s},
-                False,
-                is_manufacturer_specific=True,
-            ),
-            0x0009: foundation.ZCLCommandDef(
-                "release",
-                {
-                    "param1": t.int16s,
-                },
-                False,
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+    class ServerCommandDefs(Scenes.ServerCommandDefs):
+        """Server command definitions."""
+
+        press = foundation.ZCLCommandDef(
+            id=0x0007,
+            schema={"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
+            is_manufacturer_specific=True,
+        )
+        hold = foundation.ZCLCommandDef(
+            id=0x0008,
+            schema={"param1": t.int16s, "param2": t.int8s},
+            is_manufacturer_specific=True,
+        )
+        release = foundation.ZCLCommandDef(
+            id=0x0009,
+            schema={"param1": t.int16s},
+            is_manufacturer_specific=True,
+        )
+
+
+class IkeaBilresaLevelControl(CustomCluster, LevelControl):
+    """Custom LevelControl cluster for IKEA remotes to track direction."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction: int | None = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands.
+        """
+        if hdr.command_id in (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+        ):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif (
+            hdr.command_id
+            in (
+                LevelControl.ServerCommandDefs.stop.id,
+                LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            )
+            and self._last_move_direction is not None
+        ):
+            event = (
+                "move_up_release"
+                if self._last_move_direction == 0
+                else "move_down_release"
+            )
+            self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class ShortcutV1Cluster(EventableCluster):
@@ -64,17 +103,17 @@ class ShortcutV1Cluster(EventableCluster):
 
     cluster_id = IKEA_SHORTCUT_CLUSTER_V1_ID
 
-    server_commands = {
-        0x01: foundation.ZCLCommandDef(
-            COMMAND_SHORTCUT_V1,
-            {
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        shortcut_v1_events = foundation.ZCLCommandDef(
+            id=0x01,
+            schema={
                 "shortcut_button": t.int8s,
                 "shortcut_event": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
 
 class ShortcutV2Cluster(EventableCluster):
@@ -82,66 +121,60 @@ class ShortcutV2Cluster(EventableCluster):
 
     cluster_id = IKEA_MATTER_SWITCH_CLUSTER_ID
 
-    server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "switch_latched",
-            {
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        switch_latched = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={
                 "new_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "initial_press",
-            {
+        )
+        initial_press = foundation.ZCLCommandDef(
+            id=0x01,
+            schema={
                 "new_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x02: foundation.ZCLCommandDef(
-            "long_press",
-            {
+        )
+        long_press = foundation.ZCLCommandDef(
+            id=0x02,
+            schema={
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x03: foundation.ZCLCommandDef(
-            "short_release",
-            {
+        )
+        short_release = foundation.ZCLCommandDef(
+            id=0x03,
+            schema={
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x04: foundation.ZCLCommandDef(
-            "long_release",
-            {
+        )
+        long_release = foundation.ZCLCommandDef(
+            id=0x04,
+            schema={
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x05: foundation.ZCLCommandDef(
-            "multi_press_ongoing",
-            {
+        )
+        multi_press_ongoing = foundation.ZCLCommandDef(
+            id=0x05,
+            schema={
                 "new_position": t.int8s,
                 # "current_number_of_presses_counted": t.int8s, # not implemented
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-        0x06: foundation.ZCLCommandDef(
-            "multi_press_complete",
-            {
+        )
+        multi_press_complete = foundation.ZCLCommandDef(
+            id=0x06,
+            schema={
                 "previous_position": t.int8s,
                 "total_number_of_presses_counted": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
 
 # ZCL compliant IKEA power configuration clusters:

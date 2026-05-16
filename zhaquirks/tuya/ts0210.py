@@ -19,7 +19,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaManufCluster
+from zhaquirks.tuya import Command as TuyaCommand
 
 ZONE_TYPE = 0x0001
 IAS_VIBRATION_SENSOR = 0x5F02
@@ -34,7 +34,7 @@ class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: tuple[TuyaCommand],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]

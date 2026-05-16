@@ -272,7 +272,7 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
         # device_version=1
         # input_clusters=[0, 1, 3, 4, 32, 4096, 64636]
         # output_clusters=[3, 4, 6, 8, 258, 4096]>
-        MODELS_INFO: [(IKEA, "RODRET Dimmer")],
+        MODELS_INFO: [(IKEA, "RODRET Dimmer"), (IKEA, "RODRET wireless dimmer")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
