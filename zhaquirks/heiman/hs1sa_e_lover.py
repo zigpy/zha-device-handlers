@@ -1,9 +1,8 @@
 """Heiman HS1SA-E Lover smoke sensor."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -47,6 +46,8 @@ class CustomHeimanCluster(CustomCluster):
             type=t.uint16_t,
             manufacturer_code=0x120B,
         )
+
+
 (
     QuirkBuilder()
     .applies_to("HEIMAN", "SmokeSensor-EF2-3.0")
