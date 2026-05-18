@@ -82,6 +82,7 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder()
     .applies_to("HEIMAN", "HS1CA-E PLUS")
+    .applies_to("HEIMAN", "HS1CA-E-PLUS")
     .friendly_name(manufacturer="HEIMAN", model="HS1CA-E-PLUS")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
