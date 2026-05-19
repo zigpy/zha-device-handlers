@@ -1,4 +1,5 @@
 """VZM32-SN MMwave Switch/Dimmer Module with explicit entity declarations."""
+
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
@@ -317,7 +318,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         "output_mode",
         VZM32SN_CLUSTER_ID,
         off_value=0,  # Dimmer
-        on_value=1,   # OnOff
+        on_value=1,  # OnOff
         entity_type=EntityType.CONFIG,
         translation_key="output_mode",
         fallback_name="Output mode",
@@ -326,7 +327,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         "increased_non_neutral_output",
         VZM32SN_CLUSTER_ID,
         off_value=0,  # Low
-        on_value=1,   # High
+        on_value=1,  # High
         entity_type=EntityType.CONFIG,
         translation_key="increased_non_neutral_output",
         fallback_name="Non neutral output",
@@ -335,7 +336,7 @@ MMWAVE_CLUSTER_ID = 0xFC32
         "led_scaling_mode",
         VZM32SN_CLUSTER_ID,
         off_value=0,  # VZM31SN
-        on_value=1,   # LZW31SN
+        on_value=1,  # LZW31SN
         entity_type=EntityType.CONFIG,
         translation_key="led_scaling_mode",
         fallback_name="Led scaling mode",
