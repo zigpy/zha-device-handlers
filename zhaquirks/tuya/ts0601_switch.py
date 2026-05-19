@@ -29,7 +29,7 @@ class MoesSwitchManufClusterDP24(MoesSwitchManufCluster):
     )
     dp_to_attribute.pop(1, None)
     dp_to_attribute[24] = DPToAttributeMapping(
-        ep_attribute="on_off",
+        ep_attribute=TuyaOnOff.ep_attribute,
         attribute_name="on_off",
     )
 
