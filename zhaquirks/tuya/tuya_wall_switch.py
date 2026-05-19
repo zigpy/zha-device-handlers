@@ -10,8 +10,10 @@ from zhaquirks.clusters import CustomCluster
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     BaseEnchantedDevice,
+    ExternalSwitchType,
     IndicatorMode,
     PowerOnState,
+    TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
 
@@ -214,6 +216,7 @@ def _register_switch(
     for ep_id in range(1, num_endpoints + 1):
         builder.replaces_endpoint(ep_id, device_type=zha.DeviceType.ON_OFF_SWITCH)
     builder.replace_cluster_occurrences(TuyaZBOnOffAttributeCluster)
+    builder.replace_cluster_occurrences(TuyaZBExternalSwitchTypeCluster)
     # No-op when the cluster isn't present (no-neutral variants).
     builder.replace_cluster_occurrences(CustomMetering)
     builder.replace_cluster_occurrences(CustomElectricalMeasurement)
@@ -241,6 +244,14 @@ def _register_switch(
         unique_id_suffix=f"{OnOff.cluster_id}-power_on_state",
         translation_key="power_on_state",
         fallback_name="Power on state",
+    )
+    builder.enum(
+        TuyaZBExternalSwitchTypeCluster.AttributeDefs.external_switch_type.name,
+        ExternalSwitchType,
+        TuyaZBExternalSwitchTypeCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="external_switch_type",
+        fallback_name="External switch type",
     )
     builder.add_to_registry()
 
