@@ -12,13 +12,30 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.quirk_ids import TUYA_PLUG_MANUFACTURER
-from zhaquirks.tuya import TuyaSwitch
+from zhaquirks.tuya import DPToAttributeMapping, TuyaSwitch
 from zhaquirks.tuya.mcu import (
     MoesSwitchManufCluster,
     TuyaOnOff,
     TuyaOnOffManufCluster,
     TuyaOnOffNM,
 )
+
+
+class MoesSwitchManufClusterDP24(MoesSwitchManufCluster):
+    """MoesSwitchManufCluster variant where on/off lives on DP 24."""
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        MoesSwitchManufCluster.dp_to_attribute.copy()
+    )
+    dp_to_attribute.pop(1, None)
+    dp_to_attribute[24] = DPToAttributeMapping(
+        ep_attribute="on_off",
+        attribute_name="on_off",
+    )
+
+    data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
+    data_point_handlers.pop(1, None)
+    data_point_handlers[24] = "_dp_2_attr_update"
 
 
 class TuyaSingleSwitchTI(TuyaSwitch):
@@ -172,6 +189,63 @@ class TuyaSingleSwitchGP(TuyaSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     MoesSwitchManufCluster,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaSingleSwitchGPDP24(TuyaSwitch):
+    """Tuya single channel switch (on/off on DP 24) with GreenPowerProxy.
+
+    Same Zigbee fingerprint as TuyaSingleSwitchGP, but the relay state is on
+    DP 24 instead of the upstream MoesSwitchManufCluster default DP 1.
+    Confirmed by capturing physical-press DP reports from a Moes SFL02-Z-1
+    1-gang touch switch (_TZE200_stvgmdjz / TS0601).
+    """
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_stvgmdjz", "TS0601"),  # Moes SFL02-Z-1 1-gang touch switch
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufClusterDP24,
                     TuyaOnOffNM,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],

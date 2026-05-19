@@ -56,6 +56,8 @@ ZCL_TUYA_BUTTON_2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
 ZCL_TUYA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
+ZCL_TUYA_SWITCH_DP24_ON = b"\tQ\x02\x006\x18\x01\x00\x01\x01"
+ZCL_TUYA_SWITCH_DP24_OFF = b"\tQ\x02\x006\x18\x01\x00\x01\x00"
 ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_VALVE_TEMPERATURE = b"\tp\x02\x00\x02\x03\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_VALVE_TARGET_TEMP = b"\t3\x01\x03\x05\x02\x02\x00\x04\x00\x00\x002"
@@ -109,6 +111,32 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_ON)
     tuya_cluster.handle_message(hdr, args)
     hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_OFF)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(switch_listener.cluster_commands) == 0
+    assert len(switch_listener.attribute_updates) == 2
+    assert switch_listener.attribute_updates[0][0] == 0x0000
+    assert switch_listener.attribute_updates[0][1] == ON
+    assert switch_listener.attribute_updates[1][0] == 0x0000
+    assert switch_listener.attribute_updates[1][1] == OFF
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchGPDP24,)
+)
+async def test_singleswitch_dp24_state_report(zigpy_device_from_quirk, quirk):
+    """Tuya single switch with on/off on DP 24 (Moes SFL02-Z-1 / _TZE200_stvgmdjz)."""
+
+    switch_dev = zigpy_device_from_quirk(quirk)
+
+    switch_cluster = switch_dev.endpoints[1].on_off
+    switch_listener = ClusterListener(switch_cluster)
+
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_DP24_ON)
+    tuya_cluster.handle_message(hdr, args)
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_DP24_OFF)
     tuya_cluster.handle_message(hdr, args)
 
     assert len(switch_listener.cluster_commands) == 0
@@ -267,6 +295,55 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             cluster=0xEF00,
             sequence=2,
             data=b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x01",
+            command_id=0x00,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert rsp.status == 0
+
+    rsp = await switch_cluster.command(0x0002)
+    await wait_for_zigpy_tasks()
+    assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchGPDP24,)
+)
+async def test_singleswitch_dp24_requests(zigpy_device_from_quirk, quirk):
+    """Tuya single switch (DP 24): on/off commands target DP 24, not DP 1."""
+
+    switch_dev = zigpy_device_from_quirk(quirk)
+
+    switch_cluster = switch_dev.endpoints[1].on_off
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        rsp = await switch_cluster.command(0x0000)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x18\x01\x00\x01\x00",
+            command_id=0x00,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert rsp.status == 0
+
+        rsp = await switch_cluster.command(0x0001)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x18\x01\x00\x01\x01",
             command_id=0x00,
             timeout=5,
             expect_reply=True,
