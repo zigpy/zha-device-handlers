@@ -1,4 +1,4 @@
-"""Heiman HS1SA-E Lover smoke sensor."""
+"""Heiman HM-722-ESY-E-PLUS Co sensor."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
@@ -11,7 +11,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.quirk_ids import SIREN_BASIC
 
 
-class SmokeSirenEnum(t.enum8):
+class SmokeCoSirenEnum(t.enum8):
     """Smoke siren type."""
 
     Stop = 0
@@ -27,9 +27,29 @@ class CustomHeimanCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
+        sensor_self_check_state = ZCLAttributeDef(
+            id=0x0001,
+            type=t.enum8,
+            manufacturer_code=0x120B,
+        )
+        sensor_fault_state = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint8_t,
+            manufacturer_code=0x120B,
+        )
+        sensor_mute_state = ZCLAttributeDef(
+            id=0x0009,
+            type=t.uint8_t,
+            manufacturer_code=0x120B,
+        )
         siren_for_automation = ZCLAttributeDef(
             id=0x0012,
-            type=SmokeSirenEnum,
+            type=SmokeCoSirenEnum,
+            manufacturer_code=0x120B,
+        )
+        interconnectable = ZCLAttributeDef(
+            id=0x1007,
+            type=t.uint8_t,
             manufacturer_code=0x120B,
         )
         rebooted_count = ZCLAttributeDef(
@@ -47,10 +67,22 @@ class CustomHeimanCluster(CustomCluster):
             type=t.uint16_t,
             manufacturer_code=0x120B,
         )
+        remote_mute = ZCLAttributeDef(
+            id=0x0008,
+            type=t.uint8_t,
+            manufacturer_code=0x120B,
+        )
+        remote_test = ZCLAttributeDef(
+            id=0x1009,
+            type=t.uint8_t,
+            manufacturer_code=0x120B,
+        )
+
+
 (
     QuirkBuilder()
-    .applies_to("HEIMAN", "SmokeSensor-EF2-3.0")
-    .friendly_name(manufacturer="HEIMAN", model="HS1SA-E-Lover")
+    .applies_to("HEIMAN", "HM-722ESY-E-PLUS")
+    .friendly_name(manufacturer="HEIMAN", model="HHM-722ESY-E-PLUS")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
@@ -60,6 +92,39 @@ class CustomHeimanCluster(CustomCluster):
         new_entity_category=EntityType.CONFIG,
     )
     # XXX: siren_for_automation should be added as a siren entity, needs zigpy API
+    .binary_sensor(
+        CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
+        CustomHeimanCluster.cluster_id,
+        reporting_config=ReportingConfig(
+            min_interval=2, max_interval=0, reportable_change=1
+        ),
+        translation_key="self_test_state",
+        fallback_name="Self-test",
+    )
+    .binary_sensor(
+        CustomHeimanCluster.AttributeDefs.sensor_fault_state.name,
+        CustomHeimanCluster.cluster_id,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        fallback_name="Fault",
+    )
+    .binary_sensor(
+        CustomHeimanCluster.AttributeDefs.sensor_mute_state.name,
+        CustomHeimanCluster.cluster_id,
+        translation_key="muted",
+        fallback_name="Muted",
+    )
+    .binary_sensor(
+        CustomHeimanCluster.AttributeDefs.interconnectable.name,
+        CustomHeimanCluster.cluster_id,
+        translation_key="interconnectable",
+        fallback_name="Interconnectable",
+    )
+    .switch(
+        CustomHeimanCluster.AttributeDefs.remote_mute.name,
+        CustomHeimanCluster.cluster_id,
+        translation_key="buzzer_manual_mute",
+        fallback_name="Buzzer manual mute",
+    )
     .command_button(
         IasZone.ServerCommandDefs.init_test_mode.name,
         IasZone.cluster_id,
