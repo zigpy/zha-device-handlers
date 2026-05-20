@@ -22,20 +22,50 @@ from zhaquirks.tuya.mcu import (
 
 
 class MoesSwitchManufClusterDP24(MoesSwitchManufCluster):
-    """MoesSwitchManufCluster variant where on/off lives on DP 24."""
+    """MoesSwitchManufCluster variant where per-gang on/off lives on DPs 24-27.
+
+    Used by the Moes Star Feather family (SFL02-Z-1/2/3/4): the relay state for
+    gang N is reported and accepted on DP (23 + N), not the upstream default DP N.
+    Mappings for unused gangs are inert when the device's replacement does not
+    include that endpoint.
+    """
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = (
         MoesSwitchManufCluster.dp_to_attribute.copy()
     )
     dp_to_attribute.pop(1, None)
+    dp_to_attribute.pop(2, None)
+    dp_to_attribute.pop(3, None)
+    dp_to_attribute.pop(4, None)
     dp_to_attribute[24] = DPToAttributeMapping(
         ep_attribute=TuyaOnOff.ep_attribute,
         attribute_name="on_off",
     )
+    dp_to_attribute[25] = DPToAttributeMapping(
+        ep_attribute=TuyaOnOff.ep_attribute,
+        attribute_name="on_off",
+        endpoint_id=2,
+    )
+    dp_to_attribute[26] = DPToAttributeMapping(
+        ep_attribute=TuyaOnOff.ep_attribute,
+        attribute_name="on_off",
+        endpoint_id=3,
+    )
+    dp_to_attribute[27] = DPToAttributeMapping(
+        ep_attribute=TuyaOnOff.ep_attribute,
+        attribute_name="on_off",
+        endpoint_id=4,
+    )
 
     data_point_handlers = MoesSwitchManufCluster.data_point_handlers.copy()
     data_point_handlers.pop(1, None)
+    data_point_handlers.pop(2, None)
+    data_point_handlers.pop(3, None)
+    data_point_handlers.pop(4, None)
     data_point_handlers[24] = "_dp_2_attr_update"
+    data_point_handlers[25] = "_dp_2_attr_update"
+    data_point_handlers[26] = "_dp_2_attr_update"
+    data_point_handlers[27] = "_dp_2_attr_update"
 
 
 class TuyaSingleSwitchTI(TuyaSwitch):
@@ -249,6 +279,228 @@ class TuyaSingleSwitchGPDP24(TuyaSwitch):
                     TuyaOnOffNM,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaDoubleSwitchGPDP24(TuyaSwitch):
+    """Tuya double channel switch (on/off on DPs 24-25) with GreenPowerProxy.
+
+    Same Zigbee fingerprint as TuyaDoubleSwitchGP, but the per-gang relay state
+    is on DPs 24 (gang 1) and 25 (gang 2) instead of the upstream defaults
+    DPs 1 and 2. Used by the Moes Star Feather SFL02-Z-2 2-gang touch switch.
+    """
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_uenof8jd", "TS0601"),  # Moes SFL02-Z-2
+            ("_TZE200_tzyy0rtq", "TS0601"),  # Moes SFL02-Z-2
+            ("_TZE200_hktk6hze", "TS0601"),  # Nova Digital TPZ-2 (whitelabel)
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufClusterDP24,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaTripleSwitchGPDP24(TuyaSwitch):
+    """Tuya triple channel switch (on/off on DPs 24-26) with GreenPowerProxy.
+
+    Same Zigbee fingerprint as TuyaTripleSwitchGP, but the per-gang relay state
+    is on DPs 24, 25, and 26 instead of the upstream defaults DPs 1, 2, 3.
+    Used by the Moes Star Feather SFL02-Z-3 3-gang touch switch.
+    """
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_rd8cdssd", "TS0601"),  # Nova Digital TPZ-3 (whitelabel)
+            ("_TZE200_wv9ukqca", "TS0601"),  # Moes SFL02-Z-3
+            ("_TZE200_zo0cfekv", "TS0601"),  # Moes SFL02-Z-3
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufClusterDP24,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaQuadrupleSwitchGPDP24(TuyaSwitch):
+    """Tuya quadruple channel switch (on/off on DPs 24-27) with GreenPowerProxy.
+
+    Same Zigbee fingerprint as TuyaQuadrupleSwitchGP, but the per-gang relay
+    state is on DPs 24, 25, 26, and 27 instead of the upstream defaults DPs
+    1, 2, 3, 4. Used by the Moes Star Feather SFL02-Z-4 4-gang touch switch.
+    """
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_dq8bu0pt", "TS0601"),  # Moes SFL02-Z-4
+            ("_TZE200_hmabvy81", "TS0601"),  # Nova Digital TPZ-4 (whitelabel)
+            ("_TZE200_9dhenr94", "TS0601"),  # Moes SFL02-Z-4
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufClusterDP24,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
