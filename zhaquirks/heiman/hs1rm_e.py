@@ -8,7 +8,6 @@ from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-
 class SwitchTypeEnum(t.enum8):
     """switch type type."""
 
