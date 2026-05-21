@@ -278,11 +278,15 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 
 **Entity unique_id format:**
 
-HA uses `unique_id` to identify an entity across restarts. If a quirk change causes it to change, HA treats the result as a new entity — the old one is orphaned and anything referencing it breaks. For v2 quirk entities the format is:
+HA uses `unique_id` to identify an entity across restarts. If a quirk change causes it to change, HA treats the result as a new entity — the old one is orphaned and anything referencing it breaks.
+
+**For v2 quirk entities** the format is:
 
 ```
-{device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
+{device.ieee}-{endpoint_id}-{suffix}
 ```
+
+Note there is **no cluster_id** between the endpoint and the suffix — ZHA's v2 discovery (`zha/application/discovery.py`) passes `legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}"` and the cluster_id is never inserted. This differs from the format used by ZHA-native and v1-quirk-discovered entities (see below).
 
 `{suffix}` resolves in this order:
 1. Explicit `unique_id_suffix=` on the builder call
@@ -291,16 +295,23 @@ HA uses `unique_id` to identify an entity across restarts. If a quirk change cau
 4. Otherwise no suffix
 
 **Breaking-change implications:**
-- Renaming `attribute_name` on a custom cluster used by an existing quirk, or moving an entity to a different `endpoint_id`/cluster, changes the unique_id and **breaks existing entities**. Avoid unless necessary.
+- Renaming `attribute_name` on a custom cluster used by an existing v2 quirk changes the default suffix and **breaks existing entities**. Avoid unless necessary.
+- Moving an entity to a different `endpoint_id` also changes the unique_id and breaks existing entities.
 - `translation_key` and `fallback_name` do **not** affect unique_id — renaming these is safe.
 - If a rename is genuinely required, preserve the old suffix via `unique_id_suffix=` on each affected entity. Flag the breakage in the PR.
-- When reviewing PRs that rename attributes on an existing custom cluster (or move entities), call this out before it lands.
+- When reviewing PRs that rename attributes in an existing v2 quirk (or move entities to different endpoints), call this out before it lands.
 
-**Entities defined directly in ZHA (not via quirks):**
+**Entities defined directly in ZHA (not via quirks), and v1-quirk entities:**
 
-Some entities are defined in the ZHA library itself rather than in a quirk — e.g., Inovelli config entities on the Inovelli manufacturer cluster, and Aqara EU plug sensors/switches (`lumi.plug.mmeu01`, `lumi.plug.maeu01`) on the Aqara opple cluster. These use the same `{ieee}-{endpoint_id}-{cluster_id}-{suffix}` format, where `{suffix}` is a hardcoded `_unique_id_suffix` class attribute on the entity class (typically matching the underlying `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`).
+Some entities are not created by a v2 quirk's entity declarations — either because they come from a class defined in the ZHA library itself (e.g., Inovelli config entities on the Inovelli manufacturer cluster, Aqara EU plug sensors/switches on the Aqara opple cluster), or because they were discovered by ZHA against a v1 quirk's replaced cluster. These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
 
-When migrating such an entity from ZHA-native to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Match the endpoint and cluster, then either (a) name the v2 custom-cluster `attribute_name` the same as the old `_unique_id_suffix` (the default suffix-from-attribute_name will then match), or (b) pass `unique_id_suffix=` explicitly. Important: the suffix is **only** the trailing string — the cluster_id is auto-prepended, so do **not** include it in the suffix (e.g., not `"64704-child_lock"`). Example: the ZHA-native `AqaraThermostatChildLock` declares `_attribute_name = "child_lock"` and `_unique_id_suffix = "child_lock"`, producing `{ieee}-1-64704-child_lock`; the v2 replacement either uses `attribute_name="child_lock"` (default suffix matches) or passes `unique_id_suffix="child_lock"`. Verify against the ZHA entity class (in `zha/application/platforms/*.py`) before submitting the migration.
+```
+{device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
+```
+
+The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `_unique_id_suffix` class attribute on the ZHA-native entity class (typically matching the entity's `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`, `"child_lock"`).
+
+When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match. Example: the ZHA-native `AqaraThermostatChildLock` (cluster_id `0xFCC0` = `64704`, attribute `child_lock`) produces unique_id `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call — that yields `{ieee}-1-64704-child_lock` from the v2 path. Verify against the ZHA entity class (in `zha/application/platforms/*.py`) and against an existing device diagnostics dump (in `zha/tests/data/devices/`) before submitting the migration.
 
 **Device Automation Triggers:**
 ```python
