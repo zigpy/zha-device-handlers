@@ -6,21 +6,15 @@ import asyncio
 import logging
 from typing import Any, Final
 
+import zigpy.types as t
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import ZCLAttributeDef
-
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    TuyaCommand,
-    TuyaData,
-    TuyaDatapointData,
-    TuyaDPType,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaData, TuyaDPType
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+from zhaquirks.tuya import TuyaCommand, TuyaDatapointData
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,7 +131,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
     _energy_stream_on: bool
     _energy_stream_enabled_for_calibration: bool
     _keepalive_task: asyncio.Task | None
-    _auto_calibration_status_raw: int | None
     _pending_zone_write: bool
 
     class AttributeDefs(TuyaMCUCluster.AttributeDefs):
@@ -198,160 +191,60 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             is_manufacturer_specific=True,
         )
 
-        zone_1_active: Final = ZCLAttributeDef(
-            id=0x6511, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_2_active: Final = ZCLAttributeDef(
-            id=0x6512, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_3_active: Final = ZCLAttributeDef(
-            id=0x6513, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_4_active: Final = ZCLAttributeDef(
-            id=0x6514, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_5_active: Final = ZCLAttributeDef(
-            id=0x6515, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_6_active: Final = ZCLAttributeDef(
-            id=0x6516, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_7_active: Final = ZCLAttributeDef(
-            id=0x6517, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_8_active: Final = ZCLAttributeDef(
-            id=0x6518, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_9_active: Final = ZCLAttributeDef(
-            id=0x6519, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
-        zone_10_active: Final = ZCLAttributeDef(
-            id=0x651A, type=t.Bool, access="rwp", is_manufacturer_specific=True
-        )
+        zone_1_active: Final = ZCLAttributeDef(id=0x6511, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_2_active: Final = ZCLAttributeDef(id=0x6512, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_3_active: Final = ZCLAttributeDef(id=0x6513, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_4_active: Final = ZCLAttributeDef(id=0x6514, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_5_active: Final = ZCLAttributeDef(id=0x6515, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_6_active: Final = ZCLAttributeDef(id=0x6516, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_7_active: Final = ZCLAttributeDef(id=0x6517, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_8_active: Final = ZCLAttributeDef(id=0x6518, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_9_active: Final = ZCLAttributeDef(id=0x6519, type=t.Bool, access="rwp", is_manufacturer_specific=True)
+        zone_10_active: Final = ZCLAttributeDef(id=0x651A, type=t.Bool, access="rwp", is_manufacturer_specific=True)
 
-        zone_1_motion_energy: Final = ZCLAttributeDef(
-            id=0x6521, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_2_motion_energy: Final = ZCLAttributeDef(
-            id=0x6522, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_3_motion_energy: Final = ZCLAttributeDef(
-            id=0x6523, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_4_motion_energy: Final = ZCLAttributeDef(
-            id=0x6524, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_5_motion_energy: Final = ZCLAttributeDef(
-            id=0x6525, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_6_motion_energy: Final = ZCLAttributeDef(
-            id=0x6526, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_7_motion_energy: Final = ZCLAttributeDef(
-            id=0x6527, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_8_motion_energy: Final = ZCLAttributeDef(
-            id=0x6528, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_9_motion_energy: Final = ZCLAttributeDef(
-            id=0x6529, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_10_motion_energy: Final = ZCLAttributeDef(
-            id=0x652A, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
+        zone_1_motion_energy: Final = ZCLAttributeDef(id=0x6521, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_2_motion_energy: Final = ZCLAttributeDef(id=0x6522, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_3_motion_energy: Final = ZCLAttributeDef(id=0x6523, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_4_motion_energy: Final = ZCLAttributeDef(id=0x6524, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_5_motion_energy: Final = ZCLAttributeDef(id=0x6525, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_6_motion_energy: Final = ZCLAttributeDef(id=0x6526, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_7_motion_energy: Final = ZCLAttributeDef(id=0x6527, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_8_motion_energy: Final = ZCLAttributeDef(id=0x6528, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_9_motion_energy: Final = ZCLAttributeDef(id=0x6529, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_10_motion_energy: Final = ZCLAttributeDef(id=0x652A, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
 
-        zone_1_presence_energy: Final = ZCLAttributeDef(
-            id=0x6531, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_2_presence_energy: Final = ZCLAttributeDef(
-            id=0x6532, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_3_presence_energy: Final = ZCLAttributeDef(
-            id=0x6533, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_4_presence_energy: Final = ZCLAttributeDef(
-            id=0x6534, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_5_presence_energy: Final = ZCLAttributeDef(
-            id=0x6535, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_6_presence_energy: Final = ZCLAttributeDef(
-            id=0x6536, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_7_presence_energy: Final = ZCLAttributeDef(
-            id=0x6537, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_8_presence_energy: Final = ZCLAttributeDef(
-            id=0x6538, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_9_presence_energy: Final = ZCLAttributeDef(
-            id=0x6539, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
-        zone_10_presence_energy: Final = ZCLAttributeDef(
-            id=0x653A, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
+        zone_1_presence_energy: Final = ZCLAttributeDef(id=0x6531, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_2_presence_energy: Final = ZCLAttributeDef(id=0x6532, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_3_presence_energy: Final = ZCLAttributeDef(id=0x6533, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_4_presence_energy: Final = ZCLAttributeDef(id=0x6534, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_5_presence_energy: Final = ZCLAttributeDef(id=0x6535, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_6_presence_energy: Final = ZCLAttributeDef(id=0x6536, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_7_presence_energy: Final = ZCLAttributeDef(id=0x6537, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_8_presence_energy: Final = ZCLAttributeDef(id=0x6538, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_9_presence_energy: Final = ZCLAttributeDef(id=0x6539, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
+        zone_10_presence_energy: Final = ZCLAttributeDef(id=0x653A, type=t.uint8_t, access="rp", is_manufacturer_specific=True)
 
-        zone_1_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6541, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_2_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6542, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_3_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6543, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_4_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6544, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_5_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6545, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_6_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6546, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_7_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6547, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_8_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6548, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_9_motion_threshold: Final = ZCLAttributeDef(
-            id=0x6549, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_10_motion_threshold: Final = ZCLAttributeDef(
-            id=0x654A, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
+        zone_1_motion_threshold: Final = ZCLAttributeDef(id=0x6541, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_2_motion_threshold: Final = ZCLAttributeDef(id=0x6542, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_3_motion_threshold: Final = ZCLAttributeDef(id=0x6543, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_4_motion_threshold: Final = ZCLAttributeDef(id=0x6544, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_5_motion_threshold: Final = ZCLAttributeDef(id=0x6545, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_6_motion_threshold: Final = ZCLAttributeDef(id=0x6546, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_7_motion_threshold: Final = ZCLAttributeDef(id=0x6547, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_8_motion_threshold: Final = ZCLAttributeDef(id=0x6548, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_9_motion_threshold: Final = ZCLAttributeDef(id=0x6549, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_10_motion_threshold: Final = ZCLAttributeDef(id=0x654A, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
 
-        zone_1_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6551, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_2_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6552, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_3_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6553, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_4_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6554, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_5_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6555, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_6_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6556, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_7_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6557, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_8_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6558, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_9_presence_threshold: Final = ZCLAttributeDef(
-            id=0x6559, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
-        zone_10_presence_threshold: Final = ZCLAttributeDef(
-            id=0x655A, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
-        )
+        zone_1_presence_threshold: Final = ZCLAttributeDef(id=0x6551, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_2_presence_threshold: Final = ZCLAttributeDef(id=0x6552, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_3_presence_threshold: Final = ZCLAttributeDef(id=0x6553, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_4_presence_threshold: Final = ZCLAttributeDef(id=0x6554, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_5_presence_threshold: Final = ZCLAttributeDef(id=0x6555, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_6_presence_threshold: Final = ZCLAttributeDef(id=0x6556, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_7_presence_threshold: Final = ZCLAttributeDef(id=0x6557, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_8_presence_threshold: Final = ZCLAttributeDef(id=0x6558, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_9_presence_threshold: Final = ZCLAttributeDef(id=0x6559, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
+        zone_10_presence_threshold: Final = ZCLAttributeDef(id=0x655A, type=t.uint8_t, access="rwp", is_manufacturer_specific=True)
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         DP_PRESENCE_STATE: DPToAttributeMapping(
@@ -403,14 +296,11 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         self._energy_stream_on = False
         self._energy_stream_enabled_for_calibration = False
         self._keepalive_task = None
-        self._auto_calibration_status_raw = None
         self._pending_zone_write = False
         self._first_message_received = False
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
-        if attrid == self.AttributeDefs.auto_calibration_status.id and isinstance(
-            value, int
-        ):
+        if attrid == self.AttributeDefs.auto_calibration_status.id and isinstance(value, int):
             value = CALIB_STATUS_MAP.get(value, f"unknown({value})")
         super()._update_attribute(attrid, value)
 
@@ -431,11 +321,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
         for dpv in dp_values:
             dp = dpv.dp
             data = _tuya_raw(dpv.data)
-            _LOGGER.debug(
-                "[ZPS-Z1] received Tuya DP%d: raw=%s",
-                dp,
-                data.hex(),
-            )
 
             if dp == DP_ENERGY_VALUE:
                 self._handle_energy_value(data)
@@ -448,12 +333,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             elif dp == DP_AI_SELF_LEARNING:
                 raw = data[0] if data else 0
                 status = CALIB_STATUS_MAP.get(raw, f"unknown({raw})")
-                _LOGGER.debug(
-                    "[ZPS-Z1] received DP103 auto calibration status: raw=%s status=%s",
-                    data.hex(),
-                    status,
-                )
-                self._auto_calibration_status_raw = raw
                 self._update_attribute(
                     self.attributes_by_name["auto_calibration_status"].id,
                     status,
@@ -478,9 +357,7 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                         )
             elif dp == DP_SENSITIVITY_PRESET:
                 try:
-                    value = SensitivityPreset(
-                        data[0] if data else SensitivityPreset.custom
-                    )
+                    value = SensitivityPreset(data[0] if data else SensitivityPreset.custom)
                 except ValueError:
                     value = SensitivityPreset.custom
                 self._update_attribute(
@@ -514,17 +391,15 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
 
-    def handle_cluster_specific_commands(
-        self, tsn: int, command_id: int, args: Any
-    ) -> None:
+    def handle_cluster_specific_commands(self, tsn: int, command_id: int, args: Any) -> None:
         """Handle cluster-specific Tuya datapoint reports."""
 
         dp_values = getattr(args, "dpValues", None) or []
         self._process_tuya_datapoints(dp_values)
 
+
     def _handle_energy_value(self, data: bytes) -> None:
         if len(data) < 20:
-            _LOGGER.debug("[ZPS-Z1] ignoring short DP102 payload: %s", data.hex())
             return
         motion_raw, presence_raw = _decode_energy(data)
         for i in range(ZONE_COUNT):
@@ -539,13 +414,9 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
 
     def _handle_zone_map(self, data: bytes) -> None:
         if len(data) < ZONE_COUNT:
-            _LOGGER.debug("[ZPS-Z1] ignoring short DP117 payload: %s", data.hex())
             return
 
         zones = [bool(data[i]) for i in range(ZONE_COUNT)]
-        _LOGGER.debug(
-            "[ZPS-Z1] received DP117 zone map: raw=%s active=%s", data.hex(), zones
-        )
         if self._pending_zone_write:
             if zones != self._zone_active:
                 _LOGGER.warning(
@@ -560,22 +431,13 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             self._zone_active = zones
 
         for i, active in enumerate(zones):
-            self._update_attribute(
-                self.attributes_by_name[f"zone_{i + 1}_active"].id, active
-            )
+            self._update_attribute(self.attributes_by_name[f"zone_{i + 1}_active"].id, active)
 
     def _handle_energy_threshold(self, data: bytes) -> None:
         if len(data) < 20:
-            _LOGGER.debug("[ZPS-Z1] ignoring short DP124 payload: %s", data.hex())
             return
 
         motion_raw, presence_raw = _decode_energy(data)
-        _LOGGER.debug(
-            "[ZPS-Z1] received DP124 thresholds: raw=%s motion=%s presence=%s",
-            data.hex(),
-            motion_raw,
-            presence_raw,
-        )
         self._motion_thr = list(motion_raw)
         self._presence_thr = list(presence_raw)
         self._thresholds_initialized = True
@@ -609,30 +471,20 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                     value,
                     exc,
                 )
-                return [
-                    [
-                        foundation.WriteAttributesStatusRecord(
-                            foundation.Status.FAILURE, attr_def.id
-                        )
-                    ]
-                ]
+                return [[foundation.WriteAttributesStatusRecord(foundation.Status.FAILURE, attr_def.id)]]
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     async def _set_attribute(self, key: str, value: Any) -> None:
         if key == "detection_range":
             v = max(0, min(500, round(int(value) / 50) * 50))
-            await self._send_dp(
-                DP_DETECTION_RANGE, DT_VALUE, list(v.to_bytes(4, "big"))
-            )
+            await self._send_dp(DP_DETECTION_RANGE, DT_VALUE, list(v.to_bytes(4, "big")))
 
         elif key == "sensitivity_preset":
             v = _enum_from_value(SensitivityPreset, value)
             if v is not None:
                 await self._send_dp(DP_SENSITIVITY_PRESET, DT_ENUM, [int(v)])
-                self._update_attribute(
-                    self.attributes_by_name["sensitivity_preset"].id, v
-                )
+                self._update_attribute(self.attributes_by_name["sensitivity_preset"].id, v)
 
         elif key == "presence_clear_cooldown":
             v = max(2, min(60, round(int(value))))
@@ -640,9 +492,7 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
 
         elif key == "led_indicator":
             await self._send_dp(DP_INDICATOR, DT_BOOL, [1 if bool(value) else 0])
-            self._update_attribute(
-                self.attributes_by_name["led_indicator"].id, bool(value)
-            )
+            self._update_attribute(self.attributes_by_name["led_indicator"].id, bool(value))
 
         elif key == "energy_streaming":
             on = bool(value)
@@ -669,9 +519,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                 return
 
             if v is AutoCalibrationCmd.start and not self._energy_stream_on:
-                _LOGGER.debug(
-                    "[ZPS-Z1] enabling energy streaming before auto calibration"
-                )
                 await self._send_dp(DP_HEARTBEAT_ENABLE, DT_BOOL, [1])
                 self._energy_stream_on = True
                 self._energy_stream_enabled_for_calibration = True
@@ -682,16 +529,6 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                 self._start_keepalive()
                 await asyncio.sleep(0.5)
 
-            _LOGGER.debug(
-                "[ZPS-Z1] sending auto_calibration command: %s (%d)",
-                v.name,
-                int(v),
-            )
-            _LOGGER.debug(
-                "[ZPS-Z1] sending DP103 auto calibration command: status=%s raw=%02x",
-                v.name,
-                int(v),
-            )
             await self._send_dp(DP_AI_SELF_LEARNING, DT_ENUM, [int(v)])
             self._update_attribute(
                 self.attributes_by_name["auto_calibration"].id,
@@ -704,12 +541,8 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             zones[idx] = bool(value)
             self._zone_active = zones
             self._pending_zone_write = True
-            await self._send_dp(
-                DP_ZONE_MAP, DT_RAW, [1 if active else 0 for active in zones]
-            )
-            self._update_attribute(
-                self.attributes_by_name[f"zone_{idx + 1}_active"].id, zones[idx]
-            )
+            await self._send_dp(DP_ZONE_MAP, DT_RAW, [1 if active else 0 for active in zones])
+            self._update_attribute(self.attributes_by_name[f"zone_{idx + 1}_active"].id, zones[idx])
 
         elif key.startswith("zone_") and key.endswith("_motion_threshold"):
             await self._ensure_thresholds_initialized()
@@ -718,20 +551,11 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             app_value = max(0, min(100, round(int(value))))
             motion[idx] = _to_raw(app_value)
             self._motion_thr = motion
-            await self._send_dp(
-                DP_ENERGY_THRESHOLD,
-                DT_RAW,
-                list(_encode_energy(motion, self._presence_thr)),
-            )
+            await self._send_dp(DP_ENERGY_THRESHOLD, DT_RAW, list(_encode_energy(motion, self._presence_thr)))
             await asyncio.sleep(0.15)
-            await self._send_dp(
-                DP_SENSITIVITY_PRESET, DT_ENUM, [int(SensitivityPreset.custom)]
-            )
+            await self._send_dp(DP_SENSITIVITY_PRESET, DT_ENUM, [int(SensitivityPreset.custom)])
             self._update_attribute(self.attributes_by_name[key].id, app_value)
-            self._update_attribute(
-                self.attributes_by_name["sensitivity_preset"].id,
-                SensitivityPreset.custom,
-            )
+            self._update_attribute(self.attributes_by_name["sensitivity_preset"].id, SensitivityPreset.custom)
 
         elif key.startswith("zone_") and key.endswith("_presence_threshold"):
             await self._ensure_thresholds_initialized()
@@ -740,30 +564,19 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
             app_value = max(0, min(100, round(int(value))))
             presence[idx] = _to_raw(app_value)
             self._presence_thr = presence
-            await self._send_dp(
-                DP_ENERGY_THRESHOLD,
-                DT_RAW,
-                list(_encode_energy(self._motion_thr, presence)),
-            )
+            await self._send_dp(DP_ENERGY_THRESHOLD, DT_RAW, list(_encode_energy(self._motion_thr, presence)))
             await asyncio.sleep(0.15)
-            await self._send_dp(
-                DP_SENSITIVITY_PRESET, DT_ENUM, [int(SensitivityPreset.custom)]
-            )
+            await self._send_dp(DP_SENSITIVITY_PRESET, DT_ENUM, [int(SensitivityPreset.custom)])
             self._update_attribute(self.attributes_by_name[key].id, app_value)
-            self._update_attribute(
-                self.attributes_by_name["sensitivity_preset"].id,
-                SensitivityPreset.custom,
-            )
+            self._update_attribute(self.attributes_by_name["sensitivity_preset"].id, SensitivityPreset.custom)
 
         else:
-            _LOGGER.debug("[ZPS-Z1] unhandled writable attribute: %s", key)
+            return
 
     async def _resend_zone_map(self) -> None:
         await asyncio.sleep(0.5)
         self._pending_zone_write = True
-        await self._send_dp(
-            DP_ZONE_MAP, DT_RAW, [1 if active else 0 for active in self._zone_active]
-        )
+        await self._send_dp(DP_ZONE_MAP, DT_RAW, [1 if active else 0 for active in self._zone_active])
 
     async def _ensure_thresholds_initialized(self) -> None:
         if self._thresholds_initialized:
@@ -787,9 +600,7 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
 
         for i in range(ZONE_COUNT):
             motion_attr = self.attributes_by_name[f"zone_{i + 1}_motion_threshold"].id
-            presence_attr = self.attributes_by_name[
-                f"zone_{i + 1}_presence_threshold"
-            ].id
+            presence_attr = self.attributes_by_name[f"zone_{i + 1}_presence_threshold"].id
 
             if motion_attr not in attr_cache or presence_attr not in attr_cache:
                 return False
@@ -831,18 +642,14 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                 self.attributes_by_name["energy_streaming"].id,
                 False,
             )
-        except Exception as exc:
-            _LOGGER.debug(
-                "[ZPS-Z1] disabling calibration energy stream failed: %s", exc
-            )
+        except Exception:
+            pass
 
     async def _send_dp(self, dp: int, datatype: int, data: list[int]) -> None:
         if datatype == DT_BOOL:
             tuya_data = TuyaData(bool(data[0] if data else 0))
         elif datatype == DT_VALUE:
-            tuya_data = TuyaData(
-                int.from_bytes(bytes(data).rjust(4, b"\x00")[-4:], "big")
-            )
+            tuya_data = TuyaData(int.from_bytes(bytes(data).rjust(4, b"\x00")[-4:], "big"))
         elif datatype == DT_ENUM:
             tuya_data = TuyaData(t.enum8(data[0] if data else 0))
         else:
@@ -869,9 +676,8 @@ class ZpsZ1ManufCluster(TuyaMCUCluster):
                 self.ServerCommandDefs.query_data.id,
                 expect_reply=False,
             )
-        except Exception as exc:
-            _LOGGER.debug("[ZPS-Z1] Tuya data query failed: %s", exc)
-
+        except Exception:
+            pass
 
 builder = QuirkBuilder("_TZE284_ft7qqpx3", "TS0601")
 builder.adds(ZpsZ1ManufCluster).skip_configuration()
