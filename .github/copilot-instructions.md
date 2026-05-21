@@ -286,7 +286,7 @@ HA uses `unique_id` to identify an entity across restarts. If a quirk change cau
 {device.ieee}-{endpoint_id}-{suffix}
 ```
 
-Note there is **no cluster_id** between the endpoint and the suffix. This differs from the format used by ZHA-native and v1-quirk-discovered entities (see below).
+Note there is **no cluster_id** between the endpoint and the suffix. This differs from the format used by ZHA-native entities (see below).
 
 `{suffix}` resolves in this order:
 1. Explicit `unique_id_suffix=` on the builder call
@@ -301,9 +301,9 @@ Note there is **no cluster_id** between the endpoint and the suffix. This differ
 - If a rename is genuinely required, preserve the old suffix via `unique_id_suffix=` on each affected entity. Flag the breakage in the PR.
 - When reviewing PRs that rename attributes in an existing v2 quirk (or move entities to different endpoints), call this out before it lands.
 
-**Entities defined directly in ZHA (not via quirks), and v1-quirk entities:**
+**ZHA-native entities (not created by a v2 quirk):**
 
-Some entities are not created by a v2 quirk's entity declarations — either because they come from a class defined in the ZHA library itself (e.g., Inovelli config entities on the Inovelli manufacturer cluster, Aqara EU plug sensors/switches on the Aqara opple cluster), or because they were discovered by ZHA against a v1 quirk's replaced cluster. These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
+Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself (e.g., Inovelli config entities on the Inovelli manufacturer cluster, Aqara EU plug sensors/switches on the Aqara opple cluster). These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
 
 ```
 {device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
