@@ -40,6 +40,7 @@ class OnoffSwitchConfigurationCluster(CustomCluster):
             type=t.enum8,
         )
 
+
 class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     """Heiman Device Temperature cluster that scales raw values by 100."""
 
@@ -56,7 +57,6 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     .friendly_name(manufacturer="HEIMAN", model="HS1RM-E")
     .replaces(OnoffSwitchConfigurationCluster)
     .replaces(HeimanDeviceTemperature)
-   
     # heiman functions
     .enum(
         OnoffSwitchConfigurationCluster.AttributeDefs.switch_type.name,
