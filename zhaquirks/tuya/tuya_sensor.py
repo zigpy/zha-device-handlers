@@ -79,6 +79,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE200_bq5c8xfe", "TS0601")
     .applies_to("_TZE200_vs0skpuc", "TS0601")
     .applies_to("_TZE200_qyflbnbj", "TS0601")
+    .applies_to("_TZE204_qyflbnbj", "TS0601")
     .applies_to("_TZE284_qyflbnbj", "TS0601")
     .applies_to("_TZE200_44af8vyi", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
@@ -103,6 +104,12 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
     .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .applies_to("_TZE200_t3xd7l44", "TS0601")
+    .applies_to("_TZE284_kdqrazmy", "TS0601")
+    .applies_to("_TZE200_dikkika5", "TS0601")
+    .applies_to("_TZE200_3xfjp0ag", "TS0601")
+    .applies_to("_TZE200_ehhrv2e3", "TS0601")
+    .applies_to("_TZE200_lhqtjwax", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
@@ -126,6 +133,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_vvmbj46n", "TS0601")
     .applies_to("_TZE284_vvmbj46n", "TS0601")
     .applies_to("_TZE284_4dosadbh", "TS0601")
+    .applies_to("_TZE284_cwyqwqbf", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -269,7 +277,10 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
     .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
+    .applies_to("_TZE284_wckqztdq", "TS0601")
+    .applies_to("_TZE284_3urschql", "TS0601")
     .applies_to("_TZE284_tgrzpqf4", "TS0601")
+    .applies_to("_TZE284_g2e6cpnw", "TS0601")
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
@@ -324,6 +335,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_myd45weu", "TS0601")
     .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
+    .applies_to("_TZE284_oitavov2", "TS0601")
+    .applies_to("_TZE284_2se8efxh", "TS0601")
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
@@ -352,6 +365,10 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_1wnh8bqp", "TS0601")
     .applies_to("_TZE284_1wnh8bqp", "TS0601")
     .applies_to("_TZE204_kwi6bbk4", "TS0601")
+    .applies_to("_TZE200_d7lpruvi", "TS0601")
+    .applies_to("_TZE204_d7lpruvi", "TS0601")
+    .applies_to("_TZE284_d7lpruvi", "TS0601")
+    .applies_to("_TZE284_hdyjyqjm", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(
@@ -370,6 +387,451 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Contact, temperature and humidity sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_contact_temperature_humidity_sensor.html
+(
+    TuyaQuirkBuilder("_TZE200_nvups4nh", "TS0601")
+    .tuya_contact(dp_id=1)
+    .tuya_battery(dp_id=2)
+    .tuya_temperature(dp_id=7, scale=10)
+    .tuya_humidity(dp_id=8)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Illuminance, temperature & humidity sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_illuminance_temperature_humidity_sensor_2.html
+(
+    TuyaQuirkBuilder("_TZE200_rbbx5mfq", "TS0601")
+    .applies_to("_TZE204_rbbx5mfq", "TS0601")
+    .tuya_illuminance(dp_id=2)
+    .tuya_temperature(dp_id=6, scale=10)
+    .tuya_humidity(dp_id=7, scale=10)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Zigbee air quality sensor (CO2, temperature, humidity, VOC, formaldehyde)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_airbox.html
+(
+    TuyaQuirkBuilder("_TZE284_8b9zpaav", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18, scale=10)
+    .tuya_humidity(dp_id=19)
+    .tuya_voc(dp_id=21)
+    .tuya_formaldehyde(dp_id=22)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# PM2.5 air quality sensor (CO2, temperature, humidity, PM2.5, VOC, formaldehyde)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/PM2.5_airbox.html
+(
+    TuyaQuirkBuilder("_TZE284_it9utkro", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18, scale=10)
+    .tuya_humidity(dp_id=19, scale=10)
+    .tuya_pm25(dp_id=20)
+    .tuya_voc(dp_id=21)
+    .tuya_formaldehyde(dp_id=22)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Temperature & humidity sensor with external probe
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZY-ZTH03PRO.html
+(
+    TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="external_temperature",
+        type=t.int16s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.STANDARD,
+        translation_key="external_temperature",
+        fallback_name="External temperature",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Temperature & humidity sensor with external probe (variant)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TZ-ZT01_GA4.html
+(
+    TuyaQuirkBuilder("_TZE284_8se38w3c", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="temperature_probe",
+        type=t.int16s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_probe",
+        fallback_name="Temperature probe",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Temperature and humidity sensor (RSH-HS06)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/RSH-HS06.html
+(
+    TuyaQuirkBuilder("_TZE200_ysm4dsb1", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_battery(dp_id=4)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (ZS-301Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-301Z.html
+(
+    TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")
+    .applies_to("_TZE284_xc3vwx5a", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (ZS-300Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-300Z.html
+(
+    TuyaQuirkBuilder("_TZE284_k7p2q5d9", "TS0601")
+    .applies_to("_TZE284_65gzcss7", "TS0601")
+    .applies_to("_TZE284_0ints6wl", "TS0601")
+    .applies_to("_TZE284_yzr43ayq", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (CS-201Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/CS-201Z.html
+(
+    TuyaQuirkBuilder("_TZE200_npj9bug3", "TS0601")
+    .applies_to("_TZE200_wrmhp6b3", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=109)
+    .tuya_battery(dp_id=15)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil moisture sensor (ZG-303Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-303Z.html
+(
+    TuyaQuirkBuilder("_TZE200_wqashyqo", "TS0601")
+    .tuya_soil_moisture(dp_id=107)
+    .tuya_temperature(dp_id=103, scale=10)
+    .tuya_humidity(dp_id=109)
+    .tuya_battery(dp_id=108)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Soil fertility sensor (ZS-300TF)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZS-300TF.html
+(
+    TuyaQuirkBuilder("_TZE284_hdml1aav", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .tuya_sensor(
+        dp_id=112,
+        attribute_name="soil_fertility",
+        type=t.uint16_t,
+        entity_type=EntityType.STANDARD,
+        translation_key="soil_fertility",
+        fallback_name="Soil fertility",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaAirQuality(t.enum8):
+    """Tuya air quality enum."""
+
+    Excellent = 0x00
+    Moderate = 0x01
+    Poor = 0x02
+
+
+class TuyaAlarmRingtone(t.enum8):
+    """Tuya alarm ringtone enum."""
+
+    Melody1 = 0x00
+    Melody2 = 0x01
+    Off = 0x02
+
+
+# Multifunctional CO2 detector (ZR360CDB)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZR360CDB.html
+(
+    TuyaQuirkBuilder("_TZE200_pl31aqf5", "TS0601")
+    .applies_to("_TZE200_xpvamyfz", "TS0601")
+    .applies_to("_TZE284_xpvamyfz", "TS0601")
+    .tuya_co2(dp_id=2)
+    .tuya_temperature(dp_id=18)
+    .tuya_humidity(dp_id=19)
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="air_quality",
+        enum_class=TuyaAirQuality,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="air_quality",
+        fallback_name="Air quality",
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="alarm_ringtone",
+        enum_class=TuyaAlarmRingtone,
+        entity_type=EntityType.CONFIG,
+        translation_key="alarm_ringtone",
+        fallback_name="Alarm ringtone",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaSensitivityLevel(t.enum8):
+    """Tuya sensitivity level enum."""
+
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
+
+
+# Vibration sensor (ZG-103Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-103Z.html
+(
+    TuyaQuirkBuilder("_TZE200_iba1ckek", "TS0601")
+    .applies_to("_TZE200_hggxgsjj", "TS0601")
+    .applies_to("_TZE200_yjryxpot", "TS0601")
+    .applies_to("_TZE200_afycb3cg", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=7,
+        attribute_name="tilt",
+        translation_key="tilt",
+        fallback_name="Tilt",
+    )
+    .tuya_battery(dp_id=105)
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="sensitivity",
+        enum_class=TuyaSensitivityLevel,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Vibration sensor (ZG-102ZM)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-102ZM.html
+(
+    TuyaQuirkBuilder("_TZE200_wzk0x7fq", "TS0601")
+    .applies_to("_TZE200_jfw0a4aa", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_contact(dp_id=101)
+    .tuya_battery(dp_id=4)
+    .tuya_number(
+        dp_id=6,
+        attribute_name="sensitivity",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Vibration sensor (TZE284_4cqhd2ha)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TZE284_4cqhd2ha.html
+(
+    TuyaQuirkBuilder("_TZE284_4cqhd2ha", "TS0601")
+    .applies_to("_TZE200_8ply8mjj", "TS0601")
+    .tuya_vibration(dp_id=1)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="sensitivity",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="buzzer_mute",
+        entity_type=EntityType.CONFIG,
+        translation_key="buzzer_mute",
+        fallback_name="Buzzer mute",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaRainwaterStatus(t.enum8):
+    """Tuya rainwater status enum."""
+
+    Clear = 0x00
+    Raining = 0x01
+
+
+# Rainwater detection sensor (ZG-223Z)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZG-223Z.html
+(
+    TuyaQuirkBuilder("_TZE200_jsaqgakf", "TS0601")
+    .applies_to("_TZE200_u6x1zyv2", "TS0601")
+    .applies_to("_TZE200_2pddnnrk", "TS0601")
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="rainwater",
+        enum_class=TuyaRainwaterStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="rainwater",
+        fallback_name="Rainwater",
+    )
+    .tuya_illuminance(dp_id=102)
+    .tuya_battery(dp_id=104)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaLiquidState(t.enum8):
+    """Tuya liquid level state enum."""
+
+    Normal = 0x00
+    Low = 0x01
+    High = 0x02
+
+
+# Water level sensor (ME202WZ)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ME202WZ.html
+(
+    TuyaQuirkBuilder("_TZE284_mxujdmxo", "TS0601")
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="liquid_state",
+        enum_class=TuyaLiquidState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_state",
+        fallback_name="Liquid state",
+    )
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="liquid_depth",
+        type=t.uint32_t,
+        divisor=100,
+        unit="m",
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_depth",
+        fallback_name="Liquid depth",
+    )
+    .tuya_sensor(
+        dp_id=22,
+        attribute_name="liquid_level_percent",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        entity_type=EntityType.STANDARD,
+        translation_key="liquid_level_percent",
+        fallback_name="Liquid level ratio",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Air pressure sensor
+# Z2M reference: https://www.zigbee2mqtt.io/devices/_TZE204_w2vunxzm.html
+(
+    TuyaQuirkBuilder("_TZE204_w2vunxzm", "TS0601")
+    .tuya_sensor(
+        dp_id=101,
+        attribute_name="pressure",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.PRESSURE,
+        unit="hPa",
+        entity_type=EntityType.STANDARD,
+        translation_key="pressure",
+        fallback_name="Pressure",
+    )
+    .tuya_temperature(dp_id=8, scale=100)
     .skip_configuration()
     .add_to_registry()
 )
