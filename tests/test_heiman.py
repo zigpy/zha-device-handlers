@@ -1,7 +1,6 @@
 """Tests for Heiman custom quirks."""
 
 from unittest.mock import MagicMock, patch
-import pytest
 
 # Import the custom cluster class
 from zhaquirks.heiman.hs1rm_e import HeimanDeviceTemperature
@@ -10,7 +9,7 @@ from zhaquirks.heiman.hs1rm_e import HeimanDeviceTemperature
 @patch("zigpy.zcl.Cluster._update_attribute")
 def test_heiman_temperature_scaling(mock_super_update):
     """Test if Heiman detector raw temperature values are correctly scaled by 100."""
-    
+
     # 1. Initialize the custom cluster class with a mocked device object
     cluster = HeimanDeviceTemperature(MagicMock())
 
@@ -28,7 +27,7 @@ def test_heiman_temperature_scaling(mock_super_update):
 
     # Assert: Non-temperature attribute values should remain unchanged (still 25)
     mock_super_update.assert_called_with(0x0001, 25)
-    
+
     # 4. Simulate the device reporting a None value for temperature
     # Verify that it does not trigger a multiplication error
     mock_super_update.reset_mock()
