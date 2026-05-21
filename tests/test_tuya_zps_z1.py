@@ -44,7 +44,7 @@ async def test_zps_z1_auto_calibration_status(zigpy_device_from_v2_quirk):
     )
 
     assert success["auto_calibration_status"] == "learning"
-    assert success["auto_calibration"] == AutoCalibrationCmd.start
+    assert success["auto_calibration"] == AutoCalibrationCmd.standby
 
 
 async def test_zps_z1_sensitivity_preset(zigpy_device_from_v2_quirk):
