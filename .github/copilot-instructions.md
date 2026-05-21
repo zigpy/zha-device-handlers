@@ -300,7 +300,7 @@ HA uses `unique_id` to identify an entity across restarts. If a quirk change cau
 
 Some entities are defined in the ZHA library itself rather than in a quirk — e.g., Inovelli config entities on the Inovelli manufacturer cluster, and Aqara EU plug sensors/switches (`lumi.plug.mmeu01`, `lumi.plug.maeu01`) on the Aqara opple cluster. These use the same `{ieee}-{endpoint_id}-{cluster_id}-{suffix}` format, where `{suffix}` is a hardcoded `_unique_id_suffix` class attribute on the entity class (typically matching the underlying `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`).
 
-When migrating such an entity from ZHA-native to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Match the endpoint and cluster, and pass `unique_id_suffix=` explicitly with the old `_unique_id_suffix` value. Verify against the ZHA entity class (in `zha/application/platforms/*.py`) before submitting the migration.
+When migrating such an entity from ZHA-native to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Match the endpoint and cluster, and pass `unique_id_suffix=` explicitly with the old `_unique_id_suffix` value. Example: the ZHA-native `XiaomiPlugPowerOutageMemorySwitch` declares `_unique_id_suffix = "power_outage_memory"`, so the v2 replacement must pass `unique_id_suffix="power_outage_memory"` on the corresponding `.switch(...)` call. Verify against the ZHA entity class (in `zha/application/platforms/*.py`) before submitting the migration.
 
 **Device Automation Triggers:**
 ```python
