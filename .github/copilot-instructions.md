@@ -286,7 +286,7 @@ HA uses `unique_id` to identify an entity across restarts. If a quirk change cau
 {device.ieee}-{endpoint_id}-{suffix}
 ```
 
-Note there is **no cluster_id** between the endpoint and the suffix — ZHA's v2 discovery (`zha/application/discovery.py`) passes `legacy_discovery_unique_id=f"{device.ieee}-{endpoint.id}"` and the cluster_id is never inserted. This differs from the format used by ZHA-native and v1-quirk-discovered entities (see below).
+Note there is **no cluster_id** between the endpoint and the suffix. This differs from the format used by ZHA-native and v1-quirk-discovered entities (see below).
 
 `{suffix}` resolves in this order:
 1. Explicit `unique_id_suffix=` on the builder call
