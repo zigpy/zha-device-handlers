@@ -41,7 +41,7 @@ class OnoffSwitchConfigurationCluster(CustomCluster):
         )
 
 class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
-    """Custom Device Temperature cluster that scales raw values by 100."""
+    """Heiman Device Temperature cluster that scales raw values by 100."""
 
     def _update_attribute(self, attrid, value):
         # Attribute 0x0000 is current_temperature
