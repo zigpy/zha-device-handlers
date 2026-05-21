@@ -1,3 +1,5 @@
+"""Tests for Heiman custom quirks."""
+
 from unittest.mock import MagicMock, patch
 import pytest
 
