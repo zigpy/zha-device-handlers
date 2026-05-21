@@ -303,7 +303,7 @@ Note there is **no cluster_id** between the endpoint and the suffix. This differ
 
 **ZHA-native entities (not created by a v2 quirk):**
 
-Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself (e.g., Inovelli config entities on the Inovelli manufacturer cluster, Aqara EU plug sensors/switches on the Aqara opple cluster). These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
+Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself. These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
 
 ```
 {device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
