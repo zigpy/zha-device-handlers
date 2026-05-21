@@ -1,13 +1,11 @@
 """Heiman HS1RM-E smoke sensor."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
 
 
 class SwitchTypeEnum(t.enum8):
@@ -42,6 +40,7 @@ class OnoffSwitchConfigurationCluster(CustomCluster):
             type=t.enum8,
         )
 
+
 class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     """Custom Device Temperature cluster that scales raw values by 100."""
 
@@ -52,15 +51,12 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         super()._update_attribute(attrid, value)
 
 
-
-
 (
     QuirkBuilder()
     .applies_to("HEIMAN", "RelayModule-EF-3.0")
     .friendly_name(manufacturer="HEIMAN", model="HS1RM-E")
     .replaces(OnoffSwitchConfigurationCluster)
     .replaces(HeimanDeviceTemperature)
-   
     # heiman functions
     .enum(
         OnoffSwitchConfigurationCluster.AttributeDefs.switch_type.name,
@@ -98,6 +94,5 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         translation_key="switch_action_l2",
         fallback_name="Switch action l2",
     )
-    
     .add_to_registry()
 )
