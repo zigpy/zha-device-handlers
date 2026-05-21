@@ -313,7 +313,7 @@ The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `
 
 When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match.
 
-Example: the ZHA-native `AqaraThermostatChildLock` (cluster_id `0xFCC0` = `64704`, attribute `child_lock`) produces unique_id `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call to get the same unique_id.
+Example: for a ZHA-native entity on cluster_id `0xFCC0` (= `64704`) with attribute `child_lock`, the existing unique_id is `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call to get the same unique_id.
 
 **Device Automation Triggers:**
 ```python
