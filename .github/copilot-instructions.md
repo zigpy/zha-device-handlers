@@ -120,7 +120,7 @@ All entity methods require `fallback_name`. Common parameters:
 - `initially_disabled`: Start disabled in HA
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
-- `unique_id_suffix`: Suffix to differentiate entities when multiple use the same attribute (required when creating multiple entities from one attribute)
+- `unique_id_suffix`: Suffix appended to the entity's unique_id. Defaults to `attribute_name` (or `command_name` for command-based entities). Required when creating multiple entities from the same attribute/command on the same endpoint, since otherwise the default suffixes collide. See **Entity unique_id format** below before changing this on existing quirks.
 
 **Parameter order convention:** `attribute_name`, `cluster_id`, `endpoint_id` first; `translation_key` and `fallback_name` always last (in that order). Use keyword arguments for clarity.
 
@@ -275,6 +275,26 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
     fallback_name="Factory reset",
 )
 ```
+
+**Entity unique_id format:**
+
+HA uses `unique_id` to identify an entity across restarts. If a quirk change causes it to change, HA treats the result as a new entity — the old one is orphaned and anything referencing it breaks. For v2 quirk entities the format is:
+
+```
+{device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
+```
+
+`{suffix}` resolves in this order:
+1. Explicit `unique_id_suffix=` on the builder call
+2. Otherwise `attribute_name` (attribute-based entities)
+3. Otherwise `command_name` (for `.command_button()`)
+4. Otherwise no suffix
+
+**Breaking-change implications:**
+- Renaming `attribute_name` on a custom cluster used by an existing quirk, or moving an entity to a different `endpoint_id`/cluster, changes the unique_id and **breaks existing entities**. Avoid unless necessary.
+- `translation_key` and `fallback_name` do **not** affect unique_id — renaming these is safe.
+- If a rename is genuinely required, preserve the old suffix via `unique_id_suffix=` on each affected entity. Flag the breakage in the PR.
+- When reviewing PRs that rename attributes on an existing custom cluster (or move entities), call this out before it lands.
 
 **Device Automation Triggers:**
 ```python
