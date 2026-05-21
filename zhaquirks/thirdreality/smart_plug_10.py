@@ -4,23 +4,26 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfPower, PERCENTAGE
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPower, UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 
 class BasicClusterWithLED(CustomCluster, Basic):
     """Basic cluster with red LED brightness custom attribute."""
-    
+
     class AttributeDefs(Basic.AttributeDefs):
         """Attribute definitions."""
+
         # Red LED brightness adjustment
         red_led_brightness: Final = ZCLAttributeDef(
             id=0xFF01,
             type=t.uint8_t,
             is_manufacturer_specific=False,
         )
+
 
 class ThirdRealityPlugCluster(CustomCluster):
     """Third Reality's plug private cluster."""
@@ -50,13 +53,13 @@ class ThirdRealityPlugCluster(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
-        
+
+
 class ThirdRealityPlugClustergen2(CustomCluster):
     """Third Reality's plug private cluster."""
 
     cluster_id = 0xFF03
-    
+
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
@@ -66,7 +69,7 @@ class ThirdRealityPlugClustergen2(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         # reset the accumulated power of the plug
         reset_total_energy: Final = ZCLAttributeDef(
             id=0x0000,
@@ -88,7 +91,7 @@ class ThirdRealityPlugClustergen2(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-        
+
 class ThirdRealityPlugClustergen3(CustomCluster):
     """Third Reality's plug gen3 private cluster."""
 
@@ -117,14 +120,14 @@ class ThirdRealityPlugClustergen3(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-                
+
         # power rise threshold
         power_rise_threshold: Final = ZCLAttributeDef(
             id=0x0040,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
+
         # power drop threshold
         power_drop_threshold: Final = ZCLAttributeDef(
             id=0x0041,
@@ -137,8 +140,8 @@ class ThirdRealityPlugClustergen3(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
-        
+
+
 # single outlet plugs
 (
     QuirkBuilder("Third Reality, Inc", "3RSP02028BZ")
