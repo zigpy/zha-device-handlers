@@ -311,7 +311,7 @@ Some entities are not created by a v2 quirk's entity declarations — they come 
 
 The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `_unique_id_suffix` class attribute on the ZHA-native entity class (typically matching the entity's `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`, `"child_lock"`).
 
-Note: the main `OnOff` entity (light/switch) on certain device types — `ON_OFF_LIGHT` (and other light device types), `SMART_PLUG`, `ON_OFF_PLUG_IN_UNIT`, `ON_OFF_BALLAST`, ZLL `ON_OFF_PLUGIN_UNIT` — uses a legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility. This only applies to the primary OnOff entity, not to config/sensor entities on the same device.
+Note: several primary platform-entity classes use a shorter legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility — `Light`, `Shade`, `DeviceTracker`, `Switch` (main OnOff on light/smart-plug/ballast/plug-in-unit device types), and `Cover`/`Thermostat`/`Siren` when the endpoint's device type matches the entity's primary type. Config switches, numbers and sensors on the same device still use the standard cluster_id-included format above.
 
 When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match.
 
