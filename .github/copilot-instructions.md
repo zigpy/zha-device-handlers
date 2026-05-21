@@ -311,9 +311,13 @@ Some entities are not created by a v2 quirk's entity declarations — they come 
 
 The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `_unique_id_suffix` class attribute on the ZHA-native entity class (typically matching the entity's `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`, `"child_lock"`).
 
+Note: the main `OnOff` entity (light/switch) on certain device types — `ON_OFF_LIGHT` (and other light device types), `SMART_PLUG`, `ON_OFF_PLUG_IN_UNIT`, `ON_OFF_BALLAST`, ZLL `ON_OFF_PLUGIN_UNIT` — uses a legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility. This only applies to the primary OnOff entity, not to config/sensor entities on the same device.
+
 When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match.
 
 Example: for a ZHA-native entity on cluster_id `0xFCC0` (= `64704`) with attribute `child_lock`, the existing unique_id is `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call to get the same unique_id.
+
+If you have access to a checkout of the ZHA library, you can find existing unique_ids in the device diagnostics dumps under `zha/tests/data/devices/`.
 
 **Device Automation Triggers:**
 ```python
