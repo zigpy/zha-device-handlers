@@ -277,6 +277,7 @@ async def test_zps_z1_unknown_datapoint_returns_unsupported(
 
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
 
+
 async def test_zps_z1_write_basic_attributes(zigpy_device_from_v2_quirk):
     """Test writable basic attributes are converted to Tuya datapoints."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
@@ -296,6 +297,7 @@ async def test_zps_z1_write_basic_attributes(zigpy_device_from_v2_quirk):
     assert result[0][0].status == foundation.Status.SUCCESS
     assert send_dp.call_count == 5
 
+
 async def test_zps_z1_write_auto_calibration_starts_energy_stream(
     zigpy_device_from_v2_quirk,
 ):
@@ -313,6 +315,7 @@ async def test_zps_z1_write_auto_calibration_starts_energy_stream(
 
     assert result[0][0].status == foundation.Status.SUCCESS
     assert send_dp.call_count == 2
+
 
 async def test_zps_z1_write_zone_and_thresholds(zigpy_device_from_v2_quirk):
     """Test zone and threshold writes."""
@@ -332,4 +335,3 @@ async def test_zps_z1_write_zone_and_thresholds(zigpy_device_from_v2_quirk):
 
     assert result[0][0].status == foundation.Status.SUCCESS
     assert send_dp.call_count == 5
-
