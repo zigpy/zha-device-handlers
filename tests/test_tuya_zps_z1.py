@@ -1,7 +1,8 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
-from unittest import mock
 from asyncio import CancelledError
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 
@@ -456,6 +457,7 @@ async def test_zps_z1_first_message_initializes_calibration_status(
     cluster.handle_get_data(data.data)
     # No assertion needed — just confirming no crash on second pass.
 
+
 async def test_zps_z1_first_message_initializes_calibration_status(
     zigpy_device_from_v2_quirk,
 ):
@@ -474,6 +476,7 @@ async def test_zps_z1_first_message_initializes_calibration_status(
     # Second call — branch not taken, no crash.
     hdr, data = cluster.deserialize(_dp_frame(DP_PRESENCE_STATE, DT_ENUM, b"\x01"))
     cluster.handle_get_data(data.data)
+
 
 async def test_zps_z1_first_message_flag_starts_false(zigpy_device_from_v2_quirk):
     """Test that _first_message_received starts as False before any message."""
@@ -660,6 +663,7 @@ async def test_zps_z1_write_unhandled_attribute_key(zigpy_device_from_v2_quirk):
         await cluster._set_attribute("illuminance", 42)  # read-only, no branch
 
     send_dp.assert_not_called()
+
 
 async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
     """Test _keepalive_loop exits cleanly on CancelledError."""
