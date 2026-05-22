@@ -1,4 +1,4 @@
-"""Heiman HS1CA-E-PLUS Co sensor."""
+"""Heiman HS1CA-E-PLUS CO sensor."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
