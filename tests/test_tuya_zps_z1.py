@@ -1,6 +1,9 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
+
 from unittest import mock
+
+import pytest
 
 from zigpy.zcl import foundation
 
@@ -335,3 +338,97 @@ async def test_zps_z1_write_zone_and_thresholds(zigpy_device_from_v2_quirk):
 
     assert result[0][0].status == foundation.Status.SUCCESS
     assert send_dp.call_count == 5
+
+async def test_zps_z1_short_energy_payloads_are_ignored(zigpy_device_from_v2_quirk):
+    """Test short raw payloads are accepted and ignored."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    for dp in (DP_ENERGY_VALUE, DP_ZONE_MAP, DP_ENERGY_THRESHOLD):
+        hdr, data = cluster.deserialize(_dp_frame(dp, DT_RAW, b"\x01"))
+        status = cluster.handle_get_data(data.data)
+
+        assert status == foundation.Status.SUCCESS
+
+
+async def test_zps_z1_load_thresholds_from_cache(zigpy_device_from_v2_quirk):
+    """Test threshold state can be restored from cached attributes."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    attr_cache = {}
+    for zone in range(1, 11):
+        motion_attr = cluster.attributes_by_name[f"zone_{zone}_motion_threshold"].id
+        presence_attr = cluster.attributes_by_name[f"zone_{zone}_presence_threshold"].id
+        attr_cache[motion_attr] = 20
+        attr_cache[presence_attr] = 10
+
+    cluster._attr_cache = attr_cache
+    cluster._thresholds_initialized = False
+
+    assert cluster._load_thresholds_from_cache() is True
+    assert cluster._thresholds_initialized is True
+    assert cluster._motion_thr[0] == 51
+    assert cluster._presence_thr[0] == 26
+
+
+async def test_zps_z1_load_thresholds_from_cache_missing_attr(
+    zigpy_device_from_v2_quirk,
+):
+    """Test threshold cache restore fails when cache is incomplete."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    cluster._attr_cache = {}
+
+    assert cluster._load_thresholds_from_cache() is False
+
+
+async def test_zps_z1_ensure_thresholds_initialized_failure(
+    zigpy_device_from_v2_quirk,
+):
+    """Test threshold initialization failure when device/cache has no data."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    cluster._thresholds_initialized = False
+    cluster._attr_cache = {}
+
+    with (
+        mock.patch.object(cluster, "_query_data"),
+        mock.patch("zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep"),
+        pytest.raises(ValueError, match="energy thresholds are not initialized yet"),
+    ):
+        await cluster._ensure_thresholds_initialized()
+
+
+async def test_zps_z1_disable_calibration_energy_stream(zigpy_device_from_v2_quirk):
+    """Test calibration energy stream cleanup."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    cluster._energy_stream_on = True
+    cluster._energy_stream_enabled_for_calibration = True
+    cluster._update_attribute(cluster.attributes_by_name["energy_streaming"].id, True)
+
+    with mock.patch.object(cluster, "_send_dp") as send_dp:
+        await cluster._disable_calibration_energy_stream()
+
+    send_dp.assert_awaited_once()
+    assert cluster._energy_stream_on is False
+    assert cluster._energy_stream_enabled_for_calibration is False
+
+    success, _ = await cluster.read_attributes(("energy_streaming",))
+    assert success["energy_streaming"] is False
+
+
+async def test_zps_z1_write_attributes_failure_path(zigpy_device_from_v2_quirk):
+    """Test write_attributes returns failure when a write raises."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(cluster, "_set_attribute", side_effect=ValueError("boom")):
+        result = await cluster.write_attributes({"detection_range": 300})
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert result[0][0].attrid == cluster.attributes_by_name["detection_range"].id
