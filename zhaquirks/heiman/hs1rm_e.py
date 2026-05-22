@@ -24,7 +24,7 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     # heiman functions
     .enum(
         OnOffConfiguration.AttributeDefs.switch_type.name,
-        OnOffConfiguration.SwitchTypeEnum,
+        OnOffConfiguration.SwitchType,
         OnOffConfiguration.cluster_id,
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
@@ -33,7 +33,7 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     )
     .enum(
         OnOffConfiguration.AttributeDefs.switch_actions.name,
-        OnOffConfiguration.SwitchActionEnum,
+        OnOffConfiguration.SwitchActions,
         OnOffConfiguration.cluster_id,
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
@@ -42,7 +42,7 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     )
     .enum(
         OnOffConfiguration.AttributeDefs.switch_type.name,
-        OnOffConfiguration.SwitchTypeEnum,
+        OnOffConfiguration.SwitchType,
         OnOffConfiguration.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
@@ -51,7 +51,7 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     )
     .enum(
         OnOffConfiguration.AttributeDefs.switch_actions.name,
-        OnOffConfiguration.SwitchActionEnum,
+        OnOffConfiguration.SwitchActions,
         OnOffConfiguration.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
