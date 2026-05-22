@@ -14,6 +14,15 @@ from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
     _enum_from_value,
 )
 
+from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
+    AutoCalibrationCmd,
+    PresenceState,
+    SensitivityPreset,
+    ZpsZ1ManufCluster,
+    _enum_from_value,
+    _tuya_raw,
+)
+
 DP_PRESENCE_STATE = 1
 DP_DETECTION_RANGE = 2
 DP_ILLUMINANCE = 101
@@ -701,6 +710,8 @@ async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
         _enum_from_value(SensitivityPreset, SensitivityPreset.low)
         is SensitivityPreset.low
     )
+    assert _enum_from_value(SensitivityPreset, 999) is None
+    assert _enum_from_value(SensitivityPreset, object()) is None
 
     # String name lookup — valid.
     assert _enum_from_value(SensitivityPreset, "medium") == SensitivityPreset.medium
@@ -713,3 +724,13 @@ async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
         value = 2  # SensitivityPreset.low
 
     assert _enum_from_value(SensitivityPreset, _Wrapper()) == SensitivityPreset.low
+
+def test_zps_z1_tuya_raw_helper_branches():
+    """Test _tuya_raw helper edge cases."""
+
+    class _RawValue:
+        raw = b"\x01\x02"
+
+    assert _tuya_raw(None) == b""
+    assert _tuya_raw(_RawValue()) == b"\x01\x02"
+    assert _tuya_raw(b"\x03") == b"\x03"
