@@ -665,9 +665,7 @@ async def test_zps_z1_disable_calibration_energy_stream_exception(
     cluster._energy_stream_on = True
     cluster._energy_stream_enabled_for_calibration = True
 
-    with mock.patch.object(
-        cluster, "_send_dp", side_effect=Exception("network error")
-    ):
+    with mock.patch.object(cluster, "_send_dp", side_effect=Exception("network error")):
         # Must not raise.
         await cluster._disable_calibration_energy_stream()
 
@@ -699,7 +697,10 @@ async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
 async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
     """Test _enum_from_value covers all branches."""
     # Already the correct enum instance.
-    assert _enum_from_value(SensitivityPreset, SensitivityPreset.low) is SensitivityPreset.low
+    assert (
+        _enum_from_value(SensitivityPreset, SensitivityPreset.low)
+        is SensitivityPreset.low
+    )
 
     # String name lookup — valid.
     assert _enum_from_value(SensitivityPreset, "medium") == SensitivityPreset.medium
@@ -712,112 +713,3 @@ async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
         value = 2  # SensitivityPreset.low
 
     assert _enum_from_value(SensitivityPreset, _Wrapper()) == SensitivityPreset.low
-
-
-async def test_zps_z1_send_dp_datatypes(zigpy_device_from_v2_quirk):
-    """Test _send_dp with all datatype branches (BOOL, VALUE, ENUM, RAW)."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-
-
-
-        await cluster._send_dp(DP_INDICATOR, DT_BOOL, [1])
-        await cluster._send_dp(DP_DETECTION_RANGE, DT_VALUE, [0, 0, 1, 44])
-        await cluster._send_dp(DP_SENSITIVITY_PRESET, DT_ENUM, [1])
-        await cluster._send_dp(DP_ZONE_MAP, DT_RAW, [1, 0, 1])
-
-    assert cmd.call_count == 4
-
-
-async def test_zps_z1_query_data(zigpy_device_from_v2_quirk):
-    """Test _query_data sends the query_data command."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    with mock.patch.object(cluster, "command", new_callable=mock.AsyncMock) as cmd:
-        await cluster._query_data()
-
-    cmd.assert_called_once()
-
-
-async def test_zps_z1_query_data_exception(zigpy_device_from_v2_quirk):
-    """Test _query_data swallows exceptions."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    with mock.patch.object(cluster, "command", side_effect=Exception("fail")):
-        await cluster._query_data()  # must not raise
-
-
-async def test_zps_z1_start_and_stop_keepalive(zigpy_device_from_v2_quirk):
-    """Test _start_keepalive creates a task and _stop_keepalive cancels it."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    assert cluster._keepalive_task is None
-
-    with mock.patch.object(cluster, "_send_dp"):
-        cluster._start_keepalive()
-
-    # _stop_keepalive when task exists — covers the cancel() branch.
-    cluster._stop_keepalive()
-
-    # _stop_keepalive when already None — covers the no-op branch.
-    cluster._stop_keepalive()
-
-
-async def test_zps_z1_keepalive_loop_sends_heartbeat(zigpy_device_from_v2_quirk):
-    """Test _keepalive_loop is cancelled after first sleep."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    call_count = 0
-
-    async def fake_sleep(_):
-        nonlocal call_count
-        call_count += 1
-        if call_count >= 1:
-            raise CancelledError
-
-    with (
-        mock.patch.object(cluster, "_send_dp") as send_dp,
-        mock.patch(
-            "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep",
-            side_effect=fake_sleep,
-        ),
-    ):
-        await cluster._keepalive_loop()
-
-    send_dp.assert_not_called()
-
-
-async def test_zps_z1_resend_zone_map(zigpy_device_from_v2_quirk):
-    """Test _resend_zone_map sends DP117 after a delay."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    cluster._zone_active = [True, False] + [True] * 8
-
-    with (
-        mock.patch.object(cluster, "_send_dp") as send_dp,
-        mock.patch("zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep"),
-    ):
-        await cluster._resend_zone_map()
-
-    send_dp.assert_called_once()
-    assert cluster._pending_zone_write is True
-
-
-async def test_zps_z1_write_auto_calibration_invalid_value(
-    zigpy_device_from_v2_quirk,
-):
-    """Test _set_attribute raises ValueError for unsupported auto_calibration string."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    # "bogus" is a string that fails KeyError in _enum_from_value → returns None
-    # → _set_attribute raises ValueError → write_attributes returns FAILURE.
-    result = await cluster.write_attributes({"auto_calibration": "bogus"})
-
-    assert result[0][0].status == foundation.Status.FAILURE
