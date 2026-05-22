@@ -12,14 +12,6 @@ from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
     SensitivityPreset,
     ZpsZ1ManufCluster,
     _enum_from_value,
-)
-
-from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
-    AutoCalibrationCmd,
-    PresenceState,
-    SensitivityPreset,
-    ZpsZ1ManufCluster,
-    _enum_from_value,
     _tuya_raw,
 )
 
@@ -724,6 +716,7 @@ async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
         value = 2  # SensitivityPreset.low
 
     assert _enum_from_value(SensitivityPreset, _Wrapper()) == SensitivityPreset.low
+
 
 def test_zps_z1_tuya_raw_helper_branches():
     """Test _tuya_raw helper edge cases."""
