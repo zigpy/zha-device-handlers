@@ -432,6 +432,7 @@ async def test_zps_z1_write_attributes_failure_path(zigpy_device_from_v2_quirk):
     assert result[0][0].status == foundation.Status.FAILURE
     assert result[0][0].attrid == cluster.attributes_by_name["detection_range"].id
 
+
 async def test_zps_z1_first_message_initializes_calibration_status(
     zigpy_device_from_v2_quirk,
 ):
@@ -510,7 +511,9 @@ async def test_zps_z1_zone_map_pending_write_mismatch(zigpy_device_from_v2_quirk
     # Device echoes a different map → mismatch → _resend_zone_map is scheduled.
     mismatch_payload = bytes([0] * 10)
     with mock.patch.object(cluster, "create_catching_task") as mock_task:
-        hdr, data = cluster.deserialize(_dp_frame(DP_ZONE_MAP, DT_RAW, mismatch_payload))
+        hdr, data = cluster.deserialize(
+            _dp_frame(DP_ZONE_MAP, DT_RAW, mismatch_payload)
+        )
         cluster.handle_get_data(data.data)
 
     mock_task.assert_called_once()
