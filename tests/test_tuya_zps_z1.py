@@ -1,10 +1,8 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
-
 from unittest import mock
 
 import pytest
-
 from zigpy.zcl import foundation
 
 from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
@@ -338,6 +336,7 @@ async def test_zps_z1_write_zone_and_thresholds(zigpy_device_from_v2_quirk):
 
     assert result[0][0].status == foundation.Status.SUCCESS
     assert send_dp.call_count == 5
+
 
 async def test_zps_z1_short_energy_payloads_are_ignored(zigpy_device_from_v2_quirk):
     """Test short raw payloads are accepted and ignored."""
