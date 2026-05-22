@@ -1,7 +1,7 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
 from unittest import mock
-
+from asyncio import CancelledError
 import pytest
 from zigpy.zcl import foundation
 
@@ -456,7 +456,6 @@ async def test_zps_z1_first_message_initializes_calibration_status(
     cluster.handle_get_data(data.data)
     # No assertion needed — just confirming no crash on second pass.
 
-
 async def test_zps_z1_first_message_initializes_calibration_status(
     zigpy_device_from_v2_quirk,
 ):
@@ -464,7 +463,6 @@ async def test_zps_z1_first_message_initializes_calibration_status(
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    # Send first datapoint — triggers the _first_message_received=False branch.
     hdr, data = cluster.deserialize(_dp_frame(DP_PRESENCE_STATE, DT_ENUM, b"\x00"))
     cluster.handle_get_data(data.data)
 
@@ -476,7 +474,6 @@ async def test_zps_z1_first_message_initializes_calibration_status(
     # Second call — branch not taken, no crash.
     hdr, data = cluster.deserialize(_dp_frame(DP_PRESENCE_STATE, DT_ENUM, b"\x01"))
     cluster.handle_get_data(data.data)
-
 
 async def test_zps_z1_first_message_flag_starts_false(zigpy_device_from_v2_quirk):
     """Test that _first_message_received starts as False before any message."""
@@ -583,13 +580,12 @@ async def test_zps_z1_write_auto_calibration_start_energy_stream_already_on(
 
 
 async def test_zps_z1_sensitivity_preset_invalid_value(zigpy_device_from_v2_quirk):
-    """Test DP112 with a valid out-of-range enum byte is stored as-is (no ValueError with t.enum8)."""
+    """Test DP112 ValueError fallback to SensitivityPreset.custom."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    # t.enum8 does NOT raise ValueError for unknown values — it creates undefined_0xNN.
-    # The except ValueError branch in the quirk is therefore unreachable via a DP frame.
-    # We test the branch directly by patching SensitivityPreset to raise ValueError.
+    real_custom = SensitivityPreset.custom  # salva prima del patch
+
     with mock.patch(
         "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.SensitivityPreset",
         side_effect=ValueError("bad value"),
@@ -602,7 +598,7 @@ async def test_zps_z1_sensitivity_preset_invalid_value(zigpy_device_from_v2_quir
     assert status == foundation.Status.SUCCESS
 
     success, _ = await cluster.read_attributes(("sensitivity_preset",))
-    assert success["sensitivity_preset"] == SensitivityPreset.custom
+    assert success["sensitivity_preset"] == real_custom
 
 
 async def test_zps_z1_handle_cluster_specific_commands(zigpy_device_from_v2_quirk):
@@ -665,17 +661,14 @@ async def test_zps_z1_write_unhandled_attribute_key(zigpy_device_from_v2_quirk):
 
     send_dp.assert_not_called()
 
-
 async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
     """Test _keepalive_loop exits cleanly on CancelledError."""
-    import asyncio as _asyncio
-
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
     with mock.patch(
         "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep",
-        side_effect=_asyncio.CancelledError,
+        side_effect=CancelledError,
     ):
         await cluster._keepalive_loop()
 
