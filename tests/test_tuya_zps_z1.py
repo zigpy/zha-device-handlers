@@ -98,22 +98,3 @@ async def test_zps_z1_energy_thresholds(zigpy_device_from_v2_quirk):
     assert success["zone_1_motion_threshold"] == 16
     assert success["zone_1_presence_threshold"] == 11
 
-async def test_zps_z1_energy_Streaming (id: 0x006c)(zigpy_device_from_v2_quirk):
-    """Test DP124 threshold decoding."""
-    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
-    cluster = device.endpoints[1].tuya_manufacturer
-
-    payload = bytes([22, 38, 22, 22, 22, 18, 18, 18, 16, 18])
-    payload += bytes([28, 24, 20, 14, 13, 11, 11, 19, 11, 11])
-
-    hdr, data = cluster.deserialize(_dp_frame(DP_ENERGY_THRESHOLD, DT_RAW, payload))
-    status = cluster.handle_get_data(data.data)
-
-    assert status == foundation.Status.SUCCESS
-
-    success, _ = await cluster.read_attributes(
-        ("zone_1_motion_threshold", "zone_1_motion_energy")
-    )
-
-    assert success["zone_1_motion_energy"] == 7
-    assert success["zone_1_motion_threshold"] == 7
