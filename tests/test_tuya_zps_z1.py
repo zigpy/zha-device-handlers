@@ -97,4 +97,3 @@ async def test_zps_z1_energy_thresholds(zigpy_device_from_v2_quirk):
 
     assert success["zone_1_motion_threshold"] == 16
     assert success["zone_1_presence_threshold"] == 11
-
