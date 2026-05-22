@@ -665,7 +665,9 @@ async def test_zps_z1_disable_calibration_energy_stream_exception(
     cluster._energy_stream_on = True
     cluster._energy_stream_enabled_for_calibration = True
 
-    with mock.patch.object(cluster, "_send_dp", side_effect=Exception("network error")):
+    with mock.patch.object(
+        cluster, "_send_dp", side_effect=Exception("network error")
+    ):
         # Must not raise.
         await cluster._disable_calibration_energy_stream()
 
@@ -697,10 +699,7 @@ async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
 async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
     """Test _enum_from_value covers all branches."""
     # Already the correct enum instance.
-    assert (
-        _enum_from_value(SensitivityPreset, SensitivityPreset.low)
-        is SensitivityPreset.low
-    )
+    assert _enum_from_value(SensitivityPreset, SensitivityPreset.low) is SensitivityPreset.low
 
     # String name lookup — valid.
     assert _enum_from_value(SensitivityPreset, "medium") == SensitivityPreset.medium
@@ -720,8 +719,8 @@ async def test_zps_z1_send_dp_datatypes(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    with mock.patch.object(cluster, "command") as cmd:
-        cmd.return_value = None
+
+
 
         await cluster._send_dp(DP_INDICATOR, DT_BOOL, [1])
         await cluster._send_dp(DP_DETECTION_RANGE, DT_VALUE, [0, 0, 1, 44])
@@ -736,8 +735,7 @@ async def test_zps_z1_query_data(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    with mock.patch.object(cluster, "command") as cmd:
-        cmd.return_value = None
+    with mock.patch.object(cluster, "command", new_callable=mock.AsyncMock) as cmd:
         await cluster._query_data()
 
     cmd.assert_called_once()
@@ -814,10 +812,12 @@ async def test_zps_z1_resend_zone_map(zigpy_device_from_v2_quirk):
 async def test_zps_z1_write_auto_calibration_invalid_value(
     zigpy_device_from_v2_quirk,
 ):
-    """Test writing an invalid auto_calibration value returns FAILURE."""
+    """Test _set_attribute raises ValueError for unsupported auto_calibration string."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    result = await cluster.write_attributes({"auto_calibration": 99})
+    # "bogus" is a string that fails KeyError in _enum_from_value → returns None
+    # → _set_attribute raises ValueError → write_attributes returns FAILURE.
+    result = await cluster.write_attributes({"auto_calibration": "bogus"})
 
     assert result[0][0].status == foundation.Status.FAILURE
