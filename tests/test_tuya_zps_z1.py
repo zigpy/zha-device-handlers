@@ -581,17 +581,23 @@ async def test_zps_z1_write_auto_calibration_start_energy_stream_already_on(
     # Only DP103 is sent; no DP104 this time.
     assert send_dp.call_count == 1
 
-
 async def test_zps_z1_sensitivity_preset_invalid_value(zigpy_device_from_v2_quirk):
-    """Test DP112 ValueError fallback to SensitivityPreset.custom."""
+    """Test DP112 ValueError fallback stores SensitivityPreset.custom."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
-    real_custom = SensitivityPreset.custom  # salva prima del patch
+    # Patch il costruttore di SensitivityPreset nel namespace del modulo
+    # in modo che sollevi ValueError, simulando un valore non valido.
+    original_cls = SensitivityPreset
+
+    def raising_cls(val):
+        raise ValueError("bad value")
+
+    raising_cls.custom = original_cls.custom  # preserva .custom per il fallback
 
     with mock.patch(
         "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.SensitivityPreset",
-        side_effect=ValueError("bad value"),
+        raising_cls,
     ):
         hdr, data = cluster.deserialize(
             _dp_frame(DP_SENSITIVITY_PRESET, DT_ENUM, b"\xff")
@@ -601,7 +607,7 @@ async def test_zps_z1_sensitivity_preset_invalid_value(zigpy_device_from_v2_quir
     assert status == foundation.Status.SUCCESS
 
     success, _ = await cluster.read_attributes(("sensitivity_preset",))
-    assert success["sensitivity_preset"] == real_custom
+    assert success["sensitivity_preset"] == SensitivityPreset.custom
 
 
 async def test_zps_z1_handle_cluster_specific_commands(zigpy_device_from_v2_quirk):
@@ -675,6 +681,7 @@ async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
         side_effect=CancelledError,
     ):
         await cluster._keepalive_loop()
+    # Se arriviamo qui senza eccezioni, CancelledError è stato gestito correttamente.
 
     send_dp.assert_not_called()
 
