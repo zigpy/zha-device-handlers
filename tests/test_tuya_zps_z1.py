@@ -581,6 +581,7 @@ async def test_zps_z1_write_auto_calibration_start_energy_stream_already_on(
     # Only DP103 is sent; no DP104 this time.
     assert send_dp.call_count == 1
 
+
 async def test_zps_z1_sensitivity_preset_invalid_value(zigpy_device_from_v2_quirk):
     """Test DP112 ValueError fallback stores SensitivityPreset.custom."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
