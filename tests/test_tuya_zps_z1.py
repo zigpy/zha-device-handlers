@@ -1,7 +1,7 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
 from unittest import mock
-import asyncio
+
 import pytest
 from zigpy.zcl import foundation
 
