@@ -714,6 +714,7 @@ async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
 
     assert _enum_from_value(SensitivityPreset, _Wrapper()) == SensitivityPreset.low
 
+
 async def test_zps_z1_send_dp_datatypes(zigpy_device_from_v2_quirk):
     """Test _send_dp with all datatype branches (BOOL, VALUE, ENUM, RAW)."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
@@ -803,9 +804,7 @@ async def test_zps_z1_resend_zone_map(zigpy_device_from_v2_quirk):
 
     with (
         mock.patch.object(cluster, "_send_dp") as send_dp,
-        mock.patch(
-            "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep"
-        ),
+        mock.patch("zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep"),
     ):
         await cluster._resend_zone_map()
 
