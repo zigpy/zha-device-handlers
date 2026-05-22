@@ -21,7 +21,7 @@ class BasicClusterWithLED(CustomCluster, Basic):
         red_led_brightness: Final = ZCLAttributeDef(
             id=0xFF01,
             type=t.uint8_t,
-            is_manufacturer_specific=False,
+            manufacturer_code=0x1233,
         )
 
 
