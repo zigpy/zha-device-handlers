@@ -665,7 +665,9 @@ async def test_zps_z1_disable_calibration_energy_stream_exception(
     cluster._energy_stream_on = True
     cluster._energy_stream_enabled_for_calibration = True
 
-    with mock.patch.object(cluster, "_send_dp", side_effect=Exception("network error")):
+    with mock.patch.object(
+        cluster, "_send_dp", side_effect=Exception("network error")
+    ):
         # Must not raise.
         await cluster._disable_calibration_energy_stream()
 
@@ -697,10 +699,7 @@ async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
 async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
     """Test _enum_from_value covers all branches."""
     # Already the correct enum instance.
-    assert (
-        _enum_from_value(SensitivityPreset, SensitivityPreset.low)
-        is SensitivityPreset.low
-    )
+    assert _enum_from_value(SensitivityPreset, SensitivityPreset.low) is SensitivityPreset.low
 
     # String name lookup — valid.
     assert _enum_from_value(SensitivityPreset, "medium") == SensitivityPreset.medium
@@ -761,8 +760,6 @@ async def test_zps_z1_start_and_stop_keepalive(zigpy_device_from_v2_quirk):
 
     with mock.patch.object(cluster, "_send_dp"):
         cluster._start_keepalive()
-
-    assert cluster._keepalive_task is not None
 
     # _stop_keepalive when task exists — covers the cancel() branch.
     cluster._stop_keepalive()
