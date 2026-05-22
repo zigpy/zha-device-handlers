@@ -39,7 +39,7 @@ class UbisysC4InputConfigCluster(UbisysInputConfigCluster):
         input_mode_3: Final = ZCLAttributeDef(id=0x0002, type=InputMode)
         input_mode_4: Final = ZCLAttributeDef(id=0x0003, type=InputMode)
 
-    _ATTRIBUTE_DEFAULTS: dict[int, Any] = {
+    _DEFAULT_VALUES: dict[int, Any] = {
         AttributeDefs.input_mode_1.id: InputMode.Toggle,
         AttributeDefs.input_mode_2.id: InputMode.Toggle,
         AttributeDefs.input_mode_3.id: InputMode.Toggle,
