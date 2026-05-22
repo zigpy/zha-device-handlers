@@ -1,5 +1,7 @@
 """Tests for Zemismart ZPS-Z1 Tuya quirk."""
 
+from unittest import mock
+
 from zigpy.zcl import foundation
 
 from zhaquirks.tuya.TS0601_TZE284_ft7qqpx3 import (
@@ -274,3 +276,60 @@ async def test_zps_z1_unknown_datapoint_returns_unsupported(
     status = cluster.handle_get_data(data.data)
 
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+async def test_zps_z1_write_basic_attributes(zigpy_device_from_v2_quirk):
+    """Test writable basic attributes are converted to Tuya datapoints."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(cluster, "_send_dp") as send_dp:
+        result = await cluster.write_attributes(
+            {
+                "detection_range": 300,
+                "presence_clear_cooldown": 30,
+                "led_indicator": True,
+                "energy_streaming": False,
+                "sensitivity_preset": SensitivityPreset.low,
+            }
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert send_dp.call_count == 5
+
+async def test_zps_z1_write_auto_calibration_starts_energy_stream(
+    zigpy_device_from_v2_quirk,
+):
+    """Test auto calibration start enables energy streaming first."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    with (
+        mock.patch.object(cluster, "_send_dp") as send_dp,
+        mock.patch.object(cluster, "_start_keepalive"),
+    ):
+        result = await cluster.write_attributes(
+            {"auto_calibration": AutoCalibrationCmd.start}
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert send_dp.call_count == 2
+
+async def test_zps_z1_write_zone_and_thresholds(zigpy_device_from_v2_quirk):
+    """Test zone and threshold writes."""
+    device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    cluster._thresholds_initialized = True
+
+    with mock.patch.object(cluster, "_send_dp") as send_dp:
+        result = await cluster.write_attributes(
+            {
+                "zone_7_active": False,
+                "zone_1_motion_threshold": 20,
+                "zone_1_presence_threshold": 10,
+            }
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert send_dp.call_count == 5
+
