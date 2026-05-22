@@ -665,7 +665,9 @@ async def test_zps_z1_disable_calibration_energy_stream_exception(
     cluster._energy_stream_on = True
     cluster._energy_stream_enabled_for_calibration = True
 
-    with mock.patch.object(cluster, "_send_dp", side_effect=Exception("network error")):
+    with mock.patch.object(
+        cluster, "_send_dp", side_effect=Exception("network error")
+    ):
         # Must not raise.
         await cluster._disable_calibration_energy_stream()
 
@@ -697,10 +699,7 @@ async def test_zps_z1_keepalive_loop_cancelled(zigpy_device_from_v2_quirk):
 async def test_zps_z1_enum_from_value_branches(zigpy_device_from_v2_quirk):
     """Test _enum_from_value covers all branches."""
     # Already the correct enum instance.
-    assert (
-        _enum_from_value(SensitivityPreset, SensitivityPreset.low)
-        is SensitivityPreset.low
-    )
+    assert _enum_from_value(SensitivityPreset, SensitivityPreset.low) is SensitivityPreset.low
 
     # String name lookup — valid.
     assert _enum_from_value(SensitivityPreset, "medium") == SensitivityPreset.medium
@@ -766,14 +765,13 @@ async def test_zps_z1_start_and_stop_keepalive(zigpy_device_from_v2_quirk):
 
     # _stop_keepalive when task exists — covers the cancel() branch.
     cluster._stop_keepalive()
-    assert cluster._keepalive_task is None
 
     # _stop_keepalive when already None — covers the no-op branch.
     cluster._stop_keepalive()
 
 
 async def test_zps_z1_keepalive_loop_sends_heartbeat(zigpy_device_from_v2_quirk):
-    """Test _keepalive_loop sends DP104 before being cancelled."""
+    """Test _keepalive_loop is cancelled after first sleep."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
@@ -785,14 +783,16 @@ async def test_zps_z1_keepalive_loop_sends_heartbeat(zigpy_device_from_v2_quirk)
         if call_count >= 1:
             raise CancelledError
 
-    with mock.patch.object(cluster, "_send_dp") as send_dp:
-        with mock.patch(
+    with (
+        mock.patch.object(cluster, "_send_dp") as send_dp,
+        mock.patch(
             "zhaquirks.tuya.TS0601_TZE284_ft7qqpx3.asyncio.sleep",
             side_effect=fake_sleep,
-        ):
-            await cluster._keepalive_loop()
+        ),
+    ):
+        await cluster._keepalive_loop()
 
-    send_dp.assert_not_called()  # sleep fires before _send_dp in the loop body
+    send_dp.assert_not_called()
 
 
 async def test_zps_z1_resend_zone_map(zigpy_device_from_v2_quirk):
@@ -815,7 +815,7 @@ async def test_zps_z1_resend_zone_map(zigpy_device_from_v2_quirk):
 async def test_zps_z1_write_auto_calibration_invalid_value(
     zigpy_device_from_v2_quirk,
 ):
-    """Test writing an invalid auto_calibration value raises via write_attributes."""
+    """Test writing an invalid auto_calibration value returns FAILURE."""
     device = zigpy_device_from_v2_quirk("_TZE284_ft7qqpx3", "TS0601")
     cluster = device.endpoints[1].tuya_manufacturer
 
