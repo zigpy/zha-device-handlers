@@ -38,6 +38,34 @@ class ThirdRealityCluster(CustomCluster):
         )
 
 
+class ThirdRealityClusterGen2(CustomCluster):
+    """Third Reality's temperature and humidity sensor private cluster for manufacturer code 1407."""
+
+    cluster_id = 0xFF01
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Define the attributes of a private cluster for manufacturer code 1407."""
+
+        temperature_offset_celsius: Final = ZCLAttributeDef(
+            id=0x0031,
+            type=t.int16s,
+            manufacturer_code=0x1407,
+        )
+
+        humidity_offset: Final = ZCLAttributeDef(
+            id=0x0032,
+            type=t.int16s,
+            manufacturer_code=0x1407,
+        )
+
+        # intentionally not exposed as an entity
+        temperature_offset_fahrenheit: Final = ZCLAttributeDef(
+            id=0x0033,
+            type=t.int16s,
+            manufacturer_code=0x1407,
+        )
+
+
 base_quirk = (
     QuirkBuilder()
     .replaces(ThirdRealityCluster)
@@ -48,7 +76,7 @@ base_quirk = (
         max_value=10000,
         multiplier=0.01,
         step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
@@ -56,6 +84,35 @@ base_quirk = (
     .number(
         attribute_name=ThirdRealityCluster.AttributeDefs.humidity_offset.name,
         cluster_id=ThirdRealityCluster.cluster_id,
+        min_value=-10000,
+        max_value=10000,
+        multiplier=0.01,
+        step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
+)
+
+base_quirk_gen2 = (
+    QuirkBuilder()
+    .replaces(ThirdRealityClusterGen2)
+    .number(
+        attribute_name=ThirdRealityClusterGen2.AttributeDefs.temperature_offset_celsius.name,
+        cluster_id=ThirdRealityClusterGen2.cluster_id,
+        min_value=-10000,
+        max_value=10000,
+        multiplier=0.01,
+        step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .number(
+        attribute_name=ThirdRealityClusterGen2.AttributeDefs.humidity_offset.name,
+        cluster_id=ThirdRealityClusterGen2.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
@@ -77,5 +134,11 @@ base_quirk = (
     base_quirk.clone()
     .applies_to("Third Reality, Inc", "3RTHS0224Z")
     .removes(PollControl.cluster_id)
+    .add_to_registry()
+)
+
+(
+    base_quirk_gen2.clone()
+    .applies_to("Third Reality, Inc", "3RTHS0324Z")
     .add_to_registry()
 )
