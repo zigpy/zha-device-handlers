@@ -1212,15 +1212,14 @@ class Switch_4G_GPP_Var2(EnchantedDevice):
 
 
 BACKLIGHT_MODELS = (
-    "TS0001",
-    "TS0002",
-    "TS0003",
-    "TS0004",
+    ("_TZ3000_n1h5w253", "TS0001"),
+    ("_TZ3000_c7xsiexw", "TS0002"),
+    ("_TZ3000_6bbk8rmq", "TS0004"),
 )
 
-for model in BACKLIGHT_MODELS:
+for manufacturer, model in BACKLIGHT_MODELS:
     (
-        QuirkBuilder(model)
+        QuirkBuilder(manufacturer, model)
         .replaces(TuyaZBOnOffAttributeClusterBacklight, endpoint_id=1)
         .enum(
             TuyaZBOnOffAttributeClusterBacklight.AttributeDefs.backlight_mode.name,
