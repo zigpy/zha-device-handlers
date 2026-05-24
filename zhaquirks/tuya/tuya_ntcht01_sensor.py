@@ -26,6 +26,7 @@ class ExternalProbeTempCluster(TuyaLocalCluster, TemperatureMeasurement):
         self._update_attribute(self.attributes_by_name["measured_value"].id, 0)
         """The __init__ override with _update_attribute is necessary because ZHA marks the virtual cluster attribute as 'unsupported' if it doesn't receive an initial value during pairing, preventing the sensor from appearing in the UI."""
 
+
 class NTCHT01TuyaMCU(TuyaMCUCluster):
     """Custom Tuya MCU cluster mapping for Excellux."""
 
