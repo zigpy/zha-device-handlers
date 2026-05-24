@@ -76,6 +76,7 @@ from zhaquirks.xiaomi import (
 )
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
+import zhaquirks.xiaomi.aqara.curtain_b1
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -2470,6 +2471,407 @@ async def test_xiaomi_e1_roller_position_updates(
         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
         75,
     )
+
+
+@pytest.mark.parametrize(
+    "command, args, expected_analog_value",
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, (), 100),
+        (WindowCovering.ServerCommandDefs.down_close.id, (), 0),
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, (30,), 70),
+    ],
+)
+async def test_xiaomi_b1_curtain_commands_writes(
+    zigpy_device_from_v2_quirk, command, args, expected_analog_value
+):
+    """Test Aqara B1 curtain motor commands write to AnalogOutput.present_value."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with patch_window_covering_read, patch_analog_read, patch_analog_write:
+        await window_covering_cluster.command(command, *args)
+
+        # confirm the AnalogOutput write occurred with the expected value
+        assert analog_cluster._write_attributes.call_count == 1
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].attrid == analog_attr_id
+        )
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].value.value
+            == expected_analog_value
+        )
+
+        # confirm the follow-up read of current_position_lift_percentage was redirected
+        # to AnalogOutput.present_value (not read from the WindowCovering cluster)
+        assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+        assert len(analog_cluster._read_attributes.mock_calls) == 1
+        assert analog_cluster._read_attributes.mock_calls[0][1][0] == [analog_attr_id]
+
+
+async def test_xiaomi_b1_curtain_stop_command(zigpy_device_from_v2_quirk):
+    """Test Aqara B1 curtain stop sends native command and follows with a position read."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+    patch_analog_write = mock.patch.object(
+        analog_cluster, "_write_attributes", mock.AsyncMock()
+    )
+    patch_request = mock.patch.object(
+        window_covering_cluster, "request", mock.AsyncMock(return_value=[0x00])
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_analog_write,
+        patch_request as mock_request,
+    ):
+        await window_covering_cluster.command(WindowCovering.ServerCommandDefs.stop.id)
+
+        # confirm the native stop command was sent (no AnalogOutput write)
+        assert analog_cluster._write_attributes.call_count == 0
+        assert mock_request.call_count == 1
+
+        # confirm the follow-up read of current_position_lift_percentage
+        # was redirected to AnalogOutput.present_value
+        assert len(analog_cluster._read_attributes.mock_calls) == 1
+        assert analog_cluster._read_attributes.mock_calls[0][1][0] == [analog_attr_id]
+
+
+async def test_xiaomi_b1_curtain_unsupported_command(zigpy_device_from_v2_quirk):
+    """Test Aqara B1 curtain returns UNSUP_CLUSTER_COMMAND for non-handled commands."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+    window_covering_cluster = device.endpoints[1].window_covering
+
+    _, status = await window_covering_cluster.go_to_tilt_percentage(50)
+    assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "attr, expected_value, target_attr, target_cluster",
+    [
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            99,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read success
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            None,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read failure
+        (
+            WindowCovering.AttributeDefs.config_status,
+            1,
+            None,
+            None,
+        ),  # Regular read success
+    ],
+)
+async def test_xiaomi_b1_curtain_read_redirection(
+    zigpy_device_from_v2_quirk,
+    attr: foundation.ZCLAttributeDef,
+    expected_value: int | None,
+    target_attr: foundation.ZCLAttributeDef | None,
+    target_cluster: Cluster | None,
+):
+    """Test Aqara B1 WindowCovering attribute read redirection with inversion."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    redirect = False
+    if target_attr and target_cluster:
+        target_cluster = getattr(device.endpoints[1], target_cluster.ep_attribute)
+        redirect = True
+
+    # mock returns value=1 on success, FAILURE status if expected_value is None
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                a,
+                foundation.Status.SUCCESS
+                if expected_value
+                else foundation.Status.FAILURE,
+                foundation.TypeValue(None, 1),
+            )
+            for a in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+
+    if redirect:
+        patch_target_read = mock.patch.object(
+            target_cluster,
+            "_read_attributes",
+            mock.AsyncMock(side_effect=mock_read),
+        )
+        with patch_window_covering_read, patch_target_read:
+            await window_covering_cluster.read_attributes([attr.id])
+
+            # confirm the read was redirected to the target cluster
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+            assert len(target_cluster._read_attributes.mock_calls) == 1
+            assert target_cluster._read_attributes.mock_calls[0][1][0] == [
+                target_attr.id
+            ]
+    else:
+        with patch_window_covering_read:
+            await window_covering_cluster.read_attributes([attr.id])
+
+            # confirm the read occurred normally on the WindowCovering cluster
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 1
+            assert window_covering_cluster._read_attributes.mock_calls[0][1][0] == [
+                attr.id
+            ]
+
+    if not expected_value:
+        # failed reads should not trigger an attribute update
+        assert len(window_covering_listener.attribute_updates) == 0
+        return
+
+    # for the redirected success case the value 1 from AnalogOutput
+    # should be inverted to 99 when cached on WindowCovering
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        attr.id,
+        expected_value,
+    )
+
+
+async def test_xiaomi_b1_curtain_analog_propagation(zigpy_device_from_v2_quirk):
+    """Test Aqara B1 AnalogOutput present_value reads and reports propagate to WindowCovering."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr = AnalogOutput.AttributeDefs.present_value
+
+    # AnalogOutput read of present_value=70 should cache WindowCovering as 30
+    patch_analog_read = mock.patch.object(
+        analog_cluster,
+        "_read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 70),
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_read:
+        analog_listener.attribute_updates.clear()
+        window_covering_listener.attribute_updates.clear()
+
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            window_covering_attr_id,
+            30,
+        )
+
+    # AnalogOutput autonomous report of present_value=25 should cache WindowCovering as 75
+    attr = foundation.Attribute(
+        attrid=analog_attr.id,
+        value=foundation.TypeValue(0x39, t.Single(25.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        window_covering_attr_id,
+        75,
+    )
+
+
+async def test_xiaomi_b1_curtain_device_report_inversion(zigpy_device_from_v2_quirk):
+    """Test device-sourced current_position_lift_percentage reports are inverted.
+
+    The B1 sends autonomous reports for current_position_lift_percentage in its
+    non-standard scale (0=closed, 100=open). The _update_attribute override
+    must invert these to the standard Zigbee scale (0=open, 100=closed).
+    """
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
+    # device reports current_position_lift_percentage=17 (device scale = 17% open)
+    # which must be cached as 83 (standard Zigbee scale = 83% closed)
+    attr = foundation.Attribute(
+        attrid=window_covering_attr_id,
+        value=foundation.TypeValue(foundation.DataTypeId.uint8, t.uint8_t(17)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=window_covering_cluster.cluster_id,
+            src_ep=window_covering_cluster.endpoint.endpoint_id,
+            dst_ep=window_covering_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        window_covering_attr_id,
+        83,
+    )
+
+
+async def test_xiaomi_b1_curtain_no_double_inversion(zigpy_device_from_v2_quirk):
+    """Test that AnalogOutput propagation does not double-invert via _from_analog flag.
+
+    When AnalogOutput.present_value updates WindowCovering.current_position_lift_percentage,
+    it has already applied 100-x. The _from_analog flag must prevent _update_attribute
+    from inverting again.
+    """
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr = AnalogOutput.AttributeDefs.present_value
+
+    # AnalogOutput read of present_value=40 — propagation should cache WindowCovering as 60
+    # (100-40=60), not 40 (which would be the result of double-inversion)
+    patch_analog_read = mock.patch.object(
+        analog_cluster,
+        "_read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 40),
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_read:
+        window_covering_listener.attribute_updates.clear()
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            window_covering_attr_id,
+            60,
+        )
+
+    # confirm the flag is reset after propagation so subsequent device reports are inverted
+    assert window_covering_cluster._from_analog is False
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
