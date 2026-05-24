@@ -22,9 +22,9 @@ class ExternalProbeTempCluster(TuyaLocalCluster, TemperatureMeasurement):
     def __init__(self, *args, **kwargs):
         """Init and inject initial state to avoid unsupported attribute error."""
         super().__init__(*args, **kwargs)
-        # Söödame andurile kohe algväärtuse 0, et ZHA ei märgiks seda "unsupported" (toetamata) anduriks!
+        """The __init__ override with _update_attribute is necessary because ZHA marks the virtual cluster attribute as 'unsupported' if it doesn't receive an initial value during pairing, preventing the sensor from appearing in the UI."""
         self._update_attribute(self.attributes_by_name["measured_value"].id, 0)
-
+        """The __init__ override with _update_attribute is necessary because ZHA marks the virtual cluster attribute as 'unsupported' if it doesn't receive an initial value during pairing, preventing the sensor from appearing in the UI."""
 
 class NTCHT01TuyaMCU(TuyaMCUCluster):
     """Custom Tuya MCU cluster mapping for Excellux."""
