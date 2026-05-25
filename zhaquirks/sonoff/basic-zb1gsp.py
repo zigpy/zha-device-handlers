@@ -31,43 +31,43 @@ class SonoffCustomCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-        faultCode = ZCLAttributeDef(
+        fault_code = ZCLAttributeDef(
             id=0x0010,
             type=t.uint32_t,
             manufacturer_code=None,
         )
 
-        ACCurrentMaxOverloadEnable = ZCLAttributeDef(
+        ac_current_max_overload_enable = ZCLAttributeDef(
             id=0x700C,
             type=t.uint8_t,
             manufacturer_code=None,
         )
 
-        ACCurrentMaxOverload = ZCLAttributeDef(
+        ac_current_max_overload = ZCLAttributeDef(
             id=0x700D,
             type=t.uint32_t,
             manufacturer_code=None,
         )
 
-        ACVoltageMaxOverloadEnable = ZCLAttributeDef(
+        ac_voltage_max_overload_enable = ZCLAttributeDef(
             id=0x700E,
             type=t.uint8_t,
             manufacturer_code=None,
         )
 
-        ACVoltageMaxOverload = ZCLAttributeDef(
+        ac_voltage_max_overload = ZCLAttributeDef(
             id=0x700F,
             type=t.uint32_t,
             manufacturer_code=None,
         )
 
-        ACPowerMaxOverloadEnable = ZCLAttributeDef(
+        ac_power_max_overload_enable = ZCLAttributeDef(
             id=0x7010,
             type=t.uint8_t,
             manufacturer_code=None,
         )
 
-        ACPowerMaxOverload = ZCLAttributeDef(
+        ac_power_max_overload = ZCLAttributeDef(
             id=0x7011,
             type=t.uint32_t,
             manufacturer_code=None,
@@ -100,10 +100,10 @@ class SonoffCustomCluster(CustomCluster):
         result = []
 
         enable_writes: dict[int, int] = {}
-        if self._has_attribute(attributes, self.AttributeDefs.ACCurrentMaxOverload):
-            enable_writes[self.AttributeDefs.ACCurrentMaxOverloadEnable.id] = 0x01
-        if self._has_attribute(attributes, self.AttributeDefs.ACPowerMaxOverload):
-            enable_writes[self.AttributeDefs.ACPowerMaxOverloadEnable.id] = 0x01
+        if self._has_attribute(attributes, self.AttributeDefs.ac_current_max_overload):
+            enable_writes[self.AttributeDefs.ac_current_max_overload_enable.id] = 0x01
+        if self._has_attribute(attributes, self.AttributeDefs.ac_power_max_overload):
+            enable_writes[self.AttributeDefs.ac_power_max_overload_enable.id] = 0x01
 
         if enable_writes:
             result += await super().write_attributes(enable_writes, **kwargs)
@@ -140,7 +140,7 @@ class SonoffCustomCluster(CustomCluster):
         fallback_name="Clear energy consumption",
     )
     .binary_sensor(
-        SonoffCustomCluster.AttributeDefs.faultCode.name,
+        SonoffCustomCluster.AttributeDefs.fault_code.name,
         SonoffCustomCluster.cluster_id,
         device_class=BinarySensorDeviceClass.PROBLEM,
         attribute_converter=lambda x: x == 0x6020004,
@@ -156,7 +156,7 @@ class SonoffCustomCluster(CustomCluster):
         fallback_name="Network LED",
     )
     .number(
-        SonoffCustomCluster.AttributeDefs.ACCurrentMaxOverload.name,
+        SonoffCustomCluster.AttributeDefs.ac_current_max_overload.name,
         SonoffCustomCluster.cluster_id,
         cluster_type=ClusterType.Server,
         min_value=0.1,
@@ -165,21 +165,21 @@ class SonoffCustomCluster(CustomCluster):
         unit=UnitOfElectricCurrent.AMPERE,
         mode="box",
         multiplier=0.001,
-        translation_key="AC_Current_Max_Overload",
+        translation_key="ac_current_max_overload",
         fallback_name="AC current max overload",
     )
     .switch(
-        SonoffCustomCluster.AttributeDefs.ACVoltageMaxOverloadEnable.name,
+        SonoffCustomCluster.AttributeDefs.ac_voltage_max_overload_enable.name,
         SonoffCustomCluster.cluster_id,
         endpoint_id=1,
         force_inverted=False,  # Optional: invert on/off
         off_value=0,  # Optional: value written when turning off (default 0)
         on_value=1,  # Optional: value written when turning on (default 1)
-        translation_key="AC_Voltage_Max_Overload_Enable",
+        translation_key="ac_voltage_max_overload_enable",
         fallback_name="AC voltage max overload enable",
     )
     .number(
-        SonoffCustomCluster.AttributeDefs.ACVoltageMaxOverload.name,
+        SonoffCustomCluster.AttributeDefs.ac_voltage_max_overload.name,
         SonoffCustomCluster.cluster_id,
         cluster_type=ClusterType.Server,
         min_value=85,
@@ -189,11 +189,11 @@ class SonoffCustomCluster(CustomCluster):
         mode="box",
         multiplier=0.001,
         device_class=NumberDeviceClass.VOLTAGE,
-        translation_key="AC_Voltage_Max_Overload",
+        translation_key="ac_voltage_max_overload",
         fallback_name="AC voltage max overload",
     )
     .number(
-        SonoffCustomCluster.AttributeDefs.ACPowerMaxOverload.name,
+        SonoffCustomCluster.AttributeDefs.ac_power_max_overload.name,
         SonoffCustomCluster.cluster_id,
         cluster_type=ClusterType.Server,
         min_value=10,
@@ -203,7 +203,7 @@ class SonoffCustomCluster(CustomCluster):
         mode="box",
         multiplier=0.001,
         device_class=NumberDeviceClass.POWER,
-        translation_key="AC_Power_Max_Overload",
+        translation_key="ac_power_max_overload",
         fallback_name="AC power max overload",
     )
     .add_to_registry()
