@@ -61,7 +61,7 @@ class SEControlStatus(t.enum8):
     SensorFault = 0x84
 
 
-class SELocalTemperatureSourceSelect(t.enum8):
+class SELocalTemperatureSourceSelect(t.uint8_t):
     """Local temperature source select."""
 
     # Internal temperature sensor
