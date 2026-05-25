@@ -1,20 +1,22 @@
-"""SONOFF S60ZBTPF - Smart Socket with power measurement fix."""
+"""SONOFF BASIC-ZB1GSP - Smart Socket with power measurement fix."""
 
 from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
+from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
+    UnitOfEnergy,
     UnitOfPower,
 )
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
-
 
 class SonoffCustomCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -24,7 +26,6 @@ class SonoffCustomCluster(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
-
         network_led = ZCLAttributeDef(
             id=0x0001,
             type=t.Bool,
@@ -85,11 +86,7 @@ class SonoffCustomCluster(CustomCluster):
         attr_def: foundation.ZCLAttributeDef,
     ) -> bool:
         """Return True when an attribute write payload contains attr_def."""
-        return (
-            attr_def in attributes
-            or attr_def.id in attributes
-            or attr_def.name in attributes
-        )
+        return attr_def in attributes or attr_def.id in attributes or attr_def.name in attributes
 
     async def write_attributes(
         self,
@@ -128,6 +125,7 @@ class SonoffCustomCluster(CustomCluster):
 (
     QuirkBuilder("SONOFF", "BASIC-ZB1GSP")
     .replaces(SonoffCustomCluster)
+
     .command_button(
         SonoffCustomCluster.ServerCommandDefs.clear_energy_consumption.name,
         SonoffCustomCluster.cluster_id,
@@ -139,13 +137,14 @@ class SonoffCustomCluster(CustomCluster):
         translation_key="clear_energy_consumption",
         fallback_name="Clear energy consumption",
     )
+
     .binary_sensor(
         SonoffCustomCluster.AttributeDefs.faultCode.name,
         SonoffCustomCluster.cluster_id,
         device_class=BinarySensorDeviceClass.PROBLEM,
         attribute_converter=lambda x: x == 0x6020004,
         unique_id_suffix="threshold_protection",
-        translation_key="threshold_protection",
+        translation_key="threshold_protection", 
         fallback_name="Threshold protection",
     )
     .switch(
@@ -170,11 +169,11 @@ class SonoffCustomCluster(CustomCluster):
     )
     .switch(
         SonoffCustomCluster.AttributeDefs.ACVoltageMaxOverloadEnable.name,
-        SonoffCustomCluster.cluster_id,
+        SonoffCustomCluster.cluster_id, 
         endpoint_id=1,
-        force_inverted=False,  # Optional: invert on/off
-        off_value=0,  # Optional: value written when turning off (default 0)
-        on_value=1,  # Optional: value written when turning on (default 1)
+        force_inverted=False,             # Optional: invert on/off
+        off_value=0,                      # Optional: value written when turning off (default 0)
+        on_value=1,                       # Optional: value written when turning on (default 1)
         translation_key="AC_Voltage_Max_Overload_Enable",
         fallback_name="AC voltage max overload enable",
     )
@@ -201,7 +200,7 @@ class SonoffCustomCluster(CustomCluster):
         step=1.0,
         unit=UnitOfPower.WATT,
         mode="box",
-        multiplier=0.001,
+        multiplier=0.001, 
         device_class=NumberDeviceClass.POWER,
         translation_key="AC_Power_Max_Overload",
         fallback_name="AC power max overload",
