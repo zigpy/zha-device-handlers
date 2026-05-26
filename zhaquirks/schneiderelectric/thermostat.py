@@ -16,7 +16,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef, DataTypeId, ZCLCommandDef
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
