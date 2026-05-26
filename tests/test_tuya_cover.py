@@ -10,7 +10,7 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601, TuyaZemismartSmartCover0601_4
 
 zhaquirks.setup()
 
@@ -32,6 +32,25 @@ def test_ts601_moes_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(TuyaMoesCover0601, signature)
+
+
+def test_zemismart_tze284_fzo2pocs_signature(assert_signature_matches_quirk):
+    """Test _TZE284_fzo2pocs cover signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.142: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>)",
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x0051",
+                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00", "0xed00"],
+                "out_clusters": ["0x000a", "0x0019"],
+            }
+        },
+        "manufacturer": "_TZE284_fzo2pocs",
+        "model": "TS0601",
+        "class": "zigpy.device.Device",
+    }
+    assert_signature_matches_quirk(TuyaZemismartSmartCover0601_4, signature)
 
 
 async def test_zemismart_zm16b_quirk(zigpy_device_from_v2_quirk):
