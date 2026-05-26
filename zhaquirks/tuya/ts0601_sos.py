@@ -1,6 +1,7 @@
-"""(MOES) Tuya SOS button """
+"""(MOES) Tuya SOS button"""
 
 import logging
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 
@@ -25,6 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 # Constants for Tuya Data Points
 TUYA_DP_ID_SMART_EVENT = 1024  # Base DP for events
 HEARTBEAT_EVENT = "heartbeat"
+
 
 class TuyaSOSButtonCluster(TuyaManufClusterAttributes):
     """Manufacturer specific cluster for Tuya SOS button."""
