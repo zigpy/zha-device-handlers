@@ -16,7 +16,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import ZCLAttributeDef, DataTypeId, ZCLCommandDef
 
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
@@ -61,7 +61,7 @@ class SEControlStatus(t.enum8):
     SensorFault = 0x84
 
 
-class SELocalTemperatureSourceSelect(t.uint8_t):
+class SELocalTemperatureSourceSelect(t.enum8):
     """Local temperature source select."""
 
     # Internal temperature sensor
@@ -296,6 +296,7 @@ class SEThermostat(CustomCluster, Thermostat):
         se_local_temperature_source_select: Final = ZCLAttributeDef(
             id=0xE212,
             type=SELocalTemperatureSourceSelect,
+            zcl_type=DataTypeId.uint8,
             access="rw",
             is_manufacturer_specific=True,
         )
