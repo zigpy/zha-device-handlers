@@ -1,4 +1,4 @@
-"""(MOES) Tuya SOS button"""
+"""(MOES) Tuya SOS button."""
 
 import logging
 
