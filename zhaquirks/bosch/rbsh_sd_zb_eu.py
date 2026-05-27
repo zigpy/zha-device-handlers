@@ -5,9 +5,9 @@ from typing import Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLCommandDef
-import zigpy.types as t
 
 from zhaquirks.bosch import BOSCH
 
@@ -45,7 +45,10 @@ class BoschSmokeDetectorIasZone(CustomCluster, IasZone):
     .command_button(
         BoschSmokeDetectorIasZone.ServerCommandDefs.alarm_control.name,
         BoschSmokeDetectorIasZone.cluster_id,
-        command_kwargs={"alarm_mode": BoschAlarmMode.Smoke, "alarm_timeout": _ALARM_TIMEOUT_ACTIVE},
+        command_kwargs={
+            "alarm_mode": BoschAlarmMode.Smoke,
+            "alarm_timeout": _ALARM_TIMEOUT_ACTIVE,
+        },
         entity_type=EntityType.CONFIG,
         translation_key="trigger_smoke_alarm",
         fallback_name="Trigger smoke alarm",
@@ -64,7 +67,10 @@ class BoschSmokeDetectorIasZone(CustomCluster, IasZone):
     .command_button(
         BoschSmokeDetectorIasZone.ServerCommandDefs.alarm_control.name,
         BoschSmokeDetectorIasZone.cluster_id,
-        command_kwargs={"alarm_mode": BoschAlarmMode.Burglar, "alarm_timeout": _ALARM_TIMEOUT_ACTIVE},
+        command_kwargs={
+            "alarm_mode": BoschAlarmMode.Burglar,
+            "alarm_timeout": _ALARM_TIMEOUT_ACTIVE,
+        },
         entity_type=EntityType.CONFIG,
         translation_key="trigger_burglar_alarm",
         fallback_name="Trigger burglar alarm",
