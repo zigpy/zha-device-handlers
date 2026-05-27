@@ -31,6 +31,7 @@ class BoschSmokeDetectorIasZone(CustomCluster, IasZone):
     """
 
     class ServerCommandDefs(IasZone.ServerCommandDefs):
+        """Bosch smoke detector manufacturer specific server commands."""
         alarm_control: Final = ZCLCommandDef(
             id=0x80,
             schema={"alarm_mode": BoschAlarmMode, "alarm_timeout": t.uint8_t},
