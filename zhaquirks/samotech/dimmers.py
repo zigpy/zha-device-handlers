@@ -12,10 +12,10 @@ both. Attribute access uses the device's own manufacturer code (0x100B,
 Samotech) from the node descriptor.
 """
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeDef
 
