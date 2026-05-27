@@ -1,0 +1,2 @@
+"""Samotech device quirks."""
+
