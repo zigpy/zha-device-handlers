@@ -39,6 +39,14 @@ class TuyaNousTempHumiAlarm(t.enum8):
     UpperAlarm = 0x01
     Canceled = 0x02
 
+class GiexSoilLightLevel(t.enum8):
+    """GIEX soil sensor light level enum."""
+
+    Lower = 0x00
+    Low = 0x01
+    Normal = 0x02
+    High = 0x03
+    Higher = 0x04
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
@@ -371,6 +379,24 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("_TZE284_3urschql", "TS0601")  
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="brightness_level",
+        enum_class=GiexSoilLightLevel,
+        entity_type=EntityType.STANDARD,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="brightness_level",
+        fallback_name="Brightness level",
+    )
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15)
+    .tuya_soil_moisture(dp_id=3)
     .skip_configuration()
     .add_to_registry()
 )
