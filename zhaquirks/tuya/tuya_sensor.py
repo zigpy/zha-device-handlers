@@ -39,6 +39,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     UpperAlarm = 0x01
     Canceled = 0x02
 
+
 class GiexSoilLightLevel(t.enum8):
     """GIEX soil sensor light level enum."""
 
@@ -47,6 +48,7 @@ class GiexSoilLightLevel(t.enum8):
     Normal = 0x02
     High = 0x03
     Higher = 0x04
+
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
@@ -384,7 +386,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 )
 
 (
-    TuyaQuirkBuilder("_TZE284_3urschql", "TS0601")  
+    TuyaQuirkBuilder("_TZE284_3urschql", "TS0601")
     .tuya_enum(
         dp_id=2,
         attribute_name="brightness_level",
