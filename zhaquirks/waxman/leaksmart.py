@@ -41,11 +41,14 @@ ZONE_TYPE = 0x0001
 class EmulatedIasZone(LocalDataCluster, IasZone):
     """Emulated IAS zone cluster."""
 
+    _CONSTANT_ATTRIBUTES = {
+        ZONE_TYPE: MOISTURE_TYPE,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.ias_bus.add_listener(self)
-        super()._update_attribute(ZONE_TYPE, MOISTURE_TYPE)
 
     async def bind(self):
         """Bind cluster."""

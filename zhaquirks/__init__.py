@@ -18,7 +18,12 @@ from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUnsupportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -65,14 +70,28 @@ class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls.
 
     Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _DEFAULT_VALUES to provide default values for attribute ids. These are
+    returned when no value is cached yet, but are overridden by any cached value.
     Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
     These are attributes that should be populated later.
     """
 
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
-    async def bind(self):
+    def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
+        """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return default
+        result = super().get(key)
+        if result is not None:
+            return result
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
+
+    async def bind(self, **kwargs):
         """Prevent bind."""
         self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
@@ -101,7 +120,9 @@ class LocalDataCluster(CustomCluster):
             if record.attrid in self._CONSTANT_ATTRIBUTES:
                 record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
             else:
-                record.value.value = self._attr_cache.get(record.attrid)
+                record.value.value = self._attr_cache.get(
+                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+                )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
@@ -245,6 +266,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value),
             )
+
+    def emit(self, event_name: str, data=None) -> None:
+        """Suppress unsupported event for battery percentage remaining.
+
+        This attribute is computed from battery voltage by this quirk, so
+        an unsupported response from the device should not clear the cache.
+        """
+        if (
+            event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id == self.BATTERY_PERCENTAGE_REMAINING
+        ):
+            return
+        super().emit(event_name, data)
 
     def _calculate_battery_percentage(self, raw_value):
         volts = raw_value / 10
