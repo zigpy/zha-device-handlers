@@ -7,11 +7,12 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 import zhaquirks
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 from zhaquirks.shelly.wifi import (
-    SHELLY_MANUFACTURER_CODE,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
@@ -157,3 +158,21 @@ def test_shelly_wifi_standard_profile_packet_delegated(
     assert rsp_key is not None
     assert rsp_key.endpoint_id == 1
     assert rsp_key.cluster_id == Basic.cluster_id
+
+
+@pytest.mark.parametrize(
+    "zone_status,expected_door,expected_tilt",
+    [
+        (0x0000, False, False),  # alarm1=0, alarm2=0 → closed, not tilted
+        (0x0002, True, False),  # alarm1=0, alarm2=1 → open, not tilted
+        (0x0001, True, True),  # alarm1=1, alarm2=0 → tilted
+        (0x0003, True, False),  # alarm1=1, alarm2=1 → open, not tilted
+    ],
+)
+def test_door_window_binary_sensors(zone_status, expected_door, expected_tilt):
+    """Test DoorWindow binary sensor converters for IAS Zone status bits."""
+    alarm_bits = IasZone.ZoneStatus.Alarm_1 | IasZone.ZoneStatus.Alarm_2
+    # Door sensor: on when either alarm bit is set (open or tilted)
+    assert bool(zone_status & alarm_bits) == expected_door
+    # Tilt sensor: on only when alarm1 is set and alarm2 is not
+    assert ((zone_status & alarm_bits) == IasZone.ZoneStatus.Alarm_1) == expected_tilt
