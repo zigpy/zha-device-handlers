@@ -386,7 +386,6 @@ base_tuya_motion = (
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_laokfqwu", "TS0601")
-    .applies_to("_TZE200_clrdrnya", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -412,9 +411,10 @@ base_tuya_motion = (
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        min_value=0.1,
+        min_value=0,
         max_value=10,
         step=0.1,
+        multiplier=0.1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
     )
@@ -427,6 +427,7 @@ base_tuya_motion = (
         min_value=5,
         max_value=1500,
         step=5,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -695,6 +696,7 @@ base_tuya_motion = (
     base_tuya_motion.clone()
     .applies_to("_TZE204_sbyx0lm6", "TS0601")
     .applies_to("_TZE204_clrdrnya", "TS0601")
+    .applies_to("_TZE200_clrdrnya", "TS0601")
     .applies_to("_TZE204_dtzziy1e", "TS0601")
     .applies_to("_TZE204_iaeejhvf", "TS0601")
     .applies_to("_TZE204_mtoaryre", "TS0601")
@@ -1253,6 +1255,7 @@ base_tuya_motion = (
         min_value=1,
         max_value=1500,
         step=1,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
