@@ -242,7 +242,10 @@ class TuyaTempHumiditySensorWithIPRating(CustomDevice):
     """Tuya temperature and humidity sensor with IP Rating and weather sealing."""
 
     signature = {
-        MODELS_INFO: [("_TZ3000_isw9u95y", "TS0201")],
+        MODELS_INFO: [
+            ("_TZ3000_isw9u95y", "TS0201"),
+            ("_TZ3000_yupc0pb7", "TS0201"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
