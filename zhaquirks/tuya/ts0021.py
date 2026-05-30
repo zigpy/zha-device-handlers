@@ -1,4 +1,4 @@
-"""Device handler the TS0021."""
+"""Device handler for the TS0021."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -54,7 +54,7 @@ class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
 
 
 class TS0021(CustomDevice):
-    """Tuya TS0021 2-button switch device."""
+    """Tuya TS0021 2-button remote device."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026,
