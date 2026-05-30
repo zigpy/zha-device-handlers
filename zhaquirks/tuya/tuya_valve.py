@@ -789,6 +789,7 @@ class TuyaReportingPeriod(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE200_ajlu4cud", "TS0601")
+    .applies_to("_TZE284_ajlu4cud", "TS0601")
     # Total consumption in liters
     .tuya_metering(dp_id=1, metering_cfg=TuyaValveWaterConsumed)
     # Month consumption
