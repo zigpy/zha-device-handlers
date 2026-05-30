@@ -117,4 +117,6 @@ def test_missing_command_id_fires_fallback_event(cluster):
     hdr = MagicMock()
     payload = MagicMock(spec=[])  # no attributes at all -> getattr returns "unknown"
     cluster.handle_cluster_request(hdr, [payload])
-    cluster.listener_event.assert_called
+    cluster.listener_event.assert_called_once_with(
+        "zha_send_event", "button_unknown", {"unique_id": "unknown"}
+    )
