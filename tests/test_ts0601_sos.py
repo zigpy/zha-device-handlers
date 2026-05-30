@@ -1,14 +1,13 @@
 """Tests for MOES Tuya SOS button quirk."""
-import pytest
+
 from unittest.mock import MagicMock, patch
-from zhaquirks.const import BUTTON, COMMAND, DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
+
+import pytest
+
+from zhaquirks.const import BUTTON, DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
 
 # Adjust this import to match your actual file path in the repo
-from zhaquirks.tuya.ts0601_sos import (
-    HEARTBEAT_EVENT,
-    TuyaSOSButton,
-    TuyaSOSButtonCluster,
-)
+from zhaquirks.tuya.ts0601_sos import TuyaSOSButton, TuyaSOSButtonCluster
 
 
 @pytest.fixture
@@ -29,6 +28,7 @@ def make_payload(command_id):
 
 # --- Signature / replacement sanity checks ---
 
+
 def test_signature_model():
     assert ("_TZE200_vrcfo4i0", "TS0601") in TuyaSOSButton.signature["models_info"]
 
@@ -41,6 +41,7 @@ def test_device_automation_triggers():
 
 
 # --- handle_cluster_request: happy-path press types ---
+
 
 def test_short_press_fires_event(cluster):
     hdr = MagicMock()
@@ -68,6 +69,7 @@ def test_long_press_fires_event(cluster):
 
 # --- Heartbeat: must NOT fire a ZHA event ---
 
+
 def test_heartbeat_does_not_fire_event(cluster):
     hdr = MagicMock()
     cluster.handle_cluster_request(hdr, [make_payload(515)])
@@ -79,11 +81,14 @@ def test_heartbeat_logs_debug(cluster):
     with patch("zhaquirks.tuya.ts0601_sos._LOGGER") as mock_log:
         cluster.handle_cluster_request(hdr, [make_payload(515)])
         mock_log.debug.assert_called_once()
-        assert "515" in mock_log.debug.call_args[0][0] or \
-               "Heartbeat" in mock_log.debug.call_args[0][0]
+        assert (
+            "515" in mock_log.debug.call_args[0][0]
+            or "Heartbeat" in mock_log.debug.call_args[0][0]
+        )
 
 
 # --- Unknown dp_id: fallback action ---
+
 
 def test_unknown_dp_id_fires_fallback_event(cluster):
     hdr = MagicMock()
@@ -95,6 +100,7 @@ def test_unknown_dp_id_fires_fallback_event(cluster):
 
 # --- Exception path: empty args should not raise ---
 
+
 def test_empty_args_does_not_raise(cluster):
     hdr = MagicMock()
     with patch("zhaquirks.tuya.ts0601_sos._LOGGER") as mock_log:
@@ -104,6 +110,7 @@ def test_empty_args_does_not_raise(cluster):
 
 
 # --- getattr fallback: payload missing command_id ---
+
 
 def test_missing_command_id_fires_fallback_event(cluster):
     hdr = MagicMock()
