@@ -47,7 +47,7 @@ class TuyaSOSButtonCluster(TuyaManufClusterAttributes):
             elif dp_id == 515:
                 # Periodic 4-hour keep-alive signal
                 action = HEARTBEAT_EVENT
-                _LOGGER.debug("Heartbeat received from SOS button (DP 515)")
+                _LOGGER.debug("Heartbeat received from SOS button")
             else:
                 action = f"button_{dp_id}"
 
