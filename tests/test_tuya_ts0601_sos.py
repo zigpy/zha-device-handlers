@@ -1,13 +1,11 @@
 """Tests for MOES Tuya SOS button quirk."""
-import pytest
-from unittest.mock import MagicMock, patch
-from zhaquirks.const import BUTTON, COMMAND, DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
 
-from zhaquirks.tuya.ts0601_sos import (
-    HEARTBEAT_EVENT,
-    TuyaSOSButton,
-    TuyaSOSButtonCluster,
-)
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from zhaquirks.const import BUTTON, DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
+from zhaquirks.tuya.ts0601_sos import TuyaSOSButton, TuyaSOSButtonCluster
 
 
 @pytest.fixture
@@ -28,6 +26,7 @@ def make_payload(command_id):
 
 # --- Signature / replacement sanity checks ---
 
+
 def test_signature_model():
     """Verify the device signature includes the expected model info."""
     assert ("_TZE200_vrcfo4i0", "TS0601") in TuyaSOSButton.signature["models_info"]
@@ -42,6 +41,7 @@ def test_device_automation_triggers():
 
 
 # --- handle_cluster_request: happy-path press types ---
+
 
 def test_short_press_fires_event(cluster):
     """Verify DP 1050 fires a SHORT_PRESS ZHA event."""
@@ -72,6 +72,7 @@ def test_long_press_fires_event(cluster):
 
 # --- Heartbeat: must NOT fire a ZHA event ---
 
+
 def test_heartbeat_does_not_fire_event(cluster):
     """Verify DP 515 heartbeat does not fire a ZHA event."""
     hdr = MagicMock()
@@ -90,6 +91,7 @@ def test_heartbeat_logs_debug(cluster):
 
 # --- Unknown dp_id: fallback action ---
 
+
 def test_unknown_dp_id_fires_fallback_event(cluster):
     """Verify an unknown DP fires a fallback button_{dp_id} ZHA event."""
     hdr = MagicMock()
@@ -101,6 +103,7 @@ def test_unknown_dp_id_fires_fallback_event(cluster):
 
 # --- Exception path: empty args should not raise ---
 
+
 def test_empty_args_does_not_raise(cluster):
     """Verify empty args are handled gracefully and logged as an error."""
     hdr = MagicMock()
@@ -111,6 +114,7 @@ def test_empty_args_does_not_raise(cluster):
 
 
 # --- getattr fallback: payload missing command_id ---
+
 
 def test_missing_command_id_fires_fallback_event(cluster):
     """Verify a payload with no command_id attribute fires a fallback event."""
