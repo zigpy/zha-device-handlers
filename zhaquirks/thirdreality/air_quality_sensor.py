@@ -16,7 +16,7 @@ class ThirdRealityRadarCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        voc_Index: Final = ZCLAttributeDef(
+        voc_index: Final = ZCLAttributeDef(
             id=0x0100,
             type=t.Single,
             manufacturer_code=0x1407,
@@ -28,7 +28,7 @@ class ThirdRealityRadarCluster(CustomCluster):
     .replaces(ThirdRealityRadarCluster)
     .sensor(
         endpoint_id=1,
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.voc_Index.name,
+        attribute_name=ThirdRealityRadarCluster.AttributeDefs.voc_index.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         unit=" ",
         device_class=SensorDeviceClass.AQI,
