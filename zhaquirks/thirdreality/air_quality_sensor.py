@@ -33,7 +33,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         unit=" ",
         device_class=SensorDeviceClass.AQI,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="voc_index",
+        translation_key="VOC_index",
         fallback_name="Voc index",
     )
     .add_to_registry()
