@@ -26,8 +26,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.innr import (
     INNR,
-    ElectricalMeasurementClusterInnr,
-    MeteringClusterInnrOld,
+    ElectricalMeasurementClusterInnrSP120,
+    MeteringClusterInnrSP120,
 )
 
 
@@ -75,11 +75,11 @@ class SP120(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_PLUGIN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    ElectricalMeasurementClusterInnr,
+                    ElectricalMeasurementClusterInnrSP120,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
-                    MeteringClusterInnrOld,
+                    MeteringClusterInnrSP120,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,
