@@ -9,8 +9,7 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-
+     
 class BasicClusterWithLedGen3(CustomCluster, Basic):
     """Basic cluster with red LED brightness custom attribute."""
 
@@ -151,12 +150,14 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
+        unique_id_suffix="gen2-reset_total_energy",
         translation_key="reset_total_energy",
         fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
+        unique_id_suffix="gen2-countdown_to_turn_off",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -169,6 +170,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
+        unique_id_suffix="gen2-countdown_to_turn_on",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -181,6 +183,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.red_led_brightness.name,
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
+        unique_id_suffix="gen2-red_led_brightness",
         endpoint_id=1,
         min_value=0,
         max_value=100,
@@ -205,12 +208,14 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
+        unique_id_suffix="gen3-reset_total_energy",
         translation_key="reset_total_energy",
         fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
+        unique_id_suffix="gen3-countdown_to_turn_off",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -223,6 +228,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
+        unique_id_suffix="gen3-countdown_to_turn_on",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -235,6 +241,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.power_rise_threshold.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
+        unique_id_suffix="gen3-power_rise_threshold",
         endpoint_id=1,
         min_value=0,
         max_value=3277,
@@ -247,6 +254,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.power_drop_threshold.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
+        unique_id_suffix="gen3-power_drop_threshold",
         endpoint_id=1,
         min_value=0,
         max_value=3277,
@@ -259,12 +267,14 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .switch(
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.metering_only_mode.name,
+        unique_id_suffix="gen3-metering_only_mode",
         translation_key="metering_only_mode",
         fallback_name="Metering only mode",
     )
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,
         cluster_id=BasicClusterWithLedGen3.cluster_id,
+        unique_id_suffix="gen3-red_led_brightness",
         endpoint_id=1,
         min_value=0,
         max_value=100,
@@ -287,6 +297,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep1-reset_total_energy_left_bottom",
         endpoint_id=1,
         translation_key="reset_total_energy_left_bottom",
         fallback_name="Reset left/bottom total energy",  # ep1 is left
@@ -295,6 +306,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep2-reset_total_energy_right_top",
         endpoint_id=2,
         translation_key="reset_total_energy_right_top",
         fallback_name="Reset right/top total energy",  # ep2 is right
@@ -302,6 +314,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep1-countdown_to_turn_off_left_bottom",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -314,6 +327,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep2-countdown_to_turn_off_right_top",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
@@ -326,6 +340,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep1-countdown_to_turn_on_left_bottom",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -338,6 +353,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
+        unique_id_suffix="ep2-countdown_to_turn_on_right_top",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
@@ -350,6 +366,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,
         cluster_id=BasicClusterWithLedGen3.cluster_id,
+        unique_id_suffix="ep1-red_led_brightness_left_bottom",
         endpoint_id=1,
         min_value=0,
         max_value=100,
