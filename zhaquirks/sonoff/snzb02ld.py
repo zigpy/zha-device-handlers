@@ -1,4 +1,4 @@
-"""Sonoff SNZB-02LD - Zigbee IP65 Zigbee LCD Smart Thermometer (Probe Version)."""
+"""Sonoff SNZB-02LD - Zigbee IP65 LCD Smart Thermometer (Probe Version)."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
