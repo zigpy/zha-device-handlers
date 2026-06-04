@@ -376,7 +376,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,
         cluster_id=BasicClusterWithLedGen3.cluster_id,
-        unique_id_suffix="-1-red_led_brightness",
+        unique_id_suffix="red_led_brightness",
         endpoint_id=1,
         min_value=0,
         max_value=100,
@@ -469,7 +469,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=BasicClusterWithLedGen3.AttributeDefs.red_led_brightness.name,
         cluster_id=BasicClusterWithLedGen3.cluster_id,
-        unique_id_suffix="-2-red_led_brightness",
+        unique_id_suffix="red_led_brightness",
         endpoint_id=1,
         min_value=0,
         max_value=100,
