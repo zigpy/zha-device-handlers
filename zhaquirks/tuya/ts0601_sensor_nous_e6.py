@@ -10,10 +10,15 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-
-from zhaquirks import CustomDevice
+from zhaquirks import CustomCluster, CustomDevice
 import zhaquirks.const as data_const
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+
+class TuyaManufacturerSpecificCluster(CustomCluster):
+    """Tuya manufacturer specific cluster (0xED00)."""
+
+    cluster_id = 0xED00
 
 
 class NousE6ManufCluster(TuyaMCUCluster):
@@ -34,7 +39,6 @@ class NousE6ManufCluster(TuyaMCUCluster):
         """Safely extract integer value from TuyaData objects."""
         try:
             d = datum.data
-            # Checks for payload/value attributes (new in ZHA 2026.6 / Python 3.14)
             for attr in ("payload", "value"):
                 if hasattr(d, attr):
                     return int(getattr(d, attr))
@@ -78,15 +82,15 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                 data_const.PROFILE_ID: zha.PROFILE_ID,
                 data_const.DEVICE_TYPE: 81,
                 data_const.INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    0xED00,  # Manufacturer specific
-                    0xEF00,  # Tuya MCU
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerSpecificCluster.cluster_id,
+                    TuyaMCUCluster.cluster_id,
                 ],
                 data_const.OUTPUT_CLUSTERS: [
-                    Time.cluster_id,  # 0x000a
-                    Ota.cluster_id,  # 0x0019
+                    Time.cluster_id,
+                    Ota.cluster_id,
                 ],
             }
         },
@@ -100,7 +104,7 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    0xED00,
+                    TuyaManufacturerSpecificCluster,
                     NousE6ManufCluster,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
