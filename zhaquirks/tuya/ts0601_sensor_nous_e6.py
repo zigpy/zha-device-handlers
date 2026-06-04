@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+
 from zhaquirks import CustomCluster, CustomDevice
 import zhaquirks.const as data_const
 from zhaquirks.tuya.mcu import TuyaMCUCluster
