@@ -101,7 +101,7 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
         data_const.ENDPOINTS: {
             1: {
                 data_const.DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                data_const.INPUT_CLUSTERS: [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -111,7 +111,7 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                     RelativeHumidity.cluster_id,
                     PowerConfiguration.cluster_id,
                 ],
-                data_const.OUTPUT_CLUSTERS: [
+                OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
