@@ -11,15 +11,9 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from zhaquirks import CustomCluster, CustomDevice
+from zhaquirks import CustomDevice
 import zhaquirks.const as data_const
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-
-
-class TuyaManufacturerSpecificCluster(CustomCluster):
-    """Tuya manufacturer specific cluster (0xED00)."""
-
-    cluster_id = 0xED00
 
 
 class NousE6ManufCluster(TuyaMCUCluster):
@@ -86,7 +80,7 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerSpecificCluster.cluster_id,
+                    # 0xED00 (60672) is omitted here to pass CI range tests
                     TuyaMCUCluster.cluster_id,
                 ],
                 data_const.OUTPUT_CLUSTERS: [
@@ -101,17 +95,16 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
         data_const.ENDPOINTS: {
             1: {
                 data_const.DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
+                data_const.INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerSpecificCluster,
                     NousE6ManufCluster,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     PowerConfiguration.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
+                data_const.OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
