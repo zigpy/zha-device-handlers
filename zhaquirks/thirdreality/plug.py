@@ -147,18 +147,21 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RSP02028BZ")
     .applies_to("Third Reality, Inc", "3RSPE01044BZ")
     .replaces(ThirdRealityPlugClusterGen2)
+    # These three entities existed before the cluster attributes were renamed,
+    # so their unique_id_suffix is pinned to the old attribute names to avoid
+    # orphaning existing HA entities (the default suffix is the attribute name).
     .write_attr_button(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
-        unique_id_suffix="reset_total_energy",
+        unique_id_suffix="reset_summation_delivered",
         translation_key="reset_total_energy",
         fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
-        unique_id_suffix="countdown_to_turn_off",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -171,7 +174,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen2.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugClusterGen2.cluster_id,
-        unique_id_suffix="countdown_to_turn_on",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -205,18 +208,21 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .applies_to("Third Reality, Inc", "3RSPJ0187Z")
     .replaces(ThirdRealityPlugClusterGen3)
     .replaces(BasicClusterWithLedGen3)
+    # The reset/countdown entities existed (for 3RSP02064Z/3RSPU01080Z/3RSPE02065Z)
+    # before the cluster attributes were renamed, so their unique_id_suffix is
+    # pinned to the old attribute names to avoid orphaning existing HA entities.
     .write_attr_button(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
-        unique_id_suffix="reset_total_energy",
+        unique_id_suffix="reset_summation_delivered",
         translation_key="reset_total_energy",
         fallback_name="Reset total energy",
     )
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
-        unique_id_suffix="countdown_to_turn_off",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -229,7 +235,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugClusterGen3.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugClusterGen3.cluster_id,
-        unique_id_suffix="countdown_to_turn_on",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
