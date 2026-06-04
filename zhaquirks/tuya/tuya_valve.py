@@ -11,6 +11,7 @@ from zigpy.quirks.v2.homeassistant import (
 )
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import BatterySize
@@ -763,6 +764,37 @@ class GiexIrrigationStatus(t.enum8):
         fallback_name="Last watering duration",
     )
     .tuya_battery(dp_id=110, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Novato ZPV-01 battery powered smart valve
+class NovatoValveState(t.enum8):
+    """Novato ZPV-01 valve status reported by DP 8."""
+
+    Unknown = 0x00
+    Open = 0x01
+    Closed = 0x02
+
+
+(
+    TuyaQuirkBuilder("_TZE204_dsagrkvg", "TS0601")
+    .applies_to("_TZE284_zm8zpwas", "TS0601")
+    .applies_to("_TZE284_sdvbnmj5", "TS0601")
+    .tuya_onoff(dp_id=1)
+    .tuya_enum(
+        dp_id=8,
+        attribute_name="valve_state",
+        enum_class=NovatoValveState,
+        access=foundation.ZCLAttributeAccess.Read,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_state",
+        fallback_name="Valve state",
+    )
+    .tuya_battery(dp_id=101, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
