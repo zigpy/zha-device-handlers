@@ -299,11 +299,15 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .replaces(BasicClusterWithLedGen3)
+    # The reset/countdown entities existed before the cluster attributes were
+    # renamed; their unique_id_suffix is pinned to the old attribute names
+    # (distinguished per outlet by endpoint_id) to avoid orphaning existing
+    # HA entities on 3RDP01072Z.
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="reset_total_energy_left",
+        unique_id_suffix="reset_summation_delivered",
         endpoint_id=1,
         translation_key="reset_total_energy_left",
         fallback_name="Reset left total energy",  # ep1 is left
@@ -312,7 +316,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="reset_total_energy_right",
+        unique_id_suffix="reset_summation_delivered",
         endpoint_id=2,
         translation_key="reset_total_energy_right",
         fallback_name="Reset right total energy",  # ep2 is right
@@ -320,7 +324,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_off_left",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -333,7 +337,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_off_right",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
@@ -346,7 +350,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_on_left",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -359,7 +363,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_on_right",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
@@ -388,11 +392,15 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .replaces(BasicClusterWithLedGen3)
+    # The reset/countdown entities existed before the cluster attributes were
+    # renamed; their unique_id_suffix is pinned to the old attribute names
+    # (distinguished per outlet by endpoint_id) to avoid orphaning existing
+    # HA entities on 3RWP01073Z.
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,  # 1 reset total energy
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="reset_total_energy_bottom",
+        unique_id_suffix="reset_summation_delivered",
         endpoint_id=1,
         translation_key="reset_total_energy_bottom",
         fallback_name="Reset bottom total energy",  # ep1 is bottom
@@ -401,7 +409,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_total_energy.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="reset_total_energy_top",
+        unique_id_suffix="reset_summation_delivered",
         endpoint_id=2,
         translation_key="reset_total_energy_top",
         fallback_name="Reset top total energy",  # ep2 is top
@@ -409,7 +417,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_off_bottom",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -422,7 +430,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_off_top",
+        unique_id_suffix="on_to_off_delay",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
@@ -435,7 +443,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_on_bottom",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=1,
         min_value=0,
         max_value=65535,
@@ -448,7 +456,7 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_on.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        unique_id_suffix="countdown_to_turn_on_top",
+        unique_id_suffix="off_to_on_delay",
         endpoint_id=2,
         min_value=0,
         max_value=65535,
