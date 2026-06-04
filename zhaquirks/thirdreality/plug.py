@@ -9,7 +9,8 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-     
+
+
 class BasicClusterWithLedGen3(CustomCluster, Basic):
     """Basic cluster with red LED brightness custom attribute."""
 
