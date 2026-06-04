@@ -1,15 +1,24 @@
 """Nous E6 Temperature and Humidity sensor (_TZE284_wtikaxzs)."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-from zhaquirks.tuya.mcu import TuyaMCUCluster
+
 from zhaquirks import CustomDevice
 import zhaquirks.const as data_const
+from zhaquirks.tuya.mcu import TuyaMCUCluster
+
 
 class NousE6ManufCluster(TuyaMCUCluster):
     """Tuya MCU cluster for Temperature and Humidity data point mapping."""
-    
+
     cluster_id = 0xEF00
 
     # Bypassing automatic mapping to ensure compatibility with Python 3.14/HA 2026.6
@@ -26,7 +35,7 @@ class NousE6ManufCluster(TuyaMCUCluster):
         try:
             d = datum.data
             # Checks for payload/value attributes (new in ZHA 2026.6 / Python 3.14)
-            for attr in ('payload', 'value'):
+            for attr in ("payload", "value"):
                 if hasattr(d, attr):
                     return int(getattr(d, attr))
             return int(d)
@@ -54,6 +63,7 @@ class NousE6ManufCluster(TuyaMCUCluster):
             # Tuya sends 100 for 100% -> ZCL expects 200 (0.5% units)
             self.endpoint.device_power.update_attribute(0x0021, val * 2)
 
+
 class NousE6_TZE284_wtikaxzs(CustomDevice):
     """Nous E6 variant (_TZE284_wtikaxzs) custom quirk."""
 
@@ -68,15 +78,15 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                 data_const.PROFILE_ID: zha.PROFILE_ID,
                 data_const.DEVICE_TYPE: 81,
                 data_const.INPUT_CLUSTERS: [
-                    Basic.cluster_id,    # 0x0000
-                    Groups.cluster_id,   # 0x0004
-                    Scenes.cluster_id,   # 0x0005
-                    0xED00,              # Manufacturer specific
-                    0xEF00,              # Tuya MCU
+                    Basic.cluster_id,  # 0x0000
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    0xED00,  # Manufacturer specific
+                    0xEF00,  # Tuya MCU
                 ],
                 data_const.OUTPUT_CLUSTERS: [
-                    Time.cluster_id,     # 0x000a
-                    Ota.cluster_id,      # 0x0019
+                    Time.cluster_id,  # 0x000a
+                    Ota.cluster_id,  # 0x0019
                 ],
             }
         },
