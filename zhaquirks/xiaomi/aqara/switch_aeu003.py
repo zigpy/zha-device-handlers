@@ -1,24 +1,19 @@
+"""Aqara H2 Shutter device."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Identify
-from zhaquirks.const import (
-    BUTTON_3,
-    BUTTON_4,
-    COMMAND,
-    COMMAND_SINGLE,
-)
+
+from zhaquirks.const import BUTTON_3, BUTTON_4, COMMAND, COMMAND_SINGLE
 from zhaquirks.xiaomi import (
     AQARA,
     AnalogInputCluster,
     ElectricalMeasurementCluster,
-    MeteringCluster
+    MeteringCluster,
 )
-from zhaquirks.xiaomi.aqara.opple_remote import (
-    COMMAND_3_SINGLE,
-    COMMAND_4_SINGLE,
-)
+from zhaquirks.xiaomi.aqara.opple_remote import COMMAND_3_SINGLE, COMMAND_4_SINGLE
 from zhaquirks.xiaomi.aqara.opple_switch import MultistateInputCluster
 
 
@@ -54,9 +49,11 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
     .replaces(ElectricalMeasurementCluster, endpoint_id=1)
     .replaces(MeteringCluster, endpoint_id=1)
     .replaces(AnalogInputCluster, endpoint_id=21)
-    .device_automation_triggers({
-        (COMMAND_SINGLE, BUTTON_3): {COMMAND: COMMAND_3_SINGLE},
-        (COMMAND_SINGLE, BUTTON_4): {COMMAND: COMMAND_4_SINGLE},
-    })
+    .device_automation_triggers(
+        {
+            (COMMAND_SINGLE, BUTTON_3): {COMMAND: COMMAND_3_SINGLE},
+            (COMMAND_SINGLE, BUTTON_4): {COMMAND: COMMAND_4_SINGLE},
+        }
+    )
     .add_to_registry()
 )
