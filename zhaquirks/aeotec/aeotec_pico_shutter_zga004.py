@@ -1,13 +1,15 @@
 """Aeotec Pico Shutter (ZGA004) Custom ZHA V2 Quirk."""
 
 import enum
+
+import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.closures import WindowCovering
-import zigpy.types as t
 
 AEOTEC_MFG_CODE = 0x1310
+
 
 # ---------------------------------------------------------------------------
 # ZCL enum types — subclass t.enum8 so zigpy serialises correctly AND
@@ -24,49 +26,61 @@ class SwitchType(t.enum8, enum.Enum):
     Momentary = 0x01
     Auto_Recognize_Mode = 0x04
 
+
 class SwitchActions(t.enum8, enum.Enum):
     On_Press_Off_Release = 0x00
     Off_Press_On_Release = 0x01
     Toggle = 0x02
 
+
 class Controls(t.enum8, enum.Enum):
     Disable_Local_Control = 0x00
     Enable_Local_Control = 0x01
 
+
 class OperatingModes(t.enum8, enum.Enum):
     Roller_Shade_Mode = 0x00
     Shutter_Mode = 0x01
+
 
 class SlatsPosition(t.enum8, enum.Enum):
     Do_not_return = 0x00
     Return_after_gateway_activation = 0x01
     Return_after_any_activation = 0x02
 
+
 class MovementType(t.enum8, enum.Enum):
     Momentary = 0x00
     Continuous = 0x01
 
+
 class SelfCalibration(t.enum8, enum.Enum):
     Disabled = 0x00
     Enabled = 0x01
+
 
 # ---------------------------------------------------------------------------
 # Custom Clusters
 # ---------------------------------------------------------------------------
 class AeotecWindowCoveringLift(CustomCluster, WindowCovering):
     """Forces Endpoint 1 to be recognized as Lift-Only (Roller Shade)."""
+
     _CONSTANT_ATTRIBUTES = {
         0x0000: 0x00,  # Type 0: Roller Shade (Lift only)
     }
 
+
 class AeotecWindowCoveringTilt(CustomCluster, WindowCovering):
     """Forces Endpoint 2 to be recognized as Tilt-Only."""
+
     _CONSTANT_ATTRIBUTES = {
         0x0000: 0x07,  # Type 7: Tilt Blind Tilt Only
     }
 
+
 class AeotecSwitchConfigurationCluster(CustomCluster):
     """Aeotec Private Cluster [0xFD00] — switch type configuration."""
+
     cluster_id = 0xFD00
     name = "Aeotec Switch Type Configuration"
     ep_attribute = "aeotec_switch_config"
@@ -79,7 +93,9 @@ class AeotecSwitchConfigurationCluster(CustomCluster):
         0x0012: ("group_id", t.uint16_t, False),
     }
 
-    async def read_attributes(self, attributes, allow_cache=False, only_cache=False, manufacturer=None):
+    async def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
         # Manufacturer code required for reads on this private cluster.
         return await super().read_attributes(
             attributes,
@@ -102,6 +118,7 @@ class AeotecSwitchConfigurationCluster(CustomCluster):
 
 class AeotecWindowConfigurationCluster(CustomCluster):
     """Aeotec Private Cluster [0xFD03] — window/motor configuration."""
+
     cluster_id = 0xFD03
     name = "Aeotec Window Configuration"
     ep_attribute = "aeotec_window_config"
@@ -126,12 +143,11 @@ class AeotecWindowConfigurationCluster(CustomCluster):
 # ---------------------------------------------------------------------------
 (
     QuirkBuilder("AEOTEC", "ZGA004")
-    .replaces(AeotecWindowCoveringLift, endpoint_id=1)     # Force EP1 to Lift-only
-    .replaces(AeotecWindowCoveringTilt, endpoint_id=2)     # Force EP2 to Tilt-only
+    .replaces(AeotecWindowCoveringLift, endpoint_id=1)  # Force EP1 to Lift-only
+    .replaces(AeotecWindowCoveringTilt, endpoint_id=2)  # Force EP2 to Tilt-only
     .replaces(AeotecWindowConfigurationCluster, endpoint_id=1)
     .replaces(AeotecSwitchConfigurationCluster, endpoint_id=4)
     .replaces(AeotecSwitchConfigurationCluster, endpoint_id=5)
-
     # ===========================================================================
     # UI Entities — Switch Configuration [0xFD00] — endpoints 4 & 5
     # ===========================================================================
@@ -189,7 +205,6 @@ class AeotecWindowConfigurationCluster(CustomCluster):
         fallback_name="Local Motor Control (S2)",
         entity_type=EntityType.CONFIG,
     )
-
     # ===========================================================================
     # UI Entities — Window Covering [0x0102] — Motor Direction / LED
     # 0=Normal, 1=Reversed, 8=Normal+LED, 9=Reversed+LED
@@ -205,7 +220,6 @@ class AeotecWindowConfigurationCluster(CustomCluster):
         fallback_name="Motor Direction / LED (0=Normal 1=Rev 8=Normal+LED 9=Rev+LED)",
         entity_type=EntityType.CONFIG,
     )
-
     # ===========================================================================
     # UI Entities — Window Configuration [0xFD03] — endpoint 1
     # ===========================================================================
@@ -289,6 +303,5 @@ class AeotecWindowConfigurationCluster(CustomCluster):
         fallback_name="Self-Calibration",
         entity_type=EntityType.CONFIG,
     )
-
     .add_to_registry()
 )

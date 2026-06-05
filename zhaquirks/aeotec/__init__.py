@@ -1,5 +1,3 @@
 """Aeotec quirks."""
 
-from . import (  # noqa: F401
-    aeotec_pico_shutter_zga004,
-)
+from . import aeotec_pico_shutter_zga004  # noqa: F401
