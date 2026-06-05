@@ -1,4 +1,5 @@
 """Device handler for centralite 3130."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -38,7 +39,6 @@ from zhaquirks.osram import OSRAM
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 

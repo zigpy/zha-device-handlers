@@ -1,0 +1,1 @@
+"""smarthjemmet.dk devices."""

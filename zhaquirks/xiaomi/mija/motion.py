@@ -1,5 +1,4 @@
 """Xiaomi mija body sensor."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -22,6 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -34,7 +34,6 @@ from zhaquirks.xiaomi import (
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
-_LOGGER = logging.getLogger(__name__)
 
 
 class Motion(XiaomiQuickInitDevice):
@@ -42,7 +41,7 @@ class Motion(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 9
+        self.battery_size = BatterySize.CR2450
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 

@@ -12,6 +12,9 @@ ELKO = "ELKO"
 class ElkoThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster for Elko Thermostats."""
 
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Cluster attributes."""
+
     def __init__(self, *args, **kwargs):
         """Init thermostat cluster."""
         super().__init__(*args, **kwargs)
@@ -51,7 +54,6 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
 class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster for Elko Thermostats."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
     ACTIVE_POWER_ID = 0x050B
 
     def __init__(self, *args, **kwargs):

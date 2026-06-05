@@ -1,4 +1,5 @@
 """Tests for xiaomi."""
+
 from unittest import mock
 
 import zhaquirks

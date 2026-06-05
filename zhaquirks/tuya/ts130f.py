@@ -1,4 +1,7 @@
 """Device handler for loratap TS130F smart curtain switch."""
+
+from typing import Final
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -7,11 +10,13 @@ from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
     Groups,
+    Identify,
     OnOff,
     Ota,
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -30,8 +35,10 @@ CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
 
 
 class MotorMode(t.enum8):
@@ -44,12 +51,14 @@ class MotorMode(t.enum8):
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
     """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
 
-    attributes = WindowCovering.attributes.copy()
-    attributes.update({0x8000: ("motor_mode", MotorMode)})
-    attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
-    attributes.update({0xF001: ("calibration", t.enum8)})
-    attributes.update({0xF002: ("motor_reversal", t.enum8)})
-    attributes.update({0xF003: ("calibration_time", t.uint16_t)})
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        motor_mode: Final = ZCLAttributeDef(id=0x8000, type=MotorMode)
+        tuya_moving_state: Final = ZCLAttributeDef(id=0xF000, type=t.enum8)
+        calibration: Final = ZCLAttributeDef(id=0xF001, type=t.enum8)
+        motor_reversal: Final = ZCLAttributeDef(id=0xF002, type=t.enum8)
+        calibration_time: Final = ZCLAttributeDef(id=0xF003, type=t.uint16_t)
 
     def _update_attribute(self, attrid, value):
         if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
@@ -148,6 +157,52 @@ class TuyaZemismartTS130F(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+
+class TuyaZemismartWNEC1ETS130F(CustomDevice):
+    """Tuya ZemiSmart smart curtain roller shutter. WN-EC1E version."""
+
+    signature = {
+        MODEL: "TS130F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaWithBacklightOnOffCluster,
@@ -268,12 +323,53 @@ class TuyaTS130FTI2(CustomDevice):
     }
 
 
+class TuyaTS130FUL(CustomDevice):
+    """Tuya Cover variant from UseeLink."""
+
+    signature = {
+        # This signature was copied from TuyaTS130FTO and changed to fit the UseeLink device.
+        MODEL: "TS130F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
+
+
 class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
-        # This singnature is not correct is one copy of the first one and the cluster is not inline with the device.
+        # This signature is not correct is one copy of the first one and the cluster is not inline with the device.
         MODEL: "TS130F",
         ENDPOINTS: {
             1: {

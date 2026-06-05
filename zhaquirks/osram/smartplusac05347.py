@@ -1,4 +1,5 @@
 """Osram Smart+ AC05347 GU10 White."""
+
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

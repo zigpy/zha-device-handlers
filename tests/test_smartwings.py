@@ -1,4 +1,5 @@
 """Tests for Smartwings."""
+
 from unittest import mock
 
 import pytest
@@ -22,9 +23,9 @@ async def test_smartwings_inverted_commands(zigpy_device_from_quirk, quirk):
     # close cover and check if the command is inverted
     await covering_cluster.command(close_command_id)
     assert len(device.request.mock_calls) == 1
-    assert device.request.mock_calls[0][1][5] == b"\x01\x01\x00"
+    assert device.request.mock_calls[0].kwargs["data"] == b"\x01\x01\x00"
 
     # open cover and check if the command is inverted
     await covering_cluster.command(open_command_id)
     assert len(device.request.mock_calls) == 2
-    assert device.request.mock_calls[1][1][5] == b"\x01\x02\x01"
+    assert device.request.mock_calls[1].kwargs["data"] == b"\x01\x02\x01"

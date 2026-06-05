@@ -1,12 +1,12 @@
 """Quirk for aqara lumi.motion.ac01."""
+
 from __future__ import annotations
 
-import logging
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, DeviceTemperature, Identify, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -33,8 +33,6 @@ APPROACH_DISTANCE = 0x0146
 RESET_NO_PRESENCE_STATUS = 0x0157
 SENSOR = "sensor"
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class AqaraPresenceEvents(types.enum8):
     """Aqara presence events."""
@@ -53,7 +51,6 @@ class AqaraPresenceEvents(types.enum8):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         PRESENCE: ("presence", types.uint8_t, True),
         MONITORING_MODE: ("monitoring_mode", types.uint8_t, True),
@@ -64,10 +61,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
-        if attrid == PRESENCE or attrid == PRESENCE2:
+        if attrid in (PRESENCE, PRESENCE2):
             if value != 0xFF:
                 self.endpoint.occupancy.update_attribute(OCCUPANCY, value)
-        elif attrid == PRESENCE_EVENT or attrid == PRESENCE_EVENT2:
+        elif attrid in (PRESENCE_EVENT, PRESENCE_EVENT2):
             self.listener_event(ZHA_SEND_EVENT, AqaraPresenceEvents(value).name, {})
 
 

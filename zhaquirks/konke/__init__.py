@@ -1,9 +1,11 @@
 """Konke sensors."""
-from typing import Any, List, Optional, Union
+
+from typing import Any, Final, Optional, Union
 
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 import zigpy.zcl.foundation
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
 from zhaquirks.const import (
@@ -19,6 +21,8 @@ KONKE = "Konke"
 
 
 class KonkeButtonEvent(t.enum8):
+    """Konke button event."""
+
     Single = 0x80
     Double = 0x81
     Hold = 0x82
@@ -50,16 +54,15 @@ class KonkeOnOffCluster(CustomCluster):
     cluster_id = OnOff.cluster_id
     ep_attribute = "konke_on_off"
 
-    attributes = OnOff.attributes.copy()
-    attributes[0x0000] = ("konke_button_event", KonkeButtonEvent)
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = OnOff.server_commands.copy()
-    client_commands = OnOff.client_commands.copy()
+        konke_button_event: Final = ZCLAttributeDef(id=0x0000, type=KonkeButtonEvent)
 
     def handle_cluster_general_request(
         self,
         header: zigpy.zcl.foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]

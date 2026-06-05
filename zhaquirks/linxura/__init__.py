@@ -1,0 +1,3 @@
+"""Linxura devices."""
+
+LINXURA = "Linxura"

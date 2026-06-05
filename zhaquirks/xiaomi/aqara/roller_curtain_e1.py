@@ -1,98 +1,150 @@
 """Aqara Roller Shade Driver E1 device."""
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from zigpy import types as t
-from zigpy.profiles import zgp, zha
-from zigpy.zcl import foundation
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Alarms,
-    AnalogOutput,
-    Basic,
-    DeviceTemperature,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    MultistateOutput,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
+from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks import CustomCluster
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiPowerConfigurationPercent,
 )
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
-
-from zhaquirks import Bus, CustomCluster, LocalDataCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
-
-PRESENT_VALUE = 0x0055
-CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
-GO_TO_LIFT_PERCENTAGE = 0x0005
-DOWN_CLOSE = 0x0001
-UP_OPEN = 0x0000
-STOP = 0x0002
 
 
-class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
-    """Xiaomi mfg cluster implementation specific for E1 Roller."""
+class AqaraRollerDriverCharging(t.enum8):
+    """Aqara roller driver charging status attribute values."""
 
-    cluster_id = 0xFCC0
+    Charging = 0x01
+    NotCharging = 0x02
 
-    attributes = XiaomiCluster.attributes.copy()
-    attributes.update(
-        {
-            0x0400: ("reverse_direction", t.Bool, True),
-            0x0402: ("positions_stored", t.Bool, True),
-            0x0407: ("store_position", t.uint8_t, True),
-            0x0408: ("speed", t.uint8_t, True),
-            0x0409: ("charging", t.uint8_t, True),
-            0x00F7: ("aqara_attributes", t.LVBytes, True),
-        }
-    )
+
+class AqaraRollerDriverSpeed(t.enum8):
+    """Aqara roller driver speed attribute values."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
+class AqaraRollerControl(t.enum8):
+    """Aqara roller control attribute values."""
+
+    Close = 0x00
+    Open = 0x01
+    Stop = 0x02
+
+
+class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer cluster for the Roller Driver E1."""
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Manufacturer specific attributes."""
+
+        reverse_direction = ZCLAttributeDef(
+            id=0x0400,
+            type=t.Bool,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+
+        positions_stored = ZCLAttributeDef(
+            id=0x0402,
+            type=t.Bool,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+
+        store_position = ZCLAttributeDef(
+            id=0x0407,
+            type=t.uint8_t,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+
+        speed = ZCLAttributeDef(
+            id=0x0408,
+            type=AqaraRollerDriverSpeed,
+            zcl_type=DataTypeId.uint8,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+
+        charging = ZCLAttributeDef(
+            id=0x0409,
+            type=AqaraRollerDriverCharging,
+            zcl_type=DataTypeId.uint8,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+
+        aqara_attributes = ZCLAttributeDef(
+            id=0x00F7,
+            type=t.LVBytes,
+            is_manufacturer_specific=True,
+        )
 
 
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
-    """Analog output cluster, only used to relay current_value to WindowCovering."""
+    """AnalogOutput cluster reporting current position and used for writing target position."""
 
-    cluster_id = AnalogOutput.cluster_id
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Current position",
+        AnalogOutput.AttributeDefs.max_present_value.id: 100.0,
+        AnalogOutput.AttributeDefs.min_present_value.id: 0.0,
+        AnalogOutput.AttributeDefs.out_of_service.id: 0,
+        AnalogOutput.AttributeDefs.resolution.id: 1.0,
+        AnalogOutput.AttributeDefs.status_flags.id: 0x00,
+    }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
+        self.on_event(
+            AttributeReadEvent.event_type, self._handle_attribute_read_or_reported
+        )
+        self.on_event(
+            AttributeReportedEvent.event_type, self._handle_attribute_read_or_reported
+        )
 
-        self._update_attribute(0x0041, float(0x064))  # max_present_value
-        self._update_attribute(0x0045, 0.0)  # min_present_value
-        self._update_attribute(0x0051, 0)  # out_of_service
-        self._update_attribute(0x006A, 1.0)  # resolution
-        self._update_attribute(0x006F, 0x00)  # status_flags
-
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        super()._update_attribute(attrid, value)
-
-        if attrid == PRESENT_VALUE:
-            self.endpoint.window_covering._update_attribute(
-                CURRENT_POSITION_LIFT_PERCENTAGE, (100 - value)
+    def _handle_attribute_read_or_reported(
+        self, event: AttributeReadEvent | AttributeReportedEvent
+    ) -> None:
+        """Handle attribute read/reported events."""
+        if event.attribute_id == self.AttributeDefs.present_value.id:
+            self.endpoint.window_covering.update_attribute(
+                WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                t.uint8_t(100 - event.value),
             )
 
 
 class WindowCoveringRollerE1(CustomCluster, WindowCovering):
-    """Window covering cluster to receive commands that are sent to the AnalogOutput's present_value to move the motor."""
+    """Window covering cluster for handling motor commands."""
 
-    cluster_id = WindowCovering.cluster_id
+    _CONSTANT_ATTRIBUTES = {
+        WindowCovering.AttributeDefs.window_covering_type.id: WindowCovering.WindowCoveringType.Rollershade,
+    }
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
+    # This is used to redirect 'current_position_lift_percentage' reads to AnalogOutput 'present_value'
+    _REDIRECT_ATTRIBUTES: dict[
+        ZCLAttributeDef, tuple[ZCLAttributeDef, type[Cluster], Callable]
+    ] = {
+        WindowCovering.AttributeDefs.current_position_lift_percentage: (
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+            lambda x: t.uint8_t(100 - x),
+        ),
+    }
 
     async def command(
         self,
@@ -105,243 +157,147 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
     ) -> Any:
         """Overwrite the commands to make it work for both firmware 1425 and 1427.
 
-        We either overwrite analog_output's current_value or multistate_output's current
-        value to make the roller work.
+        Write to AnalogOutput current_value for go go_to_lift_percentage.
+        Write to MultistateOutput current_value for up_open/down_close/stop.
+
+        The current_position_lift_percentage is read prior to returning the command response
+        to ensure that ZHA has the correct position during changes in direction/stopping.
         """
-        if command_id == UP_OPEN:
+        if command_id == WindowCovering.ServerCommandDefs.up_open.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
-                {"present_value": 1}
+                {
+                    MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Open
+                }
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == DOWN_CLOSE:
+
+        if command_id == WindowCovering.ServerCommandDefs.down_close.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
-                {"present_value": 0}
+                {
+                    MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Close
+                }
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == GO_TO_LIFT_PERCENTAGE:
+
+        if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
             (res,) = await self.endpoint.analog_output.write_attributes(
-                {"present_value": (100 - args[0])}
+                {AnalogOutput.AttributeDefs.present_value.name: (100 - args[0])}
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == STOP:
+
+        if command_id == WindowCovering.ServerCommandDefs.stop.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
-                {"present_value": 2}
+                {
+                    MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Stop
+                }
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
 
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
-class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
-    """Multistate Output cluster which overwrites present_value.
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
+        """Redirect attribute reads to another cluster."""
+        success = {}
+        failure = {}
 
-    Otherwise, it gives errors of wrong datatype when using it in the commands.
-    """
+        # Attribute reads reply with the attribute format as provided during the read
+        attr_defs = {self.find_attribute(attr): attr for attr in attributes}
 
-    attributes = MultistateOutput.attributes.copy()
-    attributes.update(
-        {
-            0x0055: ("present_value", t.uint16_t),
-        }
-    )
+        for redirected_attr_def, (
+            target_attr,
+            target_cluster,
+            format_func,
+        ) in self._REDIRECT_ATTRIBUTES.items():
+            if redirected_attr_def not in attr_defs:
+                continue
 
+            # Skip this attribute and read it from the other cluster
+            other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
+            other_success, other_failure = await other_cluster.read_attributes(
+                [target_attr], **kwargs
+            )
 
-class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
-    """Xiaomi power configuration cluster implementation."""
+            # Remove it from the remaining attributes
+            attr_key = attr_defs.pop(redirected_attr_def)
+            attributes.remove(attr_key)
 
-    BATTERY_PERCENTAGE_REMAINING = 0x0021
+            if target_attr in other_success:
+                success[attr_key] = format_func(other_success[target_attr])
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.power_bus_percentage.add_listener(self)
+            if target_attr in other_failure:
+                failure[attr_key] = other_failure[target_attr]
 
-    def update_battery_percentage(self, value: int) -> None:
-        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
-        super()._update_attribute(
-            self.BATTERY_PERCENTAGE_REMAINING,
-            (value * 2),
+        # Read the remaining ones directly
+        other_success, other_failure = await super().read_attributes(
+            attributes, **kwargs
         )
+        success.update(other_success)
+        failure.update(other_failure)
+
+        return success, failure
 
 
-class RollerE1AQ(XiaomiCustomDevice):
-    """Aqara Roller Shade Driver E1 device."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        self.power_bus_percentage: Bus = Bus()  # type: ignore
-        super().__init__(*args, **kwargs)  # type: ignore
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
-        ENDPOINTS: {
-            # <SizePrefixedSimpleDescriptor endpoint=1 profile=260 device_type=256
-            # device_version=1
-            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 64704, 13, 19, 258]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Alarms.cluster_id,
-                    AnalogOutput.cluster_id,
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    XiaomiAqaraRollerE1.cluster_id,
-                    MultistateOutput.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                    WindowCovering.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Time.cluster_id,
-                ],
-            },
-            # <SizePrefixedSimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0,
-            # input_clusters=[]
-            # output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
-                INPUT_CLUSTERS: [
-                    Alarms.cluster_id,
-                    AnalogOutputRollerE1,
-                    BasicCluster,
-                    DeviceTemperature.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    XiaomiAqaraRollerE1,
-                    MultistateOutputRollerE1,
-                    Scenes.cluster_id,
-                    WindowCoveringRollerE1,
-                    PowerConfigurationRollerE1,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Time.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-
-class RollerE1AQ_2(RollerE1AQ):
-    """Aqara Roller Shade Driver E1 (version 2) device."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
-        ENDPOINTS: {
-            # <SizePrefixedSimpleDescriptor endpoint=1 profile=260 device_type=256
-            # device_version=1
-            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 13, 19, 258]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Alarms.cluster_id,
-                    AnalogOutput.cluster_id,
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    MultistateOutput.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                    WindowCovering.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Time.cluster_id,
-                ],
-            },
-            # <SizePrefixedSimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0,
-            # input_clusters=[]
-            # output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-
-class RollerE1AQ_3(RollerE1AQ):
-    """Aqara Roller Shade Driver E1 (version 3) device."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
-        ENDPOINTS: {
-            # <SizePrefixedSimpleDescriptor endpoint=1 profile=260 device_type=514
-            # device_version=1
-            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 13, 19, 258]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
-                INPUT_CLUSTERS: [
-                    Alarms.cluster_id,
-                    AnalogOutput.cluster_id,
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    MultistateOutput.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                    WindowCovering.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Time.cluster_id,
-                ],
-            },
-            # <SizePrefixedSimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0,
-            # input_clusters=[]
-            # output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(LUMI, "lumi.curtain.acn002")
+    # temporarily commented out due to potentially breaking existing blueprints
+    #    .friendly_name(
+    #        manufacturer="Aqara", model="Roller Shade Driver E1"
+    #    )
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=AnalogOutput.cluster_id)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=MultistateOutput.cluster_id
+    )
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
+    .replaces(AnalogOutputRollerE1, endpoint_id=1)
+    .replaces(BasicCluster, endpoint_id=1)
+    .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
+    .replaces(WindowCoveringRollerE1, endpoint_id=1)
+    .replaces(XiaomiAqaraRollerE1, endpoint_id=1)
+    .enum(
+        XiaomiAqaraRollerE1.AttributeDefs.speed.name,
+        AqaraRollerDriverSpeed,
+        XiaomiAqaraRollerE1.cluster_id,
+        translation_key="speed",
+        fallback_name="Speed",
+    )
+    .binary_sensor(
+        XiaomiAqaraRollerE1.AttributeDefs.charging.name,
+        XiaomiAqaraRollerE1.cluster_id,
+        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+        fallback_name="Charging",
+        attribute_converter=lambda x: x == AqaraRollerDriverCharging.Charging,
+    )
+    .binary_sensor(
+        XiaomiAqaraRollerE1.AttributeDefs.positions_stored.name,
+        XiaomiAqaraRollerE1.cluster_id,
+        translation_key="calibrated",
+        fallback_name="Calibrated",
+    )
+    .add_to_registry()
+)

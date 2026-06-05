@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden TRADFRI shortcut button."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering

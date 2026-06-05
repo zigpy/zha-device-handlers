@@ -1,6 +1,7 @@
 """zigfred device handler."""
+
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks.const import (
     BUTTON,
@@ -56,14 +58,14 @@ class ZigfredCluster(CustomCluster):
     cluster_id = ZIGFRED_CLUSTER_ID
     buttons_attribute_id = ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID
 
-    server_commands = {
-        ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: foundation.ZCLCommandDef(
-            "button_event",
-            {"param1": t.uint32_t},
-            direction=foundation.Direction.Server_to_Client,
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        button_event = foundation.ZCLCommandDef(
+            id=ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT,
+            schema={"param1": t.uint32_t},
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def _process_button_event(self, value: t.uint32_t):
         button_lookup = {
@@ -93,7 +95,7 @@ class ZigfredCluster(CustomCluster):
             PRESS_TYPE: press_type,
         }
 
-        _LOGGER.info(f"Got button press on zigfred cluster: {action}")
+        _LOGGER.info("Got button press on zigfred cluster: %s", action)
 
         if button and press_type:
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
@@ -101,7 +103,7 @@ class ZigfredCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -114,11 +116,6 @@ class ZigfredCluster(CustomCluster):
 
 class ZigfredUno(CustomDevice):
     """zigfred uno device handler."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred uno")
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("Siglis", "zigfred uno")],
@@ -266,11 +263,6 @@ class ZigfredUno(CustomDevice):
 
 class ZigfredPlus(CustomDevice):
     """zigfred plus device handler."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred plus")
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("Siglis", "zigfred plus")],

@@ -1,4 +1,5 @@
 """Device handler for Lutron LZL4BWHL01 Remote."""
+
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

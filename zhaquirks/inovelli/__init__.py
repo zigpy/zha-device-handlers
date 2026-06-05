@@ -1,18 +1,26 @@
 """Module for Inovelli quirks implementations."""
 
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    BaseCommandDefs,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+    ZCLHeader,
+)
 
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
+    BUTTON_4,
+    BUTTON_5,
+    BUTTON_6,
     COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
@@ -67,150 +75,162 @@ LED_NOTIFICATION_TYPES = {
 # 1 - down button
 # 2 - up button
 # 3 - config button
+# 4 - aux down button
+# 5 - aux up button
+# 6 - aux config button
 
-BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3}
+BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3, 4: BUTTON_4, 5: BUTTON_5, 6: BUTTON_6}
 ON = "Up"
 OFF = "Down"
 CONFIG = "Config"
+AUX_ON = "Aux up"
+AUX_OFF = "Aux down"
+AUX_CONFIG = "Aux config"
 
 NOTIFICATION_TYPE = "notification_type"
 
 
-class Inovelli_VZM31SN_Cluster(CustomCluster):
-    """Inovelli VZM31-SN custom cluster."""
+class InovelliCluster(CustomCluster):
+    """Inovelli base cluster."""
 
     cluster_id = 0xFC31
-    name = "InovelliVZM31SNCluster"
     ep_attribute = "inovelli_vzm31sn_cluster"
 
-    attributes = ManufacturerSpecificCluster.attributes.copy()
-    attributes.update(
-        {
-            0x0001: ("dimming_speed_up_remote", t.uint8_t, True),
-            0x0002: ("dimming_speed_up_local", t.uint8_t, True),
-            0x0003: ("ramp_rate_off_to_on_local", t.uint8_t, True),
-            0x0004: ("ramp_rate_off_to_on_remote", t.uint8_t, True),
-            0x0005: ("dimming_speed_down_remote", t.uint8_t, True),
-            0x0006: ("dimming_speed_down_local", t.uint8_t, True),
-            0x0007: ("ramp_rate_on_to_off_local", t.uint8_t, True),
-            0x0008: ("ramp_rate_on_to_off_remote", t.uint8_t, True),
-            0x0009: ("minimum_level", t.uint8_t, True),
-            0x000A: ("maximum_level", t.uint8_t, True),
-            0x000B: ("invert_switch", t.Bool, True),
-            0x000C: ("auto_off_timer", t.uint16_t, True),
-            0x000D: ("default_level_local", t.uint8_t, True),
-            0x000E: ("default_level_remote", t.uint8_t, True),
-            0x000F: ("state_after_power_restored", t.uint8_t, True),
-            0x0010: ("disable_remote_control", t.uint8_t, True),
-            0x0011: ("load_level_indicator_timeout", t.uint8_t, True),
-            0x0012: ("active_power_reports", t.uint8_t, True),
-            0x0013: ("periodic_power_and_energy_reports", t.uint8_t, True),
-            0x0014: ("active_energy_reports", t.uint16_t, True),
-            0x0015: ("power_type", t.uint8_t, True),
-            0x0016: ("switch_type", t.uint8_t, True),
-            0x0019: ("increased_non_neutral_output", t.Bool, True),
-            0x0032: ("button_delay", t.uint8_t, True),
-            0x0033: ("device_bind_number", t.uint8_t, True),
-            0x0034: ("smart_bulb_mode", t.Bool, True),
-            0x0035: ("double_tap_up_enabled", t.Bool, True),
-            0x0036: ("double_tap_down_enabled", t.Bool, True),
-            0x0037: ("double_tap_up_level", t.uint8_t, True),
-            0x0038: ("double_tap_down_level", t.uint8_t, True),
-            0x003C: ("default_led1_strip_color_when_on", t.uint8_t, True),
-            0x003D: ("default_led1_strip_color_when_off", t.uint8_t, True),
-            0x003E: ("default_led1_strip_intensity_when_on", t.uint8_t, True),
-            0x003F: ("default_led1_strip_intensity_when_off", t.uint8_t, True),
-            0x0041: ("default_led2_strip_color_when_on", t.uint8_t, True),
-            0x0042: ("default_led2_strip_color_when_off", t.uint8_t, True),
-            0x0043: ("default_led2_strip_intensity_when_on", t.uint8_t, True),
-            0x0044: ("default_led2_strip_intensity_when_off", t.uint8_t, True),
-            0x0046: ("default_led3_strip_color_when_on", t.uint8_t, True),
-            0x0047: ("default_led3_strip_color_when_off", t.uint8_t, True),
-            0x0048: ("default_led3_strip_intensity_when_on", t.uint8_t, True),
-            0x0049: ("default_led3_strip_intensity_when_off", t.uint8_t, True),
-            0x004B: ("default_led4_strip_color_when_on", t.uint8_t, True),
-            0x004C: ("default_led4_strip_color_when_off", t.uint8_t, True),
-            0x004D: ("default_led4_strip_intensity_when_on", t.uint8_t, True),
-            0x004E: ("default_led4_strip_intensity_when_off", t.uint8_t, True),
-            0x0050: ("default_led5_strip_color_when_on", t.uint8_t, True),
-            0x0051: ("default_led5_strip_color_when_off", t.uint8_t, True),
-            0x0052: ("default_led5_strip_intensity_when_on", t.uint8_t, True),
-            0x0053: ("default_led5_strip_intensity_when_off", t.uint8_t, True),
-            0x0055: ("default_led6_strip_color_when_on", t.uint8_t, True),
-            0x0056: ("default_led6_strip_color_when_off", t.uint8_t, True),
-            0x0057: ("default_led6_strip_intensity_when_on", t.uint8_t, True),
-            0x0058: ("default_led6_strip_intensity_when_off", t.uint8_t, True),
-            0x005A: ("default_led7_strip_color_when_on", t.uint8_t, True),
-            0x005B: ("default_led7_strip_color_when_off", t.uint8_t, True),
-            0x005C: ("default_led7_strip_intensity_when_on", t.uint8_t, True),
-            0x005D: ("default_led7_strip_intensity_when_off", t.uint8_t, True),
-            0x005F: ("led_color_when_on", t.uint8_t, True),
-            0x0060: ("led_color_when_off", t.uint8_t, True),
-            0x0061: ("led_intensity_when_on", t.uint8_t, True),
-            0x0062: ("led_intensity_when_off", t.uint8_t, True),
-            0x0064: ("led_scaling_mode", t.Bool, True),
-            0x007B: ("aux_switch_scenes", t.Bool, True),
-            0x007D: ("binding_off_to_on_sync_level", t.Bool, True),
-            0x0100: ("local_protection", t.Bool, True),
-            0x0101: ("remote_protection", t.Bool, True),
-            0x0102: ("output_mode", t.Bool, True),
-            0x0103: ("on_off_led_mode", t.Bool, True),
-            0x0104: ("firmware_progress_led", t.Bool, True),
-            0x0105: ("relay_click_in_on_off_mode", t.Bool, True),
-            0x0106: ("disable_clear_notifications_double_tap", t.Bool, True),
-        }
-    )
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "button_event",
-            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+        dimming_speed_up_remote = ZCLAttributeDef(
+            id=0x0001,
+            type=t.uint8_t,
             is_manufacturer_specific=True,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "led_effect",
-            {
+        )
+        ramp_rate_off_to_on_remote = ZCLAttributeDef(
+            id=0x0003,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_speed_down_remote = ZCLAttributeDef(
+            id=0x0005,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_on_to_off_remote = ZCLAttributeDef(
+            id=0x0007,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        minimum_level = ZCLAttributeDef(
+            id=0x0009,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        maximum_level = ZCLAttributeDef(
+            id=0x000A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        auto_off_timer = ZCLAttributeDef(
+            id=0x000C,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        default_level_remote = ZCLAttributeDef(
+            id=0x000E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        state_after_power_restored = ZCLAttributeDef(
+            id=0x000F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        power_type = ZCLAttributeDef(
+            id=0x0015,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        internal_temp_monitor = ZCLAttributeDef(
+            id=0x0020,
+            type=t.int8s,
+            is_manufacturer_specific=True,
+        )
+        overheated = ZCLAttributeDef(
+            id=0x0021,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        smart_bulb_mode = ZCLAttributeDef(
+            id=0x0034,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        led_color_when_on = ZCLAttributeDef(
+            id=0x005F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_intensity_when_on = ZCLAttributeDef(
+            id=0x0061,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        remote_protection = ZCLAttributeDef(
+            id=0x0101,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        output_mode = ZCLAttributeDef(
+            id=0x0102,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        button_event = ZCLCommandDef(
+            id=0x00,
+            schema={"button_pressed": t.uint8_t, "press_type": t.uint8_t},
+            is_manufacturer_specific=True,
+        )
+        led_effect = ZCLCommandDef(
+            id=0x01,
+            schema={
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x02: foundation.ZCLCommandDef(
-            "reset_energy_meter",
-            {},
-            direction=foundation.Direction.Server_to_Client,
+        )
+        reset_energy_meter = ZCLCommandDef(
+            id=0x02,
+            schema={},
             is_manufacturer_specific=True,
-        ),
-        0x03: foundation.ZCLCommandDef(
-            "individual_led_effect",
-            {
+        )
+        individual_led_effect = ZCLCommandDef(
+            id=0x03,
+            schema={
                 "led_number": t.uint8_t,
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x24: foundation.ZCLCommandDef(
-            "led_effect_complete",
-            {
+        )
+        led_effect_complete = ZCLCommandDef(
+            id=0x24,
+            schema={
                 "notification_type": t.uint8_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def handle_cluster_request(
         self,
-        hdr: foundation.ZCLHeader,
-        args: List[Any],
+        hdr: ZCLHeader,
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -223,7 +243,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             hdr.command_id,
             args,
         )
-        if hdr.command_id == self.commands_by_name["button_event"].id:
+        if hdr.command_id == self.ServerCommandDefs.button_event.id:
             button = BUTTONS[args.button_pressed]
             press_type = PRESS_TYPES[args.press_type]
             action = f"{button}_{press_type}"
@@ -234,7 +254,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             }
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             return
-        if hdr.command_id == self.commands_by_name["led_effect_complete"].id:
+        if hdr.command_id == self.ServerCommandDefs.led_effect_complete.id:
             notification_type = LED_NOTIFICATION_TYPES.get(
                 args.notification_type, "unknown"
             )
@@ -247,57 +267,1543 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             return
 
 
-VZM35SN_REMOVES = [
-    0x0012,
-    0x0013,
-    0x0014,
-    0x0019,
-    0x0034,
-    0x0064,
-    0x007D,
-    0x0105,
-]
+class InovelliVZM30SNCluster(InovelliCluster):
+    """Inovelli VZM30-SN custom cluster."""
+
+    name = "InovelliVZM30SNCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        dimming_speed_up_local = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_off_to_on_local = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_speed_down_local = ZCLAttributeDef(
+            id=0x0006,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_on_to_off_local = ZCLAttributeDef(
+            id=0x0008,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        invert_switch = ZCLAttributeDef(
+            id=0x000B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        default_level_local = ZCLAttributeDef(
+            id=0x000D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        load_level_indicator_timeout = ZCLAttributeDef(
+            id=0x0011,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        active_power_reports = ZCLAttributeDef(
+            id=0x0012,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        periodic_power_and_energy_reports = ZCLAttributeDef(
+            id=0x0013,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        active_energy_reports = ZCLAttributeDef(
+            id=0x0014,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        switch_type = ZCLAttributeDef(
+            id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        increased_non_neutral_output = ZCLAttributeDef(
+            id=0x0019,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        leading_or_trailing_edge = ZCLAttributeDef(
+            id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        button_delay = ZCLAttributeDef(
+            id=0x0032,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        device_bind_number = ZCLAttributeDef(
+            id=0x0033,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_enabled = ZCLAttributeDef(
+            id=0x0035,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_enabled = ZCLAttributeDef(
+            id=0x0036,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_level = ZCLAttributeDef(
+            id=0x0037,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_level = ZCLAttributeDef(
+            id=0x0038,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_on = ZCLAttributeDef(
+            id=0x003C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_off = ZCLAttributeDef(
+            id=0x003D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x003E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x003F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_on = ZCLAttributeDef(
+            id=0x0041,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_off = ZCLAttributeDef(
+            id=0x0042,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0043,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0044,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_on = ZCLAttributeDef(
+            id=0x0046,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_off = ZCLAttributeDef(
+            id=0x0047,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0048,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0049,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_on = ZCLAttributeDef(
+            id=0x004B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_off = ZCLAttributeDef(
+            id=0x004C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x004D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x004E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_on = ZCLAttributeDef(
+            id=0x0050,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_off = ZCLAttributeDef(
+            id=0x0051,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0052,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0053,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_on = ZCLAttributeDef(
+            id=0x0055,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_off = ZCLAttributeDef(
+            id=0x0056,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0057,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0058,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_on = ZCLAttributeDef(
+            id=0x005A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_off = ZCLAttributeDef(
+            id=0x005B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x005C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x005D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_when_off = ZCLAttributeDef(
+            id=0x0060,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_intensity_when_off = ZCLAttributeDef(
+            id=0x0062,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_scaling_mode = ZCLAttributeDef(
+            id=0x0064,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_single_tap_behavior = ZCLAttributeDef(
+            id=0x0078,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_timer_display = ZCLAttributeDef(
+            id=0x0079,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        aux_switch_scenes = ZCLAttributeDef(
+            id=0x007B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        binding_off_to_on_sync_level = ZCLAttributeDef(
+            id=0x007D,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_module_binding_control = ZCLAttributeDef(
+            id=0x0082,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        low_for_bound_control = ZCLAttributeDef(
+            id=0x0083,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        medium_for_bound_control = ZCLAttributeDef(
+            id=0x0084,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        high_for_bound_control = ZCLAttributeDef(
+            id=0x0085,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_for_bound_control = ZCLAttributeDef(
+            id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        local_protection = ZCLAttributeDef(
+            id=0x0100,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        on_off_led_mode = ZCLAttributeDef(
+            id=0x0103,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        firmware_progress_led = ZCLAttributeDef(
+            id=0x0104,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        relay_click_in_on_off_mode = ZCLAttributeDef(
+            id=0x0105,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        disable_clear_notifications_double_tap = ZCLAttributeDef(
+            id=0x0106,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
 
 
-class Inovelli_VZM35SN_Cluster(Inovelli_VZM31SN_Cluster):
+class InovelliVZM31SNCluster(InovelliCluster):
+    """Inovelli VZM31-SN custom cluster."""
+
+    name = "InovelliVZM31SNCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        dimming_speed_up_local = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_off_to_on_local = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_speed_down_local = ZCLAttributeDef(
+            id=0x0006,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_on_to_off_local = ZCLAttributeDef(
+            id=0x0008,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        invert_switch = ZCLAttributeDef(
+            id=0x000B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        default_level_local = ZCLAttributeDef(
+            id=0x000D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        load_level_indicator_timeout = ZCLAttributeDef(
+            id=0x0011,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        active_power_reports = ZCLAttributeDef(
+            id=0x0012,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        periodic_power_and_energy_reports = ZCLAttributeDef(
+            id=0x0013,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        active_energy_reports = ZCLAttributeDef(
+            id=0x0014,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        switch_type = ZCLAttributeDef(
+            id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        increased_non_neutral_output = ZCLAttributeDef(
+            id=0x0019,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        leading_or_trailing_edge = ZCLAttributeDef(
+            id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_algorithm = ZCLAttributeDef(
+            id=0x001B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        button_delay = ZCLAttributeDef(
+            id=0x0032,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        device_bind_number = ZCLAttributeDef(
+            id=0x0033,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_enabled = ZCLAttributeDef(
+            id=0x0035,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_enabled = ZCLAttributeDef(
+            id=0x0036,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_level = ZCLAttributeDef(
+            id=0x0037,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_level = ZCLAttributeDef(
+            id=0x0038,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_on = ZCLAttributeDef(
+            id=0x003C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_off = ZCLAttributeDef(
+            id=0x003D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x003E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x003F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_on = ZCLAttributeDef(
+            id=0x0041,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_off = ZCLAttributeDef(
+            id=0x0042,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0043,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0044,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_on = ZCLAttributeDef(
+            id=0x0046,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_off = ZCLAttributeDef(
+            id=0x0047,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0048,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0049,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_on = ZCLAttributeDef(
+            id=0x004B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_off = ZCLAttributeDef(
+            id=0x004C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x004D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x004E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_on = ZCLAttributeDef(
+            id=0x0050,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_off = ZCLAttributeDef(
+            id=0x0051,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0052,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0053,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_on = ZCLAttributeDef(
+            id=0x0055,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_off = ZCLAttributeDef(
+            id=0x0056,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0057,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0058,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_on = ZCLAttributeDef(
+            id=0x005A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_off = ZCLAttributeDef(
+            id=0x005B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x005C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x005D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_when_off = ZCLAttributeDef(
+            id=0x0060,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_intensity_when_off = ZCLAttributeDef(
+            id=0x0062,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_scaling_mode = ZCLAttributeDef(
+            id=0x0064,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_single_tap_behavior = ZCLAttributeDef(
+            id=0x0078,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_timer_display = ZCLAttributeDef(
+            id=0x0079,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        aux_switch_scenes = ZCLAttributeDef(
+            id=0x007B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        aux_detection_level = ZCLAttributeDef(
+            id=0x007C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        binding_off_to_on_sync_level = ZCLAttributeDef(
+            id=0x007D,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_module_binding_control = ZCLAttributeDef(
+            id=0x0082,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        low_for_bound_control = ZCLAttributeDef(
+            id=0x0083,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        medium_for_bound_control = ZCLAttributeDef(
+            id=0x0084,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        high_for_bound_control = ZCLAttributeDef(
+            id=0x0085,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_for_bound_control = ZCLAttributeDef(
+            id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dumb_detection_level = ZCLAttributeDef(
+            id=0x00A5,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        local_protection = ZCLAttributeDef(
+            id=0x0100,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        on_off_led_mode = ZCLAttributeDef(
+            id=0x0103,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        firmware_progress_led = ZCLAttributeDef(
+            id=0x0104,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        relay_click_in_on_off_mode = ZCLAttributeDef(
+            id=0x0105,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        disable_clear_notifications_double_tap = ZCLAttributeDef(
+            id=0x0106,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+
+class InovelliVZM32SNCluster(InovelliCluster):
+    """Inovelli VZM32-SN custom cluster."""
+
+    name = "InovelliVZM32SNCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        dimming_speed_up_local = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_off_to_on_local = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_speed_down_local = ZCLAttributeDef(
+            id=0x0006,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_on_to_off_local = ZCLAttributeDef(
+            id=0x0008,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        invert_switch = ZCLAttributeDef(
+            id=0x000B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        default_level_local = ZCLAttributeDef(
+            id=0x000D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        load_level_indicator_timeout = ZCLAttributeDef(
+            id=0x0011,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        active_power_reports = ZCLAttributeDef(
+            id=0x0012,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        periodic_power_and_energy_reports = ZCLAttributeDef(
+            id=0x0013,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        active_energy_reports = ZCLAttributeDef(
+            id=0x0014,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        switch_type = ZCLAttributeDef(
+            id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        increased_non_neutral_output = ZCLAttributeDef(
+            id=0x0019,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        leading_or_trailing_edge = ZCLAttributeDef(
+            id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        button_delay = ZCLAttributeDef(
+            id=0x0032,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        device_bind_number = ZCLAttributeDef(
+            id=0x0033,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_enabled = ZCLAttributeDef(
+            id=0x0035,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_enabled = ZCLAttributeDef(
+            id=0x0036,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_level = ZCLAttributeDef(
+            id=0x0037,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_level = ZCLAttributeDef(
+            id=0x0038,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_on = ZCLAttributeDef(
+            id=0x003C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_off = ZCLAttributeDef(
+            id=0x003D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x003E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x003F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_on = ZCLAttributeDef(
+            id=0x0041,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_off = ZCLAttributeDef(
+            id=0x0042,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0043,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0044,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_on = ZCLAttributeDef(
+            id=0x0046,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_off = ZCLAttributeDef(
+            id=0x0047,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0048,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0049,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_on = ZCLAttributeDef(
+            id=0x004B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_off = ZCLAttributeDef(
+            id=0x004C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x004D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x004E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_on = ZCLAttributeDef(
+            id=0x0050,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_off = ZCLAttributeDef(
+            id=0x0051,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0052,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0053,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_on = ZCLAttributeDef(
+            id=0x0055,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_off = ZCLAttributeDef(
+            id=0x0056,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0057,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0058,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_on = ZCLAttributeDef(
+            id=0x005A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_off = ZCLAttributeDef(
+            id=0x005B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x005C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x005D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_when_off = ZCLAttributeDef(
+            id=0x0060,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_intensity_when_off = ZCLAttributeDef(
+            id=0x0062,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_scaling_mode = ZCLAttributeDef(
+            id=0x0064,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        light_on_presence_behavior = ZCLAttributeDef(
+            id=0x006E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_room_size_preset = ZCLAttributeDef(
+            id=0x0075,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_single_tap_behavior = ZCLAttributeDef(
+            id=0x0078,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_timer_display = ZCLAttributeDef(
+            id=0x0079,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        aux_switch_scenes = ZCLAttributeDef(
+            id=0x007B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        binding_off_to_on_sync_level = ZCLAttributeDef(
+            id=0x007D,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_module_binding_control = ZCLAttributeDef(
+            id=0x0082,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        low_for_bound_control = ZCLAttributeDef(
+            id=0x0083,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        medium_for_bound_control = ZCLAttributeDef(
+            id=0x0084,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        high_for_bound_control = ZCLAttributeDef(
+            id=0x0085,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_for_bound_control = ZCLAttributeDef(
+            id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        local_protection = ZCLAttributeDef(
+            id=0x0100,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        on_off_led_mode = ZCLAttributeDef(
+            id=0x0103,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        firmware_progress_led = ZCLAttributeDef(
+            id=0x0104,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        disable_clear_notifications_double_tap = ZCLAttributeDef(
+            id=0x0106,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+
+class MMWaveControlId(t.enum8):
+    """MMWave control command IDs."""
+
+    Reset_to_factory = 0x00
+    Auto_generate_interference_area = 0x01
+    Obtain_areas = 0x02
+    Clear_interference_area = 0x03
+
+
+class InovelliVZM32SNMMWaveCluster(CustomCluster):
+    """Inovelli VZM32-SN MMWave custom cluster."""
+
+    cluster_id = 0xFC32
+    ep_attribute = "inovelli_vzm32snmmwave_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        mmwave_height_minimum_floor = ZCLAttributeDef(
+            id=0x0065,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_height_maximum_ceiling = ZCLAttributeDef(
+            id=0x0066,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_minimum_left = ZCLAttributeDef(
+            id=0x0067,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_maximum_right = ZCLAttributeDef(
+            id=0x0068,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_minimum_near = ZCLAttributeDef(
+            id=0x0069,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_maximum_far = ZCLAttributeDef(
+            id=0x006A,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_target_info_report = ZCLAttributeDef(
+            id=0x006B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_stay_life = ZCLAttributeDef(
+            id=0x006C,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_sensitivity = ZCLAttributeDef(
+            id=0x0070,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_trigger = ZCLAttributeDef(
+            id=0x0071,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_hold_time = ZCLAttributeDef(
+            id=0x0072,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_version = ZCLAttributeDef(
+            id=0x0073,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        mmwave_control_command = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "control_id": MMWaveControlId,
+            },
+            is_manufacturer_specific=True,
+        )
+
+
+class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
 
-    attributes = {
-        key: Inovelli_VZM31SN_Cluster.attributes[key]
-        for key in Inovelli_VZM31SN_Cluster.attributes
-        if key not in VZM35SN_REMOVES
-    }
-    attributes.update(
-        {
-            0x0017: ("quick_start_time", t.uint8_t, True),
-            0x001E: ("non_neutral_aux_med_gear_learn_value", t.uint8_t, True),
-            0x001F: ("non_neutral_aux_low_gear_learn_value", t.uint8_t, True),
-            0x0034: ("smart_fan_mode", t.Bool, True),
-            0x0106: ("smart_fan_led_display_levels", t.uint8_t, True),
-        }
-    )
+    name = "InovelliVZM35SNCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        dimming_speed_up_local = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_off_to_on_local = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_speed_down_local = ZCLAttributeDef(
+            id=0x0006,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        ramp_rate_on_to_off_local = ZCLAttributeDef(
+            id=0x0008,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        invert_switch = ZCLAttributeDef(
+            id=0x000B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        default_level_local = ZCLAttributeDef(
+            id=0x000D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        load_level_indicator_timeout = ZCLAttributeDef(
+            id=0x0011,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        switch_type = ZCLAttributeDef(
+            id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        non_neutral_aux_med_gear_learn_value = ZCLAttributeDef(
+            id=0x001E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        non_neutral_aux_low_gear_learn_value = ZCLAttributeDef(
+            id=0x001F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        button_delay = ZCLAttributeDef(
+            id=0x0032,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        device_bind_number = ZCLAttributeDef(
+            id=0x0033,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        smart_fan_mode = ZCLAttributeDef(
+            id=0x0034,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_enabled = ZCLAttributeDef(
+            id=0x0035,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_enabled = ZCLAttributeDef(
+            id=0x0036,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        double_tap_up_level = ZCLAttributeDef(
+            id=0x0037,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        double_tap_down_level = ZCLAttributeDef(
+            id=0x0038,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_on = ZCLAttributeDef(
+            id=0x003C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_color_when_off = ZCLAttributeDef(
+            id=0x003D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x003E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led1_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x003F,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_on = ZCLAttributeDef(
+            id=0x0041,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_color_when_off = ZCLAttributeDef(
+            id=0x0042,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0043,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led2_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0044,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_on = ZCLAttributeDef(
+            id=0x0046,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_color_when_off = ZCLAttributeDef(
+            id=0x0047,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0048,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led3_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0049,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_on = ZCLAttributeDef(
+            id=0x004B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_color_when_off = ZCLAttributeDef(
+            id=0x004C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x004D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led4_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x004E,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_on = ZCLAttributeDef(
+            id=0x0050,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_color_when_off = ZCLAttributeDef(
+            id=0x0051,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0052,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led5_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0053,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_on = ZCLAttributeDef(
+            id=0x0055,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_color_when_off = ZCLAttributeDef(
+            id=0x0056,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x0057,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led6_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x0058,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_on = ZCLAttributeDef(
+            id=0x005A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_color_when_off = ZCLAttributeDef(
+            id=0x005B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_on = ZCLAttributeDef(
+            id=0x005C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        default_led7_strip_intensity_when_off = ZCLAttributeDef(
+            id=0x005D,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_when_off = ZCLAttributeDef(
+            id=0x0060,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_intensity_when_off = ZCLAttributeDef(
+            id=0x0062,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_single_tap_behavior = ZCLAttributeDef(
+            id=0x0078,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        fan_timer_display = ZCLAttributeDef(
+            id=0x0079,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        aux_switch_scenes = ZCLAttributeDef(
+            id=0x007B,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        fan_breeze_mode = ZCLAttributeDef(
+            id=0x0081,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        fan_module_binding_control = ZCLAttributeDef(
+            id=0x0082,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        low_for_bound_control = ZCLAttributeDef(
+            id=0x0083,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        medium_for_bound_control = ZCLAttributeDef(
+            id=0x0084,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        high_for_bound_control = ZCLAttributeDef(
+            id=0x0085,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        led_color_for_bound_control = ZCLAttributeDef(
+            id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        local_protection = ZCLAttributeDef(
+            id=0x0100,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        on_off_led_mode = ZCLAttributeDef(
+            id=0x0103,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        firmware_progress_led = ZCLAttributeDef(
+            id=0x0104,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        disable_clear_notifications_double_tap = ZCLAttributeDef(
+            id=0x0106,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        smart_fan_led_display_levels = ZCLAttributeDef(
+            id=0x0107,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+
+
+class InovelliVZM36LightCluster(InovelliCluster):
+    """Inovelli VZM36 Light custom cluster."""
+
+    name = "InovelliVZM36LightCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        increased_non_neutral_output = ZCLAttributeDef(
+            id=0x0019,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        leading_or_trailing_edge = ZCLAttributeDef(
+            id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+
+
+class InovelliVZM36FanCluster(InovelliCluster):
+    """Inovelli VZM36 Fan custom cluster."""
+
+    name = "InovelliVZM36FanCluster"
+
+    class AttributeDefs(InovelliCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        smart_fan_mode = ZCLAttributeDef(
+            id=0x0034,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+        breeze_mode = ZCLAttributeDef(
+            id=0x0081,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
 
 
 INOVELLI_AUTOMATION_TRIGGERS = {
     (COMMAND_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_PRESS}"},
+    (COMMAND_PRESS, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_PRESS}"},
+    (COMMAND_PRESS, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_PRESS}"},
+    (COMMAND_PRESS, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_PRESS}"},
     (COMMAND_HOLD, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_HOLD}"},
     (COMMAND_HOLD, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_HOLD}"},
     (COMMAND_HOLD, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_HOLD}"},
+    (COMMAND_HOLD, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_HOLD}"},
+    (COMMAND_HOLD, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_HOLD}"},
+    (COMMAND_HOLD, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_HOLD}"},
     (DOUBLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_DOUBLE}"},
+    (DOUBLE_PRESS, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_DOUBLE}"},
+    (DOUBLE_PRESS, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_DOUBLE}"},
+    (DOUBLE_PRESS, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_DOUBLE}"},
     (TRIPLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_TRIPLE}"},
     (TRIPLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_TRIPLE}"},
     (TRIPLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_TRIPLE}"},
+    (TRIPLE_PRESS, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_TRIPLE}"},
+    (TRIPLE_PRESS, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_TRIPLE}"},
+    (TRIPLE_PRESS, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_TRIPLE}"},
     (QUADRUPLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_QUAD}"},
     (QUADRUPLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_QUAD}"},
     (QUADRUPLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_QUAD}"},
+    (QUADRUPLE_PRESS, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_QUAD}"},
+    (QUADRUPLE_PRESS, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_QUAD}"},
+    (QUADRUPLE_PRESS, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_QUAD}"},
     (QUINTUPLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_QUINTUPLE}"},
     (QUINTUPLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_QUINTUPLE}"},
     (QUINTUPLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_QUINTUPLE}"},
+    (QUINTUPLE_PRESS, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_QUINTUPLE}"},
+    (QUINTUPLE_PRESS, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_QUINTUPLE}"},
+    (QUINTUPLE_PRESS, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_QUINTUPLE}"},
     (COMMAND_RELEASE, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_RELEASE}"},
     (COMMAND_RELEASE, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_RELEASE}"},
     (COMMAND_RELEASE, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_RELEASE}"},
+    (COMMAND_RELEASE, AUX_ON): {COMMAND: f"{BUTTON_5}_{COMMAND_RELEASE}"},
+    (COMMAND_RELEASE, AUX_OFF): {COMMAND: f"{BUTTON_4}_{COMMAND_RELEASE}"},
+    (COMMAND_RELEASE, AUX_CONFIG): {COMMAND: f"{BUTTON_6}_{COMMAND_RELEASE}"},
 }

@@ -1,5 +1,4 @@
 """Xiaomi mija lumi cube device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -27,6 +26,7 @@ from zhaquirks.const import (
     TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -147,8 +147,6 @@ SIDES = {
     KNOCK_6_VALUE: 6,
 }
 
-_LOGGER = logging.getLogger(__name__)
-
 
 def extend_dict(dictionary, value, ranges):
     """Extend a dict."""
@@ -164,13 +162,11 @@ class Cube(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 9
+        self.battery_size = BatterySize.CR2450
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
-
-        cluster_id = MultistateInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""
@@ -204,8 +200,6 @@ class Cube(XiaomiQuickInitDevice):
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
         """Analog input cluster."""
-
-        cluster_id = AnalogInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""

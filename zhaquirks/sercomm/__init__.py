@@ -1,4 +1,5 @@
 """Module for sercomm quirks."""
+
 from zhaquirks import PowerConfigurationCluster
 
 SERCOMM = "Sercomm Corp."

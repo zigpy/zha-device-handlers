@@ -1,4 +1,5 @@
 """GLEDOPTO Soposh Dual White and color 5W GU10 300lm device."""
+
 from zigpy.profiles import zll
 from zigpy.profiles.zll import DeviceType
 from zigpy.quirks import CustomDevice

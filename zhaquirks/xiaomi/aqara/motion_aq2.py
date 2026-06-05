@@ -15,6 +15,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -36,9 +37,8 @@ class MotionAQ2(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 9
+        self.battery_size = BatterySize.CR2450
         self.motion_bus = Bus()
-        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

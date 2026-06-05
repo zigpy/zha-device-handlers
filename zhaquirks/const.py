@@ -1,4 +1,5 @@
 """Common constants for zhaquirks."""
+
 from zigpy.quirks import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
@@ -11,6 +12,7 @@ from zigpy.quirks import (
     SIG_NODE_DESC,
     SIG_SKIP_CONFIG,
 )
+import zigpy.types as t
 
 ARGS = "args"
 ATTR_ID = "attr_id"
@@ -23,6 +25,9 @@ BUTTON_3 = "button_3"
 BUTTON_4 = "button_4"
 BUTTON_5 = "button_5"
 BUTTON_6 = "button_6"
+BUTTON_CENTRE = "button_centre"
+BUTTON_7 = "button_7"
+BUTTON_8 = "button_8"
 CLICK_TYPE = "click_type"
 CLOSE = "close"
 CLUSTER_COMMAND = "cluster_command"
@@ -55,6 +60,7 @@ COMMAND_OFF_WITH_EFFECT = "off_with_effect"
 COMMAND_ON = "on"
 COMMAND_PRESS = "press"
 COMMAND_QUAD = "quadruple"
+COMMAND_RECALL = "recall"
 COMMAND_RELEASE = "release"
 COMMAND_SHAKE = "shake"
 COMMAND_SINGLE = "single"
@@ -66,9 +72,13 @@ COMMAND_STEP_SATURATION = "step_saturation"
 COMMAND_STOP = "stop"
 COMMAND_STOP_MOVE_STEP = "stop_move_step"
 COMMAND_STOP_ON_OFF = "stop_with_on_off"
+COMMAND_STORE = "store"
 COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
+COMMAND_STARTED_ROTATING = "started_rotating"
+COMMAND_CONTINUED_ROTATING = "continued_rotating"
+COMMAND_STOPPED_ROTATING = "stopped_rotating"
 DESCRIPTION = "description"
 DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"
@@ -122,3 +132,26 @@ ZONE_STATUS_CHANGE_COMMAND = 0x0000
 ZONE_STATE = 0x0000
 ZONE_TYPE = 0x0001
 ZONE_STATUS = 0x0002
+ROTARY_KNOB = "rotary_knob"
+STARTED_ROTATING = "rotary_knob_started_rotating"
+CONTINUED_ROTATING = "rotary_knob_continued_rotating"
+STOPPED_ROTATING = "rotary_knob_stopped_rotating"
+STOPPED_ROTATING_WITH_DIRECTION = "rotary_knob_stopped_rotating_with_direction"
+
+
+class BatterySize(t.enum8):
+    """Battery sizes."""
+
+    No_battery = 0x00
+    Built_in = 0x01
+    Other = 0x02
+    AA = 0x03
+    AAA = 0x04
+    C = 0x05
+    D = 0x06
+    CR2 = 0x07
+    CR123A = 0x08
+    CR2450 = 0x09
+    CR2032 = 0x0A
+    CR1632 = 0x0B
+    Unknown = 0xFF

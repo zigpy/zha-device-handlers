@@ -12,7 +12,10 @@ jobs:
     uses: zigpy/workflows/.github/workflows/ci.yml@main
     with:
       CODE_FOLDER: zhaquirks
-      CACHE_VERSION: 2
-      PYTHON_VERSION_DEFAULT: 3.9.15
+      CACHE_VERSION: 3
+      PYTHON_VERSION_DEFAULT: 3.12
       PRE_COMMIT_CACHE_PATH:  ~/.cache/pre-commit
       MINIMUM_COVERAGE_PERCENTAGE: 80
+      PYTHON_MATRIX: '"3.12", "3.13"'
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

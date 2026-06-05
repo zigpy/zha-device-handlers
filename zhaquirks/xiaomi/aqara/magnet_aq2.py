@@ -1,5 +1,4 @@
 """Xiaomi aqara contact sensor device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Groups, Identify, OnOff
@@ -13,6 +12,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -26,15 +26,13 @@ from zhaquirks.xiaomi import (
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class MagnetAQ2(XiaomiQuickInitDevice):
     """Xiaomi contact sensor device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 11
+        self.battery_size = BatterySize.CR1632
         super().__init__(*args, **kwargs)
 
     signature = {

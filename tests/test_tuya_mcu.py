@@ -2,26 +2,37 @@
 
 import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
+import time_machine
+from zigpy.quirks.registry import DeviceRegistry
+from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
+from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaDPType
+from zhaquirks.tuya import (
+    TUYA_MCU_VERSION_RSP,
+    TUYA_SET_TIME,
+    TuyaDPType,
+    TuyaLocalCluster,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     ATTR_MCU_VERSION,
     TUYA_MCU_CONNECTION_STATUS,
+    DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
     TuyaMCUCluster,
 )
 
-from tests.common import ClusterListener, MockDatetime
-
 zhaquirks.setup()
 
-ZCL_TUYA_VERSION_RSP = b"\x09\x06\x11\x01\x6D\x82"
-ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0D\x00"
+ZCL_TUYA_VERSION_RSP = b"\x09\x06\x11\x01\x6d\x82"
+ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
 
 
 @pytest.mark.parametrize(
@@ -176,6 +187,7 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert succ["mcu_version"] == "2.0.2"
 
 
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
@@ -186,10 +198,6 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
-
-    # Mock datetime
-    origdatetime = datetime.datetime
-    datetime.datetime = MockDatetime
 
     # simulate a SET_TIME message
     hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
@@ -206,9 +214,6 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
         m1.assert_called_once_with(
             TUYA_SET_TIME, [0, 0, 28, 32, 0, 0, 14, 16], expect_reply=False
         )
-
-    # restore datetime
-    datetime.datetime = origdatetime  # restore datetime
 
 
 @pytest.mark.parametrize(
@@ -357,7 +362,7 @@ async def test_tuya_mcu_classes():
     assert mcu_version
     assert mcu_version.version_raw == 1
     assert mcu_version.version == "0.0.1"
-    mcu_version = TuyaMCUCluster.MCUVersion.deserialize(b"\x00\x05\xFF")[0]
+    mcu_version = TuyaMCUCluster.MCUVersion.deserialize(b"\x00\x05\xff")[0]
     assert mcu_version
     assert mcu_version.version_raw == 255
     assert mcu_version.version == "3.3.15"
@@ -366,13 +371,83 @@ async def test_tuya_mcu_classes():
     assert not mcu_version.version
 
     # test TuyaClusterData.manufacturer values
-    t_c_d = TuyaClusterData(manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID)
-    assert t_c_d.manufacturer == -1
+    t_c_d = TuyaClusterData(manufacturer=None)
+    assert t_c_d.manufacturer is None
     t_c_d = TuyaClusterData(manufacturer=4619)
     assert t_c_d.manufacturer == 4619
-    t_c_d = TuyaClusterData(manufacturer="4098")
+    t_c_d = TuyaClusterData(manufacturer=4098)
     assert t_c_d.manufacturer == 4098
-    with pytest.raises(ValueError):
-        TuyaClusterData(manufacturer="xiaomi")
-    with pytest.raises(ValueError):
-        TuyaClusterData(manufacturer=b"")
+
+
+async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
+    """Test from_cluster_data reads other attributes from correct endpoint via dp_attr.endpoint_id."""
+
+    # Add a second endpoint to the device
+    device_mock.add_endpoint(2)
+    device_mock[2].profile_id = 0x0104
+    device_mock[2].device_type = 0x0051
+
+    registry = DeviceRegistry()
+
+    class Ep1Measurement(ElectricalMeasurement, TuyaLocalCluster):
+        """ElectricalMeasurement on endpoint 1."""
+
+    class Ep2Measurement(ElectricalMeasurement, TuyaLocalCluster):
+        """ElectricalMeasurement on endpoint 2."""
+
+    def combine_power_and_current(power: int, current: int) -> int:
+        """Combine active_power from ep1 and rms_current from ep2 into a DP value."""
+        return power * 1000 + current
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp_multi(
+            dp_id=1,
+            attribute_mapping=[
+                DPToAttributeMapping(
+                    ep_attribute=Ep1Measurement.ep_attribute,
+                    attribute_name="active_power",
+                ),
+                DPToAttributeMapping(
+                    ep_attribute=Ep2Measurement.ep_attribute,
+                    attribute_name="rms_current",
+                    endpoint_id=2,
+                ),
+            ],
+            dp_converter=combine_power_and_current,
+        )
+        .adds(Ep1Measurement)
+        .adds(Ep2Measurement, endpoint_id=2)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+
+    ep1 = quirked.endpoints[1]
+    ep2 = quirked.endpoints[2]
+
+    tuya_cluster = ep1.tuya_manufacturer
+
+    # Pre-set rms_current on endpoint 2 to a known value
+    ep2_meas = ep2.electrical_measurement
+    ep2_meas.update_attribute("rms_current", 42)
+    assert ep2_meas.get("rms_current") == 42
+
+    # Call from_cluster_data as if writing active_power=7 on ep1.
+    # The converter should read rms_current from ep2 (not ep1).
+    cluster_data = TuyaClusterData(
+        endpoint_id=1,
+        cluster_name=Ep1Measurement.ep_attribute,
+        cluster_attr="active_power",
+        attr_value=7,
+        expect_reply=False,
+        manufacturer=-1,
+    )
+
+    result = tuya_cluster.from_cluster_data(cluster_data)
+    assert len(result) == 1
+    assert result[0].datapoints[0].dp == 1
+    # combine_power_and_current(7, 42) = 7 * 1000 + 42 = 7042
+    assert result[0].datapoints[0].data.payload == 7042

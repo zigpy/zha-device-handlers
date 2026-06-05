@@ -1,19 +1,19 @@
 """Xiaomi aqara opple remote devices."""
-import logging
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
     LevelControl,
     MultistateInput,
     OnOff,
+    PowerConfiguration,
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import CustomCluster, PowerConfigurationCluster
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_LONG_PRESS,
@@ -51,7 +51,13 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
@@ -92,16 +98,11 @@ COMMAND_6_TRIPLE = "6_triple"
 COMMAND_6_HOLD = "6_hold"
 COMMAND_6_RELEASE = "6_release"
 
-OPPLE_CLUSTER_ID = 0xFCC0
 OPPLE_MFG_CODE = 0x115F
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    cluster_id = MultistateInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -134,11 +135,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class OppleCluster(CustomCluster):
+class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
-    cluster_id = OPPLE_CLUSTER_ID
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
     }
@@ -172,7 +171,7 @@ class RemoteB286OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -209,7 +208,7 @@ class RemoteB286OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -285,7 +284,7 @@ class RemoteB286OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -308,7 +307,7 @@ class RemoteB286OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -371,7 +370,7 @@ class RemoteB286OPCN01Alt(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -399,7 +398,7 @@ class RemoteB286OPCN01Alt(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -442,7 +441,7 @@ class RemoteB486OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -479,7 +478,7 @@ class RemoteB486OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -575,7 +574,7 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -612,7 +611,7 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -748,7 +747,7 @@ class RemoteB286OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -781,7 +780,7 @@ class RemoteB286OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -814,7 +813,7 @@ class RemoteB286OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -879,7 +878,7 @@ class RemoteB286OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -942,7 +941,7 @@ class RemoteB486OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -965,7 +964,7 @@ class RemoteB486OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1016,7 +1015,7 @@ class RemoteB486OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1044,7 +1043,7 @@ class RemoteB486OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1097,7 +1096,7 @@ class RemoteB486OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1158,7 +1157,7 @@ class RemoteB486OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1221,7 +1220,7 @@ class RemoteB686OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1244,7 +1243,7 @@ class RemoteB686OPCN01V2(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1307,7 +1306,7 @@ class RemoteB686OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1372,7 +1371,7 @@ class RemoteB686OPCN01V3(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1435,7 +1434,7 @@ class RemoteB686OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1484,7 +1483,7 @@ class RemoteB686OPCN01V4(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],
@@ -1547,7 +1546,7 @@ class RemoteB686OPCN01V5(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -1575,7 +1574,7 @@ class RemoteB686OPCN01V5(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                     MultistateInputCluster,
                 ],

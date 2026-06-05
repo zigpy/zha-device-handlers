@@ -1,4 +1,5 @@
 """EDP WithUs SmartPlug Quirk."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

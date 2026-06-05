@@ -1,13 +1,11 @@
 """Quirk for Aqara illumination sensor."""
-import logging
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -22,9 +20,8 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Illumination(XiaomiCustomDevice):
@@ -63,7 +60,7 @@ class Illumination(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             }
@@ -74,7 +71,6 @@ class Illumination(XiaomiCustomDevice):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster with configurable detection interval."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         0x0000: ("detection_interval", types.uint16_t, True),
     }
@@ -98,7 +94,7 @@ class IlluminationT1(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],

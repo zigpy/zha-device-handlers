@@ -1,5 +1,7 @@
 """Xiaomi aqara single key wall switch devices."""
 
+from typing import Final
+
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -15,8 +17,9 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks import Bus, EventableCluster
+from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -43,6 +46,8 @@ from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
+    ElectricalMeasurementCluster,
+    MeteringCluster,
     OnOffCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -60,21 +65,18 @@ class CtrlLn(XiaomiCustomDevice):
         # Known Options for 'decoupled_mode_<button>':
         # * 254 (decoupled)
         # * 18 (relay controlled)
-        attributes = BasicCluster.attributes.copy()
-        attributes.update(
-            {
-                0xFF22: ("decoupled_mode_left", t.uint8_t, True),
-                0xFF23: ("decoupled_mode_right", t.uint8_t, True),
-            }
-        )
+        class AttributeDefs(BasicCluster.AttributeDefs):
+            """Attribute definitions."""
+
+            decoupled_mode_left: Final = ZCLAttributeDef(
+                id=0xFF22, type=t.uint8_t, is_manufacturer_specific=True
+            )
+            decoupled_mode_right: Final = ZCLAttributeDef(
+                id=0xFF23, type=t.uint8_t, is_manufacturer_specific=True
+            )
 
     class WallSwitchMultistateInputCluster(EventableCluster, MultistateInput):
         """WallSwitchMultistateInputCluster: fire events corresponding to press type."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1"), (LUMI, "lumi.ctrl_ln2.aq1")],
@@ -150,6 +152,8 @@ class CtrlLn(XiaomiCustomDevice):
                     OnOffCluster,
                     Time.cluster_id,
                     BinaryOutput.cluster_id,
+                    ElectricalMeasurementCluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },

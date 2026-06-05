@@ -1,5 +1,7 @@
 """Tuya based cover and blinds."""
+
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -11,11 +13,13 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -174,6 +178,8 @@ class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
             ("_TZE200_fzo2pocs", "TS0601"),
             ("_TZE200_iossyxra", "TS0601"),
             ("_TZE200_pw7mji0l", "TS0601"),
+            ("_TZE200_9vpe3fl1", "TS0601"),
+            ("_TZE200_sq6affpe", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -220,6 +226,7 @@ class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
         MODELS_INFO: [
             ("_TZE200_zpzndjez", "TS0601"),
+            ("_TZE200_ba69l9ol", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -361,6 +368,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
         # "class": "zigpy.device.Device"
         # }
         MODELS_INFO: [
+            ("_TZE200_vdiuwbkq", "TS0601"),
             ("_TZE200_zah67ekd", "TS0601"),
             ("_TZE200_nueqqe6k", "TS0601"),
             ("_TZE200_gubdgai2", "TS0601"),
@@ -373,6 +381,10 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_7eue9vhc", "TS0601"),
             ("_TZE200_bv1jcqqu", "TS0601"),
             ("_TZE200_nw1r9hp6", "TS0601"),
+            ("_TZE200_gaj531w3", "TS0601"),
+            ("_TZE200_icka1clh", "TS0601"),
+            ("_TZE200_1vxgqfba", "TS0601"),
+            ("_TZE200_fctwhugx", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -457,6 +469,63 @@ class TuyaMoesCover0601_alt_controls(TuyaWindowCover):
     }
 
 
+class TuyaMoesCover0601_alt_controls2(TuyaWindowCover):
+    """Tuya blind controller device."""
+
+    tuya_cover_command = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
+    tuya_cover_inverted_by_default = True
+
+    signature = {
+        # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0,
+        #                    user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+        #                    mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>,
+        #                    manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        #                    maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>,
+        #                    *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False,
+        #                    *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        # "endpoints": {
+        # "1": { "profile_id": 260, "device_type": "0x0051", "in_clusters": [ "0x0000", "0x0004","0x0005","0x0102","0xef00"], "out_clusters": ["0x000a","0x0019"] }
+        # },
+        # "manufacturer": "_TZE200_2odrmqwq",
+        # "model": "TS0601",
+        # "class": "zigpy.device.Device"
+        # }
+        MODELS_INFO: [
+            ("_TZE200_2odrmqwq", "TS0601"),
+            ("_TZE200_hojryzzd", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerWindowCover,
+                    TuyaWindowCoverControl,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
 class TuyaMoesCover0601_inv_position(TuyaWindowCover):
     """Tuya blind controller device."""
 
@@ -480,6 +549,7 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
             ("_TZE200_3i3exuay", "TS0601"),
             ("_TZE200_nogaemzt", "TS0601"),
             ("_TZE200_dng9fn0k", "TS0601"),
+            ("_TZE200_9p5xmj5r", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -557,3 +627,81 @@ class TuyaCloneCover0601(TuyaWindowCover):
             }
         }
     }
+
+
+class MotorDirection(t.enum8):
+    """Motor direction values."""
+
+    Forward = 0x00
+    Back = 0x01
+
+
+class BorderSetting(t.enum8):
+    """Border/limit setting values."""
+
+    Up = 0x00
+    Down = 0x01
+    Up_delete = 0x02
+    Down_delete = 0x03
+    Remove_top_bottom = 0x04
+
+
+(
+    TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
+    .tuya_battery(dp_id=13)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)

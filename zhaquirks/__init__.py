@@ -1,4 +1,5 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,14 +9,21 @@ import logging
 import pathlib
 import pkgutil
 import sys
+import typing
 from typing import Any
 
 import zigpy.device
 import zigpy.endpoint
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
-from zigpy.zcl import foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUnsupportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -59,24 +67,49 @@ class Bus(ListenableMixin):
 
 
 class LocalDataCluster(CustomCluster):
-    """Cluster meant to prevent remote calls."""
+    """Cluster meant to prevent remote calls.
 
-    _CONSTANT_ATTRIBUTES = {}
+    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _DEFAULT_VALUES to provide default values for attribute ids. These are
+    returned when no value is cached yet, but are overridden by any cached value.
+    Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
+    These are attributes that should be populated later.
+    """
 
-    async def bind(self):
+    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _DEFAULT_VALUES: dict[int, typing.Any] = {}
+    _VALID_ATTRIBUTES: set[int] = set()
+
+    def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
+        """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return default
+        result = super().get(key)
+        if result is not None:
+            return result
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
+
+    async def bind(self, **kwargs):
         """Prevent bind."""
+        self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
 
     async def unbind(self):
         """Prevent unbind."""
+        self.debug("unbinding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
 
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
+        self.debug("configuring reporting for LocalDataCluster")
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Prevent remote reads."""
+        msg = "reading attributes for LocalDataCluster"
+        self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
         records = [
             foundation.ReadAttributeRecord(
                 attr, foundation.Status.UNSUPPORTED_ATTRIBUTE, foundation.TypeValue()
@@ -87,13 +120,37 @@ class LocalDataCluster(CustomCluster):
             if record.attrid in self._CONSTANT_ATTRIBUTES:
                 record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
             else:
-                record.value.value = self._attr_cache.get(record.attrid)
-            if record.value.value is not None:
+                record.value.value = self._attr_cache.get(
+                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+                )
+            if (
+                record.value.value is not None
+                or record.attrid in self._VALID_ATTRIBUTES
+            ):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
+        """Convert attributes dict to list of Attribute records."""
+        records = []
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            record = foundation.Attribute(
+                attrid=attr_def.id, value=foundation.TypeValue()
+            )
+            record.value.value = attr_def.type(value)
+            records.append(record)
+        return records
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Prevent remote writes."""
+        msg = "writing attributes for LocalDataCluster"
+        self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attributes_by_name[attrid].id
@@ -101,11 +158,17 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
@@ -126,21 +189,17 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid in self.attributes:
-            attribute_name = self.attributes[attrid].name
-        else:
-            attribute_name = UNKNOWN
-
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report or update event."""
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
             {
-                ATTRIBUTE_ID: attrid,
-                ATTRIBUTE_NAME: attribute_name,
-                VALUE: value,
+                ATTRIBUTE_ID: event.attribute_id,
+                ATTRIBUTE_NAME: event.attribute_name or UNKNOWN,
+                VALUE: event.value,
             },
         )
 
@@ -184,7 +243,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
     that don't follow the reporting spec.
     """
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
     def _update_attribute(self, attrid, value):
@@ -196,7 +254,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """Common use power configuration cluster."""
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
     MIN_VOLTS = 1.5  # old 2.1
@@ -209,6 +266,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value),
             )
+
+    def emit(self, event_name: str, data=None) -> None:
+        """Suppress unsupported event for battery percentage remaining.
+
+        This attribute is computed from battery voltage by this quirk, so
+        an unsupported response from the device should not clear the cache.
+        """
+        if (
+            event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id == self.BATTERY_PERCENTAGE_REMAINING
+        ):
+            return
+        super().emit(event_name, data)
 
     def _calculate_battery_percentage(self, raw_value):
         volts = raw_value / 10
@@ -336,10 +407,17 @@ class OccupancyOnEvent(_Occupancy):
 class OccupancyWithReset(_Occupancy):
     """Self reset Occupancy cluster and send event on motion bus."""
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
-        if attrid == OCCUPANCY_STATE and value == ON:
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report/update event."""
+        if event.attribute_id == OCCUPANCY_STATE and event.value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
@@ -432,6 +510,9 @@ class NoReplyMixin:
 
 def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
+
+    if custom_quirks_path is not None:
+        DEVICE_REGISTRY.purge_custom_quirks(custom_quirks_path)
 
     # Import all quirks in the `zhaquirks` package first
     for _importer, modname, _ispkg in pkgutil.walk_packages(

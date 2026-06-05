@@ -1,4 +1,5 @@
 """ADUROLIGHT Adurolight_NCC device."""
+
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice

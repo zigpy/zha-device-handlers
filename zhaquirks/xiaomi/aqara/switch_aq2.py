@@ -1,5 +1,4 @@
 """Xiaomi aqara button sensor."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
@@ -39,8 +38,6 @@ from zhaquirks.xiaomi import (
 BUTTON_DEVICE_TYPE = 0x5F01
 ON_OFF = "on_off"
 XIAOMI_CLUSTER_ID = 0xFFFF
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class SwitchAQ2(XiaomiQuickInitDevice):

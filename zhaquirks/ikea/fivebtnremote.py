@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
+
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -16,7 +17,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -98,7 +98,7 @@ class IkeaTradfriRemote1(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     Diagnostic.cluster_id,

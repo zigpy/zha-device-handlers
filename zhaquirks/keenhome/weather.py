@@ -1,4 +1,5 @@
 """Keen Home temperature/humidity/pressure sensor."""
+
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -30,8 +31,6 @@ from zhaquirks.xiaomi import LUMI
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     """Custom cluster representing Keen Home's pressure measurement."""
-
-    cluster_id = PressureMeasurement.cluster_id
 
     KEEN_MEASURED_VALUE_ATTR = 0x0020
     MEASURED_VALUE_ATTR = 0x0000

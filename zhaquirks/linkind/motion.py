@@ -1,6 +1,7 @@
 """Linkind Motion Sensors."""
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -11,7 +12,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import MotionWithReset
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,10 +25,18 @@ from zhaquirks.linkind import LinkindBasicCluster
 LINKIND_CLUSTER_ID = 0xFC81
 
 
-class MotionClusterLinkind(MotionWithReset):
-    """Motion cluster."""
+class IasZoneLinkind(CustomCluster, IasZone):
+    """IasZone cluster for Linkind devices that ignores Alarm_2.
 
-    reset_s: int = 60
+    The sensor uses Alarm_1 for motion and Alarm_2 for brightness. Tamper is apparently also provided by the tamper bit.
+    As ZHA only needs either Alarm_1 or Alarm_2 to activate the motion entity, we need to ignore Alarm_2 for now.
+    """
+
+    def _update_attribute(self, attrid, value):
+        if attrid == IasZone.AttributeDefs.zone_status.id:
+            # always set Alarm_2 bit to 0
+            value = value & ~IasZone.ZoneStatus.Alarm_2
+        super()._update_attribute(attrid, value)
 
 
 class LinkindD0003(CustomDevice):
@@ -68,7 +76,7 @@ class LinkindD0003(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    MotionClusterLinkind,
+                    IasZoneLinkind,
                     Diagnostic.cluster_id,
                     LINKIND_CLUSTER_ID,
                 ],

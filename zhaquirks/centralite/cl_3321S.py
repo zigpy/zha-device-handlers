@@ -1,4 +1,5 @@
 """Centralite 3321S quirk."""
+
 # pylint disable=C0103
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice

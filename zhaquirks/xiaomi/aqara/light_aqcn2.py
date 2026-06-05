@@ -1,5 +1,4 @@
 """Quirk for Xiaomi Aqara Smart LED bulb ZNLDP12LM."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -33,8 +32,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class LightAqcn02(XiaomiCustomDevice):

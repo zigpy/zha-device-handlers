@@ -1,5 +1,6 @@
 """Xiaomi aqara single key wall switch devices."""
-import logging
+
+from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -16,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -60,8 +62,6 @@ XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
 
-_LOGGER = logging.getLogger(__name__)
-
 # click attr 0xF000
 # single click 0x3FF1F00
 # double click 0xCFF1F00
@@ -73,13 +73,15 @@ class BasicClusterDecoupled(BasicCluster):
     # Known Options for 'decoupled_mode_<button>':
     # * 254 (decoupled)
     # * 18 (relay controlled)
-    attributes = BasicCluster.attributes.copy()
-    attributes.update(
-        {
-            0xFF22: ("decoupled_mode_left", t.uint8_t, True),
-            0xFF23: ("decoupled_mode_right", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(BasicCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        decoupled_mode_left: Final = ZCLAttributeDef(
+            id=0xFF22, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        decoupled_mode_right: Final = ZCLAttributeDef(
+            id=0xFF23, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class WallSwitchOnOffCluster(EventableCluster, OnOff):

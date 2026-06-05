@@ -1,14 +1,15 @@
 """Quirk for LUMI lumi.sensor_smoke.acn03 smoke sensor."""
+
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -50,7 +51,6 @@ SMOKE_DENSITY_DBM_MAP = {
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
         SELF_TEST: ("self_test", types.Bool, True),
@@ -81,13 +81,15 @@ class LocalIasZone(LocalDataCluster, IasZone):
     }
 
 
+class XiaomiSmokePowerConfiguration(XiaomiPowerConfiguration):
+    """Xiaomi Smoke Power Configuration cluster."""
+
+    MIN_VOLTS_MV = 2475
+    MAX_VOLTS_MV = 3000
+
+
 class LumiSensorSmokeAcn03(CustomDevice):
     """lumi.sensor_smoke.acn03 smoke sensor."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.battery_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.sensor_smoke.acn03")],
@@ -118,7 +120,7 @@ class LumiSensorSmokeAcn03(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    XiaomiPowerConfiguration,
+                    XiaomiSmokePowerConfiguration,
                     Identify.cluster_id,
                     LocalIasZone,
                     OppleCluster,

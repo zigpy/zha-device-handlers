@@ -1,4 +1,5 @@
 """Device handler for CCS-Switch-D0001 remote control."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

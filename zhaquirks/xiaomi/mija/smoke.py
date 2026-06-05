@@ -12,7 +12,8 @@ High Sensitivity: 0x0101000011010003,
 Medium Sensitivity: 0x0102000011010003,
 Low Sensitivity: 0x0103000011010003.
 """
-import logging
+
+from typing import Final
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -24,6 +25,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -35,6 +37,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -45,8 +48,6 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
 )
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
@@ -55,13 +56,15 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
         IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Fire_Sensor
     }
 
-    attributes = IasZone.attributes.copy()
-    attributes.update(
-        {
-            0xFFF0: ("get_status", t.uint32_t, True),
-            0xFFF1: ("set_options", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(IasZone.AttributeDefs):
+        """Attribute definitions."""
+
+        get_status: Final = ZCLAttributeDef(
+            id=0xFFF0, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        set_options: Final = ZCLAttributeDef(
+            id=0xFFF1, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
@@ -69,7 +72,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init method."""
-        self.battery_size = 8  # CR123a
+        self.battery_size = BatterySize.CR123A
         super().__init__(*args, **kwargs)
 
     signature = {

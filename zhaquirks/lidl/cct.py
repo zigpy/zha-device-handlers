@@ -1,4 +1,5 @@
 """Quirk for LIDL CCT bulb."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (

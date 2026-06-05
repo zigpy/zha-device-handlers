@@ -1,5 +1,4 @@
 """Konke Button Remote."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -29,14 +28,15 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.konke import KONKE, KonkeOnOffCluster
+from zhaquirks.quirk_ids import KONKE_BUTTON
 
 KONKE_CLUSTER_ID = 0xFCC0
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class KonkeButtonRemote1(CustomDevice):
     """Konke 1-button remote device."""
+
+    quirk_id = KONKE_BUTTON
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2
@@ -88,6 +88,8 @@ class KonkeButtonRemote1(CustomDevice):
 
 class KonkeButtonRemote2(CustomDevice):
     """Konke 1-button remote device 2nd variant."""
+
+    quirk_id = KONKE_BUTTON
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2

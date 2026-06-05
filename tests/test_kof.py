@@ -1,4 +1,5 @@
 """Tests for KOF."""
+
 from unittest import mock
 
 import zigpy.device
@@ -28,13 +29,13 @@ async def test_kof_no_reply():
         cluster_id = 0x1234
         void_input_commands = {0x02}
         server_commands = {
-            0x01: foundation.ZCLCommandDef("noop", {}, False),
-            0x02: foundation.ZCLCommandDef("noop_noreply", {}, False),
+            0x01: foundation.ZCLCommandDef("noop", {}),
+            0x02: foundation.ZCLCommandDef("noop_noreply", {}),
         }
         client_commands = {}
 
     ep = mock.AsyncMock()
-    ep.device.application.get_sequence = mock.MagicMock(return_value=4)
+    ep.device.get_sequence = mock.MagicMock(return_value=4)
 
     cluster = TestCluster(ep)
 

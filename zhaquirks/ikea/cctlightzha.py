@@ -1,4 +1,5 @@
 """Tradfri CCT light Quirk."""
+
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

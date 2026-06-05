@@ -1,4 +1,5 @@
 """XHS2-UE Door/Window Sensor."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
@@ -20,7 +21,6 @@ from zhaquirks.const import (
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 

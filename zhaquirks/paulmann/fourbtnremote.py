@@ -1,4 +1,5 @@
 """Device handler for Paulmann 4-button remote control."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -38,7 +39,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.paulmann import PAULMANN
+from zhaquirks.paulmann import PAULMANN, PAULMANN_VARIANT
 
 
 class PaulmannRemote4Btn(CustomDevice):
@@ -49,7 +50,7 @@ class PaulmannRemote4Btn(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 2821, 4096]
         # output_clusters=[3, 4, 5, 6, 8, 25, 768, 4096]>
-        MODELS_INFO: [(PAULMANN, "501.34")],
+        MODELS_INFO: [(PAULMANN, "501.34"), (PAULMANN_VARIANT, "501.34")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

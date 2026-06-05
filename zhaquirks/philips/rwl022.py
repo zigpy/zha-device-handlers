@@ -1,4 +1,5 @@
 """Philips RWL022 device."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -21,12 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import (
-    HUE_REMOTE_DEVICE_TRIGGERS,
-    SIGNIFY,
-    PhilipsBasicCluster,
-    PhilipsRemoteCluster,
-)
+from zhaquirks.philips import SIGNIFY, PhilipsBasicCluster, PhilipsRwlRemoteCluster
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
@@ -74,7 +70,7 @@ class PhilipsRWL022(CustomDevice):
                     PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRemoteCluster,
+                    PhilipsRwlRemoteCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -91,4 +87,6 @@ class PhilipsRWL022(CustomDevice):
         }
     }
 
-    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
+    device_automation_triggers = (
+        PhilipsRwlRemoteCluster.generate_device_automation_triggers()
+    )

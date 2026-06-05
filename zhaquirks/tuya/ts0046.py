@@ -23,11 +23,11 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class Tuya6ButtonTriggers:

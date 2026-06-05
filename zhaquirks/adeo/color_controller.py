@@ -1,5 +1,6 @@
 """Device handler for ADEO Lexman LXEK-5 (HR-C99C-Z-C045) & ZBEK-26 (HR-C99C-Z-C045-B) color controllers."""
-from typing import Any, List, Optional, Union
+
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -18,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, EventableCluster
 from zhaquirks.const import (
@@ -67,19 +69,20 @@ class AdeoManufacturerCluster(EventableCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "AdeoManufacturerCluster"
     ep_attribute = "adeo_manufacturer_cluster"
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "preset",
-            {"param1": t.uint8_t, "param2": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        preset = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={"param1": t.uint8_t, "param2": t.uint8_t},
             is_manufacturer_specific=True,
         )
-    }
 
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -96,8 +99,6 @@ class AdeoManufacturerCluster(EventableCluster):
 
 class AdeoScenesCluster(Scenes, EventableCluster):
     """Scenes cluster to map preset buttons to the "view" command."""
-
-    cluster_id = Scenes.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
