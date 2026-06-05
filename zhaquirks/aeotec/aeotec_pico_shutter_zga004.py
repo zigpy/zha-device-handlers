@@ -2,10 +2,10 @@
 
 import enum
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 
 AEOTEC_MFG_CODE = 0x1310
