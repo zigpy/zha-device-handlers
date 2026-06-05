@@ -11,16 +11,6 @@ from zigpy.zcl.clusters.closures import WindowCovering
 AEOTEC_MFG_CODE = 0x1310
 
 
-# ---------------------------------------------------------------------------
-# ZCL enum types — subclass t.enum8 so zigpy serialises correctly AND
-# subclass enum.IntEnum so ZHA's select entity can map values on read-back.
-# One class does both jobs; no duplicate enums needed.
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ZCL enum types — subclass t.enum8 so zigpy serialises correctly AND
-# subclass enum.Enum so ZHA's select entity can map values on read-back.
-# One class does both jobs; no duplicate enums needed.
-# ---------------------------------------------------------------------------
 class SwitchType(t.enum8, enum.Enum):
     Toggle = 0x00
     Momentary = 0x01
