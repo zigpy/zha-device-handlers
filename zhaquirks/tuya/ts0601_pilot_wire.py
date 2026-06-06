@@ -14,8 +14,8 @@ Observed data points:
             Anti-frost, Off)
 """
 
-import zigpy.types as t
 from zigpy.quirks.v2 import EntityPlatform, EntityType
+import zigpy.types as t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
