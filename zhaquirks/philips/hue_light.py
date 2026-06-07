@@ -261,3 +261,14 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX029")
+    .friendly_name(
+        model="Hue Festavia globe outdoor string lights",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
