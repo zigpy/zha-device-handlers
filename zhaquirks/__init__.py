@@ -314,12 +314,7 @@ class _Motion(CustomCluster, IasZone):
 
     @property
     def reset_after(self) -> int:
-        """Return the number of seconds after which to reset the motion state.
-
-        Defaults to the static ``reset_s``. Subclasses can override this to
-        derive the value from a device attribute, so the freshest value is
-        always used (and is computed lazily, only when needed).
-        """
+        """Seconds before resetting motion; override to derive from an attribute."""
         return self.reset_s
 
     def _turn_off(self):
