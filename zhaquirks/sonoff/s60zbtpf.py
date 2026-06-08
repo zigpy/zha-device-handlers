@@ -1,4 +1,4 @@
-"""SONOFF S60ZB - Smart Socket with power measurement fix."""
+"""SONOFF S60ZBTPF - Smart socket quirk for overload protection settings."""
 
 from typing import Any, Final
 
