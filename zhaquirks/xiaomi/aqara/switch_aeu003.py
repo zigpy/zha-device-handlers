@@ -18,20 +18,42 @@ from zhaquirks.xiaomi.aqara.opple_switch import MultistateInputCluster
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
-    """WindowCovering cluster that corrects the Aqara H2 position inversion.
+    """WindowCovering cluster that corrects the Aqara H2 position convention.
 
-    The Aqara H2 shutter switch reports lift percentage in Home Assistant
-    convention (0=closed, 100=open), but ZHA expects Zigbee spec convention
-    (0=open, 100=closed) and inverts the value itself. This cluster
-    pre-inverts the value to cancel out the double-flip.
+    The Aqara H2 shutter switch uses Home Assistant convention throughout
+    (0 = closed, 100 = open), while ZHA expects Zigbee spec convention
+    (0 = open, 100 = closed) and applies a 100-x inversion on both reads
+    and writes.  Without correction this produces a double inversion in
+    both directions.  This cluster pre-inverts values in both directions
+    so the two inversions cancel out:
+
+    - Incoming attribute reports (_update_attribute): device→cluster value
+      is inverted before ZHA reads it.
+    - Outgoing go_to_lift_percentage commands (request): ZHA-inverted value
+      is re-inverted before it is sent to the device.
     """
 
-    CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
+    CURRENT_POSITION_LIFT_PERCENTAGE = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    GO_TO_LIFT_PERCENTAGE_CMD = (
+        WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
+    )
+
+    # -- Incoming: fix reported position ------------------------------------
 
     def _update_attribute(self, attrid, value):
         if attrid == self.CURRENT_POSITION_LIFT_PERCENTAGE and value is not None:
             value = 100 - value
         super()._update_attribute(attrid, value)
+
+    # -- Outgoing: fix commanded position -----------------------------------
+
+    async def request(self, general, command_id, schema, *args, **kwargs):
+        """Extend WindowCovering.request to override Go to lift percentage commands."""
+        if not general and command_id == self.GO_TO_LIFT_PERCENTAGE_CMD and args:
+            args = (100 - args[0],) + args[1:]
+        return await super().request(general, command_id, schema, *args, **kwargs)
 
 
 (

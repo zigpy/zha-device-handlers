@@ -2820,6 +2820,75 @@ async def test_lumi_switch_aeu003_quirk_applied(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
+    "zha_sends, device_should_receive",
+    [
+        # Fully closed: device reports 0 (its own "open" convention), HA sees 100
+        (0, 100),
+        # Fully open: device reports 100 (its own "closed" convention), HA sees 0
+        (100, 0),
+        # 20 % open from device perspective → 80 % open in HA
+        (20, 80),
+        # 80 % open from device perspective → 20 % open in HA
+        (80, 20),
+        # Midpoint is symmetric
+        (50, 50),
+    ],
+)
+async def test_go_to_lift_percentage_command_inverted(
+    zigpy_device_from_v2_quirk, zha_sends, device_should_receive
+):
+    """Outgoing go_to_lift_percentage commands must be pre-inverted.
+
+    ZHA converts the HA position (0=closed, 100=open) to Zigbee convention
+    (0=open, 100=closed) with 100-x before calling the cluster command.
+    The cluster must invert again so the device receives the original HA
+    value and moves to the correct physical position.
+
+    Flow for "set to 80 %":
+        HA 80 → ZHA inverts → cluster receives 20
+        cluster inverts → device receives 80 → moves to 80 % open  ✓
+    """
+    GO_TO_LIFT_PCT_CMD = WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+    cluster = device.endpoints[1].window_covering
+    assert isinstance(cluster, InvertedWindowCoveringCluster)
+
+    # Patch WindowCovering.request (the grandparent implementation our override
+    # calls via super()).  AsyncMock is not a descriptor so super().request
+    # resolves to the mock object itself; it is called without 'self', giving
+    # call_args.args == (general, command_id, schema, percentage, ...).
+    with mock.patch.object(
+        WindowCovering, "request", new_callable=mock.AsyncMock
+    ) as base_request:
+        base_request.return_value = foundation.Status.SUCCESS, "done"
+
+        await cluster.request(False, GO_TO_LIFT_PCT_CMD, {}, zha_sends)
+
+        base_request.assert_called_once()
+        # positional args seen by the base class: (general, cmd_id, schema, pct)
+        assert base_request.call_args.args[3] == device_should_receive
+
+
+async def test_non_position_commands_unchanged(zigpy_device_from_v2_quirk):
+    """Commands other than go_to_lift_percentage must pass through unmodified."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+    cluster = device.endpoints[1].window_covering
+
+    stop_cmd = WindowCovering.ServerCommandDefs.stop.id
+
+    with mock.patch.object(
+        WindowCovering, "request", new_callable=mock.AsyncMock
+    ) as base_request:
+        base_request.return_value = foundation.Status.SUCCESS, "done"
+
+        await cluster.request(False, stop_cmd, {})
+
+        base_request.assert_called_once()
+        # stop carries no percentage argument; command_id must be unchanged
+        assert base_request.call_args.args[1] == stop_cmd
+
+
+@pytest.mark.parametrize(
     "button, expected_command",
     [
         ("button_3", "3_single"),
