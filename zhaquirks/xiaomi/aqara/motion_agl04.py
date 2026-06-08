@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -41,26 +38,19 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
     }
 
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Write attributes to device with internal 'attributes' validation."""
-        result = await super().write_attributes(attributes, **kwargs)
-        interval = attributes.get(
-            "detection_interval", attributes.get(DETECTION_INTERVAL)
-        )
-        self.endpoint.device.debug("occupancy reset interval: %s", interval)
-        if interval is not None:
-            self.endpoint.ias_zone.reset_s = int(interval)
-        return result
-
 
 class LocalMotionCluster(MotionCluster):
     """Local motion cluster."""
 
     reset_s: int = 60
+
+    @property
+    def reset_after(self) -> int:
+        """Reset motion using the device's `detection_interval`, if known."""
+        interval = self.endpoint.opple_cluster.get("detection_interval")
+        if interval is None:
+            return self.reset_s
+        return int(interval)
 
 
 class LumiLumiMotionAgl04(XiaomiCustomDevice):
