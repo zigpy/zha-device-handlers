@@ -67,7 +67,6 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder("SONOFF", "S60ZBTPF")
-    .applies_to("SONOFF", "S60ZBTPG")
     .replaces(SonoffS60OnOff)
     .replaces(SonoffS60ElectricalMeasurement)
     # firmware v2.0.2 reports instantaneous_demand as supported, always with value 0
