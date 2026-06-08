@@ -312,6 +312,16 @@ class _Motion(CustomCluster, IasZone):
         self._loop = asyncio.get_running_loop()
         self._timer_handle = None
 
+    @property
+    def reset_after(self) -> int:
+        """Return the number of seconds after which to reset the motion state.
+
+        Defaults to the static ``reset_s``. Subclasses can override this to
+        derive the value from a device attribute, so the freshest value is
+        always used (and is computed lazily, only when needed).
+        """
+        return self.reset_s
+
     def _turn_off(self):
         self._timer_handle = None
         self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
@@ -341,7 +351,7 @@ class MotionWithReset(_Motion):
         if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
             if self.send_occupancy_event:
                 self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
 
@@ -367,7 +377,7 @@ class MotionOnEvent(_Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
 
 class _Occupancy(CustomCluster, OccupancySensing):
