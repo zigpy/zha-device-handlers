@@ -37,6 +37,8 @@ class AnyTSNTuyaFrame:
         """Compare with byte array, ignoring sequence numbers at index 1 & 4."""
         if not isinstance(other, (bytes, bytearray)):
             return NotImplemented
+        if len(other) < 5 or len(self._frame) < 5:
+            return other == self._frame
         return (
             other[0:1] == self._frame[0:1]  # ZCL frame control
             and other[2:4] == self._frame[2:4]  # ZCL command ID + TuyaCommand status
