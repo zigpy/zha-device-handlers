@@ -1673,6 +1673,31 @@ async def test_xiaomi_p1_t1_motion_sensor(
 
 
 @pytest.mark.parametrize(
+    "quirk, default_reset_s",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 30),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, 60),
+    ),
+)
+async def test_aqara_motion_reset_after_detection_interval(
+    zigpy_device_from_quirk, quirk, default_reset_s
+):
+    """Test that the motion reset interval follows `detection_interval`."""
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    # without a cached detection_interval, fall back to the static reset_s
+    assert opple_cluster.get("detection_interval") is None
+    assert motion_cluster.reset_after == default_reset_s
+
+    # once detection_interval is known, reset_after follows it
+    opple_cluster.update_attribute(0x0102, 90)
+    assert motion_cluster.reset_after == 90
+
+
+@pytest.mark.parametrize(
     "quirk, cluster_name, raw_report, expected_results",
     (
         (
