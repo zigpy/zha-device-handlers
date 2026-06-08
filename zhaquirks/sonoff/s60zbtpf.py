@@ -1,4 +1,4 @@
-"""SONOFF S60ZBTPF - Smart socket quirk for overload protection settings."""
+"""SONOFF S60ZBTPF smart socket overload protection quirk."""
 
 from typing import Any, Final
 
@@ -36,7 +36,7 @@ class SonoffCustomCluster(CustomCluster):
             type=t.uint32_t,
             manufacturer_code=None,
         )
-        outlet_Control_Protect_Setting = ZCLAttributeDef(
+        outlet_control_protect_setting = ZCLAttributeDef(
             id=0x7007,
             type=t.uint8_t,
             manufacturer_code=None,
@@ -142,11 +142,11 @@ class SonoffCustomCluster(CustomCluster):
         fallback_name="Threshold protection",
     )
     .switch(
-        SonoffCustomCluster.AttributeDefs.outlet_Control_Protect_Setting.name,
+        SonoffCustomCluster.AttributeDefs.outlet_control_protect_setting.name,
         SonoffCustomCluster.cluster_id,
         off_value=0,
         on_value=1,
-        translation_key="outlet_Control_Protect_Setting",
+        translation_key="outlet_control_protect_setting",
         fallback_name="Outlet control protect setting",
     )
     .switch(
