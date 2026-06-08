@@ -1683,17 +1683,18 @@ async def test_aqara_motion_reset_after_detection_interval(
     zigpy_device_from_quirk, quirk, default_reset_s
 ):
     """Test that the motion reset interval follows `detection_interval`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
     device = zigpy_device_from_quirk(quirk)
 
     motion_cluster = device.endpoints[1].ias_zone
     opple_cluster = device.endpoints[1].opple_cluster
 
     # without a cached detection_interval, fall back to the static reset_s
-    assert opple_cluster.get("detection_interval") is None
+    assert opple_cluster.get(detection_interval) is None
     assert motion_cluster.reset_after == default_reset_s
 
     # once detection_interval is known, reset_after follows it
-    opple_cluster.update_attribute(0x0102, 90)
+    opple_cluster.update_attribute(detection_interval, 90)
     assert motion_cluster.reset_after == 90
 
 

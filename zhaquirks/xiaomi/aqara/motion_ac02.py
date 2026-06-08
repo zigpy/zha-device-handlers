@@ -72,7 +72,7 @@ class LocalMotionCluster(MotionCluster):
     @property
     def reset_after(self) -> int:
         """Use the device's `detection_interval` if known, else `reset_s`."""
-        interval = self.endpoint.opple_cluster.get("detection_interval")
+        interval = self.endpoint.opple_cluster.get(DETECTION_INTERVAL)
         if interval is None:
             return self.reset_s
         return int(interval)
