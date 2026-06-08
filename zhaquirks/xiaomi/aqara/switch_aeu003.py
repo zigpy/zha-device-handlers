@@ -96,6 +96,40 @@ class AqaraPowerOnMode(t.enum8):
     Inverted = 0x03
 
 
+class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
+    """WindowCovering cluster that corrects the Aqara H2 position convention.
+
+    The Aqara H2 shutter switch uses Home Assistant convention throughout
+    (0 = closed, 100 = open), while ZHA expects Zigbee spec convention
+    (0 = open, 100 = closed) and applies a 100-x inversion on both reads
+    and writes. Without correction this produces a double inversion in
+    both directions. This cluster pre-inverts values in both directions
+    so the two inversions cancel out:
+
+    - Incoming attribute reports (_update_attribute): device→cluster value
+      is inverted before ZHA reads it.
+    - Outgoing go_to_lift_percentage commands (request): ZHA-inverted value
+      is re-inverted before it is sent to the device.
+    """
+
+    CURRENT_POSITION_LIFT_PERCENTAGE: Final = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    GO_TO_LIFT_PERCENTAGE_CMD: Final = (
+        WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
+    )
+
+    def _update_attribute(self, attrid, value):
+        """Pre-invert reported lift percentage."""
+        if attrid == self.CURRENT_POSITION_LIFT_PERCENTAGE and value is not None:
+            value = 100 - value
+        super()._update_attribute(attrid, value)
+
+    async def request(self, general, command_id, schema, *args, **kwargs):
+        """Pre-invert go-to-lift-percentage commands."""
+        if not general and command_id == self.GO_TO_LIFT_PERCENTAGE_CMD and args:
+            args = (100 - args[0],) + args[1:]
+        return await super().request(general, command_id, schema, *args, **kwargs)
 
 
 class AqaraManuSpecificCluster(CustomCluster):
@@ -175,7 +209,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         )
         if attrid == self.AttributeDefs.position_percent.id:
             try:
-                pct = max(0, min(100, 100 - int(value)))
+                pct = max(0, min(100, int(value)))
                 if self._movement_stopped and pct in (0, 100):
                     pct = 50
                 self.endpoint.window_covering.update_attribute(
@@ -230,6 +264,7 @@ class AqaraManuSpecificCluster(CustomCluster):
 (
     QuirkBuilder("Aqara", "lumi.switch.aeu003")
     .friendly_name(model="Shutter Switch H2", manufacturer="Aqara")
+    .replaces(InvertedWindowCoveringCluster, endpoint_id=1)
     .replaces(MultistateInputCluster, endpoint_id=3)
     .replaces(MultistateInputCluster, endpoint_id=4)
     .replaces(AqaraManuSpecificCluster, endpoint_id=1)
