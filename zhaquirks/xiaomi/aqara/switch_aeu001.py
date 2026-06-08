@@ -427,6 +427,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 (
     QuirkBuilder("Aqara", "lumi.switch.aeu001")
     # Endpoint 1: Primary switch with metering
+    .replaces_endpoint(1, device_type=0x010A)
     .replaces(BasicCluster)
     .adds(Identify)
     .adds(Groups)
@@ -437,6 +438,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .replaces(ElectricalMeasurementCluster)
     .replaces(OppleCluster)
     # Endpoint 2: Secondary switch
+    .replaces_endpoint(2, device_type=0x010A)
     .adds(Identify, endpoint_id=2)
     .adds(Groups, endpoint_id=2)
     .adds(Scenes, endpoint_id=2)
