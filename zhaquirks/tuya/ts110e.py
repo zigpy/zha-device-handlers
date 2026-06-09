@@ -9,12 +9,14 @@ from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
     Groups,
+    Identify,
     LevelControl,
     OnOff,
     Ota,
     Scenes,
     Time,
 )
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
@@ -187,6 +189,93 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                     TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class DimmerSwitchWithNeutral2Gang(TuyaDimmerSwitch):
+    """Tuya Dimmer Switch Module With Neutral 2 Gang."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3210_pagajpog", "TS110E")],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=257
+            # input_clusters=[5, 4, 6, 8, 57345, 4096, 3, 0]
+            # output_clusters=[25, 10]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=257
+            # input_clusters=[5, 4, 6, 8, 57345]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+                # input_clusters=[]
+                # output_clusters=[33]
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    F000LevelControlCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    F000LevelControlCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
