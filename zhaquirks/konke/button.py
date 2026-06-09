@@ -1,7 +1,7 @@
 """Konke Button Remote."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
@@ -14,10 +14,19 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.konke import KONKE, KonkeOnOffCluster
+from zhaquirks.quirk_ids import KONKE_BUTTON
+
+
+class KonkeButtonRemote(CustomDeviceV2):
+    """Konke 1-button remote custom device."""
+
+    quirk_id = KONKE_BUTTON
+
 
 (
     QuirkBuilder(KONKE, "3AFE280100510001")
     .applies_to(KONKE, "3AFE170100510001")
+    .device_class(KonkeButtonRemote)
     .replaces_endpoint(1, device_type=zha.DeviceType.REMOTE_CONTROL)
     .replaces(PowerConfigurationCluster, endpoint_id=1)
     .replaces(KonkeOnOffCluster, endpoint_id=1)

@@ -4,9 +4,11 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.security import IasWd
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
+from zhaquirks.heiman import HEIMAN
+
 (
-    QuirkBuilder("HEIMAN", "CO_V15")
-    .applies_to("HEIMAN", "SMOK_YDLV10")
+    QuirkBuilder(HEIMAN, "CO_V15")
+    .applies_to(HEIMAN, "SMOK_YDLV10")
     .node_descriptor(
         NodeDescriptor(
             logical_type=LogicalType.EndDevice,
@@ -30,7 +32,7 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
 )
 
 (
-    QuirkBuilder("HEIMAN", "CO_CTPG")
+    QuirkBuilder(HEIMAN, "CO_CTPG")
     .node_descriptor(
         NodeDescriptor(
             logical_type=LogicalType.EndDevice,
