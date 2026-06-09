@@ -2,19 +2,11 @@
 
 from typing import Any, Optional, Union
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    PollControl,
-    PowerConfiguration,
-)
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus
@@ -23,17 +15,11 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STEP,
-    DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
     DOUBLE_PRESS,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
     PARAMS,
-    PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
@@ -139,79 +125,45 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
             )
 
 
-class SengledE1EG7F(CustomDevice):
+class SengledE1EG7FDevice(CustomDeviceV2):
     """Sengled E1E-G7F device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
-
         self.on_off_bus = Bus()
         self.level_control_bus = Bus()
-
         super().__init__(*args, **kwargs)
 
-    signature = {
-        MODELS_INFO: [("sengled", "E1E-G7F")],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=260
-            # device_version=0
-            # input_clusters=[0, 1, 3, 32, 64529]
-            # output_clusters=[3, 4, 6, 8, 64528]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    0xFC11,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    SengledE1EG7FManufacturerSpecificCluster.cluster_id,
-                ],
-            },
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    0xFC11,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    SengledE1EG7FOnOffCluster,
-                    SengledE1EG7FLevelControlCluster,
-                    SengledE1EG7FManufacturerSpecificCluster,
-                ],
+(
+    QuirkBuilder("sengled", "E1E-G7F")
+    .device_class(SengledE1EG7FDevice)
+    .replaces(SengledE1EG7FOnOffCluster, cluster_type=ClusterType.Client, endpoint_id=1)
+    .replaces(
+        SengledE1EG7FLevelControlCluster, cluster_type=ClusterType.Client, endpoint_id=1
+    )
+    .replaces(
+        SengledE1EG7FManufacturerSpecificCluster,
+        cluster_type=ClusterType.Client,
+        endpoint_id=1,
+    )
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
+            (LONG_PRESS, TURN_ON): {COMMAND: "on_long"},
+            (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double"},
+            (SHORT_PRESS, DIM_UP): {
+                COMMAND: COMMAND_STEP,
+                PARAMS: {"step_mode": 0},
             },
+            (SHORT_PRESS, DIM_DOWN): {
+                COMMAND: COMMAND_STEP,
+                PARAMS: {"step_mode": 1},
+            },
+            (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
+            (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},
+            (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double"},
         }
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (LONG_PRESS, TURN_ON): {COMMAND: "on_long"},
-        (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double"},
-        (SHORT_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP,
-            PARAMS: {"step_mode": 0},
-        },
-        (SHORT_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            PARAMS: {"step_mode": 1},
-        },
-        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
-        (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},
-        (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double"},
-    }
+    )
+    .add_to_registry()
+)

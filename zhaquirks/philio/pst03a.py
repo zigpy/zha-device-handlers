@@ -1,15 +1,8 @@
 """Device handler for Philio PST03A-v2.2.5."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Alarms,
-    Basic,
-    BinaryInput,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-)
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import BinaryInput, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     OccupancySensing,
@@ -17,77 +10,27 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MANUFACTURER,
-    MODEL,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    SKIP_CONFIGURATION,
+from zhaquirks import MotionWithReset
+
+
+class MotionCluster(MotionWithReset):
+    """Motion cluster."""
+
+    reset_s: int = 30
+
+
+(
+    # TODO: is this correct? The v1 quirk had no manufacturer name.
+    QuirkBuilder("Philio", "PST03A-v2.2.5")
+    .skip_configuration()
+    .replaces(MotionCluster, endpoint_id=1)
+    .removes(PowerConfiguration, endpoint_id=1)
+    .removes(OccupancySensing, endpoint_id=1)
+    .removes(IasZone, endpoint_id=1)
+    .removes(OnOff, endpoint_id=1, cluster_type=ClusterType.Client)
+    .adds(TemperatureMeasurement, endpoint_id=1)
+    .adds(IlluminanceMeasurement, endpoint_id=1)
+    .removes(PowerConfiguration, endpoint_id=2)
+    .removes(BinaryInput, endpoint_id=2)
+    .add_to_registry()
 )
-from zhaquirks.philio import PHILIO, MotionCluster
-
-
-class Pst03a(CustomDevice):
-    """Custom device representing PST03A 4in1 motion/opening/temperature/illuminance sensors."""
-
-    signature = {
-        MODEL: "PST03A-v2.2.5",
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Alarms.cluster_id,
-                    OccupancySensing.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Alarms.cluster_id,
-                    BinaryInput.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        SKIP_CONFIGURATION: True,
-        MANUFACTURER: PHILIO,
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Alarms.cluster_id,
-                    MotionCluster,
-                    TemperatureMeasurement.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Alarms.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-        },
-    }

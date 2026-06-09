@@ -5,14 +5,12 @@ from unittest import mock
 import pytest
 from zigpy.zcl.clusters.closures import WindowCovering
 
-from zhaquirks.smartwings.wm25lz import WM25LBlinds
 
-
-@pytest.mark.parametrize("quirk", (WM25LBlinds,))
-async def test_smartwings_inverted_commands(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize("model", ("WM25/L-Z",))
+async def test_smartwings_inverted_commands(zigpy_device_from_v2_quirk, model):
     """Test that the Smartwings WM25/L-Z blind quirk inverts the up/down commands."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk("Smartwings", model)
     device.request = mock.AsyncMock()
 
     covering_cluster = device.endpoints[1].window_covering

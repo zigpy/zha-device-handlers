@@ -9,10 +9,12 @@ import zhaquirks
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.linkind.motion.LinkindD0003,))
-async def test_linkind_motion_ignore_alarm_2(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize("manufacturer,model", [("lk", "ZB-MotionSensor-D0003")])
+async def test_linkind_motion_ignore_alarm_2(
+    zigpy_device_from_v2_quirk, manufacturer, model
+):
     """Test that the quirk for the Linkind motion sensor ignores the IasZone Alarm_2 bit."""
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(manufacturer, model)
 
     ias_zone_cluster = device.endpoints[1].ias_zone
     ias_zone_listener = ClusterListener(ias_zone_cluster)

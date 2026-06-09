@@ -24,12 +24,12 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize(
-    "quirk", (zhaquirks.konke.motion.KonkeMotion, zhaquirks.konke.motion.KonkeMotionB)
+    "model", ("3AFE28010402000D", "3AFE14010402000D", "3AFE27010402000D")
 )
-async def test_konke_motion(zigpy_device_from_quirk, quirk):
+async def test_konke_motion(zigpy_device_from_v2_quirk, model):
     """Test konke motion sensor."""
 
-    motion_dev = zigpy_device_from_quirk(quirk)
+    motion_dev = zigpy_device_from_v2_quirk("Konke", model)
 
     motion_cluster = motion_dev.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
@@ -67,16 +67,16 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "quirk",
+    "model",
     (
-        zhaquirks.konke.button.KonkeButtonRemote1,
-        zhaquirks.konke.button.KonkeButtonRemote2,
+        "3AFE170100510001",
+        "3AFE280100510001",
     ),
 )
-async def test_konke_button(zigpy_device_from_quirk, quirk):
+async def test_konke_button(zigpy_device_from_v2_quirk, model):
     """Test Konke button remotes."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk("Konke", model)
     cluster = device.endpoints[1].konke_on_off
 
     listener = mock.MagicMock()

@@ -27,10 +27,10 @@ zhaquirks.setup()
         (24.0, 0),  # below min
     ),
 )
-async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
+async def test_legrand_battery(zigpy_device_from_v2_quirk, voltage, bpr):
     """Test Legrand battery voltage to % battery left."""
 
-    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Remote dimmer switch")
     power_cluster = device.endpoints[1].power
     power_cluster.update_attribute(
         PowerConfiguration.AttributeDefs.battery_voltage.id, voltage
@@ -38,10 +38,12 @@ async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
     assert power_cluster["battery_percentage_remaining"] == bpr
 
 
-async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_quirk):
+async def test_power_config_unsupported_does_not_clear_cache(
+    zigpy_device_from_v2_quirk,
+):
     """Test that reading unsupported battery_percentage_remaining doesn't clear the cached value."""
 
-    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Remote dimmer switch")
     power_cluster = device.endpoints[1].power
 
     # Simulate a voltage report that populates battery_percentage_remaining
@@ -68,11 +70,11 @@ async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_q
 
 
 async def test_power_config_other_unsupported_events_pass_through(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
 ):
     """Test that unsupported events for other attributes are not suppressed."""
 
-    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Remote dimmer switch")
     power_cluster = device.endpoints[1].power
 
     listener = mock.MagicMock()

@@ -1,29 +1,11 @@
 """Tint remote."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Basic, Scenes
 
 from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 TINT_SCENE_ATTR = 0x4005
 
@@ -58,7 +40,7 @@ class TintRemoteBasicCluster(CustomCluster, Basic):
         self.endpoint.device.scene_bus.listener_event("change_scene", value)
 
 
-class TintRemote(CustomDevice):
+class TintRemote(CustomDeviceV2):
     """Tint remote quirk."""
 
     def __init__(self, *args, **kwargs):
@@ -66,54 +48,11 @@ class TintRemote(CustomDevice):
         self.scene_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        # endpoint=1 profile=260 device_type=2048 device_version=1 input_clusters=[0, 3, 4096]
-        # output_clusters=[0, 3, 4, 5, 8, 25, 768, 4096]
-        MODELS_INFO: [("MLI", "ZBT-Remote-ALL-RGBW")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_CONTROLLER,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    LightLink.cluster_id,  # 4096
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    OnOff.cluster_id,  # 6
-                    LevelControl.cluster_id,  # 8
-                    Ota.cluster_id,  # 25
-                    Color.cluster_id,  # 768
-                    LightLink.cluster_id,  # 4096
-                ],
-            },
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_CONTROLLER,
-                INPUT_CLUSTERS: [
-                    TintRemoteBasicCluster,  # 0
-                    Identify.cluster_id,  # 3
-                    LightLink.cluster_id,  # 4096
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    TintRemoteScenesCluster,  # 5
-                    OnOff.cluster_id,  # 6
-                    LevelControl.cluster_id,  # 8
-                    Ota.cluster_id,  # 25
-                    Color.cluster_id,  # 768
-                    LightLink.cluster_id,  # 4096
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder("MLI", "ZBT-Remote-ALL-RGBW")
+    .device_class(TintRemote)
+    .replaces(TintRemoteBasicCluster, endpoint_id=1)
+    .adds(TintRemoteScenesCluster, cluster_type=ClusterType.Client, endpoint_id=1)
+    .add_to_registry()
+)

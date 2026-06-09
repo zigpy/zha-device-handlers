@@ -13,11 +13,11 @@ import zhaquirks.orvibo.motion
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))
-async def test_orvibo_motion(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize("model", ("895a2d80097f4ae2b2d40500d5e03dcc",))
+async def test_orvibo_motion(zigpy_device_from_v2_quirk, model):
     """Test Orvibo motion sensor."""
 
-    motion_dev = zigpy_device_from_quirk(quirk)
+    motion_dev = zigpy_device_from_v2_quirk("ORVIBO", model)
 
     motion_cluster = motion_dev.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
