@@ -18,7 +18,7 @@ class HeimanSwitchType(t.enum8):
 
 
 class HeimanSpecialCluster(CustomCluster):
-    """Heiman manufacturer-specific cluster. """
+    """Heiman manufacturer-specific cluster."""
 
     cluster_id: t.uint16_t = 0xFC90
 
