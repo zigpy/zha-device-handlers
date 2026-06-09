@@ -1,4 +1,4 @@
-"""Heiman HS1RM-E smoke sensor."""
+"""Heiman HS1RM-E relay module."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
