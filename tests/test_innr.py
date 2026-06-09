@@ -59,7 +59,12 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
     assert summation_events[-1].value == 35
 
     # ...and it is cached as the standard attribute the energy sensor reads.
-    assert metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 35
+    # ZHA reads by name; the bare attribute ID 0x0000 is intentionally ambiguous
+    # now that a manufacturer-specific attribute shares it.
+    cached, _ = await metering_cluster.read_attributes(
+        ["current_summ_delivered"], only_cache=True
+    )
+    assert cached["current_summ_delivered"] == 35
 
 
 async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
@@ -92,6 +97,7 @@ async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
     ]
     assert summation_events, "current_summ_delivered report was not parsed"
     assert summation_events[-1].value == 1234
-    assert (
-        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    cached, _ = await metering_cluster.read_attributes(
+        ["current_summ_delivered"], only_cache=True
     )
+    assert cached["current_summ_delivered"] == 1234
