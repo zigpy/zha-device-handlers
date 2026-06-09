@@ -623,7 +623,7 @@ base_avatto_quirk = (
 )
 
 
-class TuyaThermostatBseed(TuyaThermostat):
+class TuyaThermostatExtendedLimits(TuyaThermostat):
     """Tuya local thermostat cluster."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -748,7 +748,7 @@ class TuyaThermostatBseed(TuyaThermostat):
         translation_key="local_temperature_floor",
         fallback_name="Floor temperature",
     )
-    .adds(TuyaThermostatBseed)
+    .adds(TuyaThermostatExtendedLimits)
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=Thermostat.cluster_id,
