@@ -29,7 +29,7 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
         translation_key="switch_type_l1",
-        fallback_name="Switch type l1",
+        fallback_name="Switch type L1",
     )
     .enum(
         OnOffConfiguration.AttributeDefs.switch_actions.name,
