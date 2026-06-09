@@ -175,6 +175,7 @@ class CustomHeimanCluster(CustomCluster):
         SensorAlarmLevelEnum,
         CustomHeimanCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
         translation_key="alarm_level",
         fallback_name="Alarm Level",
     )
