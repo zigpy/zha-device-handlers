@@ -1,16 +1,40 @@
-"""Heiman HS1RM-E smoke sensor."""
+"""Heiman HS1RM-E relay module."""
+
+from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature, OnOffConfiguration
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+
+class HeimanSwitchType(t.enum8):
+    """Heiman switch input type."""
+
+    Toggle = 0x00
+    Momentary = 0x01
+
+
+class HeimanSpecialCluster(CustomCluster):
+    """Heiman manufacturer-specific cluster. """
+
+    cluster_id: t.uint16_t = 0xFC90
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Heiman manufacturer-specific attributes."""
+
+        switch_type: Final = ZCLAttributeDef(
+            id=0x1010, type=HeimanSwitchType, access="rw", manufacturer_code=0x120B
+        )
 
 
 class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     """Heiman Device Temperature cluster that scales raw values by 100."""
 
     def _update_attribute(self, attrid, value):
-        # Attribute 0x0000 is current_temperature
+        """Scale current_temperature to centidegrees for ZHA's /100 divisor."""
         if attrid == self.AttributeDefs.current_temperature.id and value is not None:
             value = value * 100
         super()._update_attribute(attrid, value)
@@ -21,42 +45,45 @@ class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
     .applies_to("HEIMAN", "RelayModule-EF-3.0")
     .friendly_name(manufacturer="HEIMAN", model="HS1RM-E")
     .replaces(HeimanDeviceTemperature)
-    # heiman functions
+    .adds(HeimanSpecialCluster, endpoint_id=1)
+    .adds(HeimanSpecialCluster, endpoint_id=2)
+    # switch input type (Heiman manufacturer-specific cluster 0xFC90)
     .enum(
-        OnOffConfiguration.AttributeDefs.switch_type.name,
-        OnOffConfiguration.SwitchType,
-        OnOffConfiguration.cluster_id,
+        attribute_name=HeimanSpecialCluster.AttributeDefs.switch_type.name,
+        enum_class=HeimanSwitchType,
+        cluster_id=HeimanSpecialCluster.cluster_id,
         endpoint_id=1,
         entity_type=EntityType.CONFIG,
         translation_key="switch_type_l1",
-        fallback_name="Switch type l1",
+        fallback_name="Switch type L1",
     )
     .enum(
-        OnOffConfiguration.AttributeDefs.switch_actions.name,
-        OnOffConfiguration.SwitchActions,
-        OnOffConfiguration.cluster_id,
-        endpoint_id=1,
-        entity_type=EntityType.CONFIG,
-        translation_key="switch_action_l1",
-        fallback_name="Switch action l1",
-    )
-    .enum(
-        OnOffConfiguration.AttributeDefs.switch_type.name,
-        OnOffConfiguration.SwitchType,
-        OnOffConfiguration.cluster_id,
+        attribute_name=HeimanSpecialCluster.AttributeDefs.switch_type.name,
+        enum_class=HeimanSwitchType,
+        cluster_id=HeimanSpecialCluster.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
         translation_key="switch_type_l2",
-        fallback_name="Switch type l2",
+        fallback_name="Switch type L2",
+    )
+    # switch actions (standard ZCL OnOffConfiguration cluster)
+    .enum(
+        attribute_name=OnOffConfiguration.AttributeDefs.switch_actions.name,
+        enum_class=OnOffConfiguration.SwitchActions,
+        cluster_id=OnOffConfiguration.cluster_id,
+        endpoint_id=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="switch_action_l1",
+        fallback_name="Switch action L1",
     )
     .enum(
-        OnOffConfiguration.AttributeDefs.switch_actions.name,
-        OnOffConfiguration.SwitchActions,
-        OnOffConfiguration.cluster_id,
+        attribute_name=OnOffConfiguration.AttributeDefs.switch_actions.name,
+        enum_class=OnOffConfiguration.SwitchActions,
+        cluster_id=OnOffConfiguration.cluster_id,
         endpoint_id=2,
         entity_type=EntityType.CONFIG,
         translation_key="switch_action_l2",
-        fallback_name="Switch action l2",
+        fallback_name="Switch action L2",
     )
     .add_to_registry()
 )
