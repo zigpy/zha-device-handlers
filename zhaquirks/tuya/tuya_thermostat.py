@@ -68,7 +68,7 @@ class PresetModeV04(t.enum8):
 
 
 class PresetModeV05(t.enum8):
-    """Tuya preset mode v04 enum."""
+    """Tuya preset mode v05 enum."""
 
     Auto = 0x00
     Manual = 0x01
