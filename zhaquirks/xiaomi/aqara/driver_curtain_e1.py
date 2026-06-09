@@ -99,7 +99,9 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
     .replaces(WindowCoveringE1, endpoint_id=1)
     .adds(LocalIlluminanceMeasurementCluster, endpoint_id=1)
     .replaces(XiaomiAqaraDriverE1, endpoint_id=1)
-    .removes(XiaomiAqaraDriverE1, cluster_type=ClusterType.Client, endpoint_id=1)
+    .removes(
+        XiaomiAqaraDriverE1.cluster_id, cluster_type=ClusterType.Client, endpoint_id=1
+    )
     .node_descriptor(
         NodeDescriptor(
             logical_type=LogicalType.EndDevice,

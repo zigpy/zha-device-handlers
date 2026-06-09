@@ -57,6 +57,6 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
     QuirkBuilder("HEIMAN", "SmokeSensor-N-3.0")
     .applies_to("HEIMAN", "SmokeSensor-EF-3.0")
     .applies_to("HEIMAN", "SmokeSensor-EM")
-    .removes(IasWd, endpoint_id=1)
+    .removes(IasWd.cluster_id, endpoint_id=1)
     .add_to_registry()
 )

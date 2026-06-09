@@ -20,7 +20,7 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("ADUROLIGHT", "Adurolight_NCC")
-    .removes(LevelControl, endpoint_id=1)
+    .removes(LevelControl.cluster_id, endpoint_id=1)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {

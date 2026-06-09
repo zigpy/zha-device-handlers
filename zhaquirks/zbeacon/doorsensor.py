@@ -15,6 +15,6 @@ from zigpy.zcl.clusters.general import PollControl
 
 (
     QuirkBuilder("zbeacon", "DS01")
-    .removes(PollControl, endpoint_id=1)
+    .removes(PollControl.cluster_id, endpoint_id=1)
     .add_to_registry()
 )  # fmt:skip

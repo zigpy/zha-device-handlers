@@ -7,6 +7,6 @@ from zhaquirks.gledopto import GLEDOPTO
 
 (
     QuirkBuilder(GLEDOPTO, "GL-C-009")
-    .removes(Color, endpoint_id=11)
+    .removes(Color.cluster_id, endpoint_id=11)
     .add_to_registry()
 )  # fmt:skip

@@ -15,6 +15,6 @@ from zhaquirks.centralite import CENTRALITE
     .applies_to(CENTRALITE, "3328-G")
     .applies_to(CENTRALITE, "Motion Sensor-A")
     .replaces(PowerConfigurationCluster, endpoint_id=1)
-    .removes(PowerConfigurationCluster, endpoint_id=2)
+    .removes(PowerConfigurationCluster.cluster_id, endpoint_id=2)
     .add_to_registry()
 )

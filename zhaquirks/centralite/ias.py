@@ -14,6 +14,6 @@ from zhaquirks import PowerConfigurationCluster
     .applies_to("CentraLite", "3320-L")
     .applies_to("CentraLite", "Contact Sensor-A")
     .replaces(PowerConfigurationCluster, endpoint_id=1)
-    .removes(PowerConfiguration, endpoint_id=2)
+    .removes(PowerConfiguration.cluster_id, endpoint_id=2)
     .add_to_registry()
 )
