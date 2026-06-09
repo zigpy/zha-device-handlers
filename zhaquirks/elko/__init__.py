@@ -12,6 +12,9 @@ ELKO = "ELKO"
 class ElkoThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster for Elko Thermostats."""
 
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Cluster attributes."""
+
     def __init__(self, *args, **kwargs):
         """Init thermostat cluster."""
         super().__init__(*args, **kwargs)

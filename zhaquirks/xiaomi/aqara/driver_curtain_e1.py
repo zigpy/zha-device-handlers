@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -10,6 +10,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import CustomCluster
@@ -42,17 +43,27 @@ LIGHT_LEVEL = 0x0429
 class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
     """Xiaomi Aqara Curtain Driver E1 cluster."""
 
-    attributes = XiaomiAqaraE1Cluster.attributes.copy()
-    attributes.update(
-        {
-            HAND_OPEN: ("hand_open", t.Bool, True),
-            POSITIONS_STORED: ("positions_stored", t.Bool, True),
-            STORE_POSITION: ("store_position", t.uint8_t, True),
-            HOOKS_LOCK: ("hooks_lock", t.uint8_t, True),
-            HOOKS_STATE: ("hooks_state", t.uint8_t, True),
-            LIGHT_LEVEL: ("light_level", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        hand_open: Final = ZCLAttributeDef(
+            id=HAND_OPEN, type=t.Bool, is_manufacturer_specific=True
+        )
+        positions_stored: Final = ZCLAttributeDef(
+            id=POSITIONS_STORED, type=t.Bool, is_manufacturer_specific=True
+        )
+        store_position: Final = ZCLAttributeDef(
+            id=STORE_POSITION, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        hooks_lock: Final = ZCLAttributeDef(
+            id=HOOKS_LOCK, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        hooks_state: Final = ZCLAttributeDef(
+            id=HOOKS_STATE, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        light_level: Final = ZCLAttributeDef(
+            id=LIGHT_LEVEL, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         if attrid == LIGHT_LEVEL:

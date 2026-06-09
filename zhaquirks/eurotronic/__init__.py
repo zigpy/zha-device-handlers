@@ -1,11 +1,13 @@
 """Eurotronic devices."""
 
 import logging
+from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 EUROTRONIC = "Eurotronic"
 
@@ -41,20 +43,24 @@ _LOGGER = logging.getLogger(__name__)
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
-    attributes = Thermostat.attributes.copy()
-    attributes.update(
-        {
-            TRV_MODE_ATTR: ("trv_mode", t.enum8, True),
-            SET_VALVE_POS_ATTR: ("set_valve_position", t.uint8_t, True),
-            ERRORS_ATTR: ("errors", t.uint8_t, True),
-            CURRENT_TEMP_SETPOINT_ATTR: (
-                "current_temperature_setpoint",
-                t.int16s,
-                True,
-            ),
-            HOST_FLAGS_ATTR: ("host_flags", t.uint24_t, True),
-        }
-    )
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute definitions."""
+
+        trv_mode: Final = ZCLAttributeDef(
+            id=TRV_MODE_ATTR, type=t.enum8, is_manufacturer_specific=True
+        )
+        set_valve_position: Final = ZCLAttributeDef(
+            id=SET_VALVE_POS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        errors: Final = ZCLAttributeDef(
+            id=ERRORS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        current_temperature_setpoint: Final = ZCLAttributeDef(
+            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, is_manufacturer_specific=True
+        )
+        host_flags: Final = ZCLAttributeDef(
+            id=HOST_FLAGS_ATTR, type=t.uint24_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         _LOGGER.debug("update attribute %04x to %s... ", attrid, value)
@@ -133,7 +139,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         return success, error
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Override wrong writes to thermostat attributes."""
         if "system_mode" in attributes:
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
@@ -141,11 +151,13 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
             if attributes.get("system_mode") == 0x0:
                 return await super().write_attributes(
-                    {"host_flags": host_flags | SET_OFF_MODE_FLAG}, MANUFACTURER
+                    {"host_flags": host_flags | SET_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
                 )
             if attributes.get("system_mode") == 0x4:
                 return await super().write_attributes(
-                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG}, MANUFACTURER
+                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
                 )
 
-        return await super().write_attributes(attributes, manufacturer, **kwargs)
+        return await super().write_attributes(attributes, **kwargs)

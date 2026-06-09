@@ -5,14 +5,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 import logging
 import math
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
-from zigpy.zcl import foundation
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -31,6 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -51,6 +52,7 @@ from zhaquirks.const import (
     BatterySize,
 )
 
+AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"
@@ -120,6 +122,29 @@ class XiaomiCustomDevice(CustomDevice):
             self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
 
+    def _find_zcl_cluster(
+        self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
+    ) -> Cluster:
+        """Find a cluster for the packet."""
+
+        # Aqara devices seem to be very lax with their ZCL header's `direction` field,
+        # we should try "flipping" it if matching doesn't work normally.
+        try:
+            return super()._find_zcl_cluster_strict(hdr, packet)
+        except KeyError:
+            _LOGGER.debug(
+                "Packet is coming in the wrong direction, swapping direction and trying again",
+            )
+
+            return super()._find_zcl_cluster_strict(
+                hdr.replace(
+                    frame_control=hdr.frame_control.replace(
+                        direction=hdr.frame_control.direction.flip()
+                    )
+                ),
+                packet,
+            )
+
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
     """Xiaomi devices eligible for QuickInit."""
@@ -127,6 +152,136 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
 
 class XiaomiCluster(CustomCluster):
     """Xiaomi cluster implementation."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report event and dispatch Xiaomi blob data."""
+        attrid = event.attribute_id
+        value = event.value
+
+        if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
+            attributes = self._parse_aqara_attributes(value)
+            if self.endpoint.device.model == "lumi.sensor_switch.aq2":
+                if value == b"\x04!\xa8C\n!\x00\x00":
+                    self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
+        elif attrid == XIAOMI_MIJA_ATTRIBUTE:
+            attributes = self._parse_mija_attributes(value)
+        elif attrid == MODEL:
+            # 0x0005 = model attribute.
+            # Xiaomi sensors send the model attribute when their reset button is
+            # pressed quickly.
+            if attrid in self.attributes:
+                attribute_name = self.attributes[attrid].name
+            else:
+                attribute_name = UNKNOWN
+
+            self.listener_event(
+                ZHA_SEND_EVENT,
+                COMMAND_ATTRIBUTE_UPDATED,
+                {
+                    ATTRIBUTE_ID: attrid,
+                    ATTRIBUTE_NAME: attribute_name,
+                    VALUE: value,
+                },
+            )
+            return
+        else:
+            return
+
+        _LOGGER.debug(
+            "%s - Xiaomi attribute report. attribute_id: [%s] value: [%s]",
+            self.endpoint.device.ieee,
+            attrid,
+            attributes,
+        )
+
+        if BATTERY_VOLTAGE_MV in attributes:
+            if hasattr(self.endpoint.power, "battery_reported") and callable(
+                self.endpoint.power.battery_reported
+            ):
+                self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
+            else:
+                _LOGGER.debug(
+                    "%s - Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used",
+                    self.endpoint.device.ieee,
+                )
+
+        if TEMPERATURE_MEASUREMENT in attributes:
+            self.endpoint.temperature.update_attribute(
+                TemperatureMeasurement.AttributeDefs.measured_value.id,
+                attributes[TEMPERATURE_MEASUREMENT],
+            )
+
+        if HUMIDITY_MEASUREMENT in attributes:
+            self.endpoint.humidity.update_attribute(
+                RelativeHumidity.AttributeDefs.measured_value.id,
+                attributes[HUMIDITY_MEASUREMENT],
+            )
+
+        if PRESSURE_MEASUREMENT in attributes:
+            self.endpoint.pressure.update_attribute(
+                PressureMeasurement.AttributeDefs.measured_value.id,
+                attributes[PRESSURE_MEASUREMENT],
+            )
+
+        if PRESSURE_MEASUREMENT_PRECISION in attributes:
+            self.endpoint.pressure.update_attribute(
+                PressureMeasurement.AttributeDefs.measured_value.id,
+                attributes[PRESSURE_MEASUREMENT_PRECISION] / 100,
+            )
+
+        if POWER in attributes:
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.active_power.id,
+                round(attributes[POWER] * 10),
+            )
+
+        if CONSUMPTION in attributes:
+            zcl_consumption = round(attributes[CONSUMPTION] * 1000)
+            self.endpoint.smartenergy_metering.update_attribute(
+                Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
+            )
+
+        if VOLTAGE in attributes:
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.rms_voltage.id,
+                attributes[VOLTAGE] * 0.1,
+            )
+
+        if ILLUMINANCE_MEASUREMENT in attributes:
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id,
+                attributes[ILLUMINANCE_MEASUREMENT],
+            )
+
+        if TVOC_MEASUREMENT in attributes:
+            self.endpoint.voc_level.update_attribute(
+                0x0000, attributes[TVOC_MEASUREMENT]
+            )
+
+        if TEMPERATURE in attributes:
+            if hasattr(self.endpoint, "device_temperature"):
+                self.endpoint.device_temperature.update_attribute(
+                    DeviceTemperature.AttributeDefs.current_temperature.id,
+                    attributes[TEMPERATURE] * 100,
+                )
+
+        if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
+            self.endpoint.power.battery_percent_reported(
+                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE]
+            )
+
+        if SMOKE in attributes:
+            self.endpoint.ias_zone.update_attribute(
+                IasZone.AttributeDefs.zone_status.id, attributes[SMOKE]
+            )
 
     def _iter_parse_attr_report(
         self, data: bytes
@@ -137,15 +292,17 @@ class XiaomiCluster(CustomCluster):
         attr_id, data = t.uint16_t.deserialize(data)
         attr_type, data = t.uint8_t.deserialize(data)
 
-        if (
-            attr_id
-            not in (
-                XIAOMI_AQARA_ATTRIBUTE,
-                XIAOMI_MIJA_ATTRIBUTE,
-                XIAOMI_AQARA_ATTRIBUTE_E1,
-            )
-            or attr_type != 0x42  # "Character String"
-        ):
+        # Bad parsing states sometimes eat into the attribute ID's zero octet, which can
+        # be interpreted as the `nodata` type (a single null byte). This isn't really
+        # used by real devices and can be skipped.
+        if attr_type == DataTypeId.nodata:
+            return
+
+        if attr_id not in (
+            XIAOMI_AQARA_ATTRIBUTE,
+            XIAOMI_MIJA_ATTRIBUTE,
+            XIAOMI_AQARA_ATTRIBUTE_E1,
+        ) or attr_type not in (DataTypeId.octstr, DataTypeId.string):
             # Assume other attributes are reported correctly
             data = attr_id.serialize() + attr_type.serialize() + data
             attribute, data = foundation.Attribute.deserialize(data)
@@ -157,7 +314,7 @@ class XiaomiCluster(CustomCluster):
         val_len, data = t.uint8_t.deserialize(data)
 
         # Try every offset. Start with 0 to pass unbroken reports through.
-        for offset in (0, -1, 1):
+        for offset in (0, -1, 1, -3):
             fixed_len = val_len + offset
 
             if len(data) < fixed_len:
@@ -165,7 +322,7 @@ class XiaomiCluster(CustomCluster):
 
             val, final_data = data[:fixed_len], data[fixed_len:]
             attr_val = t.LVBytes(val)
-            attr_type = 0x41  # The data type should be "Octet String"
+            attr_type = DataTypeId.octstr  # The data type should be "Octet String"
 
             yield (
                 foundation.Attribute(
@@ -219,132 +376,6 @@ class XiaomiCluster(CustomCluster):
 
         return super().deserialize(hdr.serialize() + fixed_data)
 
-    def _update_attribute(self, attrid, value):
-        if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
-            attributes = self._parse_aqara_attributes(value)
-            super()._update_attribute(attrid, value)
-            if self.endpoint.device.model == "lumi.sensor_switch.aq2":
-                if value == b"\x04!\xa8C\n!\x00\x00":
-                    self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
-        elif attrid == XIAOMI_MIJA_ATTRIBUTE:
-            attributes = self._parse_mija_attributes(value)
-        else:
-            super()._update_attribute(attrid, value)
-            if attrid == MODEL:
-                # 0x0005 = model attribute.
-                # Xiaomi sensors send the model attribute when their reset button is
-                # pressed quickly."""
-
-                if attrid in self.attributes:
-                    attribute_name = self.attributes[attrid].name
-                else:
-                    attribute_name = UNKNOWN
-
-                self.listener_event(
-                    ZHA_SEND_EVENT,
-                    COMMAND_ATTRIBUTE_UPDATED,
-                    {
-                        ATTRIBUTE_ID: attrid,
-                        ATTRIBUTE_NAME: attribute_name,
-                        VALUE: value,
-                    },
-                )
-            return
-
-        _LOGGER.debug(
-            "%s - Xiaomi attribute report. attribute_id: [%s] value: [%s]",
-            self.endpoint.device.ieee,
-            attrid,
-            attributes,
-        )
-        if BATTERY_VOLTAGE_MV in attributes:
-            # many Xiaomi devices report this, but not all quirks implement the XiaomiPowerConfiguration cluster,
-            # so we might error out if the method doesn't exist
-            if hasattr(self.endpoint.power, "battery_reported") and callable(
-                self.endpoint.power.battery_reported
-            ):
-                self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
-            else:
-                # log a debug message if the cluster is not implemented
-                _LOGGER.debug(
-                    "%s - Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used",
-                    self.endpoint.device.ieee,
-                )
-
-        if TEMPERATURE_MEASUREMENT in attributes:
-            self.endpoint.temperature.update_attribute(
-                TemperatureMeasurement.AttributeDefs.measured_value.id,
-                attributes[TEMPERATURE_MEASUREMENT],
-            )
-
-        if HUMIDITY_MEASUREMENT in attributes:
-            self.endpoint.humidity.update_attribute(
-                RelativeHumidity.AttributeDefs.measured_value.id,
-                attributes[HUMIDITY_MEASUREMENT],
-            )
-
-        if PRESSURE_MEASUREMENT in attributes:
-            self.endpoint.pressure.update_attribute(
-                PressureMeasurement.AttributeDefs.measured_value.id,
-                attributes[PRESSURE_MEASUREMENT],
-            )
-
-        if PRESSURE_MEASUREMENT_PRECISION in attributes:
-            self.endpoint.pressure.update_attribute(
-                PressureMeasurement.AttributeDefs.measured_value.id,
-                attributes[PRESSURE_MEASUREMENT_PRECISION] / 100,
-            )
-
-        if POWER in attributes:
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.active_power.id,
-                round(attributes[POWER] * 10),
-            )
-
-        if CONSUMPTION in attributes:
-            zcl_consumption = round(attributes[CONSUMPTION] * 1000)
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.total_active_power.id,
-                zcl_consumption,
-            )
-            self.endpoint.smartenergy_metering.update_attribute(
-                Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
-            )
-
-        if VOLTAGE in attributes:
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.rms_voltage.id,
-                attributes[VOLTAGE] * 0.1,
-            )
-
-        if ILLUMINANCE_MEASUREMENT in attributes:
-            self.endpoint.illuminance.update_attribute(
-                IlluminanceMeasurement.AttributeDefs.measured_value.id,
-                attributes[ILLUMINANCE_MEASUREMENT],
-            )
-
-        if TVOC_MEASUREMENT in attributes:
-            self.endpoint.voc_level.update_attribute(
-                0x0000, attributes[TVOC_MEASUREMENT]
-            )
-
-        if TEMPERATURE in attributes:
-            if hasattr(self.endpoint, "device_temperature"):
-                self.endpoint.device_temperature.update_attribute(
-                    DeviceTemperature.AttributeDefs.current_temperature.id,
-                    attributes[TEMPERATURE] * 100,
-                )
-
-        if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
-            self.endpoint.power.battery_percent_reported(
-                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE]
-            )
-
-        if SMOKE in attributes:
-            self.endpoint.ias_zone.update_attribute(
-                IasZone.AttributeDefs.zone_status.id, attributes[SMOKE]
-            )
-
     def _parse_aqara_attributes(self, value):
         """Parse non-standard attributes."""
         attributes = {}
@@ -385,8 +416,11 @@ class XiaomiCluster(CustomCluster):
             "lumi.relay.c2acn01",
             "lumi.switch.n0agl1",
             "lumi.switch.n0acn2",
+            "lumi.switch.acn047",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+        elif self.endpoint.device.model == "lumi.switch.agl011":
+            attribute_names.update({150: VOLTAGE, 151: CONSUMPTION, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
@@ -462,12 +496,18 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
+    class AttributeDefs(Basic.AttributeDefs):
+        """Cluster attributes."""
+
 
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
 
 
 class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
@@ -489,8 +529,12 @@ class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    attributes = BinaryOutput.attributes.copy()
-    attributes[0xFF06] = ("interlock", t.Bool, True)
+    class AttributeDefs(BinaryOutput.AttributeDefs):
+        """Attribute definitions."""
+
+        interlock: Final = ZCLAttributeDef(
+            id=0xFF06, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
@@ -649,16 +693,21 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
     }
 
+    _DEFAULT_VALUES = {
+        ElectricalMeasurement.AttributeDefs.active_power.id: 0,
+        ElectricalMeasurement.AttributeDefs.rms_voltage.id: 0,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        # put a default value so the sensors are created
-        if self.POWER_ID not in self._attr_cache:
-            self._update_attribute(self.POWER_ID, 0)
-        if self.VOLTAGE_ID not in self._attr_cache:
-            self._update_attribute(self.VOLTAGE_ID, 0)
-        if self.CONSUMPTION_ID not in self._attr_cache:
-            self._update_attribute(self.CONSUMPTION_ID, 0)
+        # Previously, this cluster was wrongly setting the total_active_power attribute,
+        # which was not added to HA.
+        # Since it is now added to HA and the incorrect value could be set, we need to
+        # reset it.
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 class MeteringCluster(LocalDataCluster, Metering):
@@ -673,12 +722,9 @@ class MeteringCluster(LocalDataCluster, Metering):
         Metering.AttributeDefs.metering_device_type.id: 0,  # electric
     }
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        # put a default value so the sensor is created
-        if self.CURRENT_SUMM_DELIVERED_ID not in self._attr_cache:
-            self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, 0)
+    _DEFAULT_VALUES = {
+        Metering.AttributeDefs.current_summ_delivered.id: 0,
+    }
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
@@ -695,12 +741,9 @@ class LocalIlluminanceMeasurementCluster(
 ):
     """Illuminance measurement cluster based on LocalDataCluster."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        if self.AttributeDefs.measured_value.id not in self._attr_cache:
-            # put a default value so the sensor is created
-            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
+    _DEFAULT_VALUES = {
+        IlluminanceMeasurement.AttributeDefs.measured_value.id: 0,
+    }
 
 
 class OnOffCluster(OnOff, CustomCluster):

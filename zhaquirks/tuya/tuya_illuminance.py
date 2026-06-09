@@ -1,6 +1,6 @@
 """Tuya illuminance sensors."""
 
-from zigpy.quirks.v2 import EntityPlatform
+from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.types import t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -23,6 +23,7 @@ class BrightnessLevel(t.enum8):
         dp_id=1,
         attribute_name="brightness_level",
         enum_class=BrightnessLevel,
+        entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
         translation_key="brightness_level",
         fallback_name="Brightness level",

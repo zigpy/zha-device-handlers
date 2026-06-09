@@ -15,6 +15,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -69,19 +70,19 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
     name = "Sengled Manufacturer Specific"
     ep_attribute = "sengled_manufacturer_specific"
 
-    server_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            name="command",
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        command = foundation.ZCLCommandDef(
+            id=0x0000,
             schema={
                 "param1": t.uint8_t,
                 "param2": t.uint8_t,
                 "param3": t.uint8_t,
                 "param4": t.uint8_t,
             },
-            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
-    }
 
     def handle_cluster_request(
         self,
