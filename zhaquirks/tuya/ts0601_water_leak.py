@@ -29,34 +29,40 @@ class Ringtone(enum8):
 # device_version=1
 # input_clusters=[4, 5, 61184, 0, 60672]
 # output_clusters=[25, 10]>
-TuyaQuirkBuilder(
-    "_TZE284_1di7ujzp", "TS0601"
-).tuya_binary_sensor(  # Water presence (DP 1)
-    dp_id=1,
-    attribute_name="water_presence",
-    device_class=BinarySensorDeviceClass.MOISTURE,
-    fallback_name="Water presence",
-).tuya_binary_sensor(  # Water leak (DP 102)
-    dp_id=102,
-    attribute_name="water_leak",
-    device_class=BinarySensorDeviceClass.PROBLEM,
-    fallback_name="Water leak",
-).tuya_battery(  # Battery (DP 4)
-    dp_id=4, battery_type=BatterySize.AAA, battery_qty=2
-).tuya_enum(  # Alarm mode (DP 101)
-    dp_id=101,
-    attribute_name="alarm_mode",
-    enum_class=AlarmMode,
-    translation_key="alarm_mode",
-    fallback_name="Alarm mode",
-    entity_type=EntityType.CONFIG,
-).tuya_enum(  # Ringtone (DP 103)
-    dp_id=103,
-    attribute_name="ringtone",
-    enum_class=Ringtone,
-    translation_key="ringtone",
-    fallback_name="Ringtone",
-    entity_type=EntityType.CONFIG,
-).replaces_endpoint(
-    1, device_type=zha.DeviceType.IAS_ZONE
-).skip_configuration().add_to_registry()
+(
+    TuyaQuirkBuilder("_TZE284_1di7ujzp", "TS0601")
+    .tuya_binary_sensor(  # Water presence (DP 1)
+        dp_id=1,
+        attribute_name="water_presence",
+        device_class=BinarySensorDeviceClass.MOISTURE,
+        fallback_name="Water presence",
+    )
+    .tuya_binary_sensor(  # Water leak (DP 102)
+        dp_id=102,
+        attribute_name="water_leak",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        fallback_name="Water leak",
+    )
+    .tuya_battery(  # Battery (DP 4)
+        dp_id=4, battery_type=BatterySize.AAA, battery_qty=2
+    )
+    .tuya_enum(  # Alarm mode (DP 101)
+        dp_id=101,
+        attribute_name="alarm_mode",
+        enum_class=AlarmMode,
+        translation_key="alarm_mode",
+        fallback_name="Alarm mode",
+        entity_type=EntityType.CONFIG,
+    )
+    .tuya_enum(  # Ringtone (DP 103)
+        dp_id=103,
+        attribute_name="ringtone",
+        enum_class=Ringtone,
+        translation_key="ringtone",
+        fallback_name="Ringtone",
+        entity_type=EntityType.CONFIG,
+    )
+    .replaces_endpoint(1, device_type=zha.DeviceType.IAS_ZONE)
+    .skip_configuration()
+    .add_to_registry()
+)
