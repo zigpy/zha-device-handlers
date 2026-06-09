@@ -762,7 +762,7 @@ class TuyaThermostatBseed(TuyaThermostat):
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=Thermostat.cluster_id,
-        unique_id_suffix="timestamp",
+        unique_id_suffix="setpoint_change_source_timestamp",
     )
     .skip_configuration()
     .add_to_registry()
