@@ -1,11 +1,13 @@
 """Tuya Siren."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2 import CustomDeviceV2, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
+from zigpy.zcl.clusters.general import Ota, PowerConfiguration
 
 from zhaquirks.const import BatterySize
+from zhaquirks.tuya import TUYA_CLUSTER_ID, BaseEnchantedDevice
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -131,6 +133,78 @@ class NeoBatteryState(t.enum8):
     USB = 0x04
 
 
+class NlrfgpnySirenPowerConfiguration(PowerConfiguration):
+    """PowerConfiguration cluster for NLRFGPNY sirens with readable battery."""
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.Other,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 30,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
+    }
+
+    def update_attribute(self, attr_name: str, value) -> None:
+        """Update attribute by name for Tuya datapoint reports."""
+        attr = self.attributes_by_name.get(attr_name)
+        if attr is not None:
+            self._update_attribute(attr.id, value)
+
+
+class NlrfgpnySiren(CustomDeviceV2, BaseEnchantedDevice):
+    """NLRFGPNY siren that reports battery and installed firmware version."""
+
+    tuya_spell_data_query = True
+
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Read attributes this device does not send in Tuya data query responses."""
+        endpoint = self.endpoints.get(1)
+        alarm_mode = None
+        alarm_mode_attr = None
+        tuya_cluster = None
+        if endpoint is not None:
+            tuya_cluster = endpoint.in_clusters.get(TUYA_CLUSTER_ID)
+            if tuya_cluster is not None:
+                alarm_mode_attr = tuya_cluster.attributes_by_name.get("alarm_mode")
+                if alarm_mode_attr is not None:
+                    alarm_mode = tuya_cluster.get(alarm_mode_attr.id)
+
+        await super().apply_custom_configuration(*args, **kwargs)
+
+        if (
+            alarm_mode is not None
+            and alarm_mode_attr is not None
+            and tuya_cluster is not None
+            and tuya_cluster.get(alarm_mode_attr.id) is None
+        ):
+            tuya_cluster._update_attribute(alarm_mode_attr.id, alarm_mode)
+
+        if endpoint is None:
+            return
+
+        power_cluster = endpoint.in_clusters.get(PowerConfiguration.cluster_id)
+        if power_cluster is not None:
+            try:
+                await power_cluster.read_attributes(
+                    [PowerConfiguration.AttributeDefs.battery_percentage_remaining.id]
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.debug("Failed to read battery percentage: %s", exc)
+
+        ota_cluster = endpoint.out_clusters.get(Ota.cluster_id)
+        if ota_cluster is not None:
+            try:
+                await ota_cluster.read_attributes(
+                    [
+                        Ota.AttributeDefs.current_file_version.id,
+                        Ota.AttributeDefs.current_zigbee_stack_version.id,
+                        Ota.AttributeDefs.image_upgrade_status.id,
+                        Ota.AttributeDefs.manufacturer_id.id,
+                        Ota.AttributeDefs.image_type_id.id,
+                    ]
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.debug("Failed to read OTA attributes: %s", exc)
+
+
 (
     TuyaQuirkBuilder("_TZE204_nlrfgpny", "TS0601")
     .applies_to("TZE200_nlrfgpny", "TS0601")
@@ -168,9 +242,7 @@ class NeoBatteryState(t.enum8):
         translation_key="siren_on",
         fallback_name="Siren on",
     )
-    .tuya_battery(
-        dp_id=15, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
-    )
+    .tuya_battery(dp_id=15, power_cfg=NlrfgpnySirenPowerConfiguration)
     .tuya_binary_sensor(
         dp_id=20,
         attribute_name="tamper",
@@ -199,7 +271,7 @@ class NeoBatteryState(t.enum8):
         translation_key="alarm_mode",
         fallback_name="Alarm mode",
     )
-    .tuya_enchantment()
+    .device_class(NlrfgpnySiren)
     .skip_configuration()
     .add_to_registry()
 )
