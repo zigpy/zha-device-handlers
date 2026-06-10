@@ -69,14 +69,14 @@ async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
 
     tuya_cluster.handle_get_data(
         TuyaCommand(
-                status=0,
-                tsn=3,
-                datapoints=[
-                    TuyaDatapointData(6, TuyaData(True)),
-                    TuyaDatapointData(102, TuyaData(TuyaSirenState.Sound_and_light)),
-                ],
-            )
+            status=0,
+            tsn=3,
+            datapoints=[
+                TuyaDatapointData(6, TuyaData(True)),
+                TuyaDatapointData(102, TuyaData(TuyaSirenState.Sound_and_light)),
+            ],
         )
+    )
 
     assert tuya_cluster.get("charge_state") is t.Bool.true
     assert tuya_cluster.get("alarm_mode") == TuyaSirenState.Sound_and_light
