@@ -10,7 +10,7 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import OFF, ON
 from zhaquirks.tuya import TUYA_QUERY_DATA, TuyaCommand, TuyaData, TuyaDatapointData
-from zhaquirks.tuya.tuya_siren import TuyaSirenState
+from zhaquirks.tuya.tuya_siren import NlrfgpnySiren, TuyaSirenState
 
 zhaquirks.setup()
 
@@ -19,16 +19,18 @@ ZCL_TUYA_SIREN_TEMPERATURE = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_SIREN_HUMIDITY = b"\tp\x02\x00\x02j\x02\x00\x04\x00\x00\x00U"
 ZCL_TUYA_SIREN_ON = b"\t\t\x02\x00\x04h\x01\x00\x01\x01"
 ZCL_TUYA_SIREN_OFF = b"\t\t\x02\x00\x04h\x01\x00\x01\x00"
+NLRFGPNY_MANUFACTURER = "_TZE284_nlrfgpny"
 
 
 async def test_nlrfgpny_siren_apply_custom_configuration(zigpy_device_from_v2_quirk):
     """Test NLRFGPNY siren reads battery and installed firmware during configuration."""
 
     siren_dev = zigpy_device_from_v2_quirk(
-        "_TZE284_nlrfgpny",
+        NLRFGPNY_MANUFACTURER,
         "TS0601",
         cluster_ids={1: {Ota.cluster_id: ClusterType.Client}},
     )
+    assert isinstance(siren_dev, NlrfgpnySiren)
 
     with mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock()) as request_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
@@ -57,7 +59,7 @@ async def test_nlrfgpny_siren_apply_custom_configuration(zigpy_device_from_v2_qu
 async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
     """Test NLRFGPNY siren Tuya status reports update charging and alarm mode."""
 
-    siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
+    siren_dev = zigpy_device_from_v2_quirk(NLRFGPNY_MANUFACTURER, "TS0601")
     tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
     power_cluster = siren_dev.endpoints[1].power
     battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
@@ -87,7 +89,7 @@ async def test_nlrfgpny_siren_optional_reads_are_non_fatal(zigpy_device_from_v2_
     """Test NLRFGPNY siren ignores optional battery and OTA read failures."""
 
     siren_dev = zigpy_device_from_v2_quirk(
-        "_TZE284_nlrfgpny",
+        NLRFGPNY_MANUFACTURER,
         "TS0601",
         cluster_ids={1: {Ota.cluster_id: ClusterType.Client}},
     )
@@ -125,7 +127,7 @@ async def test_nlrfgpny_siren_configuration_without_endpoint(
 ):
     """Test NLRFGPNY siren configuration tolerates a missing endpoint."""
 
-    siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
+    siren_dev = zigpy_device_from_v2_quirk(NLRFGPNY_MANUFACTURER, "TS0601")
     siren_dev.endpoints = {}
 
     with mock.patch(
@@ -140,7 +142,7 @@ async def test_nlrfgpny_siren_configuration_without_endpoint(
 async def test_nlrfgpny_siren_preserves_alarm_mode(zigpy_device_from_v2_quirk):
     """Test NLRFGPNY siren restores cached alarm mode if data query omits it."""
 
-    siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
+    siren_dev = zigpy_device_from_v2_quirk(NLRFGPNY_MANUFACTURER, "TS0601")
     tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
     alarm_mode_attr = tuya_cluster.attributes_by_name["alarm_mode"]
     tuya_cluster._update_attribute(alarm_mode_attr.id, TuyaSirenState.Sound_and_light)
