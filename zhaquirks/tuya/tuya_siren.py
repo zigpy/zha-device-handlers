@@ -1,5 +1,6 @@
 """Tuya Siren."""
 
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import CustomDeviceV2, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -133,7 +134,7 @@ class NeoBatteryState(t.enum8):
     USB = 0x04
 
 
-class NlrfgpnySirenPowerConfiguration(PowerConfiguration):
+class NlrfgpnySirenPowerConfiguration(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster for NLRFGPNY sirens with readable battery."""
 
     _CONSTANT_ATTRIBUTES = {
