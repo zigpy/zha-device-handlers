@@ -66,6 +66,8 @@ async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
 
     siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
     tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
+    power_cluster = siren_dev.endpoints[1].power
+    battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
 
     tuya_cluster.handle_get_data(
         TuyaCommand(
@@ -73,13 +75,70 @@ async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
             tsn=3,
             datapoints=[
                 TuyaDatapointData(6, TuyaData(True)),
+                TuyaDatapointData(15, TuyaData(100)),
                 TuyaDatapointData(102, TuyaData(TuyaSirenState.Sound_and_light)),
             ],
         )
     )
+    power_cluster.update_attribute("unknown_attribute", 1)
 
     assert tuya_cluster.get("charge_state") is t.Bool.true
     assert tuya_cluster.get("alarm_mode") == TuyaSirenState.Sound_and_light
+    assert power_cluster.get(battery_attr.id) == 200
+
+
+async def test_nlrfgpny_siren_optional_reads_are_non_fatal(zigpy_device_from_v2_quirk):
+    """Test NLRFGPNY siren ignores optional battery and OTA read failures."""
+
+    siren_dev = zigpy_device_from_v2_quirk(
+        "_TZE284_nlrfgpny",
+        "TS0601",
+        cluster_ids={1: {Ota.cluster_id: ClusterType.Client}},
+    )
+    power_cluster = siren_dev.endpoints[1].power
+    ota_cluster = siren_dev.endpoints[1].out_clusters[Ota.cluster_id]
+
+    with (
+        mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock()) as request_mock,
+        mock.patch.object(
+            power_cluster,
+            "read_attributes",
+            mock.AsyncMock(side_effect=RuntimeError("battery read failed")),
+        ),
+        mock.patch.object(
+            ota_cluster,
+            "read_attributes",
+            mock.AsyncMock(side_effect=RuntimeError("ota read failed")),
+        ),
+        mock.patch.object(siren_dev, "debug") as debug_mock,
+    ):
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await siren_dev.apply_custom_configuration()
+
+    debug_mock.assert_has_calls(
+        [
+            mock.call("Failed to read battery percentage: %s", mock.ANY),
+            mock.call("Failed to read OTA attributes: %s", mock.ANY),
+        ]
+    )
+
+
+async def test_nlrfgpny_siren_configuration_without_endpoint(
+    zigpy_device_from_v2_quirk,
+):
+    """Test NLRFGPNY siren configuration tolerates a missing endpoint."""
+
+    siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
+    siren_dev.endpoints = {}
+
+    with mock.patch(
+        "zigpy.quirks.v2.CustomDeviceV2.apply_custom_configuration",
+        mock.AsyncMock(),
+    ) as apply_mock:
+        await siren_dev.apply_custom_configuration()
+
+    apply_mock.assert_awaited_once()
 
 
 async def test_nlrfgpny_siren_preserves_alarm_mode(zigpy_device_from_v2_quirk):
