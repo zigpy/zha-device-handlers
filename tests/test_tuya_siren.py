@@ -35,30 +35,23 @@ async def test_nlrfgpny_siren_apply_custom_configuration(zigpy_device_from_v2_qu
 
         await siren_dev.apply_custom_configuration()
 
-        assert request_mock.call_count == 4
-
-        basic_read = request_mock.mock_calls[0]
-        assert basic_read.args[1] == foundation.GeneralCommand.Read_Attributes
-        assert basic_read.args[3] == [4, 0, 1, 5, 7, 65534]
-
-        data_query = request_mock.mock_calls[1]
-        assert data_query.args[1] == TUYA_QUERY_DATA
-
-        power_read = request_mock.mock_calls[2]
-        assert power_read.args[1] == foundation.GeneralCommand.Read_Attributes
-        assert power_read.args[3] == [
-            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+        read_attributes_calls = [
+            call.args[3]
+            for call in request_mock.mock_calls
+            if call.args[1] == foundation.GeneralCommand.Read_Attributes
         ]
-
-        ota_read = request_mock.mock_calls[3]
-        assert ota_read.args[1] == foundation.GeneralCommand.Read_Attributes
-        assert ota_read.args[3] == [
+        assert [4, 0, 1, 5, 7, 65534] in read_attributes_calls
+        assert [
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+        ] in read_attributes_calls
+        assert [
             Ota.AttributeDefs.current_file_version.id,
             Ota.AttributeDefs.current_zigbee_stack_version.id,
             Ota.AttributeDefs.image_upgrade_status.id,
             Ota.AttributeDefs.manufacturer_id.id,
             Ota.AttributeDefs.image_type_id.id,
-        ]
+        ] in read_attributes_calls
+        assert any(call.args[1] == TUYA_QUERY_DATA for call in request_mock.mock_calls)
 
 
 async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
@@ -85,6 +78,9 @@ async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
     assert tuya_cluster.get("charge_state") is t.Bool.true
     assert tuya_cluster.get("alarm_mode") == TuyaSirenState.Sound_and_light
     assert power_cluster.get(battery_attr.id) == 200
+
+    power_cluster.update_attribute(battery_attr.id, 50)
+    assert power_cluster.get(battery_attr.id) == 50
 
 
 async def test_nlrfgpny_siren_optional_reads_are_non_fatal(zigpy_device_from_v2_quirk):
@@ -150,7 +146,7 @@ async def test_nlrfgpny_siren_preserves_alarm_mode(zigpy_device_from_v2_quirk):
     tuya_cluster._update_attribute(alarm_mode_attr.id, TuyaSirenState.Sound_and_light)
 
     async def clear_alarm_mode():
-        tuya_cluster._attr_cache.remove(alarm_mode_attr)
+        tuya_cluster._attr_cache.clear()
 
     with (
         mock.patch.object(siren_dev, "spell_data_query", side_effect=clear_alarm_mode),

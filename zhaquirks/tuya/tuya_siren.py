@@ -1,10 +1,13 @@
 """Tuya Siren."""
 
+from typing import Any
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import CustomDeviceV2, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Ota, PowerConfiguration
 
 from zhaquirks.const import BatterySize
@@ -143,11 +146,18 @@ class NlrfgpnySirenPowerConfiguration(CustomCluster, PowerConfiguration):
         PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
     }
 
-    def update_attribute(self, attr_name: str, value) -> None:
-        """Update attribute by name for Tuya datapoint reports."""
-        attr = self.attributes_by_name.get(attr_name)
-        if attr is not None:
-            self._update_attribute(attr.id, value)
+    def update_attribute(
+        self, attrid: int | t.uint16_t | foundation.ZCLAttributeDef | str, value: Any
+    ) -> None:
+        """Update attribute by name for Tuya datapoints, or id for ZCL reports."""
+        if isinstance(attrid, str):
+            attr = self.attributes_by_name.get(attrid)
+            if attr is None:
+                self.debug("no such attribute: %s", attrid)
+                return
+            attrid = attr.id
+
+        super().update_attribute(attrid, value)
 
 
 class NlrfgpnySiren(CustomDeviceV2, BaseEnchantedDevice):
