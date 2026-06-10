@@ -11,33 +11,30 @@ INNR = "innr"
 INNR_MANUFACTURER_CODE = 0x1166
 
 
-class _InnrMeteringAttributeDefs(Metering.AttributeDefs):
-    """Metering attributes plus the manufacturer-specific summation Innr reports."""
+class MeteringClusterInnr(CustomCluster, Metering):
+    """Base Innr Metering cluster mirroring manufacturer-framed summation reports.
 
-    # Innr SP plug firmware reports the standard current_summ_delivered (0x0000)
-    # with the manufacturer-specific bit set (Innr code 0x1166). Define that
-    # attribute so zigpy parses the report instead of dropping it as unknown.
-    current_summ_delivered_mfg = ZCLAttributeDef(
-        id=0x0000,
-        type=t.uint48_t,
-        is_manufacturer_specific=True,
-        manufacturer_code=INNR_MANUFACTURER_CODE,
-    )
+    Innr SP plug firmware sends its device-initiated metering report with the
+    manufacturer-specific bit set (Innr manufacturer code 0x1166), even though the
+    report carries the standard ``current_summ_delivered`` (0x0000) attribute.
+    Since zigpy 0.91 resolves reported attributes against the frame's manufacturer
+    code, that report no longer matches the standard ZCL attribute and is dropped
+    -- energy then only updates on the startup read.
 
-
-class _InnrMeteringSummationMirror:
-    """Mixin mirroring the manufacturer-framed summation onto the ZCL attribute.
-
-    Since zigpy 0.91, reported attributes are resolved against the frame's
-    manufacturer code, so the standard ``current_summ_delivered`` carried in
-    Innr's manufacturer-specific report no longer matches the ZCL attribute and
-    is dropped -- energy then only updates on the startup read. We instead define
-    the manufacturer-specific attribute the device actually reports (above) and,
-    on each of its updates, mirror the value onto the standard ZCL attribute that
-    the energy sensor reads.
+    Define the attribute the device actually reports (the standard ID under the
+    Innr manufacturer code) so the report is parsed, then mirror its value onto
+    the standard ZCL attribute the energy sensor reads.
     """
 
-    AttributeDefs = _InnrMeteringAttributeDefs
+    class AttributeDefs(Metering.AttributeDefs):
+        """Metering attributes plus the manufacturer-specific summation reported."""
+
+        current_summ_delivered_mfg = ZCLAttributeDef(
+            id=0x0000,
+            type=t.uint48_t,
+            is_manufacturer_specific=True,
+            manufacturer_code=INNR_MANUFACTURER_CODE,
+        )
 
     def __init__(self, *args, **kwargs) -> None:
         """Listen for the manufacturer-specific summation reports."""
@@ -49,16 +46,13 @@ class _InnrMeteringSummationMirror:
         self, event: AttributeReportedEvent | AttributeUpdatedEvent
     ) -> None:
         """Mirror the manufacturer-specific summation onto the ZCL attribute."""
-        if (
-            event.attribute_name
-            == _InnrMeteringAttributeDefs.current_summ_delivered_mfg.name
-        ):
+        if event.attribute_name == self.AttributeDefs.current_summ_delivered_mfg.name:
             self.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered, event.value
             )
 
 
-class MeteringClusterInnrOld(_InnrMeteringSummationMirror, CustomCluster, Metering):
+class MeteringClusterInnrOld(MeteringClusterInnr):
     """Provide constant multiplier and divisor for old Innr plug firmware.
 
     Old firmware provides incorrect values for the divisor, so we override them.
@@ -70,7 +64,7 @@ class MeteringClusterInnrOld(_InnrMeteringSummationMirror, CustomCluster, Meteri
     }
 
 
-class MeteringClusterInnrNew(_InnrMeteringSummationMirror, CustomCluster, Metering):
+class MeteringClusterInnrNew(MeteringClusterInnr):
     """Provide constant multiplier and divisor for new Innr plug firmware.
 
     New firmware provides already provides correct value, but the old quirk will have
