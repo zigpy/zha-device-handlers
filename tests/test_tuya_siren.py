@@ -73,9 +73,7 @@ async def test_nlrfgpny_siren_status_reports(zigpy_device_from_v2_quirk):
             tsn=3,
             datapoints=[
                 TuyaDatapointData(6, TuyaData(True)),
-                TuyaDatapointData(
-                    102, TuyaData(TuyaSirenState.Sound_and_light)
-                ),
+                TuyaDatapointData(102, TuyaData(TuyaSirenState.Sound_and_light)),
             ],
         )
     )
@@ -90,9 +88,7 @@ async def test_nlrfgpny_siren_preserves_alarm_mode(zigpy_device_from_v2_quirk):
     siren_dev = zigpy_device_from_v2_quirk("_TZE284_nlrfgpny", "TS0601")
     tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
     alarm_mode_attr = tuya_cluster.attributes_by_name["alarm_mode"]
-    tuya_cluster._update_attribute(
-        alarm_mode_attr.id, TuyaSirenState.Sound_and_light
-    )
+    tuya_cluster._update_attribute(alarm_mode_attr.id, TuyaSirenState.Sound_and_light)
 
     async def clear_alarm_mode():
         tuya_cluster._attr_cache.remove(alarm_mode_attr)
