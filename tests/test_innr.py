@@ -48,10 +48,7 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
     assert summation_events[0].value == 35
 
     # ...and cached as the standard attribute the energy sensor reads.
-    cached, _ = await metering_cluster.read_attributes(
-        ["current_summ_delivered"], only_cache=True
-    )
-    assert cached["current_summ_delivered"] == 35
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_delivered) == 35
 
 
 async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
@@ -84,7 +81,4 @@ async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
     ]
     assert len(summation_events) == 1
     assert summation_events[0].value == 1234
-    cached, _ = await metering_cluster.read_attributes(
-        ["current_summ_delivered"], only_cache=True
-    )
-    assert cached["current_summ_delivered"] == 1234
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_delivered) == 1234
