@@ -5,7 +5,6 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 INNR = "innr"
-INNR_MANUFACTURER_CODE = 0x1166
 
 
 class MeteringClusterInnrOld(CustomCluster, Metering):

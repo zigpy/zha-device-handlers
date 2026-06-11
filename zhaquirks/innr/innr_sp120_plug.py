@@ -29,7 +29,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.innr import (
     INNR,
-    INNR_MANUFACTURER_CODE,
     ElectricalMeasurementClusterInnr,
     MeteringClusterInnrOld,
 )
@@ -58,7 +57,7 @@ class MeteringClusterInnrSP120(MeteringClusterInnrOld):
             id=0x0000,
             type=t.uint48_t,
             is_manufacturer_specific=True,
-            manufacturer_code=INNR_MANUFACTURER_CODE,
+            manufacturer_code=0x1166,
         )
 
     def __init__(self, *args, **kwargs) -> None:
