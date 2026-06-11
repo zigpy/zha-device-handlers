@@ -17,22 +17,19 @@ class CustomSonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        Temperature_Compensation = ZCLAttributeDef(
-            name="Temperature_Compensation",
+        temperature_compensation = ZCLAttributeDef(
             id=0x2003,
             type=t.int16s,
             manufacturer_code=None,
         )
 
-        Relative_Humidity_Compensation = ZCLAttributeDef(
-            name="Relative_Humidity_Compensation",
+        relative_humidity_compensation = ZCLAttributeDef(
             id=0x2004,
             type=t.int16s,
             manufacturer_code=None,
         )
 
-        Pressure_Compensation = ZCLAttributeDef(
-            name="Pressure_Compensation",
+        pressure_compensation = ZCLAttributeDef(
             id=0x2007,
             type=t.int16s,
             manufacturer_code=None,
@@ -45,48 +42,55 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-02M")
-    .replaces(CustomSonoffCluster, 0xFC11, ClusterType.Server, 1)
+    .replaces(
+        CustomSonoffCluster,
+        endpoint_id=1,
+        cluster_type=ClusterType.Server,
+    )
     .number(
-        CustomSonoffCluster.AttributeDefs.Temperature_Compensation.name,
-        CustomSonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        -50.0,
-        50.0,
-        0.1,
+        attribute_name=(
+            CustomSonoffCluster.AttributeDefs.temperature_compensation.name
+        ),
+        cluster_id=CustomSonoffCluster.cluster_id,
+        endpoint_id=1,
+        min_value=-50.0,
+        max_value=50.0,
+        step=0.1,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        translation_key="Temperature_Compensation",
+        translation_key="temperature_compensation",
         device_class=NumberDeviceClass.TEMPERATURE,
-        fallback_name="Temperature Compensation",
+        fallback_name="Temperature compensation",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.Relative_Humidity_Compensation.name,
-        CustomSonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        -50.0,
-        50.0,
-        0.1,
+        attribute_name=(
+            CustomSonoffCluster.AttributeDefs.relative_humidity_compensation.name
+        ),
+        cluster_id=CustomSonoffCluster.cluster_id,
+        endpoint_id=1,
+        min_value=-50.0,
+        max_value=50.0,
+        step=0.1,
         unit=PERCENTAGE,
         multiplier=0.01,
-        translation_key="Relative_Humidity_Compensation",
+        translation_key="relative_humidity_compensation",
         device_class=NumberDeviceClass.HUMIDITY,
-        fallback_name="Relative Humidity Compensation",
+        fallback_name="Relative humidity compensation",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.Pressure_Compensation.name,
-        CustomSonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        -50.0,
-        50.0,
-        1,
+        attribute_name=(
+            CustomSonoffCluster.AttributeDefs.pressure_compensation.name
+        ),
+        cluster_id=CustomSonoffCluster.cluster_id,
+        endpoint_id=1,
+        min_value=-50.0,
+        max_value=50.0,
+        step=1,
         unit=UnitOfPressure.HPA,
         multiplier=0.01,
-        translation_key="Pressure_Compensation",
+        translation_key="pressure_compensation",
         device_class=NumberDeviceClass.ATMOSPHERIC_PRESSURE,
-        fallback_name="Pressure Compensation",
+        fallback_name="Pressure compensation",
     )
     .add_to_registry()
 )
