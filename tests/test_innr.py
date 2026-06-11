@@ -5,12 +5,8 @@ import zigpy.types as t
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.innr import (
-    MeteringClusterInnrNew,
-    MeteringClusterInnrOld,
-    MeteringClusterInnrSP120,
-)
-from zhaquirks.innr.innr_sp120_plug import SP120
+from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
+from zhaquirks.innr.innr_sp120_plug import SP120, MeteringClusterInnrSP120
 
 # Real SP 120 device-initiated metering report:
 #   fc=0x1c   -> manufacturer-specific, server-to-client, disable-default-response
