@@ -20,17 +20,7 @@ SP120_MANUF_SUMMATION_REPORT = (
 
 
 async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
-    """SP 120 reports current_summ_delivered inside a manufacturer-specific frame.
-
-    The firmware sets the manufacturer-specific bit on its device-initiated
-    metering report even though it carries the *standard* current_summ_delivered
-    attribute. Without the quirk, zigpy resolves the attribute against the frame's
-    manufacturer code, fails to match the standard attribute, and drops the report
-    as an unknown manufacturer attribute (name resolves to ``None``) -- so the
-    energy sensor only updates on startup reads. The quirk defines the
-    manufacturer-specific attribute the device reports and mirrors its value onto
-    the standard ZCL attribute, so the energy sensor updates again.
-    """
+    """The manufacturer-framed summation report updates current_summ_delivered."""
     device = zigpy_device_from_quirk(SP120)
     metering_cluster = device.endpoints[1].smartenergy_metering
 
@@ -48,9 +38,7 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
         )
     )
 
-    # The report must resolve to the *named* standard attribute. Without the
-    # quirk, the manufacturer-framed report yields an unknown attribute with
-    # ``attribute_name is None``, which ZHA never maps to the energy entity.
+    # Must resolve to the named standard attribute (None without the quirk).
     summation_events = [
         e
         for e in events
@@ -59,9 +47,7 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
     assert summation_events, "current_summ_delivered report was not parsed"
     assert summation_events[-1].value == 35
 
-    # ...and it is cached as the standard attribute the energy sensor reads.
-    # ZHA reads by name; the bare attribute ID 0x0000 is intentionally ambiguous
-    # now that a manufacturer-specific attribute shares it.
+    # ...and cached as the standard attribute the energy sensor reads.
     cached, _ = await metering_cluster.read_attributes(
         ["current_summ_delivered"], only_cache=True
     )
