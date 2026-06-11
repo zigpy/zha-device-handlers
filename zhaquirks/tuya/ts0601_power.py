@@ -21,10 +21,12 @@ from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping
 
+
 # Enum used by 1-phase Tongou TO-Q-SA1 Power Meter: TOSA1-01WXJAT1A, _TZE284_pglpvdar, TS0601
 class OnlineState(t.enum8):
     Online = 0
     Offline = 1
+
 
 # Enum used by 1-phase Tongou TO-Q-SA1 Power Meter: TOSA1-01WXJAT1A, _TZE284_pglpvdar, TS0601
 class AlertEvent(t.enum8):
@@ -586,93 +588,228 @@ class TuyaElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             ),
         ],
     )
-    
     # Energy
-    .tuya_sensor(dp_id=1, attribute_name="energy", translation_key="total_forward_energy",
-                 type=t.uint32_t, device_class=SensorDeviceClass.ENERGY,
-                 state_class=SensorStateClass.TOTAL_INCREASING,
-                 unit=UnitOfEnergy.KILO_WATT_HOUR, divisor=100,
-                 fallback_name="Total forward energy")
-    .tuya_sensor(dp_id=125, attribute_name="forward_energy", translation_key="forward_energy",
-                 type=t.uint32_t, device_class=SensorDeviceClass.ENERGY,
-                 state_class=SensorStateClass.TOTAL_INCREASING,
-                 unit=UnitOfEnergy.KILO_WATT_HOUR, divisor=100,
-                 fallback_name="Forward electricity")
-    .tuya_sensor(dp_id=13, attribute_name="remaining_energy", translation_key="remaining_energy",
-                 type=t.uint32_t, device_class=SensorDeviceClass.ENERGY_STORAGE,
-                 state_class=SensorStateClass.MEASUREMENT,
-                 unit=UnitOfEnergy.KILO_WATT_HOUR, divisor=100,
-                 fallback_name="Remaining electricity")
-
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="energy",
+        translation_key="total_forward_energy",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+        fallback_name="Total forward energy",
+    )
+    .tuya_sensor(
+        dp_id=125,
+        attribute_name="forward_energy",
+        translation_key="forward_energy",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+        fallback_name="Forward electricity",
+    )
+    .tuya_sensor(
+        dp_id=13,
+        attribute_name="remaining_energy",
+        translation_key="remaining_energy",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+        fallback_name="Remaining electricity",
+    )
     # Advanced measurements
-    .tuya_sensor(dp_id=32, attribute_name="ac_frequency", type=t.uint32_t,
-                 device_class=SensorDeviceClass.FREQUENCY,
-                 state_class=SensorStateClass.MEASUREMENT,
-                 unit=UnitOfFrequency.HERTZ, divisor=100,
-                 fallback_name="Frequency", translation_key="ac_frequency")
-    .tuya_sensor(dp_id=50, attribute_name="power_factor", type=t.uint32_t,
-                 device_class=SensorDeviceClass.POWER_FACTOR,
-                 state_class=SensorStateClass.MEASUREMENT,
-                 divisor=100,
-                 fallback_name="Power factor", translation_key="power_factor")
-    .tuya_sensor(dp_id=131, attribute_name="temperature", type=t.uint32_t,
-                 device_class=SensorDeviceClass.TEMPERATURE,
-                 state_class=SensorStateClass.MEASUREMENT,
-                 unit=UnitOfTemperature.CELSIUS, divisor=10,
-                 fallback_name="CPU temperature")
-
+    .tuya_sensor(
+        dp_id=32,
+        attribute_name="ac_frequency",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfFrequency.HERTZ,
+        divisor=100,
+        fallback_name="Frequency",
+        translation_key="ac_frequency",
+    )
+    .tuya_sensor(
+        dp_id=50,
+        attribute_name="power_factor",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.POWER_FACTOR,
+        state_class=SensorStateClass.MEASUREMENT,
+        divisor=100,
+        fallback_name="Power factor",
+        translation_key="power_factor",
+    )
+    .tuya_sensor(
+        dp_id=131,
+        attribute_name="temperature",
+        type=t.uint32_t,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        divisor=10,
+        fallback_name="CPU temperature",
+    )
     # Writable / config DPs
-    .tuya_enum(dp_id=109, attribute_name="online_state", translation_key="online_state",
-               enum_class=OnlineState, fallback_name="Online state")
-    .tuya_enum(dp_id=110, attribute_name="event", translation_key="event",
-               enum_class=AlertEvent, fallback_name="Event")
-
-    .tuya_switch(dp_id=11, attribute_name="prepayment_switch", translation_key="prepayment_switch",
-                 fallback_name="Prepayment switch")
-    .tuya_switch(dp_id=12, attribute_name="clear_remaining_energy", translation_key="clear_remaining_energy",
-                 fallback_name="Clear remaining electricity")
-    .tuya_switch(dp_id=34, attribute_name="factory_reset", translation_key="factory_reset",
-                 fallback_name="Clear forward electricity")
-    .tuya_switch(dp_id=113, attribute_name="restore_default", translation_key="restore_default",
-                 fallback_name="Restore default alarms/thresholds")
-
-    .tuya_switch(dp_id=101, attribute_name="balance_alarm", translation_key="balance_alarm",
-                 fallback_name="Balance alarm")
-    .tuya_switch(dp_id=102, attribute_name="overvoltage_alarm", translation_key="overvoltage_alarm",
-                 fallback_name="Over-voltage alarm")
-    .tuya_switch(dp_id=103, attribute_name="undervoltage_alarm", translation_key="undervoltage_alarm",
-                 fallback_name="Under-voltage alarm")
-    .tuya_switch(dp_id=104, attribute_name="overcurrent_alarm", translation_key="overcurrent_alarm",
-                 fallback_name="Over-current alarm")
-    .tuya_switch(dp_id=105, attribute_name="overpower_alarm", translation_key="overpower_alarm",
-                 fallback_name="Over-power alarm")
-    .tuya_switch(dp_id=107, attribute_name="temperature_alarm", translation_key="temperature_alarm",
-                 fallback_name="Temperature alarm")
-
+    .tuya_enum(
+        dp_id=109,
+        attribute_name="online_state",
+        translation_key="online_state",
+        enum_class=OnlineState,
+        fallback_name="Online state",
+    )
+    .tuya_enum(
+        dp_id=110,
+        attribute_name="event",
+        translation_key="event",
+        enum_class=AlertEvent,
+        fallback_name="Event",
+    )
+    .tuya_switch(
+        dp_id=11,
+        attribute_name="prepayment_switch",
+        translation_key="prepayment_switch",
+        fallback_name="Prepayment switch",
+    )
+    .tuya_switch(
+        dp_id=12,
+        attribute_name="clear_remaining_energy",
+        translation_key="clear_remaining_energy",
+        fallback_name="Clear remaining electricity",
+    )
+    .tuya_switch(
+        dp_id=34,
+        attribute_name="factory_reset",
+        translation_key="factory_reset",
+        fallback_name="Clear forward electricity",
+    )
+    .tuya_switch(
+        dp_id=113,
+        attribute_name="restore_default",
+        translation_key="restore_default",
+        fallback_name="Restore default alarms/thresholds",
+    )
+    .tuya_switch(
+        dp_id=101,
+        attribute_name="balance_alarm",
+        translation_key="balance_alarm",
+        fallback_name="Balance alarm",
+    )
+    .tuya_switch(
+        dp_id=102,
+        attribute_name="overvoltage_alarm",
+        translation_key="overvoltage_alarm",
+        fallback_name="Over-voltage alarm",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="undervoltage_alarm",
+        translation_key="undervoltage_alarm",
+        fallback_name="Under-voltage alarm",
+    )
+    .tuya_switch(
+        dp_id=104,
+        attribute_name="overcurrent_alarm",
+        translation_key="overcurrent_alarm",
+        fallback_name="Over-current alarm",
+    )
+    .tuya_switch(
+        dp_id=105,
+        attribute_name="overpower_alarm",
+        translation_key="overpower_alarm",
+        fallback_name="Over-power alarm",
+    )
+    .tuya_switch(
+        dp_id=107,
+        attribute_name="temperature_alarm",
+        translation_key="temperature_alarm",
+        fallback_name="Temperature alarm",
+    )
     # Numeric thresholds
-    .tuya_number(dp_id=14, attribute_name="add_electricity_charge", translation_key="add_electricity_charge",
-                 type=t.uint32_t, min_value=0, max_value=500, step=1, multiplier=0.01, unit=UnitOfEnergy.KILO_WATT_HOUR,
-                 fallback_name="Add electricity charge, kWh [0..500]")
-    .tuya_number(dp_id=114, attribute_name="current_threshold", translation_key="current_threshold",
-                 type=t.uint32_t, min_value=1, max_value=50, step=1, unit=UnitOfElectricCurrent.AMPERE,
-                 fallback_name="Current threshold, A [1..50]")
-    .tuya_number(dp_id=115, attribute_name="overvoltage_threshold", translation_key="overvoltage_threshold",
-                 type=t.uint32_t, min_value=100, max_value=280, step=1, unit=UnitOfElectricPotential.VOLT,
-                 fallback_name="Over-voltage threshold, V [100..280]")
-    .tuya_number(dp_id=116, attribute_name="undervoltage_threshold", translation_key="undervoltage_threshold",
-                 type=t.uint32_t, min_value=100, max_value=280, step=1, unit=UnitOfElectricPotential.VOLT,
-                 fallback_name="Under-voltage threshold, V [100..280]")
-    .tuya_number(dp_id=118, attribute_name="temperature_threshold", translation_key="temperature_threshold",
-                 type=t.int32s, min_value=-25, max_value=100, step=1, multiplier=0.1, unit=UnitOfTemperature.CELSIUS,
-                 fallback_name="Temperature threshold, C [-25..100]")
+    .tuya_number(
+        dp_id=14,
+        attribute_name="add_electricity_charge",
+        translation_key="add_electricity_charge",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=500,
+        step=1,
+        multiplier=0.01,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        fallback_name="Add electricity charge, kWh [0..500]",
+    )
+    .tuya_number(
+        dp_id=114,
+        attribute_name="current_threshold",
+        translation_key="current_threshold",
+        type=t.uint32_t,
+        min_value=1,
+        max_value=50,
+        step=1,
+        unit=UnitOfElectricCurrent.AMPERE,
+        fallback_name="Current threshold, A [1..50]",
+    )
+    .tuya_number(
+        dp_id=115,
+        attribute_name="overvoltage_threshold",
+        translation_key="overvoltage_threshold",
+        type=t.uint32_t,
+        min_value=100,
+        max_value=280,
+        step=1,
+        unit=UnitOfElectricPotential.VOLT,
+        fallback_name="Over-voltage threshold, V [100..280]",
+    )
+    .tuya_number(
+        dp_id=116,
+        attribute_name="undervoltage_threshold",
+        translation_key="undervoltage_threshold",
+        type=t.uint32_t,
+        min_value=100,
+        max_value=280,
+        step=1,
+        unit=UnitOfElectricPotential.VOLT,
+        fallback_name="Under-voltage threshold, V [100..280]",
+    )
+    .tuya_number(
+        dp_id=118,
+        attribute_name="temperature_threshold",
+        translation_key="temperature_threshold",
+        type=t.int32s,
+        min_value=-25,
+        max_value=100,
+        step=1,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        fallback_name="Temperature threshold, C [-25..100]",
+    )
     # e27182: The two alerts below I was unable to make working / 11.06.2026
-    .tuya_number(dp_id=119, attribute_name="overpower_threshold", translation_key="overpower_threshold",
-                 type=t.uint32_t, min_value=5, max_value=12005, step=10, unit=UnitOfPower.WATT,
-                 fallback_name="Over-power threshold, W [5..12005]")
-    .tuya_number(dp_id=120, attribute_name="balance_threshold", translation_key="balance_threshold",
-                 type=t.uint32_t, min_value=10, max_value=500, step=1, unit=UnitOfEnergy.KILO_WATT_HOUR,
-                 fallback_name="Balance threshold, kWh [10..500]")
-
+    .tuya_number(
+        dp_id=119,
+        attribute_name="overpower_threshold",
+        translation_key="overpower_threshold",
+        type=t.uint32_t,
+        min_value=5,
+        max_value=12005,
+        step=10,
+        unit=UnitOfPower.WATT,
+        fallback_name="Over-power threshold, W [5..12005]",
+    )
+    .tuya_number(
+        dp_id=120,
+        attribute_name="balance_threshold",
+        translation_key="balance_threshold",
+        type=t.uint32_t,
+        min_value=10,
+        max_value=500,
+        step=1,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        fallback_name="Balance threshold, kWh [10..500]",
+    )
     .adds(TuyaElectricalMeasurement)
     .skip_configuration()
     .add_to_registry()
