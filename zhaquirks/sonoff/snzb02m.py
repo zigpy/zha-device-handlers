@@ -2,31 +2,12 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    UnitOfTemperature,
-    PERCENTAGE,
-    UnitOfPressure,
-)
-import zigpy.types as t
-from enum import Enum
-from zigpy import types
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPressure, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.registry import DeviceRegistry
+import zigpy.types as t
 from zigpy.zcl import ClusterType
-from zigpy.quirks.v2 import (
-    BinarySensorMetadata,
-    CustomDeviceV2,
-    EntityMetadata,
-    EntityPlatform,
-    EntityType,
-    NumberMetadata,
-    SwitchMetadata,
-    WriteAttributeButtonMetadata,
-    ZCLCommandButtonMetadata,
-    ZCLSensorMetadata,
-    add_to_registry_v2,
-)
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -43,7 +24,7 @@ class CustomSonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-        Relative_Humidity_Compensation  = ZCLAttributeDef(
+        Relative_Humidity_Compensation = ZCLAttributeDef(
             name="Relative_Humidity_Compensation",
             id=0x2004,
             type=t.int16s,
@@ -61,7 +42,7 @@ class CustomSonoffCluster(CustomCluster):
     def _is_manuf_specific(self):
         return False
 
-    
+
 (
     QuirkBuilder("SONOFF", "SNZB-02M")
     .replaces(CustomSonoffCluster, 0xFC11, ClusterType.Server, 1)
@@ -73,11 +54,11 @@ class CustomSonoffCluster(CustomCluster):
         -50.0,
         50.0,
         0.1,
-        unit = UnitOfTemperature.CELSIUS,
-        multiplier = 0.01,
-        translation_key = "Temperature_Compensation",
-        device_class = NumberDeviceClass.TEMPERATURE,
-        fallback_name = "Temperature Compensation",
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="Temperature_Compensation",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        fallback_name="Temperature Compensation",
     )
     .number(
         CustomSonoffCluster.AttributeDefs.Relative_Humidity_Compensation.name,
@@ -87,11 +68,11 @@ class CustomSonoffCluster(CustomCluster):
         -50.0,
         50.0,
         0.1,
-        unit = PERCENTAGE,
-        multiplier = 0.01,
-        translation_key = "Relative_Humidity_Compensation",
-        device_class = NumberDeviceClass.HUMIDITY,
-        fallback_name = "Relative Humidity Compensation",
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        translation_key="Relative_Humidity_Compensation",
+        device_class=NumberDeviceClass.HUMIDITY,
+        fallback_name="Relative Humidity Compensation",
     )
     .number(
         CustomSonoffCluster.AttributeDefs.Pressure_Compensation.name,
@@ -101,11 +82,11 @@ class CustomSonoffCluster(CustomCluster):
         -50.0,
         50.0,
         1,
-        unit = UnitOfPressure.HPA,
-        multiplier = 0.01,
-        translation_key = "Pressure_Compensation",
-        device_class = NumberDeviceClass.ATMOSPHERIC_PRESSURE,
-        fallback_name = "Pressure Compensation",
+        unit=UnitOfPressure.HPA,
+        multiplier=0.01,
+        translation_key="Pressure_Compensation",
+        device_class=NumberDeviceClass.ATMOSPHERIC_PRESSURE,
+        fallback_name="Pressure Compensation",
     )
     .add_to_registry()
-)    
+)
