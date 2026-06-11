@@ -25,7 +25,7 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping
 # Enum used by 1-phase Tongou TO-Q-SA1 Power Meter: TOSA1-01WXJAT1A, _TZE284_pglpvdar, TS0601
 class OnlineState(t.enum8):
     """Online status reported by Tuya Power Meter."""
-    
+
     Online = 0
     Offline = 1
 
@@ -33,7 +33,7 @@ class OnlineState(t.enum8):
 # Enum used by 1-phase Tongou TO-Q-SA1 Power Meter: TOSA1-01WXJAT1A, _TZE284_pglpvdar, TS0601
 class AlertEvent(t.enum8):
     """Protection and status events reported by Tuya Power Meter."""
-    
+
     Normal = 0
 
     Over_Current_Trip = 1
