@@ -1,9 +1,8 @@
 """SONOFF SNZB02M - Zigbee Temperature And Humidity Sensor."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPressure, UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -42,20 +41,15 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-02M")
-    .replaces(
-        CustomSonoffCluster,
-        endpoint_id=1,
-        cluster_type=ClusterType.Server,
-    )
+    .replaces(CustomSonoffCluster, 0xFC11, ClusterType.Server, 1)
     .number(
-        attribute_name=(
-            CustomSonoffCluster.AttributeDefs.temperature_compensation.name
-        ),
-        cluster_id=CustomSonoffCluster.cluster_id,
-        endpoint_id=1,
-        min_value=-50.0,
-        max_value=50.0,
-        step=0.1,
+        CustomSonoffCluster.AttributeDefs.temperature_compensation.name,
+        CustomSonoffCluster.cluster_id,
+        ClusterType.Server,
+        1,
+        -50.0,
+        50.0,
+        0.1,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_compensation",
@@ -63,14 +57,13 @@ class CustomSonoffCluster(CustomCluster):
         fallback_name="Temperature compensation",
     )
     .number(
-        attribute_name=(
-            CustomSonoffCluster.AttributeDefs.relative_humidity_compensation.name
-        ),
-        cluster_id=CustomSonoffCluster.cluster_id,
-        endpoint_id=1,
-        min_value=-50.0,
-        max_value=50.0,
-        step=0.1,
+        CustomSonoffCluster.AttributeDefs.relative_humidity_compensation.name,
+        CustomSonoffCluster.cluster_id,
+        ClusterType.Server,
+        1,
+        -50.0,
+        50.0,
+        0.1,
         unit=PERCENTAGE,
         multiplier=0.01,
         translation_key="relative_humidity_compensation",
@@ -78,14 +71,13 @@ class CustomSonoffCluster(CustomCluster):
         fallback_name="Relative humidity compensation",
     )
     .number(
-        attribute_name=(
-            CustomSonoffCluster.AttributeDefs.pressure_compensation.name
-        ),
-        cluster_id=CustomSonoffCluster.cluster_id,
-        endpoint_id=1,
-        min_value=-50.0,
-        max_value=50.0,
-        step=1,
+        CustomSonoffCluster.AttributeDefs.pressure_compensation.name,
+        CustomSonoffCluster.cluster_id,
+        ClusterType.Server,
+        1,
+        -50.0,
+        50.0,
+        1,
         unit=UnitOfPressure.HPA,
         multiplier=0.01,
         translation_key="pressure_compensation",
