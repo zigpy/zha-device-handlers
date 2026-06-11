@@ -11,19 +11,46 @@ INNR = "innr"
 INNR_MANUFACTURER_CODE = 0x1166
 
 
-class MeteringClusterInnr(CustomCluster, Metering):
-    """Base Innr Metering cluster mirroring manufacturer-framed summation reports.
+class MeteringClusterInnrOld(CustomCluster, Metering):
+    """Provide constant multiplier and divisor for old Innr plug firmware.
 
-    Innr SP plug firmware sends its device-initiated metering report with the
-    manufacturer-specific bit set (Innr manufacturer code 0x1166), even though the
-    report carries the standard ``current_summ_delivered`` (0x0000) attribute.
-    Since zigpy 0.91 resolves reported attributes against the frame's manufacturer
-    code, that report no longer matches the standard ZCL attribute and is dropped
-    -- energy then only updates on the startup read.
+    Old firmware provides incorrect values for the divisor, so we override them.
+    """
 
-    Define the attribute the device actually reports (the standard ID under the
-    Innr manufacturer code) so the report is parsed, then mirror its value onto
-    the standard ZCL attribute the energy sensor reads.
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 100,
+    }
+
+
+class MeteringClusterInnrNew(CustomCluster, Metering):
+    """Provide constant multiplier and divisor for new Innr plug firmware.
+
+    New firmware provides already provides correct value, but the old quirk will have
+    persisted the static values in the database, so we need to force the new values
+    to avoid users having to re-pair the device.
+    """
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+    }
+
+
+class MeteringClusterInnrSP120(MeteringClusterInnrOld):
+    """SP 120 metering: also recover the manufacturer-framed summation report.
+
+    The SP 120 (NXP/Jennic JN516x) firmware reports the standard
+    ``current_summ_delivered`` (0x0000) with the manufacturer-specific bit set
+    (Innr manufacturer code 0x1166). Since zigpy 0.91 resolves reported
+    attributes against the frame's manufacturer code, that report no longer
+    matches the standard ZCL attribute and is dropped -- energy then only updates
+    on the startup read. Define the attribute the device actually reports and
+    mirror its value onto the standard ZCL attribute the energy sensor reads.
+
+    Scoped to the SP 120 on purpose: this is a quirk of that old JN516x firmware.
+    The SP 234 and the newer SP 240/242/244 family run different firmware/stacks
+    that report summation normally, so they keep the plain metering clusters.
     """
 
     class AttributeDefs(Metering.AttributeDefs):
@@ -50,32 +77,6 @@ class MeteringClusterInnr(CustomCluster, Metering):
             self.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered, event.value
             )
-
-
-class MeteringClusterInnrOld(MeteringClusterInnr):
-    """Provide constant multiplier and divisor for old Innr plug firmware.
-
-    Old firmware provides incorrect values for the divisor, so we override them.
-    """
-
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 100,
-    }
-
-
-class MeteringClusterInnrNew(MeteringClusterInnr):
-    """Provide constant multiplier and divisor for new Innr plug firmware.
-
-    New firmware provides already provides correct value, but the old quirk will have
-    persisted the static values in the database, so we need to force the new values
-    to avoid users having to re-pair the device.
-    """
-
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 1000,
-    }
 
 
 class ElectricalMeasurementClusterInnr(CustomCluster, ElectricalMeasurement):

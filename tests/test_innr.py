@@ -5,6 +5,11 @@ import zigpy.types as t
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks.innr import (
+    MeteringClusterInnrNew,
+    MeteringClusterInnrOld,
+    MeteringClusterInnrSP120,
+)
 from zhaquirks.innr.innr_sp120_plug import SP120
 
 # Real SP 120 device-initiated metering report:
@@ -27,8 +32,9 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
     attribute. Without the quirk, zigpy resolves the attribute against the frame's
     manufacturer code, fails to match the standard attribute, and drops the report
     as an unknown manufacturer attribute (name resolves to ``None``) -- so the
-    energy sensor only updates on startup reads. The quirk strips the manufacturer
-    bit so the standard ZCL attribute is matched and the report is applied.
+    energy sensor only updates on startup reads. The quirk defines the
+    manufacturer-specific attribute the device reports and mirrors its value onto
+    the standard ZCL attribute, so the energy sensor updates again.
     """
     device = zigpy_device_from_quirk(SP120)
     metering_cluster = device.endpoints[1].smartenergy_metering
@@ -101,3 +107,26 @@ async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
         ["current_summ_delivered"], only_cache=True
     )
     assert cached["current_summ_delivered"] == 1234
+
+
+def test_metering_manuf_mirror_scoped_to_sp120() -> None:
+    """Only the SP 120 cluster carries the manufacturer-framed summation handling.
+
+    The manufacturer-framing is a quirk of the SP 120's old JN516x firmware. The
+    SP 234 and SP 240/242/244 family (different firmware/stacks that report
+    summation normally) keep the plain metering clusters, so they don't carry the
+    extra manufacturer attribute (nor the same-ID lookup ambiguity it introduces).
+    """
+    mfg_attr = "current_summ_delivered_mfg"
+    # SP 120 cluster recovers it
+    assert mfg_attr in MeteringClusterInnrSP120.attributes_by_name
+    # SP 234 / SP 240 (old & new firmware) clusters do not
+    assert mfg_attr not in MeteringClusterInnrOld.attributes_by_name
+    assert mfg_attr not in MeteringClusterInnrNew.attributes_by_name
+    # the standard attribute remains intact on all of them
+    for cls in (
+        MeteringClusterInnrSP120,
+        MeteringClusterInnrOld,
+        MeteringClusterInnrNew,
+    ):
+        assert "current_summ_delivered" in cls.attributes_by_name
