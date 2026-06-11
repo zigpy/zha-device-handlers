@@ -7,15 +7,29 @@ from zigpy.zcl.clusters.smartenergy import Metering
 INNR = "innr"
 
 
-class MeteringClusterInnr(CustomCluster, Metering):
-    """Provide constant multiplier and divisor.
+class MeteringClusterInnrOld(CustomCluster, Metering):
+    """Provide constant multiplier and divisor for old Innr plug firmware.
 
-    The device seems to supply the summation_formatting attribute correctly, but ZHA doesn't use it for kWh for now.
+    Old firmware provides incorrect values for the divisor, so we override them.
     """
 
     _CONSTANT_ATTRIBUTES = {
         Metering.AttributeDefs.multiplier.id: 1,
         Metering.AttributeDefs.divisor.id: 100,
+    }
+
+
+class MeteringClusterInnrNew(CustomCluster, Metering):
+    """Provide constant multiplier and divisor for new Innr plug firmware.
+
+    New firmware provides already provides correct value, but the old quirk will have
+    persisted the static values in the database, so we need to force the new values
+    to avoid users having to re-pair the device.
+    """
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
     }
 
 

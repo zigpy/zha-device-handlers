@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
 
@@ -37,31 +38,41 @@ PRESS_TYPES = {
 class LinxuraIASCluster(CustomCluster, IasZone):
     """IAS cluster used for Linxura button."""
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.zone_status.id and 0 < value < 24:
-            if 0 < value < 6:
-                button = BUTTON_1
-                press_type = PRESS_TYPES[value // 2 + 1]
-            elif 6 < value < 12:
-                button = BUTTON_2
-                press_type = PRESS_TYPES[value // 2 - 3 + 1]
-            elif 12 < value < 18:
-                button = BUTTON_3
-                press_type = PRESS_TYPES[value // 2 - 6 + 1]
-            elif 18 < value < 24:
-                button = BUTTON_4
-                press_type = PRESS_TYPES[value // 2 - 9 + 1]
-            else:
-                # discard invalid values: 0, 6, 12, 18
-                return
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
-            action = f"{button}_{press_type}"
-            event_args = {
-                BUTTON: button,
-                PRESS_TYPE: press_type,
-            }
-            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report/update event."""
+        if event.attribute_id == self.AttributeDefs.zone_status.id:
+            value = event.value
+            if 0 < value < 24:
+                if 0 < value < 6:
+                    button = BUTTON_1
+                    press_type = PRESS_TYPES[value // 2 + 1]
+                elif 6 < value < 12:
+                    button = BUTTON_2
+                    press_type = PRESS_TYPES[value // 2 - 3 + 1]
+                elif 12 < value < 18:
+                    button = BUTTON_3
+                    press_type = PRESS_TYPES[value // 2 - 6 + 1]
+                elif 18 < value < 24:
+                    button = BUTTON_4
+                    press_type = PRESS_TYPES[value // 2 - 9 + 1]
+                else:
+                    # discard invalid values: 0, 6, 12, 18
+                    return
+
+                action = f"{button}_{press_type}"
+                event_args = {
+                    BUTTON: button,
+                    PRESS_TYPE: press_type,
+                }
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
 class LinxuraButton(CustomDevice):

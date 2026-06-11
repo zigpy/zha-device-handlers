@@ -59,6 +59,19 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX024")  # 91ft
+    .applies_to(SIGNIFY, "LCX025")  # 45ft
+    .applies_to(SIGNIFY, "LCX026")  # Likely model for 22ft
+    .friendly_name(
+        model="Hue Festavia globe outdoor string lights",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
     .applies_to(SIGNIFY, "LTB003")
     .friendly_name(
         model="Hue White Ambiance BR30 E26",
@@ -188,6 +201,61 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(PHILIPS, "1745430P7")
     .friendly_name(
         model="Hue Impress outdoor Pedestal",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCD003")
+    .friendly_name(
+        model="Hue Akari downlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1743530P7")
+    .friendly_name(
+        model="Hue Discover outdoor floodlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL008")
+    .friendly_name(
+        model="Hue Lightstrip Solo",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1746330P7")
+    .friendly_name(
+        model="Hue Appear Outdoor wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX004")
+    .friendly_name(
+        model="Hue Gradient lightstrip",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
