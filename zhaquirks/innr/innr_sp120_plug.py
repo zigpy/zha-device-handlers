@@ -3,7 +3,7 @@
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import AttributeReportedEvent
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -63,11 +63,8 @@ class MeteringClusterInnrSP120(MeteringClusterInnrOld):
         """Listen for the manufacturer-specific summation reports."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._mirror_summation)
-        self.on_event(AttributeUpdatedEvent.event_type, self._mirror_summation)
 
-    def _mirror_summation(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
-    ) -> None:
+    def _mirror_summation(self, event: AttributeReportedEvent) -> None:
         """Mirror the manufacturer-specific summation onto the ZCL attribute."""
         if event.attribute_name == self.AttributeDefs.current_summ_delivered_mfg.name:
             self.update_attribute(
