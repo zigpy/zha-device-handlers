@@ -78,9 +78,7 @@ class CustomSonoffCluster(CustomCluster):
         fallback_name="Relative humidity compensation",
     )
     .number(
-        attribute_name=(
-            CustomSonoffCluster.AttributeDefs.pressure_compensation.name
-        ),
+        attribute_name=(CustomSonoffCluster.AttributeDefs.pressure_compensation.name),
         cluster_id=CustomSonoffCluster.cluster_id,
         endpoint_id=1,
         min_value=-50.0,
