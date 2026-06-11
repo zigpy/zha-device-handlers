@@ -687,8 +687,8 @@ class TuyaElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     )
     .tuya_switch(
         dp_id=34,
-        attribute_name="factory_reset",
-        translation_key="factory_reset",
+        attribute_name="clear_forward_energy",
+        translation_key="clear_forward_energy",
         fallback_name="Clear forward electricity",
     )
     .tuya_switch(
