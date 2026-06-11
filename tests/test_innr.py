@@ -44,7 +44,7 @@ async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
         for e in events
         if e.attribute_name == Metering.AttributeDefs.current_summ_delivered.name
     ]
-    assert summation_events, "current_summ_delivered report was not parsed"
+    assert len(summation_events) == 1
     assert summation_events[0].value == 35
 
     # ...and cached as the standard attribute the energy sensor reads.
@@ -82,7 +82,7 @@ async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
         for e in events
         if e.attribute_name == Metering.AttributeDefs.current_summ_delivered.name
     ]
-    assert summation_events, "current_summ_delivered report was not parsed"
+    assert len(summation_events) == 1
     assert summation_events[0].value == 1234
     cached, _ = await metering_cluster.read_attributes(
         ["current_summ_delivered"], only_cache=True
