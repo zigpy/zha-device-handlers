@@ -56,7 +56,6 @@ class MeteringClusterInnrSP120(MeteringClusterInnrOld):
         current_summ_delivered_mfg = ZCLAttributeDef(
             id=0x0000,
             type=t.uint48_t,
-            is_manufacturer_specific=True,
             manufacturer_code=0x1166,
         )
 
