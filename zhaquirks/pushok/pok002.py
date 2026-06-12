@@ -7,7 +7,6 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import MultistateValue
 
-
 (
     QuirkBuilder("PushOk Hardware", "POK002")
     .also_applies_to("PushOk Hardware", "POK007")
