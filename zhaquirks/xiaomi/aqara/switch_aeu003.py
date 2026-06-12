@@ -200,7 +200,7 @@ class AqaraManuSpecificCluster(CustomCluster):
         )
 
     def _update_attribute(self, attrid, value):
-        """Log manufacturer-specific updates to help map attributes."""
+        """Map Aqara position and movement attributes to cover state."""
         LOGGER.debug(
             "Aqara aeu003 mfg attr update: ep=%s attr=0x%04X value=%s",
             self.endpoint.endpoint_id,
