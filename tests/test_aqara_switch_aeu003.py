@@ -269,3 +269,199 @@ async def test_non_position_commands_unchanged(zigpy_device_from_v2_quirk):
 
         base_request.assert_called_once()
         assert base_request.call_args.args[1] == stop_command_id
+
+
+@pytest.mark.asyncio
+async def test_mfg_cluster_bind_enables_multiclick_and_reads_position(
+    zigpy_device_from_v2_quirk,
+):
+    """Bind should enable multi-click on ep3/4 and read position on ep1."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.switch.aeu003",
+        endpoint_ids=[1, 2, 3, 4, 21],
+        cluster_ids={
+            1: {
+                WindowCovering.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            2: {0xFCC0: ClusterType.Server},
+            3: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            4: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            21: {AnalogInput.cluster_id: ClusterType.Server},
+        },
+    )
+
+    ep1_cluster = device.endpoints[1].opple_cluster
+    ep3_cluster = device.endpoints[3].opple_cluster
+    ep4_cluster = device.endpoints[4].opple_cluster
+
+    with (
+        mock.patch(
+            "zigpy.zcl.Cluster.bind",
+            new=mock.AsyncMock(return_value=(foundation.Status.SUCCESS,)),
+        ),
+        mock.patch.object(
+            ep1_cluster,
+            "read_attributes",
+            new=mock.AsyncMock(return_value=({}, {})),
+        ) as ep1_read,
+        mock.patch.object(
+            ep3_cluster,
+            "write_attributes",
+            new=mock.AsyncMock(
+                return_value=(
+                    [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+                )
+            ),
+        ) as ep3_write,
+        mock.patch.object(
+            ep4_cluster,
+            "write_attributes",
+            new=mock.AsyncMock(
+                return_value=(
+                    [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+                )
+            ),
+        ) as ep4_write,
+    ):
+        assert await ep1_cluster.bind() == (foundation.Status.SUCCESS,)
+        assert await ep3_cluster.bind() == (foundation.Status.SUCCESS,)
+        assert await ep4_cluster.bind() == (foundation.Status.SUCCESS,)
+
+    ep1_read.assert_awaited_once_with([0x041F])
+    ep3_write.assert_awaited_once_with({0x0286: 2}, manufacturer=0x115F)
+    ep4_write.assert_awaited_once_with({0x0286: 2}, manufacturer=0x115F)
+
+
+@pytest.mark.asyncio
+async def test_mfg_cluster_read_write_default_manufacturer(zigpy_device_from_v2_quirk):
+    """Read/write helpers should default to Aqara manufacturer code."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.switch.aeu003",
+        endpoint_ids=[1, 2, 3, 4, 21],
+        cluster_ids={
+            1: {
+                WindowCovering.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            2: {0xFCC0: ClusterType.Server},
+            3: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            4: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            21: {AnalogInput.cluster_id: ClusterType.Server},
+        },
+    )
+
+    cluster = device.endpoints[1].opple_cluster
+
+    with (
+        mock.patch(
+            "zigpy.zcl.Cluster.write_attributes",
+            new=mock.AsyncMock(
+                return_value=(
+                    [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+                )
+            ),
+        ) as super_write,
+        mock.patch(
+            "zigpy.zcl.Cluster.read_attributes",
+            new=mock.AsyncMock(return_value=({}, {})),
+        ) as super_read,
+    ):
+        await cluster.write_attributes({0x0286: 2})
+        await cluster.read_attributes([0x041F])
+
+    assert super_write.await_args.kwargs["manufacturer"] == 0x115F
+    assert super_read.await_args.kwargs["manufacturer"] == 0x115F
+
+
+@pytest.mark.asyncio
+async def test_mfg_cluster_logs_refresh_failures(zigpy_device_from_v2_quirk, caplog):
+    """Movement refresh failures should be logged, not raised."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.switch.aeu003",
+        endpoint_ids=[1, 2, 3, 4, 21],
+        cluster_ids={
+            1: {
+                WindowCovering.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            2: {0xFCC0: ClusterType.Server},
+            3: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            4: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            21: {AnalogInput.cluster_id: ClusterType.Server},
+        },
+    )
+
+    cluster = device.endpoints[1].opple_cluster
+
+    def boom(coro, *args, **kwargs):
+        coro.close()
+        raise RuntimeError("boom")
+
+    with (
+        mock.patch.object(cluster, "read_attributes", new=mock.AsyncMock()),
+        mock.patch("asyncio.create_task", side_effect=boom),
+    ):
+        cluster._update_attribute(0x0420, 0)
+
+    assert "Failed to refresh position on movement update" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_mfg_cluster_logs_position_update_failures(
+    zigpy_device_from_v2_quirk, caplog
+):
+    """Position update failures should be logged, not raised."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.switch.aeu003",
+        endpoint_ids=[1, 2, 3, 4, 21],
+        cluster_ids={
+            1: {
+                WindowCovering.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            2: {0xFCC0: ClusterType.Server},
+            3: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            4: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                0xFCC0: ClusterType.Server,
+            },
+            21: {AnalogInput.cluster_id: ClusterType.Server},
+        },
+    )
+
+    cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        device.endpoints[1].window_covering,
+        "update_attribute",
+        side_effect=RuntimeError("boom"),
+    ):
+        cluster._update_attribute(0x041F, 50)
+
+    assert "Failed to update lift percentage from percent value" in caplog.text
