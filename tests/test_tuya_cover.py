@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import pytest
 from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -10,7 +11,10 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import (
+    TuyaMoesCover0601,
+    TuyaWindowCoveringInvertedControl,
+)
 
 zhaquirks.setup()
 
@@ -223,3 +227,122 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+async def test_nty_n99_3e_quirk(zigpy_device_from_v2_quirk):
+    """Test NTY N99-3E curtain motor v2 quirk."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qbhze54q", "TS0601")
+    assert isinstance(quirked, CustomDeviceV2)
+
+    ep = quirked.endpoints[1]
+
+    # Verify clusters are present
+    cover_cluster = ep.window_covering
+    assert cover_cluster is not None
+    assert isinstance(cover_cluster, TuyaWindowCoveringInvertedControl)
+
+    tuya_cluster = ep.tuya_manufacturer
+    assert tuya_cluster is not None
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+
+@pytest.mark.parametrize(
+    ("command_id", "expected_dp_value"),
+    [
+        # This motor uses an inverted control enum (0=close, 1=stop, 2=open),
+        # so up_open/down_close must send the swapped values
+        (WindowCovering.ServerCommandDefs.up_open.id, b"\x02"),
+        (WindowCovering.ServerCommandDefs.down_close.id, b"\x00"),
+        (WindowCovering.ServerCommandDefs.stop.id, b"\x01"),
+    ],
+)
+async def test_nty_n99_3e_control_commands(
+    zigpy_device_from_v2_quirk, command_id, expected_dp_value
+):
+    """Test that control commands send the inverted DP values."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qbhze54q", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(command_id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1 (control)
+        assert call_data[-1:] == expected_dp_value
+
+
+async def test_nty_n99_3e_position_report(zigpy_device_from_v2_quirk):
+    """Test that incoming position DP reports update the cover position."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qbhze54q", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    cover_listener = ClusterListener(cover_cluster)
+
+    tuya_cluster = ep.tuya_manufacturer
+
+    # Simulate device reporting position 75 (75% open) via DP 3
+    # Should convert to ZCL 25% (0%=open, 100%=closed)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(3, TuyaData(75))],
+        )
+    )
+
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 25
+    )
+
+    # Verify attribute update event was fired
+    assert len(cover_listener.attribute_updates) == 1
+    assert (
+        cover_listener.attribute_updates[0][0]
+        == WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    assert cover_listener.attribute_updates[0][1] == 25
+
+
+async def test_nty_n99_3e_go_to_lift_percentage(zigpy_device_from_v2_quirk):
+    """Test that go_to_lift_percentage sends correct inverted position."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qbhze54q", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        # Send ZCL go_to_lift_percentage with 25% (25% closed = 75% open)
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 25
+        )
+        await wait_for_zigpy_tasks()
+
+        # Should send inverted value (100 - 25 = 75) to device
+        # Multiple calls expected (DP 2 and DP 3 both mapped)
+        assert req_mock.call_count >= 1
+        # Check that at least one call has the correct position value
+        found_correct_position = False
+        for call in req_mock.call_args_list:
+            call_data = call[1]["data"]
+            # DP 2 (position control) with value 75
+            if b"\x02" in call_data and b"\x00\x00\x00\x4b" in call_data:
+                found_correct_position = True
+        assert found_correct_position, "Expected DP 2 with value 75 in sent data"

@@ -1,7 +1,11 @@
 """Tuya based cover and blinds."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -20,6 +24,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -701,6 +706,65 @@ class BorderSetting(t.enum8):
         unique_id_suffix="border_remove_all",
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class TuyaWindowCoveringInvertedControl(TuyaWindowCovering):
+    """WindowCovering cluster for motors with an inverted control DP enum.
+
+    Some curtain motors interpret the control DP values inverted from the
+    zhaquirks default: 0=close, 1=stop, 2=open instead of 0=open, 1=stop,
+    2=close, while still reporting positions with the regular convention.
+    Swapping open/close makes the motor move in the requested direction.
+    """
+
+    _COMMAND_SWAP = {
+        WindowCovering.ServerCommandDefs.up_open.id: (
+            WindowCovering.ServerCommandDefs.down_close.id
+        ),
+        WindowCovering.ServerCommandDefs.down_close.id: (
+            WindowCovering.ServerCommandDefs.up_open.id
+        ),
+    }
+
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
+    ):
+        """Swap open/close before passing the command to the default handler."""
+        return await super().command(
+            self._COMMAND_SWAP.get(command_id, command_id),
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn,
+            **kwargs,
+        )
+
+
+(
+    # NTY N99-3E curtain motor
+    TuyaQuirkBuilder("_TZE204_qbhze54q", "TS0601")
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=3,
+        position_control_dp=2,
+        cover_cfg=TuyaWindowCoveringInvertedControl,
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
     )
     .skip_configuration()
     .add_to_registry()
