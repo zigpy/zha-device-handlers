@@ -12,6 +12,8 @@ from zigpy.zcl.clusters.general import MultistateInput, MultistateValue
 
 
 class ValveStatus(enum.IntEnum):
+    """PushOk POK006 valve status."""
+
     OFF = 0
     ON = 1
     MOVING = 2
