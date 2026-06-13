@@ -1,10 +1,18 @@
 """SONOFF S60ZBTPF - Smart Socket with power measurement fix.
 
-This device has a quirk where it continues to report active power consumption
-even when the socket is turned off. This quirk fixes that by, when the
-`on_off` state becomes False, setting `active_power` and `rms_current` to 0
-and `rms_voltage` to `uint16.non_value`, and by blocking subsequent updates
-to these three attributes while the socket remains off.
+Firmware versions before v2.0.3 (0x00002003) have a bug where the device keeps
+reporting active power consumption even when the socket is turned off. The quirk
+for those versions fixes that by, when the `on_off` state becomes False, setting
+`active_power` and `rms_current` to 0 and `rms_voltage` to `uint16.non_value`, and
+by blocking subsequent updates to these three attributes while the socket remains
+off. v2.0.3 fixed this bug, so the workaround is not applied to that version and
+newer.
+
+v2.0.2 additionally reports `instantaneous_demand` as supported (always with value
+0), which v2.0.3 fixed by marking it unsupported. The metering entity it would
+create is prevented for all firmware versions, as it is never useful here.
+
+See https://github.com/zigpy/zigpy-ota/issues/164 for more details.
 """
 
 from typing import Any
@@ -65,12 +73,33 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         super()._update_attribute(attrid, value)
 
 
+# firmware version v2.0.3 that fixed the power reporting bug
+S60_POWER_FIX_FW_VERSION = 0x00002003
+
 (
+    # firmware before v2.0.3 keeps reporting power while the socket is off,
+    # so apply the workaround to those versions (max_version is exclusive).
+    # Also apply it when the firmware version is missing, just to be safe.
     QuirkBuilder("SONOFF", "S60ZBTPF")
     .applies_to("SONOFF", "S60ZBTPG")
+    .firmware_version_filter(max_version=S60_POWER_FIX_FW_VERSION, allow_missing=True)
     .replaces(SonoffS60OnOff)
     .replaces(SonoffS60ElectricalMeasurement)
     # firmware v2.0.2 reports instantaneous_demand as supported, always with value 0
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Metering.cluster_id,
+        unique_id_suffix="1-1794",  # no actual suffix for this
+    )
+    .add_to_registry()
+)
+
+(
+    # firmware v2.0.3 and newer fixed the power reporting bug, so the workaround
+    # is not applied. The instantaneous_demand metering entity is still prevented.
+    QuirkBuilder("SONOFF", "S60ZBTPF")
+    .applies_to("SONOFF", "S60ZBTPG")
+    .firmware_version_filter(min_version=S60_POWER_FIX_FW_VERSION, allow_missing=False)
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=Metering.cluster_id,
