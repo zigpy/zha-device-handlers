@@ -16,6 +16,17 @@ from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
 zhaquirks.setup()
 
 
+def _sent_datapoints(call_data):
+    """Parse the datapoints out of a serialized Tuya MCU request frame.
+
+    Strips the ZCL header and decodes the TuyaCommand payload so tests can
+    assert on (dp, value) tuples instead of brittle raw-byte substrings.
+    """
+    _hdr, rest = foundation.ZCLHeader.deserialize(call_data)
+    tuya_cmd, _ = TuyaCommand.deserialize(rest)
+    return {dp.dp: int(dp.data.payload) for dp in tuya_cmd.datapoints}
+
+
 def test_ts601_moes_signature(assert_signature_matches_quirk):
     """Test TS0121 cover signature is matched to its quirk."""
     signature = {
@@ -248,9 +259,9 @@ async def test_nty_n99_3e_quirk(zigpy_device_from_v2_quirk):
     ("command_id", "expected_dp_value"),
     [
         # Standard control enum: open=0, stop=1, close=2
-        (WindowCovering.ServerCommandDefs.up_open.id, b"\x00"),
-        (WindowCovering.ServerCommandDefs.down_close.id, b"\x02"),
-        (WindowCovering.ServerCommandDefs.stop.id, b"\x01"),
+        (WindowCovering.ServerCommandDefs.up_open.id, 0),
+        (WindowCovering.ServerCommandDefs.down_close.id, 2),
+        (WindowCovering.ServerCommandDefs.stop.id, 1),
     ],
 )
 async def test_nty_n99_3e_control_commands(
@@ -271,9 +282,9 @@ async def test_nty_n99_3e_control_commands(
         await wait_for_zigpy_tasks()
 
         req_mock.assert_called_once()
-        call_data = req_mock.call_args[1]["data"]
-        assert b"\x01" in call_data  # DP ID 1 (control)
-        assert call_data[-1:] == expected_dp_value
+        datapoints = _sent_datapoints(req_mock.call_args[1]["data"])
+        # Control is DP 1
+        assert datapoints == {1: expected_dp_value}
 
 
 async def test_nty_n99_3e_position_report(zigpy_device_from_v2_quirk):
@@ -331,14 +342,9 @@ async def test_nty_n99_3e_go_to_lift_percentage(zigpy_device_from_v2_quirk):
         )
         await wait_for_zigpy_tasks()
 
-        # Should send the value as-is (invert=False)
-        # Multiple calls expected (DP 2 and DP 3 both mapped)
+        # Should send the value as-is (invert=False) to the position control DP 2
         assert req_mock.call_count >= 1
-        # Check that at least one call has the correct position value
-        found_correct_position = False
+        sent = {}
         for call in req_mock.call_args_list:
-            call_data = call[1]["data"]
-            # DP 2 (position control) with value 25 (0x19)
-            if b"\x02" in call_data and b"\x00\x00\x00\x19" in call_data:
-                found_correct_position = True
-        assert found_correct_position, "Expected DP 2 with value 25 in sent data"
+            sent.update(_sent_datapoints(call[1]["data"]))
+        assert sent.get(2) == 25, f"Expected DP 2 with value 25, got {sent}"

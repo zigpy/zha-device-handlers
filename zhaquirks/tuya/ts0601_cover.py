@@ -709,9 +709,9 @@ class BorderSetting(t.enum8):
 
 (
     # NTY N99-3E curtain motor.
-    # Control DP uses the standard order (0=open, 1=stop, 2=close), and this
-    # unit reports position already in the ZCL convention (0=closed, 100=open),
-    # so position values must not be inverted (invert=False).
+    # Control DP uses the standard order (0=open, 1=stop, 2=close). This unit
+    # already reports and accepts position using the ZCL lift-percentage
+    # convention (0=open, 100=closed), so it must not be inverted (invert=False).
     TuyaQuirkBuilder("_TZE204_qbhze54q", "TS0601")
     .tuya_cover(
         control_dp=1,
