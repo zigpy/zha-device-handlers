@@ -10,7 +10,6 @@ zhaquirks.setup()
 
 # firmware version that fixed the metering divisor bug (max_version is exclusive)
 SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
-DIVISOR_ID = Metering.AttributeDefs.divisor.id
 
 
 @pytest.mark.parametrize(
@@ -55,5 +54,6 @@ def test_innr_sp240_firmware_version_metering(
 
     metering_cluster = device.endpoints[1].smartenergy_metering
     assert isinstance(metering_cluster, expected_cluster)
+
     # the constant divisor override is applied regardless of what the device reports
-    assert metering_cluster.get(DIVISOR_ID) == expected_divisor
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == expected_divisor
