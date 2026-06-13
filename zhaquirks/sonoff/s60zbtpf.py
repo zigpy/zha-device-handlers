@@ -76,34 +76,34 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 # firmware version v2.0.3 that fixed the power reporting bug
 S60_POWER_FIX_FW_VERSION = 0x00002003
 
-(
-    # firmware before v2.0.3 keeps reporting power while the socket is off,
-    # so apply the workaround to those versions (max_version is exclusive).
-    # Also apply it when the firmware version is missing, just to be safe.
+# shared base for both firmware variants below: the model matches and the
+# instantaneous_demand metering entity prevention apply regardless of firmware.
+# firmware v2.0.2 reports instantaneous_demand as supported, always with value 0.
+s60_base_quirk = (
     QuirkBuilder("SONOFF", "S60ZBTPF")
     .applies_to("SONOFF", "S60ZBTPG")
-    .firmware_version_filter(max_version=S60_POWER_FIX_FW_VERSION, allow_missing=True)
-    .replaces(SonoffS60OnOff)
-    .replaces(SonoffS60ElectricalMeasurement)
-    # firmware v2.0.2 reports instantaneous_demand as supported, always with value 0
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=Metering.cluster_id,
         unique_id_suffix="1-1794",  # no actual suffix for this
     )
+)
+
+(
+    # firmware before v2.0.3 keeps reporting power while the socket is off,
+    # so apply the workaround to those versions (max_version is exclusive).
+    # Also apply it when the firmware version is missing, just to be safe.
+    s60_base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(max_version=S60_POWER_FIX_FW_VERSION, allow_missing=True)
+    .replaces(SonoffS60OnOff)
+    .replaces(SonoffS60ElectricalMeasurement)
     .add_to_registry()
 )
 
 (
     # firmware v2.0.3 and newer fixed the power reporting bug, so the workaround
     # is not applied. The instantaneous_demand metering entity is still prevented.
-    QuirkBuilder("SONOFF", "S60ZBTPF")
-    .applies_to("SONOFF", "S60ZBTPG")
+    s60_base_quirk.clone(omit_man_model_data=False)
     .firmware_version_filter(min_version=S60_POWER_FIX_FW_VERSION, allow_missing=False)
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=Metering.cluster_id,
-        unique_id_suffix="1-1794",  # no actual suffix for this
-    )
     .add_to_registry()
 )
