@@ -32,6 +32,6 @@
 -->
 
 - [ ] The changes are tested and work correctly
-- [ ] `pre-commit` checks pass / the code has been formatted using ruff
+- [ ] `pre-commit` checks pass / formatting checks pass
 - [ ] Tests have been added to verify that the new code works
 - [ ] Device diagnostics data has been attached
