@@ -27,3 +27,7 @@ SE_POLL_SUMMATION = "se_poll_summation"
 
 # Hint to expose a basic siren entity
 SIREN_BASIC = "siren_basic"
+
+# Hint that the thermostat actually implements SystemMode.Fan_only, so the
+# climate entity may expose HVACMode.FAN_ONLY
+THERMOSTAT_FAN_ONLY_HVAC = "thermostat_fan_only_hvac"
