@@ -27,7 +27,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
-from zhaquirks.tuya import TuyaManufCluster
+from zhaquirks.tuya import TuyaManufCluster, TuyaNewManufCluster
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -300,7 +300,12 @@ class ZLinkyTICFWV14(ZLinkyTICFWV12):
     signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaManufCluster.cluster_id)
     signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
 
+    # Insert Time configuration cluster in replacement for devices with firmware v14.0+
     replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
+
+    # Insert Tuya cluster in replacement for devices with firmware v14.0+
+    replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaNewManufCluster)
+    replacement[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaNewManufCluster)
 
 
 class ZLinkyTICFWV15(ZLinkyTICFWV14):
