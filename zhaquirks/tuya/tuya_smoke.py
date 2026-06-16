@@ -1,10 +1,9 @@
 """Smoke Sensor."""
 
-from typing import Final
-
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -66,9 +65,6 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
             )
 
 
-CONCENTRATION_PARTS_PER_MILLION: Final = "ppm"
-
-
 (
     QuirkBuilder("_TZ3210_up3pngle", "TS0205")
     .removes(LightLink.cluster_id)
@@ -98,20 +94,20 @@ CONCENTRATION_PARTS_PER_MILLION: Final = "ppm"
         dp_id=2,
         type=t.int16s,
         attribute_name="smoke_concentration",
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        suggested_display_precision=0,
         translation_key="smoke_concentration",
         fallback_name="Smoke concentration",
-        device_class=SensorDeviceClass.PM10,
-        state_class=SensorStateClass.MEASUREMENT,
-        converter=lambda value: value / 10,
-        unit=CONCENTRATION_PARTS_PER_MILLION,
     )
     .tuya_binary_sensor(
         dp_id=11,
         attribute_name="device_fault",
-        translation_key="device_fault",
-        fallback_name="Device failure",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_type=EntityType.DIAGNOSTIC,
+        translation_key="device_fault",
+        fallback_name="Device failure",
     )
     .tuya_battery(
         dp_id=15,
@@ -127,9 +123,9 @@ CONCENTRATION_PARTS_PER_MILLION: Final = "ppm"
     .tuya_binary_sensor(
         dp_id=101,
         attribute_name="_self_test",
+        entity_type=EntityType.DIAGNOSTIC,
         translation_key="self_test",
         fallback_name="Self test result",
-        entity_type=EntityType.DIAGNOSTIC,
     )
     .skip_configuration()
     .add_to_registry()
