@@ -122,7 +122,7 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     )
     .tuya_binary_sensor(
         dp_id=101,
-        attribute_name="_self_test",
+        attribute_name="self_test",
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="self_test",
         fallback_name="Self test result",
