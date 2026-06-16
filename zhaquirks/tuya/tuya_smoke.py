@@ -103,11 +103,11 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     )
     .tuya_binary_sensor(
         dp_id=11,
-        attribute_name="device_fault",
+        attribute_name="fault_alarm",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="device_fault",
-        fallback_name="Device failure",
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
     )
     .tuya_battery(
         dp_id=15,
