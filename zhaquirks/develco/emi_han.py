@@ -2,47 +2,17 @@
 
 from __future__ import annotations
 
-from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.smartenergy import Metering
 
-
-class FrientMetering(CustomCluster, Metering):
-    """Frient EMI Norwegian HAN Metering cluster definition."""
-
-    # fix device issue
-    _CONSTANT_ATTRIBUTES = {Metering.AttributeDefs.divisor.id: 1000}
-
-    def handle_cluster_general_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list,
-        *,
-        dst_addressing: t.Addressing.Group
-        | t.Addressing.IEEE
-        | t.Addressing.NWK
-        | None = None,
-    ) -> None:
-        """Filter out incorrect divisor attribute reports from device."""
-        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            # Filter out divisor attribute reports
-            args.attribute_reports = [
-                attr
-                for attr in args.attribute_reports
-                if attr.attrid != Metering.AttributeDefs.divisor.id
-            ]
-
-            # Don't process if no attributes remain
-            if not args.attribute_reports:
-                return
-
-        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
-
+# This quirk had a workaround for blocking attribute reports with the ZCL divisor
+# attribute ID and manufacturer-specific bit set. The underlying issue of incorrectly
+# parsing manufacturer-specific attribute reports for ZCL attributes was resolved
+# with zigpy 0.91.0.
+# There's still a test for this device which tests that the divisor is not incorrectly
+# updated. The quirk will also be expanded to use support manufacturer-specific
+# attributes for this device, so it's kept, even though there's no functionality now.
 
 (
     QuirkBuilder("frient A/S", "EMIZB-132")
-    .replaces(FrientMetering, endpoint_id=2)
     .add_to_registry()
-)
+)  # fmt: skip

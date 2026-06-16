@@ -130,50 +130,72 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
-    """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
-    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+    """Test Frient EMI Norwegian HAN metering attribute reports."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-132",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
 
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
 
-    # divisor already fixed at 1000
-    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
-
-    # send incorrect divisor attribute report
-    # Frame: 0x18 (non-mfr-specific, server-to-client, disable-default-rsp),
-    #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
+    # send mfr-specific attribute report with divisor attribute ID — should be ignored
+    # Frame: 0x1c (mfr-specific, server-to-client, disable-default-rsp),
+    #        TSN=3, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
     device.packet_received(
         t.ZigbeePacket(
             profile_id=260,
             cluster_id=Metering.cluster_id,
             src_ep=2,
-            dst_ep=2,
-            data=t.SerializableBytes(b"\x18\x01\x0a\x02\x03\x22\x00\x02\x00"),
+            dst_ep=1,
+            data=t.SerializableBytes(b"\x1c\x15\x10\x03\x0a\x02\x03\x31\x00\x02"),
         )
     )
 
-    # attribute_updated event should not be emitted
-    assert len(metering_listener.attribute_updates) == 0
+    # An attribute update with the divisor ID is emitted, but as the manufacturer bit
+    # is set, the value in the attribute cache for the divisor should NOT be updated.
+    assert len(metering_listener.attribute_updates) == 1
+    assert metering_listener.attribute_updates == [
+        (Metering.AttributeDefs.divisor.id, 512)
+    ]
+    assert metering_cluster.get(Metering.AttributeDefs.divisor) is None
 
-    # divisor should still be fixed at 1000
-    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
+    # It is only present in the legacy cache, as the definition for the manufacturer
+    # specific attribute does not yet exist in the quirk.
+    assert metering_cluster._attr_cache.get(Metering.AttributeDefs.divisor.id) == 512
+    assert (
+        metering_cluster._attr_cache._legacy_cache[
+            Metering.AttributeDefs.divisor.id
+        ].value
+        == 512
+    )
 
-    # send current_summ_delivered attribute report
-    # Frame: 0x18, TSN=1, cmd=0x0a, attr=0x0000, value=1234 (uint48)
+    # send real attribute report with current_summ_delivered, current_summ_received,
+    # instantaneous_demand, and status
+    # Frame: 0x18 (server-to-client, disable-default-rsp),
+    #        TSN=54, cmd=0x0a (Report_Attributes)
     device.packet_received(
         t.ZigbeePacket(
             profile_id=260,
             cluster_id=Metering.cluster_id,
             src_ep=2,
-            dst_ep=2,
+            dst_ep=1,
             data=t.SerializableBytes(
-                b"\x18\x01\x0a\x00\x00\x25\xd2\x04\x00\x00\x00\x00"
+                b"\x18\x36\x0a\x00\x00\x25\x08\xcc\xd4\x01\x00\x00"
+                b"\x01\x00\x25\x00\x00\x00\x00\x00\x00"
+                b"\x00\x04\x2a\xa1\x0f\x00"
+                b"\x00\x02\x18\x00"
             ),
         )
     )
 
-    # attribute_updated event should be emitted
-    assert len(metering_listener.attribute_updates) == 1
+    # attribute_updated events should be emitted (5 due to previous mfr-specific report)
+    assert len(metering_listener.attribute_updates) == 5
     assert (
-        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id)
+        == 30_723_080
     )
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_received.id) == 0
+    assert metering_cluster.get(Metering.AttributeDefs.instantaneous_demand.id) == 4001
+    assert metering_cluster.get(Metering.AttributeDefs.status.id) == 0
