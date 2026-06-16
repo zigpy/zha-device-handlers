@@ -211,16 +211,17 @@ def giex_string_to_td(v: str) -> int:
     return timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second).seconds
 
 
-def giex_string_to_ts(v: str) -> int | None:
+def giex_string_to_dt(v: str) -> datetime | None:
     """Convert Giex String Duration datetime."""
     dev_tz = timezone(timedelta(hours=4))
     dev_dt = datetime.now(dev_tz)
+
     try:
         dt = datetime.strptime(v, "%H:%M:%S").replace(tzinfo=dev_tz)
-        dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
     except ValueError:
         return None  # on initial start the device will return '--:--:--'
-    return int(dev_dt.timestamp() + UNIX_EPOCH_TO_ZCL_EPOCH)
+    else:
+        return dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
 
 
 gx02_base_quirk = (
@@ -273,7 +274,7 @@ gx02_base_quirk = (
         dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_ts(x),
+        converter=lambda x: giex_string_to_dt(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation start time",
@@ -282,7 +283,7 @@ gx02_base_quirk = (
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_ts(x),
+        converter=lambda x: giex_string_to_dt(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation end time",
@@ -361,7 +362,9 @@ class GiexIrrigationStatus(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
+    .applies_to("_TZE284_iilebqoo", "TS0601")  # NovaDigital ZVL_DUAL
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
+    .applies_to("_TZE284_fhvpaltk", "TS0601")  # SGW08
     .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=1,
@@ -509,6 +512,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=3,
         attribute_name="valve_status",
         enum_class=TuyaValveStatus,
+        entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
         translation_key="valve_status",
         fallback_name="Valve status",
@@ -684,7 +688,7 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="auto_clean",
         entity_type=EntityType.CONFIG,
         translation_key="auto_clean",
-        fallback_name="Auto clean",
+        fallback_name="Autoclean",
     )
     .tuya_dp(
         dp_id=21,
@@ -721,7 +725,7 @@ class GiexIrrigationStatus(t.enum8):
         step=5,
         unit=PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
-        fallback_name="Valve state auto shutdown",
+        fallback_name="Valve state auto-shutdown",
     )
     .tuya_sensor(
         dp_id=3,

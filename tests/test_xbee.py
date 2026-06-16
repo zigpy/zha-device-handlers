@@ -657,22 +657,22 @@ async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
     assert analog_listeners[4].attribute_updates[0] == (0x0055, 3.305)
 
 
-@mock.patch("zigpy.zdo.ZDO.handle_ieee_addr_req")
-async def test_zdo(handle_mgmt_lqi_resp, zigpy_device_from_quirk):
+async def test_zdo(zigpy_device_from_quirk):
     """Test receiving ZDO data from XBee device."""
 
     xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
 
     # Receive ZDOCmd.IEEE_addr_req
-    xbee3_device.packet_received(
-        t.ZigbeePacket(
-            profile_id=0,
-            cluster_id=0x01,
-            src_ep=0,
-            dst_ep=0,
-            data=t.SerializableBytes(b"\x07\x34\x12\x00\x00"),
+    with mock.patch("zigpy.zdo.ZDO.handle_ieee_addr_req") as handle_mgmt_lqi_resp:
+        xbee3_device.packet_received(
+            t.ZigbeePacket(
+                profile_id=0,
+                cluster_id=0x01,
+                src_ep=0,
+                dst_ep=0,
+                data=t.SerializableBytes(b"\x07\x34\x12\x00\x00"),
+            )
         )
-    )
 
     assert handle_mgmt_lqi_resp.call_count == 1
     assert len(handle_mgmt_lqi_resp.call_args_list[0][0]) == 4

@@ -155,6 +155,20 @@ class SEDimmingCurve(t.enum8):
     Exponential = 2  # Not supported in current FW, but defined in the spec
 
 
+class SESunProtectionStatus(t.bitmap8):
+    """Window covering protetion status."""
+
+    NotActive = 0
+    Active = 1
+
+
+class SESunProtectionSensor(t.bitmap8):
+    """Window covering protetion status."""
+
+    NotConnected = 0
+    Connected = 1
+
+
 class SEBallast(CustomCluster, Ballast):
     """Schneider Electric Ballast cluster."""
 
@@ -180,49 +194,85 @@ class SEWindowCovering(CustomCluster, WindowCovering):
     class AttributeDefs(WindowCovering.AttributeDefs):
         """Attribute definitions."""
 
-        unknown_attribute_65533: Final = ZCLAttributeDef(
-            id=0xFFFD,
-            type=t.uint16_t,
-            is_manufacturer_specific=True,
-        )
-        lift_duration: Final = ZCLAttributeDef(
+        # Obsolete, use se_lift_drive_up_time and se_lift_drive_down_time instead.
+        se_lift_duration: Final = ZCLAttributeDef(
             id=0xE000,
             type=t.uint16_t,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57360: Final = ZCLAttributeDef(
+        se_sun_protection_status: Final = ZCLAttributeDef(
             id=0xE010,
-            type=t.bitmap8,
+            type=SESunProtectionStatus,
+            access="r",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57362: Final = ZCLAttributeDef(
+        # SunProtectionIlluminanceThreshold = 10,000 x log10 Illuminance.
+        # Where 1 lx <= Illuminance <=3.576 Mlx, corresponding to a SunProtectionIlluminanceThreshold in the range 0 to 0xfffe.
+        # A value of 0xffff indicates that this attribute is not valid.
+        se_sun_protection_illuminance_thershold: Final = ZCLAttributeDef(
             id=0xE012,
             type=t.uint16_t,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57363: Final = ZCLAttributeDef(
+        se_sun_protection_sensor: Final = ZCLAttributeDef(
             id=0xE013,
-            type=t.bitmap8,
+            type=SESunProtectionSensor,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57364: Final = ZCLAttributeDef(
+        # Driving time from fully close to fully open state in 1/10 seconds
+        se_lift_drive_up_time: Final = ZCLAttributeDef(
             id=0xE014,
             type=t.uint16_t,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57365: Final = ZCLAttributeDef(
+        # Driving time from fully open to fully close state in 1/10 seconds
+        se_lift_drive_down_time: Final = ZCLAttributeDef(
             id=0xE015,
             type=t.uint16_t,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57366: Final = ZCLAttributeDef(
+        # Time from fully open to fully close tilt position in 1/100 seconds.
+        # This time is also taken as base for calculation of step size in Schneider manufacture specific command StopOrStepLiftPercentage.
+        # If set to 0, WindosCoveringType attribute is automatically set to 0 (lift only).
+        se_tilt_open_close_and_step_time: Final = ZCLAttributeDef(
             id=0xE016,
             type=t.uint16_t,
+            access="rw",
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57367: Final = ZCLAttributeDef(
+        # Tilt position in percent adopted by tilt after receiving go to lift percentage command.
+        # Values 0-100 are absolute position of tilt with following meaning:
+        # 100: Position of tilt when shutter is moving up (usually up).
+        # 0: Position of tilt when shutter is moving down (usually down).
+        # 255: No action after command.
+        # 101-254: Tilt position before movement is restored.
+        se_tilt_position_percentage_after_move_to_level: Final = ZCLAttributeDef(
             id=0xE017,
             type=t.uint8_t,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+        se_cluster_revision: Final = ZCLAttributeDef(
+            id=0xFFFD,
+            type=t.uint16_t,
+            access="r",
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(WindowCovering.ServerCommandDefs):
+        """Server command definitions."""
+
+        se_stop_or_step_lift_percentage: Final = foundation.ZCLCommandDef(
+            id=0x80,
+            schema={
+                "direction": t.uint8_t,
+                "step_value": t.uint8_t,
+            },
             is_manufacturer_specific=True,
         )
 
@@ -305,11 +355,11 @@ class SESwitchAction(t.enum8):
     NotUsed = 0x7F
 
 
-class SESpecific(CustomCluster):
-    """Schneider Electric manufacturer specific cluster."""
+class SESwitchConfiguration(CustomCluster):
+    """Schneider Electric manufacturer specific switch configuration cluster."""
 
-    name = "Schneider Electric Manufacturer Specific"
-    ep_attribute = "schneider_electric_manufacturer"
+    name = "Schneider Electric Manufacturer Specific Switch Configuration"
+    ep_attribute = "switch_configuration"
     cluster_id = 0xFF17
 
     class AttributeDefs(BaseAttributeDefs):

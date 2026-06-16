@@ -2,7 +2,6 @@
 
 from unittest import mock
 
-import zigpy.types as t
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -80,7 +79,7 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -95,7 +94,7 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 

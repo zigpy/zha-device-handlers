@@ -1,5 +1,7 @@
 """Aqara T1 (with neutral) relays."""
 
+from typing import Final
+
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
@@ -18,6 +20,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -43,12 +46,21 @@ from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Xiaomi Aqara T1 relay cluster."""
 
-    attributes = {
-        0x0009: ("mode", t.uint8_t, True),
-        0x000A: ("switch_type", t.uint8_t, True),
-        0x0201: ("power_outage_memory", t.Bool, True),
-        0x0203: ("do_not_disturb", t.Bool, True),
-    }
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        mode: Final = ZCLAttributeDef(
+            id=0x0009, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        switch_type: Final = ZCLAttributeDef(
+            id=0x000A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        power_outage_memory: Final = ZCLAttributeDef(
+            id=0x0201, type=t.Bool, is_manufacturer_specific=True
+        )
+        do_not_disturb: Final = ZCLAttributeDef(
+            id=0x0203, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class SwitchT1(XiaomiCustomDevice):
