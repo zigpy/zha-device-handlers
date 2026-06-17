@@ -12,15 +12,25 @@ import zhaquirks
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zhaquirks.tuya.ts0601_light import (
+    _MUSIC_PAYLOADS,
+    _SCENE_PAYLOADS,
     TuyaColorControl,
+    TuyaMusicMode,
+    TuyaScene,
+    TuyaSpiEffects,
     TuyaSpiLevelControl,
     TuyaSpiOnOff,
     TuyaWorkMode,
     decode_hue,
+    decode_music_mode,
+    decode_music_sensitivity,
     decode_saturation,
+    decode_scene,
     dp_to_level,
     dp_to_mireds,
     encode_color,
+    encode_music,
+    encode_scene,
     level_to_dp,
     mireds_to_dp,
     xy_to_hs,
@@ -311,3 +321,66 @@ async def test_work_mode_select(zigpy_device_from_v2_quirk):
         )
     )
     assert tuya.get("work_mode") == TuyaWorkMode.music
+
+
+def test_scene_payload_encoding():
+    """Scenes encode to the exact raw DP 51 payload and decode back."""
+    assert encode_scene(TuyaScene.party) == _SCENE_PAYLOADS[TuyaScene.party]
+    # byte[1] is the device scene id (0x15 for the first scene)
+    assert encode_scene(TuyaScene.ice_land_blue)[1] == 0x15
+    assert decode_scene(bytes(_SCENE_PAYLOADS[TuyaScene.game])) == TuyaScene.game
+
+
+def test_music_payload_encoding():
+    """Music encodes the mode template with sensitivity at byte[5]."""
+    payload = encode_music(TuyaMusicMode.rock, 80)
+    assert payload[5] == 80
+    assert bytes(payload[:5]) == _MUSIC_PAYLOADS[TuyaMusicMode.rock][:5]
+    assert encode_music(TuyaMusicMode.jazz, 0)[5] == 50  # falsy -> default
+    assert encode_music(TuyaMusicMode.jazz, 200)[5] == 100  # clamped
+    assert (
+        decode_music_mode(bytes(_MUSIC_PAYLOADS[TuyaMusicMode.spectrum]))
+        == TuyaMusicMode.spectrum
+    )
+    assert decode_music_sensitivity(bytes(_MUSIC_PAYLOADS[TuyaMusicMode.rock])) == 50
+
+
+async def test_scene_select_sends_dp51(zigpy_device_from_v2_quirk):
+    """Selecting a scene sends DP 51 (raw) and switches to scene work mode."""
+    quirked = zigpy_device_from_v2_quirk(MANUFACTURER, MODEL)
+    ep = quirked.endpoints[1]
+    fx = ep.tuya_spi_effects
+    tuya = ep.tuya_manufacturer
+    assert isinstance(fx, TuyaSpiEffects)
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await fx.write_attributes({"scene": TuyaScene.party})
+        await wait_for_zigpy_tasks()
+
+    sent = b"".join((c.kwargs.get("data") or b"") for c in req_mock.call_args_list)
+    party = bytes(_SCENE_PAYLOADS[TuyaScene.party])
+    assert b"\x02\x04\x00\x01\x02" in sent  # DP 2 work_mode -> scene
+    assert b"\x33\x00\x00" + bytes([len(party)]) + party in sent  # DP 51 raw
+    assert all(c.kwargs.get("expect_reply") is False for c in req_mock.call_args_list)
+
+
+async def test_music_write_sends_dp52(zigpy_device_from_v2_quirk):
+    """Setting music sensitivity sends DP 52 (raw) and switches to music mode."""
+    quirked = zigpy_device_from_v2_quirk(MANUFACTURER, MODEL)
+    ep = quirked.endpoints[1]
+    fx = ep.tuya_spi_effects
+    tuya = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await fx.write_attributes({"music_sensitivity": 77})
+        await wait_for_zigpy_tasks()
+
+    sent = b"".join((c.kwargs.get("data") or b"") for c in req_mock.call_args_list)
+    # default mode (rock) + sensitivity 77
+    expected = bytes(encode_music(TuyaMusicMode.rock, 77))
+    assert b"\x02\x04\x00\x01\x03" in sent  # DP 2 work_mode -> music
+    assert b"\x34\x00\x00" + bytes([len(expected)]) + expected in sent  # DP 52 raw

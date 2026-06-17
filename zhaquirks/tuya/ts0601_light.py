@@ -33,17 +33,19 @@ updated when a command is issued.
 """
 
 import colorsys
-from typing import Any
+from typing import Any, Final
 
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.tuya import TUYA_MCU_COMMAND, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
+    TuyaAttributesCluster,
     TuyaClusterData,
     TuyaLevelControl,
     TuyaMCUCluster,
@@ -237,6 +239,687 @@ class TuyaChipType(t.enum8):
     WS2805 = 0x09
 
 
+# --- Scenes (DP 51) and music (DP 52) ---------------------------------------
+
+
+class TuyaScene(t.enum8):
+    """Preset scene (DP 51). The value is an internal key; DP 51 is raw bytes."""
+
+    ice_land_blue = 0
+    glacier_express = 1
+    sea_of_clouds = 2
+    fireworks_at_sea = 3
+    firefly_night = 4
+    grass_land = 5
+    northern_lights = 6
+    late_autumn = 7
+    game = 8
+    holiday = 9
+    party = 10
+    trend = 11
+    meditation = 12
+    dating = 13
+    valentines_day = 14
+    neon_world = 15
+
+
+class TuyaMusicMode(t.enum8):
+    """Music reactive mode (DP 52). Internal key; DP 52 is raw bytes."""
+
+    rock = 0
+    jazz = 1
+    classic = 2
+    rolling = 3
+    energy = 4
+    spectrum = 5
+
+
+# Raw DP 51 payloads per scene, verbatim from the Z2M converter. Byte[1] is the
+# device's scene id (used to decode an incoming report).
+_SCENE_PAYLOADS: dict[TuyaScene, bytes] = {
+    TuyaScene.ice_land_blue: bytes(
+        (
+            0x01,
+            0x15,
+            0x0A,
+            0x52,
+            0x52,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xC1,
+            0x61,
+            0x00,
+            0xB4,
+            0x30,
+            0x00,
+            0xB5,
+            0x52,
+            0x00,
+            0xC4,
+            0x63,
+        )
+    ),  # fmt: skip
+    TuyaScene.glacier_express: bytes(
+        (
+            0x01,
+            0x16,
+            0x0A,
+            0x64,
+            0x64,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x92,
+            0x5F,
+            0x00,
+            0xC6,
+            0x60,
+        )
+    ),  # fmt: skip
+    TuyaScene.sea_of_clouds: bytes(
+        (
+            0x01,
+            0x17,
+            0x03,
+            0x5E,
+            0x5E,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x38,
+            0x2F,
+            0x00,
+            0x1E,
+            0x5C,
+            0x00,
+            0xD5,
+            0x45,
+            0x01,
+            0x1A,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.fireworks_at_sea: bytes(
+        (
+            0x01,
+            0x18,
+            0x02,
+            0x64,
+            0x64,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xB2,
+            0x39,
+            0x01,
+            0x0A,
+            0x64,
+            0x01,
+            0x2D,
+            0x64,
+            0x01,
+            0x3F,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.firefly_night: bytes(
+        (
+            0x01,
+            0x1A,
+            0x03,
+            0x4B,
+            0x4B,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xE0,
+            0x39,
+            0x01,
+            0x09,
+            0x53,
+        )
+    ),  # fmt: skip
+    TuyaScene.grass_land: bytes(
+        (
+            0x01,
+            0x1C,
+            0x0A,
+            0x5A,
+            0x5A,
+            0xE0,
+            0x00,
+            0x00,
+            0x52,
+            0x00,
+            0x9D,
+            0x64,
+            0x00,
+            0x8E,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.northern_lights: bytes(
+        (
+            0x01,
+            0x1D,
+            0x03,
+            0x52,
+            0x52,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xAE,
+            0x64,
+            0x00,
+            0xA6,
+            0x64,
+            0x00,
+            0xC1,
+            0x64,
+            0x00,
+            0xCC,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.late_autumn: bytes(
+        (
+            0x01,
+            0x1E,
+            0x0A,
+            0x52,
+            0x52,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x19,
+            0x64,
+            0x00,
+            0x22,
+            0x5E,
+            0x00,
+            0x2C,
+            0x5B,
+            0x00,
+            0x14,
+            0x64,
+            0x00,
+            0x0C,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.game: bytes(
+        (
+            0x01,
+            0x1F,
+            0x02,
+            0x5F,
+            0x5F,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x01,
+            0x10,
+            0x64,
+            0x00,
+            0xD2,
+            0x64,
+            0x00,
+            0xAD,
+            0x64,
+            0x00,
+            0x8B,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.holiday: bytes(
+        (
+            0x01,
+            0x20,
+            0x0A,
+            0x55,
+            0x55,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xC2,
+            0x58,
+            0x01,
+            0x3E,
+            0x33,
+            0x00,
+            0xFF,
+            0x46,
+            0x01,
+            0x1D,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.party: bytes(
+        (
+            0x01,
+            0x22,
+            0x04,
+            0x64,
+            0x64,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xD7,
+            0x5C,
+            0x00,
+            0xBC,
+            0x53,
+            0x00,
+            0x37,
+            0x1E,
+            0x00,
+            0x2C,
+            0x3F,
+            0x01,
+            0x61,
+            0x3F,
+        )
+    ),  # fmt: skip
+    TuyaScene.trend: bytes(
+        (
+            0x01,
+            0x23,
+            0x02,
+            0x64,
+            0x64,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x01,
+            0x08,
+            0x4B,
+            0x00,
+            0xB1,
+            0x2F,
+            0x00,
+            0xCD,
+            0x57,
+        )
+    ),  # fmt: skip
+    TuyaScene.meditation: bytes(
+        (
+            0x01,
+            0x25,
+            0x03,
+            0x43,
+            0x43,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0xB7,
+            0x35,
+            0x00,
+            0x9B,
+            0x54,
+            0x00,
+            0xCD,
+            0x61,
+        )
+    ),  # fmt: skip
+    TuyaScene.dating: bytes(
+        (
+            0x01,
+            0x26,
+            0x01,
+            0x59,
+            0x59,
+            0xE0,
+            0x00,
+            0x00,
+            0x64,
+            0x01,
+            0x19,
+            0x47,
+            0x01,
+            0x49,
+            0x3D,
+            0x00,
+            0xCD,
+            0x61,
+            0x00,
+            0x26,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.valentines_day: bytes(
+        (
+            0x01,
+            0x2A,
+            0x01,
+            0x64,
+            0x64,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x01,
+            0x15,
+            0x64,
+            0x01,
+            0x05,
+            0x64,
+            0x01,
+            0x45,
+            0x64,
+            0x01,
+            0x2F,
+            0x64,
+        )
+    ),  # fmt: skip
+    TuyaScene.neon_world: bytes(
+        (
+            0x01,
+            0x37,
+            0x0A,
+            0x5A,
+            0x5A,
+            0x60,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x33,
+            0x58,
+            0x00,
+            0x18,
+            0x64,
+            0x01,
+            0x00,
+            0x45,
+            0x00,
+            0xE3,
+            0x5E,
+            0x00,
+            0xAC,
+            0x30,
+        )
+    ),  # fmt: skip
+}
+_SCENE_BY_ID: dict[int, TuyaScene] = {p[1]: s for s, p in _SCENE_PAYLOADS.items()}
+
+# Raw DP 52 payloads per music mode (31 bytes). Byte[5] holds the sensitivity.
+_MUSIC_PAYLOADS: dict[TuyaMusicMode, bytes] = {
+    TuyaMusicMode.rock: bytes(
+        (
+            0x01,
+            0x01,
+            0x00,
+            0x03,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x78,
+            0x64,
+            0x00,
+            0xF0,
+            0x64,
+            0x00,
+            0x3C,
+            0x64,
+            0x00,
+            0xB4,
+            0x64,
+            0x01,
+            0x2C,
+            0x64,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+    TuyaMusicMode.jazz: bytes(
+        (
+            0x01,
+            0x01,
+            0x00,
+            0x02,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x50,
+            0x00,
+            0x78,
+            0x50,
+            0x00,
+            0xF0,
+            0x50,
+            0x00,
+            0x3C,
+            0x50,
+            0x00,
+            0xB4,
+            0x50,
+            0x01,
+            0x2C,
+            0x50,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+    TuyaMusicMode.classic: bytes(
+        (
+            0x01,
+            0x01,
+            0x00,
+            0x12,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x78,
+            0x64,
+            0x00,
+            0xF0,
+            0x64,
+            0x00,
+            0x3C,
+            0x64,
+            0x00,
+            0xB4,
+            0x64,
+            0x01,
+            0x2C,
+            0x64,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+    TuyaMusicMode.rolling: bytes(
+        (
+            0x01,
+            0x01,
+            0x01,
+            0x12,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x78,
+            0x64,
+            0x00,
+            0xF0,
+            0x64,
+            0x00,
+            0x3C,
+            0x64,
+            0x00,
+            0xB4,
+            0x64,
+            0x01,
+            0x2C,
+            0x64,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+    TuyaMusicMode.energy: bytes(
+        (
+            0x01,
+            0x01,
+            0x02,
+            0x12,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x78,
+            0x64,
+            0x00,
+            0xF0,
+            0x64,
+            0x00,
+            0x3C,
+            0x64,
+            0x00,
+            0xB4,
+            0x64,
+            0x01,
+            0x2C,
+            0x64,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+    TuyaMusicMode.spectrum: bytes(
+        (
+            0x01,
+            0x01,
+            0x03,
+            0x12,
+            0x64,
+            0x32,
+            0x01,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x00,
+            0x64,
+            0x00,
+            0x78,
+            0x64,
+            0x00,
+            0xF0,
+            0x64,
+            0x00,
+            0x3C,
+            0x64,
+            0x00,
+            0xB4,
+            0x64,
+            0x01,
+            0x2C,
+            0x64,
+            0x00,
+            0x00,
+            0x00,
+        )
+    ),  # fmt: skip
+}
+_MUSIC_BY_SIG: dict[tuple[int, int], TuyaMusicMode] = {
+    (p[2], p[3]): m for m, p in _MUSIC_PAYLOADS.items()
+}
+MUSIC_SENSITIVITY_BYTE = 5
+DEFAULT_MUSIC_SENSITIVITY = 50
+
+
+def encode_scene(scene: int) -> t.Bytes:
+    """Map a scene selection to its raw DP 51 payload."""
+    return t.Bytes(_SCENE_PAYLOADS[TuyaScene(scene)])
+
+
+def decode_scene(raw: bytes) -> TuyaScene:
+    """Map an incoming DP 51 payload back to a scene (best effort)."""
+    if len(raw) >= 2 and raw[1] in _SCENE_BY_ID:
+        return _SCENE_BY_ID[raw[1]]
+    return TuyaScene.ice_land_blue
+
+
+def encode_music(music_mode: int | None, sensitivity: int | None) -> t.Bytes:
+    """Build the raw DP 52 payload from a music mode + sensitivity (1-100)."""
+    mode = TuyaMusicMode(music_mode) if music_mode is not None else TuyaMusicMode.rock
+    payload = bytearray(_MUSIC_PAYLOADS[mode])
+    value = int(sensitivity) if sensitivity else DEFAULT_MUSIC_SENSITIVITY
+    payload[MUSIC_SENSITIVITY_BYTE] = max(1, min(100, value))
+    return t.Bytes(bytes(payload))
+
+
+def decode_music_mode(raw: bytes) -> TuyaMusicMode:
+    """Map an incoming DP 52 payload back to a music mode (best effort)."""
+    if len(raw) >= 4 and (raw[2], raw[3]) in _MUSIC_BY_SIG:
+        return _MUSIC_BY_SIG[(raw[2], raw[3])]
+    return TuyaMusicMode.rock
+
+
+def decode_music_sensitivity(raw: bytes) -> int:
+    """Extract the sensitivity byte from an incoming DP 52 payload."""
+    if len(raw) > MUSIC_SENSITIVITY_BYTE:
+        return raw[MUSIC_SENSITIVITY_BYTE]
+    return DEFAULT_MUSIC_SENSITIVITY
+
+
 # --- Custom Color cluster ----------------------------------------------------
 
 
@@ -424,6 +1107,67 @@ class TuyaSpiLevelControl(TuyaLevelControl):
         return await super().command(command_id, *args, expect_reply=False, **kwargs)
 
 
+class TuyaSpiEffects(TuyaAttributesCluster):
+    """Manufacturer cluster exposing scene + music-reactive effects.
+
+    Scene and music are written as raw datapoints (DP 51 / DP 52). Selecting
+    one also switches the device to the matching work mode (DP 2), mirroring the
+    colour path. Writes are fire-and-forget (handled by the base cluster).
+    """
+
+    cluster_id: t.uint16_t = 0xEF01
+    ep_attribute: str = "tuya_spi_effects"
+    name: str = "Tuya SPI effects"
+
+    _DEFAULT_VALUES = {
+        0x0001: TuyaMusicMode.rock,
+        0x0002: DEFAULT_MUSIC_SENSITIVITY,
+    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Effect attributes (raw payloads are built by the DP converters)."""
+
+        scene: Final = ZCLAttributeDef(
+            id=0x0000, type=TuyaScene, access="rw", is_manufacturer_specific=True
+        )
+        music_mode: Final = ZCLAttributeDef(
+            id=0x0001, type=TuyaMusicMode, access="rw", is_manufacturer_specific=True
+        )
+        music_sensitivity: Final = ZCLAttributeDef(
+            id=0x0002, type=t.uint8_t, access="rw", is_manufacturer_specific=True
+        )
+
+    def _ensure_work_mode(self, mode: TuyaWorkMode) -> None:
+        """Switch the device to ``mode`` (DP 2) only if it isn't already there."""
+        manuf = getattr(self.endpoint, TuyaMCUCluster.ep_attribute, None)
+        if manuf is None or manuf.get("work_mode") == mode:
+            return
+        self.endpoint.device.command_bus.listener_event(
+            TUYA_MCU_COMMAND,
+            TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=TuyaMCUCluster.ep_attribute,
+                cluster_attr="work_mode",
+                attr_value=mode,
+                expect_reply=False,
+                manufacturer=None,
+            ),
+        )
+
+    async def write_attributes(self, attributes, *args, **kwargs):
+        """Switch work mode before the base cluster sends the effect datapoint."""
+        for attr in attributes:
+            name = attr if isinstance(attr, str) else self.attributes[attr].name
+            if name == self.AttributeDefs.scene.name:
+                self._ensure_work_mode(TuyaWorkMode.scene)
+            elif name in (
+                self.AttributeDefs.music_mode.name,
+                self.AttributeDefs.music_sensitivity.name,
+            ):
+                self._ensure_work_mode(TuyaWorkMode.music)
+        return await super().write_attributes(attributes, *args, **kwargs)
+
+
 # --- Quirk -------------------------------------------------------------------
 
 (
@@ -520,6 +1264,54 @@ class TuyaSpiLevelControl(TuyaLevelControl):
         attribute_name="do_not_disturb",
         translation_key="do_not_disturb",
         fallback_name="Do not disturb",
+    )
+    # DP 51 - scene, DP 52 - music (raw payloads, auto-switch work mode)
+    .adds(TuyaSpiEffects)
+    .tuya_dp(
+        dp_id=51,
+        ep_attribute=TuyaSpiEffects.ep_attribute,
+        attribute_name=TuyaSpiEffects.AttributeDefs.scene.name,
+        converter=decode_scene,
+        dp_converter=encode_scene,
+    )
+    .tuya_dp_multi(
+        dp_id=52,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                TuyaSpiEffects.ep_attribute,
+                TuyaSpiEffects.AttributeDefs.music_mode.name,
+                converter=decode_music_mode,
+            ),
+            DPToAttributeMapping(
+                TuyaSpiEffects.ep_attribute,
+                TuyaSpiEffects.AttributeDefs.music_sensitivity.name,
+                converter=decode_music_sensitivity,
+            ),
+        ],
+        dp_converter=encode_music,
+    )
+    .enum(
+        attribute_name=TuyaSpiEffects.AttributeDefs.scene.name,
+        enum_class=TuyaScene,
+        cluster_id=TuyaSpiEffects.cluster_id,
+        translation_key="scene",
+        fallback_name="Scene",
+    )
+    .enum(
+        attribute_name=TuyaSpiEffects.AttributeDefs.music_mode.name,
+        enum_class=TuyaMusicMode,
+        cluster_id=TuyaSpiEffects.cluster_id,
+        translation_key="music_mode",
+        fallback_name="Music mode",
+    )
+    .number(
+        attribute_name=TuyaSpiEffects.AttributeDefs.music_sensitivity.name,
+        cluster_id=TuyaSpiEffects.cluster_id,
+        min_value=1,
+        max_value=100,
+        step=1,
+        translation_key="music_sensitivity",
+        fallback_name="Music sensitivity",
     )
     .skip_configuration()
     .add_to_registry()
