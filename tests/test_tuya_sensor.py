@@ -208,7 +208,9 @@ async def test_handle_get_data_probe_sensor(zigpy_device_from_v2_quirk, model, m
     assert ep.temperature.get("measured_value") == 2530  # 253 * 10
     assert ep.humidity.get("measured_value") == 7100  # 71 * 100
     assert ep.power.get("battery_percentage_remaining") == 100  # state 1 → 100
-    assert ep.tuya_manufacturer.get("temperature_probe") == 245  # raw value, ÷10 for display
+    assert (
+        ep.tuya_manufacturer.get("temperature_probe") == 245
+    )  # raw value, ÷10 for display
 
     # Battery state 0 maps to 0, not 50 (unlike _TZE200_upagmta9)
     bat_empty = b"\x09\xe0\x02\x0b\x33\x03\x02\x00\x04\x00\x00\x00\x00"
