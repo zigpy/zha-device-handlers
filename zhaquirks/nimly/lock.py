@@ -3,8 +3,8 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
+from zhaquirks.v2 import QuirkBuilder
+from zhaquirks.v2 import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.foundation import ZCLAttributeDef

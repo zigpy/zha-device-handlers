@@ -2,7 +2,7 @@
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiAqaraE1Cluster

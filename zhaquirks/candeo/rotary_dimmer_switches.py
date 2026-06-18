@@ -1,6 +1,6 @@
 """Candeo rotary dimmer switches."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, Ota
 

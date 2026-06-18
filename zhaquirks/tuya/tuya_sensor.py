@@ -2,9 +2,9 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
+from zhaquirks.v2 import EntityPlatform, EntityType
+from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zhaquirks.v2 import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 

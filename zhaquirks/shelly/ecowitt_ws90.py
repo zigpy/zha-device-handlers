@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import DEGREE, UnitOfPrecipitationDepth, UnitOfSpeed
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import QuirkBuilder, ReportingConfig
+from zhaquirks.v2 import DEGREE, UnitOfPrecipitationDepth, UnitOfSpeed
+from zhaquirks.v2 import BinarySensorDeviceClass
+from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 

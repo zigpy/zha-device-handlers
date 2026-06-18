@@ -1,6 +1,6 @@
 """Tuya illuminance sensors."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zhaquirks.v2 import EntityPlatform, EntityType
 from zigpy.types import t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder

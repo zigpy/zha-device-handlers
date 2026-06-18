@@ -15,6 +15,7 @@ from typing import Any
 import zigpy.device
 import zigpy.endpoint
 from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
+from zha.quirks import DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
@@ -509,10 +510,21 @@ class NoReplyMixin:
 
 
 def setup(custom_quirks_path: str | None = None) -> None:
-    """Register all quirks with zigpy, including optional custom quirks."""
+    """Register all quirks with zigpy and ZHA, including optional custom quirks.
 
+    Imports every `zhaquirks` module (firing the registration side effects of v1
+    `CustomDevice` subclasses into zigpy's registry and v2 `QuirkBuilder`
+    definitions into ZHA's), flushes any v2 builders that defined a
+    manufacturer/model but were never added to the registry, and loads custom
+    quirks from `custom_quirks_path`. Owned here (rather than ZHA's gateway) so
+    ZHA never imports zhaquirks.
+    """
     if custom_quirks_path is not None:
-        DEVICE_REGISTRY.purge_custom_quirks(custom_quirks_path)
+        path = pathlib.Path(custom_quirks_path)
+        # Remove stale custom quirks from both the v1 (zigpy) and v2 (ZHA)
+        # registries before re-importing.
+        DEVICE_REGISTRY.purge_custom_quirks(path)
+        ZHA_DEVICE_REGISTRY.purge_custom_quirks(path)
 
     # Import all quirks in the `zhaquirks` package first
     for _importer, modname, _ispkg in pkgutil.walk_packages(
@@ -521,6 +533,21 @@ def setup(custom_quirks_path: str | None = None) -> None:
     ):
         _LOGGER.debug("Loading quirks module %r", modname)
         importlib.import_module(modname)
+
+    # Register any v2 quirks that specified a manufacturer/model but did not call
+    # `add_to_registry` themselves; shared-code builders (no manufacturer/model)
+    # are intentionally left unregistered. Accessed via `sys.modules` rather than
+    # a top-level import so `zhaquirks/__init__` never eagerly imports `zha` (which
+    # would create an import cycle with ZHA's platform modules); the package is
+    # guaranteed loaded by the import loop above.
+    unbuilt_quirk_builders = sys.modules["zhaquirks.v2"].UNBUILT_QUIRK_BUILDERS
+    for builder in list(unbuilt_quirk_builders):
+        if builder.manufacturer_model_metadata:
+            _LOGGER.warning(
+                "Found a v2 quirk that was not added to the registry: %s", builder
+            )
+            builder.add_to_registry()
+    unbuilt_quirk_builders.clear()
 
     if custom_quirks_path is None:
         return

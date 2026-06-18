@@ -1,8 +1,8 @@
 """Quirk for TS0207 rain sensors."""
 
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType, UnitOfElectricPotential
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import LIGHT_LUX, EntityType, UnitOfElectricPotential
+from zhaquirks.v2 import BinarySensorDeviceClass
+from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 

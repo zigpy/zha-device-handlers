@@ -3,9 +3,9 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zhaquirks.v2 import BinarySensorDeviceClass
+from zhaquirks.v2 import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat

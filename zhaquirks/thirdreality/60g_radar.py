@@ -3,13 +3,8 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
-    NumberDeviceClass,
-    QuirkBuilder,
-    SensorDeviceClass,
-    SensorStateClass,
-)
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
+from zhaquirks.v2 import NumberDeviceClass, QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 

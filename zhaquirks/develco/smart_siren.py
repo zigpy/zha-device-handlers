@@ -1,13 +1,8 @@
 """Smart siren."""
 
-from zigpy.quirks.v2 import (
-    EntityType,
-    QuirkBuilder,
-    SensorDeviceClass,
-    SensorStateClass,
-)
-from zigpy.quirks.v2.homeassistant import PERCENTAGE
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.v2 import EntityType, QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import PERCENTAGE
+from zhaquirks.v2 import BinarySensorDeviceClass
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 

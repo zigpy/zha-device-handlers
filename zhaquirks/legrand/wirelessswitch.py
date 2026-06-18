@@ -1,6 +1,6 @@
 """Module for Legrand wireless switches (Radiant, NLD, NLT, NLW)."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
 
 from zhaquirks.const import (

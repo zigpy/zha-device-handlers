@@ -1,9 +1,9 @@
 """Heiman HS1SA-E smoke sensor."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.v2 import QuirkBuilder, ReportingConfig
+from zhaquirks.v2 import EntityPlatform, EntityType
+from zhaquirks.v2 import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef

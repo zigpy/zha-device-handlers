@@ -1,6 +1,6 @@
 """Door/Windows sensors."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
+from zhaquirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 

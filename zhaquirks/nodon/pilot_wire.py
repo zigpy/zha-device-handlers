@@ -1,7 +1,7 @@
 """NodOn pilot wire heating module."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
+from zhaquirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 

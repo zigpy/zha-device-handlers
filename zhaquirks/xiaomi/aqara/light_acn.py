@@ -4,7 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,

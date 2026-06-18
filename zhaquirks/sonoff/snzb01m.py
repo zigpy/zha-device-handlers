@@ -1,6 +1,6 @@
 """SONOFF SNZB-01M 4-button wireless switch quirk."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 

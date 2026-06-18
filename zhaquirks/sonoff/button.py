@@ -1,6 +1,6 @@
 """Device handler for Sonoff buttons."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks.const import (
     BUTTON,

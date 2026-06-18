@@ -1,8 +1,8 @@
 """Sonoff SWV - Zigbee smart water valve."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.v2 import QuirkBuilder, ReportingConfig
+from zhaquirks.v2 import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 

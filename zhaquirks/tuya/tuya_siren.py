@@ -1,8 +1,8 @@
 """Tuya Siren."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.v2 import EntityPlatform, EntityType
+from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zhaquirks.v2 import BinarySensorDeviceClass
 import zigpy.types as t
 
 from zhaquirks.const import BatterySize

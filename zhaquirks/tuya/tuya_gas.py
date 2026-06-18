@@ -1,8 +1,8 @@
 """Tuya Gas Sensor."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
+from zhaquirks.v2 import CONCENTRATION_PARTS_PER_MILLION, UnitOfTime
+from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 

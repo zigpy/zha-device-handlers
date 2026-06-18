@@ -1,6 +1,6 @@
 """Frient Electricity Meter Interface P1 variant."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks import PowerConfigurationCluster
 

@@ -1,6 +1,6 @@
 """Candeo sensors."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks.candeo import (
     CANDEO,

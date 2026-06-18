@@ -5,13 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy import types
-from zigpy.quirks.v2 import (
-    NumberDeviceClass,
-    QuirkBuilder,
-    SensorDeviceClass,
-    SensorStateClass,
-)
-from zigpy.quirks.v2.homeassistant import EntityType, UnitOfLength
+from zhaquirks.v2 import NumberDeviceClass, QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import EntityType, UnitOfLength
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone

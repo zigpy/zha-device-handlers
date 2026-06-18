@@ -3,7 +3,7 @@
 from typing import Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLCommandDef

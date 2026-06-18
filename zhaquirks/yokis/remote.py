@@ -1,6 +1,6 @@
 """Modules for Yokis remote."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks.const import (

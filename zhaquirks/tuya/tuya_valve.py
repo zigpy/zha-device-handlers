@@ -2,14 +2,9 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    UnitOfElectricPotential,
-    UnitOfTime,
-    UnitOfVolume,
-)
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
+from zhaquirks.v2 import PERCENTAGE, UnitOfElectricPotential, UnitOfTime, UnitOfVolume
+from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
 

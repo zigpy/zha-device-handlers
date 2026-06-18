@@ -1,7 +1,7 @@
 """Quirks for Schneider Electric shutters."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zhaquirks.v2 import QuirkBuilder
+from zhaquirks.v2 import UnitOfTime
 from zigpy.zcl import ClusterType
 
 from zhaquirks.schneiderelectric import (

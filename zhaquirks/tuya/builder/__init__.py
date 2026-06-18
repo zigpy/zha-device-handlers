@@ -9,11 +9,14 @@ from types import FrameType
 from typing import Any, Self
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2 import CustomDeviceV2
+from zha.quirks import QuirkRegistryEntry
+
+from zhaquirks.v2 import QuirkBuilder
+from zhaquirks.v2 import EntityPlatform, EntityType
+from zhaquirks.v2 import BinarySensorDeviceClass
+from zhaquirks.v2 import NumberDeviceClass
+from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -928,7 +931,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
         force_add_cluster: bool = False,
         mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
-    ) -> QuirksV2RegistryEntry:
+    ) -> QuirkRegistryEntry:
         """Build the quirks v2 registry entry.
 
         :param replacement_cluster: The cluster to add or replace the Tuya cluster with.

@@ -3,13 +3,8 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    EntityType,
-    UnitOfTemperature,
-    UnitOfTime,
-)
+from zhaquirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, QuirkBuilder
+from zhaquirks.v2 import PERCENTAGE, EntityType, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef

@@ -1,6 +1,6 @@
 """Philips Hue devices."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 

@@ -1,13 +1,7 @@
 """Tuya Power Meter."""
 
-from zigpy.quirks.v2 import EntityType, SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    UnitOfElectricCurrent,
-    UnitOfEnergy,
-    UnitOfPower,
-    UnitOfTime,
-)
+from zhaquirks.v2 import EntityType, SensorDeviceClass, SensorStateClass
+from zhaquirks.v2 import PERCENTAGE, UnitOfElectricCurrent, UnitOfEnergy, UnitOfPower, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement

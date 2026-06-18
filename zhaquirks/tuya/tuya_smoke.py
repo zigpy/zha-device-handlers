@@ -1,7 +1,7 @@
 """Smoke Sensor."""
 
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.v2 import EntityType, QuirkBuilder
+from zhaquirks.v2 import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink

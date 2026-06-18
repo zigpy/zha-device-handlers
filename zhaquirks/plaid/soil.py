@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl import foundation
 
 from zhaquirks import PowerConfigurationCluster

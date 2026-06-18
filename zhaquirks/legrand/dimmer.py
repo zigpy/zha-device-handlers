@@ -2,7 +2,7 @@
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,

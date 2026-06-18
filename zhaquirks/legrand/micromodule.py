@@ -1,6 +1,6 @@
 """Module for Legrand micromodule switches."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify

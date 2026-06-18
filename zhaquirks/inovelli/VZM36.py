@@ -1,7 +1,7 @@
 """VZM36 Canopy Module."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks.inovelli import (
     INOVELLI_AUTOMATION_TRIGGERS,

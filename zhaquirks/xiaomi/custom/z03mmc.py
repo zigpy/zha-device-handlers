@@ -4,8 +4,8 @@
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
+from zhaquirks.v2 import QuirkBuilder
+from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature
 from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.hvac import UserInterface
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement

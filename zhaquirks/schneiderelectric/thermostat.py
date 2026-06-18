@@ -3,15 +3,9 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    EntityPlatform,
-    UnitOfPower,
-    UnitOfTemperature,
-    UnitOfTime,
-)
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zhaquirks.v2 import EntityType, QuirkBuilder
+from zhaquirks.v2 import PERCENTAGE, EntityPlatform, UnitOfPower, UnitOfTemperature, UnitOfTime
+from zhaquirks.v2 import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement

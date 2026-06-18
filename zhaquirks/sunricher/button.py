@@ -1,6 +1,6 @@
 """Sunricher Button device."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.v2 import QuirkBuilder
 
 from zhaquirks.const import (
     COMMAND,
