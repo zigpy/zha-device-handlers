@@ -5,17 +5,16 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-import zigpy.device
-
 # `discovery` must be imported before `zha.zigbee.device`: the platform modules
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import discovery  # noqa: F401
 from zha.application.platforms import BaseEntity
 from zha.zigbee.device import Device
+import zigpy.device
 
-from zhaquirks.v2.discovery import discover_quirks_v2_entities
-from zhaquirks.v2.metadata import QuirkDefinition
+from zhaquirks.builder.discovery import discover_quirks_v2_entities
+from zhaquirks.builder.metadata import QuirkDefinition
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway

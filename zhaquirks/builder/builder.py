@@ -10,8 +10,8 @@ builds the ZHA device exposing the quirk's entities, triggers, alerts and naming
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from copy import deepcopy
+from dataclasses import dataclass, field
 from enum import Enum
 from functools import partial
 import inspect
@@ -22,13 +22,6 @@ from types import FrameType
 from typing import Any, Self, overload
 
 from frozendict import frozendict
-import zigpy.device
-import zigpy.profiles.zha
-from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import Cluster, ClusterType
-from zigpy.zcl.foundation import ZCLAttributeDef
-from zigpy.zdo.types import NodeDescriptor
-
 from zha.application import (  # noqa: F401
     EntityPlatform,
     EntityType,
@@ -54,9 +47,15 @@ from zha.quirks import (
     make_zigpy_device_replacement,
 )
 from zha.zigbee.device import Device
+import zigpy.device
+import zigpy.profiles.zha
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import Cluster, ClusterType
+from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks.v2.device import QuirkV2Device
-from zhaquirks.v2.metadata import (
+from zhaquirks.builder.device import QuirkV2Device
+from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     ChangedEntityMetadata,
     DeviceAlertLevel,
@@ -104,7 +103,9 @@ class AddCluster:
         """Apply this operation to the given zigpy device."""
         if self.endpoint_id not in device.endpoints:
             _LOGGER.warning(
-                "Cannot add cluster to missing endpoint %s on %s", self.endpoint_id, device
+                "Cannot add cluster to missing endpoint %s on %s",
+                self.endpoint_id,
+                device,
             )
             return device
         endpoint = device.endpoints[self.endpoint_id]
@@ -319,6 +320,7 @@ class SetModelInfo:
 
         return device
 
+
 class QuirkBuilder:
     """Builder compiling a declarative quirk into a registered `Device` subclass."""
 
@@ -443,8 +445,7 @@ class QuirkBuilder:
             return self.zigpy_device_class(custom_device_class)
 
     def zha_device_class(self, custom_device_class: type[Device]) -> Self:
-        """Set the ZHA `Device` subclass used as the base of this quirk's class.
-        """
+        """Set the ZHA `Device` subclass used as the base of this quirk's class."""
         self.custom_device_class = custom_device_class
         return self
 

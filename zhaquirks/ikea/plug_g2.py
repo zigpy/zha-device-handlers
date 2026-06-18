@@ -1,11 +1,11 @@
 """IKEA INSPELNING and TRETAKT plug quirk."""
 
-from zhaquirks.v2 import QuirkBuilder
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.ikea import IKEA
 
 

@@ -3,11 +3,9 @@
 from typing import Final
 
 from zigpy import types as t
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import PERCENTAGE, UnitOfLength
-from zhaquirks.v2 import NumberDeviceClass
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import PERCENTAGE, NumberDeviceClass, QuirkBuilder, UnitOfLength
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 

@@ -2,9 +2,6 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder, ReportingConfig, SensorDeviceClass, SensorStateClass
-from zhaquirks.v2 import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     ZCL_CLUSTER_REVISION_ATTR,
@@ -13,6 +10,14 @@ from zigpy.zcl.foundation import (
     ZCLAttributeDef,
 )
 
+from zhaquirks.builder import (
+    CONCENTRATION_PARTS_PER_BILLION,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.develco import DevelcoPowerConfiguration
 
 

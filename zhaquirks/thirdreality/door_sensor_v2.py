@@ -2,12 +2,11 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import UnitOfTime
-from zhaquirks.v2 import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityDoorCluster(CustomCluster):

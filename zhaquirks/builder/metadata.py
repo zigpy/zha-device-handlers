@@ -1,6 +1,6 @@
 """Quirks v2 metadata model.
 
-The declarative metadata produced by `zhaquirks.v2.QuirkBuilder`: exposed
+The declarative metadata produced by `zhaquirks.builder.QuirkBuilder`: exposed
 entities, default-entity changes, alerts and naming, aggregated into a
 `QuirkDefinition` carried by the quirk's `QuirkRegistryEntry` and exposed to ZHA
 by `QuirkV2Device`. This model is internal to the quirks layer; ZHA's entity
@@ -15,8 +15,6 @@ from typing import Any
 
 import attrs
 from frozendict import frozendict
-from zigpy.zcl import ClusterType
-
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
@@ -24,6 +22,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zigpy.zcl import ClusterType
 
 # pylint: disable=too-many-instance-attributes
 

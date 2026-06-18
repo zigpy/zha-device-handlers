@@ -3,11 +3,12 @@
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.clusters import CustomCluster
 
 EUROTRONIC = "Eurotronic"
 

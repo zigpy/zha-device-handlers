@@ -3,7 +3,6 @@
 from typing import Optional, Union
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
@@ -19,6 +18,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import Command as TuyaCommand
 
 ZONE_TYPE = 0x0001

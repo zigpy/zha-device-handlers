@@ -2,12 +2,17 @@
 
 import datetime
 
-from zhaquirks.v2 import EntityPlatform, EntityType
-from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zhaquirks.v2 import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,

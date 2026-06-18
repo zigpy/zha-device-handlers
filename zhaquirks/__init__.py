@@ -12,10 +12,9 @@ import sys
 import typing
 from typing import Any
 
+from zha.quirks import DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY
 import zigpy.device
 import zigpy.endpoint
-from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
-from zha.quirks import DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
@@ -29,6 +28,9 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
+
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.legacy import DEVICE_REGISTRY, CustomDevice
 
 from .const import (
     ATTRIBUTE_ID,
@@ -540,7 +542,7 @@ def setup(custom_quirks_path: str | None = None) -> None:
     # a top-level import so `zhaquirks/__init__` never eagerly imports `zha` (which
     # would create an import cycle with ZHA's platform modules); the package is
     # guaranteed loaded by the import loop above.
-    unbuilt_quirk_builders = sys.modules["zhaquirks.v2"].UNBUILT_QUIRK_BUILDERS
+    unbuilt_quirk_builders = sys.modules["zhaquirks.builder"].UNBUILT_QUIRK_BUILDERS
     for builder in list(unbuilt_quirk_builders):
         if builder.manufacturer_model_metadata:
             _LOGGER.warning(

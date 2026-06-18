@@ -8,15 +8,8 @@ import pathlib
 from types import FrameType
 from typing import Any, Self
 
-from zigpy.profiles import zha
-from zigpy.quirks.v2 import CustomDeviceV2
 from zha.quirks import QuirkRegistryEntry
-
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import EntityPlatform, EntityType
-from zhaquirks.v2 import BinarySensorDeviceClass
-from zhaquirks.v2 import NumberDeviceClass
-from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -34,7 +27,17 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zhaquirks.const import BatterySize
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     TUYA_SET_DATA,
@@ -916,7 +919,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> Self:
         """Set the Tuya enchantment spells."""
 
-        class EnchantedDeviceV2(CustomDeviceV2, BaseEnchantedDevice):
+        class EnchantedDeviceV2(CustomZigpyDevice, BaseEnchantedDevice):
             """Enchanted device class for v2 quirks."""
 
         EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell

@@ -1,14 +1,20 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder, ReportingConfig
-from zhaquirks.v2 import PERCENTAGE, EntityType, UnitOfTemperature
-from zhaquirks.v2 import BinarySensorDeviceClass
-from zhaquirks.v2 import NumberDeviceClass
-from zhaquirks.v2 import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorStateClass,
+    UnitOfTemperature,
+)
+from zhaquirks.clusters import CustomCluster
 
 """Bosch specific thermostat attribute ids."""
 

@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder, ReportingConfig
-from zhaquirks.v2 import DEGREE, UnitOfPrecipitationDepth, UnitOfSpeed
-from zhaquirks.v2 import BinarySensorDeviceClass
-from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import (
+    DEGREE,
+    BinarySensorDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfPrecipitationDepth,
+    UnitOfSpeed,
+)
+from zhaquirks.clusters import CustomCluster
 
 
 class ShellyWindCluster(CustomCluster):

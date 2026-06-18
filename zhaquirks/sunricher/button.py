@@ -1,7 +1,6 @@
 """Sunricher Button device."""
 
-from zhaquirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     COMMAND,
     COMMAND_MOVE_ON_OFF,

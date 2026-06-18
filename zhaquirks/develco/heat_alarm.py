@@ -1,6 +1,6 @@
 """Frient Heat Detector."""
 
-from zhaquirks.v2 import QuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 
 from . import DevelcoIasZone, DevelcoPowerConfiguration
 

@@ -2,13 +2,17 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import EntityType, QuirkBuilder, ReportingConfig
-from zhaquirks.v2 import UnitOfTime
-from zhaquirks.v2 import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import (
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
 

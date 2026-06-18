@@ -2,13 +2,13 @@
 
 from typing import Final, Optional, Union
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLCommandDef
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import CANDEO
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     BUTTON,

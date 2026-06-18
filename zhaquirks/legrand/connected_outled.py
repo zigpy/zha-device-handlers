@@ -1,8 +1,8 @@
 """Module for Legrand switches (without dimming functionality)."""
 
-from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
 (

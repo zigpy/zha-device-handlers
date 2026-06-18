@@ -1,8 +1,14 @@
 """Develco smart plugs."""
 
-from zhaquirks.v2 import EntityType, QuirkBuilder, SensorDeviceClass, SensorStateClass
-from zhaquirks.v2 import UnitOfTemperature
 from zigpy.zcl.clusters.general import DeviceTemperature
+
+from zhaquirks.builder import (
+    EntityType,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+)
 
 (
     QuirkBuilder("frient A/S", "SPLZB-141")

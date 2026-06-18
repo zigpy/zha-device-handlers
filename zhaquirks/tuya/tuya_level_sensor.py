@@ -1,10 +1,14 @@
 """Tuya Ultrasonic Level Sensors."""
 
-from zhaquirks.v2 import EntityType
-from zhaquirks.v2 import PERCENTAGE, UnitOfLength
-from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfLength,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 

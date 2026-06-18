@@ -3,7 +3,7 @@
 `discover_quirks_v2_entities` turns the declarative `EntityMetadata` carried by a
 `QuirkDefinition` into ZHA platform entities, instantiating ZHA's base entity
 classes with plain keyword arguments. This used to live in ZHA's discovery
-module reading a zigpy `CustomDeviceV2`; it now lives in the quirks layer and is
+module reading a zigpy `CustomZigpyDevice`; it now lives in the quirks layer and is
 driven by `QuirkV2Device`.
 """
 
@@ -12,8 +12,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 import logging
 from typing import TYPE_CHECKING, Any
-
-from zigpy.zcl import ClusterType, ReportingConfig
 
 from zha.application import Platform
 from zha.application.platforms import (
@@ -27,8 +25,9 @@ from zha.application.platforms import (
     sensor,
     switch,
 )
+from zigpy.zcl import ClusterType, ReportingConfig
 
-from zhaquirks.v2.metadata import (
+from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     EntityMetadata,
     NumberMetadata,
@@ -44,7 +43,9 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[tuple[Platform, type], type[PlatformEntity]] = {
+QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
+    tuple[Platform, type], type[PlatformEntity]
+] = {
     (Platform.BUTTON, WriteAttributeButtonMetadata): button.WriteAttributeButton,
     (Platform.BUTTON, ZCLCommandButtonMetadata): button.Button,
     (Platform.BINARY_SENSOR, BinarySensorMetadata): binary_sensor.BinarySensor,

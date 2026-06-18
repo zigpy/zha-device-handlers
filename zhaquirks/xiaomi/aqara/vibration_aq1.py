@@ -5,7 +5,6 @@ from typing import Final
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -19,6 +18,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,

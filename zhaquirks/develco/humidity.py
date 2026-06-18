@@ -1,7 +1,6 @@
 """Develco Smart Humidity Sensor."""
 
-from zhaquirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.develco import DevelcoPowerConfiguration
 
 (

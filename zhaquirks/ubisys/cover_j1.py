@@ -4,10 +4,6 @@ import asyncio
 import logging
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import DEGREE, PERCENTAGE, EntityPlatform, EntityType, UnitOfLength, UnitOfPower, UnitOfTime
-from zhaquirks.v2 import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReportedEvent,
@@ -24,6 +20,18 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.builder import (
+    DEGREE,
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfLength,
+    UnitOfPower,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
 

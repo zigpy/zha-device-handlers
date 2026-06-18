@@ -1,10 +1,9 @@
 """Frient Water Leak."""
 
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import EntityType
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
 from zhaquirks.quirk_ids import SIREN_BASIC
 

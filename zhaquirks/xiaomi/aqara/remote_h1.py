@@ -2,11 +2,11 @@
 
 from zigpy import types
 from zigpy.profiles import zha
-from zhaquirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_SHORT_PRESS,

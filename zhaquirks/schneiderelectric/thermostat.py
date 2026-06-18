@@ -2,16 +2,23 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import EntityType, QuirkBuilder
-from zhaquirks.v2 import PERCENTAGE, EntityPlatform, UnitOfPower, UnitOfTemperature, UnitOfTime
-from zhaquirks.v2 import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
 

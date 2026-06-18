@@ -3,10 +3,10 @@
 from typing import Final
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import UnitOfTime
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 
 class IkeaVallhornManufSpecificConfig(CustomCluster):

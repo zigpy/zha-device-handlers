@@ -35,7 +35,6 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -50,6 +49,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -58,6 +58,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 
 DANFOSS = "Danfoss"

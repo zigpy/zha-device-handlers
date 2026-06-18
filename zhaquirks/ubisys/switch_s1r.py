@@ -2,13 +2,13 @@
 
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zhaquirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,

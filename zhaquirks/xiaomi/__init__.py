@@ -10,7 +10,6 @@ from typing import Any, Final
 from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
 from zigpy.zcl.clusters.general import (
@@ -41,6 +40,7 @@ from zhaquirks import (
     OccupancyWithReset,
     QuickInitDevice,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -51,6 +51,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.legacy import CustomDevice
 
 AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"

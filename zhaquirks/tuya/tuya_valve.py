@@ -2,12 +2,20 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zhaquirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zhaquirks.v2 import PERCENTAGE, UnitOfElectricPotential, UnitOfTime, UnitOfVolume
-from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricPotential,
+    UnitOfTime,
+    UnitOfVolume,
+)
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed

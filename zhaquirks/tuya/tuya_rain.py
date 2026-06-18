@@ -1,11 +1,16 @@
 """Quirk for TS0207 rain sensors."""
 
-from zhaquirks.v2 import LIGHT_LUX, EntityType, UnitOfElectricPotential
-from zhaquirks.v2 import BinarySensorDeviceClass
-from zhaquirks.v2 import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import (
+    LIGHT_LUX,
+    BinarySensorDeviceClass,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricPotential,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster

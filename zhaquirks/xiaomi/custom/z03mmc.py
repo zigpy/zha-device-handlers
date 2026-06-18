@@ -4,14 +4,13 @@
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
 
-from zhaquirks.v2 import QuirkBuilder
-from zhaquirks.v2 import PERCENTAGE, UnitOfTemperature
 from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.hvac import UserInterface
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import PERCENTAGE, QuirkBuilder, UnitOfTemperature
 
 
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
