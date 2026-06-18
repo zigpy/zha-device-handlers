@@ -1,5 +1,7 @@
 """Tuya Doorbell."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -27,7 +29,7 @@ class IasZoneDoorbellCluster(CustomCluster, IasZone):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[IasZone.ZoneStatus],
+        args: list[Any],
         *,
         dst_addressing: t.AddrMode | None = None,
     ) -> None:
