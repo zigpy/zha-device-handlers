@@ -58,7 +58,6 @@ BATTERY_VOLTAGES = {
     BatterySize.AAA: 15,
     BatterySize.C: 15,
     BatterySize.D: 15,
-    BatterySize.AA: 15,
     BatterySize.CR2: 30,
     BatterySize.CR123A: 30,
     BatterySize.CR2450: 30,
