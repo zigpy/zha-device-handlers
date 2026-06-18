@@ -102,6 +102,11 @@ class AddCluster:
 
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
+        if self.endpoint_id not in device.endpoints:
+            _LOGGER.warning(
+                "Cannot add cluster to missing endpoint %s on %s", self.endpoint_id, device
+            )
+            return device
         endpoint = device.endpoints[self.endpoint_id]
         is_server = self.cluster_type == ClusterType.Server
 
@@ -136,6 +141,13 @@ class RemoveCluster:
 
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
+        if self.endpoint_id not in device.endpoints:
+            _LOGGER.warning(
+                "Cannot remove cluster from missing endpoint %s on %s",
+                self.endpoint_id,
+                device,
+            )
+            return device
         endpoint = device.endpoints[self.endpoint_id]
         if self.cluster_type == ClusterType.Server:
             endpoint.in_clusters.pop(self.cluster_id, None)
@@ -161,6 +173,13 @@ class ReplaceCluster:
 
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
+        if self.endpoint_id not in device.endpoints:
+            _LOGGER.warning(
+                "Cannot replace cluster on missing endpoint %s on %s",
+                self.endpoint_id,
+                device,
+            )
+            return device
         endpoint = device.endpoints[self.endpoint_id]
         is_server = self.cluster_type == ClusterType.Server
         removed_cluster_id = (
