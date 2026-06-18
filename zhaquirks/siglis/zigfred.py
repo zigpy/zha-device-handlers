@@ -1,7 +1,7 @@
 """zigfred device handler."""
 
 import logging
-from typing import Any, Union
+from typing import Any
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -105,8 +105,7 @@ class ZigfredCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Handle cluster specific commands."""
         if hdr.command_id == ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT:

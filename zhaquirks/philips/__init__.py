@@ -4,7 +4,7 @@ import asyncio
 import itertools
 import logging
 import time
-from typing import Any, Final, Union
+from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -190,8 +190,7 @@ class PhilipsRemoteCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         _LOGGER.debug(

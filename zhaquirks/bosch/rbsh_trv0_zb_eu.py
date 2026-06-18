@@ -1,6 +1,6 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any, Final, Union
+from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
@@ -376,8 +376,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """system_mode special handling.
 
