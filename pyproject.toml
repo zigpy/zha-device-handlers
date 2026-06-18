@@ -26,7 +26,7 @@ dev = [
     "codespell>=2.3.0",
     "colorlog",
     "coveralls",
-    "mypy==0.942",
+    "mypy==1.14.1",   # Keep this in sync with .pre-commit-config.yaml
     "pre-commit",
     "pylint",
     "pytest>=7.1.3",
