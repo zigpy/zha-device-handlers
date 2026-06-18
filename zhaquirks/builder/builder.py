@@ -1088,13 +1088,14 @@ class QuirkBuilder:
         base = self.custom_device_class if self.custom_device_class else QuirkV2Device
         zha_device_factory = partial(base, quirk_definition=quirk_definition)
 
-        # A cluster-replacement is just the first zigpy-level transform.
-        zigpy_transforms: tuple[Callable[..., zigpy.device.Device], ...] = ()
+        # Clone the interviewed device (the first transform) before applying
+        # modifications, so the bare device is left intact for persistence.
         if self.custom_zigpy_device_class is not None:
-            zigpy_transforms += (
-                make_zigpy_device_replacement(self.custom_zigpy_device_class),
-            )
-        zigpy_transforms += self._compile_transformations()
+            clone = make_zigpy_device_replacement(self.custom_zigpy_device_class)
+        else:
+            clone = zigpy.device.Device.clone
+
+        zigpy_transforms = (clone, *self._compile_transformations())
 
         entry = QuirkRegistryEntry(
             device_match=device_match,
