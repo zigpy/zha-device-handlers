@@ -673,7 +673,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             14: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
-                converter=lambda x: PowerOnState(x),
+                converter=PowerOnState,
             )
         }
     )
@@ -682,7 +682,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             15: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
-                converter=lambda x: MoesBacklight(x),
+                converter=MoesBacklight,
             ),
         }
     )

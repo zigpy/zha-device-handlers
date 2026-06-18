@@ -1,6 +1,6 @@
 """TS0210 vibration sensor."""
 
-from typing import Optional, Union
+from typing import Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -36,9 +36,8 @@ class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
         hdr: foundation.ZCLHeader,
         args: tuple[TuyaCommand],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ) -> None:
         """Handle cluster request."""
         self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)

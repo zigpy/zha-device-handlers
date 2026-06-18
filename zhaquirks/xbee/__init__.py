@@ -6,7 +6,7 @@ See xbee.md for additional information.
 import asyncio
 import enum
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -445,7 +445,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[t.AddrMode] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle AT response."""
         if hdr.command_id == DATA_IN_CMD:
@@ -499,7 +499,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[t.AddrMode] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster request.
 
@@ -607,7 +607,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[t.AddrMode] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle incoming data."""
         if hdr.command_id == DATA_IN_CMD:

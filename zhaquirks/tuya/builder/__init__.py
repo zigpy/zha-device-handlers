@@ -338,10 +338,13 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcentration,
         # Convert from µg/m3 to ppm, note, ZHA will scale by 1e6
-        converter: float = lambda x: round(
-            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
-        )
-        * 1e-6,
+        converter: float = lambda x: (
+            round(
+                ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS),
+                2,
+            )
+            * 1e-6
+        ),
         endpoint_id: int = 1,
     ) -> Self:
         """Add a Tuya Formaldehyde Configuration."""
