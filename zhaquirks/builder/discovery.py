@@ -131,6 +131,11 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
     if quirk_metadata is None or not quirk_metadata.entity_metadata:
+        _LOGGER.debug(
+            "Device: %s-%s does not expose any quirks v2 entities",
+            str(device.ieee),
+            device.name,
+        )
         return
 
     for entity_metadata in quirk_metadata.entity_metadata:
