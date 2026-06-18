@@ -270,7 +270,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_illuminance(
         self,
         dp_id: int,
-        illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
+        illuminance_cfg: type[TuyaLocalCluster] = TuyaIlluminance,
         converter: Callable[[Any], Any] | None = (
             lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
         ),
@@ -300,7 +300,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_co2(
         self,
         dp_id: int,
-        co2_cfg: TuyaLocalCluster = TuyaCO2Concentration,
+        co2_cfg: type[TuyaLocalCluster] = TuyaCO2Concentration,
         scale: float = 1e-6,
         endpoint_id: int = 1,
     ) -> Self:
@@ -318,7 +318,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_electrical_conductivity(
         self,
         dp_id: int,
-        ec_cfg: TuyaLocalCluster = TuyaElectricalConductivity,
+        ec_cfg: type[TuyaLocalCluster] = TuyaElectricalConductivity,
         scale: float = 1,
         endpoint_id: int = 1,
     ) -> Self:
@@ -336,9 +336,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_formaldehyde(
         self,
         dp_id: int,
-        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcentration,
+        form_cfg: type[TuyaLocalCluster] = TuyaFormaldehydeConcentration,
         # Convert from µg/m3 to ppm, note, ZHA will scale by 1e6
-        converter: float = lambda x: (
+        converter: Callable[[Any], Any] | None = lambda x: (
             round(
                 ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS),
                 2,
@@ -361,7 +361,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_pm25(
         self,
         dp_id: int,
-        pm25_cfg: TuyaLocalCluster = TuyaPM25Concentration,
+        pm25_cfg: type[TuyaLocalCluster] = TuyaPM25Concentration,
         scale: float = 1,
         endpoint_id: int = 1,
     ) -> Self:
@@ -417,7 +417,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_metering(
         self,
         dp_id: int,
-        metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumedNoInstDemand,
+        metering_cfg: type[TuyaLocalCluster] = TuyaValveWaterConsumedNoInstDemand,
         scale: float = 1,
         endpoint_id: int = 1,
     ) -> Self:
@@ -435,7 +435,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_onoff(
         self,
         dp_id: int,
-        onoff_cfg: TuyaLocalCluster = TuyaOnOffNM,
+        onoff_cfg: type[TuyaLocalCluster] = TuyaOnOffNM,
         endpoint_id: int = 1,
     ) -> Self:
         """Add a Tuya OnOff Configuration."""
@@ -454,7 +454,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         position_state_dp: int,
         position_control_dp: int,
         invert: bool = True,
-        cover_cfg: TuyaLocalCluster = TuyaWindowCovering,
+        cover_cfg: type[TuyaLocalCluster] = TuyaWindowCovering,
     ) -> Self:
         """Add a Tuya WindowCovering Configuration.
 
@@ -494,7 +494,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_humidity(
         self,
         dp_id: int,
-        rh_cfg: TuyaLocalCluster = TuyaRelativeHumidity,
+        rh_cfg: type[TuyaLocalCluster] = TuyaRelativeHumidity,
         scale: float = 100,
         endpoint_id: int = 1,
     ) -> Self:
@@ -512,7 +512,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_soil_moisture(
         self,
         dp_id: int,
-        soil_cfg: TuyaLocalCluster = TuyaSoilMoisture,
+        soil_cfg: type[TuyaLocalCluster] = TuyaSoilMoisture,
         scale: float = 100,
         endpoint_id: int = 1,
     ) -> Self:
@@ -530,7 +530,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_temperature(
         self,
         dp_id: int,
-        temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
+        temp_cfg: type[TuyaLocalCluster] = TuyaTemperatureMeasurement,
         scale: float = 100,
         endpoint_id: int = 1,
     ) -> Self:
@@ -558,7 +558,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_voc(
         self,
         dp_id: int,
-        voc_cfg: TuyaLocalCluster = TuyaAirQualityVOC,
+        voc_cfg: type[TuyaLocalCluster] = TuyaAirQualityVOC,
         scale: float = 1e-6,
         endpoint_id: int = 1,
     ) -> Self:
@@ -928,7 +928,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def add_to_registry(
         self,
-        replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
+        replacement_cluster: type[TuyaMCUCluster] = TuyaMCUCluster,
         force_add_cluster: bool = False,
         mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
     ) -> QuirksV2RegistryEntry:
