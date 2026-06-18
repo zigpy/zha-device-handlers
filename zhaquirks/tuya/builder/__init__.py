@@ -5,7 +5,6 @@ from enum import Enum
 import inspect
 import math
 import pathlib
-from types import FrameType
 from typing import Any, Self
 
 from zigpy.profiles import zha
@@ -207,8 +206,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         # quirk_file will point to the init call above if called from this QuirkBuilder,
         # so we need to re-set it correctly
-        current_frame: FrameType = inspect.currentframe()
-        caller: FrameType = current_frame.f_back
+        current_frame = inspect.currentframe()
+        assert current_frame is not None
+        caller = current_frame.f_back
+        assert caller is not None
         self.quirk_file = pathlib.Path(caller.f_code.co_filename)
         self.quirk_file_line = caller.f_lineno
 
