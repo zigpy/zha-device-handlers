@@ -11,6 +11,7 @@ import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
+    AttributeReadEvent,
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     Cluster,
@@ -2470,6 +2471,25 @@ async def test_xiaomi_e1_roller_position_updates(
         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
         75,
     )
+
+    # a present_value read event without a value (value=None) must be ignored:
+    # it should not raise and must not update the WindowCovering position
+    window_covering_listener.attribute_updates.clear()
+    analog_cluster.emit(
+        AttributeReadEvent.event_type,
+        AttributeReadEvent(
+            device_ieee=str(device.ieee),
+            endpoint_id=analog_cluster.endpoint.endpoint_id,
+            cluster_type=ClusterType.Server,
+            cluster_id=analog_cluster.cluster_id,
+            attribute_name=analog_attr.name,
+            attribute_id=analog_attr.id,
+            manufacturer_code=None,
+            raw_value=None,
+            value=None,
+        ),
+    )
+    assert len(window_covering_listener.attribute_updates) == 0
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
