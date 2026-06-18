@@ -122,6 +122,8 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     ) -> None:
         """Handle attribute read/reported events."""
         if event.attribute_id == self.AttributeDefs.present_value.id:
+            if event.value is None:
+                return
             self.endpoint.window_covering.update_attribute(
                 WindowCovering.AttributeDefs.current_position_lift_percentage.id,
                 t.uint8_t(100 - event.value),
