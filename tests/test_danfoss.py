@@ -1,5 +1,6 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
 
+from typing import cast
 from unittest import mock
 
 from zigpy.quirks import CustomCluster
@@ -189,7 +190,10 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
         await danfoss_thermostat_cluster._configure_reporting([one, two])
         assert reports == [two]
 
-    reports = None
+    # typed wide so mypy doesn't narrow to None (the mocked _read_attributes
+    # side effect reassigns this to a list), which would flag the assert below
+    # as comparing an always-None value and mark later code unreachable
+    reports = cast(list | None, None)
 
     def mock_read_attributes(attrs, *args, **kwargs):
         nonlocal reports
