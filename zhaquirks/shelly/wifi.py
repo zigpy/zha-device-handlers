@@ -117,6 +117,9 @@ class ShellyCustomProfileDevice(CustomDeviceV2):
 (
     QuirkBuilder("Shelly", "1PM")
     .applies_to("Shelly", "2PM")
+    .applies_to("Shelly", "Mini1PM")
+    .applies_to("Shelly", "Mini1")
+    .applies_to("Shelly", "EM Mini")
     .device_class(ShellyCustomProfileDevice)
     .replaces_endpoint(
         SHELLY_WIFI_SETUP_ENDPOINT_ID,
