@@ -122,8 +122,10 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     ) -> None:
         """Handle attribute read/reported events."""
         if event.attribute_id == self.AttributeDefs.present_value.id:
-            if event.value is None:
-                return
+            # event.value is typed Any | None only because of a legacy zigpy
+            # LocalDataCluster workaround; a real device read/report always
+            # carries a value, so present_value is never None here.
+            assert event.value is not None
             self.endpoint.window_covering.update_attribute(
                 WindowCovering.AttributeDefs.current_position_lift_percentage.id,
                 t.uint8_t(100 - event.value),
