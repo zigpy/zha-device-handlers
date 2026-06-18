@@ -2,9 +2,9 @@
 
 `QuirkBuilder` is the declarative quirks v2 authoring API. `add_to_registry()`
 compiles it into a `zha.quirks.QuirkRegistryEntry`: a `DeviceMatch` carrying the
-matching criteria, an `apply` callable carrying the Zigbee-level modifications,
-and a `factory` (`QuirkV2Device` bound to a `QuirkDefinition`) that builds the
-ZHA device exposing the quirk's entities, triggers, alerts and naming.
+matching criteria, `zigpy_transforms` carrying the Zigbee-level modifications,
+and a `zha_device_factory` (`QuirkV2Device` bound to a `QuirkDefinition`) that
+builds the ZHA device exposing the quirk's entities, triggers, alerts and naming.
 """
 
 from __future__ import annotations
@@ -50,6 +50,8 @@ from zha.quirks import (
     FilterType,
     ModelInfo,
     QuirkRegistryEntry,
+    QuirkSource,
+    make_zigpy_device_replacement,
 )
 from zha.zigbee.device import Device
 
@@ -228,7 +230,7 @@ class AddEndpoint:
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
         if self.endpoint_id in device.endpoints:
-            return
+            return device
         endpoint = device.add_endpoint(self.endpoint_id)
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
@@ -1048,15 +1050,10 @@ class QuirkBuilder:
         )
 
         manufacturer, model = self.manufacturer_model_metadata[0]
-        # Reproduce the identity the old class-based quirks reported via
-        # `Device.quirk_class` (`"<quirk module>.Quirk_<manu>_<model>"`).
+        # Legacy `quirk_class` identity, now carried as provenance data.
         quirk_class_name = re.sub(r"\W|^(?=\d)", "_", f"Quirk_{manufacturer}_{model}")
 
         quirk_definition = QuirkDefinition(
-            quirk_file=str(self.quirk_file),
-            quirk_file_line=self.quirk_file_line,
-            quirk_module=self.quirk_module,
-            quirk_class_name=quirk_class_name,
             friendly_name=self.friendly_name_metadata,
             exposes_features=tuple(self.exposes_features),
             device_alerts=tuple(self.device_alerts),
@@ -1065,20 +1062,30 @@ class QuirkBuilder:
             entity_metadata=tuple(self.entity_metadata),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
-            transformations=self._compile_transformations(),
         )
 
-        # The device class defaults to the shared `QuirkV2Device`; a custom
-        # `device_class()` must be a `QuirkV2Device` subclass (it is constructed
-        # with `quirk_definition=`).
+        # Shared QuirkV2Device (or custom subclass) bound to this definition; no subclass minted.
         base = self.custom_device_class if self.custom_device_class else QuirkV2Device
+        zha_device_factory = partial(base, quirk_definition=quirk_definition)
+
+        # A cluster-replacement is just the first zigpy-level transform.
+        zigpy_transforms: tuple[Callable[..., zigpy.device.Device], ...] = ()
+        if self.custom_zigpy_device_class is not None:
+            zigpy_transforms += (
+                make_zigpy_device_replacement(self.custom_zigpy_device_class),
+            )
+        zigpy_transforms += self._compile_transformations()
 
         entry = QuirkRegistryEntry(
             device_match=device_match,
-            zigpy_device_cls=self.custom_zigpy_device_class,
-            zigpy_device_transforms=self._compile_transformations(),
-            zha_device_cls=base,
-            quirk_file=str(self.quirk_file),
+            zigpy_transforms=zigpy_transforms,
+            zha_device_factory=zha_device_factory,
+            source=QuirkSource(
+                module=self.quirk_module,
+                file=str(self.quirk_file),
+                line=self.quirk_file_line,
+                label=quirk_class_name,
+            ),
         )
 
         self.registry.register(entry)

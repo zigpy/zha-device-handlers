@@ -40,13 +40,6 @@ class QuirkV2Device(Device):
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
 
-    def _compute_quirk_class(self) -> str:
-        """Return the dotted path identifying the declarative quirk."""
-        return (
-            f"{self._quirk_definition.quirk_module}."
-            f"{self._quirk_definition.quirk_class_name}"
-        )
-
     def discover_entities(self) -> Iterator[BaseEntity]:
         """Yield the default entities plus the quirk's exposed v2 entities."""
         yield from super().discover_entities()

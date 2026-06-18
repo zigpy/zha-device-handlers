@@ -16,7 +16,6 @@ from typing import Any
 import attrs
 from frozendict import frozendict
 from zigpy.zcl import ClusterType
-from zigpy.device import Device
 
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
@@ -240,18 +239,11 @@ class QuirkDefinition:
     """ZHA-level metadata of a quirk.
 
     Everything a quirk expresses about the ZHA device model: entities,
-    automation triggers, alerts and naming. Zigbee-level modifications are
-    carried by the `QuirkRegistryEntry.apply` callable instead.
-
-    `quirk_module` and `quirk_class_name` reproduce the identity the old
-    class-based quirks reported via `Device.quirk_class`
-    (`"<quirk module>.Quirk_<manufacturer>_<model>"`), which diagnostics assert.
+    automation triggers, alerts and naming. Zigbee-level modifications
+    (`zigpy_transforms`) and provenance (`source`) live on the quirk's
+    `zha.quirks.QuirkRegistryEntry`, not here.
     """
 
-    quirk_file: str | None = attrs.field(default=None, eq=False)
-    quirk_file_line: int | None = attrs.field(default=None, eq=False)
-    quirk_module: str | None = attrs.field(default=None, eq=False)
-    quirk_class_name: str | None = attrs.field(default=None, eq=False)
     friendly_name: FriendlyNameMetadata | None = attrs.field(default=None)
     exposes_features: tuple[ExposesFeatureMetadata, ...] = attrs.field(factory=tuple)
     device_alerts: tuple[DeviceAlertMetadata, ...] = attrs.field(factory=tuple)
@@ -266,4 +258,3 @@ class QuirkDefinition:
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )
     skip_configuration: bool = attrs.field(default=False)
-    transformations: tuple[Callable[[Device], Device], ...] = attrs.field(factory=tuple)
