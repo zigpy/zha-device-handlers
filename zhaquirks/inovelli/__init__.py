@@ -1,7 +1,7 @@
 """Module for Inovelli quirks implementations."""
 
 import logging
-from typing import Any, Union
+from typing import Any
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -232,8 +232,7 @@ class InovelliCluster(CustomCluster):
         hdr: ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
         _LOGGER.debug(

@@ -20,10 +20,7 @@ class FrientMetering(CustomCluster, Metering):
         hdr: foundation.ZCLHeader,
         args: list,
         *,
-        dst_addressing: t.Addressing.Group
-        | t.Addressing.IEEE
-        | t.Addressing.NWK
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Filter out incorrect divisor attribute reports from device."""
         if hdr.command_id == foundation.GeneralCommand.Report_Attributes:

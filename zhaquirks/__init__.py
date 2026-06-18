@@ -175,8 +175,7 @@ class EventableCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: None
-        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Send cluster requests as events."""
         if (
@@ -333,8 +332,7 @@ class MotionWithReset(_Motion):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: None
-        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         # check if the command is for a zone status change of ZoneStatus.Alarm_1 or ZoneStatus.Alarm_2
