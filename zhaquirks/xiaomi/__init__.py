@@ -51,7 +51,11 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.legacy import (
+    CustomDevice,
+    get_quirk_list,
+    register_uninitialized_device_message_handler,
+)
 
 AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"
@@ -831,7 +835,7 @@ def handle_quick_init(
     if not model:
         return
 
-    for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
+    for quirk in get_quirk_list(LUMI, model):
         if not issubclass(quirk, XiaomiQuickInitDevice):
             continue
 
@@ -854,4 +858,4 @@ def handle_quick_init(
     return True
 
 
-zigpy.quirks.register_uninitialized_device_message_handler(handle_quick_init)
+register_uninitialized_device_message_handler(handle_quick_init)
