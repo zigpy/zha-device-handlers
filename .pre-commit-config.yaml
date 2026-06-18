@@ -12,7 +12,7 @@ repos:
         args: ["--toml", "pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    rev: v2.1.0 # Keep this in sync with pyproject.toml
     hooks:
       - id: mypy
 
