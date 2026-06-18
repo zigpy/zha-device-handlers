@@ -12,7 +12,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 SHELLY_MANUFACTURER_CODE = 0x1490
 SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
 SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
-SHELLY_WIFI_SETUP_DEVICE_TYPE = 0x2001
 SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
 
 
@@ -121,11 +120,6 @@ class ShellyCustomProfileDevice(CustomDeviceV2):
     .applies_to("Shelly", "Mini1")
     .applies_to("Shelly", "EM Mini")
     .device_class(ShellyCustomProfileDevice)
-    .replaces_endpoint(
-        SHELLY_WIFI_SETUP_ENDPOINT_ID,
-        profile_id=SHELLY_WIFI_SETUP_PROFILE_ID,
-        device_type=SHELLY_WIFI_SETUP_DEVICE_TYPE,
-    )
     .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
     .add_to_registry()
 )

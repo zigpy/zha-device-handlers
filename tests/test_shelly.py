@@ -12,7 +12,6 @@ from zigpy.zcl.foundation import ZCLAttributeAccess
 from zhaquirks.shelly.wifi import (
     SHELLY_MANUFACTURER_CODE,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
-    SHELLY_WIFI_SETUP_DEVICE_TYPE,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
     ShellyCustomProfileDevice,
@@ -63,14 +62,6 @@ def test_shelly_wifi_setup_cluster_replaced(zigpy_device_from_v2_quirk, model) -
     ]
 
     assert isinstance(quirked, ShellyCustomProfileDevice)
-    assert (
-        quirked.endpoints[SHELLY_WIFI_SETUP_ENDPOINT_ID].profile_id
-        == SHELLY_WIFI_SETUP_PROFILE_ID
-    )
-    assert (
-        quirked.endpoints[SHELLY_WIFI_SETUP_ENDPOINT_ID].device_type
-        == SHELLY_WIFI_SETUP_DEVICE_TYPE
-    )
     assert isinstance(cluster, ShellyWiFiSetupCluster)
     assert cluster.ep_attribute == "shelly_wifi_setup"
     assert cluster.find_attribute("status") == cluster.AttributeDefs.status
