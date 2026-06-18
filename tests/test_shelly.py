@@ -9,6 +9,7 @@ from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
+import zhaquirks
 from zhaquirks.shelly.wifi import (
     SHELLY_MANUFACTURER_CODE,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
@@ -17,6 +18,8 @@ from zhaquirks.shelly.wifi import (
     ShellyCustomProfileDevice,
     ShellyWiFiSetupCluster,
 )
+
+zhaquirks.setup()
 
 
 def _attribute_report_data(
