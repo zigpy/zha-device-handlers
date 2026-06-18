@@ -26,7 +26,7 @@ dev = [
     "codespell>=2.3.0",
     "colorlog",
     "coveralls",
-    "mypy==1.14.1",   # Keep this in sync with .pre-commit-config.yaml
+    "mypy==2.1.0",   # Keep this in sync with .pre-commit-config.yaml
     "pre-commit",
     "pylint",
     "pytest>=7.1.3",
@@ -34,7 +34,7 @@ dev = [
     "pytest-cov",
     "pytest-sugar",
     "pytest-timeout",
-    "ruff==0.9.4",        # Keep this in sync with .pre-commit-config.yaml
+    "ruff==0.15.17",        # Keep this in sync with .pre-commit-config.yaml
     "time-machine>=2,<3",
 ]
 
@@ -160,7 +160,7 @@ select = [
     "T20",     # flake8-print
     "TID251",  # Banned imports
     "TRY004",  # Prefer TypeError exception for invalid type
-    "TRY302",  # Remove exception handler; error is immediately re-raised
+    "TRY203",  # Remove exception handler; error is immediately re-raised
     "UP",      # pyupgrade
     "W",       # pycodestyle
 ]
@@ -189,8 +189,6 @@ ignore = [
     "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
     "UP006",   # keep type annotation style as is
     "UP007",   # keep type annotation style as is
-    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-    "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 
     # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
     "W191",

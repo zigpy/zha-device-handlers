@@ -2,7 +2,7 @@
 
 from collections import deque
 import math
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -152,9 +152,8 @@ class TerncyRawCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:  # click event

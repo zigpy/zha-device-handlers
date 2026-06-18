@@ -1,6 +1,6 @@
 """Device handler for ADEO Lexman LXEK-5 (HR-C99C-Z-C045) & ZBEK-26 (HR-C99C-Z-C045-B) color controllers."""
 
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -84,9 +84,8 @@ class AdeoManufacturerCluster(EventableCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ):
         """Handle the cluster command."""
         if hdr.command_id == 0x0000:

@@ -1,6 +1,6 @@
 """Tuya Doorbell."""
 
-from typing import Optional, Union
+from typing import Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -31,9 +31,8 @@ class IasZoneDoorbellCluster(CustomCluster, IasZone):
         hdr: foundation.ZCLHeader,
         args: tuple[IasZone.ZoneStatus],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ) -> None:
         """Handle cluster request."""
         # args looks like [<ZoneStatus.Alarm_1: 1>, <bitmap8.0: 0>, 0, 0]

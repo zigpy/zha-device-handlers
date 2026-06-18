@@ -1,6 +1,6 @@
 """Candeo c-zb-sr5br 5-button remote with rotating dial."""
 
-from typing import Final, Optional, Union
+from typing import Final, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -122,9 +122,8 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: CandeoSceneSwitchRemoteClusterCommand,
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ):
         """Overwrite handle_cluster_request to custom process this cluster."""
         if not hdr.frame_control.disable_default_response:
