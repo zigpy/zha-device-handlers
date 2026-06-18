@@ -216,7 +216,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def _tuya_battery(
         self,
         dp_id: int,
-        power_cfg: PowerConfiguration,
+        power_cfg: type[PowerConfiguration],
         scale: float,
         endpoint_id: int = 1,
     ) -> Self:
@@ -234,7 +234,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_battery(
         self,
         dp_id: int,
-        power_cfg: PowerConfiguration | None = None,
+        power_cfg: type[PowerConfiguration] | None = None,
         battery_type: BatterySize | None = BatterySize.AA,
         battery_qty: int | None = 2,
         battery_voltage: int | None = None,
@@ -399,7 +399,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_ias(
         self,
         dp_id: int,
-        ias_cfg: TuyaLocalCluster,
+        ias_cfg: type[TuyaLocalCluster],
         converter: Callable[[Any], Any] | None = None,
         endpoint_id: int = 1,
     ) -> Self:
