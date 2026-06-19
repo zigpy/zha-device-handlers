@@ -31,6 +31,8 @@ from zhaquirks.legacy.registry import DeviceRegistry
 _LOGGER = logging.getLogger(__name__)
 
 DEVICE_REGISTRY = DeviceRegistry()
+PENDING_LEGACY_QUIRKS: list[type[CustomDevice]] = []
+
 _uninitialized_device_message_handlers = []
 
 
@@ -72,12 +74,10 @@ class CustomDevice(BaseCustomDevice):
     def __init_subclass__(cls) -> None:
         if getattr(cls, "signature", None) is not None:
             DEVICE_REGISTRY.add_to_registry(cls)
+            PENDING_LEGACY_QUIRKS.append(cls)
 
 
-FilterType = typing.Callable[
-    [zigpy.device.Device],
-    bool,
-]
+FilterType = typing.Callable[[zigpy.device.Device], bool]
 
 
 def signature_matches(

@@ -12,7 +12,15 @@ import sys
 import typing
 from typing import Any
 
-from zha.quirks import DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY
+from zha.quirks import (
+    DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
+    DeviceMatch,
+    ModelInfo,
+    QuirkRegistryEntry,
+    QuirkSource,
+    make_zigpy_device_replacement,
+)
+from zigpy.const import SIG_MANUFACTURER, SIG_MODEL, SIG_MODELS_INFO
 import zigpy.device
 import zigpy.endpoint
 import zigpy.types as t
@@ -30,7 +38,12 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.legacy import DEVICE_REGISTRY, CustomDevice
+from zhaquirks.legacy import (
+    DEVICE_REGISTRY,
+    PENDING_LEGACY_QUIRKS,
+    CustomDevice,
+    signature_matches,
+)
 
 from .const import (
     ATTRIBUTE_ID,
@@ -511,6 +524,37 @@ class NoReplyMixin:
         return rsp
 
 
+def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEntry:
+    """Compile a legacy v1 `CustomDevice` subclass into a ZHA registry entry."""
+    signature = cls.signature
+    models_info = signature.get(SIG_MODELS_INFO)
+
+    if models_info:
+        applies_to = tuple(
+            ModelInfo(manufacturer=manuf, model=model) for manuf, model in models_info
+        )
+    else:
+        manufacturer = signature.get(SIG_MANUFACTURER)
+        model = signature.get(SIG_MODEL)
+
+        # A v1 quirk with neither manufacturer nor model matches on endpoint
+        # signature alone; an empty `applies_to` makes it a wildcard entry.
+        if manufacturer is None and model is None:
+            applies_to = ()
+        else:
+            applies_to = (ModelInfo(manufacturer=manufacturer, model=model),)
+
+    return QuirkRegistryEntry(
+        device_match=DeviceMatch(
+            applies_to=applies_to,
+            filters=(signature_matches(signature),),
+        ),
+        zigpy_transforms=(make_zigpy_device_replacement(cls),),
+        zha_device_factory=None,
+        source=QuirkSource.from_class(cls),
+    )
+
+
 def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy and ZHA, including optional custom quirks.
 
@@ -550,6 +594,12 @@ def setup(custom_quirks_path: str | None = None) -> None:
             )
             builder.add_to_registry()
     unbuilt_quirk_builders.clear()
+
+    # Inject legacy v1 quirks into ZHA's unified registry
+    for cls in PENDING_LEGACY_QUIRKS:
+        ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+
+    PENDING_LEGACY_QUIRKS.clear()
 
     if custom_quirks_path is None:
         return
