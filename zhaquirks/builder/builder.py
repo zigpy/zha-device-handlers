@@ -80,7 +80,7 @@ UNBUILT_QUIRK_BUILDERS: list[QuirkBuilder] = []
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-arguments
 
-type DeviceOp = callable[[zigpy.device.Device], None]
+type DeviceOp = Callable[[zigpy.device.Device], None]
 
 
 @dataclass(frozen=True)
