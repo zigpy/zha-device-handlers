@@ -178,3 +178,61 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE284_o9ofysmo", "TS0601"),
+        ("Arteco", "ZS-304Z"),
+    ],
+)
+async def test_handle_get_data_soil_sensor(zigpy_device_from_v2_quirk, model, manuf):
+    """Test handle_get_data for Arteco ZS-304Z soil sensor."""
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    # DP 3: Soil Moisture (50%) -> 50
+    # DP 5: Temperature (25.0 C) -> 250
+    # DP 14: Battery (High) -> 2
+    # DP 101: Humidity (60%) -> 60
+    # DP 102: Illuminance (1000 lux) -> 1000
+
+    # Payload construction
+    # ZCL Header: 09 (FC) e0 (Seq) 02 (Cmd)
+    # Tuya Header in payload: 00 00 (Trans ID?)
+    # DPs
+    dps = (
+        b"\x03\x02\x00\x04\x00\x00\x00\x32"  # DP 3: 50 (0x32)
+        b"\x05\x02\x00\x04\x00\x00\x00\xfa"  # DP 5: 250 (0xFA)
+        b"\x0e\x04\x00\x01\x02"  # DP 14: 2 (0x02)
+        b"\x65\x02\x00\x04\x00\x00\x00\x3c"  # DP 101: 60 (0x3C)
+        b"\x66\x02\x00\x04\x00\x00\x03\xe8"  # DP 102: 1000 (0x03E8)
+    )
+
+    message = b"\x09\xe0\x02\x00\x00" + dps
+
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    # Verify attributes
+
+    # Soil Moisture: DP 3 -> 50
+    assert ep.tuya_manufacturer.get("soil_moisture") == 50
+
+    # Temperature: DP 5 * 10 = 250 * 10 = 2500
+    assert ep.temperature.get("measured_value") == 2500
+
+    # Battery: DP 14=2 -> 200 (100% * 2)
+    assert ep.power.get("battery_percentage_remaining") == 200
+
+    # Humidity: DP 101 * 100 = 60 * 100 = 6000
+    assert ep.humidity.get("measured_value") == 6000
+
+    # Illuminance: 10000 * log10(1000) + 1 = 10000 * 3 + 1 = 30001
+    assert ep.illuminance.get("measured_value") == 30001

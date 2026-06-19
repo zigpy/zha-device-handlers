@@ -3,7 +3,13 @@
 import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    LIGHT_LUX,
+    PERCENTAGE,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -371,6 +377,123 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")  # Arteco ZS-304Z
+    .applies_to("Arteco", "ZS-304Z")
+    .tuya_sensor(
+        dp_id=3,
+        type=t.uint16_t,
+        attribute_name="soil_moisture",
+        unit=PERCENTAGE,
+        device_class=SensorDeviceClass.MOISTURE,
+        entity_type=EntityType.STANDARD,
+        translation_key="soil_moisture",
+        fallback_name="Soil moisture",
+    )
+    .tuya_temperature(dp_id=5, scale=10)
+    # DP 14 is Battery State (Enum: 0=Low, 1=Middle, 2=High).
+    # We convert it to Zigbee percentage (0-200) for standard integration.
+    # 0 -> 20 (10%), 1 -> 100 (50%), 2 -> 200 (100%)
+    .tuya_dp(
+        dp_id=14,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 200),
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    # Calibration and configuration
+    .tuya_number(
+        dp_id=103,
+        attribute_name="soil_sampling",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="soil_sampling",
+        fallback_name="Soil sampling interval",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="soil_moisture_calibration",
+        type=t.int16s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.MOISTURE,
+        translation_key="soil_moisture_calibration",
+        fallback_name="Soil moisture calibration",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="humidity_calibration",
+        type=t.int16s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.HUMIDITY,
+        translation_key="humidity_calibration",
+        fallback_name="Humidity calibration",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="illuminance_calibration",
+        type=t.int16s,
+        unit=LIGHT_LUX,
+        min_value=-1000,
+        max_value=1000,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.ILLUMINANCE,
+        translation_key="illuminance_calibration",
+        fallback_name="Illuminance calibration",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="temperature_calibration",
+        type=t.int16s,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        step=0.1,
+        min_value=-2,
+        max_value=2,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="soil_warning",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.MOISTURE,
+        translation_key="soil_warning",
+        fallback_name="Soil warning threshold",
+    )
+    # DP 111: Water warning (0: none, 1: alarm)
+    .tuya_binary_sensor(
+        dp_id=111,
+        attribute_name="water_warning",
+        translation_key="water_warning",
+        fallback_name="Water warning",
+    )
     .skip_configuration()
     .add_to_registry()
 )
