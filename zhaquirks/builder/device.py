@@ -2,22 +2,62 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from collections.abc import Iterable, Iterator
+from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 # `discovery` must be imported before `zha.zigbee.device`: the platform modules
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
-from zha.application import discovery  # noqa: F401
-from zha.application.platforms import BaseEntity
+from zha.application import Platform, discovery  # noqa: F401
+from zha.application.platforms import BaseEntity, PlatformEntity
 from zha.zigbee.device import Device
 import zigpy.device
+import zigpy.zcl
 
 from zhaquirks.builder.discovery import discover_quirks_v2_entities
 from zhaquirks.builder.metadata import QuirkDefinition
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
+
+
+def _entity_targets_cluster(
+    entity: PlatformEntity,
+    cluster_id: int,
+    cluster_type: zigpy.zcl.ClusterType | None = None,
+) -> bool:
+    """Return True if `entity` targets the given cluster (and direction)."""
+    match = entity._cluster_match
+    if match is None:
+        # Generated quirks-v2 entities have no class-level `_cluster_match` but
+        # do have a concrete backing cluster; match against it directly.
+        cluster = entity.cluster
+        if cluster.cluster_id != cluster_id:
+            return False
+        if cluster_type is None:
+            return True
+        actual_type = (
+            zigpy.zcl.ClusterType.Client
+            if cluster.is_client
+            else zigpy.zcl.ClusterType.Server
+        )
+        return cluster_type == actual_type
+
+    if cluster_type is None or cluster_type == zigpy.zcl.ClusterType.Server:
+        if (
+            cluster_id in match.server_clusters
+            or cluster_id in match.optional_server_clusters
+        ):
+            return True
+        if cluster_type is not None:
+            return False
+    if (cluster_type is None or cluster_type == zigpy.zcl.ClusterType.Client) and (
+        cluster_id in match.client_clusters
+        or cluster_id in match.optional_client_clusters
+    ):
+        return True
+    return False
 
 
 class QuirkV2Device(Device):
@@ -43,3 +83,91 @@ class QuirkV2Device(Device):
         """Yield the default entities plus the quirk's exposed v2 entities."""
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
+
+    def _quirk_exposes_features(self) -> set[str]:
+        return {f.feature for f in self._quirk_definition.exposes_features}
+
+    def _resolve_manufacturer(self) -> str:
+        if self._quirk_definition.friendly_name is not None:
+            return self._quirk_definition.friendly_name.manufacturer
+        return super()._resolve_manufacturer()
+
+    def _resolve_model(self) -> str:
+        if self._quirk_definition.friendly_name is not None:
+            return self._quirk_definition.friendly_name.model
+        return super()._resolve_model()
+
+    @cached_property
+    def device_alerts(self) -> Iterable[Any]:
+        """Return device alerts for this device."""
+        return self._quirk_definition.device_alerts
+
+    def _quirk_skip_configuration(self) -> bool:
+        return self._quirk_definition.skip_configuration
+
+    def _quirk_device_automation_triggers(
+        self,
+    ) -> dict[tuple[str, str], dict[str, str]]:
+        return dict(self._quirk_definition.device_automation_triggers)
+
+    def _is_entity_removed_by_quirk(self, entity: PlatformEntity) -> bool:
+        if entity.PLATFORM == Platform.VIRTUAL:
+            return False
+
+        for meta in self._quirk_definition.disabled_default_entities:
+            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
+                meta.unique_id_suffix
+            ):
+                continue
+            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
+                continue
+            if meta.cluster_id is not None and not _entity_targets_cluster(
+                entity, meta.cluster_id
+            ):
+                continue
+            if meta.function is not None and not meta.function(entity):
+                continue
+            return True
+
+        return False
+
+    def _apply_entity_metadata_changes(self, entity: PlatformEntity) -> None:
+        if entity.PLATFORM == Platform.VIRTUAL:
+            return
+
+        for meta in self._quirk_definition.changed_entity_metadata:
+            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
+                meta.unique_id_suffix
+            ):
+                continue
+            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
+                continue
+            if meta.cluster_id is not None and not _entity_targets_cluster(
+                entity, meta.cluster_id, cluster_type=meta.cluster_type
+            ):
+                continue
+            if meta.function is not None and not meta.function(entity):
+                continue
+
+            if meta.new_primary is not None:
+                entity._attr_primary = meta.new_primary
+            if meta.new_unique_id is not None:
+                entity._unique_id = meta.new_unique_id
+            if meta.new_translation_key is not None:
+                entity._attr_translation_key = meta.new_translation_key
+            if meta.new_translation_placeholders is not None:
+                entity._attr_translation_placeholders = (
+                    meta.new_translation_placeholders
+                )
+            if meta.new_device_class is not None:
+                entity._attr_device_class = meta.new_device_class
+            if meta.new_state_class is not None:
+                entity._attr_state_class = meta.new_state_class
+            if meta.new_entity_category is not None:
+                entity._attr_entity_category = meta.new_entity_category
+            if meta.new_entity_registry_enabled_default is not None:
+                entity._attr_entity_registry_enabled_default = (
+                    meta.new_entity_registry_enabled_default
+                )
+            if meta.new_fallback_name is not None:
+                entity._attr_fallback_name = meta.new_fallback_name
