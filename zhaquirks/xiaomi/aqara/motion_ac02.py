@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any
-
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 
 from zhaquirks import Bus, LocalDataCluster
@@ -33,7 +29,6 @@ MOTION_ATTRIBUTE = 274
 DETECTION_INTERVAL = 0x0102
 MOTION_SENSITIVITY = 0x010C
 TRIGGER_INDICATOR = 0x0152
-_LOGGER = logging.getLogger(__name__)
 
 
 class OppleCluster(XiaomiMotionManufacturerCluster):
@@ -48,21 +43,6 @@ class OppleCluster(XiaomiMotionManufacturerCluster):
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
         TRIGGER_INDICATOR: ("trigger_indicator", types.uint8_t, True),
     }
-
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Write attributes to device with internal 'attributes' validation."""
-        result = await super().write_attributes(attributes, **kwargs)
-        interval = attributes.get(
-            "detection_interval", attributes.get(DETECTION_INTERVAL)
-        )
-        _LOGGER.debug("detection interval: %s", interval)
-        if interval is not None:
-            self.endpoint.ias_zone.reset_s = int(interval)
-        return result
 
 
 class IlluminanceMeasurementClusterP1(LocalIlluminanceMeasurementCluster):
@@ -88,6 +68,14 @@ class LocalMotionCluster(MotionCluster):
     """Local motion cluster."""
 
     reset_s: int = 30
+
+    @property
+    def reset_after(self) -> int:
+        """Use the device's `detection_interval` if known, else `reset_s`."""
+        interval = self.endpoint.opple_cluster.get(DETECTION_INTERVAL)
+        if interval is None:
+            return self.reset_s
+        return int(interval)
 
 
 class LumiMotionAC02(CustomDevice):
