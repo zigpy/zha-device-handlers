@@ -336,12 +336,14 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
     .prevent_default_entity_creation(
         endpoint_id=44,
         cluster_id=IasWd.cluster_id,
-        function=lambda entity: entity.translation_key
-        in (
-            "default_siren_tone",
-            "default_siren_level",
-            "default_strobe_level",
-            "default_strobe",
+        function=lambda entity: (
+            entity.translation_key
+            in (
+                "default_siren_tone",
+                "default_siren_level",
+                "default_strobe_level",
+                "default_strobe",
+            )
         ),
     )
     .binary_sensor(
