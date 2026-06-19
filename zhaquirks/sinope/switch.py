@@ -5,49 +5,84 @@ VA4200WZ, VA4201WZ, VA4200ZB, VA4201ZB, VA4220ZB, VA4221ZB and MC3100ZB,
 2nd gen VA4220ZB, VA4221ZB with flow meeter FS4220, FS4221.
 """
 
+from enum import Enum
 from typing import Final
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
-    DeviceTemperature,
     Groups,
     Identify,
-    LevelControl,
     OnOff,
-    Ota,
     PowerConfiguration,
     Scenes,
-    Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.measurement import (
-    FlowMeasurement,
-    RelativeHumidity,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import Array
-
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zigpy.zcl.foundation import (
+    ZCL_CLUSTER_REVISION_ATTR,
+    BaseAttributeDefs,
+    ZCLAttributeDef,
 )
+
 from zhaquirks.sinope import (
     SINOPE,
     SINOPE_MANUFACTURER_CLUSTER_ID,
     CustomDeviceTemperatureCluster,
 )
+
+
+class ManufacturerReportingMixin:
+    """Mixin to configure the attributes reporting in manufacturer cluster."""
+
+    MANUFACTURER_REPORTING = {
+        # attribut_id: (min_interval, max_interval, reportable_change)
+        0x0010: (19, 300, 25),  # outdoor_temp
+        0x0070: (60, 3678, 1),  # current_load
+        0x0076: (0, 86400, 1),  # dr_config_water_temp_min
+        0x0077: (0, 86400, 1),  # dr_config_water_temp_time
+        0x007C: (19, 300, 25),  # min_measured_temp
+        0x007D: (19, 300, 25),  # max_measured_temp
+        0x0090: (59, 1799, 60),  # current_summation_delivered
+        0x0200: (60, 43688, 1),  # dev_status
+        0x0280: (19, 300, 25),  # max_measured_value
+        0x0283: (0, 86400, 1),  # cold_load_pickup_status
+        # ... add other attributes
+    }
+
+    async def configure_reporting_all(self):
+        """Configure reporting of all configured attributes."""
+        for attr_id, (min_i, max_i, change) in self.MANUFACTURER_REPORTING.items():
+            try:
+                await self.configure_reporting(
+                    attribute=attr_id,
+                    min_interval=min_i,
+                    max_interval=max_i,
+                    reportable_change=change,
+                )
+                self.debug(f"Reporting configured for attr {hex(attr_id)}")
+            except Exception as e:
+                self.debug(f"Reporting configuration fail for attr {hex(attr_id)}: {e}")
 
 
 class KeypadLock(t.enum8):
@@ -83,6 +118,14 @@ class PowerSource(t.uint32_t):
     DC_power = 0x0001D4C0
 
 
+class PowerSourceEnum(t.enum32):
+    """Convert PowerSource to enum."""
+
+    Battery = PowerSource.Battery
+    ACUPS_01 = PowerSource.ACUPS_01
+    DC_power = PowerSource.DC_power
+
+
 class EmergencyPower(t.uint32_t):
     """Valve emergency power source types."""
 
@@ -91,11 +134,20 @@ class EmergencyPower(t.uint32_t):
     Battery_ACUPS_01 = 0x0000003C
 
 
+class EmergencyPowerEnum(t.enum32):
+    """Convert EmergencyPower to enum."""
+
+    Battery = EmergencyPower.Battery
+    ACUPS_01 = EmergencyPower.ACUPS_01
+    Battery_ACUPS_01 = EmergencyPower.Battery_ACUPS_01
+
+
 class AbnormalAction(t.bitmap16):
     """Action in case of abnormal flow detected."""
 
     Nothing = 0x0000
     Close_valve = 0x0001
+    Notify_only = 0x0002
     Close_notify = 0x0003
 
 
@@ -121,6 +173,21 @@ class FlowDuration(t.uint32_t):
     H_24 = 0x00015180
 
 
+class FlowDurationEnum(t.enum32):
+    """Convert FlowDuration to enum."""
+
+    M_15 = FlowDuration.M_15
+    M_30 = FlowDuration.M_30
+    M_45 = FlowDuration.M_45
+    M_60 = FlowDuration.M_60
+    M_75 = FlowDuration.M_75
+    M_90 = FlowDuration.M_90
+    H_3 = FlowDuration.H_3
+    H_6 = FlowDuration.H_6
+    H_12 = FlowDuration.H_12
+    H_24 = FlowDuration.H_24
+
+
 class InputDelay(t.uint16_t):
     """Delay for on/off input."""
 
@@ -136,6 +203,21 @@ class InputDelay(t.uint16_t):
     H_3 = 0x2A30
 
 
+class InputDelayEnum(t.enum16):
+    """Convert InputDelay to enum."""
+
+    Off = InputDelay.Off
+    M_1 = InputDelay.M_1
+    M_2 = InputDelay.M_2
+    M_5 = InputDelay.M_5
+    M_10 = InputDelay.M_10
+    M_15 = InputDelay.M_15
+    M_30 = InputDelay.M_30
+    H_1 = InputDelay.H_1
+    H_2 = InputDelay.H_2
+    H_3 = InputDelay.H_3
+
+
 class EnergySource(t.enum8):
     """Power source."""
 
@@ -145,6 +227,7 @@ class EnergySource(t.enum8):
     DC_source = 0x0004
     ACUPS_01 = 0x0081
     ACUPS01 = 0x0082
+    DC_12_24 = 0x0084
 
 
 class ValveStatus(t.bitmap8):
@@ -155,6 +238,53 @@ class ValveStatus(t.bitmap8):
     On = 0x02
 
 
+class DeviceStatus(t.bitmap32):
+    """Device general status."""
+
+    Ok = 0x00000000
+    Leak_cable_disconected = 0x00000040
+    Temp_cable_disconected = 0x00000020
+    Both_cables_disconected = 0x00000060
+
+
+class ZoneStatus(t.uint16_t):
+    """IAS zone status."""
+
+    Ok = 0x0030
+    Connector_1 = 0x0031
+    Connector_2 = 0x0032
+    Low_battery = 0x0038
+    Connector_low_bat = 0x003A
+
+
+class ZoneStatusEnum(t.enum16):
+    """Convert ZoneStatus to enum."""
+
+    Ok = ZoneStatus.Ok
+    Connector_1 = ZoneStatus.Connector_1
+    Connector_2 = ZoneStatus.Connector_2
+    Low_battery = ZoneStatus.Low_battery
+    Connector_low_bat = ZoneStatus.Connector_low_bat
+
+
+class FlowMeter(t.LVList):
+    """Flow meter configuration values."""
+
+    No_flow_meter = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+    FS4220 = [194, 17, 0, 0, 136, 119, 0, 0, 1, 0, 0, 0]
+    FS4221 = [159, 38, 0, 0, 76, 85, 1, 0, 1, 0, 0, 0]
+    FS4222 = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+
+class FlowMeterEnum(Enum):
+    """Create a list from FlowMeter."""
+
+    No_flow_meter = (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+    FS4220 = (194, 17, 0, 0, 136, 119, 0, 0, 1, 0, 0, 0)
+    FS4221 = (159, 38, 0, 0, 76, 85, 1, 0, 1, 0, 0, 0)
+    FS4222 = (1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+
+
 class UnitOfMeasure(t.enum8):
     """Unit_of_measure."""
 
@@ -162,7 +292,14 @@ class UnitOfMeasure(t.enum8):
     Lh = 0x07
 
 
-class SinopeManufacturerCluster(CustomCluster):
+class BatteryStatus(t.bitmap32):
+    """Battery status."""
+
+    Ok = 0x00000000
+    Low = 0x00000001
+
+
+class SinopeManufacturerCluster(ManufacturerReportingMixin, CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     KeypadLock: Final = KeypadLock
@@ -173,112 +310,159 @@ class SinopeManufacturerCluster(CustomCluster):
     AbnormalAction: Final = AbnormalAction
     ColdStatus: Final = ColdStatus
     FlowDuration: Final = FlowDuration
+    FlowMeter: Final = FlowMeter
     InputDelay: Final = InputDelay
+    DeviceStatus: Final = DeviceStatus
 
     cluster_id: Final[t.uint16_t] = SINOPE_MANUFACTURER_CLUSTER_ID
     name: Final = "SinopeManufacturerCluster"
     ep_attribute: Final = "sinope_manufacturer_specific"
 
-    class AttributeDefs(foundation.BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Sinope Manufacturer Cluster Attributes."""
 
-        keypad_lockout: Final = foundation.ZCLAttributeDef(
+        keypad_lockout: Final = ZCLAttributeDef(
             id=0x0002, type=KeypadLock, access="rw", is_manufacturer_specific=True
         )
-        firmware_number: Final = foundation.ZCLAttributeDef(
+        firmware_number: Final = ZCLAttributeDef(
             id=0x0003, type=t.uint16_t, access="r", is_manufacturer_specific=True
         )
-        outdoor_temp: Final = foundation.ZCLAttributeDef(
+        firmware_version: Final = ZCLAttributeDef(
+            id=0x0004,
+            type=t.CharacterString,
+            access="r",
+            is_manufacturer_specific=True,
+        )
+        outdoor_temp: Final = ZCLAttributeDef(
             id=0x0010, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
-        unknown_attr_1: Final = foundation.ZCLAttributeDef(
+        unknown_attr_2: Final = ZCLAttributeDef(
             id=0x0013, type=t.enum8, access="rw", is_manufacturer_specific=True
         )
-        connected_load: Final = foundation.ZCLAttributeDef(
+        connected_load: Final = ZCLAttributeDef(
             id=0x0060, type=t.uint16_t, access="r", is_manufacturer_specific=True
         )
-        current_load: Final = foundation.ZCLAttributeDef(
-            id=0x0070, type=t.bitmap8, access="r", is_manufacturer_specific=True
+        current_load: Final = ZCLAttributeDef(
+            id=0x0070, type=t.bitmap8, access="rp", is_manufacturer_specific=True
         )
-        dr_config_water_temp_min: Final = foundation.ZCLAttributeDef(
+        dr_config_water_temp_min: Final = ZCLAttributeDef(
             id=0x0076, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
         )
-        dr_config_water_temp_time: Final = foundation.ZCLAttributeDef(
+        dr_config_water_temp_time: Final = ZCLAttributeDef(
             id=0x0077, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
         )
-        dr_wt_time_on: Final = foundation.ZCLAttributeDef(
+        dr_wt_time_on: Final = ZCLAttributeDef(
             id=0x0078, type=t.uint16_t, access="rwp", is_manufacturer_specific=True
         )
-        min_measured_temp: Final = foundation.ZCLAttributeDef(
+        min_measured_temp: Final = ZCLAttributeDef(
             id=0x007C, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
-        max_measured_temp: Final = foundation.ZCLAttributeDef(
+        max_measured_temp: Final = ZCLAttributeDef(
             id=0x007D, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
-        current_summation_delivered: Final = foundation.ZCLAttributeDef(
+        water_temp_protection_type: Final = ZCLAttributeDef(
+            id=0x007E, type=t.enum8, access="rwp", is_manufacturer_specific=True
+        )
+        current_summation_delivered: Final = ZCLAttributeDef(
             id=0x0090, type=t.uint32_t, access="rp", is_manufacturer_specific=True
         )
-        timer: Final = foundation.ZCLAttributeDef(
-            id=0x00A0, type=t.uint32_t, access="rwp", is_manufacturer_specific=True
+        timer: Final = ZCLAttributeDef(
+            id=0x00A0, type=t.uint32_t, access="rw", is_manufacturer_specific=True
         )
-        timer_countdown: Final = foundation.ZCLAttributeDef(
-            id=0x00A1, type=t.uint32_t, access="rp", is_manufacturer_specific=True
+        timer_countdown: Final = ZCLAttributeDef(
+            id=0x00A1, type=t.uint32_t, access="r", is_manufacturer_specific=True
         )
-        status: Final = foundation.ZCLAttributeDef(
-            id=0x0200, type=t.bitmap32, access="rp", is_manufacturer_specific=True
+        dev_status: Final = ZCLAttributeDef(
+            id=0x0200, type=DeviceStatus, access="rp", is_manufacturer_specific=True
         )
-        alarm_flow_threshold: Final = foundation.ZCLAttributeDef(
+        alarm_flow_threshold: Final = ZCLAttributeDef(
             id=0x0230, type=FlowAlarm, access="rw", is_manufacturer_specific=True
         )
-        alarm_options: Final = foundation.ZCLAttributeDef(
-            id=0x0231, type=Array, access="r", is_manufacturer_specific=True
+        alarm_options: Final = ZCLAttributeDef(
+            id=0x0231, type=AlarmAction, access="r", is_manufacturer_specific=True
         )
-        flow_meter_config: Final = foundation.ZCLAttributeDef(
-            id=0x0240, type=AlarmAction, access="rw", is_manufacturer_specific=True
+        flow_meter_config: Final = ZCLAttributeDef(
+            id=0x0240, type=FlowMeter, access="rw", is_manufacturer_specific=True
         )
-        valve_countdown: Final = foundation.ZCLAttributeDef(
+        alarm_disable_countdown: Final = ZCLAttributeDef(
             id=0x0241, type=t.uint32_t, access="rw", is_manufacturer_specific=True
         )
-        power_source: Final = foundation.ZCLAttributeDef(
+        power_source: Final = ZCLAttributeDef(
             id=0x0250, type=PowerSource, access="rw", is_manufacturer_specific=True
         )
-        emergency_power_source: Final = foundation.ZCLAttributeDef(
+        emergency_power_source: Final = ZCLAttributeDef(
             id=0x0251, type=EmergencyPower, access="rw", is_manufacturer_specific=True
         )
-        abnormal_flow_duration: Final = foundation.ZCLAttributeDef(
+        abnormal_flow_duration: Final = ZCLAttributeDef(
             id=0x0252, type=FlowDuration, access="rw", is_manufacturer_specific=True
         )
-        abnormal_flow_action: Final = foundation.ZCLAttributeDef(
+        abnormal_flow_action: Final = ZCLAttributeDef(
             id=0x0253, type=AbnormalAction, access="rw", is_manufacturer_specific=True
         )
-        max_measured_value: Final = foundation.ZCLAttributeDef(
+        max_measured_value: Final = ZCLAttributeDef(
             id=0x0280, type=t.int16s, access="rwp", is_manufacturer_specific=True
         )
-        cold_load_pickup_status: Final = foundation.ZCLAttributeDef(
+        cold_load_pickup_status: Final = ZCLAttributeDef(
             id=0x0283, type=ColdStatus, access="r", is_manufacturer_specific=True
         )
-        cold_load_pickup_remaining_time: Final = foundation.ZCLAttributeDef(
+        cold_load_pickup_remaining_time: Final = ZCLAttributeDef(
             id=0x0284, type=t.uint16_t, access="r", is_manufacturer_specific=True
         )
-        input_on_delay: Final = foundation.ZCLAttributeDef(
-            id=0x02A0, type=InputDelay, access="rw", is_manufacturer_specific=True
+        input_on_delay: Final = ZCLAttributeDef(
+            id=0x02A0, type=InputDelay, access="rwp", is_manufacturer_specific=True
         )
-        input_off_delay: Final = foundation.ZCLAttributeDef(
-            id=0x02A1, type=InputDelay, access="rw", is_manufacturer_specific=True
+        input_off_delay: Final = ZCLAttributeDef(
+            id=0x02A1, type=InputDelay, access="rwp", is_manufacturer_specific=True
         )
-        cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
+        cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
+
+    async def bind(self):
+        """Bind the cluster and configure reporting."""
+        await super().bind()
+        await self.configure_reporting_all()
 
 
 class SinopeTechnologiesBasicCluster(CustomCluster, Basic):
-    """SinopetechnologiesBasicCluster custom cluster ."""
+    """SinopetechnologiesBasicCluster custom cluster."""
 
     EnergySource: Final = EnergySource
 
     class AttributeDefs(Basic.AttributeDefs):
         """Sinope Manufacturer Basic Cluster Attributes."""
 
-        power_source: Final = foundation.ZCLAttributeDef(
+        power_source: Final = ZCLAttributeDef(
             id=0x0007, type=EnergySource, access="r", is_manufacturer_specific=True
+        )
+
+
+class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
+    """SinopeTechnologiesIasZoneCluster custom cluster."""
+
+    ZoneStatus: Final = ZoneStatus
+
+    class AttributeDefs(IasZone.AttributeDefs):
+        """Sinope Manufacturer ias Cluster Attributes."""
+
+        zone_status: Final = ZCLAttributeDef(
+            id=0x0002, type=ZoneStatus, access="p", is_manufacturer_specific=True
+        )
+
+
+class SinopeTechnologiesPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """SinopeTechnologiesPowerConfigurationCluster custom cluster."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.battery_voltage.id:
+            value = value / 10
+        super()._update_attribute(attrid, value)
+
+    BatteryStatus: Final = BatteryStatus
+
+    class AttributeDefs(PowerConfiguration.AttributeDefs):
+        """Sinope Manufacturer ias Cluster Attributes."""
+
+        battery_alarm_state: Final = ZCLAttributeDef(
+            id=0x003E, type=BatteryStatus, access="rp", is_manufacturer_specific=True
         )
 
 
@@ -294,517 +478,454 @@ class SinopeTechnologiesMeteringCluster(CustomCluster, Metering):
     class AttributeDefs(Metering.AttributeDefs):
         """Sinope Manufacturer Metering Cluster Attributes."""
 
-        status: Final = foundation.ZCLAttributeDef(
+        status: Final = ZCLAttributeDef(
             id=0x0200, type=ValveStatus, access="r", is_manufacturer_specific=True
         )
-        unit_of_measure: Final = foundation.ZCLAttributeDef(
+        unit_of_measure: Final = ZCLAttributeDef(
             id=0x0300, type=UnitOfMeasure, access="r", is_manufacturer_specific=True
         )
 
 
-class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
-    """Custom flow measurement cluster that divides value by 10."""
+(
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=81, device_version=0,
+    # input_clusters=[0, 3, 6, 1794, 2820, 65281]
+    # output_clusters=[25]>
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=81, device_version=0,
+    # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
+    # output_clusters=[25, 4096]>
+    QuirkBuilder(SINOPE, "SP2600ZB")
+    .applies_to(SINOPE, "SP2610ZB")
+    .replaces(SinopeTechnologiesMeteringCluster)
+    .replaces(SinopeManufacturerCluster)
+    .sensor(  # Current summ delivered
+        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.current_summ_delivered.name,
+        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        reporting_config=ReportingConfig(
+            min_interval=59, max_interval=1799, reportable_change=60
+        ),
+        translation_key="current_summ_delivered",
+        fallback_name="Current summ delivered",
+        entity_type=EntityType.STANDARD,
+    )
+    .add_to_registry()
+)
 
-    def _update_attribute(self, attrid, value):
-        if attrid == self.AttributeDefs.measured_value.id:
-            value = value / 10
-        super()._update_attribute(attrid, value)
+(
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=2, device_version=0,
+    # input_clusters=[0, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
+    # output_clusters=[3, 4, 25]>
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=2, device_version=0,
+    # input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
+    # output_clusters=[3, 4, 25]>
+    QuirkBuilder(SINOPE, "RM3250ZB")
+    .replaces(CustomDeviceTemperatureCluster)
+    .replaces(SinopeManufacturerCluster)
+    .enum(  # Keypad lock
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.keypad_lockout.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=KeypadLock,
+        translation_key="keypad_lockout",
+        fallback_name="Keypad lockout",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Device status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.dev_status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=DeviceStatus,
+        translation_key="dev_status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .number(  # Timer
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer",
+        fallback_name="Timer",
+    )
+    .sensor(  # Timer countdown
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown",
+        fallback_name="Timer countdown",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)
 
+(
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=3, device_version=0,
+    # input_clusters=[0, 1, 3, 4, 5, 6, 8, 2821, 65281]
+    # output_clusters=[3, 25]>
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=3, device_version=0,
+    # input_clusters=[0, 1, 3, 4, 5, 6, 8, 1026, 1280, 1794, 2821, 65281]
+    # output_clusters=[3, 6, 25]>
+    QuirkBuilder(SINOPE, "VA4200WZ")
+    .applies_to(SINOPE, "VA4201WZ")
+    .applies_to(SINOPE, "VA4200ZB")
+    .applies_to(SINOPE, "VA4201ZB")
+    .applies_to(SINOPE, "VA4220ZB")
+    .applies_to(SINOPE, "VA4221ZB")
+    .replaces(SinopeTechnologiesBasicCluster)
+    .replaces(SinopeTechnologiesPowerConfigurationCluster)
+    .replaces(SinopeTechnologiesIasZoneCluster)
+    .replaces(SinopeTechnologiesMeteringCluster)
+    .replaces(SinopeManufacturerCluster)
+    .enum(  # energy source
+        attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
+        cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
+        enum_class=EnergySource,
+        translation_key="power_source",
+        fallback_name="Power source",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # power source
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.power_source.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=PowerSourceEnum,
+        translation_key="power_source",
+        fallback_name="Power source",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Alarm action status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_options.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=AlarmAction,
+        translation_key="alarm_options",
+        fallback_name="Alarm options",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Flow alarm
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_flow_threshold.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=FlowAlarm,
+        translation_key="alarm_flow",
+        fallback_name="Alarm flow",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Abnormal Flow action
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.abnormal_flow_action.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=AbnormalAction,
+        translation_key="abnormal_flow_action",
+        fallback_name="Abnormal flow action",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Emergency_power_source
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.emergency_power_source.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=EmergencyPowerEnum,
+        translation_key="emergency_power_source",
+        fallback_name="Emergency power source",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Valve status
+        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.status.name,
+        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
+        enum_class=ValveStatus,
+        translation_key="valve_status",
+        fallback_name="Valve status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .enum(  # Device status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.dev_status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=DeviceStatus,
+        translation_key="dev_status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .enum(  # abnormal flow duration
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.abnormal_flow_duration.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=FlowDurationEnum,
+        translation_key="abnormal_flow_duration",
+        fallback_name="Abnormal flow duration",
+        entity_type=EntityType.CONFIG,
+    )
+    .sensor(  # battery percent
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_percentage_remaining.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=43200, reportable_change=1
+        ),
+        translation_key="battery_percentage_remaining",
+        fallback_name="Battery percentage remaining",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # battery voltage
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_voltage.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=43200, reportable_change=1
+        ),
+        translation_key="battery_voltage",
+        fallback_name="Battery voltage",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Zone status
+        attribute_name=SinopeTechnologiesIasZoneCluster.AttributeDefs.zone_status.name,
+        cluster_id=SinopeTechnologiesIasZoneCluster.cluster_id,
+        translation_key="zone_status",
+        fallback_name="Zone status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .number(  # Valve closure countdown
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_disable_countdown.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        step=10,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="alarm_disable_countdown",
+        fallback_name="Alarm disable countdown",
+    )
+    .add_to_registry()
+)
 
-class SinopeTechnologiesSwitch(CustomDevice):
-    """SinopeTechnologiesSwitch custom device."""
+(
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=2, device_version=0,
+    # input_clusters=[0, 1, 3, 4, 5, 6, 15, 1026, 1029, 2821, 65281]
+    # output_clusters=[25]>
+    # <SimpleDescriptor(endpoint=2, profile=260,
+    # device_type=2, device_version=0,
+    # input_clusters=[4, 5, 6, 15, 1026, 65281]
+    # output_clusters=[25]>
+    QuirkBuilder(SINOPE, "MC3100ZB")
+    .adds_endpoint(1, device_type=zha_p.DeviceType.ON_OFF_OUTPUT)
+    .adds_endpoint(2, device_type=zha_p.DeviceType.ON_OFF_OUTPUT)
+    .replaces(SinopeTechnologiesPowerConfigurationCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=2)
+    .binary_sensor(  # Out of service status
+        attribute_name=BinaryInput.AttributeDefs.out_of_service.name,
+        cluster_id=BinaryInput.cluster_id,
+        endpoint_id=1,
+        device_class=BinarySensorDeviceClass.TAMPER,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=600, reportable_change=1
+        ),
+        translation_key="out_of_service",
+        fallback_name="Out of service",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .enum(  # energy source
+        attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
+        cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
+        enum_class=EnergySource,
+        translation_key="power_source",
+        fallback_name="Power source",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Input on delay
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.input_on_delay.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        enum_class=InputDelayEnum,
+        translation_key="input_on_delay",
+        fallback_name="Input on delay",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Input off delay
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.input_off_delay.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        enum_class=InputDelayEnum,
+        translation_key="input_off_delay",
+        fallback_name="Input off delay",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Input 2 on delay
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.input_on_delay.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=2,
+        enum_class=InputDelayEnum,
+        translation_key="input_2_on_delay",
+        fallback_name="Input 2 on delay",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Input 2 off delay
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.input_off_delay.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=2,
+        enum_class=InputDelayEnum,
+        translation_key="input_2_off_delay",
+        fallback_name="Input 2 off delay",
+        entity_type=EntityType.CONFIG,
+    )
+    .number(  # Timer 1
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer",
+        fallback_name="Timer",
+    )
+    .number(  # Timer 2
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=2,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_2",
+        fallback_name="Timer 2",
+    )
+    .sensor(  # Timer countdown
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown",
+        fallback_name="Timer countdown",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Timer2 countdown
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown_2",
+        fallback_name="Timer countdown 2",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # battery voltage
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_voltage.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=43200, reportable_change=1
+        ),
+        translation_key="battery_voltage",
+        fallback_name="Battery voltage",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Current load
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.current_load.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        reporting_config=ReportingConfig(
+            min_interval=60, max_interval=3678, reportable_change=1
+        ),
+        translation_key="current_load",
+        fallback_name="Current load",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Battery status
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_alarm_state.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        translation_key="battery_alarm_state",
+        fallback_name="Battery alarm",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Device status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.dev_status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        translation_key="dev_status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)
 
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=81, device_version=0,
-        # input_clusters=[0, 3, 6, 1794, 2820, 65281]
-        # output_clusters=[25]>
-        MODELS_INFO: [
-            (SINOPE, "SP2600ZB"),
-            (SINOPE, "SP2610ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    SinopeTechnologiesMeteringCluster,
-                    ElectricalMeasurement.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesLoadController(CustomDevice):
-    """SinopeTechnologiesLoadController custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=2, device_version=0,
-        # input_clusters=[0, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "RM3250ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesLoadController_V2(CustomDevice):
-    """SinopeTechnologiesLoadController version 2 custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=2, device_version=0,
-        # input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "RM3250ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesValve(CustomDevice):
-    """SinopeTechnologiesValve custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=3, device_version=0,
-        # input_clusters=[0, 1, 3, 4, 5, 6, 8, 2821, 65281]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            (SINOPE, "VA4200WZ"),
-            (SINOPE, "VA4201WZ"),
-            (SINOPE, "VA4200ZB"),
-            (SINOPE, "VA4201ZB"),
-            (SINOPE, "VA4220ZB"),
-            (SINOPE, "VA4221ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.LEVEL_CONTROLLABLE_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    SinopeTechnologiesBasicCluster,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesValveG2(CustomDevice):
-    """SinopeTechnologiesValveG2 custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=3, device_version=0,
-        # input_clusters=[0, 1, 3, 4, 5, 6, 8, 1026, 1280, 1794, 2821, 65281]
-        # output_clusters=[3, 6, 25]>
-        MODELS_INFO: [
-            (SINOPE, "VA4220ZB"),
-            (SINOPE, "VA4221ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.LEVEL_CONTROLLABLE_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    SinopeTechnologiesBasicCluster,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SinopeTechnologiesFlowMeasurementCluster,
-                    IasZone.cluster_id,
-                    SinopeTechnologiesMeteringCluster,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesMultiController(CustomDevice):
-    """SinopeTechnologiesMultiController custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=2, device_version=0,
-        # input_clusters=[0, 1, 3, 4, 5, 6, 15, 1026, 1029, 2821, 65281]
-        # output_clusters=[25]>
-        MODELS_INFO: [(SINOPE, "MC3100ZB")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            2: {
-                INPUT_CLUSTERS: [
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-
-
-class SinopeTechnologiesCalypso(CustomDevice):
-    """SinopeTechnologiesCalypso custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=260, device_version=0,
-        # input_clusters=[0, 2, 3, 4, 5, 6, 1026, 1280, 1794, 2820, 2821, 65281]
-        # output_clusters=[10, 25]>
-        MODELS_INFO: [
-            (SINOPE, "RM3500ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            2: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    TemperatureMeasurement.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-
-class SinopeTechnologiesSwitch_V2(CustomDevice):
-    """SinopeTechnologiesSwitch version 2 custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=81, device_version=0,
-        # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
-        # output_clusters=[25, 4096]>
-        MODELS_INFO: [
-            (SINOPE, "SP2600ZB"),
-            (SINOPE, "SP2610ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    SinopeTechnologiesMeteringCluster,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=260, device_version=0,
+    # input_clusters=[0, 2, 3, 4, 5, 6, 1026, 1280, 1794, 2820, 2821, 65281]
+    # output_clusters=[10, 25]>
+    # <SimpleDescriptor(endpoint=2, profile=260,
+    # device_type=260, device_version=0,
+    # input_clusters=[1026]
+    # output_clusters=[]>
+    QuirkBuilder(SINOPE, "RM3500ZB")
+    .replaces_endpoint(1, device_type=zha_p.DeviceType.ON_OFF_OUTPUT)
+    .adds(Basic, endpoint_id=1)
+    .adds(Identify, endpoint_id=1)
+    .adds(Groups, endpoint_id=1)
+    .adds(Scenes, endpoint_id=1)
+    .adds(OnOff, endpoint_id=1)
+    .adds(TemperatureMeasurement, endpoint_id=1)
+    .adds(Metering, endpoint_id=1)
+    .adds(IasZone, endpoint_id=1)
+    .adds(ElectricalMeasurement, endpoint_id=1)
+    .adds(Diagnostic, endpoint_id=1)
+    .replaces(CustomDeviceTemperatureCluster)
+    .replaces(SinopeManufacturerCluster)
+    .enum(  # Keypad lock
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.keypad_lockout.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=KeypadLock,
+        translation_key="keypad_lockout",
+        fallback_name="Keypad lockout",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Device status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.dev_status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=DeviceStatus,
+        translation_key="dev_status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .number(  # water temp min limit
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.dr_config_water_temp_min.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=60,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="water_temp_min",
+        fallback_name="Water temp min",
+    )
+    .sensor(  # Cold load status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.cold_load_pickup_status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        endpoint_id=1,
+        device_class=SensorDeviceClass.ENUM,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=86400, reportable_change=1
+        ),
+        translation_key="cold_load_pickup_status",
+        fallback_name="Cold load pickup status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)

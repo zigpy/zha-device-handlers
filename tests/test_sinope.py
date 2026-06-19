@@ -3,11 +3,10 @@
 from unittest import mock
 
 import pytest
-from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import DeviceTemperature
-from zigpy.zcl.clusters.measurement import FlowMeasurement
+from zigpy.zcl.clusters.general import DeviceTemperature, PowerConfiguration
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -19,12 +18,11 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
+from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
-    SinopeTechnologieslight,
+    LightManufacturerCluster,
     SinopeTechnologiesManufacturerCluster,
 )
-from zhaquirks.sinope.switch import SinopeTechnologiesCalypso, SinopeTechnologiesValveG2
 
 zhaquirks.setup()
 
@@ -32,11 +30,17 @@ ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
+SINOPE_MODELS = [
+    "SW2500ZB",  # light.py
+    "RM3500ZB",  # switch.py
+    "TH1123ZB",  # thermostat.py
+    "WL4200",  # sensor.py
+]
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologiesCalypso,))
-async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
+
+async def test_sinope_device_temp(zigpy_device_from_v2_quirk):
     """Test that device temperature is multiplied."""
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "RM3500ZB")
 
     dev_temp_cluster = device.endpoints[1].device_temperature
     dev_temp_listener = ClusterListener(dev_temp_cluster)
@@ -56,30 +60,26 @@ async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
     assert dev_temp_listener.attribute_updates[1][1] == 25  # not modified
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologiesValveG2,))
-async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
-    """Test that flow measurement measured value is divided."""
-    device = zigpy_device_from_quirk(quirk)
+async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
+    """Test that metering values are handled correctly for Sinope valve."""
+    device = zigpy_device_from_v2_quirk(SINOPE, "VA4220ZB")
 
-    flow_measurement_cluster = device.endpoints[1].flow
-    flow_measurement_listener = ClusterListener(flow_measurement_cluster)
-    flow_measurement_attr_id = FlowMeasurement.AttributeDefs.measured_value.id
-    flow_measurement_other_attr_id = FlowMeasurement.AttributeDefs.min_measured_value.id
+    metering_cluster = device.endpoints[1].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+    metering_attr_id = Metering.AttributeDefs.current_summ_delivered.id
+    metering_other_attr_id = Metering.AttributeDefs.multiplier.id
 
     # verify measured value is divided by 10
-    flow_measurement_cluster.update_attribute(flow_measurement_attr_id, 2500)
-    assert len(flow_measurement_listener.attribute_updates) == 1
-    assert flow_measurement_listener.attribute_updates[0][0] == flow_measurement_attr_id
-    assert flow_measurement_listener.attribute_updates[0][1] == 250.0  # divided by 10
+    metering_cluster.update_attribute(metering_attr_id, 2500)
+    assert len(metering_listener.attribute_updates) == 1
+    assert metering_listener.attribute_updates[0][0] == metering_attr_id
+    assert metering_listener.attribute_updates[0][1] == 2500  # not divided
 
     # verify other attributes are not modified
-    flow_measurement_cluster.update_attribute(flow_measurement_other_attr_id, 25)
-    assert len(flow_measurement_listener.attribute_updates) == 2
-    assert (
-        flow_measurement_listener.attribute_updates[1][0]
-        == flow_measurement_other_attr_id
-    )
-    assert flow_measurement_listener.attribute_updates[1][1] == 25  # not modified
+    metering_cluster.update_attribute(metering_other_attr_id, 25)
+    assert len(metering_listener.attribute_updates) == 2
+    assert metering_listener.attribute_updates[1][0] == metering_other_attr_id
+    assert metering_listener.attribute_updates[1][1] == 25  # not modified
 
 
 def _get_packet_data(
@@ -97,7 +97,7 @@ def _get_packet_data(
     return t.SerializableBytes(hdr + cmd).serialize()
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
+@pytest.mark.parametrize(LightManufacturerCluster)
 @pytest.mark.parametrize(
     "press_type,button,exp_event",
     (
@@ -114,10 +114,10 @@ def _get_packet_data(
     ),
 )
 async def test_sinope_light_switch(
-    zigpy_device_from_quirk, quirk, press_type, button, exp_event
+    zigpy_device_from_v2_quirk, press_type, button, exp_event
 ):
     """Test that button presses are sent as events."""
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "DM2500ZB")
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     endpoint_id = 1
 
@@ -162,15 +162,14 @@ async def test_sinope_light_switch(
         )
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
-async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, quirk):
+async def test_sinope_light_switch_non_action_report(zigpy_device_from_v2_quirk):
     """Test commands not handled by custom handler.
 
     Make sure that non attribute report commands and attribute reports that don't
     concern action_report are passed through to base class.
     """
 
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     endpoint_id = 1
 
@@ -216,10 +215,10 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
     assert cluster_listener.zha_send_event.call_count == 1
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
-async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
-    """Test that configuring reporting for action_report works."""
-    device: Device = zigpy_device_from_quirk(quirk)
+@pytest.mark.parametrize("model", SINOPE_MODELS)
+async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
+    """Generic test that manufacturer cluster configures reporting for all attributes."""
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
@@ -236,27 +235,90 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
         )
 
         await manu_cluster.bind()
-        await manu_cluster.configure_reporting(
-            SinopeTechnologiesManufacturerCluster.AttributeDefs.action_report.id,
-            3600,
-            10800,
-            1,
-        )
+        await manu_cluster.configure_reporting_all()
 
-        assert len(request_mock.mock_calls) == 1
         assert len(bind_mock.mock_calls) == 1
 
+        # Check that all attributes have been configured
+        called_attrs = []
+        for call in request_mock.mock_calls:
+            reports = call.args[3]  # list of AttributeReport
+            for report in reports:
+                called_attrs.append(report.attrid)
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
-async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
+        for attr_id in manu_cluster.MANUFACTURER_REPORTING:
+            assert attr_id in called_attrs
+
+        # Check that number of call is coherent
+        assert len(request_mock.mock_calls) >= len(manu_cluster.MANUFACTURER_REPORTING)
+
+
+@pytest.mark.parametrize("model", SINOPE_MODELS)
+async def test_sinope_reporting_failure(zigpy_device_from_v2_quirk, model):
+    """Test that reporting failure is handled gracefully for all models."""
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
+    manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
+
+    with mock.patch("zigpy.zcl.Cluster.request", side_effect=Exception("boom")):
+        await manu_cluster.configure_reporting_all()
+
+
+async def test_sinope_light_device_triggers_def(zigpy_device_from_v2_quirk):
     """Test device automation triggers.
 
     Make sure that values are actual ints and not instances of an enum class.
     """
 
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
 
     for config in device.device_automation_triggers.values():
         val = config.get("args", {}).get("value")
         if val is not None:
             assert type(val) is int, type(val)
+
+
+async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
+    """Test that device current_summation_delivered is divided by 100."""
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
+
+    dev_summ_cluster = device.endpoints[1].sinope_manufacturer_specific
+    dev_summ_listener = ClusterListener(dev_summ_cluster)
+    dev_summ_attr_id = dev_summ_cluster.AttributeDefs.current_summation_delivered.id
+    dev_summ_other_attr_id = dev_summ_cluster.AttributeDefs.connected_load.id
+
+    # verify current temperature is divided by 100
+    dev_summ_cluster.update_attribute(dev_summ_attr_id, 2500)
+    assert len(dev_summ_listener.attribute_updates) == 1
+    assert dev_summ_listener.attribute_updates[0][0] == dev_summ_attr_id
+    assert dev_summ_listener.attribute_updates[0][1] == 25  # divided by 100
+
+    # verify other attributes are not modified
+    dev_summ_cluster.update_attribute(dev_summ_other_attr_id, 2500)
+    assert len(dev_summ_listener.attribute_updates) == 2
+    assert dev_summ_listener.attribute_updates[1][0] == dev_summ_other_attr_id
+    assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
+
+
+@pytest.mark.parametrize("model", ["VA4220ZB", "LM4110-ZB"])
+async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk, model):
+    """Test that device battery voltage is divided by 10."""
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
+
+    dev_volt_cluster = device.endpoints[1].in_clusters[PowerConfiguration.cluster_id]
+    dev_volt_listener = ClusterListener(dev_volt_cluster)
+    dev_volt_attr_id = dev_volt_cluster.AttributeDefs.battery_voltage.id
+    dev_volt_other_attr_id = (
+        dev_volt_cluster.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # verify battery voltage is divided by 10
+    dev_volt_cluster.update_attribute(dev_volt_attr_id, 55)
+    assert len(dev_volt_listener.attribute_updates) == 1
+    assert dev_volt_listener.attribute_updates[0][0] == dev_volt_attr_id
+    assert dev_volt_listener.attribute_updates[0][1] == 5.5  # divided by 10
+
+    # verify other attributes are not modified
+    dev_volt_cluster.update_attribute(dev_volt_other_attr_id, 55)
+    assert len(dev_volt_listener.attribute_updates) == 2
+    assert dev_volt_listener.attribute_updates[1][0] == dev_volt_other_attr_id
+    assert dev_volt_listener.attribute_updates[1][1] == 55  # not modified
