@@ -17,7 +17,6 @@ from functools import partial
 import inspect
 import logging
 import pathlib
-import re
 from types import FrameType
 from typing import Any, Self, overload
 
@@ -1070,8 +1069,9 @@ class QuirkBuilder:
         )
 
         manufacturer, model = self.manufacturer_model_metadata[0]
+
         # Legacy `quirk_class` identity, now carried as provenance data.
-        quirk_class_name = re.sub(r"\W|^(?=\d)", "_", f"Quirk_{manufacturer}_{model}")
+        quirk_label = f"({manufacturer} / {model})"
 
         quirk_definition = QuirkDefinition(
             friendly_name=self.friendly_name_metadata,
@@ -1105,7 +1105,7 @@ class QuirkBuilder:
                 module=self.quirk_module,
                 file=str(self.quirk_file),
                 line=self.quirk_file_line,
-                label=quirk_class_name,
+                label=quirk_label,
             ),
         )
 
