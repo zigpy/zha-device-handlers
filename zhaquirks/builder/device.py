@@ -184,4 +184,5 @@ class QuirkV2Factory:
     def __call__(
         self, zigpy_device: zigpy.device.Device, gateway: Gateway
     ) -> QuirkV2Device:
+        """Build the bound `QuirkV2Device` for a resolved zigpy device."""
         return self.base(zigpy_device, gateway, quirk_definition=self.quirk_definition)

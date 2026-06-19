@@ -323,9 +323,12 @@ def test_signature(quirk: CustomDevice) -> None:
         return False
 
     # enforce new style of signature
+    assert quirk.signature is not None
     assert ENDPOINTS in quirk.signature
-    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]
+
+    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]  # type: ignore[unreachable]
     assert not numeric
+
     assert set(quirk.signature).issubset(SIGNATURE_ALLOWED)
     models_info = quirk.signature.get(MODELS_INFO)
     if models_info is not None:

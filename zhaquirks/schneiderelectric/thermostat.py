@@ -6,7 +6,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import (
     PERCENTAGE,
@@ -376,7 +376,7 @@ class SECycleTime(CustomCluster):
     cluster_id = 0xFF16
     name = "SECycleTime"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         se_demand_percentage: Final = ZCLAttributeDef(
@@ -423,7 +423,7 @@ class SEHeatingCoolingOutput(CustomCluster):
     cluster_id = 0xFF23
     name = "SEHeatingCoolingOutput"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         se_measured_temperature: Final = ZCLAttributeDef(

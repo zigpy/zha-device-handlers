@@ -45,6 +45,7 @@ class BaseCustomDevice(zigpy.device.Device):
         nwk: t.NWK,
         replaces: zigpy.device.Device,
     ) -> None:
+        """Initialize the custom device, cloning state from `replaces`."""
         super().__init__(application, ieee, nwk)
 
         self.lqi = replaces.lqi
@@ -70,6 +71,7 @@ class BaseCustomDevice(zigpy.device.Device):
     def add_endpoint(
         self, endpoint_id: int, replace_device: zigpy.device.Device | None = None
     ) -> zigpy.endpoint.Endpoint:
+        """Add an endpoint, cloning it from the replaced device."""
         if endpoint_id not in self.replacement.get(SIG_ENDPOINTS, {}):
             return super().add_endpoint(endpoint_id)
 
@@ -87,7 +89,7 @@ class BaseCustomDevice(zigpy.device.Device):
         return ep
 
     async def apply_custom_configuration(self, *args, **kwargs):
-        """Hook for applications to instruct instances to apply custom configuration."""
+        """Apply custom configuration to the device's custom clusters."""
         for endpoint in self.endpoints.values():
             if isinstance(endpoint, ZDO):
                 continue
@@ -125,6 +127,7 @@ class CustomZigpyDevice(BaseCustomDevice):
         nwk: t.NWK,
         replaces: zigpy.device.Device,
     ) -> None:
+        """Initialize the clone, mirroring `replaces`' endpoints and clusters."""
         self.replacement = {
             SIG_ENDPOINTS: {
                 key: {
@@ -154,6 +157,7 @@ class CustomEndpoint(zigpy.endpoint.Endpoint):
         replacement_data: dict[str, typing.Any],
         replace_device: zigpy.device.Device,
     ) -> None:
+        """Initialize the endpoint from the quirk's replacement data."""
         super().__init__(device, endpoint_id)
 
         def set_device_attr(attr):

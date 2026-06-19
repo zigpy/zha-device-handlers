@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import typing
+from typing import Any
 
 from zigpy.const import (  # noqa: F401
     SIG_ENDPOINTS,
@@ -39,7 +40,7 @@ _uninitialized_device_message_handlers = []
 def get_device(
     device: zigpy.device.Device, registry: DeviceRegistry | None = None
 ) -> zigpy.device.Device:
-    """Get a CustomDevice object, if one is available"""
+    """Get a CustomDevice object, if one is available."""
     if registry is None:
         return DEVICE_REGISTRY.get_device(device)
 
@@ -69,9 +70,10 @@ def register_uninitialized_device_message_handler(handler: typing.Callable) -> N
 class CustomDevice(BaseCustomDevice):
     """Implementation of a quirks v1 custom device."""
 
-    signature = None
+    signature: dict[str, Any] | None = None
 
     def __init_subclass__(cls) -> None:
+        """Register a quirk subclass that defines a signature."""
         if getattr(cls, "signature", None) is not None:
             DEVICE_REGISTRY.add_to_registry(cls)
             PENDING_LEGACY_QUIRKS.append(cls)
@@ -81,7 +83,7 @@ FilterType = typing.Callable[[zigpy.device.Device], bool]
 
 
 def signature_matches(
-    signature: dict[str, typing.Any],
+    signature: dict[str, Any],
 ) -> FilterType:
     """Return True if device matches signature."""
 
@@ -167,7 +169,7 @@ def handle_message_from_uninitialized_sender(
     dst_ep: int,
     message: bytes,
 ) -> None:
-    """Processes message from an uninitialized sender."""
+    """Process a message from an uninitialized sender."""
     for handler in _uninitialized_device_message_handlers:
         if handler(sender, profile, cluster, src_ep, dst_ep, message):
             break

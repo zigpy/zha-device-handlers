@@ -33,6 +33,7 @@ class DeviceRegistry:
         ] = defaultdict(lambda: defaultdict(deque))
 
     def purge_custom_quirks(self, custom_quirks_root: pathlib.Path) -> None:
+        """Remove quirks loaded from the custom quirks directory."""
         # If zhaquirks aren't being used, we can't tell if a quirk is custom or not
         for model_registry in self._registry_v1.values():
             for quirks in model_registry.values():
@@ -52,7 +53,7 @@ class DeviceRegistry:
                     quirks.remove(quirk)
 
     def add_to_registry(self, custom_device: type[CustomDevice]) -> None:
-        """Add a device to the registry"""
+        """Add a device to the registry."""
         models_info = custom_device.signature.get(SIG_MODELS_INFO)
         if models_info:
             for manuf, model in models_info:
@@ -65,7 +66,7 @@ class DeviceRegistry:
                 self.registry_v1[manufacturer][model].appendleft(custom_device)
 
     def remove(self, custom_device: type[CustomDevice]) -> None:
-        """Remove a device from the registry"""
+        """Remove a device from the registry."""
         models_info = custom_device.signature.get(SIG_MODELS_INFO)
         if models_info:
             for manuf, model in models_info:
@@ -76,7 +77,7 @@ class DeviceRegistry:
             self.registry_v1[manufacturer][model].remove(custom_device)
 
     def get_device(self, device: Device) -> CustomDevice | Device:
-        """Get a CustomDevice object, if one is available"""
+        """Get a CustomDevice object, if one is available."""
         if isinstance(device, BaseCustomDevice):
             return device
 

@@ -23,6 +23,7 @@ class CustomCluster(zigpy.zcl.Cluster):
     async def read_attributes_raw(
         self, attributes: list[int], manufacturer: int | None = None, **kwargs
     ):
+        """Read attributes, serving `_CONSTANT_ATTRIBUTES` from the quirk locally."""
         if not self._CONSTANT_ATTRIBUTES:
             return await super().read_attributes_raw(
                 attributes, manufacturer=manufacturer, **kwargs
@@ -83,4 +84,4 @@ class CustomCluster(zigpy.zcl.Cluster):
         return super().get(key, default)
 
     async def apply_custom_configuration(self, *args, **kwargs):
-        """Hook for applications to instruct instances to apply custom configuration."""
+        """Apply custom configuration; overridden by clusters that need it."""

@@ -436,7 +436,7 @@ class QuirkBuilder:
     def device_class(
         self, custom_device_class: type[Device] | type[zigpy.device.Device]
     ) -> Self:
-        """Legacy compatibility API. Use `zha_device_class` or `zigpy_device_class`"""
+        """Use `zha_device_class` or `zigpy_device_class` instead (legacy compatibility)."""
         if issubclass(custom_device_class, Device):
             return self.zha_device_class(custom_device_class)
         else:

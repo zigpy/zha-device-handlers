@@ -3,7 +3,7 @@
 from typing import Final
 
 import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import (
     EntityType,
@@ -44,7 +44,7 @@ class SEAlarmConfiguration(CustomCluster):
     cluster_id = 0xFC04
     name = "SEAlarmConfiguration"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         se_led_brightness: Final = ZCLAttributeDef(
