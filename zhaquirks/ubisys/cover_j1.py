@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Final
 
+from zha.quirks import SE_POLL_SUMMATION
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReportedEvent,
@@ -32,7 +33,6 @@ from zhaquirks.builder import (
     UnitOfTime,
 )
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
 
 _LOGGER = logging.getLogger(__name__)

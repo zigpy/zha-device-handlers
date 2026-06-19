@@ -33,6 +33,7 @@ from datetime import UTC, datetime
 import time
 from typing import Any
 
+from zha.quirks import DANFOSS_ALLY_THERMOSTAT
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -59,7 +60,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 
 DANFOSS = "Danfoss"
 HIVE = DANFOSS

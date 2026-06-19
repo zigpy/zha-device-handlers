@@ -1,11 +1,11 @@
 """Frient Water Leak."""
 
+from zha.quirks import SIREN_BASIC
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
 from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
-from zhaquirks.quirk_ids import SIREN_BASIC
 
 (
     QuirkBuilder("frient A/S", "FLSZB-110")

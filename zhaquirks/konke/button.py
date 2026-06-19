@@ -1,5 +1,6 @@
 """Konke Button Remote."""
 
+from zha.quirks import KONKE_BUTTON
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -28,7 +29,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.konke import KONKE, KonkeOnOffCluster
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.quirk_ids import KONKE_BUTTON
 
 KONKE_CLUSTER_ID = 0xFCC0
 

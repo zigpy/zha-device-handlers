@@ -1,5 +1,6 @@
 """Heiman HS1SA-E smoke sensor."""
 
+from zha.quirks import SIREN_BASIC
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -12,7 +13,6 @@ from zhaquirks.builder import (
     ReportingConfig,
 )
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.quirk_ids import SIREN_BASIC
 
 
 class SmokeSirenEnum(t.enum8):

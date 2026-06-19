@@ -1,5 +1,6 @@
 """TS011F plug."""
 
+from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -26,7 +27,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNewManufCluster,

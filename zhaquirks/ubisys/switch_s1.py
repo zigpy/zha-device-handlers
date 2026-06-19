@@ -1,5 +1,6 @@
 """Ubisys Switching Actuator S1 quirk."""
 
+from zha.quirks import SE_POLL_SUMMATION
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
@@ -14,7 +15,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 

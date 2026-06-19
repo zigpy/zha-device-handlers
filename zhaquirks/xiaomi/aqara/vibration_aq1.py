@@ -3,6 +3,7 @@
 import math
 from typing import Final
 
+from zha.quirks import XIAOMI_AQARA_VIBRATION_AQ1
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.closures import DoorLock
@@ -37,7 +38,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     ZONE_TYPE,
 )
-from zhaquirks.quirk_ids import XIAOMI_AQARA_VIBRATION_AQ1
 from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
