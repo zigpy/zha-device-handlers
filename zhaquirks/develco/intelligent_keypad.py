@@ -1,20 +1,16 @@
 """Intelligent keypad."""
 
-import asyncio
-from datetime import UTC, datetime
 from typing import Any, Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder, SensorDeviceClass
+from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.types import Addressing
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks import LocalDataCluster
+from zigpy.zcl.foundation import ZCLAttributeDef
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
@@ -82,23 +78,12 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
     def __init__(self, *args, **kwargs):
         """Init cache with sensible defaults."""
         super().__init__(*args, **kwargs)
-        if self.ep_attribute:
-            self.endpoint._cluster_attr[self.ep_attribute] = self
         self._cached_panel_status = self.PanelStatus.Panel_Disarmed
         self._cached_seconds = 0
         self._cached_audible = self.AudibleNotification.Default_Sound
         self._cached_alarm = self.AlarmStatus.No_Alarm
         self._have_cache = False
         self._suppress_panel_updates = False
-        self._emergency_reset_handle: Optional[asyncio.TimerHandle] = None
-        self._update_attribute(
-            self.AttributeDefs.auto_arm_mode.id, self.AutoArmMode.No_Auto_Arm
-        )
-        self._update_attribute(self.AttributeDefs.auto_disarm.id, False)
-        self._update_attribute(
-            self.AttributeDefs.auto_arm_disarm.id, self.AutoArmDisarm.Disabled
-        )
-        self._update_attribute(self.AttributeDefs.pin_length.id, 4)
 
     def handle_cluster_request(
         self,
@@ -110,22 +95,7 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         ] = None,
     ):
         """Intercept SOS presses before ZHA's IAS logic reacts."""
-        if hdr.command_id == self.ServerCommandDefs.arm.id:
-            self._store_last_code(args)
-            event_args = {
-                COMMAND: self.ServerCommandDefs.arm.name,
-                CLUSTER_ID: int(self.cluster_id),
-                ENDPOINT_ID: self.endpoint.endpoint_id,
-                ARGS: args,
-            }
-            self.listener_event(
-                ZHA_SEND_EVENT,
-                self.ServerCommandDefs.arm.name,
-                event_args,
-            )
-
         if hdr.command_id == self.ServerCommandDefs.emergency.id:
-            self._track_emergency_trigger()
             event_args = {
                 COMMAND: self.ServerCommandDefs.emergency.name,
                 CLUSTER_ID: int(self.cluster_id),
@@ -145,45 +115,6 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             hdr,
             args,
             dst_addressing=dst_addressing,
-        )
-
-    def _track_emergency_trigger(self) -> None:
-        """Update emergency attributes and schedule an auto-reset."""
-        emergency_cluster = getattr(self.endpoint, "frient_emergency", None)
-        if emergency_cluster is None:
-            return
-
-        emergency_cluster._update_attribute(
-            emergency_cluster.AttributeDefs.emergency.id,
-            True,
-        )
-        emergency_cluster._update_attribute(
-            emergency_cluster.AttributeDefs.last_emergency_triggered.id,
-            datetime.now(UTC).isoformat(),
-        )
-
-        if self._emergency_reset_handle is not None:
-            self._emergency_reset_handle.cancel()
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.get_event_loop()
-
-        self._emergency_reset_handle = loop.call_later(
-            10,
-            self._reset_emergency_flag,
-        )
-
-    def _reset_emergency_flag(self) -> None:
-        """Clear the emergency flag after the timeout."""
-        emergency_cluster = getattr(self.endpoint, "frient_emergency", None)
-        if emergency_cluster is None:
-            return
-
-        emergency_cluster._update_attribute(
-            emergency_cluster.AttributeDefs.emergency.id,
-            False,
         )
 
     def _remember_panel_state(
@@ -285,40 +216,18 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             **kwargs,
         )
 
-    def _store_last_code(self, args: Any) -> None:
-        """Cache the last arm/disarm code (RFID tag) sent by the keypad."""
-        if not args:
-            return
-
-        tag = None
-        if isinstance(args, (list, tuple)) and len(args) > 1:
-            tag = args[1]
-        elif isinstance(args, dict):
-            tag = args.get("arm_disarm_code")
-        elif hasattr(args, "arm_disarm_code"):
-            tag = getattr(args, "arm_disarm_code")
-
-        if not tag:
-            return
-
-        if isinstance(tag, bytes):
-            tag = tag.decode(errors="ignore")
-        else:
-            tag = str(tag)
-
-        last_code_cluster = getattr(self.endpoint, "frient_last_code", None)
-        if last_code_cluster is not None:
-            last_code_cluster._update_attribute(
-                last_code_cluster.AttributeDefs.last_code.id,
-                tag,
-            )
-
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Translate mode writes into manufacturer-specific commands."""
+        incoming_manufacturer = kwargs.pop("manufacturer", None)
+        special_manufacturer = (
+            incoming_manufacturer
+            if incoming_manufacturer is not None
+            else MANUFACTURER_CODE
+        )
         attributes_copy = dict(attributes)
         auto_arm_mode = None
         auto_disarm = None
@@ -348,108 +257,58 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             pin_length = attributes_copy.pop(self.AttributeDefs.pin_length.name)
 
         attributes_to_write: dict[str, Any] = {}
+        pending_cache_updates: dict[int, Any] = {}
         if auto_arm_mode is not None:
-            self._update_attribute(self.AttributeDefs.auto_arm_mode.id, auto_arm_mode)
             attributes_to_write[self.AttributeDefs.auto_arm_mode.name] = auto_arm_mode
+            pending_cache_updates[self.AttributeDefs.auto_arm_mode.id] = auto_arm_mode
         if auto_disarm is not None:
-            self._update_attribute(self.AttributeDefs.auto_disarm.id, auto_disarm)
             attributes_to_write[self.AttributeDefs.auto_disarm.name] = auto_disarm
+            pending_cache_updates[self.AttributeDefs.auto_disarm.id] = auto_disarm
         if auto_arm_disarm is not None:
-            self._update_attribute(
-                self.AttributeDefs.auto_arm_disarm.id, auto_arm_disarm
-            )
             attributes_to_write[self.AttributeDefs.auto_arm_disarm.name] = (
                 auto_arm_disarm
             )
+            pending_cache_updates[
+                self.AttributeDefs.auto_arm_disarm.id
+            ] = auto_arm_disarm
         if pin_length is not None:
-            self._update_attribute(self.AttributeDefs.pin_length.id, pin_length)
             attributes_to_write[self.AttributeDefs.pin_length.name] = pin_length
+            pending_cache_updates[self.AttributeDefs.pin_length.id] = pin_length
 
         results: list[list[foundation.WriteAttributesStatusRecord]] = []
         if attributes_to_write:
-            results.extend(
-                await super().write_attributes(
-                    attributes_to_write,
-                    manufacturer=MANUFACTURER_CODE,
-                    **kwargs,
-                )
+            write_results = await super().write_attributes(
+                attributes_to_write,
+                manufacturer=special_manufacturer,
+                **kwargs,
             )
+            results.extend(write_results)
+            if self._writes_succeeded(write_results):
+                for attr_id, value in pending_cache_updates.items():
+                    self._update_attribute(attr_id, value)
 
         if attributes_copy:
-            results.extend(await super().write_attributes(attributes_copy, **kwargs))
+            generic_kwargs = dict(kwargs)
+            if incoming_manufacturer is not None:
+                generic_kwargs["manufacturer"] = incoming_manufacturer
+            results.extend(
+                await super().write_attributes(attributes_copy, **generic_kwargs)
+            )
 
         if results:
             return results
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
-
-class FrientKeypadLastCodeCluster(LocalDataCluster):
-    """Virtual cluster to expose the last code as a sensor-friendly attribute."""
-
-    cluster_id = 0xFC4D
-    ep_attribute = "frient_last_code"
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Attribute that holds the most recent code sent by the keypad."""
-
-        last_code: Final = ZCLAttributeDef(
-            id=0x0000,
-            type=t.CharacterString,
-            access="r",
-            is_manufacturer_specific=True,
-        )
-
-    def __init__(self, *args, **kwargs):
-        """Seed attributes so entities start with a defined value."""
-        super().__init__(*args, **kwargs)
-        # Start with an empty string so reads never return UNSUPPORTED_ATTRIBUTE.
-        self._update_attribute(self.AttributeDefs.last_code.id, "")
-
-
-class FrientKeypadEmergencyCluster(LocalDataCluster):
-    """Virtual cluster to expose emergency state and timestamps."""
-
-    cluster_id = 0xFC4E
-    ep_attribute = "frient_emergency"
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Attributes that track emergency events."""
-
-        emergency: Final = ZCLAttributeDef(
-            id=0x0000,
-            type=t.Bool,
-            access="r",
-            is_manufacturer_specific=True,
-        )
-        last_emergency_triggered: Final = ZCLAttributeDef(
-            id=0x0001,
-            type=t.CharacterString,
-            access="r",
-            is_manufacturer_specific=True,
-        )
-
-    def __init__(self, *args, **kwargs):
-        """Seed attributes so entities start with a defined value."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(self.AttributeDefs.emergency.id, False)
-        self._update_attribute(self.AttributeDefs.last_emergency_triggered.id, "")
-
-
-def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
-    """Convert stored ISO strings into timezone-aware datetimes for HA."""
-    if not value:
-        return None
-
-    if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=UTC)
-
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
-        return None
-
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    @staticmethod
+    def _writes_succeeded(
+        write_results: list[list[foundation.WriteAttributesStatusRecord]],
+    ) -> bool:
+        for status_list in write_results:
+            for status in status_list:
+                if status.status != foundation.Status.SUCCESS:
+                    return False
+        return True
 
 
 (
@@ -466,16 +325,6 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         endpoint_id=44,
         cluster_id=IasAce.cluster_id,
         cluster_type=ClusterType.Client,
-    )
-    .adds(
-        FrientKeypadLastCodeCluster,
-        cluster_type=ClusterType.Server,
-        endpoint_id=44,
-    )
-    .adds(
-        FrientKeypadEmergencyCluster,
-        cluster_type=ClusterType.Server,
-        endpoint_id=44,
     )
     .prevent_default_entity_creation(endpoint_id=44, cluster_id=BinaryInput.cluster_id)
     # Hide the default `ias_zone` entity
@@ -504,15 +353,6 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         unique_id_suffix="tamper",
         fallback_name="Tamper",
     )
-    .binary_sensor(
-        endpoint_id=44,
-        cluster_id=FrientKeypadEmergencyCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        attribute_name=FrientKeypadEmergencyCluster.AttributeDefs.emergency.name,
-        fallback_name="Emergency",
-        translation_key="emergency",
-        unique_id_suffix="emergency",
-    )
     .device_automation_triggers(
         {
             (LONG_PRESS, "SOS button"): {
@@ -521,29 +361,6 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
                 COMMAND: IasAce.ServerCommandDefs.emergency.name,
             },
         }
-    )
-    .sensor(
-        endpoint_id=44,
-        cluster_id=FrientKeypadLastCodeCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        attribute_name=FrientKeypadLastCodeCluster.AttributeDefs.last_code.name,
-        fallback_name="Last code",
-        translation_key="last_code",
-        unique_id_suffix="last_code",
-        entity_type=EntityType.DIAGNOSTIC,
-        initially_disabled=True,
-    )
-    .sensor(
-        endpoint_id=44,
-        cluster_id=FrientKeypadEmergencyCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        attribute_name=FrientKeypadEmergencyCluster.AttributeDefs.last_emergency_triggered.name,
-        attribute_converter=parse_emergency_timestamp,
-        fallback_name="Last emergency triggered",
-        translation_key="last_emergency_triggered",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        unique_id_suffix="last_emergency_triggered",
-        entity_type=EntityType.DIAGNOSTIC,
     )
     .enum(
         attribute_name=FrientKeypadIasAce.AttributeDefs.auto_arm_mode.name,
@@ -579,7 +396,7 @@ def parse_emergency_timestamp(value: str | datetime | None) -> datetime | None:
         cluster_id=IasAce.cluster_id,
         cluster_type=ClusterType.Client,
         endpoint_id=44,
-        min_value=0,
+        min_value=4,
         max_value=10,
         step=1,
         entity_type=EntityType.CONFIG,
