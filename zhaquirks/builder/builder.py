@@ -13,7 +13,6 @@ from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from functools import partial
 import inspect
 import logging
 import pathlib
@@ -53,7 +52,7 @@ from zigpy.zcl import Cluster, ClusterType
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks.builder.device import QuirkV2Device
+from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     ChangedEntityMetadata,
@@ -1086,7 +1085,7 @@ class QuirkBuilder:
 
         # Shared QuirkV2Device (or custom subclass) bound to this definition; no subclass minted.
         base = self.custom_device_class if self.custom_device_class else QuirkV2Device
-        zha_device_factory = partial(base, quirk_definition=quirk_definition)
+        zha_device_factory = QuirkV2Factory(base, quirk_definition)
 
         # Clone the interviewed device (the first transform) before applying
         # modifications, so the bare device is left intact for persistence.

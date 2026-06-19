@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -171,3 +172,16 @@ class QuirkV2Device(Device):
                 )
             if meta.new_fallback_name is not None:
                 entity._attr_fallback_name = meta.new_fallback_name
+
+
+@dataclass(frozen=True)
+class QuirkV2Factory:
+    """Registry-entry factory that builds a `QuirkV2Device` bound to its definition."""
+
+    base: type[QuirkV2Device]
+    quirk_definition: QuirkDefinition
+
+    def __call__(
+        self, zigpy_device: zigpy.device.Device, gateway: Gateway
+    ) -> QuirkV2Device:
+        return self.base(zigpy_device, gateway, quirk_definition=self.quirk_definition)
