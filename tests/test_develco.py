@@ -591,5 +591,3 @@ async def test_frient_keypad_write_attributes_empty(zigpy_device_from_v2_quirk):
     assert result == [
         [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
     ]
-
-

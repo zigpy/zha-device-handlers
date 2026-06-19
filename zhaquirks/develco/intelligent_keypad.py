@@ -1,6 +1,6 @@
 """Intelligent keypad."""
 
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
@@ -11,6 +11,7 @@ from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasAce, IasWd, IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
+
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
@@ -90,9 +91,8 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
         hdr: foundation.ZCLHeader,
         args: Any,
         *,
-        dst_addressing: Optional[
-            Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
+        | None = None,
     ):
         """Intercept SOS presses before ZHA's IAS logic reacts."""
         if hdr.command_id == self.ServerCommandDefs.emergency.id:
@@ -268,9 +268,9 @@ class FrientKeypadIasAce(CustomCluster, IasAce):
             attributes_to_write[self.AttributeDefs.auto_arm_disarm.name] = (
                 auto_arm_disarm
             )
-            pending_cache_updates[
-                self.AttributeDefs.auto_arm_disarm.id
-            ] = auto_arm_disarm
+            pending_cache_updates[self.AttributeDefs.auto_arm_disarm.id] = (
+                auto_arm_disarm
+            )
         if pin_length is not None:
             attributes_to_write[self.AttributeDefs.pin_length.name] = pin_length
             pending_cache_updates[self.AttributeDefs.pin_length.id] = pin_length
