@@ -5,11 +5,11 @@ from unittest import mock
 
 import pytest
 import time_machine
-from zigpy.quirks.v2 import EntityMetadata
 from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 

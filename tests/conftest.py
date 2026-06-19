@@ -7,7 +7,6 @@ import pytest
 import zigpy.application
 import zigpy.device
 from zigpy.device import Device
-import zigpy.quirks
 import zigpy.types
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
@@ -23,6 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import get_device
 
 from .async_mock import sentinel
 
@@ -219,7 +219,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
                 else:
                     ep.add_input_cluster(cluster_id)
 
-        quirked = zigpy.quirks.get_device(raw_device)
+        quirked = get_device(raw_device)
 
         if not apply_quirk:
             for ep_id, ep_data in quirked.endpoints.items():
@@ -302,7 +302,7 @@ def assert_signature_matches_quirk():
         test_dev._application = Mock()
         test_dev._application._dblistener = None
 
-        device = zigpy.quirks.get_device(test_dev)
+        device = get_device(test_dev)
         assert isinstance(device, quirk)
 
     return _check

@@ -11,7 +11,6 @@ import pytest
 import time_machine
 from zigpy.device import Device
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -30,6 +29,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021

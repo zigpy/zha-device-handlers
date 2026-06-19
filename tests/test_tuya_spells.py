@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-import zigpy
 from zigpy.profiles import zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, OnOff
@@ -16,6 +15,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import DEVICE_REGISTRY
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     EnchantedDevice,
@@ -65,7 +65,7 @@ class TuyaTestSpellDevice(EnchantedDevice):
 
 
 ENCHANTED_QUIRKS = [TuyaTestSpellDevice]
-for manufacturer in zigpy.quirks.DEVICE_REGISTRY.registry_v1.values():
+for manufacturer in DEVICE_REGISTRY.registry_v1.values():
     for model_quirk_list in manufacturer.values():
         for quirk_entry in model_quirk_list:
             if quirk_entry in ENCHANTED_QUIRKS:
