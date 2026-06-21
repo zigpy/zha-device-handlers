@@ -2006,8 +2006,7 @@ async def test_ts601_door_sensor(
 
 
 async def test_ts1201_ir_send_bounded_and_guarded(zigpy_device_from_quirk):
-    """TS1201 stores pending IR messages per-seq and bounded, and ignores ACK
-    frames for unknown sequences instead of raising KeyError.
+    """Test TS1201 bounds the pending IR-message dict and guards unknown seqs.
 
     Regression test for https://github.com/zigpy/zha-device-handlers/issues/4641.
     """
