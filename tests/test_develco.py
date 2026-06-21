@@ -2,12 +2,17 @@
 
 from unittest import mock
 
+import zigpy.quirks
+from zigpy.quirks.v2 import EntityPlatform
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import DeviceTemperature, OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.power_plug import MANUFACTURER_CODE, VendorOnOff
 
 zhaquirks.setup()
 
@@ -177,3 +182,276 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+async def test_frient_power_plug_defaults(zigpy_device_from_v2_quirk):
+    """Test power plug initializes mode values."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    assert isinstance(on_off, VendorOnOff)
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 0
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 0
+
+
+async def test_frient_power_plug_safe_mode_writes(zigpy_device_from_v2_quirk):
+    """Test mode writes invoke manufacturer safe-mode commands."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            2: {
+                OnOff.cluster_id: ClusterType.Server,
+                DeviceTemperature.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    on_off = device.endpoints[2].on_off
+
+    attrs_on = {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
+    attrs_off = {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
+    attrs_on_name = {VendorOnOff.AttributeDefs.mode_on_value.name: 9}
+    attrs_off_id = {VendorOnOff.AttributeDefs.mode_off_value.id: 11}
+
+    with mock.patch.object(
+        VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+    ) as send_safe_mode:
+        await on_off.write_attributes(attrs_on)
+        send_safe_mode.assert_called_once_with(0x01, 5)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 5
+        assert attrs_on == {VendorOnOff.AttributeDefs.mode_on_value.id: 5}
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(attrs_off)
+        send_safe_mode.assert_called_once_with(0x00, 7)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 7
+        assert attrs_off == {VendorOnOff.AttributeDefs.mode_off_value.name: 7}
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(attrs_on_name)
+        send_safe_mode.assert_called_once_with(0x01, 9)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 9
+        assert attrs_on_name == {VendorOnOff.AttributeDefs.mode_on_value.name: 9}
+
+        send_safe_mode.reset_mock()
+
+        await on_off.write_attributes(attrs_off_id)
+        send_safe_mode.assert_called_once_with(0x00, 11)
+        assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 11
+        assert attrs_off_id == {VendorOnOff.AttributeDefs.mode_off_value.id: 11}
+
+
+async def test_frient_power_plug_send_safe_mode_request(zigpy_device_from_v2_quirk):
+    """Test safe mode command uses manufacturer code and no reply."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+
+    with mock.patch.object(on_off, "request", new=mock.AsyncMock()) as request_mock:
+        await on_off._send_safe_mode(0x01, 4)
+
+    request_mock.assert_called_once()
+    call_args = request_mock.call_args
+    assert call_args.args[0] is False
+    assert call_args.args[1] == 0x01
+    assert call_args.kwargs["manufacturer"] == MANUFACTURER_CODE
+    assert call_args.kwargs["expect_reply"] is False
+    assert call_args.kwargs["mode"] == 4
+
+
+async def test_frient_power_plug_write_attributes_passthrough(
+    zigpy_device_from_v2_quirk,
+):
+    """Test non-vendor writes pass kwargs through to base implementation."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=[status]),
+    ) as write_mock:
+        result = await on_off.write_attributes(
+            {OnOff.AttributeDefs.on_off.id: 1},
+            timeout=3,
+        )
+
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {OnOff.AttributeDefs.on_off.id: 1}
+    assert write_mock.call_args.kwargs["timeout"] == 3
+    assert result == [status]
+
+
+async def test_frient_power_plug_write_attributes_mixed(
+    zigpy_device_from_v2_quirk,
+):
+    """Test vendor and standard writes can be combined without mutation."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    status = [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    attrs = {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 4,
+        OnOff.AttributeDefs.on_off.id: 0,
+    }
+
+    with (
+        mock.patch.object(
+            VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+        ) as send_safe_mode,
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(return_value=[status]),
+        ) as write_mock,
+    ):
+        result = await on_off.write_attributes(attrs, priority=2)
+
+    send_safe_mode.assert_called_once_with(0x01, 4)
+    write_mock.assert_called_once()
+    assert write_mock.call_args.args[0] == {OnOff.AttributeDefs.on_off.id: 0}
+    assert write_mock.call_args.kwargs["priority"] == 2
+    assert result == [status]
+    assert attrs == {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 4,
+        OnOff.AttributeDefs.on_off.id: 0,
+    }
+
+
+async def test_frient_power_plug_write_attributes_multiple_vendor(
+    zigpy_device_from_v2_quirk,
+):
+    """Test multiple vendor mode writes are processed together."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SPLZB-131",
+        endpoint_ids=[1, 2],
+        cluster_ids={2: {OnOff.cluster_id: ClusterType.Server}},
+    )
+
+    on_off = device.endpoints[2].on_off
+    attrs = {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 12,
+        VendorOnOff.AttributeDefs.mode_off_value: 34,
+    }
+
+    with (
+        mock.patch.object(
+            VendorOnOff, "_send_safe_mode", new=mock.AsyncMock()
+        ) as send_safe_mode,
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(),
+        ) as write_mock,
+    ):
+        result = await on_off.write_attributes(attrs)
+
+    send_safe_mode.assert_has_calls(
+        [
+            mock.call(0x01, 12),
+            mock.call(0x00, 34),
+        ],
+        any_order=False,
+    )
+    write_mock.assert_not_called()
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_on_value.id) == 12
+    assert on_off.get(VendorOnOff.AttributeDefs.mode_off_value.id) == 34
+    assert attrs == {
+        VendorOnOff.AttributeDefs.mode_on_value.id: 12,
+        VendorOnOff.AttributeDefs.mode_off_value: 34,
+    }
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
+
+
+def _get_power_plug_entry():
+    entries = zigpy.quirks.DEVICE_REGISTRY.registry_v2.get(
+        ("frient A/S", "SPLZB-131"),
+        [],
+    )
+    assert entries, "Power plug quirk not registered in v2 registry"
+    return entries[0]
+
+
+def test_frient_power_plug_entity_metadata() -> None:
+    """Test power plug entity metadata is registered as expected."""
+    entry = _get_power_plug_entry()
+
+    mode_on = next(
+        meta for meta in entry.entity_metadata if meta.translation_key == "mode_on"
+    )
+    assert mode_on.entity_platform is EntityPlatform.NUMBER
+    assert mode_on.cluster_id == OnOff.cluster_id
+    assert mode_on.endpoint_id == 2
+    assert mode_on.unique_id_suffix == "mode_on"
+
+    mode_off = next(
+        meta for meta in entry.entity_metadata if meta.translation_key == "mode_off"
+    )
+    assert mode_off.entity_platform is EntityPlatform.NUMBER
+    assert mode_off.cluster_id == OnOff.cluster_id
+    assert mode_off.endpoint_id == 2
+    assert mode_off.unique_id_suffix == "mode_off"
+
+    dev_temp = next(
+        meta
+        for meta in entry.entity_metadata
+        if meta.translation_key == "device_temperature"
+    )
+    assert dev_temp.entity_platform is EntityPlatform.SENSOR
+    assert dev_temp.cluster_id == DeviceTemperature.cluster_id
+    assert dev_temp.endpoint_id == 2
+    if hasattr(dev_temp, "divisor"):
+        assert dev_temp.divisor == 1
+
+    return_to_state = next(
+        meta
+        for meta in entry.entity_metadata
+        if meta.translation_key == "return_to_state"
+    )
+    assert return_to_state.entity_platform is EntityPlatform.BINARY_SENSOR
+    assert return_to_state.cluster_id == OnOff.cluster_id
+    assert return_to_state.endpoint_id == 2
+
+
+def test_frient_power_plug_prevents_default_entities() -> None:
+    """Test power plug prevents default entities for temp and power clusters."""
+    entry = _get_power_plug_entry()
+
+    prevented = list(entry.disabled_default_entities)
+    assert prevented, "No disabled default entity metadata found"
+
+    def _matches(item, cluster_id):
+        return (
+            getattr(item, "cluster_id", None) == cluster_id
+            and getattr(item, "endpoint_id", None) == 2
+        )
+
+    assert any(_matches(item, DeviceTemperature.cluster_id) for item in prevented)
+    assert any(_matches(item, ElectricalMeasurement.cluster_id) for item in prevented)
