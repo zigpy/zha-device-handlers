@@ -369,3 +369,141 @@ async def test_power_factor(zigpy_device_from_quirk):
     )
     tuya_cluster.handle_message(hdr, args)  # active_power
     assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 99)]
+
+
+@pytest.mark.parametrize(
+    "frame, attributes",
+    (
+        (
+            b"\x09\x01\x01\x02\x03\x01\x01\x00\x01\x01",
+            {"state": True},
+        ),
+        (
+            b"\x09\x02\x01\x02\x03\x26\x04\x00\x01\x02",
+            {
+                "power_outage_memory": zhaquirks.tuya.ts0601_rcbo.RCBO2PowerOutageMemory.restore,
+            },
+        ),
+        (
+            b"\x09\x03\x01\x02\x030\x00\x00\x0c\xaa\x01\x00\x14\xbb\x00\x00\x5a\xcc\x01\x00\x03",
+            {
+                "alarm1_reserved_0": 0xAA,
+                "leakage_breaker": True,
+                "leakage_threshold": 20,
+                "alarm1_reserved_4": 0xBB,
+                "high_temperature_breaker": False,
+                "high_temperature_threshold": 90,
+                "alarm1_reserved_8": 0xCC,
+                "high_power_breaker": True,
+                "high_power_threshold": 3,
+            },
+        ),
+        (
+            b"\x09\x04\x01\x02\x031\x00\x00\x0c\x11\x00\x00\x32\x22\x01\x00\xfa\x33\x00\x00\xb4",
+            {
+                "alarm2_reserved_0": 0x11,
+                "over_current_breaker": False,
+                "over_current_threshold": 50,
+                "alarm2_reserved_4": 0x22,
+                "over_voltage_breaker": True,
+                "over_voltage_threshold": 250,
+                "alarm2_reserved_8": 0x33,
+                "under_voltage_breaker": False,
+                "under_voltage_threshold": 180,
+            },
+        ),
+        (
+            b"\x09\x05\x01\x02\x035\x02\x00\x04\x00\x00\x00\x07",
+            {"leakage": 7},
+        ),
+    ),
+)
+async def test_report_values_rcbo2(zigpy_device_from_v2_quirk, frame, attributes):
+    """Test receiving attributes from `_TZE284_5m4nchbm` RCBO."""
+
+    rcbo_dev = zigpy_device_from_v2_quirk("_TZE284_5m4nchbm", "TS0601")
+    tuya_cluster = rcbo_dev.endpoints[1].tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    hdr, args = tuya_cluster.deserialize(frame)
+    tuya_cluster.handle_message(hdr, args)
+
+    expected = [
+        (tuya_cluster.attributes_by_name[name].id, value)
+        for name, value in attributes.items()
+    ]
+    assert tuya_listener.attribute_updates == expected
+
+
+async def test_write_attr_rcbo2(zigpy_device_from_v2_quirk):
+    """Test write cluster attributes for `_TZE284_5m4nchbm` RCBO."""
+
+    rcbo_dev = zigpy_device_from_v2_quirk("_TZE284_5m4nchbm", "TS0601")
+    tuya_cluster = rcbo_dev.endpoints[1].tuya_manufacturer
+
+    tuya_cluster.handle_message(
+        *tuya_cluster.deserialize(
+            b"\x09\x01\x01\x02\x030\x00\x00\x0c\xaa\x01\x00\x14\xbb\x00\x00\x5a\xcc\x01\x00\x03"
+        )
+    )
+    tuya_cluster.handle_message(
+        *tuya_cluster.deserialize(
+            b"\x09\x02\x01\x02\x031\x00\x00\x0c\x11\x00\x00\x32\x22\x01\x00\xfa\x33\x00\x00\xb4"
+        )
+    )
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"power_outage_memory": 2})
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x26\x04\x00\x01\x02",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes({"leakage_threshold": 40})
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x020\x00\x00\x0c\xaa\x01\x00\x28\xbb\x00\x00\x5a\xcc\x01\x00\x03",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"under_voltage_threshold": 200}
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x031\x00\x00\x0c\x11\x00\x00\x32\x22\x01\x00\xfa\x33\x00\x00\xc8",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]

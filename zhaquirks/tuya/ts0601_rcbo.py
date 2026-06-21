@@ -4,6 +4,19 @@ from typing import Any, Final, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import (
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfTemperature,
+)
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -26,7 +39,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    TUYA_MCU_COMMAND,
+    AttributeWithMask,
+    PowerOnState,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
@@ -554,3 +573,542 @@ class TuyaCircuitBreaker(CustomDevice):
             }
         }
     }
+
+
+class RCBO2FaultCode(t.enum16):
+    """Fault code enum for `_TZE284_5m4nchbm`."""
+
+    clear = 0x0000
+    short_circuit_alarm = 0x0001
+    surge_alarm = 0x0002
+    overload_alarm = 0x0004
+    overvoltage_alarm = 0x0008
+    undervoltage_alarm = 0x0010
+    temp_dif_fault = 0x0020
+    self_test_alarm = 0x0040
+    fire_alarm = 0x0080
+    leakagecurr_alarm = 0x0100
+    high_power_alarm = 0x0200
+    overcurrent_alarm = 0x0400
+    outage_alarm = 0x0800
+    magnetism_alarm = 0x1000
+    credit_alarm = 0x2000
+
+
+class RCBO2PowerOutageMemory(t.enum8):
+    """Power restore behavior for `_TZE284_5m4nchbm`."""
+
+    off = 0x00
+    on = 0x01
+    restore = 0x02
+
+
+class RCBO2Alarm1Payload(t.Struct):
+    """Raw payload for datapoint 48."""
+
+    reserved_0: t.uint8_t
+    leakage_breaker: t.Bool
+    leakage_threshold: t.uint16_t_be
+    reserved_4: t.uint8_t
+    high_temperature_breaker: t.Bool
+    high_temperature_threshold: t.uint16_t_be
+    reserved_8: t.uint8_t
+    high_power_breaker: t.Bool
+    high_power_threshold: t.uint16_t_be
+
+
+class RCBO2Alarm2Payload(t.Struct):
+    """Raw payload for datapoint 49."""
+
+    reserved_0: t.uint8_t
+    over_current_breaker: t.Bool
+    over_current_threshold: t.uint16_t_be
+    reserved_4: t.uint8_t
+    over_voltage_breaker: t.Bool
+    over_voltage_threshold: t.uint16_t_be
+    reserved_8: t.uint8_t
+    under_voltage_breaker: t.Bool
+    under_voltage_threshold: t.uint16_t_be
+
+
+def _int_or_default(value: object, default: int = 0) -> int:
+    """Return an int while tolerating unset cached attributes."""
+
+    return int(value) if isinstance(value, int) else default
+
+
+def _rcbo2_alarm1_dp_converter(
+    alarm1_reserved_0: object,
+    leakage_breaker: object,
+    leakage_threshold: object,
+    alarm1_reserved_4: object,
+    high_temperature_breaker: object,
+    high_temperature_threshold: object,
+    alarm1_reserved_8: object,
+    high_power_breaker: object,
+    high_power_threshold: object,
+) -> RCBO2Alarm1Payload:
+    """Preserve the full raw DP48 payload when only one field changes."""
+
+    return RCBO2Alarm1Payload(
+        _int_or_default(alarm1_reserved_0),
+        leakage_breaker is True,
+        _int_or_default(leakage_threshold),
+        _int_or_default(alarm1_reserved_4),
+        high_temperature_breaker is True,
+        _int_or_default(high_temperature_threshold),
+        _int_or_default(alarm1_reserved_8),
+        high_power_breaker is True,
+        _int_or_default(high_power_threshold),
+    )
+
+
+def _rcbo2_alarm2_dp_converter(
+    alarm2_reserved_0: object,
+    over_current_breaker: object,
+    over_current_threshold: object,
+    alarm2_reserved_4: object,
+    over_voltage_breaker: object,
+    over_voltage_threshold: object,
+    alarm2_reserved_8: object,
+    under_voltage_breaker: object,
+    under_voltage_threshold: object,
+) -> RCBO2Alarm2Payload:
+    """Preserve the full raw DP49 payload when only one field changes."""
+
+    return RCBO2Alarm2Payload(
+        _int_or_default(alarm2_reserved_0),
+        over_current_breaker is True,
+        _int_or_default(over_current_threshold),
+        _int_or_default(alarm2_reserved_4),
+        over_voltage_breaker is True,
+        _int_or_default(over_voltage_threshold),
+        _int_or_default(alarm2_reserved_8),
+        under_voltage_breaker is True,
+        _int_or_default(under_voltage_threshold),
+    )
+
+
+(
+    TuyaQuirkBuilder("_TZE284_5m4nchbm", "TS0601")
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="state",
+        entity_type=EntityType.STANDARD,
+        translation_key="state",
+        fallback_name="Switch",
+    )
+    .tuya_sensor(
+        dp_id=17,
+        attribute_name="energy",
+        type=t.uint32_t,
+        divisor=100,
+        entity_type=EntityType.STANDARD,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="energy",
+        fallback_name="Energy",
+    )
+    .tuya_sensor(
+        dp_id=18,
+        attribute_name="current",
+        type=t.uint32_t,
+        divisor=100,
+        entity_type=EntityType.STANDARD,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="current",
+        fallback_name="Current",
+    )
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="power",
+        type=t.uint32_t,
+        divisor=10,
+        entity_type=EntityType.STANDARD,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfPower.WATT,
+        translation_key="power",
+        fallback_name="Power",
+    )
+    .tuya_sensor(
+        dp_id=20,
+        attribute_name="voltage",
+        type=t.uint32_t,
+        divisor=10,
+        entity_type=EntityType.STANDARD,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        translation_key="voltage",
+        fallback_name="Voltage",
+    )
+    .tuya_enum(
+        dp_id=26,
+        attribute_name="fault",
+        enum_class=RCBO2FaultCode,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="fault",
+        fallback_name="Fault",
+    )
+    .tuya_enum(
+        dp_id=38,
+        attribute_name="power_outage_memory",
+        enum_class=RCBO2PowerOutageMemory,
+        translation_key="power_outage_memory",
+        fallback_name="Power outage memory",
+    )
+    .tuya_switch(
+        dp_id=41,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_switch(
+        dp_id=45,
+        attribute_name="leakage_test",
+        entity_type=EntityType.STANDARD,
+        translation_key="leakage_test",
+        fallback_name="Leakage test",
+    )
+    .tuya_sensor(
+        dp_id=47,
+        attribute_name="temperature",
+        type=t.int16s,
+        entity_type=EntityType.STANDARD,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature",
+        fallback_name="Temperature",
+    )
+    .tuya_attribute(
+        dp_id=0x60,
+        attribute_name="alarm1_reserved_0",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x61,
+        attribute_name="leakage_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x62,
+        attribute_name="leakage_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x63,
+        attribute_name="alarm1_reserved_4",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x64,
+        attribute_name="high_temperature_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x65,
+        attribute_name="high_temperature_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x66,
+        attribute_name="alarm1_reserved_8",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x67,
+        attribute_name="high_power_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x68,
+        attribute_name="high_power_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_dp_multi(
+        dp_id=48,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm1_reserved_0",
+                converter=lambda value: value[0],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "leakage_breaker",
+                converter=lambda value: bool(value[1]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "leakage_threshold",
+                converter=lambda value: (value[2] << 8) | value[3],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm1_reserved_4",
+                converter=lambda value: value[4],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "high_temperature_breaker",
+                converter=lambda value: bool(value[5]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "high_temperature_threshold",
+                converter=lambda value: (value[6] << 8) | value[7],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm1_reserved_8",
+                converter=lambda value: value[8],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "high_power_breaker",
+                converter=lambda value: bool(value[9]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "high_power_threshold",
+                converter=lambda value: (value[10] << 8) | value[11],
+            ),
+        ],
+        dp_converter=_rcbo2_alarm1_dp_converter,
+    )
+    .tuya_attribute(
+        dp_id=0x69,
+        attribute_name="alarm2_reserved_0",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x6A,
+        attribute_name="over_current_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x6B,
+        attribute_name="over_current_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x6C,
+        attribute_name="alarm2_reserved_4",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x6D,
+        attribute_name="over_voltage_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x6E,
+        attribute_name="over_voltage_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x6F,
+        attribute_name="alarm2_reserved_8",
+        type=t.uint8_t,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .tuya_attribute(
+        dp_id=0x70,
+        attribute_name="under_voltage_breaker",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_attribute(
+        dp_id=0x71,
+        attribute_name="under_voltage_threshold",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .tuya_dp_multi(
+        dp_id=49,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm2_reserved_0",
+                converter=lambda value: value[0],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "over_current_breaker",
+                converter=lambda value: bool(value[1]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "over_current_threshold",
+                converter=lambda value: (value[2] << 8) | value[3],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm2_reserved_4",
+                converter=lambda value: value[4],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "over_voltage_breaker",
+                converter=lambda value: bool(value[5]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "over_voltage_threshold",
+                converter=lambda value: (value[6] << 8) | value[7],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "alarm2_reserved_8",
+                converter=lambda value: value[8],
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "under_voltage_breaker",
+                converter=lambda value: bool(value[9]),
+            ),
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "under_voltage_threshold",
+                converter=lambda value: (value[10] << 8) | value[11],
+            ),
+        ],
+        dp_converter=_rcbo2_alarm2_dp_converter,
+    )
+    .tuya_sensor(
+        dp_id=53,
+        attribute_name="leakage",
+        type=t.uint32_t,
+        entity_type=EntityType.STANDARD,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.MILLIAMPERE,
+        translation_key="leakage",
+        fallback_name="Leakage current",
+    )
+    .switch(
+        attribute_name="leakage_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="leakage_breaker",
+        fallback_name="Leakage breaker",
+    )
+    .number(
+        attribute_name="leakage_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=10,
+        max_value=99,
+        step=1,
+        unit=UnitOfElectricCurrent.MILLIAMPERE,
+        translation_key="leakage_threshold",
+        fallback_name="Leakage threshold",
+    )
+    .switch(
+        attribute_name="high_temperature_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="high_temperature_breaker",
+        fallback_name="High temperature breaker",
+    )
+    .number(
+        attribute_name="high_temperature_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=40,
+        max_value=150,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="high_temperature_threshold",
+        fallback_name="High temperature threshold",
+    )
+    .switch(
+        attribute_name="high_power_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="high_power_breaker",
+        fallback_name="High power breaker",
+    )
+    .number(
+        attribute_name="high_power_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=1,
+        max_value=26,
+        step=1,
+        unit=UnitOfPower.KILO_WATT,
+        translation_key="high_power_threshold",
+        fallback_name="High power threshold",
+    )
+    .switch(
+        attribute_name="over_current_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="over_current_breaker",
+        fallback_name="Over current breaker",
+    )
+    .number(
+        attribute_name="over_current_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=1,
+        max_value=63,
+        step=1,
+        unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="over_current_threshold",
+        fallback_name="Over current threshold",
+    )
+    .switch(
+        attribute_name="over_voltage_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="over_voltage_breaker",
+        fallback_name="Over voltage breaker",
+    )
+    .number(
+        attribute_name="over_voltage_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=110,
+        max_value=300,
+        step=1,
+        unit=UnitOfElectricPotential.VOLT,
+        translation_key="over_voltage_threshold",
+        fallback_name="Over voltage threshold",
+    )
+    .switch(
+        attribute_name="under_voltage_breaker",
+        cluster_id=TUYA_CLUSTER_ID,
+        translation_key="under_voltage_breaker",
+        fallback_name="Under voltage breaker",
+    )
+    .number(
+        attribute_name="under_voltage_threshold",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=85,
+        max_value=220,
+        step=1,
+        unit=UnitOfElectricPotential.VOLT,
+        translation_key="under_voltage_threshold",
+        fallback_name="Under voltage threshold",
+    )
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
