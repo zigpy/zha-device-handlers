@@ -13,7 +13,7 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -30,7 +30,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    TuyaCommand,
+    TuyaDatapointData,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
@@ -39,6 +46,7 @@ import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
+import zhaquirks.tuya.ts0601_screen_switch
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
@@ -305,6 +313,90 @@ def test_ts0121_signature(assert_signature_matches_quirk):
         "class": "zhaquirks.tuya.ts0121_plug.Plug",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
+
+
+@pytest.mark.parametrize(
+    ("manufacturer", "gang_count"),
+    zhaquirks.tuya.ts0601_screen_switch.SCREEN_SWITCH_SIGNATURES,
+)
+async def test_ts0601_screen_switch_v2_quirks(
+    zigpy_device_from_v2_quirk, manufacturer, gang_count
+):
+    """Test TS0601 screen switches are matched to their v2 quirks."""
+
+    quirked = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+    for gang in range(1, gang_count + 1):
+        assert f"state_l{gang}" in tuya_cluster.attributes_by_name
+        assert f"name_l{gang}" in tuya_cluster.attributes_by_name
+
+    entity_metadata = quirked.exposes_metadata[
+        (1, zhaquirks.tuya.TUYA_CLUSTER_ID, ClusterType.Server)
+    ]
+    assert {entity.fallback_name for entity in entity_metadata} == {
+        f"Switch {gang}" for gang in range(1, gang_count + 1)
+    }
+
+
+async def test_ts0601_screen_switch_dp_updates(zigpy_device_from_v2_quirk):
+    """Test TS0601 screen switch state and name DP reports."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_y4jqpry8", "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+    listener = ClusterListener(tuya_cluster)
+
+    status = tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[
+                TuyaDatapointData(1, True),
+                TuyaDatapointData(105, "Kitchen"),
+            ],
+        )
+    )
+
+    assert status == foundation.Status.SUCCESS
+    assert tuya_cluster.get("state_l1") == t.Bool.true
+    assert tuya_cluster.get("name_l1") == "Kitchen"
+    assert listener.attribute_updates == [
+        (tuya_cluster.attributes_by_name["state_l1"].id, t.Bool.true),
+        (tuya_cluster.attributes_by_name["name_l1"].id, "Kitchen"),
+    ]
+
+
+async def test_ts0601_screen_switch_name_write(zigpy_device_from_v2_quirk):
+    """Test writing a TS0601 screen switch display name."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_y4jqpry8", "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "name_l1": "Very long kitchen name",
+            }
+        )
+        await wait_for_zigpy_tasks()
+
+    request.assert_called_once_with(
+        cluster=61184,
+        sequence=1,
+        data=b"\x01\x01\x00\x00\x01i\x03\x00\x0cVery long ki",
+        command_id=0,
+        timeout=5,
+        expect_reply=False,
+        use_ieee=False,
+        ask_for_ack=None,
+        priority=None,
+    )
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    assert tuya_cluster.get("name_l1") == "Very long kitchen name"
 
 
 async def test_tuya_data_conversion():
