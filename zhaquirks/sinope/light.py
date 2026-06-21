@@ -5,7 +5,7 @@ DM2550ZB-G2.
 """
 
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -163,9 +163,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         self.debug(
