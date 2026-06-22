@@ -15,7 +15,7 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.legacy import DeviceRegistry
+from zhaquirks.legacy import LegacyDeviceRegistry
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SEND_DATA,
@@ -78,7 +78,7 @@ zhaquirks.setup()
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
     """Test TuyaQuirkBuilder convenience methods."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     entry = TuyaQuirkBuilder(
         device_mock.manufacturer, device_mock.model, registry=registry
@@ -123,7 +123,7 @@ async def test_battery_methods(
 ):
     """Test the battery convenience method."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -153,7 +153,7 @@ async def test_battery_methods(
 async def test_tuya_quirkbuilder(device_mock):
     """Test adding a v2 Tuya Quirk to the registry and getting back a quirked device."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     class TestEnum(t.enum8):
         """Test Enum."""
@@ -307,7 +307,7 @@ async def test_tuya_quirkbuilder(device_mock):
 async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
     """Test that mapping the same DP multiple times will raise."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     with pytest.raises(ValueError):
         (
@@ -350,7 +350,7 @@ async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
 )
 async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
     """Test that enchanted Tuya devices have their spells applied during configuration."""
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -413,7 +413,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
 async def test_tuya_mcu_set_time(device_mock):
     """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -459,7 +459,7 @@ async def test_tuya_mcu_set_time(device_mock):
 async def test_tuya_quirkbuilder_force(device_mock, force):
     """Test adding an empty TuyaQuirkBuilder doesn't add an MCU cluster unless forced to."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -500,7 +500,7 @@ async def test_tuya_override_mcu_command(
 ):
     """Test TuyaQuirkBuilder overriding MCU datapoint write command."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     class TestEnum(t.enum8):
         """Test Enum."""
@@ -566,7 +566,7 @@ async def test_tuya_override_mcu_command(
 async def test_tuya_quirk_builder_endpoint_id(device_mock):
     """Test TuyaQuirkBuilder endpoint_id."""
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)

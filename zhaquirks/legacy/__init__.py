@@ -27,18 +27,18 @@ from zigpy.const import (  # noqa: F401
 import zigpy.device
 
 from zhaquirks.device import BaseCustomDevice
-from zhaquirks.legacy.registry import DeviceRegistry
+from zhaquirks.legacy.registry import LegacyDeviceRegistry
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_REGISTRY = DeviceRegistry()
+DEVICE_REGISTRY = LegacyDeviceRegistry()
 PENDING_LEGACY_QUIRKS: list[type[CustomDevice]] = []
 
 _uninitialized_device_message_handlers = []
 
 
 def get_device(
-    device: zigpy.device.Device, registry: DeviceRegistry | None = None
+    device: zigpy.device.Device, registry: LegacyDeviceRegistry | None = None
 ) -> zigpy.device.Device:
     """Get a CustomDevice object, if one is available."""
     if registry is None:
@@ -48,7 +48,7 @@ def get_device(
 
 
 def get_quirk_list(
-    manufacturer: str, model: str, registry: DeviceRegistry | None = None
+    manufacturer: str, model: str, registry: LegacyDeviceRegistry | None = None
 ):
     """Get the Quirk list for a given manufacturer and model."""
     if registry is None:

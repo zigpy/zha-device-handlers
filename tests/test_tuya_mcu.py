@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.legacy import DeviceRegistry
+from zhaquirks.legacy import LegacyDeviceRegistry
 from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
@@ -387,7 +387,7 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
     device_mock[2].profile_id = 0x0104
     device_mock[2].device_type = 0x0051
 
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     class Ep1Measurement(ElectricalMeasurement, TuyaLocalCluster):
         """ElectricalMeasurement on endpoint 1."""

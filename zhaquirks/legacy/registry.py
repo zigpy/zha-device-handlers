@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class DeviceRegistry:
+class LegacyDeviceRegistry:
     """Device registry for quirks v1."""
 
     def __init__(self, *args, **kwargs) -> None:

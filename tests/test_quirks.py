@@ -54,7 +54,7 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.legacy as zq
-from zhaquirks.legacy import CustomDevice, DeviceRegistry
+from zhaquirks.legacy import CustomDevice, LegacyDeviceRegistry
 import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
@@ -990,7 +990,7 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
 
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
-    registry = DeviceRegistry()
+    registry = LegacyDeviceRegistry()
 
     class TestLocalCluster(zhaquirks.LocalDataCluster):
         """Test cluster."""
