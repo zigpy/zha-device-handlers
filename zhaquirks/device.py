@@ -1,10 +1,4 @@
-"""Device-cloning machinery for quirks.
-
-`BaseCustomDevice` clones a freshly-interviewed device into a custom device via a
-`replacement` dict; `CustomEndpoint` does the per-endpoint cloning.
-`CustomZigpyDevice` is the builder's `.zigpy_device_class()` base: a faithful 1:1
-clone whose low-level methods (e.g. `request`) a quirk can override.
-"""
+"""Device-cloning machinery for quirks."""
 
 from __future__ import annotations
 
@@ -110,13 +104,7 @@ class BaseCustomDevice(zigpy.device.Device):
 
 
 class CustomZigpyDevice(BaseCustomDevice):
-    """A faithful 1:1 clone of a device whose low-level behavior can be overridden.
-
-    Used as the base for `QuirkBuilder.zigpy_device_class()`. Mirrors the
-    freshly-constructed device's endpoints and clusters (preserving cached
-    attribute values) so subclasses can override device-level methods such as
-    `request`.
-    """
+    """A faithful 1:1 clone of a device whose low-level behavior can be overridden."""
 
     _copy_cluster_attr_cache = True
 

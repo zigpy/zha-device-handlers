@@ -1,11 +1,4 @@
-"""Quirks v2 builder.
-
-`QuirkBuilder` is the declarative quirks v2 authoring API. `add_to_registry()`
-compiles it into a `zha.quirks.QuirkRegistryEntry`: a `DeviceMatch` carrying the
-matching criteria, `zigpy_transforms` carrying the Zigbee-level modifications,
-and a `zha_device_factory` (`QuirkV2Device` bound to a `QuirkDefinition`) that
-builds the ZHA device exposing the quirk's entities, triggers, alerts and naming.
-"""
+"""Quirks v2 builder."""
 
 from __future__ import annotations
 
@@ -71,6 +64,7 @@ from zhaquirks.builder.metadata import (
     ZCLEnumMetadata,
     ZCLSensorMetadata,
 )
+from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -326,12 +320,10 @@ class QuirkBuilder:
         self,
         manufacturer: str | None | UndefinedType = UNDEFINED,
         model: str | None | UndefinedType = UNDEFINED,
-        registry: DeviceRegistry | None = None,
+        registry: DeviceRegistry = DEVICE_REGISTRY,
     ) -> None:
         """Initialize the quirk builder."""
-        self.registry: DeviceRegistry = (
-            registry if registry is not None else DEVICE_REGISTRY
-        )
+        self.registry: DeviceRegistry = registry
         self.manufacturer_model_metadata: list[ModelInfo] = []
         self.friendly_name_metadata: FriendlyNameMetadata | None = None
         self.exposes_features: list[ExposesFeatureMetadata] = []
@@ -343,7 +335,7 @@ class QuirkBuilder:
         self.firmware_version_max: int | None = None
         self.firmware_version_allow_missing: bool = True
         self.custom_device_class: type[Device] | None = None
-        self.custom_zigpy_device_class: type[zigpy.device.Device] | None = None
+        self.custom_zigpy_device_class: type[BaseCustomDevice] = CustomZigpyDevice
         self.device_node_descriptor: NodeDescriptor | None = None
         self.skip_device_configuration: bool = False
         self.removes_endpoint_ops: list[RemoveEndpoint] = []
@@ -434,7 +426,7 @@ class QuirkBuilder:
         return self
 
     def device_class(
-        self, custom_device_class: type[Device] | type[zigpy.device.Device]
+        self, custom_device_class: type[Device] | type[BaseCustomDevice]
     ) -> Self:
         """Use `zha_device_class` or `zigpy_device_class` instead (legacy compatibility)."""
         if issubclass(custom_device_class, Device):
@@ -447,9 +439,7 @@ class QuirkBuilder:
         self.custom_device_class = custom_device_class
         return self
 
-    def zigpy_device_class(
-        self, custom_device_class: type[zigpy.device.Device]
-    ) -> Self:
+    def zigpy_device_class(self, custom_device_class: type[BaseCustomDevice]) -> Self:
         """Replace the zigpy device object with an instance of the given class."""
         self.custom_zigpy_device_class = custom_device_class
         return self
@@ -1052,7 +1042,9 @@ class QuirkBuilder:
 
         return tuple(ops)
 
-    def add_to_registry(self) -> QuirkRegistryEntry:
+    def add_to_registry(
+        self, registry: DeviceRegistry | None = None
+    ) -> QuirkRegistryEntry:
         """Compile the quirk into a `QuirkRegistryEntry` and register it."""
         if not self.manufacturer_model_metadata:
             raise ValueError(
@@ -1089,10 +1081,7 @@ class QuirkBuilder:
 
         # Clone the interviewed device (the first transform) before applying
         # modifications, so the bare device is left intact for persistence.
-        if self.custom_zigpy_device_class is not None:
-            clone = make_zigpy_device_replacement(self.custom_zigpy_device_class)
-        else:
-            clone = zigpy.device.Device.clone
+        clone = make_zigpy_device_replacement(self.custom_zigpy_device_class)
 
         zigpy_transforms = (clone, *self._compile_transformations())
 
@@ -1108,7 +1097,7 @@ class QuirkBuilder:
             ),
         )
 
-        self.registry.register(entry)
+        (registry or self.registry).register(entry)
 
         if self in UNBUILT_QUIRK_BUILDERS:
             UNBUILT_QUIRK_BUILDERS.remove(self)
