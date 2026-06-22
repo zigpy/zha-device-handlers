@@ -46,7 +46,7 @@ class SPM01ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=OnOff.cluster_id,
-        # prevent the button from being not being created
+        # Avoid preventing the quirk-defined reset button from being created
         function=lambda entity: (
             getattr(entity, "translation_key", None) != "reset_energy"
         ),
