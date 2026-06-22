@@ -116,9 +116,9 @@ tuya_gas_alarm_base = (
     .tuya_ias(
         dp_id=1,
         ias_cfg=TuyaIasGasLEL,
-        converter=lambda x: IasZone.ZoneStatus.Alarm_1
-        if x == TuyaGasState.Present
-        else 0,
+        converter=lambda x: (
+            IasZone.ZoneStatus.Alarm_1 if x == TuyaGasState.Present else 0
+        ),
     )  # Reports as enum, not bool
     .tuya_switch(
         dp_id=8,

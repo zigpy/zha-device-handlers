@@ -6,7 +6,7 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 
 import base64
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -100,9 +100,9 @@ class ZosungIRControl(CustomCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
         **kwargs: Any,
     ):
         """Override the default cluster command."""
@@ -257,9 +257,7 @@ class ZosungIRTransmit(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
 
