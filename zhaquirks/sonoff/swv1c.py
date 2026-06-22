@@ -3,20 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     NumberDeviceClass,
-    QuirkBuilder, 
+    QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,  # 传感器设备类
-    SensorStateClass    # 传感器状态类（用于折线图）
+    SensorStateClass,  # 传感器状态类（用于折线图）
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+
 # 导入单位常量（时长/体积）
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReadEvent,
@@ -111,7 +112,10 @@ class QuarterlyAdjustmentState:
     def __init__(self, values: list[int] | None = None):
         """Initialize monthly seasonal adjustment values."""
 
-        self.values = list(values or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN)
+        self.values = list(
+            values
+            or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN
+        )
         if len(self.values) != QUARTERLY_ADJUSTMENT_PAYLOAD_LEN:
             raise ValueError("Quarterly adjustment state must contain 12 values")
 
@@ -238,7 +242,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
     """Return the Zigbee epoch timestamp for a date at midnight UTC."""
 
     return int(
-        datetime(int(year), int(month), int(day), tzinfo=timezone.utc).timestamp()
+        datetime(int(year), int(month), int(day), tzinfo=UTC).timestamp()
         - ZIGBEE_EPOCH_OFFSET
     )
 
@@ -246,7 +250,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
 def _zigbee_now_timestamp() -> int:
     """Return the current UTC timestamp using the Zigbee epoch."""
 
-    return int(datetime.now(tz=timezone.utc).timestamp() - ZIGBEE_EPOCH_OFFSET)
+    return int(datetime.now(tz=UTC).timestamp() - ZIGBEE_EPOCH_OFFSET)
 
 
 def _local_timezone_offset_seconds() -> int:
@@ -261,7 +265,7 @@ def _local_timezone_offset_seconds() -> int:
 def _zigbee_timestamp_to_ymd(value: int) -> tuple[int, int, int]:
     """Convert a Zigbee epoch timestamp to year/month/day."""
 
-    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=timezone.utc)
+    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=UTC)
     return dt.year, dt.month, dt.day
 
 
@@ -297,9 +301,7 @@ def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
 
     if isinstance(value, foundation.Array):
         value = value.value
-    if isinstance(value, (bytes, bytearray)):
-        data = bytes(value)
-    elif isinstance(value, t.LVList):
+    if isinstance(value, (bytes, bytearray)) or isinstance(value, t.LVList):
         data = bytes(value)
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
@@ -416,17 +418,18 @@ def encode_single_irrigation_payload(state: SingleIrrigationState) -> bytes:
 
 class ValveState(t.enum8):
     """Water valve state (8位变量，按位定义)."""
+
     # 基础状态（单一位）
-    Normal = 0                    # 000 (无任何异常)
-    Water_Shortage = 1 << 0       # 001 (bit0: 缺水)
-    Water_Leakage = 1 << 1        # 010 (bit1: 漏水)
-    Anti_Frost_Alarm = 1 << 2     # 100 (bit2: 防霜冻报警)
+    Normal = 0  # 000 (无任何异常)
+    Water_Shortage = 1 << 0  # 001 (bit0: 缺水)
+    Water_Leakage = 1 << 1  # 010 (bit1: 漏水)
+    Anti_Frost_Alarm = 1 << 2  # 100 (bit2: 防霜冻报警)
     Water_Shortage_Channel_2 = 1 << 4  # bit4: 二通道缺水
     # 组合状态（多位同时触发）
     Water_Shortage_And_Leakage = Water_Shortage | Water_Leakage  # 011
     Water_Shortage_And_Frost = Water_Shortage | Anti_Frost_Alarm  # 101
-    Water_Leakage_And_Frost = Water_Leakage | Anti_Frost_Alarm    # 110
-    All_Alarms = Water_Shortage | Water_Leakage | Anti_Frost_Alarm # 111
+    Water_Leakage_And_Frost = Water_Leakage | Anti_Frost_Alarm  # 110
+    All_Alarms = Water_Shortage | Water_Leakage | Anti_Frost_Alarm  # 111
 
 
 class CustomSonoffCluster(CustomCluster):
@@ -468,7 +471,7 @@ class CustomSonoffCluster(CustomCluster):
             type=ValveState,
             manufacturer_code=None,
         )
-        #用水时长
+        # 用水时长
         water_usage_duration = ZCLAttributeDef(
             id=0x501C,
             type=t.uint32_t,
@@ -609,6 +612,7 @@ class CustomSonoffCluster(CustomCluster):
         """Avoid blocking ZHA pairing on optional private attribute reads."""
         return None
 
+
 class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
     """Local cluster for individual single irrigation configuration entities."""
 
@@ -618,9 +622,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        irrigation_mode: Final = ZCLAttributeDef(
-            id=0x0010, type=SingleIrrigationMode
-        )
+        irrigation_mode: Final = ZCLAttributeDef(id=0x0010, type=SingleIrrigationMode)
         total_duration_min: Final = ZCLAttributeDef(id=0x0011, type=t.uint16_t)
         amount_unit: Final = ZCLAttributeDef(id=0x0012, type=t.uint8_t)
         amount: Final = ZCLAttributeDef(id=0x0013, type=t.uint16_t)
@@ -712,13 +714,9 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
         for attr in attributes.keys():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if (
-                pending_mode == SingleIrrigationMode.Duration
-                and attr_id
-                in (
-                    self.AttributeDefs.amount.id,
-                    self.AttributeDefs.fail_safe_duration_min.id,
-                )
+            if pending_mode == SingleIrrigationMode.Duration and attr_id in (
+                self.AttributeDefs.amount.id,
+                self.AttributeDefs.fail_safe_duration_min.id,
             ):
                 raise ValueError(
                     "Single irrigation amount and fail safe duration are only "
@@ -995,7 +993,9 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         start_minute: Final = ZCLAttributeDef(id=0x002F, type=t.uint8_t)
         apply_plan: Final = ZCLAttributeDef(id=0x0030, type=t.uint8_t)
         remove_plan: Final = ZCLAttributeDef(id=0x0031, type=t.uint8_t)
-        plan_irrigation_mode: Final = ZCLAttributeDef(id=0x0032, type=IrrigationPlanMode)
+        plan_irrigation_mode: Final = ZCLAttributeDef(
+            id=0x0032, type=IrrigationPlanMode
+        )
         duration_min: Final = ZCLAttributeDef(id=0x0033, type=t.uint16_t)
         interval_duration_min: Final = ZCLAttributeDef(id=0x0034, type=t.uint16_t)
         plan_amount: Final = ZCLAttributeDef(id=0x0035, type=t.uint16_t)
@@ -1009,7 +1009,9 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         seasonal_adjustment_june: Final = ZCLAttributeDef(id=0x0045, type=t.uint8_t)
         seasonal_adjustment_july: Final = ZCLAttributeDef(id=0x0046, type=t.uint8_t)
         seasonal_adjustment_august: Final = ZCLAttributeDef(id=0x0047, type=t.uint8_t)
-        seasonal_adjustment_september: Final = ZCLAttributeDef(id=0x0048, type=t.uint8_t)
+        seasonal_adjustment_september: Final = ZCLAttributeDef(
+            id=0x0048, type=t.uint8_t
+        )
         seasonal_adjustment_october: Final = ZCLAttributeDef(id=0x0049, type=t.uint8_t)
         seasonal_adjustment_november: Final = ZCLAttributeDef(id=0x004A, type=t.uint8_t)
         seasonal_adjustment_december: Final = ZCLAttributeDef(id=0x004B, type=t.uint8_t)
@@ -1035,7 +1037,11 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         self._start_minute = 0
         self._quarterly_adjustment = QuarterlyAdjustmentState()
         self._update_all_attributes()
-        self._ui_date_year, self._ui_date_month, self._ui_date_day = now.year, now.month, now.day
+        self._ui_date_year, self._ui_date_month, self._ui_date_day = (
+            now.year,
+            now.month,
+            now.day,
+        )
 
     def _quarterly_adjustment_attr_defs(self) -> tuple[ZCLAttributeDef, ...]:
         """Return monthly seasonal adjustment attributes in month order."""
@@ -1073,10 +1079,16 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             self.AttributeDefs.weekday_sunday.id: int(bool(self._weekday_mask & 0x01)),
             self.AttributeDefs.weekday_monday.id: int(bool(self._weekday_mask & 0x02)),
             self.AttributeDefs.weekday_tuesday.id: int(bool(self._weekday_mask & 0x04)),
-            self.AttributeDefs.weekday_wednesday.id: int(bool(self._weekday_mask & 0x08)),
-            self.AttributeDefs.weekday_thursday.id: int(bool(self._weekday_mask & 0x10)),
+            self.AttributeDefs.weekday_wednesday.id: int(
+                bool(self._weekday_mask & 0x08)
+            ),
+            self.AttributeDefs.weekday_thursday.id: int(
+                bool(self._weekday_mask & 0x10)
+            ),
             self.AttributeDefs.weekday_friday.id: int(bool(self._weekday_mask & 0x20)),
-            self.AttributeDefs.weekday_saturday.id: int(bool(self._weekday_mask & 0x40)),
+            self.AttributeDefs.weekday_saturday.id: int(
+                bool(self._weekday_mask & 0x40)
+            ),
             self.AttributeDefs.start_hour.id: self._start_hour,
             self.AttributeDefs.start_minute.id: self._start_minute,
         }
@@ -1212,29 +1224,17 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         elif attr_id == self.AttributeDefs.weekday_sunday.id:
             self._weekday_mask = (self._weekday_mask & ~0x01) | int(bool(value))
         elif attr_id == self.AttributeDefs.weekday_monday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x02) | (
-                int(bool(value)) << 1
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x02) | (int(bool(value)) << 1)
         elif attr_id == self.AttributeDefs.weekday_tuesday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x04) | (
-                int(bool(value)) << 2
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x04) | (int(bool(value)) << 2)
         elif attr_id == self.AttributeDefs.weekday_wednesday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x08) | (
-                int(bool(value)) << 3
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x08) | (int(bool(value)) << 3)
         elif attr_id == self.AttributeDefs.weekday_thursday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x10) | (
-                int(bool(value)) << 4
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x10) | (int(bool(value)) << 4)
         elif attr_id == self.AttributeDefs.weekday_friday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x20) | (
-                int(bool(value)) << 5
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x20) | (int(bool(value)) << 5)
         elif attr_id == self.AttributeDefs.weekday_saturday.id:
-            self._weekday_mask = (self._weekday_mask & ~0x40) | (
-                int(bool(value)) << 6
-            )
+            self._weekday_mask = (self._weekday_mask & ~0x40) | (int(bool(value)) << 6)
         elif attr_id == self.AttributeDefs.start_hour.id:
             self._start_hour = int(value)
         elif attr_id == self.AttributeDefs.start_minute.id:
@@ -1255,9 +1255,13 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             attr_id = attr_def.id
             if self._write_local_plan_attribute(attr_id, value):
                 continue
-            if attr_id in {attr_def.id for attr_def in self._quarterly_adjustment_attr_defs()}:
+            if attr_id in {
+                attr_def.id for attr_def in self._quarterly_adjustment_attr_defs()
+            }:
                 values = list(self._quarterly_adjustment.values)
-                for index, attr_def in enumerate(self._quarterly_adjustment_attr_defs()):
+                for index, attr_def in enumerate(
+                    self._quarterly_adjustment_attr_defs()
+                ):
                     if attr_id == attr_def.id:
                         values[index] = int(value)
                         break
@@ -1271,7 +1275,9 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
                 )
             elif attr_id == self.AttributeDefs.apply_plan.id:
                 self._validate_plan_before_send()
-                payload = encode_irrigation_plan_payload(self._plan_from_current_config())
+                payload = encode_irrigation_plan_payload(
+                    self._plan_from_current_config()
+                )
                 result = await self.endpoint.sonoff_cluster.command(
                     IRRIGATION_PLAN_SET_COMMAND_ID,
                     payload=IrrigationPlanPayload(payload),
@@ -1307,7 +1313,10 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
         normalized_attributes = dict(attributes)
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
-            if attr_def.id == self.AttributeDefs.plan_irrigation_mode.id and int(value) == 1:
+            if (
+                attr_def.id == self.AttributeDefs.plan_irrigation_mode.id
+                and int(value) == 1
+            ):
                 normalized_attributes[attr] = int(IrrigationPlanMode.Duration)
         return await super().write_attributes(normalized_attributes, **kwargs)
 
@@ -1800,7 +1809,7 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
         fallback_name="6.12 schedule seasonal adjustment december(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
         unique_id_suffix="schedule_seasonal_adjustment_december",
     )
-     # 1. 漏水传感器（bit1）
+    # 1. 漏水传感器（bit1）
     .binary_sensor(
         CustomSonoffCluster.AttributeDefs.water_valve_state.name,
         CustomSonoffCluster.cluster_id,
@@ -1819,8 +1828,9 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
         CustomSonoffCluster.cluster_id,
         device_class=BinarySensorDeviceClass.PROBLEM,
         # bit0 或 bit4 任一置位都显示缺水报警，不区分通道
-        attribute_converter=lambda x: x
-        & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2),
+        attribute_converter=lambda x: (
+            x & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2)
+        ),
         unique_id_suffix="water_depletion_status",
         translation_key="Water depletion",
         fallback_name="Water depletion",
@@ -2242,13 +2252,13 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
         fallback_name="5.12 Schedule Seasonal Adjustment December(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
         unique_id_suffix="schedule_seasonal_adjustment_december",
     )
-        # 1. 新增：用水时长传感器
+    # 1. 新增：用水时长传感器
     .sensor(
         attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
         cluster_id=CustomSonoffCluster.cluster_id,
         device_class=SensorDeviceClass.DURATION,  # 时长类传感器
-        state_class=SensorStateClass.MEASUREMENT, # 关键：测量值，支持折线图
-        unit=UnitOfTime.MINUTES,                  # 单位：分钟
+        state_class=SensorStateClass.MEASUREMENT,  # 关键：测量值，支持折线图
+        unit=UnitOfTime.MINUTES,  # 单位：分钟
         unique_id_suffix="water_usage_duration",
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=1
