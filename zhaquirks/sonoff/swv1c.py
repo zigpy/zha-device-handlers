@@ -709,7 +709,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             elif attr_id == self.AttributeDefs.amount_unit.id:
                 pending_amount_unit = int(value)
 
-        for attr, _value in attributes.items():
+        for attr in attributes.keys():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if (
