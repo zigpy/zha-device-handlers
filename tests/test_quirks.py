@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from zha.quirks import DeviceRegistry
 from zigpy import zcl
 import zigpy.device
 import zigpy.endpoint
@@ -54,7 +55,7 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.legacy as zq
-from zhaquirks.legacy import CustomDevice, LegacyDeviceRegistry
+from zhaquirks.legacy import CustomDevice
 import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
@@ -990,7 +991,7 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
 
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     class TestLocalCluster(zhaquirks.LocalDataCluster):
         """Test cluster."""
@@ -1008,11 +1009,11 @@ async def test_local_data_cluster(device_mock) -> None:
             default_attr = foundation.ZCLAttributeDef(id=3, type=t.uint8_t)
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(TestLocalCluster)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
-    device = registry.get_device(device_mock)
+    device = registry.resolve(device_mock)
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 

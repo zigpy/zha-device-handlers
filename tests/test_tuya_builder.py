@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
+from zha.quirks import DeviceRegistry
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -15,7 +16,6 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.legacy import LegacyDeviceRegistry
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SEND_DATA,
@@ -78,7 +78,7 @@ zhaquirks.setup()
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
     """Test TuyaQuirkBuilder convenience methods."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     entry = TuyaQuirkBuilder(
         device_mock.manufacturer, device_mock.model, registry=registry
@@ -86,7 +86,7 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
     entry = getattr(entry, method_name)(dp_id=1)
     entry.skip_configuration().add_to_registry()
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 
@@ -123,7 +123,7 @@ async def test_battery_methods(
 ):
     """Test the battery convenience method."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -139,7 +139,7 @@ async def test_battery_methods(
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     ep = quirked.endpoints[1]
 
     assert ep.power is not None
@@ -153,7 +153,7 @@ async def test_battery_methods(
 async def test_tuya_quirkbuilder(device_mock):
     """Test adding a v2 Tuya Quirk to the registry and getting back a quirked device."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     class TestEnum(t.enum8):
         """Test Enum."""
@@ -176,7 +176,7 @@ async def test_tuya_quirkbuilder(device_mock):
     def dpToVoltage(data: bytes) -> int:
         return data[2]
 
-    entry = (
+    (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
         .tuya_onoff(dp_id=3)
@@ -238,11 +238,7 @@ async def test_tuya_quirkbuilder(device_mock):
         .add_to_registry(replacement_cluster=ModTuyaMCUCluster)
     )
 
-    # coverage for overridden __eq__ method
-    assert entry.adds_metadata[0] != entry.adds_metadata[1]
-    assert entry.adds_metadata[0] != entry
-
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 
@@ -307,7 +303,7 @@ async def test_tuya_quirkbuilder(device_mock):
 async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
     """Test that mapping the same DP multiple times will raise."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     with pytest.raises(ValueError):
         (
@@ -350,9 +346,9 @@ async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
 )
 async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
     """Test that enchanted Tuya devices have their spells applied during configuration."""
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
-    entry = (
+    (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
         .tuya_onoff(dp_id=3)
@@ -363,11 +359,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         .add_to_registry()
     )
 
-    # coverage for overridden __eq__ method
-    assert entry.adds_metadata[0] != entry.adds_metadata[1]
-    assert entry.adds_metadata[0] != entry
-
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
 
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
@@ -413,7 +405,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
 async def test_tuya_mcu_set_time(device_mock):
     """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -422,7 +414,7 @@ async def test_tuya_mcu_set_time(device_mock):
         .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 
@@ -459,7 +451,7 @@ async def test_tuya_mcu_set_time(device_mock):
 async def test_tuya_quirkbuilder_force(device_mock, force):
     """Test adding an empty TuyaQuirkBuilder doesn't add an MCU cluster unless forced to."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -467,7 +459,7 @@ async def test_tuya_quirkbuilder_force(device_mock, force):
         .add_to_registry(force_add_cluster=force)
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 
@@ -500,7 +492,7 @@ async def test_tuya_override_mcu_command(
 ):
     """Test TuyaQuirkBuilder overriding MCU datapoint write command."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     class TestEnum(t.enum8):
         """Test Enum."""
@@ -521,7 +513,7 @@ async def test_tuya_override_mcu_command(
         .add_to_registry(**kwargs)
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 
@@ -566,7 +558,7 @@ async def test_tuya_override_mcu_command(
 async def test_tuya_quirk_builder_endpoint_id(device_mock):
     """Test TuyaQuirkBuilder endpoint_id."""
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -577,7 +569,7 @@ async def test_tuya_quirk_builder_endpoint_id(device_mock):
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
     assert quirked in registry
 

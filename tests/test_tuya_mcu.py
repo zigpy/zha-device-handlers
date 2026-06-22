@@ -6,13 +6,13 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
+from zha.quirks import DeviceRegistry
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.legacy import LegacyDeviceRegistry
 from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
@@ -387,7 +387,7 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
     device_mock[2].profile_id = 0x0104
     device_mock[2].device_type = 0x0051
 
-    registry = LegacyDeviceRegistry()
+    registry = DeviceRegistry()
 
     class Ep1Measurement(ElectricalMeasurement, TuyaLocalCluster):
         """ElectricalMeasurement on endpoint 1."""
@@ -422,7 +422,7 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     assert isinstance(quirked, CustomZigpyDevice)
 
     ep1 = quirked.endpoints[1]

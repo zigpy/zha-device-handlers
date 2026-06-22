@@ -4,6 +4,7 @@ import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.application
 import zigpy.device
 from zigpy.device import Device
@@ -234,7 +235,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
                 Ota.AttributeDefs.current_file_version.id, firmware_version
             )
 
-        quirked = get_device(raw_device)
+        quirked = DEVICE_REGISTRY.resolve(raw_device)
 
         if not apply_quirk:
             for ep_id, ep_data in quirked.endpoints.items():

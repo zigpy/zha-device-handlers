@@ -145,20 +145,6 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
-    .applies_to(SIGNIFY, "929003116301")
-    .applies_to(SIGNIFY, "929003116401")
-    .applies_to(SIGNIFY, "929003116501")
-    .applies_to(SIGNIFY, "929003116601")
-    .friendly_name(
-        model="Hue Perifo light tube",
-        manufacturer="Philips",
-    )
-    .replaces(PhilipsHueLightCluster, endpoint_id=11)
-    .add_to_registry()
-)
-
-(
-    QuirkBuilder()
     .applies_to(SIGNIFY, "LTA001")
     .friendly_name(
         model="Hue white ambiance E27 with Bluetooth",
