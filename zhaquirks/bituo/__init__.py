@@ -1,1 +1,1 @@
-"""Quirks for BITUO TECHNIK devices."""
+"""Quirks for BITUO TECHNIK devices."""  # codespell:ignore technik

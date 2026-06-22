@@ -1,4 +1,4 @@
-"""Tests for the BITUO TECHNIK SPM01X energy meter."""
+"""Tests for the BITUO TECHNIK SPM01X energy meter."""  # codespell:ignore technik
 
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
@@ -23,7 +23,8 @@ async def test_spm01x_phantom_reports_swallowed(zigpy_device_from_v2_quirk):
 
     The firmware reports these attributes even though the device is single phase.
     """
-    device = zigpy_device_from_v2_quirk("BITUO TECHNIK", "SPM01X")
+    manufacturer = "BITUO TECHNIK"  # codespell:ignore technik
+    device = zigpy_device_from_v2_quirk(manufacturer, "SPM01X")
     electrical_cluster = device.endpoints[1].electrical_measurement
 
     for attr_id in PHANTOM_PHASE_BC_ATTRS:

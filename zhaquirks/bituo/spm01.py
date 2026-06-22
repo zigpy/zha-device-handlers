@@ -1,4 +1,4 @@
-"""BITUO TECHNIK SPM01X single-phase energy meter."""
+"""BITUO TECHNIK SPM01X single-phase energy meter."""  # codespell:ignore technik
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
@@ -37,7 +37,7 @@ class SPM01ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 
 (
-    QuirkBuilder("BITUO TECHNIK", "SPM01X")
+    QuirkBuilder("BITUO TECHNIK", "SPM01X")  # codespell:ignore technik
     .replaces(SPM01ElectricalMeasurement)
     # The On/Off cluster does not control a relay: command "on" (0x01) resets
     # the accumulated energy to zero. Hide the entities ZHA creates by default

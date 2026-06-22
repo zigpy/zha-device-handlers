@@ -92,7 +92,7 @@ norecursedirs = ".git testing_config"
 
 [tool.codespell]
 skip = "Contributors.md,uv.lock"
-ignore-words-list = "hass, dout, potentiels, checkin, technik"
+ignore-words-list = "hass, dout, potentiels, checkin"
 quiet-level = 2
 
 [tool.ruff]
