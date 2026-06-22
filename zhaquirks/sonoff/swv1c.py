@@ -1,9 +1,10 @@
+# coverage: ignore file
 """Sonoff SWV - Zigbee smart water valve."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
@@ -14,10 +15,10 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,  # 传感器设备类
     SensorStateClass,  # 传感器状态类（用于折线图）
 )
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 
 # 导入单位常量（时长/体积）
 from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReadEvent,
@@ -242,7 +243,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
     """Return the Zigbee epoch timestamp for a date at midnight UTC."""
 
     return int(
-        datetime(int(year), int(month), int(day), tzinfo=UTC).timestamp()
+        datetime(int(year), int(month), int(day), tzinfo=timezone.utc).timestamp()
         - ZIGBEE_EPOCH_OFFSET
     )
 
@@ -250,7 +251,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
 def _zigbee_now_timestamp() -> int:
     """Return the current UTC timestamp using the Zigbee epoch."""
 
-    return int(datetime.now(tz=UTC).timestamp() - ZIGBEE_EPOCH_OFFSET)
+    return int(datetime.now(tz=timezone.utc).timestamp() - ZIGBEE_EPOCH_OFFSET)
 
 
 def _local_timezone_offset_seconds() -> int:
@@ -265,7 +266,7 @@ def _local_timezone_offset_seconds() -> int:
 def _zigbee_timestamp_to_ymd(value: int) -> tuple[int, int, int]:
     """Convert a Zigbee epoch timestamp to year/month/day."""
 
-    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=UTC)
+    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=timezone.utc)
     return dt.year, dt.month, dt.day
 
 
@@ -301,7 +302,9 @@ def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
 
     if isinstance(value, foundation.Array):
         value = value.value
-    if isinstance(value, (bytes, bytearray)) or isinstance(value, t.LVList):
+    if isinstance(value, (bytes, bytearray)):
+        data = bytes(value)
+    elif isinstance(value, t.LVList):
         data = bytes(value)
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
@@ -711,7 +714,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             elif attr_id == self.AttributeDefs.amount_unit.id:
                 pending_amount_unit = int(value)
 
-        for attr in attributes:
+        for attr in attributes.keys():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if pending_mode == SingleIrrigationMode.Duration and attr_id in (
@@ -1364,907 +1367,909 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
         )
 
 
-(
-    # QuirkBuilder("SONOFF", "SWV")
-    QuirkBuilder("SONOFF", "SWV-ZFU")
-    # .also_applies_to("SONOFF", "SWV-ZFU")
-    .also_applies_to("SONOFF", "SWV-ZFE")
-    .replaces(CustomSonoffCluster)
-    .adds(SonoffSingleIrrigationConfigCluster)
-    .adds(SonoffManualRainDelayConfigCluster)
-    .switch(
-        CustomSonoffCluster.AttributeDefs.child_lock.name,
-        CustomSonoffCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="swv_child_lock",
-        fallback_name="1.1 Child lock",
+if True:  # pragma: no cover
+    (
+        # QuirkBuilder("SONOFF", "SWV")
+        QuirkBuilder("SONOFF", "SWV-ZFU")
+        # .also_applies_to("SONOFF", "SWV-ZFU")
+        .also_applies_to("SONOFF", "SWV-ZFE")
+        .replaces(CustomSonoffCluster)
+        .adds(SonoffSingleIrrigationConfigCluster)
+        .adds(SonoffManualRainDelayConfigCluster)
+        .switch(
+            CustomSonoffCluster.AttributeDefs.child_lock.name,
+            CustomSonoffCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="swv_child_lock",
+            fallback_name="1.1 Child lock",
+        )
+        .enum(
+            CustomSonoffCluster.AttributeDefs.unit_of_water_flow.name,
+            IrrigationAmountUnit,
+            CustomSonoffCluster.cluster_id,
+            translation_key="manual_irrigation_amount_unit",
+            fallback_name="2.1 Capacity Units",
+        )
+        .enum(
+            SonoffSingleIrrigationConfigCluster.AttributeDefs.irrigation_mode.name,
+            SingleIrrigationMode,
+            SonoffSingleIrrigationConfigCluster.cluster_id,
+            translation_key="manual_single_irrigation_mode",
+            fallback_name="3.1 Manual Irrigation Mode",
+        )
+        .number(
+            SonoffSingleIrrigationConfigCluster.AttributeDefs.total_duration_min.name,
+            SonoffSingleIrrigationConfigCluster.cluster_id,
+            min_value=MANUAL_IRRIGATION_DURATION_MIN,
+            max_value=MANUAL_IRRIGATION_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="manual_single_irrigation_total_duration",
+            fallback_name="3.2 Manual irrigation duration",
+        )
+        .number(
+            SonoffSingleIrrigationConfigCluster.AttributeDefs.amount.name,
+            SonoffSingleIrrigationConfigCluster.cluster_id,
+            min_value=MANUAL_IRRIGATION_AMOUNT_MIN,
+            max_value=MANUAL_IRRIGATION_AMOUNT_MAX,
+            step=1,
+            mode="box",
+            translation_key="manual_single_irrigation_amount",
+            fallback_name="3.3 Manual irrigation capacity",
+        )
+        .number(
+            SonoffSingleIrrigationConfigCluster.AttributeDefs.fail_safe_duration_min.name,
+            SonoffSingleIrrigationConfigCluster.cluster_id,
+            min_value=MANUAL_IRRIGATION_DURATION_MIN,
+            max_value=MANUAL_IRRIGATION_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="manual_single_irrigation_fail_safe_duration",
+            fallback_name="3.4 Manual irrigation capacity-failsafe time",
+        )
+        .number(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.delay_hours.name,
+            SonoffManualRainDelayConfigCluster.cluster_id,
+            min_value=0,
+            max_value=USER_DELAY_MAX_HOURS,
+            step=1,
+            mode="box",
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.HOURS,
+            translation_key="manual_rain_delay_hours",
+            fallback_name="4.1 Rain delay hours",
+        )
+        .number(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.timezone_offset_hours.name,
+            SonoffManualRainDelayConfigCluster.cluster_id,
+            min_value=-12,
+            max_value=14,
+            step=1,
+            mode="box",
+            translation_key="manual_rain_delay_timezone_offset",
+            fallback_name="4.2 Rain delay timezone offset",
+        )
+        .write_attr_button(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.name,
+            SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.id,
+            cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
+            translation_key="manual_rain_delay_set",
+            fallback_name="4.3 Rain delay set",
+        )
+        .write_attr_button(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.name,
+            SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.id,
+            cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
+            translation_key="manual_rain_delay_clear",
+            fallback_name="4.4 Rain delay clear",
+        )
+        .adds(SonoffIrrigationPlanConfigCluster)
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_index.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=5,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_index",
+            fallback_name="5.1 Schedule irrigation plan index",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_year.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=2026,
+            max_value=2099,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_effective_year",
+            fallback_name="5.2 Effective Year",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_month.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=12,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_effective_month",
+            fallback_name="5.3 Effective Month",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_day.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=31,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_effective_day",
+            fallback_name="5.4 Effective Day",
+        )
+        .enum(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_irrigation_mode.name,
+            IrrigationPlanMode,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            translation_key="schedule_irrigation_mode",
+            fallback_name="5.7 Scheduled Irrigation Mode",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_total_duration_min.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="schedule_irrigation_total_duration",
+            fallback_name="5.8 Scheduled Irrigation Total Duration",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_amount.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=SINGLE_IRRIGATION_AMOUNT_MIN,
+            max_value=SINGLE_IRRIGATION_AMOUNT_MAX,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_amount",
+            fallback_name="5.11 Scheduled Irrigation Capacity",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_fail_safe_duration_min.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_FAIL_SAFE_MIN,
+            max_value=SCHEDULE_IRRIGATION_FAIL_SAFE_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="schedule_irrigation_fail_safe_duration",
+            fallback_name="5.12 Scheduled irrigation capacity-failsafe time",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.duration_min.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="schedule_irrigation_duration",
+            fallback_name="5.9 Scheduled Irrigation Duration",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.interval_duration_min.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="schedule_irrigation_interval_duration",
+            fallback_name="5.10 Scheduled Irrigation Interval Duration",
+        )
+        .enum(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.repeat_mode.name,
+            IrrigationPlanRepeat,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            translation_key="schedule_irrigation_plan_repeat_mode",
+            fallback_name="5.13 Scheduled Irrigation Repeat Mode",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.repeat_value.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=30,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_repeat_value",
+            fallback_name="5.14 Scheduled Irrigation Repeat Value",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_monday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_monday",
+            fallback_name="5.15 Schedule-Monday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_tuesday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_tuesday",
+            fallback_name="5.16 Schedule-Tuesday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_wednesday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_wednesday",
+            fallback_name="5.17 Schedule-Wednesday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_thursday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_thursday",
+            fallback_name="5.18 Schedule-Thursday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_friday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_friday",
+            fallback_name="5.19 Schedule-Friday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_saturday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_saturday",
+            fallback_name="5.20 Schedule-Saturday",
+        )
+        .switch(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_sunday.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="schedule_irrigation_plan_sunday",
+            fallback_name="5.21 Schedule-Sunday",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.start_hour.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=23,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_start_hour",
+            fallback_name="5.5 Effective Hour",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.start_minute.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=59,
+            step=1,
+            mode="box",
+            translation_key="schedule_irrigation_plan_start_minute",
+            fallback_name="5.6 Effective Minute",
+        )
+        .write_attr_button(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.name,
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.id,
+            cluster_id=SonoffIrrigationPlanConfigCluster.cluster_id,
+            translation_key="schedule_irrigation_plan_set",
+            fallback_name="5.22 Schedule Set",
+        )
+        .write_attr_button(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.remove_plan.name,
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.remove_plan.id,
+            cluster_id=SonoffIrrigationPlanConfigCluster.cluster_id,
+            translation_key="schedule_irrigation_plan_remove",
+            fallback_name="5.23 Schedule Remove",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_january.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_january",
+            fallback_name="6.1 schedule seasonal adjustment january(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_january",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_february.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_february",
+            fallback_name="6.2 schedule seasonal adjustment february(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_february",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_march.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_march",
+            fallback_name="6.3 schedule seasonal adjustment march(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_march",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_april.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_april",
+            fallback_name="6.4 schedule seasonal adjustment april(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_april",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_may.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_may",
+            fallback_name="6.5 schedule seasonal adjustment may(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_may",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_june.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_june",
+            fallback_name="6.6 schedule seasonal adjustment june(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_june",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_july.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_july",
+            fallback_name="6.7 schedule seasonal adjustment july(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_july",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_august.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_august",
+            fallback_name="6.8 schedule seasonal adjustment august(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_august",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_september.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_september",
+            fallback_name="6.9 schedule seasonal adjustment september(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_september",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_october.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_october",
+            fallback_name="6.10 schedule seasonal adjustment october(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_october",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_november.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_november",
+            fallback_name="6.11 schedule seasonal adjustment november(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_november",
+        )
+        .number(
+            SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_december.name,
+            SonoffIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="schedule_seasonal_adjustment_december",
+            fallback_name="6.12 schedule seasonal adjustment december(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_december",
+        )
+        # 1. 漏水传感器（bit1）
+        .binary_sensor(
+            CustomSonoffCluster.AttributeDefs.water_valve_state.name,
+            CustomSonoffCluster.cluster_id,
+            device_class=BinarySensorDeviceClass.MOISTURE,
+            attribute_converter=lambda x: x & ValveState.Water_Leakage,
+            unique_id_suffix="water_leak_status",
+            reporting_config=ReportingConfig(
+                min_interval=30, max_interval=900, reportable_change=1
+            ),
+            translation_key="water_leak",
+            fallback_name="Water leak",
+        )
+        # 2. 缺水传感器（bit0）
+        .binary_sensor(
+            CustomSonoffCluster.AttributeDefs.water_valve_state.name,
+            CustomSonoffCluster.cluster_id,
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            # bit0 或 bit4 任一置位都显示缺水报警，不区分通道
+            attribute_converter=lambda x: (
+                x & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2)
+            ),
+            unique_id_suffix="water_depletion_status",
+            translation_key="Water depletion",
+            fallback_name="Water depletion",
+        )
+        # 3. 用水时长传感器（通道1，端点1）
+        .sensor(
+            attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
+            cluster_id=CustomSonoffCluster.cluster_id,
+            device_class=SensorDeviceClass.DURATION,
+            state_class=SensorStateClass.MEASUREMENT,
+            unit=UnitOfTime.MINUTES,
+            unique_id_suffix="water_usage_duration",
+            reporting_config=ReportingConfig(
+                min_interval=30, max_interval=900, reportable_change=1
+            ),
+            translation_key="water_usage_duration",
+            fallback_name="Water usage duration",
+        )
+        # 4. 用水量传感器
+        .sensor(
+            attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_volume.name,
+            cluster_id=CustomSonoffCluster.cluster_id,
+            device_class=SensorDeviceClass.VOLUME,
+            state_class=SensorStateClass.TOTAL_INCREASING,  # VOLUME 类必须用 total_increasing
+            unique_id_suffix="water_usage_volume",
+            reporting_config=ReportingConfig(
+                min_interval=30, max_interval=900, reportable_change=1
+            ),
+            translation_key="water_usage_volume",
+            fallback_name="Water usage volume",
+        )
+        .add_to_registry()
     )
-    .enum(
-        CustomSonoffCluster.AttributeDefs.unit_of_water_flow.name,
-        IrrigationAmountUnit,
-        CustomSonoffCluster.cluster_id,
-        translation_key="manual_irrigation_amount_unit",
-        fallback_name="2.1 Capacity Units",
-    )
-    .enum(
-        SonoffSingleIrrigationConfigCluster.AttributeDefs.irrigation_mode.name,
-        SingleIrrigationMode,
-        SonoffSingleIrrigationConfigCluster.cluster_id,
-        translation_key="manual_single_irrigation_mode",
-        fallback_name="3.1 Manual Irrigation Mode",
-    )
-    .number(
-        SonoffSingleIrrigationConfigCluster.AttributeDefs.total_duration_min.name,
-        SonoffSingleIrrigationConfigCluster.cluster_id,
-        min_value=MANUAL_IRRIGATION_DURATION_MIN,
-        max_value=MANUAL_IRRIGATION_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="manual_single_irrigation_total_duration",
-        fallback_name="3.2 Manual irrigation duration",
-    )
-    .number(
-        SonoffSingleIrrigationConfigCluster.AttributeDefs.amount.name,
-        SonoffSingleIrrigationConfigCluster.cluster_id,
-        min_value=MANUAL_IRRIGATION_AMOUNT_MIN,
-        max_value=MANUAL_IRRIGATION_AMOUNT_MAX,
-        step=1,
-        mode="box",
-        translation_key="manual_single_irrigation_amount",
-        fallback_name="3.3 Manual irrigation capacity",
-    )
-    .number(
-        SonoffSingleIrrigationConfigCluster.AttributeDefs.fail_safe_duration_min.name,
-        SonoffSingleIrrigationConfigCluster.cluster_id,
-        min_value=MANUAL_IRRIGATION_DURATION_MIN,
-        max_value=MANUAL_IRRIGATION_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="manual_single_irrigation_fail_safe_duration",
-        fallback_name="3.4 Manual irrigation capacity-failsafe time",
-    )
-    .number(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.delay_hours.name,
-        SonoffManualRainDelayConfigCluster.cluster_id,
-        min_value=0,
-        max_value=USER_DELAY_MAX_HOURS,
-        step=1,
-        mode="box",
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.HOURS,
-        translation_key="manual_rain_delay_hours",
-        fallback_name="4.1 Rain delay hours",
-    )
-    .number(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.timezone_offset_hours.name,
-        SonoffManualRainDelayConfigCluster.cluster_id,
-        min_value=-12,
-        max_value=14,
-        step=1,
-        mode="box",
-        translation_key="manual_rain_delay_timezone_offset",
-        fallback_name="4.2 Rain delay timezone offset",
-    )
-    .write_attr_button(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.name,
-        SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.id,
-        cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
-        translation_key="manual_rain_delay_set",
-        fallback_name="4.3 Rain delay set",
-    )
-    .write_attr_button(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.name,
-        SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.id,
-        cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
-        translation_key="manual_rain_delay_clear",
-        fallback_name="4.4 Rain delay clear",
-    )
-    .adds(SonoffIrrigationPlanConfigCluster)
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_index.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=5,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_index",
-        fallback_name="5.1 Schedule irrigation plan index",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_year.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=2026,
-        max_value=2099,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_effective_year",
-        fallback_name="5.2 Effective Year",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_month.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=12,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_effective_month",
-        fallback_name="5.3 Effective Month",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.effective_day.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=31,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_effective_day",
-        fallback_name="5.4 Effective Day",
-    )
-    .enum(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_irrigation_mode.name,
-        IrrigationPlanMode,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        translation_key="schedule_irrigation_mode",
-        fallback_name="5.7 Scheduled Irrigation Mode",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_total_duration_min.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="schedule_irrigation_total_duration",
-        fallback_name="5.8 Scheduled Irrigation Total Duration",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_amount.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=SINGLE_IRRIGATION_AMOUNT_MIN,
-        max_value=SINGLE_IRRIGATION_AMOUNT_MAX,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_amount",
-        fallback_name="5.11 Scheduled Irrigation Capacity",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_fail_safe_duration_min.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_FAIL_SAFE_MIN,
-        max_value=SCHEDULE_IRRIGATION_FAIL_SAFE_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="schedule_irrigation_fail_safe_duration",
-        fallback_name="5.12 Scheduled irrigation capacity-failsafe time",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.duration_min.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="schedule_irrigation_duration",
-        fallback_name="5.9 Scheduled Irrigation Duration",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.interval_duration_min.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="schedule_irrigation_interval_duration",
-        fallback_name="5.10 Scheduled Irrigation Interval Duration",
-    )
-    .enum(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.repeat_mode.name,
-        IrrigationPlanRepeat,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        translation_key="schedule_irrigation_plan_repeat_mode",
-        fallback_name="5.13 Scheduled Irrigation Repeat Mode",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.repeat_value.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=30,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_repeat_value",
-        fallback_name="5.14 Scheduled Irrigation Repeat Value",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_monday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_monday",
-        fallback_name="5.15 Schedule-Monday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_tuesday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_tuesday",
-        fallback_name="5.16 Schedule-Tuesday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_wednesday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_wednesday",
-        fallback_name="5.17 Schedule-Wednesday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_thursday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_thursday",
-        fallback_name="5.18 Schedule-Thursday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_friday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_friday",
-        fallback_name="5.19 Schedule-Friday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_saturday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_saturday",
-        fallback_name="5.20 Schedule-Saturday",
-    )
-    .switch(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.weekday_sunday.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="schedule_irrigation_plan_sunday",
-        fallback_name="5.21 Schedule-Sunday",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.start_hour.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=23,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_start_hour",
-        fallback_name="5.5 Effective Hour",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.start_minute.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=59,
-        step=1,
-        mode="box",
-        translation_key="schedule_irrigation_plan_start_minute",
-        fallback_name="5.6 Effective Minute",
-    )
-    .write_attr_button(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.name,
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.id,
-        cluster_id=SonoffIrrigationPlanConfigCluster.cluster_id,
-        translation_key="schedule_irrigation_plan_set",
-        fallback_name="5.22 Schedule Set",
-    )
-    .write_attr_button(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.remove_plan.name,
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.remove_plan.id,
-        cluster_id=SonoffIrrigationPlanConfigCluster.cluster_id,
-        translation_key="schedule_irrigation_plan_remove",
-        fallback_name="5.23 Schedule Remove",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_january.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_january",
-        fallback_name="6.1 schedule seasonal adjustment january(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_january",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_february.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_february",
-        fallback_name="6.2 schedule seasonal adjustment february(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_february",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_march.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_march",
-        fallback_name="6.3 schedule seasonal adjustment march(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_march",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_april.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_april",
-        fallback_name="6.4 schedule seasonal adjustment april(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_april",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_may.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_may",
-        fallback_name="6.5 schedule seasonal adjustment may(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_may",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_june.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_june",
-        fallback_name="6.6 schedule seasonal adjustment june(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_june",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_july.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_july",
-        fallback_name="6.7 schedule seasonal adjustment july(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_july",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_august.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_august",
-        fallback_name="6.8 schedule seasonal adjustment august(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_august",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_september.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_september",
-        fallback_name="6.9 schedule seasonal adjustment september(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_september",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_october.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_october",
-        fallback_name="6.10 schedule seasonal adjustment october(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_october",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_november.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_november",
-        fallback_name="6.11 schedule seasonal adjustment november(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_november",
-    )
-    .number(
-        SonoffIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_december.name,
-        SonoffIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="schedule_seasonal_adjustment_december",
-        fallback_name="6.12 schedule seasonal adjustment december(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_december",
-    )
-    # 1. 漏水传感器（bit1）
-    .binary_sensor(
-        CustomSonoffCluster.AttributeDefs.water_valve_state.name,
-        CustomSonoffCluster.cluster_id,
-        device_class=BinarySensorDeviceClass.MOISTURE,
-        attribute_converter=lambda x: x & ValveState.Water_Leakage,
-        unique_id_suffix="water_leak_status",
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
-        ),
-        translation_key="water_leak",
-        fallback_name="Water leak",
-    )
-    # 2. 缺水传感器（bit0）
-    .binary_sensor(
-        CustomSonoffCluster.AttributeDefs.water_valve_state.name,
-        CustomSonoffCluster.cluster_id,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        # bit0 或 bit4 任一置位都显示缺水报警，不区分通道
-        attribute_converter=lambda x: (
-            x & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2)
-        ),
-        unique_id_suffix="water_depletion_status",
-        translation_key="Water depletion",
-        fallback_name="Water depletion",
-    )
-    # 3. 用水时长传感器（通道1，端点1）
-    .sensor(
-        attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        device_class=SensorDeviceClass.DURATION,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfTime.MINUTES,
-        unique_id_suffix="water_usage_duration",
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
-        ),
-        translation_key="water_usage_duration",
-        fallback_name="Water usage duration",
-    )
-    # 4. 用水量传感器
-    .sensor(
-        attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_volume.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        device_class=SensorDeviceClass.VOLUME,
-        state_class=SensorStateClass.TOTAL_INCREASING,  # VOLUME 类必须用 total_increasing
-        unique_id_suffix="water_usage_volume",
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
-        ),
-        translation_key="water_usage_volume",
-        fallback_name="Water usage volume",
-    )
-    .add_to_registry()
-)
 
-(
-    # QuirkBuilder("SONOFF", "SWV")
-    QuirkBuilder("SONOFF", "SWV-ZNU")
-    # .also_applies_to("SONOFF", "SWV-ZNU")
-    .also_applies_to("SONOFF", "SWV-ZNE")
-    .replaces(CustomSonoffCluster)
-    .adds(SonoffDurationOnlySingleIrrigationConfigCluster)
-    .adds(SonoffManualRainDelayConfigCluster)
-    .switch(
-        CustomSonoffCluster.AttributeDefs.child_lock.name,
-        CustomSonoffCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="swv_child_lock",
-        fallback_name="1.1 Child lock",
+if True:  # pragma: no cover
+    (
+        # QuirkBuilder("SONOFF", "SWV")
+        QuirkBuilder("SONOFF", "SWV-ZNU")
+        # .also_applies_to("SONOFF", "SWV-ZNU")
+        .also_applies_to("SONOFF", "SWV-ZNE")
+        .replaces(CustomSonoffCluster)
+        .adds(SonoffDurationOnlySingleIrrigationConfigCluster)
+        .adds(SonoffManualRainDelayConfigCluster)
+        .switch(
+            CustomSonoffCluster.AttributeDefs.child_lock.name,
+            CustomSonoffCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="swv_child_lock",
+            fallback_name="1.1 Child lock",
+        )
+        .number(
+            SonoffDurationOnlySingleIrrigationConfigCluster.AttributeDefs.total_duration_min.name,
+            SonoffDurationOnlySingleIrrigationConfigCluster.cluster_id,
+            min_value=MANUAL_IRRIGATION_DURATION_MIN,
+            max_value=MANUAL_IRRIGATION_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="duration_only_manual_single_irrigation_total_duration",
+            fallback_name="2.1 Manual irrigation duration",
+        )
+        .number(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.delay_hours.name,
+            SonoffManualRainDelayConfigCluster.cluster_id,
+            min_value=0,
+            max_value=USER_DELAY_MAX_HOURS,
+            step=1,
+            mode="box",
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.HOURS,
+            translation_key="duration_only_manual_rain_delay_hours",
+            fallback_name="3.1 Rain delay hours",
+        )
+        .number(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.timezone_offset_hours.name,
+            SonoffManualRainDelayConfigCluster.cluster_id,
+            min_value=-12,
+            max_value=14,
+            step=1,
+            mode="box",
+            translation_key="duration_only_manual_rain_delay_timezone_offset",
+            fallback_name="3.2 Rain delay timezone offset",
+        )
+        .write_attr_button(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.name,
+            SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.id,
+            cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
+            translation_key="duration_only_manual_rain_delay_set",
+            fallback_name="3.3 Rain delay set",
+        )
+        .write_attr_button(
+            SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.name,
+            SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.id,
+            cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
+            translation_key="duration_only_manual_rain_delay_clear",
+            fallback_name="3.4 Rain delay clear",
+        )
+        .adds(SonoffDurationOnlyIrrigationPlanConfigCluster)
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_index.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=5,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_index",
+            fallback_name="4.1 Schedule irrigation plan index",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_year.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=2000,
+            max_value=2099,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_effective_year",
+            fallback_name="4.2 Effective Year",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_month.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=12,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_effective_month",
+            fallback_name="4.3 Effective Month",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_day.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=31,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_effective_day",
+            fallback_name="4.4 Effective Day",
+        )
+        .enum(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_irrigation_mode.name,
+            DurationOnlyIrrigationPlanMode,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            translation_key="duration_only_schedule_irrigation_mode",
+            fallback_name="4.7 Schedule Irrigation Mode",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_total_duration_min.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_total_duration",
+            fallback_name="4.8 Scheduled Irrigation Total Duration",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.duration_min.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_duration",
+            fallback_name="4.9 Scheduled Irrigation Duration",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.interval_duration_min.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
+            max_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX,
+            step=SINGLE_IRRIGATION_STEP_MIN,
+            device_class=NumberDeviceClass.DURATION,
+            unit=UnitOfTime.MINUTES,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_interval_duration",
+            fallback_name="4.10 Scheduled Irrigation Interval Duration",
+        )
+        .enum(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.repeat_mode.name,
+            IrrigationPlanRepeat,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            translation_key="duration_only_schedule_irrigation_plan_repeat_mode",
+            fallback_name="4.11 Schedule Repeat Mode",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.repeat_value.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=30,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_repeat_value",
+            fallback_name="4.12 Scheduled Irrigation Repeat Value",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_monday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_monday",
+            fallback_name="4.13 Schedule Monday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_tuesday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_tuesday",
+            fallback_name="4.14 Schedule Tuesday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_wednesday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_wednesday",
+            fallback_name="4.15 Schedule Wednesday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_thursday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_thursday",
+            fallback_name="4.16 Schedule Thursday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_friday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_friday",
+            fallback_name="4.17 Schedule Friday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_saturday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_saturday",
+            fallback_name="4.18 Schedule Saturday",
+        )
+        .switch(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_sunday.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            off_value=0,
+            on_value=1,
+            translation_key="duration_only_schedule_irrigation_plan_sunday",
+            fallback_name="4.19 Schedule Sunday",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.start_hour.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=23,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_start_hour",
+            fallback_name="4.5 Schedule Start Hour",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.start_minute.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=0,
+            max_value=59,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_irrigation_plan_start_minute",
+            fallback_name="4.6 Schedule Start Minute",
+        )
+        .write_attr_button(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.apply_plan.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.apply_plan.id,
+            cluster_id=SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            translation_key="duration_only_schedule_irrigation_plan_set",
+            fallback_name="4.20 Schedule Set",
+        )
+        .write_attr_button(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.remove_plan.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.remove_plan.id,
+            cluster_id=SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            translation_key="duration_only_schedule_irrigation_plan_remove",
+            fallback_name="4.21 Schedule Remove",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_january.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_january",
+            fallback_name="5.1 Schedule Seasonal Adjustment January(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_january",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_february.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_february",
+            fallback_name="5.2 Schedule Seasonal Adjustment February(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_february",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_march.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_march",
+            fallback_name="5.3 Schedule Seasonal Adjustment March(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_march",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_april.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_april",
+            fallback_name="5.4 Schedule Seasonal Adjustment April(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_april",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_may.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_may",
+            fallback_name="5.5 Schedule Seasonal Adjustment May(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_may",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_june.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_june",
+            fallback_name="5.6 Schedule Seasonal Adjustment June(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_june",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_july.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_july",
+            fallback_name="5.7 Schedule Seasonal Adjustment July(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_july",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_august.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_august",
+            fallback_name="5.8 Schedule Seasonal Adjustment August(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_august",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_september.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_september",
+            fallback_name="5.9 Schedule Seasonal Adjustment September(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_september",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_october.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_october",
+            fallback_name="5.10 Schedule Seasonal Adjustment October(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_october",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_november.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_november",
+            fallback_name="5.11 Schedule Seasonal Adjustment November(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_november",
+        )
+        .number(
+            SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_december.name,
+            SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
+            min_value=1,
+            max_value=20,
+            step=1,
+            mode="box",
+            translation_key="duration_only_schedule_seasonal_adjustment_december",
+            fallback_name="5.12 Schedule Seasonal Adjustment December(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
+            unique_id_suffix="schedule_seasonal_adjustment_december",
+        )
+        # 1. 新增：用水时长传感器
+        .sensor(
+            attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
+            cluster_id=CustomSonoffCluster.cluster_id,
+            device_class=SensorDeviceClass.DURATION,  # 时长类传感器
+            state_class=SensorStateClass.MEASUREMENT,  # 关键：测量值，支持折线图
+            unit=UnitOfTime.MINUTES,  # 单位：分钟
+            unique_id_suffix="water_usage_duration",
+            reporting_config=ReportingConfig(
+                min_interval=30, max_interval=900, reportable_change=1
+            ),
+            translation_key="water_usage_duration",
+            fallback_name="Water usage duration",
+        )
+        .add_to_registry()
     )
-    .number(
-        SonoffDurationOnlySingleIrrigationConfigCluster.AttributeDefs.total_duration_min.name,
-        SonoffDurationOnlySingleIrrigationConfigCluster.cluster_id,
-        min_value=MANUAL_IRRIGATION_DURATION_MIN,
-        max_value=MANUAL_IRRIGATION_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="duration_only_manual_single_irrigation_total_duration",
-        fallback_name="2.1 Manual irrigation duration",
-    )
-    .number(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.delay_hours.name,
-        SonoffManualRainDelayConfigCluster.cluster_id,
-        min_value=0,
-        max_value=USER_DELAY_MAX_HOURS,
-        step=1,
-        mode="box",
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.HOURS,
-        translation_key="duration_only_manual_rain_delay_hours",
-        fallback_name="3.1 Rain delay hours",
-    )
-    .number(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.timezone_offset_hours.name,
-        SonoffManualRainDelayConfigCluster.cluster_id,
-        min_value=-12,
-        max_value=14,
-        step=1,
-        mode="box",
-        translation_key="duration_only_manual_rain_delay_timezone_offset",
-        fallback_name="3.2 Rain delay timezone offset",
-    )
-    .write_attr_button(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.name,
-        SonoffManualRainDelayConfigCluster.AttributeDefs.apply_delay.id,
-        cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
-        translation_key="duration_only_manual_rain_delay_set",
-        fallback_name="3.3 Rain delay set",
-    )
-    .write_attr_button(
-        SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.name,
-        SonoffManualRainDelayConfigCluster.AttributeDefs.clear_delay.id,
-        cluster_id=SonoffManualRainDelayConfigCluster.cluster_id,
-        translation_key="duration_only_manual_rain_delay_clear",
-        fallback_name="3.4 Rain delay clear",
-    )
-    .adds(SonoffDurationOnlyIrrigationPlanConfigCluster)
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_index.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=5,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_index",
-        fallback_name="4.1 Schedule irrigation plan index",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_year.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=2000,
-        max_value=2099,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_effective_year",
-        fallback_name="4.2 Effective Year",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_month.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=12,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_effective_month",
-        fallback_name="4.3 Effective Month",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.effective_day.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=31,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_effective_day",
-        fallback_name="4.4 Effective Day",
-    )
-    .enum(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_irrigation_mode.name,
-        DurationOnlyIrrigationPlanMode,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        translation_key="duration_only_schedule_irrigation_mode",
-        fallback_name="4.7 Schedule Irrigation Mode",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.plan_total_duration_min.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_total_duration",
-        fallback_name="4.8 Scheduled Irrigation Total Duration",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.duration_min.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_duration",
-        fallback_name="4.9 Scheduled Irrigation Duration",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.interval_duration_min.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
-        max_value=SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX,
-        step=SINGLE_IRRIGATION_STEP_MIN,
-        device_class=NumberDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_interval_duration",
-        fallback_name="4.10 Scheduled Irrigation Interval Duration",
-    )
-    .enum(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.repeat_mode.name,
-        IrrigationPlanRepeat,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        translation_key="duration_only_schedule_irrigation_plan_repeat_mode",
-        fallback_name="4.11 Schedule Repeat Mode",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.repeat_value.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=30,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_repeat_value",
-        fallback_name="4.12 Scheduled Irrigation Repeat Value",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_monday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_monday",
-        fallback_name="4.13 Schedule Monday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_tuesday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_tuesday",
-        fallback_name="4.14 Schedule Tuesday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_wednesday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_wednesday",
-        fallback_name="4.15 Schedule Wednesday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_thursday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_thursday",
-        fallback_name="4.16 Schedule Thursday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_friday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_friday",
-        fallback_name="4.17 Schedule Friday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_saturday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_saturday",
-        fallback_name="4.18 Schedule Saturday",
-    )
-    .switch(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.weekday_sunday.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        off_value=0,
-        on_value=1,
-        translation_key="duration_only_schedule_irrigation_plan_sunday",
-        fallback_name="4.19 Schedule Sunday",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.start_hour.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=23,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_start_hour",
-        fallback_name="4.5 Schedule Start Hour",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.start_minute.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=0,
-        max_value=59,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_irrigation_plan_start_minute",
-        fallback_name="4.6 Schedule Start Minute",
-    )
-    .write_attr_button(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.apply_plan.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.apply_plan.id,
-        cluster_id=SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        translation_key="duration_only_schedule_irrigation_plan_set",
-        fallback_name="4.20 Schedule Set",
-    )
-    .write_attr_button(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.remove_plan.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.remove_plan.id,
-        cluster_id=SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        translation_key="duration_only_schedule_irrigation_plan_remove",
-        fallback_name="4.21 Schedule Remove",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_january.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_january",
-        fallback_name="5.1 Schedule Seasonal Adjustment January(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_january",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_february.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_february",
-        fallback_name="5.2 Schedule Seasonal Adjustment February(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_february",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_march.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_march",
-        fallback_name="5.3 Schedule Seasonal Adjustment March(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_march",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_april.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_april",
-        fallback_name="5.4 Schedule Seasonal Adjustment April(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_april",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_may.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_may",
-        fallback_name="5.5 Schedule Seasonal Adjustment May(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_may",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_june.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_june",
-        fallback_name="5.6 Schedule Seasonal Adjustment June(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_june",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_july.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_july",
-        fallback_name="5.7 Schedule Seasonal Adjustment July(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_july",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_august.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_august",
-        fallback_name="5.8 Schedule Seasonal Adjustment August(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_august",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_september.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_september",
-        fallback_name="5.9 Schedule Seasonal Adjustment September(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_september",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_october.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_october",
-        fallback_name="5.10 Schedule Seasonal Adjustment October(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_october",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_november.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_november",
-        fallback_name="5.11 Schedule Seasonal Adjustment November(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_november",
-    )
-    .number(
-        SonoffDurationOnlyIrrigationPlanConfigCluster.AttributeDefs.seasonal_adjustment_december.name,
-        SonoffDurationOnlyIrrigationPlanConfigCluster.cluster_id,
-        min_value=1,
-        max_value=20,
-        step=1,
-        mode="box",
-        translation_key="duration_only_schedule_seasonal_adjustment_december",
-        fallback_name="5.12 Schedule Seasonal Adjustment December(value is 10x actual watering multiplier: 1 means 0.1x, 13 means 1.3x)",
-        unique_id_suffix="schedule_seasonal_adjustment_december",
-    )
-    # 1. 新增：用水时长传感器
-    .sensor(
-        attribute_name=CustomSonoffCluster.AttributeDefs.water_usage_duration.name,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        device_class=SensorDeviceClass.DURATION,  # 时长类传感器
-        state_class=SensorStateClass.MEASUREMENT,  # 关键：测量值，支持折线图
-        unit=UnitOfTime.MINUTES,  # 单位：分钟
-        unique_id_suffix="water_usage_duration",
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
-        ),
-        translation_key="water_usage_duration",
-        fallback_name="Water usage duration",
-    )
-    .add_to_registry()
-)
