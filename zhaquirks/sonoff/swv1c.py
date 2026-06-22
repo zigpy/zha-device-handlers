@@ -2258,3 +2258,4 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
     )
     .add_to_registry()
 )
+
