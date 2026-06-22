@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
@@ -15,7 +15,6 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
@@ -60,6 +59,7 @@ ENABLE_HOUR_IRRIGATION_DURATION = False
 ENABLE_HOUR_IRRIGATION_VOLUME = False
 ENABLE_USER_DELAY_END_DATETIME = False
 
+
 def _u16_be(data: bytes) -> int:
     """Decode an unsigned big-endian 16-bit integer."""
 
@@ -71,12 +71,11 @@ def _put_u16_be(value: int) -> list[int]:
 
     return list(int(value).to_bytes(2, "big"))
 
+
 def _put_u32_be(value: int) -> list[int]:
     """Encode an unsigned big-endian 32-bit integer."""
 
     return list(int(value).to_bytes(4, "big"))
-
-
 
 
 class DelayTimestampPayload(t.FixedList):
@@ -84,6 +83,7 @@ class DelayTimestampPayload(t.FixedList):
 
     _item_type = t.uint8_t
     _length = 4
+
 
 # Irrigation plan payload
 class IrrigationPlanPayload(t.FixedList):
@@ -104,7 +104,10 @@ class QuarterlyAdjustmentState:
     """State container for seasonal watering adjustment."""
 
     def __init__(self, values: list[int] | None = None):
-        self.values = list(values or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN)
+        self.values = list(
+            values
+            or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN
+        )
         if len(self.values) != QUARTERLY_ADJUSTMENT_PAYLOAD_LEN:
             raise ValueError("Quarterly adjustment state must contain 12 values")
 
@@ -117,7 +120,9 @@ class SingleIrrigationPayload(t.LVList, item_type=t.uint8_t, length_type=t.uint1
 
     @staticmethod
     def _coerce_value(value: Any) -> bytes | list[int] | tuple[int, ...]:
-        while hasattr(value, "value") and not isinstance(value, (bytes, bytearray, list, tuple)):
+        while hasattr(value, "value") and not isinstance(
+            value, (bytes, bytearray, list, tuple)
+        ):
             inner_value = getattr(value, "value", None)
             if inner_value is None or inner_value is value:
                 break
@@ -143,6 +148,7 @@ class SingleIrrigationPayload(t.LVList, item_type=t.uint8_t, length_type=t.uint1
     def __init__(self, value=()):
         super().__init__(self._coerce_value(value))
 
+
 # Single irrigation mode enum (duration, volume, duration with interval)
 class SingleIrrigationMode(t.enum8):
     """Single irrigation mode."""
@@ -159,6 +165,7 @@ class ManualIrrigationMode(t.enum8):
     Duration = 0x00
     Volume = 0x01
 
+
 # Amount unit enum (gallon, liter)
 class IrrigationAmountUnit(t.enum8):
     """Single irrigation amount unit."""
@@ -166,6 +173,7 @@ class IrrigationAmountUnit(t.enum8):
     Liter = 0x00
     US_Gallon = 0x01
     Imperial_Gallon = 0x02
+
 
 # Data class (corresponds to single irrigation array)
 @dataclass
@@ -180,43 +188,48 @@ class SingleIrrigationState:
     amount: int = SINGLE_IRRIGATION_DEFAULT_AMOUNT
     fail_safe_duration_min: int = SINGLE_IRRIGATION_DEFAULT_FAIL_SAFE_DURATION_MIN
 
+
 class IrrigationLoopType(t.enum8):
     """Irrigation schedule loop type."""
 
-    Odd_Day  = 0x00
+    Odd_Day = 0x00
     Even_Day = 0x01
-    Days     = 0x02
-    Week     = 0x03
-    Only     = 0x04
+    Days = 0x02
+    Week = 0x03
+    Only = 0x04
 
 
 class IrrigationPlanRepeat(t.enum8):
     """Simplified irrigation schedule repeat mode."""
 
-    Odd_Day  = 0x00
+    Odd_Day = 0x00
     Even_Day = 0x01
     Interval = 0x02
-    Custom   = 0x03
+    Custom = 0x03
+
 
 # Data class (corresponds to plan)
 @dataclass
 class IrrigationPlan:
     """Sonoff auto irrigation plan in the Zigbee command payload format."""
 
-    index: int = 0                                                          # Index
+    index: int = 0  # Index
     enabled: int = 1
     enable_datetime: int = 0
     irrigation_mode: int = SingleIrrigationMode.Duration
-    start_datetime: int = 0                                                 # Start time
-    total_duration_min: int = SINGLE_IRRIGATION_DEFAULT_TOTAL_DURATION_MIN  # Total duration
+    start_datetime: int = 0  # Start time
+    total_duration_min: int = (
+        SINGLE_IRRIGATION_DEFAULT_TOTAL_DURATION_MIN  # Total duration
+    )
     duration_min: int = 0
-    interval_duration_min: int = 0                                          # Interval duration
-    amount_unit: int = SINGLE_IRRIGATION_ZB_AMOUNT_UNIT_LITER               # Amount unit
-    amount: int = SINGLE_IRRIGATION_DEFAULT_AMOUNT                          # Amount
+    interval_duration_min: int = 0  # Interval duration
+    amount_unit: int = SINGLE_IRRIGATION_ZB_AMOUNT_UNIT_LITER  # Amount unit
+    amount: int = SINGLE_IRRIGATION_DEFAULT_AMOUNT  # Amount
     fail_safe_duration_min: int = SINGLE_IRRIGATION_DEFAULT_FAIL_SAFE_DURATION_MIN
     create_datetime: int = 0
-    repeat_mode: int = IrrigationPlanRepeat.Custom                          # Repeat mode
+    repeat_mode: int = IrrigationPlanRepeat.Custom  # Repeat mode
     repeat_value: int = 0
+
 
 # Validate irrigation plan index
 def _validate_irrigation_plan_index(index: int) -> None:
@@ -225,25 +238,31 @@ def _validate_irrigation_plan_index(index: int) -> None:
     if not 0 <= int(index) < IRRIGATION_PLAN_MAX_COUNT:
         raise ValueError("Irrigation plan index must be between 0 and 5")
 
+
 # Validate schedule repeat mode
 def _repeat_to_loop_info(repeat_mode: int, repeat_value: int) -> tuple[int, int]:
     """Convert simplified repeat settings to firmware loop fields."""
 
     repeat_mode = int(repeat_mode)
     repeat_value = int(repeat_value)
-    if repeat_mode == IrrigationPlanRepeat.Odd_Day:     # Odd day cycle
+    if repeat_mode == IrrigationPlanRepeat.Odd_Day:  # Odd day cycle
         return IrrigationLoopType.Odd_Day, 0
-    if repeat_mode == IrrigationPlanRepeat.Even_Day:    # Even day cycle
+    if repeat_mode == IrrigationPlanRepeat.Even_Day:  # Even day cycle
         return IrrigationLoopType.Even_Day, 0
-    if repeat_mode == IrrigationPlanRepeat.Interval:    # Interval cycle, repeat_value is interval days (1..30)
+    if (
+        repeat_mode == IrrigationPlanRepeat.Interval
+    ):  # Interval cycle, repeat_value is interval days (1..30)
         if not 1 <= repeat_value <= 30:
             raise ValueError("Irrigation plan interval must be between 1 and 30 days")
         return IrrigationLoopType.Days, repeat_value
-    if repeat_mode == IrrigationPlanRepeat.Custom:      # Custom cycle, repeat_value is weekday mask (0..127, bit0=Sun, bit1=Mon..bit6=Sat)
+    if (
+        repeat_mode == IrrigationPlanRepeat.Custom
+    ):  # Custom cycle, repeat_value is weekday mask (0..127, bit0=Sun, bit1=Mon..bit6=Sat)
         if not 0 <= repeat_value <= 0x7F:
             raise ValueError("Irrigation plan custom weekday mask must be 0..127")
         return IrrigationLoopType.Week, repeat_value
     raise ValueError("Unsupported irrigation plan repeat mode")
+
 
 # Seconds elapsed since midnight
 def _seconds_from_midnight(hour: int, minute: int) -> int:
@@ -251,20 +270,22 @@ def _seconds_from_midnight(hour: int, minute: int) -> int:
 
     return int(hour) * 3600 + int(minute) * 60
 
+
 # Convert YMD to Zigbee epoch timestamp (seconds)
 def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
     """Return the Zigbee epoch timestamp for a date at midnight UTC."""
 
     return int(
-        datetime(int(year), int(month), int(day), tzinfo=timezone.utc).timestamp()
+        datetime(int(year), int(month), int(day), tzinfo=UTC).timestamp()
         - ZIGBEE_EPOCH_OFFSET
     )
+
 
 # Return current UTC time as Zigbee epoch timestamp (seconds)
 def _zigbee_now_timestamp() -> int:
     """Return the current UTC timestamp using the Zigbee epoch."""
 
-    return int(datetime.now(tz=timezone.utc).timestamp() - ZIGBEE_EPOCH_OFFSET)
+    return int(datetime.now(tz=UTC).timestamp() - ZIGBEE_EPOCH_OFFSET)
 
 
 def _local_timezone_offset_seconds() -> int:
@@ -280,15 +301,18 @@ def _local_timezone_offset_seconds() -> int:
 def _zigbee_timestamp_to_ymd(value: int) -> tuple[int, int, int]:
     """Convert a Zigbee epoch timestamp to year/month/day."""
 
-    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=timezone.utc)
+    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=UTC)
     return dt.year, dt.month, dt.day
+
 
 # Encode irrigation plan payload to Zigbee protocol byte format
 def encode_irrigation_plan_payload(plan: IrrigationPlan) -> bytes:
     """Encode a Zigbee auto irrigation plan command payload."""
 
     _validate_irrigation_plan_index(plan.index)  # Validate plan index
-    loop_type, loop_option = _repeat_to_loop_info(plan.repeat_mode, plan.repeat_value)  # Validate schedule repeat mode
+    loop_type, loop_option = _repeat_to_loop_info(
+        plan.repeat_mode, plan.repeat_value
+    )  # Validate schedule repeat mode
 
     payload: list[int] = [
         int(plan.index),
@@ -310,12 +334,14 @@ def encode_irrigation_plan_payload(plan: IrrigationPlan) -> bytes:
         raise ValueError("Irrigation plan payload must be 28 bytes")
     return bytes(payload)
 
+
 def single_irrigation_array_from_payload(
     payload: bytes | list[int],
 ) -> SingleIrrigationPayload:
     """Wrap a single irrigation payload in a ZCL array value."""
 
     return SingleIrrigationPayload(payload)
+
 
 def single_irrigation_array_from_payload_test(
     payload: bytes | list[int],
@@ -327,14 +353,13 @@ def single_irrigation_array_from_payload_test(
         value=t.LVList[t.uint8_t, t.uint16_t](payload),
     )
 
+
 def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
     """Normalize quarterly adjustment input to 12 raw bytes."""
 
     if isinstance(value, foundation.Array):
         value = value.value
-    if isinstance(value, (bytes, bytearray)):
-        data = bytes(value)
-    elif isinstance(value, t.LVList):
+    if isinstance(value, (bytes, bytearray)) or isinstance(value, t.LVList):
         data = bytes(value)
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
@@ -378,6 +403,7 @@ def single_irrigation_payload_from_array(value: Any) -> bytes:
         return bytes(value)
     raise ValueError("Unsupported single irrigation payload value")
 
+
 # Decode Sonoff irrigation data
 def decode_single_irrigation_payload(
     payload: bytes | list[int] | foundation.Array,
@@ -397,6 +423,7 @@ def decode_single_irrigation_payload(
         amount=_u16_be(data[8:10]),
         fail_safe_duration_min=_u16_be(data[10:12]),
     )
+
 
 # Encode irrigation state object to byte payload
 def encode_single_irrigation_payload(state: SingleIrrigationState) -> bytes:
@@ -428,14 +455,16 @@ def encode_single_irrigation_payload(state: SingleIrrigationState) -> bytes:
     ]
     return bytes(payload)
 
+
 # Valve abnormal state bitmap
 class ValveState(t.enum8):
     """Water valve abnormal state bitmap."""
+
     # Basic states (single bit)
-    Normal = 0                    # 000 (no abnormal state)
-    Water_Shortage = 1 << 0       # 001 (bit0: water shortage)
-    Water_Leakage = 1 << 1        # 010 (bit1: water leakage)
-    Anti_Frost_Alarm = 1 << 2     # 100 (bit2: anti-frost alarm)
+    Normal = 0  # 000 (no abnormal state)
+    Water_Shortage = 1 << 0  # 001 (bit0: water shortage)
+    Water_Leakage = 1 << 1  # 010 (bit1: water leakage)
+    Anti_Frost_Alarm = 1 << 2  # 100 (bit2: anti-frost alarm)
     Water_Shortage_Channel_2 = 1 << 4  # bit4: channel 2 water shortage
     # Combined states (multi-bit)
     Water_Shortage_And_Leakage = Water_Shortage | Water_Leakage
@@ -449,8 +478,10 @@ class SonoffWaterValveCluster(CustomCluster):
 
     cluster_id = 0xFC11
     ep_attribute = "sonoff_cluster"
+
     class ServerCommandDefs(foundation.BaseCommandDefs):
         """SONOFF private server command definitions."""
+
         # Irrigation plan set command
         irrigation_plan_set = foundation.ZCLCommandDef(
             id=IRRIGATION_PLAN_SET_COMMAND_ID,
@@ -582,18 +613,10 @@ class SonoffWaterValveCluster(CustomCluster):
         self.on_event(
             AttributeWrittenEvent.event_type, self._handle_quarterly_adjustment_change
         )
-        self.on_event(
-            AttributeReadEvent.event_type, self._handle_user_delay_change
-        )
-        self.on_event(
-            AttributeReportedEvent.event_type, self._handle_user_delay_change
-        )
-        self.on_event(
-            AttributeUpdatedEvent.event_type, self._handle_user_delay_change
-        )
-        self.on_event(
-            AttributeWrittenEvent.event_type, self._handle_user_delay_change
-        )
+        self.on_event(AttributeReadEvent.event_type, self._handle_user_delay_change)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_user_delay_change)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_user_delay_change)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_user_delay_change)
 
     # Handle single irrigation attribute changes
     def _handle_single_irrigation_change(
@@ -614,9 +637,7 @@ class SonoffWaterValveCluster(CustomCluster):
             if not hasattr(target, "sonoff_amount_unit_config"):
                 target = self.endpoint.device.endpoints.get(1)
             if target is not None and hasattr(target, "sonoff_amount_unit_config"):
-                target.sonoff_amount_unit_config.update_amount_unit(
-                    int(event.value)
-                )
+                target.sonoff_amount_unit_config.update_amount_unit(int(event.value))
             return
 
         if event.attribute_id != self.AttributeDefs.single_irrigation_set.id:
@@ -628,7 +649,9 @@ class SonoffWaterValveCluster(CustomCluster):
 
         for value in values:
             try:
-                self._single_irrigation_state = decode_single_irrigation_payload(value)  # Parse single irrigation setting attribute value
+                self._single_irrigation_state = decode_single_irrigation_payload(
+                    value
+                )  # Parse single irrigation setting attribute value
                 break
             except (TypeError, ValueError):
                 continue
@@ -712,7 +735,9 @@ class SonoffWaterValveCluster(CustomCluster):
             ]
         )
 
-#****************************** Amount unit (global) start *****************************************************
+
+# ****************************** Amount unit (global) start *****************************************************
+
 
 class SonoffAmountUnitConfigCluster(LocalDataCluster):
     """Global cluster for irrigation amount unit, shared by manual irrigation and schedules."""
@@ -767,7 +792,8 @@ class SonoffAmountUnitConfigCluster(LocalDataCluster):
         return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
 
 
-#****************************** Manual irrigation entities start *****************************************************
+# ****************************** Manual irrigation entities start *****************************************************
+
 
 class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
     """Local cluster exposing pieces of the aggregate single irrigation setting."""
@@ -778,9 +804,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Local single irrigation configuration attributes."""
 
-        irrigation_mode: Final = ZCLAttributeDef(
-            id=0x0010, type=SingleIrrigationMode
-        )
+        irrigation_mode: Final = ZCLAttributeDef(id=0x0010, type=SingleIrrigationMode)
         total_duration_min: Final = ZCLAttributeDef(id=0x0011, type=t.uint16_t)
         amount: Final = ZCLAttributeDef(id=0x0013, type=t.uint16_t)
         fail_safe_duration_min: Final = ZCLAttributeDef(id=0x0014, type=t.uint16_t)
@@ -847,8 +871,6 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
         if hasattr(self.endpoint, "sonoff_amount_unit_config"):
             self.endpoint.sonoff_amount_unit_config.update_amount_unit(unit)
 
-
-
     # Write manual irrigation attributes to zigbee
     async def write_attributes(
         self,
@@ -880,13 +902,9 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if (
-                final_mode == SingleIrrigationMode.Duration
-                and attr_id
-                in (
-                    self.AttributeDefs.amount.id,
-                    self.AttributeDefs.fail_safe_duration_min.id,
-                )
+            if final_mode == SingleIrrigationMode.Duration and attr_id in (
+                self.AttributeDefs.amount.id,
+                self.AttributeDefs.fail_safe_duration_min.id,
             ):
                 raise ValueError(
                     "Single irrigation amount and fail safe duration are only "
@@ -962,13 +980,15 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
         else:
             # Write failed — return failure for all attempted attrs
-            return [[
-                foundation.WriteAttributesStatusRecord(
-                    status=Status.FAILURE,
-                    attrid=self.find_attribute(attr).id,
-                )
-                for attr, value in attributes.items()
-            ]]
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=Status.FAILURE,
+                        attrid=self.find_attribute(attr).id,
+                    )
+                    for attr, value in attributes.items()
+                ]
+            ]
 
     @staticmethod
     def _write_succeeded(result: list) -> bool:
@@ -990,11 +1010,14 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             records = records.status_records
 
         try:
-            return all(getattr(record, "status", None) == Status.SUCCESS for record in records)
+            return all(
+                getattr(record, "status", None) == Status.SUCCESS for record in records
+            )
         except TypeError:
             return False
 
-#****************************** Schedule plan start *****************************************************
+
+# ****************************** Schedule plan start *****************************************************
 class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
     """Local cluster for auto irrigation plan configuration entities."""
 
@@ -1049,7 +1072,11 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         self._amount = SINGLE_IRRIGATION_DEFAULT_AMOUNT
         self._fail_safe_duration_min = SINGLE_IRRIGATION_DEFAULT_FAIL_SAFE_DURATION_MIN
         self._update_all_attributes()
-        self._ui_date_year, self._ui_date_month, self._ui_date_day = now.year, now.month, now.day
+        self._ui_date_year, self._ui_date_month, self._ui_date_day = (
+            now.year,
+            now.month,
+            now.day,
+        )
 
     # Sync local irrigation plan data to entity attributes
     def _update_all_attributes(self) -> None:
@@ -1069,10 +1096,16 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             self.AttributeDefs.fail_safe_duration_min.id: self._fail_safe_duration_min,
             self.AttributeDefs.weekday_monday.id: int(bool(self._weekday_mask & 0x02)),
             self.AttributeDefs.weekday_tuesday.id: int(bool(self._weekday_mask & 0x04)),
-            self.AttributeDefs.weekday_wednesday.id: int(bool(self._weekday_mask & 0x08)),
-            self.AttributeDefs.weekday_thursday.id: int(bool(self._weekday_mask & 0x10)),
+            self.AttributeDefs.weekday_wednesday.id: int(
+                bool(self._weekday_mask & 0x08)
+            ),
+            self.AttributeDefs.weekday_thursday.id: int(
+                bool(self._weekday_mask & 0x10)
+            ),
             self.AttributeDefs.weekday_friday.id: int(bool(self._weekday_mask & 0x20)),
-            self.AttributeDefs.weekday_saturday.id: int(bool(self._weekday_mask & 0x40)),
+            self.AttributeDefs.weekday_saturday.id: int(
+                bool(self._weekday_mask & 0x40)
+            ),
             self.AttributeDefs.weekday_sunday.id: int(bool(self._weekday_mask & 0x01)),
             self.AttributeDefs.start_hour.id: self._start_hour,
             self.AttributeDefs.start_minute.id: self._start_minute,
@@ -1111,7 +1144,10 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             plan_total_duration = 0
             plan_duration = 0
             plan_interval_duration = 0
-        elif self._irrigation_mode in (SingleIrrigationMode.Duration, SingleIrrigationMode.Duration_With_Interval):
+        elif self._irrigation_mode in (
+            SingleIrrigationMode.Duration,
+            SingleIrrigationMode.Duration_With_Interval,
+        ):
             plan_amount = 0
             plan_fail_safe = 0
             if self._irrigation_mode == SingleIrrigationMode.Duration:
@@ -1152,14 +1188,12 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if (
-                pending_mode
-                in (SingleIrrigationMode.Duration, SingleIrrigationMode.Duration_With_Interval)
-                and attr_id
-                in (
-                    self.AttributeDefs.amount.id,
-                    self.AttributeDefs.fail_safe_duration_min.id,
-                )
+            if pending_mode in (
+                SingleIrrigationMode.Duration,
+                SingleIrrigationMode.Duration_With_Interval,
+            ) and attr_id in (
+                self.AttributeDefs.amount.id,
+                self.AttributeDefs.fail_safe_duration_min.id,
             ):
                 raise ValueError(
                     "Irrigation amount and fail safe duration are only "
@@ -1170,8 +1204,7 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
                 and attr_id == self.AttributeDefs.total_duration_min.id
             ):
                 raise ValueError(
-                    "Irrigation total duration is only configurable in "
-                    "duration mode"
+                    "Irrigation total duration is only configurable in duration mode"
                 )
             if (
                 pending_mode != SingleIrrigationMode.Duration_With_Interval
@@ -1216,24 +1249,36 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             elif attr_id == self.AttributeDefs.fail_safe_duration_min.id:
                 self._fail_safe_duration_min = int(value)
             elif attr_id == self.AttributeDefs.weekday_monday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x02) | (int(bool(value)) << 1)
+                self._weekday_mask = (self._weekday_mask & ~0x02) | (
+                    int(bool(value)) << 1
+                )
             elif attr_id == self.AttributeDefs.weekday_tuesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x04) | (int(bool(value)) << 2)
+                self._weekday_mask = (self._weekday_mask & ~0x04) | (
+                    int(bool(value)) << 2
+                )
             elif attr_id == self.AttributeDefs.weekday_wednesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x08) | (int(bool(value)) << 3)
+                self._weekday_mask = (self._weekday_mask & ~0x08) | (
+                    int(bool(value)) << 3
+                )
             elif attr_id == self.AttributeDefs.weekday_thursday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x10) | (int(bool(value)) << 4)
+                self._weekday_mask = (self._weekday_mask & ~0x10) | (
+                    int(bool(value)) << 4
+                )
             elif attr_id == self.AttributeDefs.weekday_friday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x20) | (int(bool(value)) << 5)
+                self._weekday_mask = (self._weekday_mask & ~0x20) | (
+                    int(bool(value)) << 5
+                )
             elif attr_id == self.AttributeDefs.weekday_saturday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x40) | (int(bool(value)) << 6)
+                self._weekday_mask = (self._weekday_mask & ~0x40) | (
+                    int(bool(value)) << 6
+                )
             elif attr_id == self.AttributeDefs.weekday_sunday.id:
                 self._weekday_mask = (self._weekday_mask & ~0x01) | int(bool(value))
             elif attr_id == self.AttributeDefs.start_hour.id:
                 self._start_hour = int(value)
             elif attr_id == self.AttributeDefs.start_minute.id:
                 self._start_minute = int(value)
-            elif attr_id == self.AttributeDefs.apply_plan.id:   # Set plan
+            elif attr_id == self.AttributeDefs.apply_plan.id:  # Set plan
                 plan = self._plan_from_current_config()
                 payload = encode_irrigation_plan_payload(plan)
                 # Wrap payload in ZCL command and send to Zigbee device
@@ -1288,7 +1333,8 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             return result
         return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
 
-#****************************** Channel 2 schedule plan start *****************************************************
+
+# ****************************** Channel 2 schedule plan start *****************************************************
 class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
     """Local cluster for channel 2 auto irrigation plan configuration entities.
 
@@ -1366,10 +1412,16 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             self.AttributeDefs.fail_safe_duration_min.id: self._fail_safe_duration_min,
             self.AttributeDefs.weekday_monday.id: int(bool(self._weekday_mask & 0x02)),
             self.AttributeDefs.weekday_tuesday.id: int(bool(self._weekday_mask & 0x04)),
-            self.AttributeDefs.weekday_wednesday.id: int(bool(self._weekday_mask & 0x08)),
-            self.AttributeDefs.weekday_thursday.id: int(bool(self._weekday_mask & 0x10)),
+            self.AttributeDefs.weekday_wednesday.id: int(
+                bool(self._weekday_mask & 0x08)
+            ),
+            self.AttributeDefs.weekday_thursday.id: int(
+                bool(self._weekday_mask & 0x10)
+            ),
             self.AttributeDefs.weekday_friday.id: int(bool(self._weekday_mask & 0x20)),
-            self.AttributeDefs.weekday_saturday.id: int(bool(self._weekday_mask & 0x40)),
+            self.AttributeDefs.weekday_saturday.id: int(
+                bool(self._weekday_mask & 0x40)
+            ),
             self.AttributeDefs.weekday_sunday.id: int(bool(self._weekday_mask & 0x01)),
             self.AttributeDefs.start_hour.id: self._start_hour,
             self.AttributeDefs.start_minute.id: self._start_minute,
@@ -1405,7 +1457,10 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             plan_total_duration = 0
             plan_duration = 0
             plan_interval_duration = 0
-        elif self._irrigation_mode in (SingleIrrigationMode.Duration, SingleIrrigationMode.Duration_With_Interval):
+        elif self._irrigation_mode in (
+            SingleIrrigationMode.Duration,
+            SingleIrrigationMode.Duration_With_Interval,
+        ):
             plan_amount = 0
             plan_fail_safe = 0
             if self._irrigation_mode == SingleIrrigationMode.Duration:
@@ -1445,14 +1500,12 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if (
-                pending_mode
-                in (SingleIrrigationMode.Duration, SingleIrrigationMode.Duration_With_Interval)
-                and attr_id
-                in (
-                    self.AttributeDefs.amount.id,
-                    self.AttributeDefs.fail_safe_duration_min.id,
-                )
+            if pending_mode in (
+                SingleIrrigationMode.Duration,
+                SingleIrrigationMode.Duration_With_Interval,
+            ) and attr_id in (
+                self.AttributeDefs.amount.id,
+                self.AttributeDefs.fail_safe_duration_min.id,
             ):
                 raise ValueError(
                     "Irrigation amount and fail safe duration are only "
@@ -1463,8 +1516,7 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
                 and attr_id == self.AttributeDefs.total_duration_min.id
             ):
                 raise ValueError(
-                    "Irrigation total duration is only configurable in "
-                    "duration mode"
+                    "Irrigation total duration is only configurable in duration mode"
                 )
             if (
                 pending_mode != SingleIrrigationMode.Duration_With_Interval
@@ -1509,17 +1561,29 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             elif attr_id == self.AttributeDefs.fail_safe_duration_min.id:
                 self._fail_safe_duration_min = int(value)
             elif attr_id == self.AttributeDefs.weekday_monday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x02) | (int(bool(value)) << 1)
+                self._weekday_mask = (self._weekday_mask & ~0x02) | (
+                    int(bool(value)) << 1
+                )
             elif attr_id == self.AttributeDefs.weekday_tuesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x04) | (int(bool(value)) << 2)
+                self._weekday_mask = (self._weekday_mask & ~0x04) | (
+                    int(bool(value)) << 2
+                )
             elif attr_id == self.AttributeDefs.weekday_wednesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x08) | (int(bool(value)) << 3)
+                self._weekday_mask = (self._weekday_mask & ~0x08) | (
+                    int(bool(value)) << 3
+                )
             elif attr_id == self.AttributeDefs.weekday_thursday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x10) | (int(bool(value)) << 4)
+                self._weekday_mask = (self._weekday_mask & ~0x10) | (
+                    int(bool(value)) << 4
+                )
             elif attr_id == self.AttributeDefs.weekday_friday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x20) | (int(bool(value)) << 5)
+                self._weekday_mask = (self._weekday_mask & ~0x20) | (
+                    int(bool(value)) << 5
+                )
             elif attr_id == self.AttributeDefs.weekday_saturday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x40) | (int(bool(value)) << 6)
+                self._weekday_mask = (self._weekday_mask & ~0x40) | (
+                    int(bool(value)) << 6
+                )
             elif attr_id == self.AttributeDefs.weekday_sunday.id:
                 self._weekday_mask = (self._weekday_mask & ~0x01) | int(bool(value))
             elif attr_id == self.AttributeDefs.start_hour.id:
@@ -1579,7 +1643,9 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             return result
         return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
 
-#****************************** User delay (rain delay) start *****************************************************
+
+# ****************************** User delay (rain delay) start *****************************************************
+
 
 class SonoffUserDelayConfigCluster(LocalDataCluster):
     """Local cluster for manual rain / user delay configuration.
@@ -1673,7 +1739,8 @@ class SonoffUserDelayConfigCluster(LocalDataCluster):
         return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
 
 
-#****************************** Seasonal adjustment (global) start *****************************************************
+# ****************************** Seasonal adjustment (global) start *****************************************************
+
 
 class SonoffSeasonalAdjustmentConfigCluster(LocalDataCluster):
     """Local cluster for seasonal (monthly) watering adjustment — global, shared by all channels."""
@@ -1692,7 +1759,9 @@ class SonoffSeasonalAdjustmentConfigCluster(LocalDataCluster):
         seasonal_adjustment_june: Final = ZCLAttributeDef(id=0x0085, type=t.uint8_t)
         seasonal_adjustment_july: Final = ZCLAttributeDef(id=0x0086, type=t.uint8_t)
         seasonal_adjustment_august: Final = ZCLAttributeDef(id=0x0087, type=t.uint8_t)
-        seasonal_adjustment_september: Final = ZCLAttributeDef(id=0x0088, type=t.uint8_t)
+        seasonal_adjustment_september: Final = ZCLAttributeDef(
+            id=0x0088, type=t.uint8_t
+        )
         seasonal_adjustment_october: Final = ZCLAttributeDef(id=0x0089, type=t.uint8_t)
         seasonal_adjustment_november: Final = ZCLAttributeDef(id=0x008A, type=t.uint8_t)
         seasonal_adjustment_december: Final = ZCLAttributeDef(id=0x008B, type=t.uint8_t)
@@ -1761,25 +1830,24 @@ class SonoffSeasonalAdjustmentConfigCluster(LocalDataCluster):
         return [[foundation.WriteAttributesStatusRecord(status=Status.SUCCESS)]]
 
 
-#****************************** Amount unit entity (global) start *****************************************************
+# ****************************** Amount unit entity (global) start *****************************************************
+
 
 def add_amount_unit_config_entity(builder: QuirkBuilder) -> QuirkBuilder:
     """Add the global amount unit config entity, shared by manual and schedules."""
 
-    return (
-        builder.adds(SonoffAmountUnitConfigCluster)
-        .enum(
-            SonoffAmountUnitConfigCluster.AttributeDefs.amount_unit.name,
-            IrrigationAmountUnit,
-            SonoffAmountUnitConfigCluster.cluster_id,
-            entity_type=EntityType.CONFIG,
-            translation_key="irrigation_amount_unit",
-            fallback_name="2.1 Capacity Units",
-        )
+    return builder.adds(SonoffAmountUnitConfigCluster).enum(
+        SonoffAmountUnitConfigCluster.AttributeDefs.amount_unit.name,
+        IrrigationAmountUnit,
+        SonoffAmountUnitConfigCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="irrigation_amount_unit",
+        fallback_name="2.1 Capacity Units",
     )
 
 
-#****************************** Seasonal adjustment entities start *****************************************************
+# ****************************** Seasonal adjustment entities start *****************************************************
+
 
 def add_seasonal_adjustment_entities(builder: QuirkBuilder) -> QuirkBuilder:
     """Add seasonal (monthly) watering adjustment config entities — global, shared by all channels."""
@@ -1921,7 +1989,7 @@ def add_seasonal_adjustment_entities(builder: QuirkBuilder) -> QuirkBuilder:
     )
 
 
-#****************************** Manual irrigation entities start *****************************************************
+# ****************************** Manual irrigation entities start *****************************************************
 # Split aggregate array into individual entities so HA can display decoded values
 def add_single_irrigation_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
     """Add config entities for the aggregate single irrigation attribute 0x501D."""
@@ -2007,13 +2075,14 @@ def add_single_irrigation_config_entities(builder: QuirkBuilder) -> QuirkBuilder
         )
     )
 
+
 # Channel 1 schedule entities
 def add_irrigation_plan_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
     """Add config entities for channel 1 irrigation plan attribute."""
 
     return (
         builder.adds(SonoffIrrigationPlanConfigCluster)
-         .number(
+        .number(
             SonoffIrrigationPlanConfigCluster.AttributeDefs.plan_index.name,
             SonoffIrrigationPlanConfigCluster.cluster_id,
             min_value=0,
@@ -2220,9 +2289,6 @@ def add_irrigation_plan_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
             translation_key="schedule_ch1_irrigation_plan_sunday",
             fallback_name="5.21 CH1 Schedule-Sunday",
         )
-
-
-
         .write_attr_button(
             SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.name,
             SonoffIrrigationPlanConfigCluster.AttributeDefs.apply_plan.id,
@@ -2239,13 +2305,14 @@ def add_irrigation_plan_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
         )
     )
 
+
 # Channel 2 schedule entities
 def add_irrigation_plan_config_entities_ch2(builder: QuirkBuilder) -> QuirkBuilder:
     """Add config entities for channel 2 irrigation plan attribute."""
 
     return (
         builder.adds(SonoffIrrigationPlanConfigClusterCh2, endpoint_id=2)
-         .number(
+        .number(
             SonoffIrrigationPlanConfigClusterCh2.AttributeDefs.plan_index.name,
             SonoffIrrigationPlanConfigClusterCh2.cluster_id,
             endpoint_id=2,
@@ -2467,9 +2534,6 @@ def add_irrigation_plan_config_entities_ch2(builder: QuirkBuilder) -> QuirkBuild
             translation_key="schedule_ch2_irrigation_plan_sunday",
             fallback_name="6.21 CH2 Schedule-Sunday",
         )
-
-
-
         .write_attr_button(
             SonoffIrrigationPlanConfigClusterCh2.AttributeDefs.apply_plan.name,
             SonoffIrrigationPlanConfigClusterCh2.AttributeDefs.apply_plan.id,
@@ -2487,6 +2551,7 @@ def add_irrigation_plan_config_entities_ch2(builder: QuirkBuilder) -> QuirkBuild
             fallback_name="6.23 CH2 Schedule Remove",
         )
     )
+
 
 # Add user delay (rain delay) entities
 def add_user_delay_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
@@ -2532,6 +2597,7 @@ def add_user_delay_config_entities(builder: QuirkBuilder) -> QuirkBuilder:
         )
     )
 
+
 # Add common entities
 def add_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
     """Add shared SWV private-cluster entities."""
@@ -2573,8 +2639,10 @@ def add_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
             SonoffWaterValveCluster.AttributeDefs.valve_abnormal_state.name,
             SonoffWaterValveCluster.cluster_id,
             device_class=BinarySensorDeviceClass.PROBLEM,
-            attribute_converter=lambda value: value
-            & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2),
+            attribute_converter=lambda value: (
+                value
+                & (ValveState.Water_Shortage | ValveState.Water_Shortage_Channel_2)
+            ),
             unique_id_suffix="water_shortage_status_v2",
             reporting_config=ReportingConfig(
                 min_interval=30, max_interval=900, reportable_change=1
@@ -2594,7 +2662,11 @@ def add_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
             reporting_config=ReportingConfig(
                 min_interval=30, max_interval=900, reportable_change=1
             ),
-            attribute_converter=lambda v: datetime.fromtimestamp(v + ZIGBEE_EPOCH_OFFSET, tz=timezone.utc) if v != 0 else None,
+            attribute_converter=lambda v: (
+                datetime.fromtimestamp(v + ZIGBEE_EPOCH_OFFSET, tz=UTC)
+                if v != 0
+                else None
+            ),
             unique_id_suffix="user_delay_end_datetime_v2",
             translation_key="user_delay_end_datetime",
             fallback_name="User delay end time",
@@ -2682,6 +2754,7 @@ def add_common_entities(builder: QuirkBuilder) -> QuirkBuilder:
     )
 
     return result
+
 
 # Model definitions
 add_common_entities(
