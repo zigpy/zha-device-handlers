@@ -1,6 +1,7 @@
 """Module for Samjin quirks implementations."""
 
 from typing import Any
+
 import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
