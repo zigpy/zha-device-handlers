@@ -14,7 +14,6 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,  # 传感器设备类
     SensorStateClass    # 传感器状态类（用于折线图）
 )
-from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 # 导入单位常量（时长/体积）
 from zigpy.quirks.v2.homeassistant import UnitOfTime
@@ -110,11 +109,15 @@ class QuarterlyAdjustmentState:
     """State container for seasonal watering adjustment."""
 
     def __init__(self, values: list[int] | None = None):
+        """Initialize monthly seasonal adjustment values."""
+
         self.values = list(values or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN)
         if len(self.values) != QUARTERLY_ADJUSTMENT_PAYLOAD_LEN:
             raise ValueError("Quarterly adjustment state must contain 12 values")
 
     def to_payload(self) -> bytes:
+        """Return the 12-byte firmware payload."""
+
         return bytes(int(value) for value in self.values)
 
 
@@ -301,7 +304,7 @@ def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
     else:
-        raise ValueError("Unsupported quarterly adjustment payload value")
+        raise TypeError("Unsupported quarterly adjustment payload value")
     if len(data) != QUARTERLY_ADJUSTMENT_PAYLOAD_LEN:
         raise ValueError("Quarterly adjustment payload must be 12 bytes")
     return data
@@ -706,7 +709,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             elif attr_id == self.AttributeDefs.amount_unit.id:
                 pending_amount_unit = int(value)
 
-        for attr, value in attributes.items():
+        for attr, _value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if (
@@ -1163,6 +1166,83 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
                 "less than or equal to scheduled total duration"
             )
 
+    def _write_local_plan_attribute(self, attr_id: int, value: Any) -> bool:
+        """Update a local schedule field and return whether it was handled."""
+
+        if attr_id == self.AttributeDefs.plan_index.id:
+            _validate_irrigation_plan_index(value)
+            self._plan_index = int(value)
+        elif attr_id == self.AttributeDefs.effective_year.id:
+            self._effective_year = int(value)
+        elif attr_id == self.AttributeDefs.effective_month.id:
+            self._effective_month = int(value)
+        elif attr_id == self.AttributeDefs.effective_day.id:
+            self._effective_day = int(value)
+        elif attr_id == self.AttributeDefs.repeat_mode.id:
+            self._repeat_mode = int(value)
+        elif attr_id == self.AttributeDefs.repeat_value.id:
+            self._repeat_value = int(value)
+        elif attr_id == self.AttributeDefs.plan_irrigation_mode.id:
+            self._irrigation_mode = max(0, min(int(value), 2))
+        elif attr_id == self.AttributeDefs.plan_total_duration_min.id:
+            self._total_duration_min = max(
+                SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
+                min(int(value), SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX),
+            )
+        elif attr_id == self.AttributeDefs.duration_min.id:
+            self._duration_min = max(
+                SCHEDULE_IRRIGATION_DURATION_MIN,
+                min(int(value), SCHEDULE_IRRIGATION_DURATION_MAX),
+            )
+        elif attr_id == self.AttributeDefs.interval_duration_min.id:
+            self._interval_duration_min = max(
+                SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
+                min(int(value), SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX),
+            )
+        elif attr_id == self.AttributeDefs.plan_amount.id:
+            self._amount = max(
+                SINGLE_IRRIGATION_AMOUNT_MIN,
+                min(int(value), SINGLE_IRRIGATION_AMOUNT_MAX),
+            )
+        elif attr_id == self.AttributeDefs.plan_fail_safe_duration_min.id:
+            self._fail_safe_duration_min = max(
+                SCHEDULE_IRRIGATION_FAIL_SAFE_MIN,
+                min(int(value), SCHEDULE_IRRIGATION_FAIL_SAFE_MAX),
+            )
+        elif attr_id == self.AttributeDefs.weekday_sunday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x01) | int(bool(value))
+        elif attr_id == self.AttributeDefs.weekday_monday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x02) | (
+                int(bool(value)) << 1
+            )
+        elif attr_id == self.AttributeDefs.weekday_tuesday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x04) | (
+                int(bool(value)) << 2
+            )
+        elif attr_id == self.AttributeDefs.weekday_wednesday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x08) | (
+                int(bool(value)) << 3
+            )
+        elif attr_id == self.AttributeDefs.weekday_thursday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x10) | (
+                int(bool(value)) << 4
+            )
+        elif attr_id == self.AttributeDefs.weekday_friday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x20) | (
+                int(bool(value)) << 5
+            )
+        elif attr_id == self.AttributeDefs.weekday_saturday.id:
+            self._weekday_mask = (self._weekday_mask & ~0x40) | (
+                int(bool(value)) << 6
+            )
+        elif attr_id == self.AttributeDefs.start_hour.id:
+            self._start_hour = int(value)
+        elif attr_id == self.AttributeDefs.start_minute.id:
+            self._start_minute = int(value)
+        else:
+            return False
+        return True
+
     async def write_attributes(
         self,
         attributes: dict[str | int | ZCLAttributeDef, Any],
@@ -1173,62 +1253,9 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if attr_id == self.AttributeDefs.plan_index.id:
-                _validate_irrigation_plan_index(value)
-                self._plan_index = int(value)
-            elif attr_id == self.AttributeDefs.effective_year.id:
-                self._effective_year = int(value)
-            elif attr_id == self.AttributeDefs.effective_month.id:
-                self._effective_month = int(value)
-            elif attr_id == self.AttributeDefs.effective_day.id:
-                self._effective_day = int(value)
-            elif attr_id == self.AttributeDefs.repeat_mode.id:
-                self._repeat_mode = int(value)
-            elif attr_id == self.AttributeDefs.repeat_value.id:
-                self._repeat_value = int(value)
-            elif attr_id == self.AttributeDefs.plan_irrigation_mode.id:
-                self._irrigation_mode = max(0, min(int(value), 2))
-            elif attr_id == self.AttributeDefs.plan_total_duration_min.id:
-                self._total_duration_min = max(
-                    SCHEDULE_IRRIGATION_TOTAL_DURATION_MIN,
-                    min(int(value), SCHEDULE_IRRIGATION_TOTAL_DURATION_MAX),
-                )
-            elif attr_id == self.AttributeDefs.duration_min.id:
-                self._duration_min = max(
-                    SCHEDULE_IRRIGATION_DURATION_MIN,
-                    min(int(value), SCHEDULE_IRRIGATION_DURATION_MAX),
-                )
-            elif attr_id == self.AttributeDefs.interval_duration_min.id:
-                self._interval_duration_min = max(
-                    SCHEDULE_IRRIGATION_INTERVAL_DURATION_MIN,
-                    min(int(value), SCHEDULE_IRRIGATION_INTERVAL_DURATION_MAX),
-                )
-            elif attr_id == self.AttributeDefs.plan_amount.id:
-                self._amount = max(SINGLE_IRRIGATION_AMOUNT_MIN, min(int(value), SINGLE_IRRIGATION_AMOUNT_MAX))
-            elif attr_id == self.AttributeDefs.plan_fail_safe_duration_min.id:
-                self._fail_safe_duration_min = max(
-                    SCHEDULE_IRRIGATION_FAIL_SAFE_MIN,
-                    min(int(value), SCHEDULE_IRRIGATION_FAIL_SAFE_MAX),
-                )
-            elif attr_id == self.AttributeDefs.weekday_sunday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x01) | int(bool(value))
-            elif attr_id == self.AttributeDefs.weekday_monday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x02) | (int(bool(value)) << 1)
-            elif attr_id == self.AttributeDefs.weekday_tuesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x04) | (int(bool(value)) << 2)
-            elif attr_id == self.AttributeDefs.weekday_wednesday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x08) | (int(bool(value)) << 3)
-            elif attr_id == self.AttributeDefs.weekday_thursday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x10) | (int(bool(value)) << 4)
-            elif attr_id == self.AttributeDefs.weekday_friday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x20) | (int(bool(value)) << 5)
-            elif attr_id == self.AttributeDefs.weekday_saturday.id:
-                self._weekday_mask = (self._weekday_mask & ~0x40) | (int(bool(value)) << 6)
-            elif attr_id == self.AttributeDefs.start_hour.id:
-                self._start_hour = int(value)
-            elif attr_id == self.AttributeDefs.start_minute.id:
-                self._start_minute = int(value)
-            elif attr_id in {attr_def.id for attr_def in self._quarterly_adjustment_attr_defs()}:
+            if self._write_local_plan_attribute(attr_id, value):
+                continue
+            if attr_id in {attr_def.id for attr_def in self._quarterly_adjustment_attr_defs()}:
                 values = list(self._quarterly_adjustment.values)
                 for index, attr_def in enumerate(self._quarterly_adjustment_attr_defs()):
                     if attr_id == attr_def.id:
@@ -2231,4 +2258,3 @@ class SonoffDurationOnlyIrrigationPlanConfigCluster(SonoffIrrigationPlanConfigCl
     )
     .add_to_registry()
 )
-
