@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
@@ -15,10 +15,10 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,  # 传感器设备类
     SensorStateClass,  # 传感器状态类（用于折线图）
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 
 # 导入单位常量（时长/体积）
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReadEvent,
@@ -243,7 +243,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
     """Return the Zigbee epoch timestamp for a date at midnight UTC."""
 
     return int(
-        datetime(int(year), int(month), int(day), tzinfo=timezone.utc).timestamp()
+        datetime(int(year), int(month), int(day), tzinfo=UTC).timestamp()
         - ZIGBEE_EPOCH_OFFSET
     )
 
@@ -251,7 +251,7 @@ def _zigbee_date_timestamp(year: int, month: int, day: int) -> int:
 def _zigbee_now_timestamp() -> int:
     """Return the current UTC timestamp using the Zigbee epoch."""
 
-    return int(datetime.now(tz=timezone.utc).timestamp() - ZIGBEE_EPOCH_OFFSET)
+    return int(datetime.now(tz=UTC).timestamp() - ZIGBEE_EPOCH_OFFSET)
 
 
 def _local_timezone_offset_seconds() -> int:
@@ -266,7 +266,7 @@ def _local_timezone_offset_seconds() -> int:
 def _zigbee_timestamp_to_ymd(value: int) -> tuple[int, int, int]:
     """Convert a Zigbee epoch timestamp to year/month/day."""
 
-    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=timezone.utc)
+    dt = datetime.fromtimestamp(int(value) + ZIGBEE_EPOCH_OFFSET, tz=UTC)
     return dt.year, dt.month, dt.day
 
 
@@ -302,9 +302,7 @@ def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
 
     if isinstance(value, foundation.Array):
         value = value.value
-    if isinstance(value, (bytes, bytearray)):
-        data = bytes(value)
-    elif isinstance(value, t.LVList):
+    if isinstance(value, (bytes, bytearray)) or isinstance(value, t.LVList):
         data = bytes(value)
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
@@ -714,7 +712,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             elif attr_id == self.AttributeDefs.amount_unit.id:
                 pending_amount_unit = int(value)
 
-        for attr in attributes.keys():
+        for attr in attributes:
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if pending_mode == SingleIrrigationMode.Duration and attr_id in (
