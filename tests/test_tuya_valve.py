@@ -94,6 +94,8 @@ async def test_command_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -123,6 +125,8 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -144,6 +148,8 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -227,6 +233,8 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
