@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.const import ARGS, CLUSTER_ID, COMMAND, ENDPOINT_ID, ZHA_SEND_EVENT
 from zhaquirks.develco.intelligent_keypad import MANUFACTURER_CODE
 
 zhaquirks.setup()
@@ -224,6 +225,48 @@ async def test_frient_keypad_panel_status_suppression(zigpy_device_from_v2_quirk
     )
 
 
+async def test_frient_keypad_handle_cluster_request_emergency(
+    zigpy_device_from_v2_quirk,
+):
+    """Test SOS requests emit keypad events and default responses when enabled."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].out_clusters[IasAce.cluster_id]
+    hdr = mock.Mock()
+    hdr.command_id = ias_ace.ServerCommandDefs.emergency.id
+    hdr.frame_control.disable_default_response = False
+
+    with (
+        mock.patch.object(ias_ace, "listener_event") as listener_event,
+        mock.patch.object(ias_ace, "send_default_rsp") as send_default_rsp,
+    ):
+        ias_ace.handle_cluster_request(hdr, [1, 2, 3])
+
+    listener_event.assert_called_once()
+    assert listener_event.call_args.args[0] == ZHA_SEND_EVENT
+    assert listener_event.call_args.args[1] == ias_ace.ServerCommandDefs.emergency.name
+    assert (
+        listener_event.call_args.args[2][COMMAND]
+        == ias_ace.ServerCommandDefs.emergency.name
+    )
+    assert listener_event.call_args.args[2][CLUSTER_ID] == int(ias_ace.cluster_id)
+    assert listener_event.call_args.args[2][ENDPOINT_ID] == 44
+    assert listener_event.call_args.args[2][ARGS] == [1, 2, 3]
+    send_default_rsp.assert_called_once_with(hdr, foundation.Status.SUCCESS)
+
+
 async def test_frient_keypad_panel_status_normal(zigpy_device_from_v2_quirk):
     """Test panel status updates pass through when not suppressed."""
     device = zigpy_device_from_v2_quirk(
@@ -301,6 +344,45 @@ async def test_frient_keypad_panel_status_response_cached(zigpy_device_from_v2_q
     )
 
 
+async def test_frient_keypad_panel_status_response_populates_cache(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the first panel response seeds the cache before replaying it."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].out_clusters[IasAce.cluster_id]
+
+    with mock.patch.object(IasAce, "client_command", new=mock.AsyncMock()) as send:
+        await ias_ace.panel_status_response(
+            IasAce.PanelStatus.Armed_Away,
+            30,
+            IasAce.AudibleNotification.Default_Sound,
+            IasAce.AlarmStatus.Fire,
+        )
+
+    send.assert_called_once_with(
+        ias_ace.ClientCommandDefs.panel_status_response.id,
+        IasAce.PanelStatus.Armed_Away,
+        30,
+        IasAce.AudibleNotification.Default_Sound,
+        IasAce.AlarmStatus.Fire,
+    )
+    assert ias_ace._have_cache is True
+    assert ias_ace._cached_panel_status == IasAce.PanelStatus.Armed_Away
+
+
 async def test_frient_keypad_arm_response_suppression(zigpy_device_from_v2_quirk):
     """Test arm response toggles suppression flag."""
     device = zigpy_device_from_v2_quirk(
@@ -325,6 +407,51 @@ async def test_frient_keypad_arm_response_suppression(zigpy_device_from_v2_quirk
 
         await ias_ace.arm_response(IasAce.ArmNotification.All_Zones_Armed)
         assert ias_ace._suppress_panel_updates is False
+
+
+async def test_frient_keypad_panel_status_same_state_breaks_suppression(
+    zigpy_device_from_v2_quirk,
+):
+    """Test repeated suppressed states are allowed through unchanged."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].out_clusters[IasAce.cluster_id]
+    ias_ace._remember_panel_state(
+        IasAce.PanelStatus.Panel_Disarmed,
+        0,
+        IasAce.AudibleNotification.Mute,
+        IasAce.AlarmStatus.No_Alarm,
+    )
+    ias_ace._suppress_panel_updates = True
+
+    with mock.patch.object(IasAce, "client_command", new=mock.AsyncMock()) as send:
+        await ias_ace.panel_status_changed(
+            IasAce.PanelStatus.Panel_Disarmed,
+            0,
+            IasAce.AudibleNotification.Mute,
+            IasAce.AlarmStatus.No_Alarm,
+        )
+
+    send.assert_called_once_with(
+        ias_ace.ClientCommandDefs.panel_status_changed.id,
+        IasAce.PanelStatus.Panel_Disarmed,
+        0,
+        IasAce.AudibleNotification.Mute,
+        IasAce.AlarmStatus.No_Alarm,
+    )
+    assert ias_ace._suppress_panel_updates is False
 
 
 async def test_frient_keypad_write_attributes_manufacturer(zigpy_device_from_v2_quirk):
@@ -519,6 +646,7 @@ async def test_frient_keypad_write_attributes_mixed(zigpy_device_from_v2_quirk):
                 0xFFFD: 2,
             },
             priority=1,
+            manufacturer=MANUFACTURER_CODE,
         )
 
     assert write_mock.call_count == 2
@@ -529,8 +657,48 @@ async def test_frient_keypad_write_attributes_mixed(zigpy_device_from_v2_quirk):
     assert first_call.kwargs["manufacturer"] == MANUFACTURER_CODE
     assert first_call.kwargs["priority"] == 1
     assert second_call.args[0] == {0xFFFD: 2}
-    assert "manufacturer" not in second_call.kwargs
+    assert second_call.kwargs["manufacturer"] == MANUFACTURER_CODE
     assert second_call.kwargs["priority"] == 1
+
+
+async def test_frient_keypad_write_attributes_failure_does_not_update_cache(
+    zigpy_device_from_v2_quirk,
+):
+    """Test failed manufacturer writes do not update cached keypad attributes."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "KEPZB-112",
+        endpoint_ids=[1, 44],
+        cluster_ids={
+            44: {
+                IasAce.cluster_id: ClusterType.Client,
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    ias_ace = device.endpoints[44].out_clusters[IasAce.cluster_id]
+    failure_status = [
+        foundation.WriteAttributesStatusRecord(foundation.Status.FAILURE),
+    ]
+
+    with (
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(return_value=[failure_status]),
+        ) as write_mock,
+        mock.patch.object(ias_ace, "_update_attribute") as update_mock,
+    ):
+        result = await ias_ace.write_attributes(
+            {ias_ace.AttributeDefs.auto_disarm.name: True}
+        )
+
+    assert write_mock.call_count == 1
+    assert update_mock.call_count == 0
+    assert ias_ace.get(ias_ace.AttributeDefs.auto_disarm.id) is None
+    assert result == [failure_status]
 
 
 async def test_frient_keypad_write_attributes_standard_only(zigpy_device_from_v2_quirk):
