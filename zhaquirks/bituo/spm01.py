@@ -4,19 +4,20 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import ZCLAttributeDef
 
 
 class SPM01ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """ElectricalMeasurement cluster for the single-phase SPM01X.
 
     The SPM01X is a single-phase meter, but its firmware reports the Phase B/C
-    measurement attributes with placeholder values (0 or -1). That populates
-    ZHA's attribute cache and causes phantom "Phase B/C" sensors to be created.
+    and total measurement attributes with placeholder values (0, -1, and
+    0xFFFF). That populates ZHA's attribute cache and causes phantom "Phase B/C"
+    and "Total power" sensors to be created.
     """
 
-    PHANTOM_PHASE_BC_ATTRIBUTES = frozenset(
+    PHANTOM_ATTRIBUTES = frozenset(
         {
+            ElectricalMeasurement.AttributeDefs.total_active_power.id,
             ElectricalMeasurement.AttributeDefs.active_power_ph_b.id,
             ElectricalMeasurement.AttributeDefs.active_power_ph_c.id,
             ElectricalMeasurement.AttributeDefs.rms_current_ph_b.id,
@@ -28,12 +29,11 @@ class SPM01ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         }
     )
 
-    def _update_attribute(self, attrid, value):
-        """Ignore reports/restores for the phantom Phase B/C attributes."""
-        attr_id = attrid.id if isinstance(attrid, ZCLAttributeDef) else attrid
-        if attr_id in self.PHANTOM_PHASE_BC_ATTRIBUTES:
-            return
-        super()._update_attribute(attrid, value)
+    def is_attribute_unsupported(self, attr):
+        """Report the phantom attributes as always unsupported."""
+        if self.find_attribute(attr).id in self.PHANTOM_ATTRIBUTES:
+            return True
+        return super().is_attribute_unsupported(attr)
 
 
 (
