@@ -544,3 +544,20 @@ def test_quirks_v2_exposes_feature():
         ExposesFeatureMetadata(feature="some_feature"),
         ExposesFeatureMetadata(feature="another_feature", config={"option": True}),
     )
+
+
+def test_quirks_v2_firmware_version_filter():
+    """Test that firmware_version_filter populates the device match."""
+    registry = DeviceRegistry()
+
+    entry = (
+        QuirkBuilder("manufacturer", "model")
+        .firmware_version_filter(min_version=10, max_version=50, allow_missing=False)
+        .adds(OnOff.cluster_id)
+        .add_to_registry(registry)
+    )
+
+    match = entry.device_match
+    assert match.firmware_version_min == 10
+    assert match.firmware_version_max == 50
+    assert match.firmware_version_allow_missing is False
