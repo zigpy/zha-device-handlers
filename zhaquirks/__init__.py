@@ -18,7 +18,7 @@ from zha.quirks import (
     ModelInfo,
     QuirkRegistryEntry,
     QuirkSource,
-    make_zigpy_device_replacement,
+    ReplaceZigpyDevice,
 )
 from zigpy.const import SIG_MANUFACTURER, SIG_MODEL, SIG_MODELS_INFO
 import zigpy.device
@@ -547,7 +547,7 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
             applies_to=applies_to,
             filters=(signature_matches(signature),),
         ),
-        zigpy_transforms=(make_zigpy_device_replacement(cls),),
+        zigpy_transforms=(ReplaceZigpyDevice(cls),),
         zha_device_factory=None,
         source=QuirkSource.from_class(cls),
     )

@@ -35,7 +35,7 @@ from zha.quirks import (
     ModelInfo,
     QuirkRegistryEntry,
     QuirkSource,
-    make_zigpy_device_replacement,
+    ReplaceZigpyDevice,
 )
 from zha.zigbee.device import Device
 import zigpy.device
@@ -89,7 +89,9 @@ class AddCluster:
     cluster: int | type[Cluster]
     endpoint_id: int = 1
     cluster_type: ClusterType = ClusterType.Server
-    constant_attributes: dict[ZCLAttributeDef, Any] = field(default_factory=dict)
+    constant_attributes: frozendict[ZCLAttributeDef, Any] = field(
+        default_factory=frozendict
+    )
 
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
@@ -482,7 +484,7 @@ class QuirkBuilder:
                 cluster=cluster,
                 endpoint_id=endpoint_id,
                 cluster_type=cluster_type,
-                constant_attributes=constant_attributes or {},
+                constant_attributes=frozendict(constant_attributes or {}),
             )
         )
         return self
@@ -1081,7 +1083,7 @@ class QuirkBuilder:
 
         # Clone the interviewed device (the first transform) before applying
         # modifications, so the bare device is left intact for persistence.
-        clone = make_zigpy_device_replacement(self.custom_zigpy_device_class)
+        clone = ReplaceZigpyDevice(self.custom_zigpy_device_class)
 
         zigpy_transforms = (clone, *self._compile_transformations())
 
