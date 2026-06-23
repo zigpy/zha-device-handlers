@@ -646,7 +646,7 @@ class TestCoerceValueEdgeCases:
             value = Inner()
 
         result = SingleIrrigationPayload._coerce_value(Outer())
-        assert result == 42
+        assert result == 42  # type: ignore[comparison-overlap]
 
     def test_value_is_self_break_out(self):
         """Coerce where value is its own .value."""
@@ -658,7 +658,7 @@ class TestCoerceValueEdgeCases:
 
         obj = SelfRef()
         result = SingleIrrigationPayload._coerce_value(obj)
-        assert result is obj
+        assert result is obj  # type: ignore[comparison-overlap]
 
     def test_bytes_with_array_prefix(self):
         """Coerce bytes with array type prefix."""
