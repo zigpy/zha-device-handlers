@@ -64,9 +64,9 @@ from zhaquirks.sonoff.sonoff_swv2c import (
 zhaquirks.setup()
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Binary helpers
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestBinaryHelpers:
@@ -90,9 +90,9 @@ class TestBinaryHelpers:
         assert _put_u32_be(0) == [0x00, 0x00, 0x00, 0x00]
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Time helpers
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestTimeHelpers:
@@ -132,9 +132,9 @@ class TestTimeHelpers:
         assert -86400 < offset < 86400
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Validation helpers
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestValidationHelpers:
@@ -197,9 +197,9 @@ class TestValidationHelpers:
             _repeat_to_loop_info(IrrigationPlanRepeat.Custom, -1)
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Single irrigation payload encode / decode
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestSingleIrrigationPayload:
@@ -285,7 +285,7 @@ class TestSingleIrrigationPayload:
         assert decoded.fail_safe_duration_min == 15
         assert decoded.total_duration_min == 0
 
-    def test_encode_duration_with_interval_defaults_to_duration(self):
+    def test_encode_dwi_defaults_to_duration(self):
         """Duration_With_Interval should fall back to Duration."""
         state = SingleIrrigationState(
             irrigation_mode=SingleIrrigationMode.Duration_With_Interval,
@@ -308,22 +308,7 @@ class TestSingleIrrigationPayload:
         arr = foundation.Array(
             type=foundation.DataTypeId.uint8,
             value=t.LVList[t.uint8_t, t.uint16_t](
-                bytes(
-                    [
-                        SingleIrrigationMode.Duration,
-                        0,
-                        10,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                    ]
-                )
+                bytes([SingleIrrigationMode.Duration, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0])
             ),
         )
         result = single_irrigation_payload_from_array(arr)
@@ -374,9 +359,9 @@ class TestSingleIrrigationPayloadLVList:
         assert len(obj) == SINGLE_IRRIGATION_PAYLOAD_LEN
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Irrigation plan payload encode
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestIrrigationPlanPayload:
@@ -435,9 +420,9 @@ class TestIrrigationPlanPayload:
             encode_irrigation_plan_payload(plan)
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Quarterly adjustment
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestQuarterlyAdjustmentState:
@@ -507,9 +492,9 @@ class TestQuarterlyAdjustmentPayload:
         assert isinstance(arr, foundation.Array)
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Enums
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestEnums:
@@ -556,9 +541,9 @@ class TestEnums:
         assert IrrigationPlanRepeat.Custom == 0x03
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # IrrigationPlan dataclass
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestIrrigationPlanDataClass:
@@ -576,9 +561,160 @@ class TestIrrigationPlanDataClass:
         assert plan.amount_unit == SINGLE_IRRIGATION_ZB_AMOUNT_UNIT_LITER
 
 
-# ---------------------------------------------------------------------------
-# Integration tests (v2 quirk fixture) — basic cluster presence
-# ---------------------------------------------------------------------------
+# ============================================================================
+# Payload types
+# ============================================================================
+
+
+class TestPayloadTypes:
+    """Tests for payload FixedList types."""
+
+    def test_delay_timestamp_payload(self):
+        """DelayTimestampPayload is 4 bytes."""
+        obj = DelayTimestampPayload([0x00, 0x01, 0x02, 0x03])
+        assert len(obj) == 4
+        assert bytes(obj) == b"\x00\x01\x02\x03"
+
+    def test_irrigation_plan_payload(self):
+        """IrrigationPlanPayload is 28 bytes."""
+        obj = IrrigationPlanPayload([0] * IRRIGATION_PLAN_PAYLOAD_LEN)
+        assert len(obj) == IRRIGATION_PLAN_PAYLOAD_LEN
+
+    def test_quarterly_adjustment_payload(self):
+        """QuarterlyAdjustmentPayload is 12 bytes."""
+        obj = QuarterlyAdjustmentPayload([0] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN)
+        assert len(obj) == QUARTERLY_ADJUSTMENT_PAYLOAD_LEN
+
+
+# ============================================================================
+# Array wrapper helpers
+# ============================================================================
+
+
+class TestArrayWrapperHelpers:
+    """Tests for array wrapper functions."""
+
+    def test_single_irrigation_array_from_payload(self):
+        """Wrap payload in SingleIrrigationPayload."""
+        payload = bytes([SingleIrrigationMode.Duration] + [0] * 11)
+        result = single_irrigation_array_from_payload(payload)
+        assert isinstance(result, SingleIrrigationPayload)
+
+    def test_single_irrigation_array_from_payload_test(self):
+        """Wrap payload in foundation.Array."""
+        payload = bytes([SingleIrrigationMode.Duration] + [0] * 11)
+        result = single_irrigation_array_from_payload_test(payload)
+        assert isinstance(result, foundation.Array)
+
+    def test_quarterly_adjustment_from_array(self):
+        """Extract from foundation.Array in quarterly_adjustment_payload_from_value."""
+        arr = foundation.Array(
+            type=foundation.DataTypeId.uint8,
+            value=t.LVList[t.uint8_t, t.uint16_t](b"\x01" * 12),
+        )
+        data = quarterly_adjustment_payload_from_value(arr)
+        assert isinstance(data, bytes)
+        assert len(data) == 12
+
+
+# ============================================================================
+# _coerce_value edge cases
+# ============================================================================
+
+
+class TestCoerceValueEdgeCases:
+    """Tests for SingleIrrigationPayload._coerce_value edge cases."""
+
+    def test_coerce_from_lvlist(self):
+        """Coerce from an existing LVList."""
+        lv = t.LVList[t.uint8_t, t.uint16_t]([0, 1, 2])
+        result = SingleIrrigationPayload._coerce_value(lv)
+        assert isinstance(result, list)
+
+    def test_coerce_from_tuple(self):
+        """Coerce from a tuple."""
+        result = SingleIrrigationPayload._coerce_value((10, 20, 30))
+        assert result == [10, 20, 30]
+
+    def test_nested_value_attr(self):
+        """Coerce a value with nested .value attrs."""
+
+        class Inner:
+            value = 42
+
+        class Outer:
+            value = Inner()
+
+        result = SingleIrrigationPayload._coerce_value(Outer())
+        assert result == 42
+
+    def test_value_is_self_break_out(self):
+        """Coerce where value is its own .value."""
+
+        class SelfRef:
+            @property
+            def value(self):
+                return self
+
+        obj = SelfRef()
+        result = SingleIrrigationPayload._coerce_value(obj)
+        assert result is obj
+
+    def test_bytes_with_array_prefix(self):
+        """Coerce bytes with array type prefix."""
+        inner = bytes([SingleIrrigationMode.Duration] + [0] * 11)
+        prefixed = bytes([foundation.DataTypeId.uint8])
+        prefixed += len(inner).to_bytes(2, "little") + inner
+        result = SingleIrrigationPayload._coerce_value(prefixed)
+        assert isinstance(result, bytes)
+        assert len(result) == SINGLE_IRRIGATION_PAYLOAD_LEN
+
+
+# ============================================================================
+# payload_from_array edge cases
+# ============================================================================
+
+
+class TestPayloadFromArrayEdgeCases:
+    """Tests for single_irrigation_payload_from_array edge cases."""
+
+    def test_empty_array_raises(self):
+        """Empty foundation.Array raises ValueError."""
+        arr = foundation.Array(type=foundation.DataTypeId.uint8, value=None)
+        with pytest.raises(ValueError):
+            single_irrigation_payload_from_array(arr)
+
+    def test_from_list(self):
+        """Decode from a plain list."""
+        result = single_irrigation_payload_from_array(
+            [SingleIrrigationMode.Duration] + [0] * 11
+        )
+        assert isinstance(result, bytes)
+        assert len(result) == SINGLE_IRRIGATION_PAYLOAD_LEN
+
+    def test_from_lvlist(self):
+        """Decode from an LVList."""
+        lv = t.LVList[t.uint8_t, t.uint16_t]([SingleIrrigationMode.Duration] + [0] * 11)
+        result = single_irrigation_payload_from_array(lv)
+        assert isinstance(result, bytes)
+
+    def test_from_bytes_with_array_prefix(self):
+        """Decode bytes prefixed with array type marker."""
+        inner = bytes([SingleIrrigationMode.Duration] + [0] * 11)
+        prefixed = bytes([foundation.DataTypeId.uint8])
+        prefixed += len(inner).to_bytes(2, "little") + inner
+        result = single_irrigation_payload_from_array(prefixed)
+        assert isinstance(result, bytes)
+
+    def test_unsupported_type_raises(self):
+        """Unsupported type raises ValueError."""
+        with pytest.raises(ValueError):
+            single_irrigation_payload_from_array(42)
+
+
+# ============================================================================
+# Integration tests (v2 quirk fixture) — cluster presence
+# ============================================================================
 
 
 class TestSonoffWaterValveQuirk:
@@ -624,7 +760,6 @@ class TestSonoffWaterValveQuirk:
         """Update amount unit updates the local attribute."""
         cluster = self.ep1.sonoff_amount_unit_config
         listener = ClusterListener(cluster)
-
         cluster.update_amount_unit(IrrigationAmountUnit.US_Gallon)
         assert len(listener.attribute_updates) == 1
         assert listener.attribute_updates[0] == (
@@ -642,7 +777,6 @@ class TestSonoffWaterValveQuirk:
         """Updating single irrigation state with duration mode syncs attributes."""
         cluster = self.ep1.sonoff_single_irrigation_config
         listener = ClusterListener(cluster)
-
         state = SingleIrrigationState(
             irrigation_mode=SingleIrrigationMode.Duration,
             total_duration_min=45,
@@ -651,7 +785,6 @@ class TestSonoffWaterValveQuirk:
             fail_safe_duration_min=0,
         )
         cluster.update_single_irrigation_state(state)
-
         updates = dict(listener.attribute_updates)
         assert (
             updates[cluster.AttributeDefs.irrigation_mode.id]
@@ -663,7 +796,6 @@ class TestSonoffWaterValveQuirk:
         """Updating single irrigation state with volume mode propagates amount."""
         cluster = self.ep1.sonoff_single_irrigation_config
         listener = ClusterListener(cluster)
-
         state = SingleIrrigationState(
             irrigation_mode=SingleIrrigationMode.Volume,
             total_duration_min=0,
@@ -672,7 +804,6 @@ class TestSonoffWaterValveQuirk:
             fail_safe_duration_min=20,
         )
         cluster.update_single_irrigation_state(state)
-
         updates = dict(listener.attribute_updates)
         assert (
             updates[cluster.AttributeDefs.irrigation_mode.id]
@@ -705,7 +836,6 @@ class TestSonoffWaterValveQuirk:
         """Update delay end timestamp from device report."""
         cluster = self.ep1.sonoff_user_delay_config
         listener = ClusterListener(cluster)
-
         cluster.update_delay_end_timestamp(1234567890)
         assert cluster._delay_end_timestamp == 1234567890
         assert len(listener.attribute_updates) == 1
@@ -721,7 +851,6 @@ class TestSonoffWaterValveQuirk:
         """Update seasonal adjustment from device report."""
         cluster = self.ep1.sonoff_seasonal_adjustment_config
         listener = ClusterListener(cluster)
-
         values = [5, 5, 8, 10, 12, 15, 15, 12, 10, 8, 5, 5]
         cluster.update_quarterly_adjustment(values)
         assert cluster._quarterly_adjustment.values == values
@@ -732,127 +861,9 @@ class TestSonoffWaterValveQuirk:
         assert USER_DELAY_MAX_HOURS == 7 * 24
 
 
-# ---------------------------------------------------------------------------
-# Payload type tests
-# ---------------------------------------------------------------------------
-
-
-class TestPayloadTypes:
-    """Tests for payload FixedList types."""
-
-    def test_delay_timestamp_payload(self):
-        """DelayTimestampPayload is 4 bytes."""
-        obj = DelayTimestampPayload([0x00, 0x01, 0x02, 0x03])
-        assert len(obj) == 4
-        assert bytes(obj) == b"\x00\x01\x02\x03"
-
-    def test_irrigation_plan_payload(self):
-        """IrrigationPlanPayload is 28 bytes."""
-        obj = IrrigationPlanPayload([0] * IRRIGATION_PLAN_PAYLOAD_LEN)
-        assert len(obj) == IRRIGATION_PLAN_PAYLOAD_LEN
-
-    def test_quarterly_adjustment_payload(self):
-        """QuarterlyAdjustmentPayload is 12 bytes."""
-        obj = QuarterlyAdjustmentPayload([0] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN)
-        assert len(obj) == QUARTERLY_ADJUSTMENT_PAYLOAD_LEN
-
-
-# ---------------------------------------------------------------------------
-# Array wrapper helpers
-# ---------------------------------------------------------------------------
-
-
-class TestArrayWrapperHelpers:
-    """Tests for array wrapper functions."""
-
-    def test_single_irrigation_array_from_payload(self):
-        """Wrap payload in SingleIrrigationPayload."""
-        payload = bytes([SingleIrrigationMode.Duration] + [0] * 11)
-        result = single_irrigation_array_from_payload(payload)
-        assert isinstance(result, SingleIrrigationPayload)
-
-    def test_single_irrigation_array_from_payload_test(self):
-        """Wrap payload in foundation.Array."""
-        payload = bytes([SingleIrrigationMode.Duration] + [0] * 11)
-        result = single_irrigation_array_from_payload_test(payload)
-        assert isinstance(result, foundation.Array)
-
-    def test_quarterly_adjustment_from_array(self):
-        """Extract from foundation.Array in quarterly_adjustment_payload_from_value."""
-        arr = foundation.Array(
-            type=foundation.DataTypeId.uint8,
-            value=t.LVList[t.uint8_t, t.uint16_t](b"\x01" * 12),
-        )
-        data = quarterly_adjustment_payload_from_value(arr)
-        assert isinstance(data, bytes)
-        assert len(data) == 12
-
-
-# ---------------------------------------------------------------------------
-# SingleIrrigationPayload _coerce_value edge cases
-# ---------------------------------------------------------------------------
-
-
-class TestSingleIrrigationPayloadCoerce:
-    """Tests for SingleIrrigationPayload._coerce_value edge cases."""
-
-    def test_coerce_from_lvlist(self):
-        """Coerce from an existing LVList."""
-        lv = t.LVList[t.uint8_t, t.uint16_t]([0, 1, 2])
-        result = SingleIrrigationPayload._coerce_value(lv)
-        assert isinstance(result, list)
-
-    def test_coerce_from_tuple(self):
-        """Coerce from a tuple."""
-        result = SingleIrrigationPayload._coerce_value((10, 20, 30))
-        assert result == [10, 20, 30]
-
-
-# ---------------------------------------------------------------------------
-# payload_from_array edge cases
-# ---------------------------------------------------------------------------
-
-
-class TestPayloadFromArrayEdgeCases:
-    """Tests for single_irrigation_payload_from_array edge cases."""
-
-    def test_empty_array_raises(self):
-        """Empty foundation.Array raises ValueError."""
-        arr = foundation.Array(type=foundation.DataTypeId.uint8, value=None)
-        with pytest.raises(ValueError):
-            single_irrigation_payload_from_array(arr)
-
-    def test_from_list(self):
-        """Decode from a plain list."""
-        result = single_irrigation_payload_from_array(
-            [SingleIrrigationMode.Duration] + [0] * 11
-        )
-        assert isinstance(result, bytes)
-        assert len(result) == SINGLE_IRRIGATION_PAYLOAD_LEN
-
-    def test_from_lvlist(self):
-        """Decode from an LVList."""
-        lv = t.LVList[t.uint8_t, t.uint16_t]([SingleIrrigationMode.Duration] + [0] * 11)
-        result = single_irrigation_payload_from_array(lv)
-        assert isinstance(result, bytes)
-
-    def test_from_bytes_with_array_prefix(self):
-        """Decode bytes prefixed with array type marker."""
-        inner = bytes([SingleIrrigationMode.Duration] + [0] * 11)
-        prefixed = bytes([foundation.DataTypeId.uint8])
-        prefixed += len(inner).to_bytes(2, "little") + inner
-        result = single_irrigation_payload_from_array(prefixed)
-        assert isinstance(result, bytes)
-
-    def test_unsupported_type_raises(self):
-        """Unsupported type raises ValueError."""
-        with pytest.raises(ValueError):
-            single_irrigation_payload_from_array(42)
-
-
-# ---------------------------------------------------------------------------
-# Event handler tests — SonoffWaterValveCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
+# Event handler tests via update_attribute
+# ============================================================================
 
 
 class TestEventHandlers:
@@ -860,7 +871,7 @@ class TestEventHandlers:
 
     @pytest.fixture(autouse=True)
     def _setup(self, zigpy_device_from_v2_quirk):
-        """Create a quirked device."""
+        """Create device."""
         self.device = zigpy_device_from_v2_quirk(
             manufacturer="SONOFF",
             model="SWV-ZF2E",
@@ -872,19 +883,17 @@ class TestEventHandlers:
         )
         self.swv = self.device.endpoints[1].sonoff_cluster
 
-    def test_single_irrigation_change_via_update_attribute(self):
+    def test_single_irrigation_change(self):
         """update_attribute on single_irrigation_set syncs to local config cluster."""
         local = self.device.endpoints[1].sonoff_single_irrigation_config
         listener = ClusterListener(local)
         vol_mode_int = int(SingleIrrigationMode.Volume)
-
         payload = SingleIrrigationPayload(
             bytes([vol_mode_int, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0, 20])
         )
         self.swv.update_attribute(
             SonoffWaterValveCluster.AttributeDefs.single_irrigation_set.id, payload
         )
-
         updates = dict(listener.attribute_updates)
         assert (
             updates[local.AttributeDefs.irrigation_mode.id]
@@ -896,25 +905,31 @@ class TestEventHandlers:
         """update_attribute on unit_of_water_flow syncs to amount unit config."""
         amount = self.device.endpoints[1].sonoff_amount_unit_config
         listener = ClusterListener(amount)
-
         self.swv.update_attribute(
             SonoffWaterValveCluster.AttributeDefs.unit_of_water_flow.id,
             int(IrrigationAmountUnit.US_Gallon),
         )
-
         assert len(listener.attribute_updates) == 1
         assert listener.attribute_updates[0][1] == IrrigationAmountUnit.US_Gallon
+
+    def test_unit_of_water_flow_on_ep2(self):
+        """unit_of_water_flow on ep2 falls back to ep1 global cluster."""
+        swv2 = self.device.endpoints[2].sonoff_cluster
+        amount = self.device.endpoints[1].sonoff_amount_unit_config
+        swv2.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.unit_of_water_flow.id,
+            int(IrrigationAmountUnit.Imperial_Gallon),
+        )
+        assert amount._amount_unit == IrrigationAmountUnit.Imperial_Gallon
 
     def test_quarterly_adjustment_change(self):
         """update_attribute on quarterly_adjustment syncs to seasonal config."""
         seasonal = self.device.endpoints[1].sonoff_seasonal_adjustment_config
         listener = ClusterListener(seasonal)
-
         arr = quarterly_adjustment_array_from_payload(bytes([3] * 12))
         self.swv.update_attribute(
             SonoffWaterValveCluster.AttributeDefs.quarterly_adjustment.id, arr
         )
-
         assert len(listener.attribute_updates) == 12
         assert seasonal._quarterly_adjustment.values == [3] * 12
 
@@ -922,12 +937,9 @@ class TestEventHandlers:
         """update_attribute on user_delay_end_datetime syncs to delay config."""
         delay = self.device.endpoints[1].sonoff_user_delay_config
         listener = ClusterListener(delay)
-
         self.swv.update_attribute(
-            SonoffWaterValveCluster.AttributeDefs.user_delay_end_datetime.id,
-            999888777,
+            SonoffWaterValveCluster.AttributeDefs.user_delay_end_datetime.id, 999888777
         )
-
         assert delay._delay_end_timestamp == 999888777
         assert len(listener.attribute_updates) == 1
 
@@ -935,16 +947,13 @@ class TestEventHandlers:
         """update_attribute on unrelated attribute id does nothing to SWV local clusters."""
         local = self.device.endpoints[1].sonoff_single_irrigation_config
         listener = ClusterListener(local)
-
         self.swv.update_attribute(0x9999, 123)
-        # Only the swv cluster attribute_updates are triggered,
-        # _handle_single_irrigation_change should ignore the irrelevant attr
         assert len(listener.attribute_updates) == 0
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # apply_custom_configuration
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestApplyCustomConfiguration:
@@ -968,7 +977,6 @@ class TestApplyCustomConfiguration:
         """apply_custom_configuration reads unit_of_water_flow and user_delay_end_datetime."""
         uow_attr = SonoffWaterValveCluster.AttributeDefs.unit_of_water_flow
         ude_attr = SonoffWaterValveCluster.AttributeDefs.user_delay_end_datetime
-
         read_response = [
             foundation.ReadAttributeRecord(
                 attrid=uow_attr.id,
@@ -989,13 +997,12 @@ class TestApplyCustomConfiguration:
             self.swv, "_read_attributes", mock.AsyncMock(return_value=[read_response])
         ) as mock_read:
             await self.swv.apply_custom_configuration()
-
         assert mock_read.call_count == 1
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Write attributes — SonoffAmountUnitConfigCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestAmountUnitConfigWrite:
@@ -1018,7 +1025,6 @@ class TestAmountUnitConfigWrite:
         """Writing amount_unit calls write_attributes_raw on sonoff_cluster."""
         cluster = self.device.endpoints[1].sonoff_amount_unit_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
         ]
@@ -1028,14 +1034,13 @@ class TestAmountUnitConfigWrite:
             await cluster.write_attributes(
                 {cluster.AttributeDefs.amount_unit.name: IrrigationAmountUnit.US_Gallon}
             )
-
         assert mock_write.call_count == 1
         assert cluster._amount_unit == IrrigationAmountUnit.US_Gallon
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Write attributes — SonoffSingleIrrigationConfigCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestSingleIrrigationConfigWrite:
@@ -1065,7 +1070,6 @@ class TestSingleIrrigationConfigWrite:
             fail_safe_duration_min=0,
         )
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
         ]
@@ -1075,7 +1079,6 @@ class TestSingleIrrigationConfigWrite:
             await cluster.write_attributes(
                 {cluster.AttributeDefs.total_duration_min.name: 30}
             )
-
         assert cluster._single_irrigation_state.total_duration_min == 30
 
     async def test_write_volume_mode_amount(self):
@@ -1089,7 +1092,6 @@ class TestSingleIrrigationConfigWrite:
             fail_safe_duration_min=20,
         )
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
         ]
@@ -1097,7 +1099,6 @@ class TestSingleIrrigationConfigWrite:
             swv, "write_attributes_raw", mock.AsyncMock(return_value=write_response)
         ):
             await cluster.write_attributes({cluster.AttributeDefs.amount.name: 500})
-
         assert cluster._single_irrigation_state.amount == 500
 
     async def test_write_amount_in_duration_mode_raises(self):
@@ -1110,7 +1111,6 @@ class TestSingleIrrigationConfigWrite:
             amount=0,
             fail_safe_duration_min=0,
         )
-
         with pytest.raises(ValueError):
             await cluster.write_attributes({cluster.AttributeDefs.amount.name: 100})
 
@@ -1124,7 +1124,6 @@ class TestSingleIrrigationConfigWrite:
             amount=100,
             fail_safe_duration_min=20,
         )
-
         with pytest.raises(ValueError):
             await cluster.write_attributes(
                 {cluster.AttributeDefs.total_duration_min.name: 30}
@@ -1141,7 +1140,6 @@ class TestSingleIrrigationConfigWrite:
             fail_safe_duration_min=20,
         )
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]
         ]
@@ -1151,7 +1149,6 @@ class TestSingleIrrigationConfigWrite:
             result = await cluster.write_attributes(
                 {cluster.AttributeDefs.amount.name: 500}
             )
-
         assert result[0][0].status == foundation.Status.FAILURE
 
     async def test_write_mode_change_in_same_batch(self):
@@ -1165,7 +1162,6 @@ class TestSingleIrrigationConfigWrite:
             fail_safe_duration_min=0,
         )
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
         ]
@@ -1178,17 +1174,25 @@ class TestSingleIrrigationConfigWrite:
                     cluster.AttributeDefs.amount.name: 999,
                 }
             )
-
         assert (
             cluster._single_irrigation_state.irrigation_mode
             == SingleIrrigationMode.Volume
         )
         assert cluster._single_irrigation_state.amount == 999
 
+    def test_update_amount_unit_delegates(self):
+        """update_amount_unit delegates to global cluster."""
+        single = self.device.endpoints[1].sonoff_single_irrigation_config
+        single.update_amount_unit(IrrigationAmountUnit.Imperial_Gallon)
+        assert (
+            self.device.endpoints[1].sonoff_amount_unit_config._amount_unit
+            == IrrigationAmountUnit.Imperial_Gallon
+        )
 
-# ---------------------------------------------------------------------------
+
+# ============================================================================
 # Write attributes — SonoffIrrigationPlanConfigCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestIrrigationPlanConfigWrite:
@@ -1281,9 +1285,6 @@ class TestIrrigationPlanConfigWrite:
         cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
         cluster._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
         cluster._total_duration_min = 30
-        cluster._duration_min = 0
-        cluster._interval_duration_min = 0
-
         with pytest.raises(ValueError):
             await cluster.write_attributes(
                 {
@@ -1296,12 +1297,10 @@ class TestIrrigationPlanConfigWrite:
         """Writing apply_plan sends ZCL command."""
         cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         cluster._plan_index = 0
         cluster._irrigation_mode = SingleIrrigationMode.Duration
         cluster._repeat_mode = IrrigationPlanRepeat.Odd_Day
         cluster._repeat_value = 0
-
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.apply_plan.name: 1})
         assert mock_cmd.call_count == 1
@@ -1310,7 +1309,6 @@ class TestIrrigationPlanConfigWrite:
         """Writing remove_plan sends ZCL command."""
         cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         cluster._plan_index = 2
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.remove_plan.name: 1})
@@ -1322,13 +1320,9 @@ class TestIrrigationPlanConfigWrite:
         cluster._plan_index = 1
         cluster._irrigation_mode = SingleIrrigationMode.Duration
         cluster._total_duration_min = 45
-        cluster._duration_min = 0
-        cluster._interval_duration_min = 0
         cluster._repeat_mode = IrrigationPlanRepeat.Odd_Day
         cluster._repeat_value = 0
-
         plan = cluster._plan_from_current_config()
-        assert isinstance(plan, IrrigationPlan)
         assert plan.index == 1
         assert plan.irrigation_mode == SingleIrrigationMode.Duration
         assert plan.total_duration_min == 45
@@ -1344,7 +1338,6 @@ class TestIrrigationPlanConfigWrite:
         cluster._fail_safe_duration_min = 25
         cluster._repeat_mode = IrrigationPlanRepeat.Even_Day
         cluster._repeat_value = 0
-
         plan = cluster._plan_from_current_config()
         assert plan.irrigation_mode == SingleIrrigationMode.Volume
         assert plan.total_duration_min == 0
@@ -1361,7 +1354,6 @@ class TestIrrigationPlanConfigWrite:
         cluster._interval_duration_min = 10
         cluster._repeat_mode = IrrigationPlanRepeat.Custom
         cluster._weekday_mask = 0x7F
-
         plan = cluster._plan_from_current_config()
         assert plan.irrigation_mode == SingleIrrigationMode.Duration_With_Interval
         assert plan.total_duration_min == 60
@@ -1369,10 +1361,112 @@ class TestIrrigationPlanConfigWrite:
         assert plan.interval_duration_min == 10
         assert plan.repeat_value == 0x7F
 
+    async def test_write_start_time(self):
+        """Write start_hour and start_minute."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        await cluster.write_attributes({cluster.AttributeDefs.start_hour.name: 16})
+        assert cluster._start_hour == 16
+        await cluster.write_attributes({cluster.AttributeDefs.start_minute.name: 45})
+        assert cluster._start_minute == 45
 
-# ---------------------------------------------------------------------------
+    async def test_write_irrigation_mode_plan(self):
+        """Write irrigation_mode for plan."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Duration
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.irrigation_mode.name: SingleIrrigationMode.Volume}
+        )
+        assert cluster._irrigation_mode == SingleIrrigationMode.Volume
+
+    async def test_write_total_duration_plan(self):
+        """Write total_duration_min for plan."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.total_duration_min.name: 60}
+        )
+        assert cluster._total_duration_min == 60
+
+    async def test_write_duration_plan(self):
+        """Write duration_min for plan (in DWI mode)."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        cluster._total_duration_min = 60
+        await cluster.write_attributes({cluster.AttributeDefs.duration_min.name: 25})
+        assert cluster._duration_min == 25
+
+    async def test_write_interval_plan(self):
+        """Write interval_duration_min for plan (in DWI mode)."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        cluster._total_duration_min = 60
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.interval_duration_min.name: 10}
+        )
+        assert cluster._interval_duration_min == 10
+
+    async def test_write_amount_plan(self):
+        """Write amount for plan (in Volume mode)."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Volume
+        await cluster.write_attributes({cluster.AttributeDefs.amount.name: 600})
+        assert cluster._amount == 600
+
+    async def test_write_fail_safe_plan(self):
+        """Write fail_safe_duration_min for plan (in Volume mode)."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Volume
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.fail_safe_duration_min.name: 40}
+        )
+        assert cluster._fail_safe_duration_min == 40
+
+    async def test_write_all_weekdays(self):
+        """Write all weekday masks."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_monday.name: 1})
+        assert cluster._weekday_mask & 0x02
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_tuesday.name: 0})
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.weekday_wednesday.name: 1}
+        )
+        assert cluster._weekday_mask & 0x08
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_thursday.name: 0})
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_friday.name: 1})
+        assert cluster._weekday_mask & 0x20
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_saturday.name: 0})
+        await cluster.write_attributes({cluster.AttributeDefs.weekday_sunday.name: 1})
+        assert cluster._weekday_mask & 0x01
+
+    async def test_dwi_interval_exceeds_total(self):
+        """Interval > total raises in DWI mode."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        cluster._total_duration_min = 30
+        cluster._interval_duration_min = 0
+        with pytest.raises(ValueError):
+            await cluster.write_attributes(
+                {cluster.AttributeDefs.interval_duration_min.name: 50}
+            )
+
+    async def test_dwi_sum_exceeds_total(self):
+        """Duration + interval > total raises in DWI mode."""
+        cluster = self.device.endpoints[1].sonoff_irrigation_plan_config
+        cluster._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        cluster._total_duration_min = 30
+        cluster._duration_min = 25
+        cluster._interval_duration_min = 25
+        with pytest.raises(ValueError):
+            await cluster.write_attributes(
+                {
+                    cluster.AttributeDefs.duration_min.name: 25,
+                    cluster.AttributeDefs.interval_duration_min.name: 25,
+                }
+            )
+
+
+# ============================================================================
 # Write attributes — SonoffIrrigationPlanConfigClusterCh2
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestIrrigationPlanConfigCh2Write:
@@ -1404,7 +1498,6 @@ class TestIrrigationPlanConfigCh2Write:
             IrrigationAmountUnit.US_Gallon
         )
         cluster._irrigation_mode = SingleIrrigationMode.Volume
-
         plan = cluster._plan_from_current_config()
         assert plan.amount_unit == IrrigationAmountUnit.US_Gallon
 
@@ -1412,12 +1505,10 @@ class TestIrrigationPlanConfigCh2Write:
         """apply_plan triggers ZCL command for ch2."""
         cluster = self.device.endpoints[2].sonoff_irrigation_plan_config_ch2
         swv = self.device.endpoints[2].sonoff_cluster
-
         cluster._plan_index = 0
         cluster._irrigation_mode = SingleIrrigationMode.Duration
         cluster._repeat_mode = IrrigationPlanRepeat.Odd_Day
         cluster._repeat_value = 0
-
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.apply_plan.name: 1})
         assert mock_cmd.call_count == 1
@@ -1426,16 +1517,142 @@ class TestIrrigationPlanConfigCh2Write:
         """remove_plan triggers ZCL command for ch2."""
         cluster = self.device.endpoints[2].sonoff_irrigation_plan_config_ch2
         swv = self.device.endpoints[2].sonoff_cluster
-
         cluster._plan_index = 5
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.remove_plan.name: 1})
         assert mock_cmd.call_count == 1
 
 
-# ---------------------------------------------------------------------------
+class TestIrrigationPlanConfigCh2WriteFull:
+    """Full branch coverage for ch2 write_attributes individual attrs."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, zigpy_device_from_v2_quirk):
+        """Create device."""
+        self.device = zigpy_device_from_v2_quirk(
+            manufacturer="SONOFF",
+            model="SWV-ZF2E",
+            endpoint_ids=[1, 2],
+            cluster_ids={
+                1: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+                2: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+            },
+        )
+
+    @property
+    def c(self):
+        """Shortcut for ch2 plan config cluster."""
+        return self.device.endpoints[2].sonoff_irrigation_plan_config_ch2
+
+    async def test_write_ch2_amount_in_duration_raises(self):
+        """Amount in Duration mode raises."""
+        self.c._irrigation_mode = SingleIrrigationMode.Duration
+        with pytest.raises(ValueError):
+            await self.c.write_attributes({self.c.AttributeDefs.amount.name: 100})
+
+    async def test_write_ch2_total_duration_in_volume_raises(self):
+        """total_duration in Volume mode raises."""
+        self.c._irrigation_mode = SingleIrrigationMode.Volume
+        with pytest.raises(ValueError):
+            await self.c.write_attributes(
+                {self.c.AttributeDefs.total_duration_min.name: 30}
+            )
+
+    async def test_write_ch2_duration_not_dwi_raises(self):
+        """duration_min in non-DWI mode raises."""
+        self.c._irrigation_mode = SingleIrrigationMode.Duration
+        with pytest.raises(ValueError):
+            await self.c.write_attributes({self.c.AttributeDefs.duration_min.name: 10})
+
+    async def test_write_ch2_individual_attrs(self):
+        """Write each individual ch2 attribute."""
+        c = self.c
+
+        await c.write_attributes({c.AttributeDefs.plan_index.name: 2})
+        assert c._plan_index == 2
+
+        await c.write_attributes({c.AttributeDefs.effective_year.name: 2027})
+        assert c._effective_year == 2027
+
+        await c.write_attributes({c.AttributeDefs.effective_month.name: 8})
+        assert c._effective_month == 8
+
+        await c.write_attributes({c.AttributeDefs.effective_day.name: 20})
+        assert c._effective_day == 20
+
+        await c.write_attributes(
+            {c.AttributeDefs.repeat_mode.name: IrrigationPlanRepeat.Interval}
+        )
+        assert c._repeat_mode == IrrigationPlanRepeat.Interval
+
+        await c.write_attributes({c.AttributeDefs.repeat_value.name: 7})
+        assert c._repeat_value == 7
+
+        # Switch to Duration to allow total_duration write
+        c._irrigation_mode = SingleIrrigationMode.Duration
+        await c.write_attributes({c.AttributeDefs.total_duration_min.name: 50})
+        assert c._total_duration_min == 50
+
+        c._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        await c.write_attributes({c.AttributeDefs.duration_min.name: 15})
+        assert c._duration_min == 15
+
+        await c.write_attributes({c.AttributeDefs.interval_duration_min.name: 5})
+        assert c._interval_duration_min == 5
+
+    async def test_write_ch2_weekdays(self):
+        """Write weekday masks for ch2."""
+        c = self.c
+        await c.write_attributes({c.AttributeDefs.weekday_monday.name: 1})
+        assert c._weekday_mask & 0x02
+        await c.write_attributes({c.AttributeDefs.weekday_tuesday.name: 1})
+        assert c._weekday_mask & 0x04
+        await c.write_attributes({c.AttributeDefs.weekday_wednesday.name: 0})
+        await c.write_attributes({c.AttributeDefs.weekday_thursday.name: 1})
+        assert c._weekday_mask & 0x10
+        await c.write_attributes({c.AttributeDefs.weekday_friday.name: 0})
+        await c.write_attributes({c.AttributeDefs.weekday_saturday.name: 1})
+        assert c._weekday_mask & 0x40
+        await c.write_attributes({c.AttributeDefs.weekday_sunday.name: 1})
+        assert c._weekday_mask & 0x01
+
+    async def test_write_ch2_start_time(self):
+        """Write start_hour and start_minute for ch2."""
+        c = self.c
+        await c.write_attributes({c.AttributeDefs.start_hour.name: 14})
+        assert c._start_hour == 14
+        await c.write_attributes({c.AttributeDefs.start_minute.name: 30})
+        assert c._start_minute == 30
+
+    async def test_ch2_dwi_validation_interval_exceeds_total(self):
+        """Interval > total raises in DWI mode for ch2."""
+        c = self.c
+        c._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        c._total_duration_min = 30
+        c._interval_duration_min = 0
+        c._duration_min = 0
+        with pytest.raises(ValueError):
+            await c.write_attributes({c.AttributeDefs.interval_duration_min.name: 40})
+
+    async def test_ch2_dwi_validation_sum_exceeds_total(self):
+        """Duration + interval > total raises in DWI mode for ch2."""
+        c = self.c
+        c._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        c._total_duration_min = 30
+        c._interval_duration_min = 20
+        c._duration_min = 20
+        with pytest.raises(ValueError):
+            await c.write_attributes(
+                {
+                    c.AttributeDefs.duration_min.name: 20,
+                    c.AttributeDefs.interval_duration_min.name: 20,
+                }
+            )
+
+
+# ============================================================================
 # Write attributes — SonoffUserDelayConfigCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestUserDelayConfigWrite:
@@ -1492,7 +1709,6 @@ class TestUserDelayConfigWrite:
         """apply_delay sends user_delay_set command."""
         cluster = self.device.endpoints[1].sonoff_user_delay_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         cluster._delay_hours = 24
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.apply_delay.name: 1})
@@ -1502,16 +1718,14 @@ class TestUserDelayConfigWrite:
         """clear_delay sends command with 0 delay_end_timestamp."""
         cluster = self.device.endpoints[1].sonoff_user_delay_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         with mock.patch.object(swv, "command", mock.AsyncMock()) as mock_cmd:
             await cluster.write_attributes({cluster.AttributeDefs.clear_delay.name: 1})
-
         assert mock_cmd.call_count == 1
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # Write attributes — SonoffSeasonalAdjustmentConfigCluster
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestSeasonalAdjustmentConfigWrite:
@@ -1534,7 +1748,6 @@ class TestSeasonalAdjustmentConfigWrite:
         """Write a single month's adjustment."""
         cluster = self.device.endpoints[1].sonoff_seasonal_adjustment_config
         swv = self.device.endpoints[1].sonoff_cluster
-
         write_response = [
             [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
         ]
@@ -1544,7 +1757,6 @@ class TestSeasonalAdjustmentConfigWrite:
             await cluster.write_attributes(
                 {cluster.AttributeDefs.seasonal_adjustment_january.name: 8}
             )
-
         assert cluster._quarterly_adjustment.values[0] == 8
         assert (
             cluster._quarterly_adjustment.values[1]
@@ -1552,9 +1764,9 @@ class TestSeasonalAdjustmentConfigWrite:
         )
 
 
-# ---------------------------------------------------------------------------
-# _write_succeeded static method
-# ---------------------------------------------------------------------------
+# ============================================================================
+# _write_succeeded
+# ============================================================================
 
 
 class TestWriteSucceeded:
@@ -1579,15 +1791,146 @@ class TestWriteSucceeded:
         result = SonoffSingleIrrigationConfigCluster._write_succeeded([])
         assert result is False
 
-    def test_unexpected_structure(self):
-        """Non-standard structure returns False."""
-        result = SonoffSingleIrrigationConfigCluster._write_succeeded([[object()]])
+    def test_with_status_records_attr(self):
+        """WriteAttributesResponse with status_records attribute."""
+        record = foundation.WriteAttributesStatusRecord(
+            status=foundation.Status.SUCCESS
+        )
+        response = type("WriteAttributesResponse", (), {"status_records": [record]})()
+        result = SonoffSingleIrrigationConfigCluster._write_succeeded([response])
+        assert result is True
+
+    def test_typeerror_in_iteration(self):
+        """TypeError during record iteration returns False."""
+        result = SonoffSingleIrrigationConfigCluster._write_succeeded([[42]])
         assert result is False
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
+# Quirk model variants
+# ============================================================================
+
+
+class TestQuirkModelVariants:
+    """Verify multiple SWV models can be instantiated."""
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "SWV-ZF2E",
+            "SWV-ZF2U",
+            "SWV-ZN2E",
+            "SWV-ZN2U",
+            "SWV-ZF2",
+            "SWV-ZNE",
+            "SWV-ZNU",
+        ],
+    )
+    def test_all_models(self, zigpy_device_from_v2_quirk, model):
+        """All seven SWV models should create a valid quirked device."""
+        device = zigpy_device_from_v2_quirk(
+            manufacturer="SONOFF",
+            model=model,
+            endpoint_ids=[1, 2],
+            cluster_ids={
+                1: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+                2: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+            },
+        )
+        assert hasattr(device.endpoints[1], "sonoff_cluster")
+        assert hasattr(device.endpoints[1], "sonoff_single_irrigation_config")
+        assert hasattr(device.endpoints[1], "sonoff_irrigation_plan_config")
+        assert hasattr(device.endpoints[1], "sonoff_user_delay_config")
+        assert hasattr(device.endpoints[1], "sonoff_amount_unit_config")
+        assert hasattr(device.endpoints[1], "sonoff_seasonal_adjustment_config")
+        assert hasattr(device.endpoints[2], "sonoff_irrigation_plan_config_ch2")
+
+
+# ============================================================================
+# Sensor/binary_sensor entities from add_common_entities
+# ============================================================================
+
+
+class TestCommonEntities:
+    """Verify entities created by add_common_entities."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, zigpy_device_from_v2_quirk):
+        """Create device."""
+        self.device = zigpy_device_from_v2_quirk(
+            manufacturer="SONOFF",
+            model="SWV-ZF2E",
+            endpoint_ids=[1, 2],
+            cluster_ids={
+                1: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+                2: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+            },
+        )
+        self.swv = self.device.endpoints[1].sonoff_cluster
+
+    def test_valve_state_leak_detection(self):
+        """ValveState Water_Leakage bit triggers binary_sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.valve_abnormal_state.id,
+            ValveState.Water_Leakage,
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_valve_state_water_shortage(self):
+        """ValveState Water_Shortage triggers binary_sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.valve_abnormal_state.id,
+            ValveState.Water_Shortage,
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_child_lock_switch(self):
+        """Child lock attribute update."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.child_lock.id, True
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_valve_state_normal(self):
+        """ValveState Normal triggers binary_sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.valve_abnormal_state.id,
+            ValveState.Normal,
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_daily_irrigation_volume(self):
+        """Daily irrigation volume attribute triggers sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.daily_irrigation_volume.id, 12345
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_weather_delay(self):
+        """Weather delay duration attribute triggers sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.weather_delay_duration.id, 120
+        )
+        assert len(listener.attribute_updates) >= 1
+
+    def test_daily_irrigation_duration(self):
+        """Daily irrigation duration attribute triggers sensor."""
+        listener = ClusterListener(self.swv)
+        self.swv.update_attribute(
+            SonoffWaterValveCluster.AttributeDefs.daily_irrigation_duration.id, 3600
+        )
+        assert len(listener.attribute_updates) >= 1
+
+
+# ============================================================================
 # Unsupported repeat mode
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 
 class TestRepeatModeUnsupported:
@@ -1597,3 +1940,95 @@ class TestRepeatModeUnsupported:
         """An unsupported repeat_mode should raise ValueError."""
         with pytest.raises(ValueError, match="Unsupported"):
             _repeat_to_loop_info(99, 0)
+
+
+# ============================================================================
+# More edge cases
+# ============================================================================
+
+
+class TestMoreEdgeCases:
+    """Additional edge case tests."""
+
+    def test_single_irrigation_array_wrapper_direct(self):
+        """Call single_irrigation_array_from_payload directly."""
+        payload = bytes([SingleIrrigationMode.Duration] + [0] * 11)
+        result = single_irrigation_array_from_payload(payload)
+        assert isinstance(result, SingleIrrigationPayload)
+
+    def test_payload_from_array_with_bytes_value(self):
+        """Array where value.value is bytes."""
+        arr = foundation.Array(
+            type=foundation.DataTypeId.uint8,
+            value=bytes(
+                [SingleIrrigationMode.Duration, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            ),
+        )
+        result = single_irrigation_payload_from_array(arr)
+        assert isinstance(result, bytes)
+        assert len(result) == SINGLE_IRRIGATION_PAYLOAD_LEN
+
+    def test_lvlist_with_bytearray(self):
+        """Coerce from bytearray."""
+        result = SingleIrrigationPayload._coerce_value(
+            bytearray([SingleIrrigationMode.Duration] + [0] * 11)
+        )
+        assert isinstance(result, bytes)
+
+
+class TestCh2WriteMore:
+    """More branch coverage for ch2 write_attributes."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, zigpy_device_from_v2_quirk):
+        """Create device."""
+        self.device = zigpy_device_from_v2_quirk(
+            manufacturer="SONOFF",
+            model="SWV-ZF2E",
+            endpoint_ids=[1, 2],
+            cluster_ids={
+                1: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+                2: {SonoffWaterValveCluster.cluster_id: ClusterType.Server},
+            },
+        )
+
+    @property
+    def c(self):
+        """Shortcut for ch2 plan config cluster."""
+        return self.device.endpoints[2].sonoff_irrigation_plan_config_ch2
+
+    async def test_write_ch2_irrigation_mode(self):
+        """Write irrigation_mode for ch2."""
+        self.c._irrigation_mode = SingleIrrigationMode.Duration
+        await self.c.write_attributes(
+            {self.c.AttributeDefs.irrigation_mode.name: SingleIrrigationMode.Volume}
+        )
+        assert self.c._irrigation_mode == SingleIrrigationMode.Volume
+
+    async def test_write_ch2_amount(self):
+        """Write amount for ch2 in Volume mode."""
+        self.c._irrigation_mode = SingleIrrigationMode.Volume
+        await self.c.write_attributes({self.c.AttributeDefs.amount.name: 700})
+        assert self.c._amount == 700
+
+    async def test_write_ch2_fail_safe(self):
+        """Write fail_safe_duration_min for ch2 in Volume mode."""
+        self.c._irrigation_mode = SingleIrrigationMode.Volume
+        await self.c.write_attributes(
+            {self.c.AttributeDefs.fail_safe_duration_min.name: 45}
+        )
+        assert self.c._fail_safe_duration_min == 45
+
+    async def test_ch2_dwi_duration_exceeds_total(self):
+        """Duration > total raises in DWI mode for ch2."""
+        c = self.c
+        c._irrigation_mode = SingleIrrigationMode.Duration_With_Interval
+        c._total_duration_min = 30
+        c._duration_min = 0
+        with pytest.raises(ValueError):
+            await c.write_attributes(
+                {
+                    c.AttributeDefs.duration_min.name: 50,
+                    c.AttributeDefs.total_duration_min.name: 30,
+                }
+            )
