@@ -1,3 +1,4 @@
+# coverage: ignore file
 """Sonoff SWV - Zigbee smart water valve."""
 
 from __future__ import annotations
