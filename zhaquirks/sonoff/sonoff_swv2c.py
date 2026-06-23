@@ -1180,7 +1180,7 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         self,
         attributes: dict[str | int | ZCLAttributeDef, Any],
         **kwargs,
-    ) -> list:  # noqa: C901
+    ) -> list:
         """Update local plan fields or trigger set/remove actions."""
         # Determine the final mode after this write (mode change may be in the same batch)
         pending_mode = self._irrigation_mode
