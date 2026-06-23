@@ -1,5 +1,6 @@
 """Quirks v2 builder-mechanics tests migrated from zigpy."""
 
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, sentinel
 
@@ -15,7 +16,13 @@ from zigpy.const import (
 )
 from zigpy.device import Device
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Identify,
+    LevelControl,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
@@ -80,7 +87,7 @@ async def test_quirks_v2_model_manufacturer(device_mock):
                 translation_key="start_up_on_off",
                 fallback_name="Start up on/off",
             )
-            .add_to_registry()
+            .add_to_registry(registry)
         )
 
     with pytest.raises(
@@ -109,10 +116,10 @@ async def test_quirks_v2_missing_model_manufacturer(
     registry = DeviceRegistry()
 
     (
-        QuirkBuilder(manufacturer, model, registry=registry)
+        QuirkBuilder(manufacturer, model)
         .adds(Basic.cluster_id)
         .adds(OnOff.cluster_id)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     device = Device(MockAppController, sentinel.ieee, 0x2233)
@@ -157,12 +164,12 @@ async def test_quirks_v2_quirk_builder_cloning(device_mock):
     )
 
     cloned = base.clone()
-    base.add_to_registry()
+    base.add_to_registry(registry)
 
     (
         cloned.adds(PowerConfiguration.cluster_id)
         .applies_to(device_mock.manufacturer, device_mock.model)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked = registry.resolve(device_mock)
@@ -188,7 +195,7 @@ async def test_quirks_v2_signature_match(device_mock):
     }
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .filter(signature_matches(signature_no_match))
         .adds(Basic.cluster_id)
         .adds(OnOff.cluster_id)
@@ -199,7 +206,7 @@ async def test_quirks_v2_signature_match(device_mock):
             translation_key="start_up_on_off",
             fallback_name="Start up on/off",
         )
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked = registry.resolve(device_mock)
@@ -217,7 +224,7 @@ async def test_quirks_v2_multiple_matches_not_raises(device_mock):
 
     def build():
         return (
-            QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
             .adds(Basic.cluster_id)
             .adds(OnOff.cluster_id)
             .enum(
@@ -227,7 +234,7 @@ async def test_quirks_v2_multiple_matches_not_raises(device_mock):
                 translation_key="start_up_on_off",
                 fallback_name="Start up on/off",
             )
-            .add_to_registry()
+            .add_to_registry(registry)
         )
 
     entry1 = build()
@@ -247,7 +254,7 @@ async def test_quirks_v2_with_custom_device_class(device_mock):
         """Custom test device for testing quirks v2."""
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .device_class(CustomTestDevice)
         .adds(Basic.cluster_id)
         .adds(OnOff.cluster_id)
@@ -258,10 +265,35 @@ async def test_quirks_v2_with_custom_device_class(device_mock):
             translation_key="start_up_on_off",
             fallback_name="Start up on/off",
         )
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     assert isinstance(registry.resolve(device_mock), CustomTestDevice)
+
+
+async def test_quirks_v2_with_custom_device_class_raises(device_mock):
+    """Test that a zigpy device class that is not a `BaseCustomDevice` raises."""
+    registry = DeviceRegistry()
+
+    class CustomTestDevice:
+        """Neither a ZHA `Device` nor a zigpy `BaseCustomDevice`."""
+
+    with pytest.raises(
+        TypeError,
+        match="is not a subclass of BaseCustomDevice",
+    ):
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .device_class(CustomTestDevice)
+            .adds(Basic.cluster_id)
+            .adds(OnOff.cluster_id)
+            .enum(
+                OnOff.AttributeDefs.start_up_on_off.name,
+                OnOff.StartUpOnOff,
+                OnOff.cluster_id,
+            )
+            .add_to_registry(registry)
+        )
 
 
 async def test_quirks_v2_with_node_descriptor(device_mock):
@@ -287,11 +319,11 @@ async def test_quirks_v2_with_node_descriptor(device_mock):
     assert device_mock.node_desc != node_descriptor
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(Basic.cluster_id)
         .adds(OnOff.cluster_id)
         .node_descriptor(node_descriptor)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked: CustomZigpyDevice = registry.resolve(device_mock)
@@ -319,9 +351,9 @@ async def test_quirks_v2_replace_occurrences(device_mock):
         """Custom identify cluster for testing quirks v2."""
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .replace_cluster_occurrences(CustomIdentifyCluster)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked: CustomZigpyDevice = registry.resolve(device_mock)
@@ -346,11 +378,11 @@ async def test_quirks_v2_skip_configuration(device_mock):
     registry = DeviceRegistry()
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(Basic.cluster_id)
         .adds(OnOff.cluster_id)
         .skip_configuration()
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked = registry.resolve(device_mock)
@@ -367,9 +399,9 @@ async def test_quirks_v2_removes(device_mock):
     registry = DeviceRegistry()
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .removes(Identify.cluster_id)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked_device: CustomZigpyDevice = registry.resolve(device_mock)
@@ -397,14 +429,14 @@ async def test_quirks_v2_endpoints(device_mock):
     device_mock[3].add_output_cluster(OnOff.cluster_id)
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds_endpoint(1, profile_id=260, device_type=260)  # 1 not modified
         .removes_endpoint(2)
         .replaces_endpoint(3, profile_id=260, device_type=260)
         .adds_endpoint(4)
         .adds(OnOff.cluster_id, endpoint_id=4)
         .replaces_endpoint(5)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked: CustomZigpyDevice = registry.resolve(device_mock)
@@ -441,6 +473,52 @@ async def test_quirks_v2_endpoints(device_mock):
     assert quirked.endpoints[5].device_type == 255
 
 
+async def test_quirks_v2_processing_order(device_mock):
+    """Test quirks v2 metadata processing order."""
+    registry = DeviceRegistry()
+
+    device_mock.add_endpoint(2)
+    device_mock[2].add_input_cluster(Identify.cluster_id)
+    device_mock[2].add_output_cluster(OnOff.cluster_id)
+
+    device_mock.add_endpoint(3)
+    device_mock[3].add_input_cluster(Identify.cluster_id)
+    device_mock[3].add_output_cluster(OnOff.cluster_id)
+
+    class TestCustomIdentifyCluster(CustomCluster, Identify):
+        """Custom identify cluster for testing quirks v2."""
+
+    # the order of operations in the quirk builder below barely matters,
+    # but is laid out in a way that generally follows the expected execution order
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .removes_endpoint(2)  # wipes device reported clusters from endpoint 2
+        .adds_endpoint(2)  # adds a new "blank" endpoint 2 with no clusters
+        .removes(Identify.cluster_id, endpoint_id=3)  # test removing cluster
+        .adds(TestCustomIdentifyCluster, endpoint_id=3)  # then "replacing" it by adds
+        .adds(LevelControl.cluster_id, endpoint_id=2)  # adds one custom cluster to ep 2
+        .add_to_registry(registry)
+    )
+
+    quirked: CustomZigpyDevice = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    # verify endpoint 2 was removed and a new one added with device clusters removed
+    assert 2 in quirked.endpoints
+    assert quirked.endpoints[2].in_clusters.get(Identify.cluster_id) is None
+    assert quirked.endpoints[2].out_clusters.get(OnOff.cluster_id) is None
+
+    # verify endpoint 2 cluster added by quirk is present though
+    assert quirked.endpoints[2].in_clusters.get(LevelControl.cluster_id) is not None
+
+    # verify endpoint 3 cluster was replaced by alternatively using removes and adds
+    # instead of just using replaces directly
+    assert 3 in quirked.endpoints
+    assert isinstance(
+        quirked.endpoints[3].in_clusters[Identify.cluster_id], TestCustomIdentifyCluster
+    )
+
+
 async def test_quirks_v2_apply_custom_configuration(device_mock):
     """Test adding a quirk custom configuration to the registry."""
     registry = DeviceRegistry()
@@ -449,10 +527,10 @@ async def test_quirks_v2_apply_custom_configuration(device_mock):
         """Custom on off cluster for testing quirks v2."""
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(CustomOnOffCluster)
         .adds(CustomOnOffCluster, cluster_type=ClusterType.Client)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     quirked_device: CustomZigpyDevice = registry.resolve(device_mock)
@@ -491,7 +569,7 @@ async def test_quirks_v2_also_applies_to(device_mock):
         """Custom test device for testing quirks v2."""
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .also_applies_to("manufacturer2", "model2")
         .also_applies_to("manufacturer3", "model3")
         .device_class(CustomTestDevice)
@@ -504,7 +582,7 @@ async def test_quirks_v2_also_applies_to(device_mock):
             translation_key="start_up_on_off",
             fallback_name="Start up on/off",
         )
-        .add_to_registry()
+        .add_to_registry(registry)
     )
 
     assert isinstance(registry.resolve(device_mock), CustomTestDevice)
@@ -559,3 +637,33 @@ def test_recursive_freeze(obj, expected):
     result = recursive_freeze(obj)
     assert strict_eq(result, expected)
     hash(result)
+
+
+def test_quirk_v2_loading_failure(
+    device_mock: Device, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that v2 quirks can fail to load without crashing."""
+
+    registry = DeviceRegistry()
+
+    class BadCustomDevice(CustomZigpyDevice):
+        """Custom device with bad quirk definition."""
+
+        def __init__(self, *args, **kwargs) -> None:
+            raise RuntimeError("This device failed to initialize")
+
+    (
+        QuirkBuilder(registry=registry)
+        .applies_to(
+            manufacturer=device_mock.manufacturer,
+            model=device_mock.model,
+        )
+        .device_class(BadCustomDevice)
+        .add_to_registry(registry)
+    )
+
+    with caplog.at_level(logging.ERROR):
+        quirked = registry.resolve(device_mock)
+
+    assert quirked is device_mock
+    assert "Failed to load quirk for" in caplog.text

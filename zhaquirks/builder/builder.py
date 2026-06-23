@@ -443,6 +443,10 @@ class QuirkBuilder:
 
     def zigpy_device_class(self, custom_device_class: type[BaseCustomDevice]) -> Self:
         """Replace the zigpy device object with an instance of the given class."""
+        if not issubclass(custom_device_class, BaseCustomDevice):
+            raise TypeError(
+                f"{custom_device_class!r} is not a subclass of BaseCustomDevice"
+            )
         self.custom_zigpy_device_class = custom_device_class
         return self
 

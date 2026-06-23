@@ -66,7 +66,13 @@ class BaseCustomDevice(zigpy.device.Device):
         self, endpoint_id: int, replace_device: zigpy.device.Device | None = None
     ) -> zigpy.endpoint.Endpoint:
         """Add an endpoint, cloning it from the replaced device."""
-        if endpoint_id not in self.replacement.get(SIG_ENDPOINTS, {}):
+
+        # The clone path requires a device to clone from. A quirk transform that adds an
+        # endpoint at runtime (e.g. `adds_endpoint`) calls this without one, so fall
+        # back to a plain endpoint it can then configure itself.
+        if replace_device is None or endpoint_id not in self.replacement.get(
+            SIG_ENDPOINTS, {}
+        ):
             return super().add_endpoint(endpoint_id)
 
         endpoints = self.replacement[SIG_ENDPOINTS]
