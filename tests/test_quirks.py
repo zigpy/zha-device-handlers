@@ -574,6 +574,12 @@ class TestReplacementISWZPR1WP13(CustomDevice):
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
 
+    # The custom quirk must also resolve through ZHA's runtime registry, not only the
+    # legacy `get_device` path: the two are drained separately during `setup()`, and a
+    # custom quirk imported after the initial drain must still reach ZHA's registry.
+    resolved = zhaquirks.ZHA_DEVICE_REGISTRY.resolve(device)
+    assert type(resolved).__name__ == "TestReplacementISWZPR1WP13"
+
 
 def test_zigpy_custom_cluster_pollution() -> None:
     """Ensure all quirks subclass `CustomCluster`."""
