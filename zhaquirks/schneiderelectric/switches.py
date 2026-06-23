@@ -22,7 +22,7 @@ base_micro_switch = (
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload.name,
         cluster_id=SEOnOff.cluster_id,
         endpoint_id=1,
-        min_value=0x0,
+        min_value=0,
         max_value=0xFFFFFFFF,
         step=1,
         unit=UnitOfTime.SECONDS,
@@ -34,8 +34,8 @@ base_micro_switch = (
         attribute_name=SEOnOff.AttributeDefs.se_pre_warning_time.name,
         cluster_id=SEOnOff.cluster_id,
         endpoint_id=1,
-        min_value=0x0,
-        max_value=0xFFFF,
+        min_value=0,
+        max_value=6553,
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
@@ -43,10 +43,10 @@ base_micro_switch = (
         fallback_name="Pre warning time",
     )
     .enum(
-        endpoint_id=1,
-        cluster_id=SEOnOff.cluster_id,
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload_options.name,
         enum_class=SEOnTimeReloadOptions,
+        cluster_id=SEOnOff.cluster_id,
+        endpoint_id=1,
         translation_key="on_time_reload_options",
         fallback_name="On time reload options",
     )
@@ -60,18 +60,18 @@ base_micro_switch = (
     .replaces(SEBasic, endpoint_id=21)
     .replaces(SESwitchConfiguration, endpoint_id=21)
     .enum(
-        endpoint_id=21,
-        cluster_id=SESwitchConfiguration.cluster_id,
         attribute_name=SESwitchConfiguration.AttributeDefs.se_switch_indication.name,
         enum_class=SESwitchIndication,
+        cluster_id=SESwitchConfiguration.cluster_id,
+        endpoint_id=21,
         translation_key="switch_indication",
         fallback_name="Switch indication",
     )
     .enum(
-        endpoint_id=21,
-        cluster_id=SESwitchConfiguration.cluster_id,
         attribute_name=SESwitchConfiguration.AttributeDefs.se_switch_actions.name,
         enum_class=SESwitchAction,
+        cluster_id=SESwitchConfiguration.cluster_id,
+        endpoint_id=21,
         translation_key="switch_actions",
         fallback_name="Switch actions",
     )

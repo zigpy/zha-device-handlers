@@ -30,8 +30,8 @@ base_micro_dimmer = (
         min_value=1,
         max_value=254,
         step=1,
-        fallback_name="Min light level",
         translation_key="min_level",
+        fallback_name="Min light level",
     )
     .number(
         attribute_name=SEBallast.AttributeDefs.max_level.name,
@@ -40,14 +40,14 @@ base_micro_dimmer = (
         min_value=1,
         max_value=254,
         step=1,
-        fallback_name="Max light level",
         translation_key="max_level",
+        fallback_name="Max light level",
     )
     .number(
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload.name,
         cluster_id=SEOnOff.cluster_id,
         endpoint_id=3,
-        min_value=0x0,
+        min_value=0,
         max_value=0xFFFFFFFF,
         step=1,
         unit=UnitOfTime.SECONDS,
@@ -59,8 +59,8 @@ base_micro_dimmer = (
         attribute_name=SEOnOff.AttributeDefs.se_pre_warning_time.name,
         cluster_id=SEOnOff.cluster_id,
         endpoint_id=3,
-        min_value=0x0,
-        max_value=0xFFFF,
+        min_value=0,
+        max_value=6553,
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
@@ -68,18 +68,18 @@ base_micro_dimmer = (
         fallback_name="Pre warning time",
     )
     .enum(
-        endpoint_id=3,
-        cluster_id=SEOnOff.cluster_id,
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload_options.name,
         enum_class=SEOnTimeReloadOptions,
+        cluster_id=SEOnOff.cluster_id,
+        endpoint_id=3,
         translation_key="on_time_reload_options",
         fallback_name="On time reload options",
     )
     .enum(
-        endpoint_id=3,
-        cluster_id=SEBallast.cluster_id,
         attribute_name=SEBallast.AttributeDefs.se_control_mode.name,
         enum_class=SEControlMode,
+        cluster_id=SEBallast.cluster_id,
+        endpoint_id=3,
         translation_key="control_mode",
         fallback_name="Control mode",
     )
@@ -90,18 +90,18 @@ base_dimmer = (
     .replaces(SEBasic, endpoint_id=21)
     .replaces(SESwitchConfiguration, endpoint_id=21)
     .enum(
-        endpoint_id=21,
-        cluster_id=SESwitchConfiguration.cluster_id,
         attribute_name=SESwitchConfiguration.AttributeDefs.se_switch_indication.name,
         enum_class=SESwitchIndication,
+        cluster_id=SESwitchConfiguration.cluster_id,
+        endpoint_id=21,
         translation_key="switch_indication",
         fallback_name="Switch indication",
     )
     .enum(
-        endpoint_id=21,
-        cluster_id=SESwitchConfiguration.cluster_id,
         attribute_name=SESwitchConfiguration.AttributeDefs.se_switch_actions.name,
         enum_class=SESwitchAction,
+        cluster_id=SESwitchConfiguration.cluster_id,
+        endpoint_id=21,
         translation_key="switch_actions",
         fallback_name="Switch actions",
     )
@@ -126,20 +126,20 @@ base_dimmer = (
     .applies_to(SE_MANUF_NAME, "NHROTARY/UNIDIM/1")
     .applies_to(SE_MANUF_NAME, "NHPB/UNIDIM/1")
     .enum(
-        endpoint_id=3,
-        cluster_id=SEBallast.cluster_id,
         attribute_name=SEBallast.AttributeDefs.se_wiring_mode.name,
         enum_class=SEWiringMode,
+        cluster_id=SEBallast.cluster_id,
+        endpoint_id=3,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="wiring_mode",
         fallback_name="Wiring mode",
     )
     .enum(
-        endpoint_id=3,
-        cluster_id=SEBallast.cluster_id,
         attribute_name=SEBallast.AttributeDefs.se_dimming_curve.name,
         enum_class=SEDimmingCurve,
+        cluster_id=SEBallast.cluster_id,
+        endpoint_id=3,
         translation_key="dimming_curve",
         fallback_name="Dimming curve",
     )
