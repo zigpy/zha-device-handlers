@@ -104,6 +104,7 @@ class QuarterlyAdjustmentState:
     """State container for seasonal watering adjustment."""
 
     def __init__(self, values: list[int] | None = None):
+        """Initialize with default or provided seasonal adjustment values."""
         self.values = list(
             values
             or [QUARTERLY_ADJUSTMENT_DEFAULT_VALUE] * QUARTERLY_ADJUSTMENT_PAYLOAD_LEN
@@ -112,6 +113,7 @@ class QuarterlyAdjustmentState:
             raise ValueError("Quarterly adjustment state must contain 12 values")
 
     def to_payload(self) -> bytes:
+        """Return the quarterly adjustment values as raw bytes."""
         return bytes(int(value) for value in self.values)
 
 
@@ -143,9 +145,11 @@ class SingleIrrigationPayload(t.LVList, item_type=t.uint8_t, length_type=t.uint1
         return value
 
     def __new__(cls, value=()):
+        """Create a new instance, coercing the value to the expected format."""
         return super().__new__(cls, cls._coerce_value(value))
 
     def __init__(self, value=()):
+        """Initialize with coerced value."""
         super().__init__(self._coerce_value(value))
 
 
@@ -364,7 +368,7 @@ def quarterly_adjustment_payload_from_value(value: Any) -> bytes:
     elif isinstance(value, list):
         data = bytes(int(item) for item in value)
     else:
-        raise ValueError("Unsupported quarterly adjustment payload value")
+        raise TypeError("Unsupported quarterly adjustment payload value")
     if len(data) != QUARTERLY_ADJUSTMENT_PAYLOAD_LEN:
         raise ValueError("Quarterly adjustment payload must be 12 bytes")
     return data
@@ -899,7 +903,7 @@ class SonoffSingleIrrigationConfigCluster(LocalDataCluster):
             if attr_def.id == self.AttributeDefs.irrigation_mode.id:
                 final_mode = int(value)
 
-        for attr, value in attributes.items():
+        for attr in attributes:
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if final_mode == SingleIrrigationMode.Duration and attr_id in (
@@ -1172,11 +1176,11 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
         )
 
     # HA entity modifications are cached locally; only sent to Zigbee device when apply/remove button is clicked
-    async def write_attributes(
+    async def write_attributes(  # noqa: C901
         self,
         attributes: dict[str | int | ZCLAttributeDef, Any],
         **kwargs,
-    ) -> list:
+    ) -> list:  # noqa: C901
         """Update local plan fields or trigger set/remove actions."""
         # Determine the final mode after this write (mode change may be in the same batch)
         pending_mode = self._irrigation_mode
@@ -1185,7 +1189,7 @@ class SonoffIrrigationPlanConfigCluster(LocalDataCluster):
             if attr_def.id == self.AttributeDefs.irrigation_mode.id:
                 pending_mode = int(value)
 
-        for attr, value in attributes.items():
+        for attr in attributes:
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if pending_mode in (
@@ -1484,7 +1488,7 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             repeat_value=repeat_value,
         )
 
-    async def write_attributes(
+    async def write_attributes(  # noqa: C901
         self,
         attributes: dict[str | int | ZCLAttributeDef, Any],
         **kwargs,
@@ -1497,7 +1501,7 @@ class SonoffIrrigationPlanConfigClusterCh2(LocalDataCluster):
             if attr_def.id == self.AttributeDefs.irrigation_mode.id:
                 pending_mode = int(value)
 
-        for attr, value in attributes.items():
+        for attr in attributes:
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if pending_mode in (
