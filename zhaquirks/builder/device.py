@@ -23,44 +23,6 @@ if TYPE_CHECKING:
     from zha.application.gateway import Gateway
 
 
-def _entity_targets_cluster(
-    entity: PlatformEntity,
-    cluster_id: int,
-    cluster_type: zigpy.zcl.ClusterType | None = None,
-) -> bool:
-    """Return True if `entity` targets the given cluster (and direction)."""
-    match = entity._cluster_match
-    if match is None:
-        # Generated quirks-v2 entities have no class-level `_cluster_match` but
-        # do have a concrete backing cluster; match against it directly.
-        cluster = entity.cluster
-        if cluster.cluster_id != cluster_id:
-            return False
-        if cluster_type is None:
-            return True
-        actual_type = (
-            zigpy.zcl.ClusterType.Client
-            if cluster.is_client
-            else zigpy.zcl.ClusterType.Server
-        )
-        return cluster_type == actual_type
-
-    if cluster_type is None or cluster_type == zigpy.zcl.ClusterType.Server:
-        if (
-            cluster_id in match.server_clusters
-            or cluster_id in match.optional_server_clusters
-        ):
-            return True
-        if cluster_type is not None:
-            return False
-    if (cluster_type is None or cluster_type == zigpy.zcl.ClusterType.Client) and (
-        cluster_id in match.client_clusters
-        or cluster_id in match.optional_client_clusters
-    ):
-        return True
-    return False
-
-
 class QuirkV2Device(Device):
     """Base ZHA device for QuirkBuilder."""
 
@@ -122,8 +84,8 @@ class QuirkV2Device(Device):
                 continue
             if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
                 continue
-            if meta.cluster_id is not None and not _entity_targets_cluster(
-                entity, meta.cluster_id
+            if meta.cluster_id is not None and not entity.targets_cluster(
+                meta.cluster_id
             ):
                 continue
             if meta.function is not None and not meta.function(entity):
@@ -143,8 +105,8 @@ class QuirkV2Device(Device):
                 continue
             if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
                 continue
-            if meta.cluster_id is not None and not _entity_targets_cluster(
-                entity, meta.cluster_id, cluster_type=meta.cluster_type
+            if meta.cluster_id is not None and not entity.targets_cluster(
+                meta.cluster_id, cluster_type=meta.cluster_type
             ):
                 continue
             if meta.function is not None and not meta.function(entity):
