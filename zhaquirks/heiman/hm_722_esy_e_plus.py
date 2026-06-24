@@ -1,14 +1,17 @@
 """Heiman HM-722-ESY-E-PLUS Co sensor."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zha.quirks import SIREN_BASIC
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.quirk_ids import SIREN_BASIC
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+)
+from zhaquirks.clusters import CustomCluster
 
 
 class SmokeCoSirenEnum(t.enum8):
