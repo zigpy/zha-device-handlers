@@ -1,10 +1,10 @@
 """Sonoff SNZB-02LD - Zigbee IP65 LCD Smart Thermometer (Probe Version)."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTemperature
+from zhaquirks.clusters import CustomCluster
 
 
 class TemperatureUnit(t.enum16):
