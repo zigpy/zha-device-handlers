@@ -38,15 +38,6 @@ dev = [
     "time-machine>=2,<3",
 ]
 
-# zha 2.0.0 (which this package requires) is not yet released but it can't publish until
-# this decouple work lands. Pin zha to its branch and relax the unreleased `zha>=2.0.0`
-# bound for the dev lock. CI/dev-only; removed once zha 2.0.0 ships.
-[tool.uv]
-override-dependencies = ["zha"]
-
-[tool.uv.sources]
-zha = { git = "https://github.com/puddly/zha", rev = "af78810a6967104bc2f4579e26b1d791a4b12e90" }
-
 [tool.setuptools-git-versioning]
 enabled = true
 
