@@ -1,7 +1,5 @@
 """Smoke Sensor."""
 
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -9,6 +7,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
 from zhaquirks.tuya import (
     BatterySize,
     TuyaManufClusterAttributes,

@@ -3,11 +3,11 @@
 from typing import Final
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.schneiderelectric import SE_MANUF_ID, SE_MANUF_NAME, SEBasic
 
 
@@ -34,7 +34,7 @@ class SEOutletConfiguration(CustomCluster):
     name = "SEOutletConfiguration"
     ep_attribute = "se_outlet_configuration"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         # IndicatorLuminanceLevel: brightness of the indication front LED.

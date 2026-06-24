@@ -2,10 +2,6 @@
 
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
@@ -14,6 +10,15 @@ from zigpy.zcl.clusters.hvac import (
     UserInterface,
 )
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
+
+from zhaquirks.builder import (
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+)
+from zhaquirks.clusters import CustomCluster
 
 """Bosch specific thermostat attribute ids."""
 
