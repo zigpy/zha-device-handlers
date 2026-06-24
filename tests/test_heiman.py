@@ -1,35 +1,28 @@
 """Tests for Heiman custom quirks."""
 
-from unittest.mock import MagicMock, patch
+from zigpy.zcl.clusters.general import DeviceTemperature
 
-# Import the custom cluster class
-from zhaquirks.heiman.hs1rm_e import HeimanDeviceTemperature
+import zhaquirks.heiman.hs1rm_e
+
+zhaquirks.setup()
+
+CURRENT_TEMP_ID = DeviceTemperature.AttributeDefs.current_temperature.id
+MIN_TEMP_ID = DeviceTemperature.AttributeDefs.min_temp_experienced.id
 
 
-@patch("zigpy.zcl.Cluster._update_attribute")
-def test_heiman_temperature_scaling(mock_super_update):
-    """Test if Heiman detector raw temperature values are correctly scaled by 100."""
+def test_heiman_hs1rm_e_temperature_scaling(zigpy_device_from_v2_quirk):
+    """Test that the Heiman HS1RM-E scales raw device temperatures by 100."""
+    device = zigpy_device_from_v2_quirk("HEIMAN", "RelayModule-EF-3.0")
+    device_temp_cluster = device.endpoints[1].device_temperature
 
-    # 1. Initialize the custom cluster class with a mocked device object
-    cluster = HeimanDeviceTemperature(MagicMock())
+    # current_temperature is scaled ×100 to centidegrees for ZHA's /100 divisor
+    device_temp_cluster.update_attribute(CURRENT_TEMP_ID, 25)
+    assert device_temp_cluster.get(CURRENT_TEMP_ID) == 2500
 
-    # 2. Simulate the device reporting the temperature attribute (attrid=0x0000) with a raw value of 25
-    # This should trigger the custom logic: 25 * 100 = 2500
-    cluster._update_attribute(0x0000, 25)
+    # other attributes pass through unchanged
+    device_temp_cluster.update_attribute(MIN_TEMP_ID, 25)
+    assert device_temp_cluster.get(MIN_TEMP_ID) == 25
 
-    # Assert: Verify that super()._update_attribute was called with the scaled value of 2500
-    mock_super_update.assert_called_with(0x0000, 2500)
-
-    # 3. Simulate the device reporting a non-temperature attribute (e.g., attrid=0x0001)
-    # Verify that it is not incorrectly scaled
-    mock_super_update.reset_mock()
-    cluster._update_attribute(0x0001, 25)
-
-    # Assert: Non-temperature attribute values should remain unchanged (still 25)
-    mock_super_update.assert_called_with(0x0001, 25)
-
-    # 4. Simulate the device reporting a None value for temperature
-    # Verify that it does not trigger a multiplication error
-    mock_super_update.reset_mock()
-    cluster._update_attribute(0x0000, None)
-    mock_super_update.assert_called_with(0x0000, None)
+    # a None current_temperature must not raise (no multiplication)
+    device_temp_cluster.update_attribute(CURRENT_TEMP_ID, None)
+    assert device_temp_cluster.get(CURRENT_TEMP_ID) is None
