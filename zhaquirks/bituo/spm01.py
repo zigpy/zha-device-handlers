@@ -1,9 +1,10 @@
 """BITUO TECHNIK SPM01X single-phase energy meter."""  # codespell:ignore technik
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+
+from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SPM01ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
