@@ -2,12 +2,12 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature, OnOffConfiguration
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class HeimanSwitchType(t.enum8):
