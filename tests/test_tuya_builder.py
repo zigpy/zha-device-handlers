@@ -6,8 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import CustomDeviceV2
+from zha.quirks import DeviceRegistry
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SEND_DATA,
@@ -86,9 +86,9 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
     entry = getattr(entry, method_name)(dp_id=1)
     entry.skip_configuration().add_to_registry()
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     ep = quirked.endpoints[1]
 
@@ -139,7 +139,7 @@ async def test_battery_methods(
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
+    quirked = registry.resolve(device_mock)
     ep = quirked.endpoints[1]
 
     assert ep.power is not None
@@ -176,7 +176,7 @@ async def test_tuya_quirkbuilder(device_mock):
     def dpToVoltage(data: bytes) -> int:
         return data[2]
 
-    entry = (
+    (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
         .tuya_onoff(dp_id=3)
@@ -238,13 +238,9 @@ async def test_tuya_quirkbuilder(device_mock):
         .add_to_registry(replacement_cluster=ModTuyaMCUCluster)
     )
 
-    # coverage for overridden __eq__ method
-    assert entry.adds_metadata[0] != entry.adds_metadata[1]
-    assert entry.adds_metadata[0] != entry
-
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     ep = quirked.endpoints[1]
 
@@ -284,6 +280,8 @@ async def test_tuya_quirkbuilder(device_mock):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -352,7 +350,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
     """Test that enchanted Tuya devices have their spells applied during configuration."""
     registry = DeviceRegistry()
 
-    entry = (
+    (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
         .tuya_onoff(dp_id=3)
@@ -363,14 +361,10 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         .add_to_registry()
     )
 
-    # coverage for overridden __eq__ method
-    assert entry.adds_metadata[0] != entry.adds_metadata[1]
-    assert entry.adds_metadata[0] != entry
+    quirked = registry.resolve(device_mock)
 
-    quirked = registry.get_device(device_mock)
-
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
     with request_patch as request_mock:
@@ -380,31 +374,31 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         # ZHA does this during device configuration normally
         await quirked.apply_custom_configuration()
 
-        # the number of Tuya spells that are allowed to be cast, so the sum of enabled Tuya spells
-        enabled_tuya_spells_num = (
-            quirked.tuya_spell_read_attributes + quirked.tuya_spell_data_query
-        )
+        # zigpy chunks attribute reads so the read spell may span multiple requests;
+        # collect by command.
+        read_calls = [
+            c
+            for c in request_mock.mock_calls
+            if c[1][1] == foundation.GeneralCommand.Read_Attributes
+        ]
+        query_calls = [c for c in request_mock.mock_calls if c[1][1] == TUYA_QUERY_DATA]
 
-        # verify request was called the correct number of times
-        assert request_mock.call_count == enabled_tuya_spells_num
-
-        # used to check list of mock calls below
-        messages = 0
+        # only the enabled spells should have sent requests
+        assert request_mock.call_count == len(read_calls) + len(query_calls)
 
         # check 'attribute read spell' was cast correctly (if enabled)
         if quirked.tuya_spell_read_attributes:
-            assert (
-                request_mock.mock_calls[messages][1][1]
-                == foundation.GeneralCommand.Read_Attributes
-            )
-            assert request_mock.mock_calls[messages][1][3] == [4, 0, 1, 5, 7, 65534]
-            messages += 1
+            read_attrs = [attr for c in read_calls for attr in c[1][3]]
+            assert read_attrs == [4, 0, 1, 5, 7, 65534]
+        else:
+            assert not read_calls
 
         # check 'query data spell' was cast correctly (if enabled)
         if quirked.tuya_spell_data_query:
-            assert not request_mock.mock_calls[messages][1][0]
-            assert request_mock.mock_calls[messages][1][1] == TUYA_QUERY_DATA
-            messages += 1
+            assert len(query_calls) == 1
+            assert not query_calls[0][1][0]
+        else:
+            assert not query_calls
 
         request_mock.reset_mock()
 
@@ -422,9 +416,9 @@ async def test_tuya_mcu_set_time(device_mock):
         .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
     )
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     ep = quirked.endpoints[1]
 
@@ -467,9 +461,9 @@ async def test_tuya_quirkbuilder_force(device_mock, force):
         .add_to_registry(force_add_cluster=force)
     )
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     ep = quirked.endpoints[1]
 
@@ -521,9 +515,9 @@ async def test_tuya_override_mcu_command(
         .add_to_registry(**kwargs)
     )
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     ep = quirked.endpoints[1]
 
@@ -554,6 +548,8 @@ async def test_tuya_override_mcu_command(
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -577,9 +573,9 @@ async def test_tuya_quirk_builder_endpoint_id(device_mock):
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
-    assert quirked in registry
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert registry.match_entry(quirked) is not None
 
     assert not hasattr(quirked.endpoints[1], "humidity")
     assert hasattr(quirked.endpoints[2], "humidity")
