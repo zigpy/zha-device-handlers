@@ -1,9 +1,9 @@
 """VZM35-SN Fan Switch."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM35SNCluster
 
 (

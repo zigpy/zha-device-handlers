@@ -3,13 +3,13 @@
 from typing import cast
 from unittest import mock
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
 import zhaquirks
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
 zhaquirks.setup()

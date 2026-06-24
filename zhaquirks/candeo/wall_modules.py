@@ -1,7 +1,6 @@
 """Candeo modules."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
 
 (

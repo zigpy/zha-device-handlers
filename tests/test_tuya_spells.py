@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-import zigpy
 from zigpy.profiles import zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, OnOff
@@ -16,6 +15,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import DEVICE_REGISTRY
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     EnchantedDevice,
@@ -65,7 +65,7 @@ class TuyaTestSpellDevice(EnchantedDevice):
 
 
 ENCHANTED_QUIRKS = [TuyaTestSpellDevice]
-for manufacturer in zigpy.quirks.DEVICE_REGISTRY.registry_v1.values():
+for manufacturer in DEVICE_REGISTRY.registry_v1.values():
     for model_quirk_list in manufacturer.values():
         for quirk_entry in model_quirk_list:
             if quirk_entry in ENCHANTED_QUIRKS:
@@ -90,36 +90,33 @@ async def test_tuya_spell(zigpy_device_from_quirk):
             # ZHA does this during device configuration normally
             await device.apply_custom_configuration()
 
-            # the number of Tuya spells that are allowed to be cast, so the sum of enabled Tuya spells
-            enabled_tuya_spells_num = (
-                device.tuya_spell_read_attributes + device.tuya_spell_data_query
-            )
-
-            # skip if no Tuya spells are enabled,
-            # this case is already handled in the test_tuya_spell_devices_valid() test
-            if enabled_tuya_spells_num == 0:
-                continue
-
-            # verify request was called the correct number of times
-            assert request_mock.call_count == enabled_tuya_spells_num
-
-            # used to check list of mock calls below
-            messages = 0
+            # zigpy chunks attribute reads so the read spell may span multiple requests;
+            # collect by command.
+            read_calls = [
+                c
+                for c in request_mock.call_args_list
+                if len(c.args) > 1
+                and c.args[1] == foundation.GeneralCommand.Read_Attributes
+            ]
+            query_calls = [
+                c
+                for c in request_mock.call_args_list
+                if len(c.args) > 1 and c.args[1] == TUYA_QUERY_DATA
+            ]
 
             # check 'attribute read spell' was cast correctly (if enabled)
             if device.tuya_spell_read_attributes:
-                assert (
-                    request_mock.mock_calls[messages][1][1]
-                    == foundation.GeneralCommand.Read_Attributes
-                )
-                assert request_mock.mock_calls[messages][1][3] == [4, 0, 1, 5, 7, 65534]
-                messages += 1
+                read_attrs = [attr for c in read_calls for attr in c.args[3]]
+                assert read_attrs == [4, 0, 1, 5, 7, 65534]
+            else:
+                assert not read_calls
 
             # check 'query data spell' was cast correctly (if enabled)
             if device.tuya_spell_data_query:
-                assert not request_mock.mock_calls[messages][1][0]
-                assert request_mock.mock_calls[messages][1][1] == TUYA_QUERY_DATA
-                messages += 1
+                assert len(query_calls) == 1
+                assert not query_calls[0].args[0]
+            else:
+                assert not query_calls
 
             request_mock.reset_mock()
 

@@ -7,12 +7,8 @@ import math
 import pathlib
 from typing import Any, Self
 
+from zha.quirks import QuirkRegistryEntry
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -30,7 +26,17 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zhaquirks.const import BatterySize
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     TUYA_SET_DATA,
@@ -916,7 +922,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> Self:
         """Set the Tuya enchantment spells."""
 
-        class EnchantedDeviceV2(CustomDeviceV2, BaseEnchantedDevice):
+        class EnchantedDeviceV2(CustomZigpyDevice, BaseEnchantedDevice):
             """Enchanted device class for v2 quirks."""
 
         EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell
@@ -931,7 +937,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         replacement_cluster: type[TuyaMCUCluster] = TuyaMCUCluster,
         force_add_cluster: bool = False,
         mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
-    ) -> QuirksV2RegistryEntry:
+    ) -> QuirkRegistryEntry:
         """Build the quirks v2 registry entry.
 
         :param replacement_cluster: The cluster to add or replace the Tuya cluster with.

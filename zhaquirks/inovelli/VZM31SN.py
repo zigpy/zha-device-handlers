@@ -1,8 +1,8 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM31SNCluster
 
 (

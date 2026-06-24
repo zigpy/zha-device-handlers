@@ -9,13 +9,11 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from zha.quirks import DeviceRegistry
 from zigpy import zcl
 import zigpy.device
 import zigpy.endpoint
 import zigpy.profiles
-import zigpy.quirks as zq
-from zigpy.quirks import CustomDevice, DeviceRegistry
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zdo.types
@@ -23,7 +21,10 @@ import zigpy.zdo.types
 import zhaquirks
 from zhaquirks import const
 import zhaquirks.bosch.motion
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder.metadata import ReportingConfig
 import zhaquirks.centralite.cl_3310S
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     COMMAND,
@@ -53,6 +54,8 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 import zhaquirks.konke
+import zhaquirks.legacy as zq
+from zhaquirks.legacy import CustomDevice
 import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
@@ -290,7 +293,7 @@ def test_dev_from_signature(
     "quirk",
     (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice)),
 )
-def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
+def test_quirk_quickinit(quirk: CustomDevice) -> None:
     """Make sure signature in QuickInit Devices have all required attributes."""
 
     if not issubclass(quirk, zhaquirks.QuickInitDevice):
@@ -321,9 +324,12 @@ def test_signature(quirk: CustomDevice) -> None:
         return False
 
     # enforce new style of signature
+    assert quirk.signature is not None
     assert ENDPOINTS in quirk.signature
-    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]
+
+    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]  # type: ignore[unreachable]
     assert not numeric
+
     assert set(quirk.signature).issubset(SIGNATURE_ALLOWED)
     models_info = quirk.signature.get(MODELS_INFO)
     if models_info is not None:
@@ -499,7 +505,7 @@ def test_custom_quirk_loading(
         '''
 """Device handler for Bosch motion sensors."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zhaquirks.legacy import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -567,6 +573,12 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
+
+    # The custom quirk must also resolve through ZHA's runtime registry, not only the
+    # legacy `get_device` path: the two are drained separately during `setup()`, and a
+    # custom quirk imported after the initial drain must still reach ZHA's registry.
+    resolved = zhaquirks.ZHA_DEVICE_REGISTRY.resolve(device)
+    assert type(resolved).__name__ == "TestReplacementISWZPR1WP13"
 
 
 def test_zigpy_custom_cluster_pollution() -> None:
@@ -735,7 +747,7 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             ):
                 continue
 
-            assert issubclass(cluster, zigpy.quirks.CustomCluster)
+            assert issubclass(cluster, CustomCluster)
 
             # Check if attributes match based on cluster endpoint attribute
             if not (
@@ -1003,11 +1015,11 @@ async def test_local_data_cluster(device_mock) -> None:
             default_attr = foundation.ZCLAttributeDef(id=3, type=t.uint8_t)
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(TestLocalCluster)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
-    device = registry.get_device(device_mock)
+    device = registry.resolve(device_mock)
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 

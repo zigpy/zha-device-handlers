@@ -3,7 +3,6 @@
 import logging
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -13,6 +12,7 @@ from zigpy.zcl.foundation import (
     ZCLHeader,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,

@@ -9,7 +9,6 @@ import enum
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -21,6 +20,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
     LEFT,
@@ -30,6 +30,8 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import BaseCustomDevice
+from zhaquirks.legacy import CustomDevice
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID

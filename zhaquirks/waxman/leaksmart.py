@@ -4,7 +4,6 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -20,6 +19,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_COMMAND,
     DEVICE_TYPE,
@@ -29,6 +29,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514

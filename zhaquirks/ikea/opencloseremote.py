@@ -3,7 +3,6 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -20,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     CLOSE,
@@ -37,6 +37,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
+from zhaquirks.legacy import CustomDevice
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"

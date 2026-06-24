@@ -1,7 +1,6 @@
 """Schneider Electric dimmers and switches quirks."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBallast,
