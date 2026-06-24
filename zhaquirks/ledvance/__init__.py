@@ -1,8 +1,9 @@
 """Ledvance quirks elements."""
 
-from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseCommandDefs
+
+from zhaquirks.clusters import CustomCluster
 
 LEDVANCE = "LEDVANCE"
 
