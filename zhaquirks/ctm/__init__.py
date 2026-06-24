@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -12,6 +11,8 @@ from zigpy.zcl.foundation import (
     ZCLAttributeDef,
     ZCLCommandDef,
 )
+
+from zhaquirks.clusters import CustomCluster
 
 CTM_MANUF_NAME = "CTM Lyng"
 CTM_MANUF_CODE = 0x1337

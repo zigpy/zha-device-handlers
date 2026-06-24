@@ -1,9 +1,8 @@
 """CTM Lyng outlet quirks."""
 
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl import ClusterType
 
+from zhaquirks.builder import EntityType, QuirkBuilder, UnitOfTime
 from zhaquirks.ctm import (
     CTM_MANUF_NAME,
     CTMCooktopGuardCluster,

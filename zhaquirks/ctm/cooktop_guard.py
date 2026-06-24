@@ -1,10 +1,14 @@
 """CTM Lyng cooktop guard quirks."""
 
-from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
-
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    UnitOfTemperature,
+)
 from zhaquirks.ctm import (
     CTM_MANUF_NAME,
     AlarmStatus,
