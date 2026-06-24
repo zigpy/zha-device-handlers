@@ -16,7 +16,7 @@ class ThirdRealityAirQualityCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        voc_Index: Final = ZCLAttributeDef(
+        voc_index: Final = ZCLAttributeDef(
             id=0x0100,
             type=t.Single,
             manufacturer_code=0x1407,
@@ -28,7 +28,7 @@ class ThirdRealityAirQualityCluster(CustomCluster):
     .replaces(ThirdRealityAirQualityCluster)
     .sensor(
         endpoint_id=1,
-        attribute_name=ThirdRealityAirQualityCluster.AttributeDefs.voc_Index.name,
+        attribute_name=ThirdRealityAirQualityCluster.AttributeDefs.voc_index.name,
         cluster_id=ThirdRealityAirQualityCluster.cluster_id,
         device_class=SensorDeviceClass.AQI,
         state_class=SensorStateClass.MEASUREMENT,
