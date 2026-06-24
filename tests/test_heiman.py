@@ -15,7 +15,7 @@ def test_heiman_hs1rm_e_temperature_scaling(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk("HEIMAN", "RelayModule-EF-3.0")
     device_temp_cluster = device.endpoints[1].device_temperature
 
-    # current_temperature is scaled ×100 to centidegrees for ZHA's /100 divisor
+    # current_temperature is scaled *100 to centidegrees for ZHA's /100 divisor
     device_temp_cluster.update_attribute(CURRENT_TEMP_ID, 25)
     assert device_temp_cluster.get(CURRENT_TEMP_ID) == 2500
 
