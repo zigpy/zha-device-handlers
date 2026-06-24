@@ -2,8 +2,6 @@
 
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReadEvent,
@@ -16,6 +14,8 @@ from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,

@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden SOMRIG shortcut button."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -42,6 +41,7 @@ from zhaquirks.ikea import (
     PowerConfig1AAACluster,
     ShortcutV2Cluster,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class IkeaSomrigSmartButton(CustomDevice):
