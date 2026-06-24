@@ -6,9 +6,6 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
-[manifest]
-overrides = [{ name = "zha", git = "https://github.com/puddly/zha?rev=af78810a6967104bc2f4579e26b1d791a4b12e90" }]
-
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -900,6 +897,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl", hash = "sha256:87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147", size = 87321, upload-time = "2025-08-11T12:57:51.923Z" },
+]
+
+[[package]]
+name = "mashumaro"
+version = "3.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d1/e3/a06dcd2e6df094c5e294721926f1f76da30f50823e2ac233a9198e804891/mashumaro-3.22.tar.gz", hash = "sha256:64538cc365204402a060ebde683a86505b5a4344acf6870d79021e9fbfe57360", size = 197845, upload-time = "2026-05-26T14:39:21.859Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/1c/92fd926c2e7763535454683250dbdd8d10aa2f2c62f58d6abbcce4d8b3fc/mashumaro-3.22-py3-none-any.whl", hash = "sha256:17dc4d7294c33ef380a8b929dda0608577aa2141988c00a0c4932310108fe71d", size = 95916, upload-time = "2026-05-26T14:39:20.233Z" },
 ]
 
 [[package]]
@@ -1894,8 +1903,8 @@ wheels = [
 
 [[package]]
 name = "zha"
-version = "0.0.1"
-source = { git = "https://github.com/puddly/zha?rev=af78810a6967104bc2f4579e26b1d791a4b12e90#af78810a6967104bc2f4579e26b1d791a4b12e90" }
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "bellows" },
@@ -1904,7 +1913,12 @@ dependencies = [
     { name = "zigpy-deconz" },
     { name = "zigpy-xbee" },
     { name = "zigpy-zigate" },
+    { name = "zigpy-ziggurat" },
     { name = "zigpy-znp" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/62/65e1dc912bf90d1f85296524bb6cfa095e1bc41b43a114237f9911f065aa/zha-2.0.0.tar.gz", hash = "sha256:ac5f1145be99a7b34dfc777304fc4cedf2df5dd7d4d6f9ea6e150a7a4d3e4559", size = 266231, upload-time = "2026-06-24T03:43:05.61Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/06/77/26c73ac69e669d8d3c462f6009906891b03c9b57dc09bd9270987c819812/zha-2.0.0-py3-none-any.whl", hash = "sha256:d9440523202cf363eb00035ed05391cab8eca08d6ff4dff3674a053290df277c", size = 202194, upload-time = "2026-06-24T03:43:04.203Z" },
 ]
 
 [[package]]
@@ -1939,7 +1953,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "zha", git = "https://github.com/puddly/zha?rev=af78810a6967104bc2f4579e26b1d791a4b12e90" },
+    { name = "zha", specifier = ">=2.0.0" },
     { name = "zigpy", specifier = ">=2.0.0" },
 ]
 
@@ -2024,6 +2038,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e5/7f/85a5cb1c160d9f51de6ae0321df02fc32d13dc4b110f3102fdc728da680c/zigpy_zigate-0.14.0.tar.gz", hash = "sha256:517a1b615763db0e943586d089b9f9ff51ce49a46564dc8fe76d979093736629", size = 45175, upload-time = "2026-04-20T16:39:58.32Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/43/13/bba1ebb8eeebd3714aa1bc032e7c3a638a52733ff07b6daa5f58c51842a9/zigpy_zigate-0.14.0-py3-none-any.whl", hash = "sha256:6258dafeb47f6d3b20d43a1d6c2d0f819b5a9e58545bb9d64af2b2b6f2d954d9", size = 40076, upload-time = "2026-04-20T16:39:57.411Z" },
+]
+
+[[package]]
+name = "zigpy-ziggurat"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "mashumaro" },
+    { name = "zigpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/23/da/3ac4eb47e278ca1e0825ccbb182fb9b0f8bda874164f378a3b7b918adedb/zigpy_ziggurat-1.0.1.tar.gz", hash = "sha256:9ffd74c03b332fcf3ebf0514a446f13eb402fb42b8efce42190fa89679c25488", size = 22727, upload-time = "2026-06-23T21:34:51.82Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/90/3b1e92e72e388f1022494c0c9cbcc0b7780ca7a6b2bcd1c05da58b7fa6f2/zigpy_ziggurat-1.0.1-py3-none-any.whl", hash = "sha256:62432bb4804cd98639d483545a5b550f4c2776fffa8facec58e654ff49698a18", size = 14636, upload-time = "2026-06-23T21:34:50.841Z" },
 ]
 
 [[package]]
