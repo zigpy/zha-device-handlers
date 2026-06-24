@@ -9,7 +9,6 @@ import logging
 from typing import Any, Final, Union
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
@@ -24,6 +23,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,6 +32,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
