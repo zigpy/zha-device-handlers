@@ -17,13 +17,14 @@ See https://github.com/zigpy/zigpy-ota/issues/164 for more details.
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffS60OnOff(CustomCluster, OnOff):

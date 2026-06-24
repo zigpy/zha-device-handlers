@@ -1,8 +1,8 @@
 """Tuya fingerbot."""
 
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTime
 import zigpy.types as t
 
+from zhaquirks.builder import PERCENTAGE, UnitOfTime
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
