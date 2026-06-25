@@ -6,14 +6,13 @@ from collections.abc import Callable
 from typing import Any
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,

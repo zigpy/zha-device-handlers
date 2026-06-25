@@ -1,7 +1,7 @@
 """Tuya TS0121 plug."""
 
+from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -23,7 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import (
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
