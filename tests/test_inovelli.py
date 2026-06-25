@@ -5,9 +5,11 @@ from zha.quirks import DEVICE_REGISTRY
 
 import zhaquirks
 from zhaquirks.builder.device import QuirkV2Factory
-from zhaquirks.inovelli.builder import INOVELLI_CLUSTER_ID
+from zhaquirks.inovelli.builder import INOVELLI_CLUSTER_ID, INOVELLI_MMWAVE_CLUSTER_ID
 
 zhaquirks.setup()
+
+INOVELLI_CLUSTER_IDS = (INOVELLI_CLUSTER_ID, INOVELLI_MMWAVE_CLUSTER_ID)
 
 
 def _inovelli_v2_definitions():
@@ -26,12 +28,14 @@ def _inovelli_v2_definitions():
         yield model, factory.quirk_definition
 
 
-# Number of Inovelli ``0xFC31`` entities each device file is expected to expose.
-# Locks the per-model set derived from the ZHA library's registration rules.
+# Number of Inovelli manufacturer-cluster (0xFC31 / 0xFC32) entities each device
+# file is expected to expose. Locks the per-model set: for VZM30/31/35/36 this is
+# the set derived from the ZHA library's registration rules; VZM32-SN additionally
+# exposes its mmWave-specific entities.
 EXPECTED_ENTITY_COUNTS = {
     "VZM30SN.py": 38,
     "VZM31SN.py": 40,
-    "VZM32SN.py": 37,
+    "VZM32SN.py": 50,  # 41 on 0xFC31 + 9 on the 0xFC32 mmWave cluster
     "VZM35SN.py": 38,
     "VZM36.py": 32,  # 17 on endpoint 1 + 15 on endpoint 2
 }
@@ -48,21 +52,23 @@ def test_inovelli_quirks_present():
     [(m, d) for m, d in _inovelli_v2_definitions()],
 )
 def test_inovelli_entity_unique_id_suffix(model, definition):
-    """Every Inovelli cluster entity keeps the ZHA-native unique_id.
+    """Every Inovelli cluster entity keeps the ZHA-native unique_id format.
 
     ZHA-native entities include the cluster id in their unique_id, but quirks v2
-    entities do not. To avoid orphaning existing Home Assistant entities, every
-    ported entity must carry a ``64561[-<attribute>]`` suffix (``64561 == 0xFC31``).
+    entities do not. To avoid orphaning existing Home Assistant entities (and to
+    stay consistent for the new mmWave entities), every entity must carry a
+    ``<cluster_id>[-<attribute>]`` suffix (``64561 == 0xFC31``, ``64562 == 0xFC32``).
     """
     inovelli_entities = [
-        em for em in definition.entity_metadata if em.cluster_id == INOVELLI_CLUSTER_ID
+        em for em in definition.entity_metadata if em.cluster_id in INOVELLI_CLUSTER_IDS
     ]
     assert len(inovelli_entities) == EXPECTED_ENTITY_COUNTS[model]
 
     for em in inovelli_entities:
         suffix = em.unique_id_suffix
+        cid = em.cluster_id
         assert suffix is not None
-        # bare cluster id (internal temperature sensor) or ``64561-<attribute>``
-        assert suffix == str(INOVELLI_CLUSTER_ID) or suffix.startswith(
-            f"{INOVELLI_CLUSTER_ID}-"
-        ), f"{model}: unexpected unique_id suffix {suffix!r}"
+        # bare cluster id (internal temperature sensor) or ``<cluster_id>-<attribute>``
+        assert suffix == str(cid) or suffix.startswith(f"{cid}-"), (
+            f"{model}: unexpected unique_id suffix {suffix!r} for cluster {cid}"
+        )
