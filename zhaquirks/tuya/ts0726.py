@@ -22,8 +22,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_E001_ID,
-    TuyaZBExternalSwitchTypeCluster,
     TuyaZBE000Cluster,
+    TuyaZBExternalSwitchTypeCluster,
 )
 
 
@@ -127,9 +127,7 @@ class BseedTS0726OptionsCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        power_on_behavior: Final = ZCLAttributeDef(
-            id=0xD010, type=BseedPowerOnBehavior
-        )
+        power_on_behavior: Final = ZCLAttributeDef(id=0xD010, type=BseedPowerOnBehavior)
         switch_mode: Final = ZCLAttributeDef(id=0xD020, type=BseedSwitchMode)
         external_switch_type: Final = (
             TuyaZBExternalSwitchTypeCluster.AttributeDefs.external_switch_type
