@@ -3,7 +3,6 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -51,6 +50,7 @@ from zhaquirks.const import (
     TURN_ON,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.legacy import CustomDevice
 
 COLOR_UP = "color_up"
 COLOR_DOWN = "color_down"
