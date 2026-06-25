@@ -93,9 +93,7 @@ def test_bseed_ts0726_forwards_standard_on_off_requests(zigpy_device_from_v2_qui
     )
     cluster = device.endpoints[1].in_clusters[OnOff.cluster_id]
 
-    hdr = foundation.ZCLHeader.cluster(
-        tsn=2, command_id=OnOff.ServerCommandDefs.on.id
-    )
+    hdr = foundation.ZCLHeader.cluster(tsn=2, command_id=OnOff.ServerCommandDefs.on.id)
 
     with mock.patch.object(OnOff, "handle_cluster_request", autospec=True) as handler:
         cluster.handle_cluster_request(hdr, [])
