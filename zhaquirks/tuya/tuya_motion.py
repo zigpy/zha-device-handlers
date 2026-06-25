@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import MotionWithReset
-from zhaquirks.const import BatterySize
 from zhaquirks.builder import (
     LIGHT_LUX,
     BinarySensorDeviceClass,
@@ -20,6 +19,7 @@ from zhaquirks.builder import (
     UnitOfLength,
     UnitOfTime,
 )
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
