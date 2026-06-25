@@ -71,6 +71,7 @@ def test_bseed_ts0726_scene_events(
         },
     )
     cluster = device.endpoints[endpoint_id].in_clusters[OnOff.cluster_id]
+    cluster.send_default_rsp = mock.MagicMock()
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
