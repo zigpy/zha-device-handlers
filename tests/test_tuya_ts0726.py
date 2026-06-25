@@ -77,5 +77,27 @@ def test_bseed_ts0726_scene_events(
 
     hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=0xFD)
     cluster.handle_cluster_request(hdr, [0])
+    cluster.handle_cluster_request(hdr, [0])
 
     assert listener.zha_send_event.call_args == mock.call(expected_command, [])
+    assert listener.zha_send_event.call_count == 1
+
+
+def test_bseed_ts0726_forwards_standard_on_off_requests(zigpy_device_from_v2_quirk):
+    """Test standard OnOff commands are handled normally."""
+
+    device = zigpy_device_from_v2_quirk(
+        "_TZ3002_jn2x20tg",
+        "TS0726",
+        cluster_ids={1: {OnOff.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[OnOff.cluster_id]
+
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=2, command_id=OnOff.ServerCommandDefs.on.id
+    )
+
+    with mock.patch.object(OnOff, "handle_cluster_request", autospec=True) as handler:
+        cluster.handle_cluster_request(hdr, [])
+
+    handler.assert_called_once_with(cluster, hdr, [], dst_addressing=None)
