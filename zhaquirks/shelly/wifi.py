@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-from zigpy.device import ResponseKey
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE, SHELLY_WIFI_SETUP_CLUSTER_ID
 
-SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
-SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
-SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
+__all__ = [
+    "SHELLY_MANUFACTURER_CODE",
+    "SHELLY_WIFI_SETUP_CLUSTER_ID",
+    "ShellyWiFiSetupCluster",
+]
 
 
 class ShellyWiFiSetupCluster(CustomCluster):
@@ -93,35 +91,3 @@ class ShellyWiFiSetupCluster(CustomCluster):
             access="rw",
             manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
-
-
-class ShellyCustomProfileDevice(CustomZigpyDevice):
-    """Handle Shelly responses sent on their custom endpoint profile."""
-
-    def _parse_packet_header(
-        self, packet: t.ZigbeePacket
-    ) -> tuple[foundation.ZCLHeader, ResponseKey] | tuple[None, None]:
-        """Parse Shelly custom-profile packets as ZCL for normal zigpy matching."""
-        if packet.profile_id != SHELLY_WIFI_SETUP_PROFILE_ID:
-            return super()._parse_packet_header(packet)
-
-        hdr, _ = foundation.ZCLHeader.deserialize(packet.data.serialize())
-        rsp_key = ResponseKey(
-            endpoint_id=packet.src_ep,
-            cluster_id=packet.cluster_id,
-            direction=hdr.frame_control.direction,
-            tsn=hdr.tsn,
-        )
-        return hdr, rsp_key
-
-
-(
-    QuirkBuilder("Shelly", "1PM")
-    .applies_to("Shelly", "2PM")
-    .applies_to("Shelly", "Mini1PM")
-    .applies_to("Shelly", "Mini1")
-    .applies_to("Shelly", "EM Mini")
-    .device_class(ShellyCustomProfileDevice)
-    .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
-    .add_to_registry()
-)
