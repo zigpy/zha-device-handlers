@@ -280,6 +280,7 @@ async def test_saswell_81isopgh_write_timer(zigpy_device_from_v2_quirk):
         m1.assert_called_with(
             cluster=61184,
             sequence=1,
+            # DP 11 (0x0b), uint32, value=1800 s = 30 min
             data=b"\x01\x01\x00\x00\x01\x0b\x02\x00\x04\x00\x00\x07\x08",
             command_id=0,
             timeout=5,
