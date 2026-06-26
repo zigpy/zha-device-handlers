@@ -1,9 +1,8 @@
 """Module for Inovelli quirks implementations."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -13,6 +12,7 @@ from zigpy.zcl.foundation import (
     ZCLHeader,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -232,9 +232,7 @@ class InovelliCluster(CustomCluster):
         hdr: ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
         _LOGGER.debug(
@@ -680,6 +678,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+        dimming_algorithm = ZCLAttributeDef(
+            id=0x001B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         button_delay = ZCLAttributeDef(
             id=0x0032,
             type=t.uint8_t,
@@ -880,6 +883,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+        aux_detection_level = ZCLAttributeDef(
+            id=0x007C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         binding_off_to_on_sync_level = ZCLAttributeDef(
             id=0x007D,
             type=t.Bool,
@@ -907,6 +915,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         led_color_for_bound_control = ZCLAttributeDef(
             id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dumb_detection_level = ZCLAttributeDef(
+            id=0x00A5,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )

@@ -230,6 +230,8 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
             return
 
 
+from zhaquirks.builder import QuirkBuilder
+
 (
     QuirkBuilder(FRIENT, "IOMZB-110")
     .applies_to(DEVELCO, "IOMZB-110")

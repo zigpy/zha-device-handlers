@@ -45,10 +45,10 @@ mypy zhaquirks/
 
 ### V2 Quirks (Preferred for New Quirks)
 
-Use `QuirkBuilder` from `zigpy.quirks.v2` for declarative quirk definition:
+Use `QuirkBuilder` from `zhaquirks.builder` for declarative quirk definition:
 
 ```python
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 
 (
     QuirkBuilder("Manufacturer", "Model")
@@ -120,13 +120,13 @@ All entity methods require `fallback_name`. Common parameters:
 - `initially_disabled`: Start disabled in HA
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
-- `unique_id_suffix`: Suffix to differentiate entities when multiple use the same attribute (required when creating multiple entities from one attribute)
+- `unique_id_suffix`: Suffix appended to the entity's unique_id. Defaults to `attribute_name` (or `command_name` for command-based entities). Required when creating multiple entities from the same attribute/command on the same endpoint, since otherwise the default suffixes collide. See **Entity unique_id format** below before changing this on existing quirks.
 
 **Parameter order convention:** `attribute_name`, `cluster_id`, `endpoint_id` first; `translation_key` and `fallback_name` always last (in that order). Use keyword arguments for clarity.
 
 `reporting_config` sets up automatic attribute reporting from the device:
 ```python
-from zigpy.quirks.v2 import ReportingConfig
+from zhaquirks.builder import ReportingConfig
 
 .sensor(
     attribute_name="measured_value",
@@ -200,11 +200,38 @@ from zigpy.quirks.v2 import ReportingConfig
     step=1,                           # Optional: step increment
     unit=UnitOfTime.SECONDS,          # Optional: unit constant
     mode="box",                       # Optional: "box" for text input, "slider" for slider
-    multiplier=1,                     # Optional: multiply value before writing to device
+    multiplier=1,                     # Optional: scale between HA value and raw attribute (default 1)
     device_class=NumberDeviceClass.DURATION,  # Optional: HA device class
     translation_key="turn_on_delay",
     fallback_name="Turn on delay",
 )
+```
+
+**Number `multiplier` semantics:** Defined on the entity by ZHA. HA Core is a pure pass-through — it does no scaling itself. The conversion is:
+- Display: `native_value = raw_attr_value * multiplier`
+- Write: `raw_attr_value = int(ha_value / multiplier)`
+
+If the underlying attribute is an integer representing a fractional unit (e.g., the ZCL `local_temperature_calibration` attribute is `int8s` storing tenths of a degree), pair fractional `step` with the matching `multiplier` so HA values are scaled correctly. The attribute's raw type comes from the cluster's `AttributeDefs` — for `.number()` (unlike `.tuya_number()`) you don't pass a `type`. Without a `multiplier` (default `1`), `int()` silently truncates fractional input on write and raw values are displayed unscaled.
+
+```python
+# ZCL Thermostat local_temperature_calibration: int8s, tenths of a degree.
+# HA range -2.5..2.5 °C ↔ raw attribute value -25..25
+.number(
+    attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
+    cluster_id=Thermostat.cluster_id,
+    min_value=-2.5,
+    max_value=2.5,
+    step=0.1,
+    multiplier=0.1,   # required: pairs with step=0.1
+    unit=UnitOfTemperature.CELSIUS,
+    translation_key="local_temperature_calibration",
+    fallback_name="Local temperature calibration",
+)
+```
+
+`min_value`/`max_value` are HA-side values (after the multiplier), not raw attribute values. Confirm the device's raw value range and pick HA-side limits accordingly.
+
+```python
 
 # Enum as SELECT (dropdown, default) - user can change value
 .enum(
@@ -248,6 +275,49 @@ from zigpy.quirks.v2 import ReportingConfig
     fallback_name="Factory reset",
 )
 ```
+
+**Entity unique_id format:**
+
+HA uses `unique_id` to identify an entity across restarts. If a quirk change causes it to change, HA treats the result as a new entity — the old one is orphaned and anything referencing it breaks.
+
+**For v2 quirk entities** the format is:
+
+```
+{device.ieee}-{endpoint_id}-{suffix}
+```
+
+Note there is **no cluster_id** between the endpoint and the suffix. This differs from the format used by ZHA-native entities (see below).
+
+`{suffix}` resolves in this order:
+1. Explicit `unique_id_suffix=` on the builder call
+2. Otherwise `attribute_name` (attribute-based entities)
+3. Otherwise `command_name` (for `.command_button()`)
+4. Otherwise no suffix
+
+**Breaking-change implications:**
+- Renaming `attribute_name` on a custom cluster used by an existing v2 quirk changes the default suffix and **breaks existing entities**. Avoid unless necessary.
+- Moving an entity to a different `endpoint_id` also changes the unique_id and breaks existing entities.
+- `translation_key` and `fallback_name` do **not** affect unique_id — renaming these is safe.
+- If a rename is genuinely required, preserve the old suffix via `unique_id_suffix=` on each affected entity. Flag the breakage in the PR.
+- When reviewing PRs that rename attributes in an existing v2 quirk (or move entities to different endpoints), call this out before it lands.
+
+**ZHA-native entities (not created by a v2 quirk):**
+
+Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself. These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
+
+```
+{device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
+```
+
+The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `_unique_id_suffix` class attribute on the ZHA-native entity class (typically matching the entity's `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`, `"child_lock"`).
+
+Note: several primary platform-entity classes use a shorter legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility — `Light`, `Shade`, `DeviceTracker`, `Switch` (main OnOff on light/smart-plug/ballast/plug-in-unit device types), and `Cover`/`Thermostat`/`Siren` when the endpoint's device type matches the entity's primary type. Config switches, numbers and sensors on the same device still use the standard cluster_id-included format above.
+
+When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match.
+
+Example: for a ZHA-native entity on cluster_id `0xFCC0` (= `64704`) with attribute `child_lock`, the existing unique_id is `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call to get the same unique_id.
+
+If you have access to a checkout of the ZHA library, you can find existing unique_ids in the device diagnostics dumps under `zha/tests/data/devices/`.
 
 **Device Automation Triggers:**
 ```python
@@ -334,7 +404,7 @@ See `tuya.md` for detailed Tuya quirk documentation including finding DPs and al
 V1 quirks inherit from `CustomDevice` with explicit `signature` and `replacement` dicts. The signature must match the device exactly; the replacement defines what ZHA should use instead:
 
 ```python
-from zigpy.quirks import CustomDevice
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.const import MODELS_INFO, ENDPOINTS, INPUT_CLUSTERS, ...
 
 class MyDevice(CustomDevice):
@@ -363,7 +433,7 @@ class MyDevice(CustomDevice):
 **Extending a ZCL cluster** - Add manufacturer-specific attributes to a standard cluster:
 
 ```python
-from zigpy.quirks import CustomCluster
+from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.clusters.general import OnOff
 
 class CustomOnOffCluster(CustomCluster, OnOff):
@@ -378,7 +448,7 @@ class CustomOnOffCluster(CustomCluster, OnOff):
 **Fully custom cluster** - For manufacturer-specific clusters not based on ZCL:
 
 ```python
-from zigpy.quirks import CustomCluster
+from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 class VOCIndex(CustomCluster):
@@ -499,14 +569,14 @@ from zhaquirks.const import (
 )
 
 # Quirk building
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import (  # Unit constants
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityPlatform, EntityType
+from zhaquirks.builder import (  # Unit constants
     UnitOfTemperature, UnitOfTime, UnitOfEnergy, UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.builder import BinarySensorDeviceClass
+from zhaquirks.builder import NumberDeviceClass
+from zhaquirks.builder import SensorDeviceClass, SensorStateClass
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 # Cluster types
