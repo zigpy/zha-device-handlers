@@ -10,6 +10,7 @@ from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import UnitOfTime
 from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
@@ -227,6 +228,57 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
             cluster=61184,
             sequence=1,
             data=b"\x01\x01\x00\x00\x01\x19\x02\x00\x04\x00\x00\x00\x0a",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+            retries=None,
+            retry_delay=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE200_81isopgh", "TS0601"),
+        ("_TZE200_1n2zev06", "TS0601"),
+        ("_TZE204_qtnjuoae", "TS0601"),
+        ("_TZE200_akjefhj5", "TS0601"),
+    ],
+)
+async def test_saswell_81isopgh_writable_timer(zigpy_device_from_v2_quirk, model, manuf):
+    """DP 11 is exposed as a writable number (minutes) for the Saswell valve family."""
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    entry = DEVICE_REGISTRY.match_entry(quirked)
+    metadata_by_suffix = {
+        md.resolved_unique_id_suffix: md
+        for md in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    number_md: EntityMetadata = metadata_by_suffix["time_left"]
+    assert number_md.min == 1
+    assert number_md.max == 1440
+    assert number_md.unit == UnitOfTime.MINUTES
+
+
+async def test_saswell_81isopgh_write_timer(zigpy_device_from_v2_quirk):
+    """Writing the DP-11 number sends the correct Tuya frame (raw seconds)."""
+    quirked = zigpy_device_from_v2_quirk("_TZE200_81isopgh", "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"time_left": 1800})
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x0b\x02\x00\x04\x00\x00\x07\x08",
             command_id=0,
             timeout=5,
             expect_reply=False,
