@@ -5,7 +5,6 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
-
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone
 
 
