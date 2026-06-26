@@ -5,7 +5,6 @@ from typing import Any
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -28,21 +27,10 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
     """Binary input with configurable device-side output linking."""
 
     INPUT_ENDPOINT_IDS: set[int] = {112, 113, 114, 115}
-    OUTPUT_ENDPOINT_IDS: set[int] = {116, 117}
     OUTPUT_ENDPOINT_BY_LINK: dict[LinkedOutput, int] = {
         LinkedOutput.output_1: 116,
         LinkedOutput.output_2: 117,
     }
-
-    def _local_attr_defaults_for_endpoint(self, endpoint_id: int) -> dict[int, Any]:
-        """Return endpoint-specific local attributes managed by the quirk."""
-        local_defaults: dict[int, Any] = {}
-        if endpoint_id in self.INPUT_ENDPOINT_IDS:
-            local_defaults[self.AttributeDefs.linked_output.id] = LinkedOutput.none
-        if endpoint_id in self.OUTPUT_ENDPOINT_IDS:
-            local_defaults[self.AttributeDefs.on_with_timed_off_on_time.id] = 0
-            local_defaults[self.AttributeDefs.on_with_timed_off_off_wait_time.id] = 0
-        return local_defaults
 
     class AttributeDefs(BinaryInput.AttributeDefs):
         """Attribute definitions."""
@@ -52,24 +40,12 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
             type=LinkedOutput,
             access="rw",
         )
-        on_with_timed_off_on_time = ZCLAttributeDef(
-            id=0x8000,
-            type=t.uint16_t,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-        on_with_timed_off_off_wait_time = ZCLAttributeDef(
-            id=0x8001,
-            type=t.uint16_t,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-        # Device uses Binary Input polarity (0x0054, enum8) where 0=normal, 1=reversed.
-        polarity = ZCLAttributeDef(
-            id=BinaryInput.AttributeDefs.polarity.id,
-            type=t.enum8,
-            access="rw",
-        )
+
+    def _local_attr_defaults_for_endpoint(self, endpoint_id: int) -> dict[int, Any]:
+        """Return local attributes managed by the quirk for the given endpoint."""
+        if endpoint_id in self.INPUT_ENDPOINT_IDS:
+            return {self.AttributeDefs.linked_output.id: LinkedOutput.none}
+        return {}
 
     def _resolve_attr_id(
         self, attr: str | int | foundation.ZCLAttributeDef
@@ -184,15 +160,10 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
             endpoint_id in self.INPUT_ENDPOINT_IDS
             and attrid == self.AttributeDefs.present_value.id
         ):
-            try:
-                asyncio.get_running_loop()
-            except RuntimeError:
-                # Some sync tests call _update_attribute without a running event loop.
-                return
             self.create_catching_task(self._dispatch_output_command(bool(value)))
 
     async def _dispatch_output_command(self, is_active: bool) -> None:
-        """Dispatch output command based on linked output and timed-off settings."""
+        """Dispatch ON/OFF command to the linked output."""
         linked_output = self._normalize_linked_output(
             self.get(self.AttributeDefs.linked_output.id, LinkedOutput.none)
         )
@@ -206,39 +177,6 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
 
         output_cluster = output_endpoint.in_clusters.get(OnOff.cluster_id)
         if output_cluster is None:
-            return
-
-        output_settings_cluster = output_endpoint.in_clusters.get(
-            BinaryInput.cluster_id
-        )
-        on_time = 0
-        off_wait_time = 0
-        if output_settings_cluster is not None:
-            on_time = int(
-                output_settings_cluster.get(
-                    self.AttributeDefs.on_with_timed_off_on_time.id,
-                    0,
-                )
-                or 0
-            )
-            off_wait_time = int(
-                output_settings_cluster.get(
-                    self.AttributeDefs.on_with_timed_off_off_wait_time.id,
-                    0,
-                )
-                or 0
-            )
-
-        if on_time > 0:
-            if not is_active:
-                return
-
-            await output_cluster.command(
-                OnOff.ServerCommandDefs.on_with_timed_off.id,
-                on_off_control=0,
-                on_time=on_time,
-                off_wait_time=off_wait_time,
-            )
             return
 
         command_id = (
@@ -292,62 +230,14 @@ class FrientBinaryInput(CustomCluster, BinaryInput):
             return
 
 
-class FrientOnOffOutput(CustomCluster, OnOff):
-    """OnOff cluster that applies output timed settings to manual ON commands."""
-
-    async def command(self, command_id, *args, **kwargs):
-        """Map ON to OnWithTimedOff when output OnTime is configured."""
-        try:
-            resolved_command_id = self.server_commands[command_id].id
-        except (KeyError, TypeError):
-            resolved_command_id = int(command_id)
-
-        if resolved_command_id != OnOff.ServerCommandDefs.on.id:
-            return await super().command(command_id, *args, **kwargs)
-
-        settings_cluster = self.endpoint.in_clusters.get(BinaryInput.cluster_id)
-        if settings_cluster is None:
-            return await super().command(command_id, *args, **kwargs)
-
-        on_time = int(
-            settings_cluster.get(
-                FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.id,
-                0,
-            )
-            or 0
-        )
-        off_wait_time = int(
-            settings_cluster.get(
-                FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.id,
-                0,
-            )
-            or 0
-        )
-
-        if on_time <= 0:
-            return await super().command(command_id, *args, **kwargs)
-
-        return await super().command(
-            OnOff.ServerCommandDefs.on_with_timed_off.id,
-            on_off_control=OnOff.OnOffControl(0),
-            on_time=on_time,
-            off_wait_time=off_wait_time,
-            **kwargs,
-        )
-
-
 (
     QuirkBuilder(FRIENT, "IOMZB-110")
     .applies_to(DEVELCO, "IOMZB-110")
-    # Replace all input and output BinaryInput clusters with custom behavior/attributes.
+    # Replace input BinaryInput clusters with custom behavior/attributes.
     .replaces(FrientBinaryInput, endpoint_id=112)
     .replaces(FrientBinaryInput, endpoint_id=113)
     .replaces(FrientBinaryInput, endpoint_id=114)
     .replaces(FrientBinaryInput, endpoint_id=115)
-    .replaces(FrientBinaryInput, endpoint_id=116)
-    .replaces(FrientBinaryInput, endpoint_id=117)
-    .replaces(FrientOnOffOutput, endpoint_id=116)
-    .replaces(FrientOnOffOutput, endpoint_id=117)
     .prevent_default_entity_creation(
         endpoint_id=116,
         cluster_id=BinaryInput.cluster_id,
@@ -373,7 +263,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         new_fallback_name="Output 2",
         new_translation_key="frient_output_2",
     )
-    # And the two inputs
+    # And the four inputs
     .change_entity_metadata(
         endpoint_id=112,
         cluster_id=BinaryInput.cluster_id,
@@ -440,7 +330,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         fallback_name="Input 4 control output",
     )
     .switch(
-        attribute_name=FrientBinaryInput.AttributeDefs.polarity.name,
+        attribute_name=BinaryInput.AttributeDefs.polarity.name,
         cluster_id=BinaryInput.cluster_id,
         endpoint_id=112,
         unique_id_suffix="in1_reverse_polarity",
@@ -448,7 +338,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         fallback_name="Input 1 reverse polarity",
     )
     .switch(
-        attribute_name=FrientBinaryInput.AttributeDefs.polarity.name,
+        attribute_name=BinaryInput.AttributeDefs.polarity.name,
         cluster_id=BinaryInput.cluster_id,
         endpoint_id=113,
         unique_id_suffix="in2_reverse_polarity",
@@ -456,7 +346,7 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         fallback_name="Input 2 reverse polarity",
     )
     .switch(
-        attribute_name=FrientBinaryInput.AttributeDefs.polarity.name,
+        attribute_name=BinaryInput.AttributeDefs.polarity.name,
         cluster_id=BinaryInput.cluster_id,
         endpoint_id=114,
         unique_id_suffix="in3_reverse_polarity",
@@ -464,68 +354,12 @@ class FrientOnOffOutput(CustomCluster, OnOff):
         fallback_name="Input 3 reverse polarity",
     )
     .switch(
-        attribute_name=FrientBinaryInput.AttributeDefs.polarity.name,
+        attribute_name=BinaryInput.AttributeDefs.polarity.name,
         cluster_id=BinaryInput.cluster_id,
         endpoint_id=115,
         unique_id_suffix="in4_reverse_polarity",
         translation_key="frient_in_4_reverse_polarity",
         fallback_name="Input 4 reverse polarity",
-    )
-    .number(
-        attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.name,
-        cluster_id=BinaryInput.cluster_id,
-        endpoint_id=116,
-        multiplier=0.1,
-        min_value=0,
-        max_value=6553.5,
-        unit=UnitOfTime.SECONDS,
-        step=1,
-        mode="box",
-        unique_id_suffix="out1_on_with_timed_off_on_time",
-        translation_key="frient_out_1_on_with_timed_off_on_time",
-        fallback_name="Output 1 on time",
-    )
-    .number(
-        attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.name,
-        cluster_id=BinaryInput.cluster_id,
-        endpoint_id=116,
-        multiplier=0.1,
-        min_value=0,
-        max_value=6553.5,
-        unit=UnitOfTime.SECONDS,
-        step=1,
-        mode="box",
-        unique_id_suffix="out1_on_with_timed_off_off_wait_time",
-        translation_key="frient_out_1_on_with_timed_off_off_wait_time",
-        fallback_name="Output 1 off wait time",
-    )
-    .number(
-        attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_on_time.name,
-        cluster_id=BinaryInput.cluster_id,
-        endpoint_id=117,
-        multiplier=0.1,
-        min_value=0,
-        max_value=6553.5,
-        unit=UnitOfTime.SECONDS,
-        step=1,
-        mode="box",
-        unique_id_suffix="out2_on_with_timed_off_on_time",
-        translation_key="frient_out_2_on_with_timed_off_on_time",
-        fallback_name="Output 2 on time",
-    )
-    .number(
-        attribute_name=FrientBinaryInput.AttributeDefs.on_with_timed_off_off_wait_time.name,
-        cluster_id=BinaryInput.cluster_id,
-        endpoint_id=117,
-        multiplier=0.1,
-        min_value=0,
-        max_value=6553.5,
-        unit=UnitOfTime.SECONDS,
-        step=1,
-        mode="box",
-        unique_id_suffix="out2_on_with_timed_off_off_wait_time",
-        translation_key="frient_out_2_on_with_timed_off_off_wait_time",
-        fallback_name="Output 2 off wait time",
     )
     .add_to_registry()
 )
