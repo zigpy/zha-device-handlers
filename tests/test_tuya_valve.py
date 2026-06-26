@@ -251,7 +251,9 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
         ("_TZE200_akjefhj5", "TS0601"),
     ],
 )
-async def test_saswell_81isopgh_writable_timer(zigpy_device_from_v2_quirk, model, manuf):
+async def test_saswell_81isopgh_writable_timer(
+    zigpy_device_from_v2_quirk, model, manuf
+):
     """DP 11 is exposed as a writable number (minutes) for the Saswell valve family."""
     quirked = zigpy_device_from_v2_quirk(model, manuf)
     entry = DEVICE_REGISTRY.match_entry(quirked)

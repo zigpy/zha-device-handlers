@@ -62,7 +62,9 @@ class TuyaValveStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_81isopgh", "TS0601")
     .applies_to("_TZE200_1n2zev06", "TS0601")
-    .applies_to("_TZE204_qtnjuoae", "TS0601")  # SASWELL SAS980SWT-7-Z01, reported same (issue #3287)
+    .applies_to(
+        "_TZE204_qtnjuoae", "TS0601"
+    )  # SASWELL SAS980SWT-7-Z01, reported same (issue #3287)
     .applies_to("_TZE200_akjefhj5", "TS0601")  # reported same (discussion #1660)
     .tuya_onoff(dp_id=1)
     .tuya_metering(
