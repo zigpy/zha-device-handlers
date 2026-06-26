@@ -1,10 +1,11 @@
-"""Sonoff MINI-ZB2GS - Zigbee Switch."""
+"""Sonoff MINI-ZB2GS and MINI-ZB2GS-L - Zigbee Switches."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
@@ -57,8 +58,8 @@ class SonoffCluster(CustomCluster):
         )
 
 
-(
-    QuirkBuilder("SONOFF", "MINI-ZB2GS")
+zb2gs_l_quirk = (
+    QuirkBuilder("SONOFF", "MINI-ZB2GS-L")
     .replaces(SonoffCluster, endpoint_id=1)
     .replaces(SonoffCluster, endpoint_id=2)
     .enum(
@@ -85,6 +86,12 @@ class SonoffCluster(CustomCluster):
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
     )
+)
+zb2gs_l_quirk.add_to_registry()
+
+zb2gs_quirk = (
+    zb2gs_l_quirk.clone()
+    .applies_to("SONOFF", "MINI-ZB2GS")
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
         SonoffCluster.cluster_id,
@@ -101,5 +108,5 @@ class SonoffCluster(CustomCluster):
         translation_key="network_led",
         fallback_name="Network LED",
     )
-    .add_to_registry()
 )
+zb2gs_quirk.add_to_registry()
