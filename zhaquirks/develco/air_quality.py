@@ -24,7 +24,7 @@ from zhaquirks.develco import DevelcoPowerConfiguration
 class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
     """PowerConfiguration with device-specific voltage bounds."""
 
-    MIN_VOLTS = 2.3
+    MIN_VOLTS = 2.5
     MAX_VOLTS = 3.0
 
 
@@ -90,7 +90,7 @@ def value_to_caqi(value: int) -> str | None:
     elif value < 2201:
         return "Poor"
     else:
-        return "Bad"
+        return "Unhealthy"
 
 
 (
@@ -121,8 +121,9 @@ def value_to_caqi(value: int) -> str | None:
         attribute_converter=value_to_caqi,
         device_class=SensorDeviceClass.ENUM,
         unit=None,  # No unit for enum values
-        fallback_name="CAQI",
-        unique_id_suffix="caqi_index",
+        translation_key="air_quality",
+        fallback_name="Air quality",
+        unique_id_suffix="air_quality",
     )
     .add_to_registry()
 )

@@ -226,9 +226,9 @@ def test_air_quality_measured_value_converter():
         (660, "Moderate"),
         (661, "Poor"),
         (2200, "Poor"),
-        (2201, "Bad"),
+        (2201, "Unhealthy"),
     ],
 )
 def test_air_quality_value_to_caqi(value, expected):
-    """Test VOC value to CAQI mapping thresholds."""
+    """Test VOC value to air quality mapping thresholds."""
     assert value_to_caqi(value) == expected
