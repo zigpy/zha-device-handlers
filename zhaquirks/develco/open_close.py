@@ -11,7 +11,7 @@ from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone
 class DevelcoPowerConfiguration(PowerConfigurationCluster):
     """Power configuration cluster."""
 
-    MIN_VOLTS = 2.3  # advised voltage to replace batteries, device will blink red when this state hits.
+    MIN_VOLTS = 2.5  # advised voltage to replace batteries, device will blink red when this state hits.
     MAX_VOLTS = 3.0
 
 
