@@ -1,9 +1,9 @@
 """Innr SP 240 plug."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import LevelControl
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
 
 

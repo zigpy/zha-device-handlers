@@ -3,8 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfEnergy
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -12,6 +10,12 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.builder import (
+    PERCENTAGE,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfEnergy,
+)
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
