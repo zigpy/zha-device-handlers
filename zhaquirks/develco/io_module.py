@@ -3,8 +3,8 @@
 import asyncio
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 from zigpy.builder import QuirkBuilder
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
