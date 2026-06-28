@@ -2,15 +2,20 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import RelativeHumidity
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    SensorDeviceClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
@@ -69,7 +74,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2, scale=10)
@@ -90,7 +95,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
@@ -328,6 +333,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_myd45weu", "TS0601")
     .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
+    .applies_to("_TZE284_oitavov2", "TS0601")
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)

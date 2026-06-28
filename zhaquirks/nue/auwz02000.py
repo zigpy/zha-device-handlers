@@ -1,9 +1,10 @@
 """Nue / 3A Smart Home - Double GPO Quirk."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
+
+from zhaquirks.legacy import CustomDevice
 
 from ..const import (
     DEVICE_TYPE,
