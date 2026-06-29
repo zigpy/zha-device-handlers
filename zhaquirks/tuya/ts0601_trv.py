@@ -22,6 +22,11 @@ from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.builder import (
+    HVACMode,
+    Preset as ClimatePreset,
+    register_thermostat_presets,
+)
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -1981,3 +1986,105 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             },
         }
     }
+
+
+# Manufacturer-specific operating modes are exposed as Home Assistant climate
+# preset_modes (rather than a separate select), via a quirk-defined Thermostat
+# entity registered into ZHA's entity registry. These ports replace the
+# hardcoded MoesThermostat / BecaThermostat / ZONNSMARTThermostat classes that
+# used to live in the ZHA library; the operating mode is stored in the
+# `operation_preset` attribute populated by each manufacturer cluster above.
+#
+# The manufacturer lists below are kept identical to the ones the removed ZHA
+# classes matched, so this is a behavior-preserving port. Some additional models
+# handled by the quirks above (e.g. the Moes _TZE200_rufdtfyv / _TZE200_8thwkzxl
+# / _TZE200_xby0s3ta and the Zonnsmart _TZE200_sur6q7ko / _TZE200_lllliz3p /
+# _TZE200_fsow0qsk / _TZE200_py4cm3he) expose the same operation_preset attribute
+# and could be added here later to gain presets, but that is a separate change.
+
+MOES_PRESET_MANUFACTURERS = frozenset(
+    {
+        "_TZE200_ckud7u2l",
+        "_TZE200_ywdxldoj",
+        "_TZE200_cwnjrr72",
+        "_TZE200_2atgpdho",
+        "_TZE200_pvvbommb",
+        "_TZE200_4eeyebrt",
+        "_TZE200_cpmgn2cf",
+        "_TZE200_9sfg7gm0",
+        "_TZE200_8whxpsiw",
+        "_TYST11_ckud7u2l",
+        "_TYST11_ywdxldoj",
+        "_TYST11_cwnjrr72",
+        "_TYST11_2atgpdho",
+    }
+)
+
+BECA_PRESET_MANUFACTURERS = frozenset({"_TZE200_b6wax7g0"})
+
+ZONNSMART_PRESET_MANUFACTURERS = frozenset(
+    {
+        "_TZE200_7yoranx2",
+        "_TZE200_e9ba97vf",
+        "_TZE200_hue3yfsn",
+        "_TZE200_husqqvux",
+        "_TZE200_kly8gjlz",
+        "_TZE200_lnbfnyxd",
+        "_TZE200_mudxchsu",
+        "_TZE200_kds0pmmv",
+    }
+)
+
+ZONNSMART_PRESET_HOLIDAY = "holiday"
+ZONNSMART_PRESET_FROST = "frost protect"
+
+# Moes valves can't be turned off, so only HEAT is offered as an HVAC mode and
+# everything else (away/schedule/comfort/eco/boost/complex) is a preset.
+register_thermostat_presets(
+    manufacturers=MOES_PRESET_MANUFACTURERS,
+    attribute_name=MoesThermostat.AttributeDefs.operation_preset.name,
+    presets={
+        ClimatePreset.NONE: Preset.Manual,
+        ClimatePreset.AWAY: Preset.Away,
+        ClimatePreset.SCHEDULE: Preset.Schedule,
+        ClimatePreset.COMFORT: Preset.Comfort,
+        ClimatePreset.ECO: Preset.Eco,
+        ClimatePreset.BOOST: Preset.Boost,
+        ClimatePreset.COMPLEX: Preset.Complex,
+    },
+    hvac_modes=[HVACMode.HEAT],
+    name="MoesThermostat",
+)
+
+# Beca (_TZE200_b6wax7g0) uses a different value layout, including 7 for the
+# "temporary manual" preset, which isn't part of the shared Preset enum.
+register_thermostat_presets(
+    manufacturers=BECA_PRESET_MANUFACTURERS,
+    attribute_name=MoesThermostatNew.AttributeDefs.operation_preset.name,
+    presets={
+        ClimatePreset.NONE: 2,
+        ClimatePreset.AWAY: 0,
+        ClimatePreset.SCHEDULE: 1,
+        ClimatePreset.ECO: 4,
+        ClimatePreset.BOOST: 5,
+        ClimatePreset.TEMP_MANUAL: 7,
+    },
+    hvac_modes=[HVACMode.HEAT],
+    name="BecaThermostat",
+)
+
+# Zonnsmart reports two values (2 and 3) for the single holiday preset, but
+# writes 3 to select it; clearing a preset writes 1 ("manual" / no preset).
+register_thermostat_presets(
+    manufacturers=ZONNSMART_PRESET_MANUFACTURERS,
+    attribute_name=ZONNSMARTThermostat.AttributeDefs.operation_preset.name,
+    presets={
+        # Order matches the former ZHA ZONNSMARTThermostat preset list.
+        ClimatePreset.NONE: ZONNSMARTThermostat.Preset.Manual,
+        ZONNSMART_PRESET_HOLIDAY: ZONNSMARTThermostat.Preset.HolidayTemp,
+        ClimatePreset.SCHEDULE: ZONNSMARTThermostat.Preset.Schedule,
+        ZONNSMART_PRESET_FROST: ZONNSMARTThermostat.Preset.FrostProtect,
+    },
+    read_value_overrides={ZONNSMARTThermostat.Preset.Holiday: ZONNSMART_PRESET_HOLIDAY},
+    name="ZONNSMARTThermostat",
+)

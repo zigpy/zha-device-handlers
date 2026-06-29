@@ -945,6 +945,7 @@ class QuirkBuilder:
         none_value: int | None = None,
         hvac_modes: list[Any] | None = None,
         required_clusters: tuple[int, ...] | None = None,
+        name: str | None = None,
     ) -> Self:
         """Augment the device's thermostat/climate entity with extra presets.
 
@@ -961,6 +962,7 @@ class QuirkBuilder:
             "read_value_overrides": read_value_overrides,
             "none_value": none_value,
             "hvac_modes": hvac_modes,
+            "name": name,
         }
         if required_clusters is not None:
             config["required_clusters"] = required_clusters

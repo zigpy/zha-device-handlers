@@ -125,6 +125,7 @@ def register_thermostat_presets(
     hvac_modes: list[HVACMode] | None = None,
     required_clusters: tuple[int, ...] = (ThermostatCluster.cluster_id,),
     feature_priority: int = QUIRK_THERMOSTAT_FEATURE_PRIORITY,
+    name: str | None = None,
 ) -> type[QuirksThermostat]:
     """Generate and register a quirk-defined thermostat entity.
 
@@ -171,7 +172,9 @@ def register_thermostat_presets(
         "_quirk_hvac_modes": hvac_modes,
         "_cluster_match": cluster_match,
     }
-    generated = type(f"QuirksThermostat_{scope}", (QuirksThermostat,), namespace)
+    generated = type(
+        name or f"QuirksThermostat_{scope}", (QuirksThermostat,), namespace
+    )
 
     register_entity(ThermostatCluster.cluster_id)(generated)
     _LOGGER.debug(
