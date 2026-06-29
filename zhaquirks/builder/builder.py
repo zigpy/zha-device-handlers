@@ -944,6 +944,7 @@ class QuirkBuilder:
         read_value_overrides: dict[int, str] | None = None,
         none_value: int | None = None,
         hvac_modes: list[Any] | None = None,
+        preset_cluster_id: int | None = None,
         required_clusters: tuple[int, ...] | None = None,
         name: str | None = None,
     ) -> Self:
@@ -962,6 +963,7 @@ class QuirkBuilder:
             "read_value_overrides": read_value_overrides,
             "none_value": none_value,
             "hvac_modes": hvac_modes,
+            "preset_cluster_id": preset_cluster_id,
             "name": name,
         }
         if required_clusters is not None:

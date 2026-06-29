@@ -117,6 +117,7 @@ def _make_instance(cls):
     inst._cluster = mock.MagicMock()
     inst._cluster.get.return_value = 0xFF  # unknown ctrl_sequence -> [OFF]
     inst._cluster.write_attributes = mock.AsyncMock(return_value=([], []))
+    inst._preset_cluster = inst._cluster  # default: preset lives on the thermostat
     inst._device = mock.MagicMock()
     inst._device.manufacturer_code = 0x1234
     # The base handle_attribute_updated dispatches an async task; close the
@@ -184,3 +185,42 @@ async def test_async_preset_handler_writes_backing_attribute():
 def test_quirk_thermostat_not_directly_registered():
     """The base augmentation class is never registered itself."""
     assert QuirksThermostat not in ENTITY_REGISTRY[ThermostatCluster.cluster_id]
+
+
+def test_preset_cluster_id_requires_and_matches_renamed_cluster():
+    """A separate preset cluster is required for discovery and opts into renames."""
+    mcu_cluster_id = 0xEF00
+    cls = register_thermostat_presets(
+        manufacturers={"_TZE204_preset_cluster"},
+        attribute_name="preset_mode",
+        presets={Preset.NONE: 0, Preset.AWAY: 2},
+        preset_cluster_id=mcu_cluster_id,
+    )
+    assert cls._preset_cluster_id == mcu_cluster_id
+    match = cls._cluster_match
+    # Both the thermostat cluster and the preset cluster must be present.
+    assert match.server_clusters == frozenset(
+        {ThermostatCluster.cluster_id, mcu_cluster_id}
+    )
+    # The preset cluster has a renamed ep_attribute (Tuya MCU), so opt in.
+    assert match.match_renamed_clusters is True
+
+
+async def test_async_preset_handler_writes_to_preset_cluster():
+    """Writes go to the separate preset cluster, not the thermostat cluster."""
+    cls = register_thermostat_presets(
+        manufacturers={"_TZE204_preset_write"},
+        attribute_name="preset_mode",
+        presets={Preset.NONE: 0, Preset.AWAY: 2},
+        preset_cluster_id=0xEF00,
+    )
+    inst = _make_instance(cls)
+    # Distinct preset cluster from the thermostat cluster.
+    inst._preset_cluster = mock.MagicMock()
+    inst._preset_cluster.write_attributes = mock.AsyncMock(return_value=([], []))
+
+    await inst.async_preset_handler(Preset.AWAY, enable=True)
+    inst._preset_cluster.write_attributes.assert_awaited_with(
+        {"preset_mode": 2}, manufacturer=0x1234
+    )
+    inst._cluster.write_attributes.assert_not_awaited()
