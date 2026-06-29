@@ -4,6 +4,7 @@ import asyncio
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 
@@ -319,9 +320,16 @@ def test_io_module_link_selectors_are_exposed_for_all_inputs(
         115: "in4_linked_output",
     }
 
+    entry = DEVICE_REGISTRY.match_entry(device)
+    all_metadata = entry.zha_device_factory.quirk_definition.entity_metadata
+
     for endpoint_id, expected_suffix in expected.items():
-        metadata = device.exposes_metadata[
-            (endpoint_id, BinaryInput.cluster_id, ClusterType.Server)
+        metadata = [
+            m
+            for m in all_metadata
+            if m.endpoint_id == endpoint_id
+            and m.cluster_id == BinaryInput.cluster_id
+            and m.cluster_type == ClusterType.Server
         ]
         suffixes = {entity.unique_id_suffix for entity in metadata}
         assert expected_suffix in suffixes
@@ -340,9 +348,16 @@ def test_io_module_reverse_polarity_switches_are_exposed_for_all_inputs(
         115: "in4_reverse_polarity",
     }
 
+    entry = DEVICE_REGISTRY.match_entry(device)
+    all_metadata = entry.zha_device_factory.quirk_definition.entity_metadata
+
     for endpoint_id, expected_suffix in expected.items():
-        metadata = device.exposes_metadata[
-            (endpoint_id, BinaryInput.cluster_id, ClusterType.Server)
+        metadata = [
+            m
+            for m in all_metadata
+            if m.endpoint_id == endpoint_id
+            and m.cluster_id == BinaryInput.cluster_id
+            and m.cluster_type == ClusterType.Server
         ]
         suffixes = {entity.unique_id_suffix for entity in metadata}
         assert expected_suffix in suffixes
