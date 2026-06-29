@@ -1,7 +1,7 @@
 """Device handler for WAXMAN leakSMART."""
 
 # pylint: disable=W0102
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -89,9 +89,8 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        | None = None,
     ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == WAXMAN_CMDID:
