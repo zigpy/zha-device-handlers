@@ -47,8 +47,10 @@ from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
+    AttributeReportingConfigMetadata,
     BinarySensorMetadata,
     ChangedEntityMetadata,
+    ClusterConfigMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
     EntityMetadata,
@@ -348,6 +350,7 @@ class QuirkBuilder:
         self.replaces_ops: list[ReplaceCluster] = []
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
+        self.cluster_config_metadata: list[ClusterConfigMetadata] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -934,6 +937,66 @@ class QuirkBuilder:
         )
         return self
 
+    def binds(
+        self,
+        cluster_id: int,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+    ) -> Self:
+        """Bind a cluster to the coordinator without exposing an entity.
+
+        Use this for clusters that must be bound so the device sends unsolicited
+        reports or commands, but where no Home Assistant entity is created from
+        the cluster. To also configure attribute reporting use
+        `configures_reporting` instead (it binds the cluster as well).
+        """
+        self.cluster_config_metadata.append(
+            ClusterConfigMetadata(
+                cluster_id=cluster_id,
+                endpoint_id=endpoint_id,
+                cluster_type=cluster_type,
+                bind=True,
+            )
+        )
+        return self
+
+    def configures_reporting(
+        self,
+        cluster_id: int,
+        attribute_name: str,
+        reporting_config: ReportingConfig,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+        bind: bool = True,
+        read_on_startup: bool = False,
+    ) -> Self:
+        """Set up attribute reporting for a cluster without exposing an entity.
+
+        The entity-less counterpart of the `reporting_config` accepted by the
+        entity methods: it configures reporting for an attribute that has no
+        associated Home Assistant entity. The cluster is bound by default
+        (reporting requires a binding); pass ``bind=False`` to skip binding,
+        e.g. when another quirk feature already binds the cluster. Set
+        ``read_on_startup`` to also read the attribute once when the device is
+        configured.
+        """
+        self.cluster_config_metadata.append(
+            ClusterConfigMetadata(
+                cluster_id=cluster_id,
+                endpoint_id=endpoint_id,
+                cluster_type=cluster_type,
+                bind=bind,
+                attributes=(
+                    AttributeReportingConfigMetadata(
+                        attribute_name=attribute_name,
+                        reporting_config=reporting_config,
+                        read_on_startup=read_on_startup,
+                    ),
+                ),
+            )
+        )
+        return self
+
     def device_automation_triggers(
         self, device_automation_triggers: dict[tuple[str, str], dict[str, str]]
     ) -> Self:
@@ -1077,6 +1140,7 @@ class QuirkBuilder:
             disabled_default_entities=tuple(self.disabled_default_entities),
             changed_entity_metadata=tuple(self.changed_entity_metadata),
             entity_metadata=tuple(self.entity_metadata),
+            cluster_configs=tuple(self.cluster_config_metadata),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
         )

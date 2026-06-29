@@ -37,6 +37,41 @@ class ReportingConfig:
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
+class AttributeReportingConfigMetadata:
+    """Reporting / read-on-startup config for a single attribute, without an entity.
+
+    The entity-less counterpart of an entity's `reporting_config`: it lets a
+    quirk request attribute reporting (and/or a fresh read at startup) for an
+    attribute that has no associated Home Assistant entity.
+    """
+
+    attribute_name: str = attrs.field()
+    reporting_config: ReportingConfig | None = attrs.field(default=None)
+    read_on_startup: bool = attrs.field(default=False)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ClusterConfigMetadata:
+    """Entity-less cluster configuration: bind a cluster and/or set up reporting.
+
+    Mirrors ZHA's per-cluster `ClusterConfig`/`AttrConfig`, but is expressed
+    declaratively in quirk metadata. It is realized as a config-only virtual
+    entity that ZHA's cluster-config aggregation picks up to bind the cluster
+    and configure attribute reporting, without the cluster ever being surfaced
+    as a Home Assistant entity.
+    """
+
+    cluster_id: int = attrs.field()
+    endpoint_id: int = attrs.field(default=1)
+    cluster_type: ClusterType = attrs.field(default=ClusterType.Server)
+    bind: bool = attrs.field(default=False)
+    attributes: tuple[AttributeReportingConfigMetadata, ...] = attrs.field(
+        factory=tuple
+    )
+    unique_id_suffix: str | None = attrs.field(default=None)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
 class EntityMetadata:
     """Metadata for an exposed entity."""
 
@@ -253,6 +288,7 @@ class QuirkDefinition:
         factory=tuple
     )
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
+    cluster_configs: tuple[ClusterConfigMetadata, ...] = attrs.field(factory=tuple)
     device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )

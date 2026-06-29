@@ -26,7 +26,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
-from zhaquirks.builder.metadata import recursive_freeze
+from zhaquirks.builder.metadata import (
+    AttributeReportingConfigMetadata,
+    ClusterConfigMetadata,
+    ReportingConfig,
+    recursive_freeze,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import signature_matches
@@ -392,6 +397,94 @@ async def test_quirks_v2_skip_configuration(device_mock):
     # definition rather than on the resolved zigpy device.
     entry = registry.match_entry(quirked)
     assert entry.zha_device_factory.quirk_definition.skip_configuration is True
+
+
+async def test_quirks_v2_binds(device_mock):
+    """Test adding a quirk that binds a cluster without exposing an entity."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .binds(OnOff.cluster_id, cluster_type=ClusterType.Client)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    entry = registry.match_entry(quirked)
+    cluster_configs = entry.zha_device_factory.quirk_definition.cluster_configs
+    assert cluster_configs == (
+        ClusterConfigMetadata(
+            cluster_id=OnOff.cluster_id,
+            endpoint_id=1,
+            cluster_type=ClusterType.Client,
+            bind=True,
+            attributes=(),
+        ),
+    )
+
+
+async def test_quirks_v2_configures_reporting(device_mock):
+    """Test adding a quirk that configures reporting without exposing an entity."""
+    registry = DeviceRegistry()
+
+    reporting = ReportingConfig(min_interval=0, max_interval=900, reportable_change=1)
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .configures_reporting(
+            OnOff.cluster_id,
+            OnOff.AttributeDefs.on_off.name,
+            reporting,
+        )
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    entry = registry.match_entry(quirked)
+    cluster_configs = entry.zha_device_factory.quirk_definition.cluster_configs
+    assert cluster_configs == (
+        ClusterConfigMetadata(
+            cluster_id=OnOff.cluster_id,
+            endpoint_id=1,
+            cluster_type=ClusterType.Server,
+            bind=True,
+            attributes=(
+                AttributeReportingConfigMetadata(
+                    attribute_name=OnOff.AttributeDefs.on_off.name,
+                    reporting_config=reporting,
+                    read_on_startup=False,
+                ),
+            ),
+        ),
+    )
+
+
+async def test_quirks_v2_configures_reporting_no_bind(device_mock):
+    """Test configuring reporting while skipping the implicit cluster bind."""
+    registry = DeviceRegistry()
+
+    reporting = ReportingConfig(min_interval=1, max_interval=60, reportable_change=1)
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .configures_reporting(
+            OnOff.cluster_id,
+            OnOff.AttributeDefs.on_off.name,
+            reporting,
+            bind=False,
+            read_on_startup=True,
+        )
+        .add_to_registry(registry)
+    )
+
+    entry = registry.match_entry(registry.resolve(device_mock))
+    (cluster_config,) = entry.zha_device_factory.quirk_definition.cluster_configs
+    assert cluster_config.bind is False
+    assert cluster_config.attributes[0].read_on_startup is True
 
 
 async def test_quirks_v2_removes(device_mock):

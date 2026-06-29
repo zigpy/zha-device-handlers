@@ -109,6 +109,42 @@ Example: Change device type so HA creates correct entity (ZHA profile used by de
 .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
 ```
 
+**Cluster Binding & Reporting (without an entity):**
+
+Normally a cluster is bound and an attribute's reporting is configured as a side
+effect of creating an entity for that attribute (via the entity method's
+`reporting_config=`). When no entity is wanted, these methods set up binding
+and/or reporting directly:
+
+- `.binds(cluster_id, cluster_type=ClusterType.Server, endpoint_id=1)` - Bind a
+  cluster to the coordinator without exposing an entity. Use for clusters that
+  must be bound so the device sends unsolicited reports/commands.
+- `.configures_reporting(cluster_id, attribute_name, reporting_config, cluster_type=ClusterType.Server, endpoint_id=1, bind=True, read_on_startup=False)` -
+  Configure attribute reporting for an attribute that has no associated entity.
+  Binds the cluster by default (reporting requires a binding); pass `bind=False`
+  to skip binding, or `read_on_startup=True` to also read the attribute once at
+  configuration time.
+
+```python
+from zhaquirks.builder import QuirkBuilder, ReportingConfig
+
+(
+    QuirkBuilder("Shelly", "Mini1PM")
+    # Bind the manufacturer RPC cluster and report its rx_ctl attribute so
+    # input-status notifications arrive without polling - no entity created.
+    .configures_reporting(
+        0xFC01,
+        "rx_ctl",
+        ReportingConfig(min_interval=0, max_interval=900, reportable_change=1),
+    )
+    .add_to_registry()
+)
+```
+
+These are realized as config-only virtual entities that ZHA's cluster-config
+aggregation consumes; they never appear as Home Assistant entities and respect
+`.skip_configuration()`.
+
 **Entity Creation (Home Assistant):**
 All entity methods require `fallback_name`. Common parameters:
 - `attribute_name`: ZCL attribute to expose
