@@ -17,6 +17,7 @@ from zhaquirks.builder.metadata import (
     ChangedEntityMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
+    EntityMetadata,
     ExposesFeatureMetadata,
     NumberMetadata,
     PreventDefaultEntityCreationMetadata,
@@ -561,3 +562,55 @@ def test_quirks_v2_firmware_version_filter():
     assert match.firmware_version_min == 10
     assert match.firmware_version_max == 50
     assert match.firmware_version_allow_missing is False
+
+
+def test_resolved_unique_id_suffix_explicit():
+    """An explicit unique_id_suffix takes precedence over any fallback."""
+    meta = ZCLSensorMetadata(
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        cluster_id=OnOff.cluster_id,
+        attribute_name="on_time",
+        unique_id_suffix="explicit",
+        translation_key="on_time",
+        fallback_name="On time",
+    )
+    assert meta.resolved_unique_id_suffix == "explicit"
+
+
+def test_resolved_unique_id_suffix_attribute_name_fallback():
+    """Without an explicit suffix, the attribute name is used."""
+    meta = ZCLSensorMetadata(
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        cluster_id=OnOff.cluster_id,
+        attribute_name="on_time",
+        translation_key="on_time",
+        fallback_name="On time",
+    )
+    assert meta.resolved_unique_id_suffix == "on_time"
+
+
+def test_resolved_unique_id_suffix_command_name_fallback():
+    """A command button with no attribute falls back to the command name."""
+    meta = ZCLCommandButtonMetadata(
+        entity_platform=EntityPlatform.BUTTON,
+        entity_type=EntityType.CONFIG,
+        cluster_id=OnOff.cluster_id,
+        command_name="on",
+        translation_key="on",
+        fallback_name="On",
+    )
+    assert meta.resolved_unique_id_suffix == "on"
+
+
+def test_resolved_unique_id_suffix_none():
+    """With no suffix, attribute name or command name, the suffix is None."""
+    meta = EntityMetadata(
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        cluster_id=OnOff.cluster_id,
+        translation_key="generic",
+        fallback_name="Generic",
+    )
+    assert meta.resolved_unique_id_suffix is None
