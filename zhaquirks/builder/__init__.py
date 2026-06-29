@@ -9,6 +9,7 @@ backward compatibility with externally-maintained custom quirks.
 
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
+from zha.application.platforms.climate.const import HVACMode, Preset
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
@@ -17,6 +18,7 @@ from zha.application.platforms.sensor.device_class import (
 from zha.units import *  # noqa: F401, F403
 
 from zhaquirks.builder.builder import UNBUILT_QUIRK_BUILDERS, QuirkBuilder
+from zhaquirks.builder.climate import QuirksThermostat, register_thermostat_presets
 from zhaquirks.builder.metadata import ReportingConfig
 
 __all__ = [
@@ -24,9 +26,13 @@ __all__ = [
     "BinarySensorDeviceClass",
     "EntityPlatform",
     "EntityType",
+    "HVACMode",
     "NumberDeviceClass",
+    "Preset",
     "QuirkBuilder",
+    "QuirksThermostat",
     "ReportingConfig",
     "SensorDeviceClass",
     "SensorStateClass",
+    "register_thermostat_presets",
 ]

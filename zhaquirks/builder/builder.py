@@ -45,6 +45,7 @@ from zigpy.zcl import Cluster, ClusterType
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
+from zhaquirks.builder.climate import register_thermostat_presets
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
@@ -348,6 +349,7 @@ class QuirkBuilder:
         self.replaces_ops: list[ReplaceCluster] = []
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
+        self.thermostat_preset_configs: list[dict[str, Any]] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -934,6 +936,37 @@ class QuirkBuilder:
         )
         return self
 
+    def thermostat_presets(
+        self,
+        attribute_name: str | None = None,
+        presets: dict[str, int] | None = None,
+        *,
+        read_value_overrides: dict[int, str] | None = None,
+        none_value: int | None = None,
+        hvac_modes: list[Any] | None = None,
+        required_clusters: tuple[int, ...] | None = None,
+    ) -> Self:
+        """Augment the device's thermostat/climate entity with extra presets.
+
+        Registers a quirk-defined ``Thermostat`` subclass (scoped to this quirk's
+        manufacturers/models) that exposes manufacturer-specific operating modes
+        as Home Assistant ``preset_mode``s instead of a separate entity. ``presets``
+        maps each preset name to the value written to the backing ``attribute_name``;
+        ``hvac_modes`` optionally fixes the HVAC mode list (e.g. ``[HVACMode.HEAT]``
+        for valves that can't be turned off). See ``register_thermostat_presets``.
+        """
+        config: dict[str, Any] = {
+            "attribute_name": attribute_name,
+            "presets": presets,
+            "read_value_overrides": read_value_overrides,
+            "none_value": none_value,
+            "hvac_modes": hvac_modes,
+        }
+        if required_clusters is not None:
+            config["required_clusters"] = required_clusters
+        self.thermostat_preset_configs.append(config)
+        return self
+
     def device_automation_triggers(
         self, device_automation_triggers: dict[tuple[str, str], dict[str, str]]
     ) -> Self:
@@ -1104,6 +1137,20 @@ class QuirkBuilder:
         )
 
         (registry or self.registry).register(entry)
+
+        # Quirk-defined thermostat entities register into ZHA's entity registry
+        # scoped to this quirk's devices, rather than going through the additive
+        # `discover_quirks_v2_entities` path (which can't replace the natively
+        # discovered thermostat and would create a duplicate climate entity).
+        if self.thermostat_preset_configs:
+            manufacturers = {man for man, _ in self.manufacturer_model_metadata if man}
+            models = {mod for _, mod in self.manufacturer_model_metadata if mod}
+            for config in self.thermostat_preset_configs:
+                register_thermostat_presets(
+                    manufacturers=manufacturers or None,
+                    models=models or None,
+                    **config,
+                )
 
         if self in UNBUILT_QUIRK_BUILDERS:
             UNBUILT_QUIRK_BUILDERS.remove(self)
