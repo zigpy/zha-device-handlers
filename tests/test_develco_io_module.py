@@ -7,10 +7,7 @@ import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 
-from zhaquirks.develco.io_module import (
-    FrientBinaryInput,
-    LinkedOutput,
-)
+from zhaquirks.develco.io_module import FrientBinaryInput, LinkedOutput
 
 
 def _get_io_module_device(zigpy_device_from_v2_quirk):

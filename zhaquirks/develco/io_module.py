@@ -4,7 +4,6 @@ import asyncio
 from typing import Any
 
 from zigpy.quirks import CustomCluster
-from zhaquirks.builder import QuirkBuilder
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -12,6 +11,7 @@ from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo import types as zdo_t
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.develco import DEVELCO, FRIENT
 
 
