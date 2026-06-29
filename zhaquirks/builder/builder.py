@@ -45,7 +45,7 @@ from zigpy.zcl import Cluster, ClusterType
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks.builder.climate import register_thermostat_presets
+from zhaquirks.builder.climate import ThermostatPresetConfig
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
@@ -349,7 +349,7 @@ class QuirkBuilder:
         self.replaces_ops: list[ReplaceCluster] = []
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
-        self.thermostat_preset_configs: list[dict[str, Any]] = []
+        self.thermostat_preset_configs: list[ThermostatPresetConfig] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -957,18 +957,18 @@ class QuirkBuilder:
         ``hvac_modes`` optionally fixes the HVAC mode list (e.g. ``[HVACMode.HEAT]``
         for valves that can't be turned off). See ``register_thermostat_presets``.
         """
-        config: dict[str, Any] = {
-            "attribute_name": attribute_name,
-            "presets": presets,
-            "read_value_overrides": read_value_overrides,
-            "none_value": none_value,
-            "hvac_modes": hvac_modes,
-            "preset_cluster_id": preset_cluster_id,
-            "name": name,
-        }
-        if required_clusters is not None:
-            config["required_clusters"] = required_clusters
-        self.thermostat_preset_configs.append(config)
+        self.thermostat_preset_configs.append(
+            ThermostatPresetConfig(
+                attribute_name=attribute_name,
+                presets=presets,
+                read_value_overrides=read_value_overrides,
+                none_value=none_value,
+                hvac_modes=hvac_modes,
+                preset_cluster_id=preset_cluster_id,
+                required_clusters=required_clusters,
+                name=name,
+            )
+        )
         return self
 
     def device_automation_triggers(
@@ -1150,11 +1150,7 @@ class QuirkBuilder:
             manufacturers = {man for man, _ in self.manufacturer_model_metadata if man}
             models = {mod for _, mod in self.manufacturer_model_metadata if mod}
             for config in self.thermostat_preset_configs:
-                register_thermostat_presets(
-                    manufacturers=manufacturers or None,
-                    models=models or None,
-                    **config,
-                )
+                config.register(manufacturers or None, models or None)
 
         if self in UNBUILT_QUIRK_BUILDERS:
             UNBUILT_QUIRK_BUILDERS.remove(self)

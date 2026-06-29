@@ -20,6 +20,7 @@ is a thin wrapper that derives the device scope from the builder.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -242,3 +243,47 @@ def register_thermostat_presets(
         list(presets),
     )
     return generated
+
+
+@dataclass(frozen=True)
+class ThermostatPresetConfig:
+    """A deferred ``QuirkBuilder.thermostat_presets()`` registration.
+
+    Mirrors the keyword arguments of ``register_thermostat_presets``. The builder
+    derives the device scope (manufacturers/models) at ``add_to_registry`` time
+    and calls ``register()``.
+    """
+
+    attribute_name: str | None = None
+    presets: dict[str, int] | None = None
+    read_value_overrides: dict[int, str] | None = None
+    none_value: int | None = None
+    hvac_modes: list[HVACMode] | None = None
+    preset_cluster_id: int | None = None
+    required_clusters: tuple[int, ...] | None = None
+    name: str | None = None
+
+    def register(
+        self,
+        manufacturers: frozenset[str] | set[str] | tuple[str, ...] | None,
+        models: frozenset[str] | set[str] | tuple[str, ...] | None,
+    ) -> type[QuirksThermostat]:
+        """Register the quirk thermostat scoped to the given manufacturers/models."""
+        # Only forward required_clusters when set, so the helper's default applies.
+        extra = (
+            {}
+            if self.required_clusters is None
+            else {"required_clusters": self.required_clusters}
+        )
+        return register_thermostat_presets(
+            manufacturers=manufacturers,
+            models=models,
+            attribute_name=self.attribute_name,
+            presets=self.presets,
+            read_value_overrides=self.read_value_overrides,
+            none_value=self.none_value,
+            hvac_modes=self.hvac_modes,
+            preset_cluster_id=self.preset_cluster_id,
+            name=self.name,
+            **extra,
+        )
