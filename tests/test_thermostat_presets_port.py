@@ -90,3 +90,50 @@ def test_ported_classes_use_priority_three(name):
     cls = _registered(name)
     _group, priority = cls._cluster_match.feature_priority
     assert priority == 3
+
+
+# Tuya MCU cluster id - the Avatto wall thermostats hold preset_mode here, not
+# on the thermostat cluster, so the climate entity binds across clusters.
+TUYA_MCU_CLUSTER_ID = 0xEF00
+
+
+@pytest.mark.parametrize(
+    ("name", "manufacturer", "expected_presets"),
+    [
+        ("AvattoThermostatV01", "_TZE204_p3lqqy2r", {"none": 0, "home": 1, "away": 2}),
+        (
+            "AvattoThermostatV02",
+            "_TZE204_lzriup1j",
+            {"none": 0, "Schedule": 1, "Temporary manual": 2},
+        ),
+        (
+            "AvattoThermostatV03",
+            "_TZE200_viy9ihs7",
+            {"Schedule": 0, "none": 1, "Temporary manual": 2},
+        ),
+        (
+            "AvattoThermostatV04",
+            "_TZE204_cvub6xbb",
+            {"none": 0, "Schedule": 1, "eco": 3},
+        ),
+    ],
+)
+def test_avatto_wall_thermostat_presets(name, manufacturer, expected_presets):
+    """The Avatto wall-thermostat selects are folded into climate presets."""
+    # Several variants share a class name (e.g. two V03 clones), so match on the
+    # manufacturer scope rather than the name alone.
+    matches = [
+        cls
+        for cls in ENTITY_REGISTRY[ThermostatCluster.cluster_id]
+        if issubclass(cls, QuirksThermostat)
+        and cls.__name__ == name
+        and cls._cluster_match.manufacturers
+        and manufacturer in cls._cluster_match.manufacturers
+    ]
+    assert len(matches) == 1, f"expected one {name} for {manufacturer}"
+    cls = matches[0]
+    # preset_mode lives on the Tuya MCU cluster, so the entity binds there.
+    assert cls._preset_cluster_id == TUYA_MCU_CLUSTER_ID
+    assert TUYA_MCU_CLUSTER_ID in cls._cluster_match.server_clusters
+    assert cls._cluster_match.match_renamed_clusters is True
+    assert {k: int(v) for k, v in cls._preset_write_values.items()} == expected_presets

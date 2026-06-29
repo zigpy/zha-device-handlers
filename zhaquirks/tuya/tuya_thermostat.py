@@ -7,6 +7,7 @@ from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityType,
+    Preset,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfElectricCurrent,
@@ -167,8 +168,19 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         dp_id=2,
         attribute_name="preset_mode",
         enum_class=PresetModeV01,
+        initially_disabled=True,  # superseded by the climate preset_mode
         translation_key="preset_mode",
         fallback_name="Preset mode",
+    )
+    .thermostat_presets(
+        attribute_name="preset_mode",
+        presets={
+            Preset.NONE: PresetModeV01.Manual,
+            Preset.HOME: PresetModeV01.Home,
+            Preset.AWAY: PresetModeV01.Away,
+        },
+        preset_cluster_id=TuyaMCUCluster.cluster_id,
+        name="AvattoThermostatV01",
     )
     .tuya_dp(
         dp_id=16,
@@ -425,8 +437,19 @@ base_avatto_quirk = (
         dp_id=4,
         attribute_name="preset_mode",
         enum_class=PresetModeV02,
+        initially_disabled=True,  # superseded by the climate preset_mode
         translation_key="preset_mode",
         fallback_name="Preset mode",
+    )
+    .thermostat_presets(
+        attribute_name="preset_mode",
+        presets={
+            Preset.NONE: PresetModeV02.Manual,
+            Preset.SCHEDULE: PresetModeV02.Auto,
+            Preset.TEMP_MANUAL: PresetModeV02.Temporary_Manual,
+        },
+        preset_cluster_id=TuyaMCUCluster.cluster_id,
+        name="AvattoThermostatV02",
     )
     .tuya_enum(
         dp_id=104,
@@ -446,8 +469,19 @@ base_avatto_quirk = (
         dp_id=4,
         attribute_name="preset_mode",
         enum_class=PresetModeV03,
+        initially_disabled=True,  # superseded by the climate preset_mode
         translation_key="preset_mode",
         fallback_name="Preset mode",
+    )
+    .thermostat_presets(
+        attribute_name="preset_mode",
+        presets={
+            Preset.SCHEDULE: PresetModeV03.Auto,
+            Preset.NONE: PresetModeV03.Manual,
+            Preset.TEMP_MANUAL: PresetModeV03.Temporary_Manual,
+        },
+        preset_cluster_id=TuyaMCUCluster.cluster_id,
+        name="AvattoThermostatV03",
     )
     .tuya_enum(
         dp_id=104,
@@ -468,8 +502,19 @@ base_avatto_quirk = (
         dp_id=4,
         attribute_name="preset_mode",
         enum_class=PresetModeV03,
+        initially_disabled=True,  # superseded by the climate preset_mode
         translation_key="preset_mode",
         fallback_name="Preset mode",
+    )
+    .thermostat_presets(
+        attribute_name="preset_mode",
+        presets={
+            Preset.SCHEDULE: PresetModeV03.Auto,
+            Preset.NONE: PresetModeV03.Manual,
+            Preset.TEMP_MANUAL: PresetModeV03.Temporary_Manual,
+        },
+        preset_cluster_id=TuyaMCUCluster.cluster_id,
+        name="AvattoThermostatV03",
     )
     .tuya_enum(
         dp_id=104,
@@ -517,8 +562,19 @@ base_avatto_quirk = (
         dp_id=4,
         attribute_name="preset_mode",
         enum_class=PresetModeV04,
+        initially_disabled=True,  # superseded by the climate preset_mode
         translation_key="preset_mode",
         fallback_name="Preset mode",
+    )
+    .thermostat_presets(
+        attribute_name="preset_mode",
+        presets={
+            Preset.NONE: PresetModeV04.Manual,
+            Preset.SCHEDULE: PresetModeV04.Auto,
+            Preset.ECO: PresetModeV04.Eco,
+        },
+        preset_cluster_id=TuyaMCUCluster.cluster_id,
+        name="AvattoThermostatV04",
     )
     .tuya_switch(
         dp_id=9,
