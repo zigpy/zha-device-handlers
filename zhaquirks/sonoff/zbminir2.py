@@ -50,7 +50,6 @@ class SonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "ZBMINIR2")
-    .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
