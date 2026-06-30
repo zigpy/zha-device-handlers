@@ -1,4 +1,4 @@
-"""Tests for Sonoff MINI-ZBD inching support."""
+"""Tests for Sonoff MINI-ZBD quirks."""
 
 from unittest import mock
 
