@@ -1,6 +1,7 @@
 """Third Reality soil moisture sensor devices."""
 
 from typing import Final
+
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import RelativeHumidity
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
