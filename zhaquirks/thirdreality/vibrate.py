@@ -2,13 +2,32 @@
 
 from typing import Final
 
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+
+
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.legacy import CustomDevice
+from zhaquirks.thirdreality import THIRD_REALITY
+
+MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1
+
 
 
 class ThirdRealityVibrationSensorCluster(CustomCluster):
