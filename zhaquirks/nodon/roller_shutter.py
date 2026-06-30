@@ -1,12 +1,11 @@
 """NodOn Roller Shutter Relay Switch."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 NODON = "NodOn"
 

@@ -9,6 +9,15 @@ import zigpy.types as t
 from zigpy.zcl.clusters.measurement import RelativeHumidity
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    NumberDeviceClass,
+    QuirkBuilder,
+    SensorDeviceClass,
+    UnitOfTemperature,
+)
+from zhaquirks.clusters import CustomCluster
+
 
 class ThirdRealitySoilMoistureCluster(CustomCluster):
     """Third Reality's soil moisture sensor private cluster."""
