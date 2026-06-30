@@ -1,8 +1,7 @@
-"""Sonoff MINI-ZBD - Zigbee Switch with inching support."""
+"""Sonoff MINI-ZBD - Zigbee Switch."""
 
 from typing import Any
 
-from zigpy import types
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -14,18 +13,10 @@ from zigpy.zcl.foundation import (
 
 from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.sonoff.zbminir2 import SonoffExternalSwitchTriggerType
 
 
-class SonoffExternalSwitchTriggerType(types.enum8):
-    """External switch trigger type."""
-
-    Edge_trigger = 0x00
-    Pulse_trigger = 0x01
-    Normally_off_follow_trigger = 0x02
-    Normally_on_follow_trigger = 0x82
-
-
-class SonoffInchingMode(types.enum8):
+class SonoffInchingMode(t.enum8):
     """Inching mode: what happens after the timer expires."""
 
     Turn_OFF = 0x00  # Auto-off after turning on
@@ -54,7 +45,7 @@ INCHING_ATTR_NAMES = frozenset({"inching_control", "inching_time", "inching_mode
 
 
 class SonoffCluster(CustomCluster):
-    """Sonoff cluster 0xFC11 with inching support via protocolData command."""
+    """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
     ep_attribute = "sonoff_cluster"
