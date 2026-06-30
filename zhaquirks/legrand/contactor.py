@@ -102,8 +102,8 @@ LEGRAND_MANUFACTURER_CODE = 0x1021
 class DeviceMode(t.enum16):
     """Device mode."""
 
-    MODE_SWITCH = 30
-    MODE_AUTO = 40
+    MODE_SWITCH = 3
+    MODE_AUTO = 4
 
 
 class LegrandMode(Enum):
@@ -241,7 +241,7 @@ class LegrandContactorMode(CustomCluster):
 
         super()._update_attribute(attrid, value)
         if attrid == self.MODE_ID and value is not None:
-            mode = (int(value[0]) * 10) + int(value[1])
+            mode = value[0] | (value[1] << 8)
             if mode in self.MODES:
                 self.endpoint.device.reporting_bus.listener_event(
                     self.CONTACTOR_IS_SWITCH_REPORTED, mode == DeviceMode.MODE_SWITCH

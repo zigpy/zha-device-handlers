@@ -1,6 +1,5 @@
 """Tests for Legrand."""
 
-import logging
 from unittest import mock
 
 import pytest
@@ -438,16 +437,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
     )
     await mode_cluster.write_attributes({0: LegrandMode.Switch}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
-    try:
-        mode_cluster._write_attributes.assert_awaited_with(
-            [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([3, 0])))],
-            manufacturer=0x1021,
-        )
-    except AssertionError as e:
-        logging.warning(
-            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
-            str(e),
-        )
+    call_args = mode_cluster._write_attributes.call_args
+    assert call_args[0][0][0].attrid == 0
+    assert list(call_args[0][0][0].value.value) == [3, 0]
+    assert call_args[1]["manufacturer"] == 0x1021
 
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -456,16 +449,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
     )
     await mode_cluster.write_attributes({0: LegrandMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
-    try:
-        mode_cluster._write_attributes.assert_awaited_with(
-            [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([4, 0])))],
-            manufacturer=0x1021,
-        )
-    except AssertionError as e:
-        logging.warning(
-            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
-            str(e),
-        )
+    call_args = mode_cluster._write_attributes.call_args
+    assert call_args[0][0][0].attrid == 0
+    assert list(call_args[0][0][0].value.value) == [4, 0]
+    assert call_args[1]["manufacturer"] == 0x1021
 
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -476,16 +463,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
         {"mode": LegrandMode.Switch}, manufacturer=0x1021
     )
     mode_cluster._write_attributes.assert_awaited_once()
-    try:
-        mode_cluster._write_attributes.assert_awaited_with(
-            [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([3, 0])))],
-            manufacturer=0x1021,
-        )
-    except AssertionError as e:
-        logging.warning(
-            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
-            str(e),
-        )
+    call_args = mode_cluster._write_attributes.call_args
+    assert call_args[0][0][0].attrid == 0
+    assert list(call_args[0][0][0].value.value) == [3, 0]
+    assert call_args[1]["manufacturer"] == 0x1021
 
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -494,13 +475,7 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
     )
     await mode_cluster.write_attributes({"mode": LegrandMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
-    try:
-        mode_cluster._write_attributes.assert_awaited_with(
-            [f.Attribute(attrid=0, value=f.TypeValue(value=t.data16([4, 0])))],
-            manufacturer=0x1021,
-        )
-    except AssertionError as e:
-        logging.warning(
-            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
-            str(e),
-        )
+    call_args = mode_cluster._write_attributes.call_args
+    assert call_args[0][0][0].attrid == 0
+    assert list(call_args[0][0][0].value.value) == [4, 0]
+    assert call_args[1]["manufacturer"] == 0x1021
