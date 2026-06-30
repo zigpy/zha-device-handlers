@@ -17,14 +17,14 @@ from zhaquirks.sonoff.zbminir2 import SonoffExternalSwitchTriggerType
 
 
 class SonoffInchingMode(t.enum8):
-    """Inching mode: what happens after the timer expires."""
+    """Inching mode."""
 
-    Turn_OFF = 0x00  # Auto-off after turning on
-    Turn_ON = 0x01  # Auto-on after turning off
+    Turn_OFF = 0x00
+    Turn_ON = 0x01
 
 
 class InchingPayload(t.Struct):
-    """Protocol data payload for inching command (cluster 0xFC11, cmd 0x01)."""
+    """Inching protocolData command payload."""
 
     cmd: t.uint8_t
     subcmd: t.uint8_t
