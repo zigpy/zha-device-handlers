@@ -53,7 +53,7 @@ PROTOCOL_DATA_COMMAND_ID = 0x01
 INCHING_ATTR_NAMES = frozenset({"inching_control", "inching_time", "inching_mode"})
 
 
-class SonoffInchingCluster(CustomCluster):
+class SonoffCluster(CustomCluster):
     """Sonoff cluster 0xFC11 with inching support via protocolData command."""
 
     cluster_id = 0xFC11
@@ -172,43 +172,43 @@ class SonoffInchingCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "MINI-ZBD")
-    .replaces(SonoffInchingCluster)
+    .replaces(SonoffCluster)
     .enum(
-        SonoffInchingCluster.AttributeDefs.external_trigger_mode.name,
+        SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.cluster_id,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
     )
     .switch(
-        SonoffInchingCluster.AttributeDefs.turbo_mode.name,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.AttributeDefs.turbo_mode.name,
+        SonoffCluster.cluster_id,
         off_value=9,
         on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
     )
     .switch(
-        SonoffInchingCluster.AttributeDefs.detach_relay.name,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.AttributeDefs.detach_relay.name,
+        SonoffCluster.cluster_id,
         translation_key="detach_relay",
         fallback_name="Detach relay",
     )
     .switch(
-        SonoffInchingCluster.AttributeDefs.network_led.name,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
         translation_key="network_led",
         fallback_name="Network LED",
     )
     .switch(
-        SonoffInchingCluster.AttributeDefs.inching_control.name,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.AttributeDefs.inching_control.name,
+        SonoffCluster.cluster_id,
         translation_key="inching_control",
         fallback_name="Inching",
     )
     .number(
-        SonoffInchingCluster.AttributeDefs.inching_time.name,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.AttributeDefs.inching_time.name,
+        SonoffCluster.cluster_id,
         min_value=0.5,
         max_value=3599.5,
         step=0.5,
@@ -219,9 +219,9 @@ class SonoffInchingCluster(CustomCluster):
         fallback_name="Inching time",
     )
     .enum(
-        SonoffInchingCluster.AttributeDefs.inching_mode.name,
+        SonoffCluster.AttributeDefs.inching_mode.name,
         SonoffInchingMode,
-        SonoffInchingCluster.cluster_id,
+        SonoffCluster.cluster_id,
         translation_key="inching_mode",
         fallback_name="Inching mode",
     )

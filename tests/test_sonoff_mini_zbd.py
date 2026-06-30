@@ -10,7 +10,7 @@ from zhaquirks.sonoff.mini_zbd import (
     EWELINK_MANUFACTURER_CODE,
     PROTOCOL_DATA_COMMAND_ID,
     InchingPayload,
-    SonoffInchingCluster,
+    SonoffCluster,
     SonoffInchingMode,
 )
 
@@ -23,7 +23,7 @@ async def test_inching_write_sends_protocol_data(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -36,9 +36,9 @@ async def test_inching_write_sends_protocol_data(zigpy_device_from_v2_quirk):
     ) as mock_request:
         await cluster.write_attributes(
             {
-                SonoffInchingCluster.AttributeDefs.inching_control.name: True,
-                SonoffInchingCluster.AttributeDefs.inching_time.name: 4,  # 2 seconds
-                SonoffInchingCluster.AttributeDefs.inching_mode.name: 0,  # Turn_OFF
+                SonoffCluster.AttributeDefs.inching_control.name: True,
+                SonoffCluster.AttributeDefs.inching_time.name: 4,  # 2 seconds
+                SonoffCluster.AttributeDefs.inching_mode.name: 0,  # Turn_OFF
             }
         )
 
@@ -69,7 +69,7 @@ async def test_inching_mode_on_sets_bit(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -82,8 +82,8 @@ async def test_inching_mode_on_sets_bit(zigpy_device_from_v2_quirk):
     ) as mock_request:
         await cluster.write_attributes(
             {
-                SonoffInchingCluster.AttributeDefs.inching_control.name: True,
-                SonoffInchingCluster.AttributeDefs.inching_mode.name: SonoffInchingMode.Turn_ON,
+                SonoffCluster.AttributeDefs.inching_control.name: True,
+                SonoffCluster.AttributeDefs.inching_mode.name: SonoffInchingMode.Turn_ON,
             }
         )
 
@@ -97,7 +97,7 @@ async def test_inching_disabled_clears_enable_bit(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -109,7 +109,7 @@ async def test_inching_disabled_clears_enable_bit(zigpy_device_from_v2_quirk):
         mock.AsyncMock(),
     ) as mock_request:
         await cluster.write_attributes(
-            {SonoffInchingCluster.AttributeDefs.inching_control.name: False}
+            {SonoffCluster.AttributeDefs.inching_control.name: False}
         )
 
         payload_args = mock_request.call_args[0][3:]
@@ -122,7 +122,7 @@ async def test_inching_time_large_value(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -135,7 +135,7 @@ async def test_inching_time_large_value(zigpy_device_from_v2_quirk):
     ) as mock_request:
         # 3599.5 seconds = 7199 half-seconds = 0x1C1F
         await cluster.write_attributes(
-            {SonoffInchingCluster.AttributeDefs.inching_time.name: 7199}
+            {SonoffCluster.AttributeDefs.inching_time.name: 7199}
         )
 
         payload_args = mock_request.call_args[0][3:]
@@ -149,7 +149,7 @@ async def test_inching_checksum(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -161,7 +161,7 @@ async def test_inching_checksum(zigpy_device_from_v2_quirk):
         mock.AsyncMock(),
     ) as mock_request:
         await cluster.write_attributes(
-            {SonoffInchingCluster.AttributeDefs.inching_control.name: True}
+            {SonoffCluster.AttributeDefs.inching_control.name: True}
         )
 
         payload_args = mock_request.call_args[0][3:]
@@ -177,7 +177,7 @@ async def test_regular_attrs_pass_through(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -192,7 +192,7 @@ async def test_regular_attrs_pass_through(zigpy_device_from_v2_quirk):
         mock.AsyncMock(return_value=write_response),
     ) as mock_write_raw:
         result = await cluster.write_attributes(
-            {SonoffInchingCluster.AttributeDefs.detach_relay.name: True}
+            {SonoffCluster.AttributeDefs.detach_relay.name: True}
         )
 
         mock_write_raw.assert_called_once()
@@ -205,7 +205,7 @@ async def test_inching_updates_attr_cache(zigpy_device_from_v2_quirk):
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -218,10 +218,10 @@ async def test_inching_updates_attr_cache(zigpy_device_from_v2_quirk):
         mock.AsyncMock(),
     ):
         await cluster.write_attributes(
-            {SonoffInchingCluster.AttributeDefs.inching_control.name: True}
+            {SonoffCluster.AttributeDefs.inching_control.name: True}
         )
 
-    inching_control_id = SonoffInchingCluster.AttributeDefs.inching_control.id
+    inching_control_id = SonoffCluster.AttributeDefs.inching_control.id
     assert any(
         attr_id == inching_control_id for attr_id, _ in listener.attribute_updates
     )
@@ -235,7 +235,7 @@ async def test_mixed_attrs_writes_regular_and_sends_inching(
         manufacturer="SONOFF",
         model="MINI-ZBD",
         cluster_ids={
-            1: {SonoffInchingCluster.cluster_id: ClusterType.Server},
+            1: {SonoffCluster.cluster_id: ClusterType.Server},
         },
     )
 
@@ -258,8 +258,8 @@ async def test_mixed_attrs_writes_regular_and_sends_inching(
     ):
         await cluster.write_attributes(
             {
-                SonoffInchingCluster.AttributeDefs.detach_relay.name: True,
-                SonoffInchingCluster.AttributeDefs.inching_control.name: True,
+                SonoffCluster.AttributeDefs.detach_relay.name: True,
+                SonoffCluster.AttributeDefs.inching_control.name: True,
             }
         )
 
