@@ -741,11 +741,11 @@ class LegrandContactorV2(CustomDeviceV2):
     acts as a proxy to LegrandContactorAutoOnOff in Auto mode.
     """
 
-    def __init__(self, application, ieee, nwk, replaces, quirk_metadata):
+    def __init__(self, *args, **kwargs):
         """Init."""
 
         self.reporting_bus = Bus()
-        super().__init__(application, ieee, nwk, replaces, quirk_metadata)
+        super().__init__(*args, **kwargs)
 
 
 REPORTING_WHEN_CHANGED = ReportingConfig(
