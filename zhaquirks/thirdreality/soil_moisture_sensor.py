@@ -13,7 +13,6 @@ from zhaquirks.builder import (
     PERCENTAGE,
     NumberDeviceClass,
     QuirkBuilder,
-    SensorDeviceClass,
     UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
