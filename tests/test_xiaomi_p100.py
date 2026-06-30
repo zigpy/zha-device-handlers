@@ -1,8 +1,10 @@
 """Tests for the Aqara Multi-State Sensor P100 (lumi.vibration.agl002)."""
 
+from types import SimpleNamespace
 from unittest import mock
 
 import pytest
+from zha.application import Platform
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
@@ -18,6 +20,7 @@ from zhaquirks.xiaomi.aqara.multi_sensor_p100 import (
     ACTION_VIBRATION,
     P100ActionCluster,
     P100ManufacturerCluster,
+    _is_default_switch,
 )
 
 zhaquirks.setup()
@@ -117,3 +120,10 @@ def test_p100_battery_direct_attributes(p100_device):
         P100ManufacturerCluster.AttributeDefs.battery_voltage.id, 3000
     )
     assert (voltage_id, 30) in power_listener.attribute_updates
+
+
+def test_p100_default_switch_filter():
+    """The OnOff prevent-default filter removes the switch but not the contact sensor."""
+    # entity.PLATFORM is ZHA's Platform enum.
+    assert _is_default_switch(SimpleNamespace(PLATFORM=Platform.SWITCH)) is True
+    assert _is_default_switch(SimpleNamespace(PLATFORM=Platform.BINARY_SENSOR)) is False

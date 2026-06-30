@@ -7,13 +7,15 @@ generic on/off switch. This quirk removes those, exposes the Aqara configuration
 attributes as Home Assistant entities, and surfaces the motion events as device
 automation triggers.
 
-Attribute IDs, types and lookups are based on the reverse-engineered
-zigbee-herdsman-converters implementation:
-https://github.com/absent42/Aqara-P100-Sensor
+Attribute IDs, types and value lookups follow the upstream
+zigbee-herdsman-converters definition for this device, merged in
+Koenkk/zigbee-herdsman-converters#11974, cross-checked against the device
+diagnostics.
 """
 
-from typing import Final
+from typing import Any, Final
 
+from zha.application import Platform
 from zigpy import types as t
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import AnalogInput, OnOff
@@ -200,6 +202,18 @@ class P100ActionCluster(CustomCluster, DoorLock):
                 self.listener_event(ZHA_SEND_EVENT, action, {})
 
 
+def _is_default_switch(entity: Any) -> bool:
+    """Match only the default OnOff switch entity.
+
+    ``prevent_default_entity_creation`` is evaluated against every discovered
+    entity, including this quirk's own Contact binary sensor (which also targets
+    the OnOff cluster). ``entity.PLATFORM`` is ZHA's ``Platform`` enum, so
+    compare against ``Platform.SWITCH`` to drop the switch while keeping the
+    binary sensor.
+    """
+    return entity.PLATFORM == Platform.SWITCH
+
+
 (
     QuirkBuilder("Aqara", "lumi.vibration.agl002")
     # Remove the entities ZHA creates by default from the raw signature.
@@ -209,7 +223,7 @@ class P100ActionCluster(CustomCluster, DoorLock):
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.PLATFORM == EntityPlatform.SWITCH,
+        function=_is_default_switch,
     )
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=AnalogInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=2, cluster_id=AnalogInput.cluster_id)
