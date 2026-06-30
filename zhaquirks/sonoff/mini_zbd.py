@@ -62,16 +62,6 @@ class SonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        network_led = ZCLAttributeDef(
-            id=0x0001,
-            type=t.Bool,
-            manufacturer_code=None,
-        )
-        turbo_mode = ZCLAttributeDef(
-            id=0x0012,
-            type=t.int16s,
-            manufacturer_code=None,
-        )
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=SonoffExternalSwitchTriggerType,
@@ -80,6 +70,16 @@ class SonoffCluster(CustomCluster):
         )
         detach_relay = ZCLAttributeDef(
             id=0x0017,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        turbo_mode = ZCLAttributeDef(
+            id=0x0012,
+            type=t.int16s,
+            manufacturer_code=None,
+        )
+        network_led = ZCLAttributeDef(
+            id=0x0001,
             type=t.Bool,
             manufacturer_code=None,
         )
