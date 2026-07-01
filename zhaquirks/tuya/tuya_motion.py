@@ -3,15 +3,22 @@
 import asyncio
 from typing import Any
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, UnitOfLength, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks import MotionWithReset
+from zhaquirks.builder import (
+    LIGHT_LUX,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfLength,
+    UnitOfTime,
+)
+from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -385,7 +392,6 @@ base_tuya_motion = (
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_laokfqwu", "TS0601")
-    .applies_to("_TZE200_clrdrnya", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -411,9 +417,10 @@ base_tuya_motion = (
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        min_value=0.1,
+        min_value=0,
         max_value=10,
         step=0.1,
+        multiplier=0.1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
     )
@@ -426,6 +433,7 @@ base_tuya_motion = (
         min_value=5,
         max_value=1500,
         step=5,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -694,6 +702,7 @@ base_tuya_motion = (
     base_tuya_motion.clone()
     .applies_to("_TZE204_sbyx0lm6", "TS0601")
     .applies_to("_TZE204_clrdrnya", "TS0601")
+    .applies_to("_TZE200_clrdrnya", "TS0601")
     .applies_to("_TZE204_dtzziy1e", "TS0601")
     .applies_to("_TZE204_iaeejhvf", "TS0601")
     .applies_to("_TZE204_mtoaryre", "TS0601")
@@ -1252,6 +1261,7 @@ base_tuya_motion = (
         min_value=1,
         max_value=1500,
         step=1,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -1324,6 +1334,8 @@ base_tuya_motion = (
 # Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
+    .applies_to("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)")
+    .applies_to("HOBEIAN", "CK-BL702-MWS-01(7016)")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -1609,6 +1621,17 @@ base_tuya_motion = (
         translation_key="breath_detection_max",
         fallback_name="Breath detection max",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR motion sensor, SNZB-03
+(
+    TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
+    .applies_to("_TZ3040_bb6xaihh", "TS0202")
+    .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )

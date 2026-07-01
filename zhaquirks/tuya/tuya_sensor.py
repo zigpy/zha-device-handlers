@@ -2,12 +2,17 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -22,6 +27,14 @@ class TuyaTempUnitConvert(t.enum8):
 
     Celsius = 0x00
     Fahrenheit = 0x01
+
+
+class TuyaSoilLightLevel(t.enum8):
+    """Tuya soil sensor light level enum."""
+
+    Low = 0x00
+    Normal = 0x02
+    High = 0x04
 
 
 class TuyaNousTempHumiAlarm(t.enum8):
@@ -51,12 +64,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
     .applies_to("_TZE200_zl1kmjqx", "TS0601")
+    .applies_to("_TZE284_9ern5sfh", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2, scale=10)
@@ -77,7 +91,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
@@ -116,6 +130,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_w6n8jeuu", "TS0601")
     .applies_to("_TZE200_vvmbj46n", "TS0601")
     .applies_to("_TZE284_vvmbj46n", "TS0601")
+    .applies_to("_TZE284_4dosadbh", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -259,9 +274,37 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
     .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
+    .applies_to("_TZE284_tgrzpqf4", "TS0601")
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_nt4pquef", "TS0601")  # SG502Z
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="light_level",
+        enum_class=TuyaSoilLightLevel,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="light_level",
+        fallback_name="Light level",
+    )
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .tuya_battery(dp_id=15)
     .skip_configuration()
     .add_to_registry()
 )
@@ -286,6 +329,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_myd45weu", "TS0601")
     .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
+    .applies_to("_TZE284_oitavov2", "TS0601")
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
@@ -305,6 +349,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_yjjdcqsq", "TS0601")
     .applies_to("_TZE200_9yapgbuv", "TS0601")
     .applies_to("_TZE204_9yapgbuv", "TS0601")
+    .applies_to("_TZE284_9yapgbuv", "TS0601")
     .applies_to("_TZE200_utkemkbs", "TS0601")
     .applies_to("_TZE204_utkemkbs", "TS0601")
     .applies_to("_TZE284_utkemkbs", "TS0601")
@@ -312,6 +357,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_upagmta9", "TS0601")
     .applies_to("_TZE204_1wnh8bqp", "TS0601")
     .applies_to("_TZE284_1wnh8bqp", "TS0601")
+    .applies_to("_TZE204_kwi6bbk4", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(
