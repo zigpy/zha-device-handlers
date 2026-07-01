@@ -3,7 +3,7 @@
 import logging
 
 from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -29,7 +29,6 @@ def uint_to_sint(value: t.uint8_t) -> t.int8s:
         attribute_name="x_axis",
         type=t.uint8_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.ACCELERATION,
         entity_type=EntityType.STANDARD,
         translation_key="x_axis_acceleration",
         fallback_name="X-axis Acceleration",
@@ -40,7 +39,6 @@ def uint_to_sint(value: t.uint8_t) -> t.int8s:
         attribute_name="y_axis",
         type=t.uint8_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.ACCELERATION,
         entity_type=EntityType.STANDARD,
         translation_key="y_axis_acceleration",
         fallback_name="Y-axis Acceleration",
@@ -51,7 +49,6 @@ def uint_to_sint(value: t.uint8_t) -> t.int8s:
         attribute_name="z_axis",
         type=t.uint8_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.ACCELERATION,
         entity_type=EntityType.STANDARD,
         translation_key="z_axis_acceleration",
         fallback_name="Z-axis Acceleration",
