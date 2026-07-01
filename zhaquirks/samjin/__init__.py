@@ -1,12 +1,12 @@
 """Module for Samjin quirks implementations."""
 
-from typing import Any
+from typing import Any, Optional, Union
 
-import zigpy.types as t
+from zigpy.quirks import CustomCluster
+from zigpy.types import Addressing
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 DOUBLE = 2
@@ -25,7 +25,9 @@ class SamjinIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
+        ] = None,
     ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:

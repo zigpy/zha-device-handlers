@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI SYMFONISK remote control."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -45,7 +46,6 @@ from zhaquirks.ikea import (
     DoublingPowerConfig1CRCluster,
     PowerConfig1CRCluster,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class IkeaSYMFONISK1(CustomDevice):

@@ -1,6 +1,7 @@
 """Innr SP 120 plug."""
 
 from zigpy.profiles import zll
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -28,7 +29,6 @@ from zhaquirks.innr import (
     ElectricalMeasurementClusterInnr,
     MeteringClusterInnrOld,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class SP120(CustomDevice):

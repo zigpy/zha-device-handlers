@@ -1,6 +1,6 @@
 """Tuya Dimmer TS110E."""
 
-from typing import Any, Final, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
@@ -101,9 +101,9 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Union[int, t.uint16_t] | None = None,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
-        tsn: Union[int, t.uint8_t] | None = None,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""

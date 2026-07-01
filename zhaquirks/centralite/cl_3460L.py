@@ -2,6 +2,7 @@
 
 # pylint disable=C0103
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -29,7 +30,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     SHORT_RELEASE,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):

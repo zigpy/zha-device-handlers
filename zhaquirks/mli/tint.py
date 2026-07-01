@@ -1,6 +1,7 @@
 """Tint remote."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -15,7 +16,6 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,7 +24,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 TINT_SCENE_ATTR = 0x4005
 

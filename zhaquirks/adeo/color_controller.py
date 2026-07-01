@@ -1,8 +1,9 @@
 """Device handler for ADEO Lexman LXEK-5 (HR-C99C-Z-C045) & ZBEK-26 (HR-C99C-Z-C045-B) color controllers."""
 
-from typing import Any
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -50,7 +51,6 @@ from zhaquirks.const import (
     TURN_ON,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.legacy import CustomDevice
 
 COLOR_UP = "color_up"
 COLOR_DOWN = "color_down"
@@ -84,7 +84,9 @@ class AdeoManufacturerCluster(EventableCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """Handle the cluster command."""
         if hdr.command_id == 0x0000:

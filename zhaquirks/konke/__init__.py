@@ -1,6 +1,6 @@
 """Konke sensors."""
 
-from typing import Any, Final
+from typing import Any, Final, Optional, Union
 
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
@@ -64,7 +64,9 @@ class KonkeOnOffCluster(CustomCluster):
         header: zigpy.zcl.foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """Handle the cluster command."""
         self.info(

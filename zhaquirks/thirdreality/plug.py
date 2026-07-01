@@ -2,11 +2,12 @@
 
 from typing import Final
 
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
-from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityPlugCluster(CustomCluster):
@@ -21,21 +22,21 @@ class ThirdRealityPlugCluster(CustomCluster):
         reset_summation_delivered: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
-            manufacturer_code=0x1233,
+            is_manufacturer_specific=True,
         )
 
         # turn off delay
         on_to_off_delay: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
-            manufacturer_code=0x1233,
+            is_manufacturer_specific=True,
         )
 
         # turn on delay
         off_to_on_delay: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
-            manufacturer_code=0x1233,
+            is_manufacturer_specific=True,
         )
 
 

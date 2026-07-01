@@ -1,6 +1,7 @@
 """Aqara H1 single rocker switch quirks. Also see opple_switch.py for similar double rocker switches."""
 
 from zigpy.profiles import zgp, zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -38,7 +39,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,

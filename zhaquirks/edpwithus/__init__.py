@@ -1,8 +1,7 @@
 """EDP WithUs module."""
 
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.smartenergy import Metering
-
-from zhaquirks.clusters import CustomCluster
 
 
 class MeteringCluster(CustomCluster, Metering):

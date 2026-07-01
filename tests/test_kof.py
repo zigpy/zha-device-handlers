@@ -2,11 +2,13 @@
 
 from unittest import mock
 
+import zigpy.device
+import zigpy.endpoint
+import zigpy.quirks
 from zigpy.zcl import foundation
 import zigpy.zdo.types as zdo_t
 
 import zhaquirks
-from zhaquirks.clusters import CustomCluster
 import zhaquirks.kof.kof_mr101z
 
 zhaquirks.setup()
@@ -19,7 +21,9 @@ Default_Response = foundation.GENERAL_COMMANDS[
 async def test_kof_no_reply():
     """Test KOF No reply."""
 
-    class TestCluster(zhaquirks.kof.kof_mr101z.NoReplyMixin, CustomCluster):
+    class TestCluster(
+        zhaquirks.kof.kof_mr101z.NoReplyMixin, zigpy.quirks.CustomCluster
+    ):
         """Test Cluster Class."""
 
         cluster_id = 0x1234

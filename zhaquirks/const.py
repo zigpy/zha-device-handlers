@@ -1,8 +1,6 @@
 """Common constants for zhaquirks."""
 
-import zigpy.types as t
-
-from zhaquirks.legacy import (
+from zigpy.quirks import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
     SIG_EP_OUTPUT,
@@ -14,6 +12,7 @@ from zhaquirks.legacy import (
     SIG_NODE_DESC,
     SIG_SKIP_CONFIG,
 )
+import zigpy.types as t
 
 ARGS = "args"
 ATTR_ID = "attr_id"
@@ -26,7 +25,6 @@ BUTTON_3 = "button_3"
 BUTTON_4 = "button_4"
 BUTTON_5 = "button_5"
 BUTTON_6 = "button_6"
-BUTTON_CENTRE = "button_centre"
 BUTTON_7 = "button_7"
 BUTTON_8 = "button_8"
 CLICK_TYPE = "click_type"
@@ -137,7 +135,6 @@ ROTARY_KNOB = "rotary_knob"
 STARTED_ROTATING = "rotary_knob_started_rotating"
 CONTINUED_ROTATING = "rotary_knob_continued_rotating"
 STOPPED_ROTATING = "rotary_knob_stopped_rotating"
-STOPPED_ROTATING_WITH_DIRECTION = "rotary_knob_stopped_rotating_with_direction"
 
 
 class BatterySize(t.enum8):

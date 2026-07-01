@@ -3,6 +3,7 @@
 import math
 from typing import Final
 
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
@@ -15,7 +16,6 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZONE_TYPE
 
 CANDEO = "Candeo"

@@ -4,13 +4,14 @@
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
 
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.hvac import UserInterface
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
-from zhaquirks.builder import PERCENTAGE, QuirkBuilder, UnitOfTemperature
 
 
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
@@ -24,7 +25,7 @@ class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
             id=0x0010,
             type=int16s,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
 
@@ -39,7 +40,7 @@ class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
             id=0x0010,
             type=int16s,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
 
@@ -60,7 +61,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0010,
             type=Bool,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
         # display. 0 - display is off, 1 - display is on
@@ -68,7 +69,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0011,
             type=Bool,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
         # comfort temperature min: A value in 0.01ºC to set minimum comfort temperature for happy face
@@ -76,7 +77,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0102,
             type=int16s,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
         # comfort temperature max: A value in 0.01ºC to set maximum comfort temperature for happy face
@@ -84,7 +85,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0103,
             type=int16s,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
         # comfort humidity min: A value in 0.01%RH to set minimum comfort humidity for happy face
@@ -92,7 +93,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0104,
             type=uint16_t,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
         # comfort humidity max: A value in 0.01%RH to set maximum comfort humidity for happy face
@@ -100,7 +101,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
             id=0x0105,
             type=uint16_t,
             access="rw",
-            manufacturer_code=0x1141,
+            is_manufacturer_specific=True,
         )
 
 

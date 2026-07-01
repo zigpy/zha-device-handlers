@@ -1,6 +1,7 @@
 """Centralite 3310S implementation."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
@@ -9,7 +10,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,7 +18,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 SMRT_THINGS_REL_HUM_CLSTR = 0xFC45
 
@@ -28,6 +27,7 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
 
     cluster_id = SMRT_THINGS_REL_HUM_CLSTR
     name = "Smartthings Relative Humidity Measurement"
+    ep_attribute = "humidity"
 
     class AttributeDefs(BaseAttributeDefs):
         """Cluster attributes."""

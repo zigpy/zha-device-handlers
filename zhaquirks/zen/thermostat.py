@@ -1,6 +1,7 @@
 """Module to handle quirks of the  Zen Within thermostat."""
 
 import zigpy.profiles.zha as zha_p
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters import general, homeautomation, hvac
 
 from zhaquirks.const import (
@@ -11,7 +12,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.zen import ZEN, ZenPowerConfiguration
 
 

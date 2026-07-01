@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
 from zhaquirks.tuya import (
     BatterySize,
     TuyaManufClusterAttributes,
@@ -157,9 +156,9 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .tuya_ias(
         dp_id=1,
         ias_cfg=TuyaIasFire,
-        converter=lambda x: (
-            IasZone.ZoneStatus.Alarm_1 if x == TuyaSmokeState.Alarm else 0
-        ),
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1
+        if x == TuyaSmokeState.Alarm
+        else 0,
     )
     .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
     .tuya_switch(

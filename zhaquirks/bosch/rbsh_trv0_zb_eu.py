@@ -1,7 +1,11 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any, Final
+from typing import Any, Final, Optional, Union
 
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
@@ -10,15 +14,6 @@ from zigpy.zcl.clusters.hvac import (
     UserInterface,
 )
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
-
-from zhaquirks.builder import (
-    EntityPlatform,
-    EntityType,
-    NumberDeviceClass,
-    QuirkBuilder,
-    ReportingConfig,
-)
-from zhaquirks.clusters import CustomCluster
 
 """Bosch specific thermostat attribute ids."""
 
@@ -194,10 +189,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         )
 
     async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
         """system_mode special handling.
 
         - turn off by setting operating_mode to Pause
@@ -245,7 +238,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 system_mode_value
             ]
             result += await super().write_attributes(
-                {operating_mode_attr.id: new_operating_mode_value}, **kwargs
+                {operating_mode_attr.id: new_operating_mode_value}, manufacturer
             )
             self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
         elif operating_mode_value is not None:
@@ -259,10 +252,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                     Thermostat.AttributeDefs.ctrl_sequence_of_oper
                 )
                 successful_r, failed_r = await super().read_attributes(
-                    [ctrl_sequence_of_oper_attr.name],
-                    allow_cache=True,
-                    only_cache=False,
-                    **kwargs,
+                    [ctrl_sequence_of_oper_attr.name], True, False, manufacturer
                 )
                 if ctrl_sequence_of_oper_attr.name in successful_r:
                     ctrl_sequence_of_oper_value = successful_r.pop(
@@ -288,10 +278,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 )
                 if ctrl_sequence_of_oper_value is not None:
                     successful_r, failed_r = await super().read_attributes(
-                        [operating_mode_attr.name],
-                        allow_cache=True,
-                        only_cache=False,
-                        **kwargs,
+                        [operating_mode_attr.name], True, False, manufacturer
                     )
                     if operating_mode_attr.name in successful_r:
                         operating_mode_attr_value = successful_r.pop(
@@ -311,14 +298,16 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         """Write the remaining attributes to thermostat cluster."""
         if remaining_attributes:
-            result += await super().write_attributes(remaining_attributes, **kwargs)
+            result += await super().write_attributes(remaining_attributes, manufacturer)
         return result
 
     async def read_attributes(
         self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
         """system_mode special handling.
 
         - read and convert operating_mode to system_mode.
@@ -342,7 +331,9 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
             successful_r, failed_r = await super().read_attributes(
                 [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name],
-                **kwargs,
+                allow_cache,
+                only_cache,
+                manufacturer,
             )
             if operating_mode_attr.name in successful_r:
                 operating_mode_value = successful_r.pop(operating_mode_attr.name)
@@ -368,7 +359,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         """Read remaining attributes from thermostat cluster."""
         if remaining_attributes:
             remaining_result = await super().read_attributes(
-                remaining_attributes, **kwargs
+                remaining_attributes, allow_cache, only_cache, manufacturer
             )
 
             successful_r.update(remaining_result[0])
@@ -381,7 +372,9 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """system_mode special handling.
 
