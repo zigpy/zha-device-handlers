@@ -72,7 +72,7 @@ class SonoffContactCluster(CustomCluster):
                     return
 
         super().handle_cluster_general_request(hdr, args, *extra, **kwargs)
-        
+
 
 (
     #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
