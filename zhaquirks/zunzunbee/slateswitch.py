@@ -1,10 +1,9 @@
 """ZunZunBee button device."""
 
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.builder import QuirkBuilder
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -44,38 +43,27 @@ BUTTON_MAPPING = {
 class ZunZunBeeIASCluster(CustomCluster, IasZone):
     """IAS cluster used for ZunZunBee button."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == self.AttributeDefs.zone_status.id:
+            # Ignore first bit for determining button id
+            button_id = value & 0x01FE
 
-    def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
-    ) -> None:
-        """Handle attribute report/update event to emit button press events."""
-        if event.attribute_id != self.AttributeDefs.zone_status.id:
-            return
+            # Map to button presses, ignore invalid buttons
+            button = BUTTON_MAPPING.get(button_id)
+            if button is None:
+                return
 
-        value = event.value
-        # Ignore first bit for determining button id
-        button_id = value & 0x01FE
+            # Only check first bit for press type
+            press_id = (value & 1) + 1
+            press_type = PRESS_TYPES[press_id]
 
-        # Map to button presses, ignore invalid buttons
-        button = BUTTON_MAPPING.get(button_id)
-        if button is None:
-            return
-
-        # Only check first bit for press type
-        press_id = (value & 1) + 1
-        press_type = PRESS_TYPES[press_id]
-
-        action = f"{button}_{press_type}"
-        event_args = {
-            BUTTON: button,
-            PRESS_TYPE: press_type,
-        }
-        self.listener_event(ZHA_SEND_EVENT, action, event_args)
+            action = f"{button}_{press_type}"
+            event_args = {
+                BUTTON: button,
+                PRESS_TYPE: press_type,
+            }
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
 (

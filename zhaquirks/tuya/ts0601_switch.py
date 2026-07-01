@@ -1,6 +1,5 @@
 """Tuya DP based switches."""
 
-from zha.quirks import TUYA_PLUG_MANUFACTURER
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
@@ -12,6 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_PLUG_MANUFACTURER
 from zhaquirks.tuya import TuyaSwitch
 from zhaquirks.tuya.mcu import (
     MoesSwitchManufCluster,

@@ -2,11 +2,11 @@
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.zcl import ClusterType
+from zigpy.quirks.v2 import ClusterType, QuirkBuilder
 from zigpy.zcl.clusters.general import Identify, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_SHORT_PRESS,
@@ -23,7 +23,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TRIPLE_PRESS,
 )
-from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
+from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster
 from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_1_DOUBLE,
     COMMAND_1_HOLD,
@@ -82,6 +82,15 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
         )
 
 
+class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
+    """Reports battery level."""
+
+    # Aqara H1 wireless remote uses one CR2450 battery.
+    # Values are copied from zigbee-herdsman-converters.
+    MIN_VOLTS = 2.5
+    MAX_VOLTS = 3.0
+
+
 (
     QuirkBuilder(LUMI, "lumi.remote.b18ac1")
     # temporarily commented out due to potentially breaking existing blueprints
@@ -90,7 +99,7 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
     # )
     .replaces(AqaraRemoteManuSpecificCluster)
     .replaces(MultistateInputCluster)
-    .replaces(XiaomiPowerConfiguration)
+    .replaces(PowerConfigurationClusterH1Remote)
     .enum(
         AqaraRemoteManuSpecificCluster.AttributeDefs.click_mode.name,
         AqaraSwitchClickMode,
@@ -147,7 +156,7 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
     .adds(OnOff, cluster_type=ClusterType.Client)
     .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
     .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
-    .replaces(XiaomiPowerConfiguration)
+    .replaces(PowerConfigurationClusterH1Remote)
     .enum(
         AqaraRemoteManuSpecificCluster.AttributeDefs.click_mode.name,
         AqaraSwitchClickMode,

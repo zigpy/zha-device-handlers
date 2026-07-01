@@ -3,13 +3,14 @@
 see https://github.com/pvvx/ZigbeeTLc
 """
 
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import ScheduleProgrammingVisibility, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
-from zhaquirks.builder import PERCENTAGE, QuirkBuilder, UnitOfTemperature, UnitOfTime
 
 
 class Display(t.enum8):
@@ -96,7 +97,6 @@ class CustomUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("MiaoMiaoCe", "MHO-C122-z")
     .applies_to("MiaMiaoCe", "MHO-C122-z")  # typo until v. 1.2.2
     .applies_to("Xiaomi", "LYWSD03MMC-z")
-    .applies_to("Xiaomi", "MJWSD06MMC-z")
     .applies_to("Tuya", "TS0201-z")
     .applies_to("Tuya", "TH03Z-z")
     .applies_to("Tuya", "ZTH01-z")

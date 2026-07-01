@@ -1,11 +1,8 @@
 """PLAID SYSTEMS PS-SPRZMS-SLP3 soil moisture sensor."""
 
-from typing import Any
-
-from zigpy.zcl import foundation
+from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.builder import QuirkBuilder
 from zhaquirks.plaid import PLAID_SYSTEMS
 
 
@@ -28,14 +25,10 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
             return self.MAINS_VOLTAGE_ATTR
         return attr
 
-    async def read_attributes(
-        self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
+    async def read_attributes(self, attributes, *args, **kwargs):
         """Replace battery voltage with mains voltage."""
         return await super().read_attributes(
-            [self._remap(attr) for attr in attributes], **kwargs
+            [self._remap(attr) for attr in attributes], *args, **kwargs
         )
 
     async def configure_reporting(self, attribute, *args, **kwargs):

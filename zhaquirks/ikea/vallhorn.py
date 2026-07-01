@@ -3,10 +3,10 @@
 from typing import Final
 
 from zigpy import types as t
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks.builder import QuirkBuilder, UnitOfTime
-from zhaquirks.clusters import CustomCluster
 
 
 class IkeaVallhornManufSpecificConfig(CustomCluster):
@@ -21,13 +21,11 @@ class IkeaVallhornManufSpecificConfig(CustomCluster):
         on_only_when_dark: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.Bool,
-            manufacturer_code=0x117C,
         )
 
         on_time: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
-            manufacturer_code=0x117C,
         )
 
 

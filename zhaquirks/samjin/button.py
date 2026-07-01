@@ -1,6 +1,7 @@
 """Samjin button device."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -28,7 +29,6 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 

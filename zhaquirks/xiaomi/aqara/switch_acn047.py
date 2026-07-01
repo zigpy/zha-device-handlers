@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -20,7 +21,6 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,

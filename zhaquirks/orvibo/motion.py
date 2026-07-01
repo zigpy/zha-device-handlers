@@ -4,6 +4,7 @@ Based on Konke motion sensor code.
 """
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -22,7 +23,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.orvibo import ORVIBO_LATIN, MotionCluster, OccupancyCluster
 
 ORVIBO_CLUSTER_ID = 0xFFFF

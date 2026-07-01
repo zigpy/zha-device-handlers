@@ -1,6 +1,7 @@
 """Device handler for Philio PST03A-v2.2.5."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -26,7 +27,6 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.philio import PHILIO, MotionCluster
 
 

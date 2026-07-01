@@ -1,5 +1,6 @@
 """Samjin Multi 2019 Refresh Quirk."""
 
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -19,7 +20,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.samjin import SAMJIN
 from zhaquirks.smartthings import SmartThingsAccelCluster
 

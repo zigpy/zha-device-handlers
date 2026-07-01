@@ -5,9 +5,10 @@ DM2550ZB-G2.
 """
 
 import logging
-from typing import Any, Final
+from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -26,7 +27,6 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -47,7 +47,6 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
@@ -164,7 +163,9 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """Handle the cluster command."""
         self.debug(

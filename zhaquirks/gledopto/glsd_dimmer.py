@@ -1,6 +1,7 @@
 """Quirk for GLEDOPTO GL-SD-* dimmers."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -13,7 +14,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import NoReplyMixin
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -22,7 +22,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class LevelControlNoReply(NoReplyMixin, CustomCluster, LevelControl):

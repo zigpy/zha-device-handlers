@@ -1,8 +1,9 @@
 """Tuya Din RCBO Circuit Breaker."""
 
-from typing import Any, Final, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -17,7 +18,6 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,7 +26,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
@@ -161,9 +160,9 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Union[int, t.uint16_t] | None = None,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
-        tsn: Union[int, t.uint8_t] | None = None,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
 
@@ -292,9 +291,9 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Union[int, t.uint16_t] | None = None,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
-        tsn: Union[int, t.uint8_t] | None = None,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
 
@@ -343,12 +342,12 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         TUYA_DP_FAULT_CODE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "alarm",
-            FaultCode,
+            lambda x: FaultCode(x),
         ),
         TUYA_DP_RELAY_STATUS: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "power_on_state",
-            PowerOnState,
+            lambda x: PowerOnState(x),
         ),
         TUYA_DP_CHILD_LOCK: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
@@ -386,7 +385,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             TuyaRCBOMetering.ep_attribute,
             ("cost_parameters", "cost_parameters_enabled"),
             lambda x: (x[1] | x[0] << 8, x[2]),
-            CostParameters,
+            lambda *fields: CostParameters(*fields),
         ),
         TUYA_DP_LEAKAGE_PARAMETERS: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -400,7 +399,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 "self_test",
             ),
             lambda x: (x[0], x[1], x[2], x[4] | x[3] << 8, x[5], x[6], SelfTest(x[7])),
-            LeakageParameters,
+            lambda *fields: LeakageParameters(*fields),
         ),
         TUYA_DP_VOLTAGE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -418,15 +417,17 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[5] | x[4] << 8,
                 x[6],
             ),
-            lambda rms_extreme_over_voltage, over_voltage_trip, ac_alarms_mask, rms_extreme_under_voltage, under_voltage_trip: (
-                VoltageParameters(
-                    rms_extreme_over_voltage,
-                    over_voltage_trip,
-                    bool(ac_alarms_mask & 0x40),
-                    rms_extreme_under_voltage,
-                    under_voltage_trip,
-                    bool(ac_alarms_mask & 0x80),
-                )
+            lambda rms_extreme_over_voltage,
+            over_voltage_trip,
+            ac_alarms_mask,
+            rms_extreme_under_voltage,
+            under_voltage_trip: VoltageParameters(
+                rms_extreme_over_voltage,
+                over_voltage_trip,
+                bool(ac_alarms_mask & 0x40),
+                rms_extreme_under_voltage,
+                under_voltage_trip,
+                bool(ac_alarms_mask & 0x80),
             ),
         ),
         TUYA_DP_CURRENT_THRESHOLD: DPToAttributeMapping(
@@ -437,10 +438,10 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[3],
                 AttributeWithMask(x[4] << 1, 1 << 1),
             ),
-            lambda ac_current_overload, over_current_trip, ac_alarms_mask: (
-                CurrentParameters(
-                    ac_current_overload, over_current_trip, bool(ac_alarms_mask & 0x02)
-                )
+            lambda ac_current_overload,
+            over_current_trip,
+            ac_alarms_mask: CurrentParameters(
+                ac_current_overload, over_current_trip, bool(ac_alarms_mask & 0x02)
             ),
         ),
         TUYA_DP_TEMPERATURE_THRESHOLD: DPToAttributeMapping(

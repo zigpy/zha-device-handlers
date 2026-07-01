@@ -1,6 +1,7 @@
 """Philips first generation RWL devices."""
 
 from zigpy.profiles import zha, zll
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -21,7 +22,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
     SIGNIFY,
