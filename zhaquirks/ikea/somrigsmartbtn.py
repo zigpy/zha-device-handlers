@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden SOMRIG shortcut button."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -41,7 +42,6 @@ from zhaquirks.ikea import (
     PowerConfig1AAACluster,
     ShortcutV2Cluster,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class IkeaSomrigSmartButton(CustomDevice):
@@ -110,6 +110,7 @@ class IkeaSomrigSmartButton(CustomDevice):
                     Basic.cluster_id,
                     PowerConfig1AAACluster,
                     Identify.cluster_id,
+                    Groups.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
@@ -131,6 +132,7 @@ class IkeaSomrigSmartButton(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
+                    Groups.cluster_id,
                     ShortcutV2Cluster,
                 ],
                 OUTPUT_CLUSTERS: [

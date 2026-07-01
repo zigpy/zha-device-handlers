@@ -2,9 +2,9 @@
 
 from typing import Any
 
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -13,8 +13,6 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks.builder import EntityType, QuirkBuilder
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 
@@ -77,7 +75,7 @@ class LegrandCableOutletCluster(CustomCluster):
         pilot_wire_mode = ZCLAttributeDef(
             id=0x00,
             type=PilotWireMode,
-            manufacturer_code=0x1021,
+            is_manufacturer_specific=True,
         )
 
     class ServerCommandDefs(BaseCommandDefs):
@@ -86,15 +84,15 @@ class LegrandCableOutletCluster(CustomCluster):
         set_pilot_wire_mode = ZCLCommandDef(
             id=0x00,
             schema={"mode": PilotWireMode},
-            manufacturer_code=0x1021,
+            is_manufacturer_specific=True,
         )
 
     async def write_attributes(
         self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        attributes: dict[str | int, Any],
+        manufacturer: int | None = None,
         **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+    ) -> list:
         """Write attributes to the cluster."""
 
         attrs = {}
@@ -103,9 +101,7 @@ class LegrandCableOutletCluster(CustomCluster):
             if attr_def == LegrandCableOutletCluster.AttributeDefs.pilot_wire_mode:
                 await self.set_pilot_wire_mode(value, manufacturer=manufacturer)
                 await super().read_attributes([attr], manufacturer=manufacturer)
-        return await super().write_attributes(
-            attrs, manufacturer=manufacturer, **kwargs
-        )
+        return await super().write_attributes(attrs, manufacturer)
 
 
 (

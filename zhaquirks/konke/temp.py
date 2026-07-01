@@ -1,6 +1,7 @@
 """Konke temp and humidity sensor."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
@@ -14,7 +15,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.konke import KONKE
-from zhaquirks.legacy import CustomDevice
 
 
 class KonkeTempHumidity(CustomDevice):

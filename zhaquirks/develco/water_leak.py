@@ -1,18 +1,16 @@
 """Frient Water Leak."""
 
-from zha.quirks import SIREN_BASIC
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
-from zhaquirks.builder import EntityType, QuirkBuilder
-from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
+from . import DevelcoIasZone, DevelcoPowerConfiguration
 
 (
     QuirkBuilder("frient A/S", "FLSZB-110")
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
-    # The device only has basic siren features, so hint that to ZHA
-    .exposes_feature(SIREN_BASIC)
     # Hide the default binary input sensor
     .prevent_default_entity_creation(
         endpoint_id=35,
@@ -29,7 +27,7 @@ from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
         endpoint_id=35,
         cluster_id=IasWd.cluster_id,
         new_primary=False,
-        new_entity_category=EntityType.CONFIG,
+        new_entity_category=EntityType.DIAGNOSTIC,
     )
     .add_to_registry()
 )

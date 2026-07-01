@@ -7,7 +7,7 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.zcl import foundation
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 
 from zhaquirks import Bus, LocalDataCluster
@@ -20,7 +20,6 @@ from zhaquirks.const import (
     PROFILE_ID,
     BatterySize,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import (
     LocalIlluminanceMeasurementCluster,
     MotionCluster,
@@ -50,12 +49,10 @@ class OppleCluster(XiaomiMotionManufacturerCluster):
     }
 
     async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
         """Write attributes to device with internal 'attributes' validation."""
-        result = await super().write_attributes(attributes, **kwargs)
+        result = await super().write_attributes(attributes, manufacturer)
         interval = attributes.get(
             "detection_interval", attributes.get(DETECTION_INTERVAL)
         )

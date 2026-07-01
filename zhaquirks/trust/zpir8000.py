@@ -1,6 +1,7 @@
 """Device handler for Trust ZPIR-8000 sensors."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
@@ -12,7 +13,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.trust import MotionCluster
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFFF

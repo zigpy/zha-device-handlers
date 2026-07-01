@@ -11,6 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaSwitch,
@@ -279,6 +280,8 @@ class TuyaSingleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
 
 class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     """Tuya 2 gang no neutral light switch (v2)."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,

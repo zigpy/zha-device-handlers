@@ -6,6 +6,7 @@ from collections.abc import Coroutine
 from typing import Any
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -19,7 +20,6 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import DoublingPowerConfigurationCluster
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,7 +28,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):

@@ -2,16 +2,16 @@
 
 from typing import Final
 
-import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks.builder import (
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import (
     QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,
     SensorStateClass,
 )
-from zhaquirks.clusters import CustomCluster
+import zigpy.types as t
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks.ikea import IKEA
 
 

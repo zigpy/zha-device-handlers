@@ -1,6 +1,7 @@
 """Smart Things multi purpose sensor quirk."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -18,7 +19,6 @@ from zhaquirks import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 from zhaquirks.smartthings import SmartThingsAccelCluster
 
 

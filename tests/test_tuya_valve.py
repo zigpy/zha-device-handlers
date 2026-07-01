@@ -5,12 +5,11 @@ from unittest import mock
 
 import pytest
 import time_machine
-from zha.quirks import DEVICE_REGISTRY
-from zigpy.zcl import foundation
+from zigpy.quirks.v2 import EntityMetadata
+from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -94,8 +93,6 @@ async def test_command_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
-            retries=None,
-            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -125,8 +122,6 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
-            retries=None,
-            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -148,8 +143,6 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
-            retries=None,
-            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -172,23 +165,16 @@ async def test_giex_02_quirk(zigpy_device_from_v2_quirk, model, manuf, use_minut
 
     quirked_device = zigpy_device_from_v2_quirk(model, manuf)
     metering_cluster = quirked_device.endpoints[1].smartenergy_metering
-    assert metering_cluster.is_attribute_unsupported(
-        metering_cluster.AttributeDefs.instantaneous_demand
-    )
-    entry = DEVICE_REGISTRY.match_entry(quirked_device)
-    metadata_by_suffix = {
-        metadata.resolved_unique_id_suffix: metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
-    }
+    assert metering_cluster.unsupported_attributes == {0x0400, "instantaneous_demand"}
+    for entity in range(6, 8):
+        number_metadata: EntityMetadata = quirked_device.exposes_metadata[
+            (1, zhaquirks.tuya.TUYA_CLUSTER_ID, ClusterType.Server)
+        ][entity]
 
-    expected_max = (
-        zhaquirks.tuya.tuya_valve.GIEX_24HRS_AS_MIN
-        if use_minutes
-        else zhaquirks.tuya.tuya_valve.GIEX_12HRS_AS_SEC
-    )
-    for suffix in ("irrigation_target", "irrigation_interval"):
-        number_metadata: EntityMetadata = metadata_by_suffix[suffix]
-        assert number_metadata.max == expected_max
+        if not use_minutes:
+            assert number_metadata.max == zhaquirks.tuya.tuya_valve.GIEX_12HRS_AS_SEC
+        else:
+            assert number_metadata.max == zhaquirks.tuya.tuya_valve.GIEX_24HRS_AS_MIN
 
 
 async def test_giex_functions():
@@ -233,8 +219,6 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
-            retries=None,
-            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

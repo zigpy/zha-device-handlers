@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy.profiles import zgp, zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -20,7 +20,6 @@ from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import Bus
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,7 +29,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
-from zhaquirks.legacy import CustomDevice
 
 
 class IkeaAirpurifier(CustomCluster):
@@ -44,27 +42,31 @@ class IkeaAirpurifier(CustomCluster):
         """Cluster attributes."""
 
         filter_run_time = ZCLAttributeDef(
-            id=0x0000, type=t.uint32_t, manufacturer_code=0x117C
+            id=0x0000, type=t.uint32_t, is_manufacturer_specific=True
         )
         replace_filter = ZCLAttributeDef(
-            id=0x0001, type=t.uint8_t, manufacturer_code=0x117C
+            id=0x0001, type=t.uint8_t, is_manufacturer_specific=True
         )
         filter_life_time = ZCLAttributeDef(
-            id=0x0002, type=t.uint32_t, manufacturer_code=0x117C
+            id=0x0002, type=t.uint32_t, is_manufacturer_specific=True
         )
-        disable_led = ZCLAttributeDef(id=0x0003, type=t.Bool, manufacturer_code=0x117C)
+        disable_led = ZCLAttributeDef(
+            id=0x0003, type=t.Bool, is_manufacturer_specific=True
+        )
         air_quality_25pm = ZCLAttributeDef(
-            id=0x0004, type=t.uint16_t, manufacturer_code=0x117C
+            id=0x0004, type=t.uint16_t, is_manufacturer_specific=True
         )
-        child_lock = ZCLAttributeDef(id=0x0005, type=t.Bool, manufacturer_code=0x117C)
+        child_lock = ZCLAttributeDef(
+            id=0x0005, type=t.Bool, is_manufacturer_specific=True
+        )
         fan_mode = ZCLAttributeDef(
-            id=0x0006, type=t.uint8_t, manufacturer_code=0x117C
+            id=0x0006, type=t.uint8_t, is_manufacturer_specific=True
         )  # fan mode (Off, Auto, fanspeed 10 - 50)  read/write
         fan_speed = ZCLAttributeDef(
-            id=0x0007, type=t.uint8_t, manufacturer_code=0x117C
+            id=0x0007, type=t.uint8_t, is_manufacturer_specific=True
         )  # current fan speed (only fan speed 10-50)
         device_run_time = ZCLAttributeDef(
-            id=0x0008, type=t.uint32_t, manufacturer_code=0x117C
+            id=0x0008, type=t.uint32_t, is_manufacturer_specific=True
         )
 
     def __init__(self, *args, **kwargs):
@@ -85,17 +87,17 @@ class IkeaAirpurifier(CustomCluster):
         super()._update_attribute(attrid, value)
 
     async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
         """Override wrong writes to thermostat attributes."""
         if "fan_mode" in attributes:
             fan_mode = attributes.get("fan_mode")
             if fan_mode and fan_mode > 1 and fan_mode < 11:
                 fan_mode = fan_mode * 5
-                return await super().write_attributes({"fan_mode": fan_mode}, **kwargs)
-        return await super().write_attributes(attributes, **kwargs)
+                return await super().write_attributes(
+                    {"fan_mode": fan_mode}, manufacturer
+                )
+        return await super().write_attributes(attributes, manufacturer)
 
 
 class PM25Cluster(CustomCluster, PM25):
@@ -119,19 +121,27 @@ class PM25Cluster(CustomCluster, PM25):
             super()._update_attribute(attrid, value)
 
     async def read_attributes(
-        self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
         """Read attributes ZCL foundation command."""
         if "measured_value" in attributes:
             return (
                 await self.endpoint.device.endpoints[1]
                 .in_clusters[64637]
-                .read_attributes(["air_quality_25pm"], **kwargs)
+                .read_attributes(
+                    ["air_quality_25pm"],
+                    allow_cache=allow_cache,
+                    only_cache=only_cache,
+                    manufacturer=manufacturer,
+                )
             )
         else:
-            return await super().read_attributes(attributes, **kwargs)
+            return await super().read_attributes(
+                attributes,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+            )
 
 
 class IkeaSTARKVIND(CustomDevice):

@@ -2,17 +2,13 @@
 
 from typing import Final
 
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import (
-    EntityType,
-    NumberDeviceClass,
-    QuirkBuilder,
-    ReportingConfig,
-    UnitOfTime,
-)
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
 
@@ -44,7 +40,7 @@ class SEAlarmConfiguration(CustomCluster):
     cluster_id = 0xFC04
     name = "SEAlarmConfiguration"
 
-    class AttributeDefs(BaseAttributeDefs):
+    class AttributeDefs(CustomCluster.AttributeDefs):
         """Attribute definitions."""
 
         se_led_brightness: Final = ZCLAttributeDef(

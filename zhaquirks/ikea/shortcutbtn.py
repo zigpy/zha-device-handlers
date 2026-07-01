@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI shortcut button."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -38,7 +39,6 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
-from zhaquirks.legacy import CustomDevice
 
 
 class IkeaTradfriShortcutBtn(CustomDevice):

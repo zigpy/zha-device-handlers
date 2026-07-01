@@ -1,3 +1,0 @@
-"""zunzunbee devices."""
-
-ZUNZUNBEE = "zunzunbee"
