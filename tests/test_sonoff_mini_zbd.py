@@ -200,7 +200,7 @@ async def test_regular_attrs_pass_through(zigpy_device_from_v2_quirk):
 
 
 async def test_inching_updates_attr_cache(zigpy_device_from_v2_quirk):
-    """Writing inching attributes updates the cluster attribute cache."""
+    """Writing one inching attribute caches all three effective values."""
     device = zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="MINI-ZBD",
@@ -221,10 +221,10 @@ async def test_inching_updates_attr_cache(zigpy_device_from_v2_quirk):
             {SonoffCluster.AttributeDefs.inching_control.name: True}
         )
 
-    inching_control_id = SonoffCluster.AttributeDefs.inching_control.id
-    assert any(
-        attr_id == inching_control_id for attr_id, _ in listener.attribute_updates
-    )
+    updated_ids = {attr_id for attr_id, _ in listener.attribute_updates}
+    assert SonoffCluster.AttributeDefs.inching_control.id in updated_ids
+    assert SonoffCluster.AttributeDefs.inching_time.id in updated_ids
+    assert SonoffCluster.AttributeDefs.inching_mode.id in updated_ids
 
 
 async def test_mixed_attrs_writes_regular_and_sends_inching(

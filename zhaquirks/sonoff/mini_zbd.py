@@ -126,12 +126,20 @@ class SonoffCluster(CustomCluster):
 
     async def _send_inching_command(self):
         """Build and send the protocolData payload for inching."""
+        control = self.get(self.AttributeDefs.inching_control.id, False)
         time_half_secs = int(self.get(self.AttributeDefs.inching_time.id, 2))
+        inching_mode = self.get(self.AttributeDefs.inching_mode.id, 0)
+
+        # Ensure all effective values are in the cache so entities show
+        # their state even when only one attribute was explicitly written.
+        self._update_attribute(self.AttributeDefs.inching_control.id, control)
+        self._update_attribute(self.AttributeDefs.inching_time.id, time_half_secs)
+        self._update_attribute(self.AttributeDefs.inching_mode.id, inching_mode)
 
         mode = 0x00
-        if self.get(self.AttributeDefs.inching_control.id, False):
+        if control:
             mode |= 0x80
-        if self.get(self.AttributeDefs.inching_mode.id, 0):
+        if inching_mode:
             mode |= 0x01
 
         raw = [
