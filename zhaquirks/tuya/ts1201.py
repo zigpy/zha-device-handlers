@@ -6,9 +6,10 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 
 import base64
 import logging
-from typing import Any, Final, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zgp, zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
@@ -23,7 +24,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,7 +32,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,6 +56,9 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -70,24 +72,22 @@ class ZosungIRControl(CustomCluster):
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={"data": Bytes},
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         IRLearn: Final = foundation.ZCLCommandDef(
             id=0x01,
             schema={"on_off": t.Bool},
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         IRSend: Final = foundation.ZCLCommandDef(
             id=0x02,
             schema={"code": t.CharacterString},
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
 
     async def read_attributes(
-        self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
         """Read attributes ZCL foundation command."""
         if (
             self.AttributeDefs.last_learned_ir_code.id in attributes
@@ -101,9 +101,9 @@ class ZosungIRControl(CustomCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Union[int, t.uint16_t] | None = None,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
-        tsn: Union[int, t.uint8_t] | None = None,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
         **kwargs: Any,
     ):
         """Override the default cluster command."""
@@ -160,6 +160,9 @@ class ZosungIRTransmit(CustomCluster):
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     current_position = 0
     msg_length = 0
     ir_msg = []
@@ -178,7 +181,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         receive_ir_frame_01: Final = foundation.ZCLCommandDef(
             id=0x01,
@@ -192,7 +195,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         receive_ir_frame_02: Final = foundation.ZCLCommandDef(
             id=0x02,
@@ -201,7 +204,7 @@ class ZosungIRTransmit(CustomCluster):
                 "position": t.uint32_t,
                 "maxlen": t.uint8_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         receive_ir_frame_03: Final = foundation.ZCLCommandDef(
             id=0x03,
@@ -212,6 +215,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
+            is_manufacturer_specific=False,
         )
         receive_ir_frame_04: Final = foundation.ZCLCommandDef(
             id=0x04,
@@ -220,7 +224,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero1": t.uint16_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
         receive_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -228,7 +232,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
 
     class ClientCommandDefs(BaseCommandDefs):
@@ -243,6 +247,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
+            is_manufacturer_specific=False,
         )
         resp_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -250,7 +255,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
 
     def handle_cluster_request(
@@ -258,7 +263,9 @@ class ZosungIRTransmit(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """Handle a cluster request."""
 
@@ -433,7 +440,6 @@ class ZosungIRBlaster(CustomDevice):
         MODELS_INFO: [
             ("_TZ3290_ot6ewjvmejq5ekhl", "TS1201"),
             ("_TZ3290_j37rooaxrcdcqo5n", "TS1201"),
-            ("_TZ3290_u9xac5rv", "TS1201"),
         ],
         ENDPOINTS: {
             1: {
@@ -496,7 +502,6 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
             ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
             ("_TZ3290_gnl5a6a5xvql7c2a", "TS1201"),
             ("_TZ3290_rlkmy85q4pzoxobl", "TS1201"),
-            ("_TZ3290_nba3knpsarkawgnt", "TS1201"),
         ],
         ENDPOINTS: {
             1: {

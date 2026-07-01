@@ -8,13 +8,12 @@ import struct
 from typing import Any, Final
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -77,9 +76,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
     async def read_attributes(
         self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
         """Pass reading attributes to Xiaomi cluster if applicable."""
         successful_r, failed_r = {}, {}
         remaining_attributes = attributes.copy()
@@ -94,28 +95,25 @@ class ThermostatCluster(CustomCluster, Thermostat):
                 remaining_attributes.remove("system_mode")
 
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
-                [SYSTEM_MODE], **kwargs
+                [SYSTEM_MODE], allow_cache, only_cache, manufacturer
             )
             # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
-                mapped_value = XIAOMI_SYSTEM_MODE_MAP[successful_r.pop(SYSTEM_MODE)]
-                successful_r[ZCL_SYSTEM_MODE] = mapped_value
-                # Update the thermostat cluster's cache
-                self._update_attribute(ZCL_SYSTEM_MODE, mapped_value)
+                successful_r[ZCL_SYSTEM_MODE] = XIAOMI_SYSTEM_MODE_MAP[
+                    successful_r.pop(SYSTEM_MODE)
+                ]
         # read remaining attributes from thermostat cluster
         if remaining_attributes:
             remaining_result = await super().read_attributes(
-                remaining_attributes, **kwargs
+                remaining_attributes, allow_cache, only_cache, manufacturer
             )
             successful_r.update(remaining_result[0])
             failed_r.update(remaining_result[1])
         return successful_r, failed_r
 
     async def write_attributes(
-        self,
-        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
         """Pass writing attributes to Xiaomi cluster if applicable."""
         result = []
         remaining_attributes = attributes.copy()
@@ -133,14 +131,12 @@ class ThermostatCluster(CustomCluster, Thermostat):
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
-                {SYSTEM_MODE: min(int(system_mode_value), 1)}, **kwargs
+                {SYSTEM_MODE: min(int(system_mode_value), 1)}
             )
-            # Update the thermostat cluster's cache
-            self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
 
         # write remaining attributes to thermostat cluster
         if remaining_attributes:
-            result += await super().write_attributes(remaining_attributes, **kwargs)
+            result += await super().write_attributes(remaining_attributes, manufacturer)
         return result
 
 

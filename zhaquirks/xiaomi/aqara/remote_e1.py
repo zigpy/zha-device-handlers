@@ -30,12 +30,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TRIPLE_PRESS,
 )
-from zhaquirks.xiaomi import (
-    LUMI,
-    BasicCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_1_DOUBLE,
     COMMAND_1_HOLD,
@@ -51,7 +46,10 @@ from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_3_TRIPLE,
     MultistateInputCluster,
 )
-from zhaquirks.xiaomi.aqara.remote_h1 import AqaraRemoteManuSpecificCluster
+from zhaquirks.xiaomi.aqara.remote_h1 import (
+    AqaraRemoteManuSpecificCluster,
+    PowerConfigurationClusterH1Remote,
+)
 
 BOTH_BUTTONS = "both_buttons"
 
@@ -92,7 +90,7 @@ class RemoteE1SingleRocker1(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    XiaomiPowerConfiguration,
+                    PowerConfigurationClusterH1Remote,
                     MultistateInputCluster,
                     AqaraRemoteManuSpecificCluster,
                 ],
@@ -171,7 +169,7 @@ class RemoteE1DoubleRocker1(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    XiaomiPowerConfiguration,
+                    PowerConfigurationClusterH1Remote,
                     MultistateInputCluster,
                     AqaraRemoteManuSpecificCluster,
                 ],

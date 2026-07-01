@@ -4,15 +4,15 @@ import asyncio
 import itertools
 import logging
 import time
-from typing import Any, Final
+from typing import Any, Final, Optional, Union
 
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
-from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     BUTTON,
@@ -43,17 +43,20 @@ SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
 
 
-class PhilipsOccupancySensing(CustomCluster, OccupancySensing):
+class PhilipsOccupancySensing(CustomCluster):
     """Philips occupancy cluster."""
+
+    cluster_id = OccupancySensing.cluster_id
+    ep_attribute = "philips_occupancy"
 
     class AttributeDefs(OccupancySensing.AttributeDefs):
         """Attribute definitions."""
 
         sensitivity: Final = ZCLAttributeDef(
-            id=0x0030, type=t.uint8_t, manufacturer_code=0x100B
+            id=0x0030, type=t.uint8_t, is_manufacturer_specific=True
         )
         sensitivity_max: Final = ZCLAttributeDef(
-            id=0x0031, type=t.uint8_t, manufacturer_code=0x100B
+            id=0x0031, type=t.uint8_t, is_manufacturer_specific=True
         )
 
 
@@ -190,7 +193,9 @@ class PhilipsRemoteCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: t.AddrMode | None = None,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """Handle the cluster command."""
         _LOGGER.debug(

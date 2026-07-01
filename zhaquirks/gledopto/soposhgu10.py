@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zll
 from zigpy.profiles.zll import DeviceType
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -20,7 +21,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class SoposhGU10(CustomDevice):

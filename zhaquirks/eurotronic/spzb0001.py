@@ -1,6 +1,7 @@
 """Eurotronic Spirit Zigbee quirk."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -20,7 +21,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.eurotronic import EUROTRONIC, ThermostatCluster
-from zhaquirks.legacy import CustomDevice
 
 
 class SPZB0001(CustomDevice):

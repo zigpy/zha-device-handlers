@@ -1,6 +1,7 @@
 """Doorsensors."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -18,7 +19,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class DS01DoorSensor(CustomDevice):

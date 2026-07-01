@@ -1,6 +1,7 @@
 """Device handler for Yale Real Living."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import Alarms, Basic, Identify, Ota, PollControl, Time
 
@@ -13,7 +14,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
 
 
 class YRD210PBDB220TSLL(CustomDevice):

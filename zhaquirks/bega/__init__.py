@@ -1,1 +1,0 @@
-"""Quirks for BEGA devices."""

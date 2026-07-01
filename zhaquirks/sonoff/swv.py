@@ -1,10 +1,11 @@
 """Sonoff SWV - Zigbee smart water valve."""
 
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder, ReportingConfig
-from zhaquirks.clusters import CustomCluster
 
 
 class ValveState(t.enum8):
@@ -20,6 +21,7 @@ class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -27,13 +29,12 @@ class CustomSonoffCluster(CustomCluster):
         water_valve_state = ZCLAttributeDef(
             id=0x500C,
             type=ValveState,
-            manufacturer_code=None,
         )
 
         auto_close_water_shortage = ZCLAttributeDef(
             id=0x5011,
             type=t.uint16_t,
-            manufacturer_code=None,
+            is_manufacturer_specific=True,
         )
 
 
