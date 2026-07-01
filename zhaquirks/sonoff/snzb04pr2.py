@@ -1,5 +1,32 @@
 """Sonoff SNZB-04PR2 device."""
 
+# Changes compared with the SONOFF-provided ZHA quirk:
+#
+# SONOFF's original quirk defined the tamper attribute on cluster 0xFC11,
+# attribute 0x2000, as a manufacturer-specific Bool:
+#
+#   type=types.Bool
+#   is_manufacturer_specific=True
+#
+# Device logs show that the SNZB-04PR2 actually reports this attribute as a
+# normal ZCL Report Attributes frame on the manufacturer-specific cluster:
+#
+#   cluster_id=0xFC11
+#   attribute_id=0x2000
+#   type=uint8_t
+#   manufacturer_code=None
+#   value=0/1
+#
+# Therefore this quirk changes the attribute definition to types.uint8_t and
+# removes is_manufacturer_specific=True. The cluster remains manufacturer-
+# specific, but the attribute report itself is not manufacturer-coded.
+#
+# Additionally, live tamper reports were received and decoded by ZHA but did not
+# reliably update the binary sensor state. handle_cluster_general_request()
+# catches Report Attributes command 0x0A for attribute 0x2000 and updates the
+# attribute cache with the actual reported 0/1 value, so live tamper changes
+# update immediately without double-processing the report.
+
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
@@ -22,6 +49,8 @@ class SonoffContactCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
+        # SONOFF-provided version:
+        #
         # tamper = ZCLAttributeDef(
         #     id=0x2000,
         #     type=types.Bool,
@@ -35,15 +64,15 @@ class SonoffContactCluster(CustomCluster):
         )
 
     def handle_cluster_general_request(self, hdr, args, *extra, **kwargs):
+        """Handle reported tamper attribute updates."""
+        if hdr.command_id == 0x0A:  # Report Attributes
+            for attr in getattr(args, "attribute_reports", []):
+                if attr.attrid == self.AttributeDefs.tamper.id:
+                    self._update_attribute(attr.attrid, int(attr.value.value))
+                    return
+
         super().handle_cluster_general_request(hdr, args, *extra, **kwargs)
-
-        if hdr.command_id != 0x0A:  # Report Attributes
-            return
-
-        for attr in args.attribute_reports:
-            if attr.attrid == self.AttributeDefs.tamper.id:
-                self._update_attribute(attr.attrid, int(attr.value.value))
-
+        
 
 (
     #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
