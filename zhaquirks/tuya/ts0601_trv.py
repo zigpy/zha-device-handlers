@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -958,7 +958,11 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         )
         self._update_attribute(self.attributes_by_name["on_off"].id, value[2])
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)
@@ -1004,7 +1008,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
 
         if has_change:
             return await self.endpoint.tuya_manufacturer.write_attributes(
-                {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
+                {MOES_WINDOW_DETECT_ATTR: data}, **kwargs
             )
 
         return [
@@ -1020,9 +1024,9 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -1404,13 +1408,14 @@ class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
 class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
     """Binary cluster for the window detection function of the heating thermostats."""
 
+    _CONSTANT_ATTRIBUTES = {
+        BinaryInput.AttributeDefs.description.id: "Open Window Detected",
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_detection_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Open Window Detected"
-        )
 
     def set_value(self, value):
         """Set opened window value."""
@@ -1428,7 +1433,11 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         """Return dict with attribute and value for thermostat."""
         return None
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
         records = self._write_attr_records(attributes)
         if not records:
@@ -1446,7 +1455,7 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
             if attr_val is not None:
                 # global self in case when different endpoint has to exist
                 return await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                    attr_val, manufacturer=manufacturer
+                    attr_val, **kwargs
                 )
 
         return [
@@ -1462,9 +1471,9 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -1541,18 +1550,19 @@ class ZONNSMARTOnlineMode(ZONNSMARTHelperOnOff):
 class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
     """AnalogOutput cluster for setting temperature offset."""
 
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Temperature Offset",
+        AnalogOutput.AttributeDefs.max_present_value.id: 5,
+        AnalogOutput.AttributeDefs.min_present_value.id: -5,
+        AnalogOutput.AttributeDefs.resolution.id: 0.1,
+        AnalogOutput.AttributeDefs.application_type.id: 0x0009,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.temperature_calibration_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Temperature Offset"
-        )
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, 5)
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, -5)
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.1)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0x0009)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set new temperature offset value."""
@@ -1562,7 +1572,11 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
         """Get current temperature offset value."""
         return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Modify value before passing it to the set_data tuya command."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
@@ -1573,32 +1587,29 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
             self._update_attribute(attrid, value)
 
             await self.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, manufacturer=None
+                {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, **kwargs
             )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
     """AnalogOutput cluster for temperature when opened window detected."""
 
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Opened Window Temperature",
+        AnalogOutput.AttributeDefs.max_present_value.id: ZONNSMART_MAX_TEMPERATURE_VAL
+        / 100,
+        AnalogOutput.AttributeDefs.min_present_value.id: ZONNSMART_MIN_TEMPERATURE_VAL
+        / 100,
+        AnalogOutput.AttributeDefs.resolution.id: 0.5,
+        AnalogOutput.AttributeDefs.application_type.id: 0 << 16,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_temperature_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Opened Window Temperature"
-        )
-        self._update_attribute(
-            self.attributes_by_name["max_present_value"].id,
-            ZONNSMART_MAX_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(
-            self.attributes_by_name["min_present_value"].id,
-            ZONNSMART_MIN_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.5)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set temperature value when opened window detected."""
@@ -1608,7 +1619,11 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
         """Get temperature value when opened window detected."""
         return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Modify value before passing it to the set_data tuya command."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
@@ -1620,9 +1635,9 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
 
             # different Endpoint for compatibility issue
             await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, manufacturer=None
+                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
             )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class SiterwellGS361_Type1(TuyaThermostat):
@@ -1686,6 +1701,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
             ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
+            ("_TZE200_lrznf59v", "TS0601"),
             ("_TZE200_04yfvweb", "TS0601"),  # Appartme APRM-04-001
         ],
         ENDPOINTS: {
@@ -1910,6 +1926,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
             ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
             ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
+            ("_TZE200_py4cm3he", "TS0601"),  # GIEX Smart TRV TV06
         ],
         ENDPOINTS: {
             1: {
