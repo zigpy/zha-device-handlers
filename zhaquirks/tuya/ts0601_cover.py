@@ -709,6 +709,17 @@ class BorderSetting(t.enum8):
 )
 
 
+class MoesCoverCommand(t.enum8):
+    """Moes _TZE204_guvc7pdy cover command values.
+
+    Reversed relative to TuyaCoverControl (0=open, 2=close).
+    """
+
+    Close = 0x00
+    Stop = 0x01
+    Open = 0x02
+
+
 (
     # Moes curtain motor. Cannot use tuya_cover() because this motor's control
     # DP enum is reversed relative to TuyaCoverControl: the device uses
@@ -719,7 +730,7 @@ class BorderSetting(t.enum8):
         ep_attribute=TuyaWindowCovering.ep_attribute,
         attribute_name=TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
         converter=lambda x: TuyaCoverControl(2 - x),
-        dp_converter=lambda x: TuyaCoverControl(2 - int(x)),
+        dp_converter=lambda x: MoesCoverCommand(2 - int(x)),
     )
     # DP 2 sets the target position, DP 3 reports the current position while
     # moving. Both are 0-100 in ZCL orientation already (0=open, 100=closed),
