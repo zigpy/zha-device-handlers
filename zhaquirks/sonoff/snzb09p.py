@@ -1,15 +1,15 @@
 """Sonoff SNZB-09P - Zigbee alarm sensor."""
 
-from typing import Any, Union
+from typing import Any
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasWd, IasZone
-import zigpy.types as t
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 SONOFF_MANUFACTURER_CODE = 0x1286
@@ -217,7 +217,10 @@ class SonoffSNZB09PFC11Cluster(CustomCluster):
             and hdr.command_id == CMD_SOUND_AND_LIGHT_ALARM_SETTINGS
         ):
             payload_bytes = bytes(payload)
-            if len(payload_bytes) >= 2 and payload_bytes[0] == SUBCMD_ALARM_STATE_REPORT:
+            if (
+                len(payload_bytes) >= 2
+                and payload_bytes[0] == SUBCMD_ALARM_STATE_REPORT
+            ):
                 self._update_alarm_active_from_type(payload_bytes[1])
 
         return super().deserialize(data)
