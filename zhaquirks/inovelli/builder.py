@@ -14,6 +14,7 @@ temperature sensor had no ZHA suffix, so its suffix is the bare cluster id.
 """
 
 from enum import Enum
+from typing import Self
 
 import zigpy.types as t
 
@@ -119,7 +120,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
         max_value: float,
         fallback_name: str,
         endpoint_id: int = 1,
-    ) -> "InovelliQuirkBuilder":
+    ) -> Self:
         return self.number(
             attribute_name=attribute_name,
             cluster_id=INOVELLI_CLUSTER_ID,
@@ -138,7 +139,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
         fallback_name: str,
         translation_key: str | None = None,
         endpoint_id: int = 1,
-    ) -> "InovelliQuirkBuilder":
+    ) -> Self:
         return self.switch(
             attribute_name=attribute_name,
             cluster_id=INOVELLI_CLUSTER_ID,
@@ -155,7 +156,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
         *,
         fallback_name: str,
         endpoint_id: int = 1,
-    ) -> "InovelliQuirkBuilder":
+    ) -> Self:
         return self.enum(
             attribute_name=attribute_name,
             enum_class=enum_class,
@@ -168,7 +169,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
 
     # --- number entities -------------------------------------------------
 
-    def inovelli_remote_dimming_up_speed(self, endpoint_id: int = 1):
+    def inovelli_remote_dimming_up_speed(self, endpoint_id: int = 1) -> Self:
         """Add the remote dimming up speed number entity."""
         return self._inovelli_number(
             "dimming_speed_up_remote",
@@ -178,7 +179,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_dimming_up_speed(self, endpoint_id: int = 1):
+    def inovelli_local_dimming_up_speed(self, endpoint_id: int = 1) -> Self:
         """Add the local dimming up speed number entity."""
         return self._inovelli_number(
             "dimming_speed_up_local",
@@ -188,7 +189,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_remote_dimming_down_speed(self, endpoint_id: int = 1):
+    def inovelli_remote_dimming_down_speed(self, endpoint_id: int = 1) -> Self:
         """Add the remote dimming down speed number entity."""
         return self._inovelli_number(
             "dimming_speed_down_remote",
@@ -198,7 +199,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_dimming_down_speed(self, endpoint_id: int = 1):
+    def inovelli_local_dimming_down_speed(self, endpoint_id: int = 1) -> Self:
         """Add the local dimming down speed number entity."""
         return self._inovelli_number(
             "dimming_speed_down_local",
@@ -208,7 +209,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_ramp_rate_off_to_on(self, endpoint_id: int = 1):
+    def inovelli_local_ramp_rate_off_to_on(self, endpoint_id: int = 1) -> Self:
         """Add the off-to-on local ramp rate number entity."""
         return self._inovelli_number(
             "ramp_rate_off_to_on_local",
@@ -218,7 +219,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_remote_ramp_rate_off_to_on(self, endpoint_id: int = 1):
+    def inovelli_remote_ramp_rate_off_to_on(self, endpoint_id: int = 1) -> Self:
         """Add the off-to-on remote ramp rate number entity."""
         return self._inovelli_number(
             "ramp_rate_off_to_on_remote",
@@ -228,7 +229,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_ramp_rate_on_to_off(self, endpoint_id: int = 1):
+    def inovelli_local_ramp_rate_on_to_off(self, endpoint_id: int = 1) -> Self:
         """Add the on-to-off local ramp rate number entity."""
         return self._inovelli_number(
             "ramp_rate_on_to_off_local",
@@ -238,7 +239,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_remote_ramp_rate_on_to_off(self, endpoint_id: int = 1):
+    def inovelli_remote_ramp_rate_on_to_off(self, endpoint_id: int = 1) -> Self:
         """Add the on-to-off remote ramp rate number entity."""
         return self._inovelli_number(
             "ramp_rate_on_to_off_remote",
@@ -248,7 +249,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_button_delay(self, endpoint_id: int = 1):
+    def inovelli_button_delay(self, endpoint_id: int = 1) -> Self:
         """Add the button delay number entity."""
         return self._inovelli_number(
             "button_delay",
@@ -258,7 +259,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_minimum_load_dimming_level(self, endpoint_id: int = 1):
+    def inovelli_minimum_load_dimming_level(self, endpoint_id: int = 1) -> Self:
         """Add the minimum load dimming level number entity."""
         return self._inovelli_number(
             "minimum_level",
@@ -268,7 +269,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_maximum_load_dimming_level(self, endpoint_id: int = 1):
+    def inovelli_maximum_load_dimming_level(self, endpoint_id: int = 1) -> Self:
         """Add the maximum load dimming level number entity."""
         return self._inovelli_number(
             "maximum_level",
@@ -278,7 +279,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_auto_shutoff_timer(self, endpoint_id: int = 1):
+    def inovelli_auto_shutoff_timer(self, endpoint_id: int = 1) -> Self:
         """Add the automatic switch shutoff timer number entity."""
         return self._inovelli_number(
             "auto_off_timer",
@@ -288,7 +289,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_default_level(self, endpoint_id: int = 1):
+    def inovelli_local_default_level(self, endpoint_id: int = 1) -> Self:
         """Add the local default dimming level number entity."""
         return self._inovelli_number(
             "default_level_local",
@@ -298,7 +299,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_remote_default_level(self, endpoint_id: int = 1):
+    def inovelli_remote_default_level(self, endpoint_id: int = 1) -> Self:
         """Add the remote default dimming level number entity."""
         return self._inovelli_number(
             "default_level_remote",
@@ -308,7 +309,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_startup_default_level(self, endpoint_id: int = 1):
+    def inovelli_startup_default_level(self, endpoint_id: int = 1) -> Self:
         """Add the start-up default dimming level number entity."""
         return self._inovelli_number(
             "state_after_power_restored",
@@ -318,7 +319,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_quick_start_time(self, endpoint_id: int = 1):
+    def inovelli_quick_start_time(self, endpoint_id: int = 1) -> Self:
         """Add the fan quick start time number entity."""
         return self._inovelli_number(
             "quick_start_time",
@@ -328,7 +329,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_load_level_indicator_timeout(self, endpoint_id: int = 1):
+    def inovelli_load_level_indicator_timeout(self, endpoint_id: int = 1) -> Self:
         """Add the load level indicator timeout number entity."""
         return self._inovelli_number(
             "load_level_indicator_timeout",
@@ -338,7 +339,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_default_all_led_on_color(self, endpoint_id: int = 1):
+    def inovelli_default_all_led_on_color(self, endpoint_id: int = 1) -> Self:
         """Add the default all-LED on color number entity."""
         return self._inovelli_number(
             "led_color_when_on",
@@ -348,7 +349,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_default_all_led_off_color(self, endpoint_id: int = 1):
+    def inovelli_default_all_led_off_color(self, endpoint_id: int = 1) -> Self:
         """Add the default all-LED off color number entity."""
         return self._inovelli_number(
             "led_color_when_off",
@@ -358,7 +359,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_default_all_led_on_intensity(self, endpoint_id: int = 1):
+    def inovelli_default_all_led_on_intensity(self, endpoint_id: int = 1) -> Self:
         """Add the default all-LED on intensity number entity."""
         return self._inovelli_number(
             "led_intensity_when_on",
@@ -368,7 +369,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_default_all_led_off_intensity(self, endpoint_id: int = 1):
+    def inovelli_default_all_led_off_intensity(self, endpoint_id: int = 1) -> Self:
         """Add the default all-LED off intensity number entity."""
         return self._inovelli_number(
             "led_intensity_when_off",
@@ -378,7 +379,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_double_tap_up_level(self, endpoint_id: int = 1):
+    def inovelli_double_tap_up_level(self, endpoint_id: int = 1) -> Self:
         """Add the double tap up level number entity."""
         return self._inovelli_number(
             "double_tap_up_level",
@@ -388,7 +389,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_double_tap_down_level(self, endpoint_id: int = 1):
+    def inovelli_double_tap_down_level(self, endpoint_id: int = 1) -> Self:
         """Add the double tap down level number entity."""
         return self._inovelli_number(
             "double_tap_down_level",
@@ -400,7 +401,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
 
     # --- switch entities -------------------------------------------------
 
-    def inovelli_invert_switch(self, endpoint_id: int = 1):
+    def inovelli_invert_switch(self, endpoint_id: int = 1) -> Self:
         """Add the invert switch entity."""
         return self._inovelli_switch(
             "invert_switch",
@@ -408,7 +409,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_smart_bulb_mode(self, endpoint_id: int = 1):
+    def inovelli_smart_bulb_mode(self, endpoint_id: int = 1) -> Self:
         """Add the smart bulb mode switch entity."""
         return self._inovelli_switch(
             "smart_bulb_mode",
@@ -416,7 +417,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_smart_fan_mode(self, endpoint_id: int = 1):
+    def inovelli_smart_fan_mode(self, endpoint_id: int = 1) -> Self:
         """Add the smart fan mode switch entity."""
         return self._inovelli_switch(
             "smart_fan_mode",
@@ -424,7 +425,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_double_tap_up_enabled(self, endpoint_id: int = 1):
+    def inovelli_double_tap_up_enabled(self, endpoint_id: int = 1) -> Self:
         """Add the double tap up enabled switch entity."""
         return self._inovelli_switch(
             "double_tap_up_enabled",
@@ -432,7 +433,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_double_tap_down_enabled(self, endpoint_id: int = 1):
+    def inovelli_double_tap_down_enabled(self, endpoint_id: int = 1) -> Self:
         """Add the double tap down enabled switch entity."""
         return self._inovelli_switch(
             "double_tap_down_enabled",
@@ -440,7 +441,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_aux_switch_scenes(self, endpoint_id: int = 1):
+    def inovelli_aux_switch_scenes(self, endpoint_id: int = 1) -> Self:
         """Add the aux switch scenes switch entity."""
         return self._inovelli_switch(
             "aux_switch_scenes",
@@ -448,7 +449,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_binding_off_to_on_sync_level(self, endpoint_id: int = 1):
+    def inovelli_binding_off_to_on_sync_level(self, endpoint_id: int = 1) -> Self:
         """Add the binding off-to-on sync level switch entity."""
         return self._inovelli_switch(
             "binding_off_to_on_sync_level",
@@ -456,7 +457,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_local_protection(self, endpoint_id: int = 1):
+    def inovelli_local_protection(self, endpoint_id: int = 1) -> Self:
         """Add the local protection switch entity."""
         return self._inovelli_switch(
             "local_protection",
@@ -464,7 +465,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_on_off_led_mode(self, endpoint_id: int = 1):
+    def inovelli_on_off_led_mode(self, endpoint_id: int = 1) -> Self:
         """Add the only-1-LED mode switch entity."""
         return self._inovelli_switch(
             "on_off_led_mode",
@@ -473,7 +474,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_firmware_progress_led(self, endpoint_id: int = 1):
+    def inovelli_firmware_progress_led(self, endpoint_id: int = 1) -> Self:
         """Add the firmware progress LED switch entity."""
         return self._inovelli_switch(
             "firmware_progress_led",
@@ -481,7 +482,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_relay_click_in_on_off_mode(self, endpoint_id: int = 1):
+    def inovelli_relay_click_in_on_off_mode(self, endpoint_id: int = 1) -> Self:
         """Add the disable relay click in on/off mode switch entity."""
         return self._inovelli_switch(
             "relay_click_in_on_off_mode",
@@ -489,7 +490,9 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_disable_clear_notifications_double_tap(self, endpoint_id: int = 1):
+    def inovelli_disable_clear_notifications_double_tap(
+        self, endpoint_id: int = 1
+    ) -> Self:
         """Add the disable config 2x-tap-to-clear-notifications switch entity."""
         return self._inovelli_switch(
             "disable_clear_notifications_double_tap",
@@ -499,7 +502,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
 
     # --- select entities -------------------------------------------------
 
-    def inovelli_output_mode(self, endpoint_id: int = 1):
+    def inovelli_output_mode(self, endpoint_id: int = 1) -> Self:
         """Add the output mode select entity."""
         return self._inovelli_select(
             "output_mode",
@@ -508,7 +511,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_switch_type(self, endpoint_id: int = 1):
+    def inovelli_switch_type(self, endpoint_id: int = 1) -> Self:
         """Add the (dimmer) switch type select entity."""
         return self._inovelli_select(
             "switch_type",
@@ -517,7 +520,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_fan_switch_type(self, endpoint_id: int = 1):
+    def inovelli_fan_switch_type(self, endpoint_id: int = 1) -> Self:
         """Add the fan switch type select entity."""
         return self._inovelli_select(
             "switch_type",
@@ -526,7 +529,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_led_scaling_mode(self, endpoint_id: int = 1):
+    def inovelli_led_scaling_mode(self, endpoint_id: int = 1) -> Self:
         """Add the LED scaling mode select entity."""
         return self._inovelli_select(
             "led_scaling_mode",
@@ -535,7 +538,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_fan_led_scaling_mode(self, endpoint_id: int = 1):
+    def inovelli_fan_led_scaling_mode(self, endpoint_id: int = 1) -> Self:
         """Add the smart fan LED display levels select entity."""
         return self._inovelli_select(
             "smart_fan_led_display_levels",
@@ -544,7 +547,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_increased_non_neutral_output(self, endpoint_id: int = 1):
+    def inovelli_increased_non_neutral_output(self, endpoint_id: int = 1) -> Self:
         """Add the increased non-neutral output select entity."""
         return self._inovelli_select(
             "increased_non_neutral_output",
@@ -553,7 +556,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
 
-    def inovelli_dimming_mode(self, endpoint_id: int = 1):
+    def inovelli_dimming_mode(self, endpoint_id: int = 1) -> Self:
         """Add the dimming mode (leading/trailing edge) select entity."""
         return self._inovelli_select(
             "leading_or_trailing_edge",
@@ -564,7 +567,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
 
     # --- sensor entities -------------------------------------------------
 
-    def inovelli_internal_temperature(self, endpoint_id: int = 1):
+    def inovelli_internal_temperature(self, endpoint_id: int = 1) -> Self:
         """Add the internal temperature diagnostic sensor entity."""
         return self.sensor(
             attribute_name="internal_temp_monitor",
@@ -579,7 +582,7 @@ class InovelliQuirkBuilder(QuirkBuilder):
             fallback_name="Internal temperature",
         )
 
-    def inovelli_overheated(self, endpoint_id: int = 1):
+    def inovelli_overheated(self, endpoint_id: int = 1) -> Self:
         """Add the overheat protection diagnostic (enum) sensor entity."""
         return self.enum(
             attribute_name="overheated",
