@@ -1,10 +1,10 @@
 """Module for Leviton dimmers."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import LevelControl
 
 from zhaquirks import NoReplyMixin
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class LevitonLevelControl(NoReplyMixin, CustomCluster, LevelControl):
