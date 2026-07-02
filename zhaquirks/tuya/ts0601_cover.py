@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -20,6 +21,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaCoverControl, TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -702,6 +704,38 @@ class BorderSetting(t.enum8):
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    # Moes curtain motor. Cannot use tuya_cover() because this motor's control
+    # DP enum is reversed relative to TuyaCoverControl: the device uses
+    # 0=close, 1=stop, 2=open, so both directions are mapped with converters.
+    TuyaQuirkBuilder("_TZE204_guvc7pdy", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaWindowCovering.ep_attribute,
+        attribute_name=TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
+        converter=lambda x: TuyaCoverControl(2 - x),
+        dp_converter=lambda x: TuyaCoverControl(2 - int(x)),
+    )
+    # DP 2 sets the target position, DP 3 reports the current position while
+    # moving. Both are 0-100 in ZCL orientation already (0=open, 100=closed),
+    # so no inversion.
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaWindowCovering.ep_attribute,
+        attribute_name=WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaWindowCovering.ep_attribute,
+        attribute_name=WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+    )
+    .adds(TuyaWindowCovering)
+    .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
     .skip_configuration()
     .add_to_registry()
 )
