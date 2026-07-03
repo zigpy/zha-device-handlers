@@ -45,6 +45,7 @@ from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
@@ -70,7 +71,11 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
@@ -105,9 +110,11 @@ import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+from zhaquirks.xiaomi.aqara.opple_remote import STATUS_TYPE_ATTR, MultistateInputCluster
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
+import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
@@ -2729,3 +2736,78 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
+    """W100 quirk matches and swaps in its custom clusters on all endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+
+    ep1 = device.endpoints[1]
+    assert isinstance(ep1.temperature, TemperatureMeasurementCluster)
+    assert isinstance(ep1.humidity, RelativeHumidityCluster)
+    assert isinstance(ep1.power, XiaomiPowerConfiguration)
+    assert isinstance(ep1.opple_cluster, XiaomiAqaraE1Cluster)
+
+    # the three buttons live on endpoints 1/2/3
+    for ep_id in (1, 2, 3):
+        assert isinstance(
+            device.endpoints[ep_id].multistate_input, MultistateInputCluster
+        )
+
+
+@pytest.mark.parametrize(
+    "endpoint, value, expected_action, expected_press",
+    [
+        (1, 1, "1_single", "single"),
+        (2, 2, "2_double", "double"),
+        (3, 0, "3_hold", "hold"),
+        (1, 255, "1_release", "release"),
+    ],
+)
+def test_w100_button_events(
+    zigpy_device_from_v2_quirk, endpoint, value, expected_action, expected_press
+):
+    """A button press on any endpoint fires the expected zha_send_event."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    mi_cluster = device.endpoints[endpoint].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(STATUS_TYPE_ATTR, value)
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            expected_action,
+            {
+                BUTTON: endpoint,
+                PRESS_TYPE: expected_press,
+                ATTR_ID: STATUS_TYPE_ATTR,
+                VALUE: value,
+            },
+        )
+    ]
+
+
+def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
+    """The 0xFCC0 heartbeat feeds battery voltage/percentage into the power cluster."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    # heartbeat carrying 3000 mV battery voltage (key 1)
+    opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({1: 3000})
+    )
+
+    assert (voltage_id, 30.0) in power_listener.attribute_updates
+    assert any(attr_id == percent_id for attr_id, _ in power_listener.attribute_updates)
