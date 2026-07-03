@@ -2,9 +2,11 @@
 
 Exposes the three buttons (plus/center/minus = endpoints 1/2/3) as zha_event and
 device-automation triggers via the shared Aqara ``MultistateInputCluster``, and battery
-from the 0xFCC0 heartbeat struct (``XiaomiAqaraE1Cluster`` feeding
-``XiaomiPowerConfiguration``, same wiring as the H1 remote).
-
+from the 0xFCC0 heartbeat struct. The W100 reports battery percent only in heartbeat
+tag 102 — there is no tag-1 voltage, and the standard PowerConfiguration attribute
+always reports 0 — so ``XiaomiCluster._parse_aqara_attributes`` maps tag 102 for this
+model (matching zigbee2mqtt's TH-S04D converter,
+https://github.com/Koenkk/zigbee-herdsman-converters/pull/10787).
 """
 
 from zhaquirks.builder import QuirkBuilder

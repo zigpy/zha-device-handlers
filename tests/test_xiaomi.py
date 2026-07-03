@@ -2793,7 +2793,7 @@ def test_w100_button_events(
 
 
 def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
-    """The 0xFCC0 heartbeat feeds battery voltage/percentage into the power cluster."""
+    """The 0xFCC0 heartbeat tag 102 feeds battery percent into the power cluster."""
     device = zigpy_device_from_v2_quirk(
         "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
     )
@@ -2801,13 +2801,11 @@ def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
     power_cluster = device.endpoints[1].power
     power_listener = ClusterListener(power_cluster)
 
-    voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
     percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
 
-    # heartbeat carrying 3000 mV battery voltage (key 1)
-    opple_cluster.update_attribute(
-        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({1: 3000})
-    )
+    # heartbeat carrying 87 % battery percent in tag 102 (uint8, as on the device —
+    # the W100 sends no tag-1 voltage)
+    report = bytes([102]) + foundation.TypeValue(0x20, t.uint8_t(87)).serialize()
+    opple_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, report)
 
-    assert (voltage_id, 30.0) in power_listener.attribute_updates
-    assert any(attr_id == percent_id for attr_id, _ in power_listener.attribute_updates)
+    assert (percent_id, 87 * 2) in power_listener.attribute_updates
