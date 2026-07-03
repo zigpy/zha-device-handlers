@@ -58,6 +58,7 @@ from zhaquirks.builder.metadata import (
     PreventDefaultEntityCreationMetadata,
     QuirkDefinition,
     ReportingConfig,
+    SirenMetadata,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
@@ -745,6 +746,59 @@ class QuirkBuilder:
                 invert_attribute_name=invert_attribute_name,
                 off_value=off_value,
                 on_value=on_value,
+                primary=primary,
+            )
+        )
+        return self
+
+    def siren(
+        self,
+        attribute_name: str,
+        cluster_id: int,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+        available_tones: dict[int, str] | None = None,
+        off_value: int = 0,
+        default_tone: int | None = None,
+        entity_type: EntityType = EntityType.STANDARD,
+        initially_disabled: bool = False,
+        attribute_initialized_from_cache: bool = True,
+        reporting_config: ReportingConfig | None = None,
+        unique_id_suffix: str | None = None,
+        translation_key: str | None = None,
+        fallback_name: str | None = None,
+        primary: bool | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
+        """Add an EntityMetadata containing SirenMetadata and return self.
+
+        This exposes a siren entity in Home Assistant that is controlled by
+        writing ``attribute_name``: turning on writes a tone value (the requested
+        tone, else ``default_tone``), turning off writes ``off_value``. The
+        entity's state follows the cached attribute value, so a device that
+        resets the attribute on its own keeps the entity in sync. Pass
+        ``available_tones`` (a ``{value: name}`` mapping) to let the user pick a
+        tone in Home Assistant.
+        """
+        self._add_entity_metadata(
+            SirenMetadata(
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+                entity_platform=EntityPlatform.SIREN,
+                entity_type=entity_type,
+                initially_disabled=initially_disabled,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+                reporting_config=reporting_config,
+                unique_id_suffix=unique_id_suffix,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders or {},
+                fallback_name=fallback_name,
+                attribute_name=attribute_name,
+                available_tones=available_tones or {},
+                off_value=off_value,
+                default_tone=default_tone,
                 primary=primary,
             )
         )

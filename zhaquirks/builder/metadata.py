@@ -140,6 +140,19 @@ class BinarySensorMetadata(EntityMetadata):
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
+class SirenMetadata(EntityMetadata):
+    """Metadata for an exposed attribute-controlled siren entity."""
+
+    attribute_name: str = attrs.field()
+    available_tones: frozendict[int, str] = attrs.field(
+        factory=frozendict, converter=frozendict
+    )
+    off_value: int = attrs.field(default=0)
+    default_tone: int | None = attrs.field(default=None)
+    reporting_config: ReportingConfig | None = attrs.field(default=None)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
 class WriteAttributeButtonMetadata(EntityMetadata):
     """Metadata for exposed button entity that writes an attribute when pressed."""
 
