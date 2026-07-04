@@ -8,7 +8,6 @@ import enum
 import logging
 from typing import Any
 
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -23,6 +22,7 @@ from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
+from zhaquirks.legacy import CustomDevice
 
 from .types import ATCommand, BinaryString, Bytes, IOSample
 
