@@ -51,6 +51,11 @@ class SonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
         work_mode = ZCLAttributeDef(
             id=0x0018,
             type=SonoffWorkMode,
