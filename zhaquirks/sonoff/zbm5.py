@@ -166,6 +166,12 @@ zbm_1c_quirk = (
         fallback_name="Work mode",
     )
     .switch(
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
+        translation_key="network_led",
+        fallback_name="Network LED",
+    )
+    .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
         SonoffInputConfigCluster.cluster_id,
         translation_key="detach_relay_id",
