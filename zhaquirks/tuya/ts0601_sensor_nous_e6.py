@@ -1,92 +1,44 @@
-"""Nous E6 Temperature and Humidity sensor (_TZE284_wtikaxzs)."""
-
+"""Nous E6 custom quirk for _TZE284_wtikaxzs variant."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-
+from zhaquirks.tuya.mcu import TuyaMCUCluster, DPToAttributeMapping
 from zhaquirks import CustomDevice
 import zhaquirks.const as data_const
-from zhaquirks.tuya.mcu import TuyaMCUCluster
-
 
 class NousE6ManufCluster(TuyaMCUCluster):
-    """Tuya MCU cluster for Temperature and Humidity data point mapping."""
-
-    cluster_id = 0xEF00
-
-    # Bypassing automatic mapping to ensure compatibility with Python 3.14/HA 2026.6
-    # and to handle the specific TuyaData object structure.
-    dp_to_attribute = {}
-    data_point_handlers = {
-        1: "handle_temp",
-        2: "handle_hum",
-        4: "handle_batt",
+    """Manufacturer specific cluster for native Tuya MCU DP mapping."""
+    
+    # Der saubere, native Weg: Das Framework routet und skaliert die Datenpunkte von selbst
+    dp_to_attribute = {
+        1: DPToAttributeMapping(
+            TemperatureMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 10,  # Raw 310 (31.0°C) -> ZCL erwartet 3100 (0.01°C Units)
+        ),
+        2: DPToAttributeMapping(
+            RelativeHumidity.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 100, # Raw 67 (67%) -> ZCL erwartet 6700 (0.01% Units)
+        ),
+        4: DPToAttributeMapping(
+            PowerConfiguration.ep_attribute,
+            "battery_percentage_remaining",
+            converter=lambda x: x * 2,   # Raw 100 (100%) -> ZCL erwartet 200 (0.5% Units)
+        ),
     }
 
-    def _extract_value(self, datum):
-        """Safely extract integer value from TuyaData objects."""
-        try:
-            d = datum.data
-            for attr in ("payload", "value"):
-                if hasattr(d, attr):
-                    return int(getattr(d, attr))
-            return int(d)
-        except (TypeError, ValueError, AttributeError):
-            return None
-
-    def handle_temp(self, datum):
-        """Handle temperature data points (DP 1)."""
-        val = self._extract_value(datum)
-        if val is not None:
-            # Tuya sends 243 for 24.3°C -> ZCL expects 2430 (0.01°C units)
-            self.endpoint.temperature.update_attribute(0x0000, val * 10)
-
-    def handle_hum(self, datum):
-        """Handle humidity data points (DP 2)."""
-        val = self._extract_value(datum)
-        if val is not None:
-            # Tuya sends 49 for 49% -> ZCL expects 4900 (0.01% units)
-            self.endpoint.humidity.update_attribute(0x0000, val * 100)
-
-    def handle_batt(self, datum):
-        """Handle battery data points (DP 4)."""
-        val = self._extract_value(datum)
-        if val is not None:
-            # Tuya sends 100 for 100% -> ZCL expects 200 (0.5% units)
-            self.endpoint.device_power.update_attribute(0x0021, val * 2)
-
-
 class NousE6_TZE284_wtikaxzs(CustomDevice):
-    """Nous E6 variant (_TZE284_wtikaxzs) custom quirk."""
+    """Nous E6 signature match for _TZE284_wtikaxzs."""
 
     signature = {
         data_const.MODELS_INFO: [("_TZE284_wtikaxzs", "TS0601")],
         data_const.ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
-            # device_version=1
-            # input_clusters=[0, 4, 5, 60672, 61184]
-            # output_clusters=[10, 25]>
             1: {
                 data_const.PROFILE_ID: zha.PROFILE_ID,
                 data_const.DEVICE_TYPE: 81,
-                data_const.INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    # 0xED00 (60672) is omitted here to pass CI range tests
-                    TuyaMCUCluster.cluster_id,
-                ],
-                data_const.OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
+                data_const.INPUT_CLUSTERS: [0x0000, 0x0004, 0x0005, 0xED00, 0xEF00], # 0xED00 ist jetzt fix drin!
+                data_const.OUTPUT_CLUSTERS: [0x000A, 0x0019],
             }
         },
     }
@@ -99,15 +51,13 @@ class NousE6_TZE284_wtikaxzs(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    0xED00,
                     NousE6ManufCluster,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     PowerConfiguration.cluster_id,
                 ],
-                data_const.OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
+                data_const.OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
     }
