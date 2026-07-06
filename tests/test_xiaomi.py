@@ -2809,3 +2809,39 @@ def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
     opple_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, report)
 
     assert (percent_id, 87 * 2) in power_listener.attribute_updates
+
+
+async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
+    """ZCL battery reports (always 0 on the W100) don't overwrite the heartbeat value."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    attr = foundation.Attribute(
+        attrid=percent_id, value=foundation.TypeValue(0x20, t.uint8_t(0))
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=power_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    assert power_listener.attribute_updates == []
