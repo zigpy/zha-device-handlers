@@ -9,6 +9,8 @@ model (matching zigbee2mqtt's TH-S04D converter,
 https://github.com/Koenkk/zigbee-herdsman-converters/pull/10787).
 """
 
+from zigpy.zcl import foundation
+
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import COMMAND, DOUBLE_PRESS, LONG_PRESS, LONG_RELEASE, SHORT_PRESS
 from zhaquirks.xiaomi import (
@@ -39,12 +41,28 @@ CENTER_BUTTON = "center"
 MINUS_BUTTON = "minus"
 
 
+class W100PowerConfiguration(XiaomiPowerConfiguration):
+    """PowerConfiguration that drops the device's own ZCL battery reports.
+
+    The W100's battery_percentage_remaining attribute always reports 0, and a
+    reporting config from a pre-quirk join persists in the device — a 0 every
+    max-interval that overwrites the heartbeat-derived value. Battery comes solely
+    from the 0xFCC0 heartbeat via ``battery_percent_reported``.
+    """
+
+    def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
+        """Drop attribute reports; pass everything else through."""
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            return
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
+
 (
     QuirkBuilder(AQARA, "lumi.sensor_ht.agl001")
     .friendly_name(manufacturer="Aqara", model="Climate Sensor W100")
     .replaces(TemperatureMeasurementCluster)
     .replaces(RelativeHumidityCluster)
-    .replaces(XiaomiPowerConfiguration)
+    .replaces(W100PowerConfiguration)
     .replaces(XiaomiAqaraE1Cluster)
     .replaces(MultistateInputCluster)
     .replaces(MultistateInputCluster, endpoint_id=2)
