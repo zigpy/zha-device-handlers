@@ -122,6 +122,19 @@ async def test_ts0601_yrugsphv_stop_command(zigpy_device_from_quirk):
         assert call_data[-1:] == b"\x01"  # device value = 1 (stop, unchanged)
 
 
+async def test_ts0601_yrugsphv_unsupported_command(zigpy_device_from_quirk):
+    """Test that an unsupported command_id returns UNSUP_CLUSTER_COMMAND."""
+
+    quirked = zigpy_device_from_quirk(TuyaCover0601MCU)
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+
+    response = await cover_cluster.command(0xFF)
+
+    assert response.status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
 async def test_ts0601_yrugsphv_go_to_lift_percentage(zigpy_device_from_quirk):
     """Test that go_to_lift_percentage forwards the raw percentage (no inversion)."""
 
