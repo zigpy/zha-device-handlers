@@ -1,12 +1,12 @@
 """Sonoff ZBMINIR2 and MINI-ZBD - Zigbee Switches."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import BUTTON, COMMAND, COMMAND_TOGGLE, ENDPOINT_ID, SHORT_PRESS
 
 
