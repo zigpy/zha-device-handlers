@@ -226,7 +226,7 @@ energy_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.network_led.name,
         SonoffMiniZb1gpCluster.cluster_id,
         translation_key="network_led",
-        fallback_name="Network indicator",
+        fallback_name="Network LED",
     )
     .switch(
         SonoffMiniZb1gpCluster.AttributeDefs.turbo_mode.name,
