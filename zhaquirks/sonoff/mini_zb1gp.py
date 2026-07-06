@@ -155,7 +155,7 @@ energy_reporting = ReportingConfig(
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfPower.WATT,
         reporting_config=power_reporting,
-        unique_id_suffix="power",
+        unique_id_suffix="2820-active_power",
         translation_key="power",
         fallback_name="Power",
         primary=True,
@@ -169,7 +169,7 @@ energy_reporting = ReportingConfig(
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricCurrent.AMPERE,
         reporting_config=current_reporting,
-        unique_id_suffix="current",
+        unique_id_suffix="2820-rms_current",
         translation_key="current",
         fallback_name="Current",
     )
@@ -182,7 +182,7 @@ energy_reporting = ReportingConfig(
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.VOLT,
         reporting_config=voltage_reporting,
-        unique_id_suffix="voltage",
+        unique_id_suffix="2820-rms_voltage",
         translation_key="voltage",
         fallback_name="Voltage",
     )
@@ -219,7 +219,7 @@ energy_reporting = ReportingConfig(
         state_class=SensorStateClass.TOTAL_INCREASING,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         reporting_config=energy_reporting,
-        unique_id_suffix="total_energy",
+        unique_id_suffix="1794-summation_delivered",
         fallback_name="Total energy",
     )
     .switch(
