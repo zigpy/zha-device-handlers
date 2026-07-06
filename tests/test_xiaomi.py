@@ -2845,3 +2845,30 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
     )
 
     assert power_listener.attribute_updates == []
+
+    # other general commands still reach the base handler: a device-initiated
+    # read gets a Read_Attributes_rsp task
+    hdr = foundation.ZCLHeader.general(
+        2,
+        foundation.GeneralCommand.Read_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Read_Attributes]
+        .schema([percent_id])
+        .serialize()
+    )
+
+    with mock.patch.object(power_cluster, "create_catching_task") as task_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=power_cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr + cmd),
+            )
+        )
+
+    assert len(task_mock.mock_calls) == 1
+    task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
