@@ -10,7 +10,7 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import TuyaCover0601MCU, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -32,6 +32,120 @@ def test_ts601_moes_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(TuyaMoesCover0601, signature)
+
+
+def test_ts0601_yrugsphv_signature(assert_signature_matches_quirk):
+    """Test _TZE200_yrugsphv cover signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x0051",
+                "in_clusters": ["0x0004", "0x0005", "0xef00", "0x0000"],
+                "out_clusters": ["0x0019", "0x000a"],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "_TZE200_yrugsphv",
+        "model": "TS0601",
+        "class": "zigpy.device.Device",
+    }
+    assert_signature_matches_quirk(TuyaCover0601MCU, signature)
+
+
+async def test_ts0601_yrugsphv_open_command(zigpy_device_from_quirk):
+    """Test that the open command sends the reversed device value (2) for this device."""
+
+    quirked = zigpy_device_from_quirk(TuyaCover0601MCU)
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1 (curtain_switch)
+        assert call_data[-1:] == b"\x02"  # device value = 2 (reversed "open")
+
+
+async def test_ts0601_yrugsphv_close_command(zigpy_device_from_quirk):
+    """Test that the close command sends the reversed device value (0) for this device."""
+
+    quirked = zigpy_device_from_quirk(TuyaCover0601MCU)
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.down_close.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1 (curtain_switch)
+        assert call_data[-1:] == b"\x00"  # device value = 0 (reversed "close")
+
+
+async def test_ts0601_yrugsphv_stop_command(zigpy_device_from_quirk):
+    """Test that the stop command sends device value 1 for this device."""
+
+    quirked = zigpy_device_from_quirk(TuyaCover0601MCU)
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.stop.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1 (curtain_switch)
+        assert call_data[-1:] == b"\x01"  # device value = 1 (stop, unchanged)
+
+
+async def test_ts0601_yrugsphv_go_to_lift_percentage(zigpy_device_from_quirk):
+    """Test that go_to_lift_percentage forwards the raw percentage (no inversion)."""
+
+    quirked = zigpy_device_from_quirk(TuyaCover0601MCU)
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 42
+        )
+        await wait_for_zigpy_tasks()
+
+        assert req_mock.call_count >= 1
+        found_value = False
+        for call in req_mock.call_args_list:
+            call_data = call[1]["data"]
+            if call_data[-1:] == b"\x2a":  # 42 decimal
+                found_value = True
+        assert found_value
 
 
 async def test_zemismart_zm16b_quirk(zigpy_device_from_v2_quirk):
