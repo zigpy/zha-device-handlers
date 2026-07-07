@@ -3,12 +3,12 @@
 from unittest import mock
 
 import pytest
-from zigpy.quirks.v2 import CustomDeviceV2
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
 from zhaquirks.tuya.ts0601_cover import (
@@ -45,6 +45,10 @@ class AnyTSNTuyaFrame:
             and other[5:] == self._frame[5:]  # DP data
         )
 
+    def __hash__(self) -> int:
+        """Return a hash of this object."""
+        return hash(self._frame)
+
     def __repr__(self) -> str:
         """Return a string representation of the frame."""
         return f"AnyTSNTuyaFrame({self._frame!r})"
@@ -73,7 +77,7 @@ async def test_zemismart_zm16b_quirk(zigpy_device_from_v2_quirk):
     """Test Zemismart ZM16B cover motor v2 quirk."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE284_3mzb0sdz", "TS0601")
-    assert isinstance(quirked, CustomDeviceV2)
+    assert isinstance(quirked, CustomZigpyDevice)
 
     ep = quirked.endpoints[1]
 
@@ -317,6 +321,8 @@ async def test_zemismart_zm25r3_cover_commands(
             use_ieee=mock.ANY,
             ask_for_ack=mock.ANY,
             priority=mock.ANY,
+            retries=mock.ANY,
+            retry_delay=mock.ANY,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -437,6 +443,8 @@ async def _assert_zm25r3_attribute_set_sends_expected_frame(
             use_ieee=mock.ANY,
             ask_for_ack=mock.ANY,
             priority=mock.ANY,
+            retries=mock.ANY,
+            retry_delay=mock.ANY,
         )
         assert write_results == [
             [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]

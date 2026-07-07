@@ -1,7 +1,6 @@
 """Ledvance A19 RGBW device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -23,6 +22,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.ledvance import LEDVANCE, LedvanceLightCluster
+from zhaquirks.legacy import CustomDevice
 
 
 class LedvanceA19RGBW(CustomDevice):
