@@ -110,6 +110,29 @@ def milli_to_value(value: int) -> float:
     return value / 1000
 
 
+def fault_code_bit_is_set(value: int, bit: int) -> bool:
+    """Return whether a MINI-ZB1GP fault bit is set."""
+
+    fault_type = (value >> 24) & 0xFF
+    fault_length = (value >> 16) & 0xFF
+    if fault_type != 0x07 or fault_length != 0x02:
+        return False
+
+    return bool((value & 0xFFFF) & bit)
+
+
+def metering_communication_error(value: int) -> bool:
+    """Return whether the metering communication error fault bit is set."""
+
+    return fault_code_bit_is_set(value, 0b010)
+
+
+def overload_protection(value: int) -> bool:
+    """Return whether the overload protection fault bit is set."""
+
+    return fault_code_bit_is_set(value, 0b100)
+
+
 power_reporting = ReportingConfig(
     min_interval=5,
     max_interval=900,
@@ -131,6 +154,12 @@ voltage_reporting = ReportingConfig(
 energy_reporting = ReportingConfig(
     min_interval=60,
     max_interval=3600,
+    reportable_change=1,
+)
+
+fault_reporting = ReportingConfig(
+    min_interval=5,
+    max_interval=900,
     reportable_change=1,
 )
 
@@ -196,6 +225,7 @@ energy_reporting = ReportingConfig(
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         reporting_config=energy_reporting,
         unique_id_suffix="energy_today",
+        translation_key="energy_today",
         fallback_name="Energy today",
     )
     .sensor(
@@ -208,7 +238,36 @@ energy_reporting = ReportingConfig(
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         reporting_config=energy_reporting,
         unique_id_suffix="energy_month",
+        translation_key="energy_month",
         fallback_name="Energy this month",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.output_energy_today.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="output_energy_today",
+        translation_key="output_energy_today",
+        fallback_name="Export energy today",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.output_energy_month.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="output_energy_month",
+        translation_key="output_energy_month",
+        fallback_name="Export energy this month",
+        initially_disabled=True,
     )
     .sensor(
         SonoffMiniZb1gpCluster.AttributeDefs.total_energy.name,
@@ -220,7 +279,40 @@ energy_reporting = ReportingConfig(
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         reporting_config=energy_reporting,
         unique_id_suffix="1794-summation_delivered",
+        translation_key="total_energy",
         fallback_name="Total energy",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.total_output_energy.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="total_output_energy",
+        translation_key="total_output_energy",
+        fallback_name="Total export energy",
+        initially_disabled=True,
+    )
+    .binary_sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.fault_code.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=metering_communication_error,
+        reporting_config=fault_reporting,
+        unique_id_suffix="metering_communication_error",
+        translation_key="metering_communication_error",
+        fallback_name="Metering communication error",
+    )
+    .binary_sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.fault_code.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=overload_protection,
+        reporting_config=fault_reporting,
+        unique_id_suffix="overload_protection",
+        translation_key="overload_protection",
+        fallback_name="Overload protection error",
     )
     .switch(
         SonoffMiniZb1gpCluster.AttributeDefs.network_led.name,
