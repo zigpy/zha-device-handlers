@@ -1095,6 +1095,7 @@ class QuirkBuilder:
             device_match=device_match,
             zigpy_transforms=zigpy_transforms,
             zha_device_factory=zha_device_factory,
+            device_automation_triggers=quirk_definition.device_automation_triggers,
             source=QuirkSource(
                 module=self.quirk_module,
                 file=str(self.quirk_file),

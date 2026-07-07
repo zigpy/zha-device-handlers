@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, sentinel
 from frozendict import frozendict
 import pytest
 from zha.quirks import DeviceRegistry
+from zha.zigbee.device import get_device_automation_triggers
 from zigpy.const import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
@@ -28,6 +29,7 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.builder.metadata import recursive_freeze
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import signature_matches
 
@@ -392,6 +394,29 @@ async def test_quirks_v2_skip_configuration(device_mock):
     # definition rather than on the resolved zigpy device.
     entry = registry.match_entry(quirked)
     assert entry.zha_device_factory.quirk_definition.skip_configuration is True
+
+
+async def test_quirks_v2_device_automation_triggers_on_entry(device_mock):
+    """Test quirk-defined triggers are carried on the registry entry."""
+    registry = DeviceRegistry()
+
+    triggers = {(SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON}}
+
+    quirk_entry = (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .device_automation_triggers(triggers)
+        .add_to_registry(registry)
+    )
+
+    assert quirk_entry.device_automation_triggers == recursive_freeze(triggers)
+
+    # Consumers holding only the resolved zigpy device (e.g. HA's early device
+    # trigger cache) read the triggers from the stamped entry via ZHA.
+    quirked = registry.resolve(device_mock)
+    assert get_device_automation_triggers(quirked) == {
+        ("device_offline", "device_offline"): {"device_event_type": "device_offline"},
+        **triggers,
+    }
 
 
 async def test_quirks_v2_removes(device_mock):
