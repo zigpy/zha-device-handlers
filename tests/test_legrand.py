@@ -16,6 +16,7 @@ from zigpy.zcl.foundation import ReadAttributeRecord, Status
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
 from zhaquirks.legrand.contactor import (
+    LEGRAND_MANUFACTURER_CODE,
     AutoOverride,
     AutoStatus,
     DeviceMode,
@@ -113,11 +114,13 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
     cable_cluster.set_pilot_wire_mode = mock.AsyncMock()
 
     # test writing read-only pilot_wire_mode attribute, should call set_pilot_wire_mode
-    await cable_cluster.write_attributes({0x00: 0x02}, manufacturer=0x1021)
+    await cable_cluster.write_attributes(
+        {0x00: 0x02}, manufacturer=LEGRAND_MANUFACTURER_CODE
+    )
 
     cable_cluster.set_pilot_wire_mode.assert_awaited_with(
         0x02,
-        manufacturer=0x1021,
+        manufacturer=LEGRAND_MANUFACTURER_CODE,
     )
     # With an empty attrs dict, _write_attributes is not called in the new zigpy API
     assert len(cable_cluster._write_attributes.mock_calls) == 0
@@ -492,13 +495,15 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: DeviceMode.Switch}, manufacturer=0x1021)
+    await mode_cluster.write_attributes(
+        {0: DeviceMode.Switch}, manufacturer=LEGRAND_MANUFACTURER_CODE
+    )
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
     assert call_args[0][0][0].value.type == f.DataTypeId.data16
     assert call_args[0][0][0].value.value == DeviceMode.Switch
-    assert call_args[1]["manufacturer"] == 0x1021
+    assert call_args[1]["manufacturer"] == LEGRAND_MANUFACTURER_CODE
     auto_on_off_cluster.override.assert_not_awaited()
 
     auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
@@ -507,13 +512,15 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: DeviceMode.Auto}, manufacturer=0x1021)
+    await mode_cluster.write_attributes(
+        {0: DeviceMode.Auto}, manufacturer=LEGRAND_MANUFACTURER_CODE
+    )
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
     assert call_args[0][0][0].value.type == f.DataTypeId.data16
     assert call_args[0][0][0].value.value == DeviceMode.Auto
-    assert call_args[1]["manufacturer"] == 0x1021
+    assert call_args[1]["manufacturer"] == LEGRAND_MANUFACTURER_CODE
     auto_on_off_cluster.override.assert_awaited_once_with(AutoOverride.Automatic)
 
     auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
@@ -523,14 +530,14 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
         ]
     )
     await mode_cluster.write_attributes(
-        {"mode": DeviceMode.Switch}, manufacturer=0x1021
+        {"mode": DeviceMode.Switch}, manufacturer=LEGRAND_MANUFACTURER_CODE
     )
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
     assert call_args[0][0][0].value.type == f.DataTypeId.data16
     assert call_args[0][0][0].value.value == DeviceMode.Switch
-    assert call_args[1]["manufacturer"] == 0x1021
+    assert call_args[1]["manufacturer"] == LEGRAND_MANUFACTURER_CODE
     auto_on_off_cluster.override.assert_not_awaited()
 
     auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
@@ -539,13 +546,15 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({"mode": DeviceMode.Auto}, manufacturer=0x1021)
+    await mode_cluster.write_attributes(
+        {"mode": DeviceMode.Auto}, manufacturer=LEGRAND_MANUFACTURER_CODE
+    )
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
     assert call_args[0][0][0].value.type == f.DataTypeId.data16
     assert call_args[0][0][0].value.value == DeviceMode.Auto
-    assert call_args[1]["manufacturer"] == 0x1021
+    assert call_args[1]["manufacturer"] == LEGRAND_MANUFACTURER_CODE
     auto_on_off_cluster.override.assert_awaited_once_with(AutoOverride.Automatic)
 
     # cover write_attributes - mode write to Auto that fails must NOT
@@ -556,7 +565,9 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             [f.WriteAttributesStatusRecord(status=f.Status.FAILURE, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: DeviceMode.Auto}, manufacturer=0x1021)
+    await mode_cluster.write_attributes(
+        {0: DeviceMode.Auto}, manufacturer=LEGRAND_MANUFACTURER_CODE
+    )
     auto_on_off_cluster.override.assert_not_awaited()
 
 
