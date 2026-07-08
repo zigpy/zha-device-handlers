@@ -187,7 +187,6 @@ fault_reporting = ReportingConfig(
         unique_id_suffix="2820-active_power",
         translation_key="power",
         fallback_name="Power",
-        primary=True,
     )
     .sensor(
         SonoffMiniZb1gpCluster.AttributeDefs.current.name,

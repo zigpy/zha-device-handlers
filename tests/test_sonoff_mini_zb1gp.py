@@ -100,6 +100,13 @@ def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_q
     assert suffixes["Voltage"] == "2820-rms_voltage"
     assert suffixes["Total energy"] == "1794-summation_delivered"
 
+    power_metadata = next(
+        metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if metadata.fallback_name == "Power"
+    )
+    assert power_metadata.primary is not True
+
 
 def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     """Test optional export energy and diagnostic fault entities."""
