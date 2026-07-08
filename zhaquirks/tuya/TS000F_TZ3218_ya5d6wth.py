@@ -11,11 +11,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement,
-    RelativeHumidity,
-)
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -25,23 +21,23 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.tuya import (
     EnchantedDevice,
+    TuyaLocalCluster,
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
-    TuyaLocalCluster,
-    TuyaZBExternalSwitchTypeCluster,
 )
-
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
 
+
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
-   """Tuya local RelativeHumidity cluster."""
+    """Tuya local RelativeHumidity cluster."""
+
 
 class TemperatureHumidityManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
@@ -53,16 +49,17 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
             converter=lambda x: x * 10,  # decidegree to centidegree
         ),
         103: DPToAttributeMapping(
-           TuyaRelativeHumidity.ep_attribute,
-           "measured_value",
-           converter=lambda x: x * 100,
-       ),
+            TuyaRelativeHumidity.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 100,
+        ),
     }
 
     data_point_handlers = {
         102: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
     }
+
 
 class Switch_4G_GPP_Temperature(EnchantedDevice):
     """Tuya 4 gang switch module with restore power state and temperature support."""
