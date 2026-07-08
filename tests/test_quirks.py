@@ -711,6 +711,17 @@ def test_quirk_device_automation_triggers_unique(quirk):
 
 @pytest.mark.parametrize(
     "quirk",
+    [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
+)
+def test_legacy_quirk_entry_carries_device_automation_triggers(quirk) -> None:
+    """Ensure the v1 adapter carries the class-attribute triggers on the entry."""
+    entry = zhaquirks._legacy_quirk_to_registry_entry(quirk)
+
+    assert entry.device_automation_triggers == quirk.device_automation_triggers
+
+
+@pytest.mark.parametrize(
+    "quirk",
     [
         quirk_cls
         for quirk_cls in ALL_QUIRK_CLASSES

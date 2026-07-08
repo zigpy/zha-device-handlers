@@ -549,6 +549,9 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
         ),
         zigpy_transforms=(ReplaceZigpyDevice(cls),),
         zha_device_factory=None,
+        # v1 triggers are a class attribute on the zigpy-level device; carry them
+        # on the entry too so it can eventually become the sole source of truth.
+        device_automation_triggers=getattr(cls, "device_automation_triggers", {}),
         source=QuirkSource.from_class(cls),
     )
 
