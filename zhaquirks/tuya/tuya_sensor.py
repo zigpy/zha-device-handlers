@@ -2,12 +2,17 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -65,7 +70,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2, scale=10)
@@ -86,7 +91,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+        converter=lambda x: (x - 0xFFFF if x > 0x2000 else x) * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
