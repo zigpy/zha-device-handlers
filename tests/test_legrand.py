@@ -5,7 +5,11 @@ from unittest import mock
 import pytest
 import zigpy.types as t
 from zigpy.zcl import AttributeUnsupportedEvent
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    EffectIdentifier,
+    EffectVariant,
+    PowerConfiguration,
+)
 import zigpy.zcl.foundation as f
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
@@ -14,10 +18,10 @@ from zhaquirks.legrand import LEGRAND
 from zhaquirks.legrand.contactor import (
     AutoOverride,
     AutoStatus,
+    DeviceMode,
     LegrandContactorAutoOnOff,
     LegrandContactorMode,
     LegrandContactorSwitchOnOff,
-    LegrandMode,
 )
 
 zhaquirks.setup()
@@ -412,70 +416,173 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
     switch_on_off_cluster = device.endpoints[1].in_clusters[
         LegrandContactorSwitchOnOff.cluster_id
     ]
+    auto_on_off_cluster = device.endpoints[1].in_clusters[
+        LegrandContactorAutoOnOff.cluster_id
+    ]
 
-    # cover _read_mode
-    mode_cluster.read_attributes = mock.AsyncMock(return_value=[None])
+    # cover _read_mode - no records returned
+    mode_cluster._read_attributes = mock.AsyncMock(return_value=[None])
     result = await mode_cluster._read_mode()
     assert result is None
-    mode_cluster.read_attributes = mock.AsyncMock(
-        return_value=[{LegrandContactorMode.MODE_ID: "mode_id_value"}]
+
+    # cover _read_mode - unsuccessful read
+    mode_cluster._read_attributes = mock.AsyncMock(
+        return_value=[
+            [ReadAttributeRecord(attrid=0, status=Status.UNSUPPORTED_ATTRIBUTE)]
+        ]
     )
     result = await mode_cluster._read_mode()
-    assert result == "mode_id_value"
+    assert result is None
+
+    # cover _read_mode - real data16 raw wire value.
+    #
+    # Regression test for: "TypeError: int() argument must be a string, a
+    # bytes-like object or a real number, not 'data16'". This used to be
+    # raised because the previous implementation called the generic
+    # read_attributes(), which casts the raw wire value with
+    # ``attr_def.type(record.value.value)``, i.e.
+    # ``DeviceMode(t.data16([3, 0]))`` - impossible since DeviceMode
+    # (t.enum16) is int-based and can't be constructed from a data16
+    # FixedList. _read_mode() must decode the raw bytes itself instead.
+    mode_cluster._read_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                ReadAttributeRecord(
+                    attrid=0,
+                    status=Status.SUCCESS,
+                    value=f.TypeValue(type=f.DataTypeId.data16, value=t.data16([3, 0])),
+                )
+            ]
+        ]
+    )
+    result = await mode_cluster._read_mode()
+    assert result == DeviceMode.Switch
+    assert mode_cluster.get("mode") == DeviceMode.Switch
+
+    mode_cluster._read_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                ReadAttributeRecord(
+                    attrid=0,
+                    status=Status.SUCCESS,
+                    value=f.TypeValue(type=f.DataTypeId.data16, value=t.data16([4, 0])),
+                )
+            ]
+        ]
+    )
+    result = await mode_cluster._read_mode()
+    assert result == DeviceMode.Auto
+    assert mode_cluster.get("mode") == DeviceMode.Auto
 
     # cover _update_attribute
-    mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, [3, 0])
+    mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, DeviceMode.Switch)
     assert switch_on_off_cluster._contactor_is_switch
-    mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, [4, 0])
+    mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, DeviceMode.Auto)
     assert not switch_on_off_cluster._contactor_is_switch
 
-    # cover write_attributes
+    # cover write_attributes (default CustomCluster.write_attributes) plus the
+    # auto-reset-to-Automatic behavior: switching mode to Auto must
+    # automatically call AutoOnOff.override(Automatic), equivalent to
+    # pressing "Reset Auto", so the device resumes obeying the external
+    # input without a manual button press. Switching to Switch must not
+    # trigger it.
+    auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: LegrandMode.Switch}, manufacturer=0x1021)
+    await mode_cluster.write_attributes({0: DeviceMode.Switch}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
-    assert list(call_args[0][0][0].value.value) == [3, 0]
+    assert call_args[0][0][0].value.type == f.DataTypeId.data16
+    assert call_args[0][0][0].value.value == DeviceMode.Switch
     assert call_args[1]["manufacturer"] == 0x1021
+    auto_on_off_cluster.override.assert_not_awaited()
 
+    auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({0: LegrandMode.Auto}, manufacturer=0x1021)
+    await mode_cluster.write_attributes({0: DeviceMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
-    assert list(call_args[0][0][0].value.value) == [4, 0]
+    assert call_args[0][0][0].value.type == f.DataTypeId.data16
+    assert call_args[0][0][0].value.value == DeviceMode.Auto
     assert call_args[1]["manufacturer"] == 0x1021
+    auto_on_off_cluster.override.assert_awaited_once_with(AutoOverride.Automatic)
 
+    auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
     await mode_cluster.write_attributes(
-        {"mode": LegrandMode.Switch}, manufacturer=0x1021
+        {"mode": DeviceMode.Switch}, manufacturer=0x1021
     )
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
-    assert list(call_args[0][0][0].value.value) == [3, 0]
+    assert call_args[0][0][0].value.type == f.DataTypeId.data16
+    assert call_args[0][0][0].value.value == DeviceMode.Switch
     assert call_args[1]["manufacturer"] == 0x1021
+    auto_on_off_cluster.override.assert_not_awaited()
 
+    auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
     mode_cluster._write_attributes = mock.AsyncMock(
         return_value=[
             [f.WriteAttributesStatusRecord(status=f.Status.SUCCESS, attrid=0)]
         ]
     )
-    await mode_cluster.write_attributes({"mode": LegrandMode.Auto}, manufacturer=0x1021)
+    await mode_cluster.write_attributes({"mode": DeviceMode.Auto}, manufacturer=0x1021)
     mode_cluster._write_attributes.assert_awaited_once()
     call_args = mode_cluster._write_attributes.call_args
     assert call_args[0][0][0].attrid == 0
-    assert list(call_args[0][0][0].value.value) == [4, 0]
+    assert call_args[0][0][0].value.type == f.DataTypeId.data16
+    assert call_args[0][0][0].value.value == DeviceMode.Auto
     assert call_args[1]["manufacturer"] == 0x1021
+    auto_on_off_cluster.override.assert_awaited_once_with(AutoOverride.Automatic)
+
+    # cover write_attributes - mode write to Auto that fails must NOT
+    # auto-reset (only a successful write reflects the device's real state).
+    auto_on_off_cluster.override = mock.AsyncMock(return_value=(f.Status.SUCCESS, None))
+    mode_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [f.WriteAttributesStatusRecord(status=f.Status.FAILURE, attrid=0)]
+        ]
+    )
+    await mode_cluster.write_attributes({0: DeviceMode.Auto}, manufacturer=0x1021)
+    auto_on_off_cluster.override.assert_not_awaited()
+
+
+async def test_legrand_contactor_identify(zigpy_device_from_v2_quirk):
+    """Test Legrand contactor identify command redirect.
+
+    Regression test for: identify does nothing on the physical device, with
+    no error on the HA side. The Contactor doesn't honor the standard ZCL
+    'identify' command; like every other Legrand quirk (switch, dimmer,
+    shutter, micromodule, connected_outled - all via LegrandIdentify), it
+    needs the manufacturer-specific 'trigger_effect' command instead.
+    """
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Contactor")
+
+    identify_cluster = device.endpoints[1].identify
+    identify_cluster.request = mock.AsyncMock(return_value=(Status.SUCCESS, None))
+
+    await identify_cluster.identify(5)
+
+    assert identify_cluster.request.await_count == 2
+
+    trigger_effect_call = identify_cluster.request.await_args_list[0]
+    assert trigger_effect_call.args[1] == 0x40  # trigger_effect command id
+    assert trigger_effect_call.kwargs["effect_id"] == EffectIdentifier.Blink
+    assert trigger_effect_call.kwargs["effect_variant"] == EffectVariant.Default
+
+    identify_call = identify_cluster.request.await_args_list[1]
+    assert identify_call.args[1] == 0x00  # identify command id
+    assert identify_call.args[3] == 5

@@ -68,29 +68,26 @@ signature:
 from enum import Enum
 import logging
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
-    CustomDeviceV2,
-    EntityPlatform,
-    EntityType,
-    QuirkBuilder,
-    ReportingConfig,
-)
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
+    DataTypeId,
     Status,
     ZCLAttributeDef,
     ZCLCommandDef,
 )
 
 from zhaquirks import Bus
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, ReportingConfig
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legrand import (  # decimal = 64513
     LEGRAND,
     MANUFACTURER_SPECIFIC_CLUSTER_ID,
+    LegrandIdentify,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,17 +97,16 @@ LEGRAND_MANUFACTURER_CODE = 0x1021
 
 
 class DeviceMode(t.enum16):
-    """Device mode."""
+    """Device mode.
 
-    MODE_SWITCH = 3
-    MODE_AUTO = 4
+    Wire encoding is a manufacturer-specific "data16" (2 raw bytes), matching
+    zhaquirks.legrand.cable_outlet.DeviceMode. The attribute's Python type
+    stays a plain int-based enum16 so the cached value (and the ZHA select
+    entity backed by it) can compare directly against these members.
+    """
 
-
-class LegrandMode(Enum):
-    """Device readable mode."""
-
-    Switch = [3, 0]
-    Auto = [4, 0]
+    Switch = 3
+    Auto = 4
 
 
 class LegrandContactorMode(CustomCluster):
@@ -194,14 +190,15 @@ class LegrandContactorMode(CustomCluster):
 
     CONTACTOR_IS_SWITCH_REPORTED = "contactor_is_switch_reported"
     MODE_ID = 0x0000
-    MODES = [DeviceMode.MODE_SWITCH, DeviceMode.MODE_AUTO]
+    MODES = [DeviceMode.Switch, DeviceMode.Auto]
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         mode = ZCLAttributeDef(
             id=0x0000,
-            type=t.data16,  # DeviceMode
+            type=DeviceMode,
+            zcl_type=DataTypeId.data16,
             manufacturer_code=LEGRAND_MANUFACTURER_CODE,
         )
         led_dark = ZCLAttributeDef(
@@ -215,21 +212,6 @@ class LegrandContactorMode(CustomCluster):
             manufacturer_code=LEGRAND_MANUFACTURER_CODE,
         )
 
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes."""
-
-        new_attributes = attributes.copy()
-        for k in new_attributes:
-            if k in [0, "mode"]:
-                v = new_attributes[k]
-                if isinstance(v, LegrandMode):
-                    if v == LegrandMode.Switch:
-                        new_v = [3, 0]
-                    elif v == LegrandMode.Auto:
-                        new_v = [4, 0]
-                    new_attributes[k] = new_v
-        return await super().write_attributes(new_attributes, manufacturer)
-
     def _update_attribute(self, attrid, value):
         """Attribute update."""
 
@@ -241,19 +223,83 @@ class LegrandContactorMode(CustomCluster):
 
         super()._update_attribute(attrid, value)
         if attrid == self.MODE_ID and value is not None:
-            mode = value[0] | (value[1] << 8)
+            mode = value
             if mode in self.MODES:
                 self.endpoint.device.reporting_bus.listener_event(
-                    self.CONTACTOR_IS_SWITCH_REPORTED, mode == DeviceMode.MODE_SWITCH
+                    self.CONTACTOR_IS_SWITCH_REPORTED, mode == DeviceMode.Switch
                 )
 
     async def _read_mode(self):
-        """Read mode."""
-        result = await self.read_attributes([self.MODE_ID], allow_cache=False)
-        if not result[0]:
+        """Read mode.
+
+        NOTE: Uses read_attributes_raw() instead of read_attributes(). The
+        latter casts the raw wire value with
+        ``attr_def.type(record.value.value)``, i.e. ``DeviceMode(raw)``.
+        Since the wire encoding is a raw ``data16`` (2 bytes, per the
+        ZCL Toolkit scan in this module's docstring) and ``DeviceMode`` is
+        int-based (``t.enum16``), this cast raises
+        ``TypeError: int() argument ... not 'data16'`` whenever this method
+        is called with a live read (e.g. from `_update_contactor_mode`,
+        itself invoked on every switch on/off/toggle). Decode the raw
+        little-endian bytes into ``DeviceMode`` manually here instead, and
+        update the cache ourselves so downstream consumers (``MODES``
+        comparisons, ``CONTACTOR_IS_SWITCH_REPORTED``) keep working
+        transparently.
+        """
+        result = await self.read_attributes_raw([self.MODE_ID])
+        records = result[0]
+        if not isinstance(records, list) or not records:
             return None
 
-        return result[0][self.MODE_ID]
+        record = records[0]
+        if record.status != Status.SUCCESS or record.value.value is None:
+            return None
+
+        raw = record.value.value
+        if isinstance(raw, (bytes, bytearray, list, tuple)):
+            mode = DeviceMode(raw[0] | (raw[1] << 8))
+        else:
+            mode = DeviceMode(raw)
+
+        self._update_attribute(self.MODE_ID, mode)
+        return mode
+
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+        """Write attributes.
+
+        NOTE: Restores AutoOnOff's Automatic override right after switching
+        mode to Auto (equivalent to pressing the 'Reset Auto' button).
+        Without this, the device stays in whatever Forced On/Off state it
+        was left in and requires a manual 'Reset Auto' press to resume
+        obeying the external input.
+        """
+        result = await super().write_attributes(
+            attributes, manufacturer=manufacturer, **kwargs
+        )
+
+        mode_value = attributes.get(self.MODE_ID, attributes.get("mode"))
+        if mode_value == DeviceMode.Auto and self._write_succeeded(
+            result, self.MODE_ID
+        ):
+            await self._reset_auto_override()
+
+        return result
+
+    @staticmethod
+    def _write_succeeded(result, attrid):
+        """Check whether a given attribute write succeeded."""
+        records = result[0] if result else []
+        return any(
+            record.attrid == attrid and record.status == Status.SUCCESS
+            for record in records
+        )
+
+    async def _reset_auto_override(self):
+        """Reset AutoOnOff override to Automatic."""
+        auto_cluster = self.endpoint.device.endpoints[1].in_clusters[
+            LegrandContactorAutoOnOff.cluster_id
+        ]
+        await auto_cluster.override(AutoOverride.Automatic)
 
 
 class AutoStatus(t.enum8):
@@ -692,7 +738,7 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         super()._update_attribute(attrid, value)
 
 
-class LegrandContactorV2(CustomDeviceV2):
+class LegrandContactorV2(CustomZigpyDevice):
     """Legrand Contactor device.
 
     The device offers two modes of operation:
@@ -758,9 +804,10 @@ REPORTING_WHEN_CHANGED = ReportingConfig(
     .replaces(LegrandContactorMode)
     .replaces(LegrandContactorAutoOnOff)
     .replaces(LegrandContactorSwitchOnOff)
+    .replaces(LegrandIdentify)
     .enum(
         attribute_name="mode",
-        enum_class=LegrandMode,
+        enum_class=DeviceMode,
         cluster_id=LegrandContactorMode.cluster_id,
         cluster_type=ClusterType.Server,
         endpoint_id=1,
