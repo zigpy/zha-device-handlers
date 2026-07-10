@@ -1,4 +1,4 @@
-"""Tests for Sonoff MINI-ZBD quirks."""
+"""Tests for Sonoff ZBMINIR2 / MINI-ZBD quirks."""
 
 from unittest import mock
 
@@ -6,7 +6,7 @@ from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.sonoff.mini_zbd import (
+from zhaquirks.sonoff.zbminir2 import (
     EWELINK_MANUFACTURER_CODE,
     PROTOCOL_DATA_COMMAND_ID,
     InchingPayload,
