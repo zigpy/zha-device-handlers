@@ -5,12 +5,13 @@ from typing import Any
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
+    EntityPlatform,
+    EntityType,
     NumberDeviceClass,
     QuirkBuilder,
     SensorDeviceClass,
     SensorStateClass,
 )
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
     PERCENTAGE,
     UnitOfElectricCurrent,
@@ -127,7 +128,9 @@ class SonoffCluster(CustomCluster):
         remapped_attributes = {}
         for attr, value in attributes.items():
             if self.find_attribute(attr).id in ACTION_ID_MAPPING:
-                remapped_attributes[self.AttributeDefs.set_calibration_action.name] = value
+                remapped_attributes[self.AttributeDefs.set_calibration_action.name] = (
+                    value
+                )
             else:
                 remapped_attributes[attr] = value
 
