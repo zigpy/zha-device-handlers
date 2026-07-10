@@ -3,6 +3,7 @@
 import importlib
 from unittest import mock
 
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import LevelControl
 
@@ -72,7 +73,7 @@ async def test_sonoff_mini_zbdim_write_attributes_maps_virtual_actions(
             written_attrs[1].attrid
             == SonoffCluster.AttributeDefs.delayed_power_on_state.id
         )
-        assert written_attrs[1].value.value is True
+        assert written_attrs[1].value.value == t.Bool.true
 
 
 async def test_sonoff_mini_zbdim_apply_custom_configuration_reads_backed_attributes(
