@@ -2,6 +2,7 @@
 
 from typing import Any
 
+import zigpy.types as t
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
@@ -19,11 +20,10 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfPower,
     UnitOfTime,
 )
-import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeAccess, ZCLAttributeDef
 
-ACTION_ID_MAPPING = [0xFFD1, 0xFFD2, 0xFFD3]
+ACTION_ATTRIBUTE_IDS = (0xFFD1, 0xFFD2, 0xFFD3)
 
 
 class SonoffCluster(CustomCluster):
@@ -127,10 +127,10 @@ class SonoffCluster(CustomCluster):
         """Map virtual calibration action attributes to the real device attribute."""
         remapped_attributes = {}
         for attr, value in attributes.items():
-            if self.find_attribute(attr).id in ACTION_ID_MAPPING:
-                remapped_attributes[self.AttributeDefs.set_calibration_action.name] = (
-                    value
-                )
+            if self.find_attribute(attr).id in ACTION_ATTRIBUTE_IDS:
+                remapped_attributes[
+                    self.AttributeDefs.set_calibration_action.name
+                ] = value
             else:
                 remapped_attributes[attr] = value
 
@@ -183,14 +183,6 @@ class DimmingLightRate(types.enum8):
     X3 = 3
     X4 = 4
     X5 = 5
-
-
-# class SetCalibrationAction(Enum):
-#     """Set calibration action attribute values."""
-
-#     Start = bytes([0x01,0x01,0x01]).decode("latin-1"),
-#     Stop = bytes([0x01,0x01,0x02]).decode("latin-1"),
-#     Clear = bytes([0x01,0x01,0x03]).decode("latin-1"),
 
 
 class CalibrationStatus(types.enum8):
