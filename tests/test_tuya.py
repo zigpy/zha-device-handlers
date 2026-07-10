@@ -38,6 +38,7 @@ import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
+import zhaquirks.tuya.ts0601_din_power_meter_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
@@ -2095,3 +2096,125 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+def test_ts0601_din_power_meter_switch_signature(assert_signature_matches_quirk):
+    """Test matching of DIN Power Meter Switch ZCR1-40EM signature with quirk."""
+    signature = {
+        # NodeDescriptor: manufacturer_code=4417, max_buffer_size=66, server_mask=10752
+        # device_version=1
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
+        # output_clusters=[0x000a, 0x0019]
+        "endpoints": {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81 device_version=1
+            # input_clusters=[4, 5, 61184, 0] -> [Groups, Scenes, TuyaMCU, Basic]
+            # output_clusters=[25, 10] -> [OTA, Time]>
+            1: {
+                "profile_id": 260,
+                "device_type": "0x0051",
+                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xEF00"],
+                "out_clusters": ["0x0019", "0x000A"],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97 device_version=0
+            # input_clusters=[] output_clusters=[33]>
+            242: {
+                "profile_id": 41440,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "_TZE200_abatw3kj",
+        "model": "TS0601",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0601_din_power_meter_switch.TuyaDinPowerMeterSwitch, signature
+    )
+
+
+@pytest.mark.parametrize(
+    "raw_data, expected_output",
+    (
+        ([0x01, 0x2C, 0x00, 0x00, 0x32, 0x00, 0x00, 0x64], (300, 50, 100)),
+        ([0x00, 0xFA, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x32], (250, 10, 50)),
+        ([1, 2, 3], (0, 0, 0)),
+        (None, (0, 0, 0)),
+        ([], (0, 0, 0)),
+        (b"\x01\x02\x03\x04\x05\x06\x07\x08", (258, 1029, 1800)),
+    ),
+)
+def test_convert_electrical_measurements(raw_data, expected_output):
+    """Test electrical measurements data conversion."""
+    assert (
+        zhaquirks.tuya.ts0601_din_power_meter_switch.convert_electrical_measurements(
+            raw_data
+        )
+        == expected_output
+    )
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_output",
+    (
+        (123, 123),
+        (123.45, 123),
+        (b"\x00\x00\x00\x64", 100),
+        ([0, 0, 0, 100], 100),
+        (b"\x01\x02\x03", 0),
+        ([1, 2], 0),
+        (None, 0),
+    ),
+)
+def test_convert_energy_data(input_data, expected_output):
+    """Test energy data conversion."""
+    assert (
+        zhaquirks.tuya.ts0601_din_power_meter_switch.convert_energy_data(input_data)
+        == expected_output
+    )
+
+
+async def test_tuya_switch_command(zigpy_device_from_quirk):
+    """Test TuyaDinPowerMeterSwitchOnOff commands."""
+
+    device = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts0601_din_power_meter_switch.TuyaDinPowerMeterSwitch
+    )
+    cluster = device.endpoints[1].tuya_manufacturer
+    onoff_cluster = device.endpoints[1].on_off
+
+    with mock.patch.object(cluster, "request", return_value=foundation.Status.SUCCESS):
+        # Test clear_locking command
+        rsp = await onoff_cluster.command(0x74)
+        assert rsp.status == foundation.Status.SUCCESS
+
+        # Test regular command
+        rsp = await onoff_cluster.command(0x00)  # on command
+        assert rsp.status == foundation.Status.SUCCESS
+
+
+def test_electrical_measurement_updates(zigpy_device_from_quirk):
+    """Test electrical measurement attribute updates."""
+
+    device = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts0601_din_power_meter_switch.TuyaDinPowerMeterSwitch
+    )
+    cluster = device.endpoints[1].electrical_measurement
+
+    # Initialize cluster
+    cluster.update_attribute("apparent_power", 0)
+
+    # Test rms_current update with voltage
+    cluster.update_attribute("rms_voltage", 230)
+    cluster.update_attribute("rms_current", 1000)  # 1A
+    assert cluster.get("apparent_power") == 230  # 230VA
+
+    # Test active_power update with apparent_power
+    cluster.update_attribute("apparent_power", 100)
+    cluster.update_attribute("active_power", 90)  # 90W
+    assert cluster.get("power_factor") == 90  # 90%
+
+    # Test power_factor limiting
+    cluster.update_attribute("apparent_power", 50)
+    cluster.update_attribute("active_power", 100)  # 100W
+    assert cluster.get("power_factor") == 100  # should be limited to 100%
