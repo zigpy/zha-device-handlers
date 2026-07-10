@@ -2,7 +2,6 @@
 
 from typing import Any
 
-import zigpy.types as t
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
@@ -20,6 +19,7 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfPower,
     UnitOfTime,
 )
+import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeAccess, ZCLAttributeDef
 
@@ -128,9 +128,9 @@ class SonoffCluster(CustomCluster):
         remapped_attributes = {}
         for attr, value in attributes.items():
             if self.find_attribute(attr).id in ACTION_ATTRIBUTE_IDS:
-                remapped_attributes[
-                    self.AttributeDefs.set_calibration_action.name
-                ] = value
+                remapped_attributes[self.AttributeDefs.set_calibration_action.name] = (
+                    value
+                )
             else:
                 remapped_attributes[attr] = value
 
