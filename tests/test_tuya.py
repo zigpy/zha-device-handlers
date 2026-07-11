@@ -2095,3 +2095,507 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+# Test frames for MoesBHT6
+ZCL_TUYA_EHEAT6_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"  # Current temp 17.9°C (0xb3 = 179 decidegree)
+ZCL_TUYA_EHEAT6_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"  # Target temp 21°C (0x15 = 21 degree)
+ZCL_TUYA_EHEAT6_MODE_MANUAL = (
+    b"\t4\x02\x00\x06\x02\x04\x00\x01\x00"  # Manual mode (0x02 = 0x0402, value = 0)
+)
+ZCL_TUYA_EHEAT6_MODE_SCHEDULED = (
+    b"\t5\x02\x00\x06\x02\x04\x00\x01\x01"  # Scheduled mode (0x02 = 0x0402, value = 1)
+)
+ZCL_TUYA_EHEAT6_ENABLED_ON = b"\t6\x02\x00\x06\x01\x01\x00\x01\x01"  # Enabled (ON)
+ZCL_TUYA_EHEAT6_ENABLED_OFF = b"\t7\x02\x00\x06\x01\x01\x00\x01\x00"  # Disabled (OFF)
+ZCL_TUYA_EHEAT6_RUNNING_HEAT = (
+    b"\t8\x02\x00\x06\x24\x04\x00\x01\x00"  # Running/Heating (value = 0)
+)
+ZCL_TUYA_EHEAT6_RUNNING_IDLE = (
+    b"\t9\x02\x00\x06\x24\x04\x00\x01\x01"  # Idle (value = 1)
+)
+ZCL_TUYA_EHEAT6_CHILD_LOCK_ON = (
+    b"\t\x0a\x02\x00\x06\x28\x01\x00\x01\x01"  # Child lock ON
+)
+ZCL_TUYA_EHEAT6_CHILD_LOCK_OFF = (
+    b"\t\x0b\x02\x00\x06\x28\x01\x00\x01\x00"  # Child lock OFF
+)
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_state_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 thermostat standard reporting from incoming commands."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+
+    thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
+
+    # Test temperature and target temperature reporting
+    frames = (ZCL_TUYA_EHEAT6_TEMPERATURE, ZCL_TUYA_EHEAT6_TARGET_TEMP)
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.cluster_commands) == 0
+    assert len(thermostat_listener.attribute_updates) == 2
+    assert thermostat_listener.attribute_updates[0][0] == 0x0000  # local_temperature
+    assert thermostat_listener.attribute_updates[0][1] == 1790  # 17.9°C in centidegrees
+    assert (
+        thermostat_listener.attribute_updates[1][0] == 0x0012
+    )  # occupied_heating_setpoint
+    assert thermostat_listener.attribute_updates[1][1] == 2100  # 21°C in centidegrees
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_mode_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 mode reporting (manual/scheduled)."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+    thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
+
+    # Test manual mode
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_MODE_MANUAL)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 1
+    assert thermostat_listener.attribute_updates[0][0] == 0x0025  # programing_oper_mode
+    assert thermostat_listener.attribute_updates[0][1] == 0x00  # Simple (manual)
+
+    thermostat_listener.attribute_updates.clear()
+
+    # Test scheduled mode
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_MODE_SCHEDULED)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 1
+    assert thermostat_listener.attribute_updates[0][0] == 0x0025  # programing_oper_mode
+    assert (
+        thermostat_listener.attribute_updates[0][1] == 0x01
+    )  # Schedule_programming_mode
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_system_mode_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 system mode reporting (on/off)."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+    thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
+
+    # Test enabled (Heat mode)
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_ENABLED_ON)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 1
+    assert thermostat_listener.attribute_updates[0][0] == 0x001C  # system_mode
+    assert thermostat_listener.attribute_updates[0][1] == 0x04  # Heat
+
+    thermostat_listener.attribute_updates.clear()
+
+    # Test disabled (Off mode)
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_ENABLED_OFF)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 1
+    assert thermostat_listener.attribute_updates[0][0] == 0x001C  # system_mode
+    assert thermostat_listener.attribute_updates[0][1] == 0x00  # Off
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_running_state_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 running state reporting."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+    thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
+
+    # Test heating state
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_RUNNING_HEAT)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 2
+    # Should update both running_mode and running_state
+    assert thermostat_listener.attribute_updates[0][0] == 0x001E  # running_mode
+    assert thermostat_listener.attribute_updates[0][1] == 0x04  # Heat
+    assert thermostat_listener.attribute_updates[1][0] == 0x0029  # running_state
+    assert thermostat_listener.attribute_updates[1][1] == 0x0001  # Heat_State_On
+
+    thermostat_listener.attribute_updates.clear()
+
+    # Test idle state
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_RUNNING_IDLE)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.attribute_updates) == 2
+    assert thermostat_listener.attribute_updates[0][0] == 0x001E  # running_mode
+    assert thermostat_listener.attribute_updates[0][1] == 0x00  # Off
+    assert thermostat_listener.attribute_updates[1][0] == 0x0029  # running_state
+    assert thermostat_listener.attribute_updates[1][1] == 0x0000  # Idle
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_send_attribute(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 thermostat outgoing commands."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = eheat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+        # Test setting target temperature (25°C = 2500 centidegrees = 25 degrees)
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        # Test setting system mode to Off
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x00",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        # Test setting system mode to Heat
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0x04,
+            }
+        )
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        # Test setting programming operation mode to manual
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "programing_oper_mode": 0x00,  # Simple (manual)
+            }
+        )
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=4,
+            data=b"\x01\x04\x00\x00\x04\x02\x04\x00\x01\x00",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        # Test setting programming operation mode to scheduled
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "programing_oper_mode": 0x01,  # Schedule_programming_mode
+            }
+        )
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=5,
+            data=b"\x01\x05\x00\x00\x05\x02\x04\x00\x01\x01",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_command_on_off(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 on/off command handling via ManufCluster."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    tuya_manuf_cluster = eheat_dev.endpoints[1].tuya_manufacturer
+
+    # Test on command (0x0001)
+    result = await tuya_manuf_cluster.command(0x0001)
+    assert result.command_id == 0x0001
+    assert result.status == foundation.Status.SUCCESS
+
+    # Test off command (0x0000)
+    result = await tuya_manuf_cluster.command(0x0000)
+    assert result.command_id == 0x0000
+    assert result.status == foundation.Status.SUCCESS
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_setpoint_rounding(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 setpoint rounding and boundary behavior."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test various setpoint values and rounding
+    test_cases = [
+        (1500, 15),  # 15.00°C → 15°C
+        (1550, 16),  # 15.50°C → 16°C (rounds up)
+        (2050, 20),  # 20.50°C → 20°C (rounds to even)
+        (2150, 22),  # 21.50°C → 22°C (rounds to even)
+        (2549, 25),  # 25.49°C → 25°C (rounds down)
+        (2551, 26),  # 25.51°C → 26°C (rounds up)
+        (500, 5),  # 5.00°C → 5°C
+        (3500, 35),  # 35.00°C → 35°C
+    ]
+
+    for input_val, expected in test_cases:
+        result = thermostat_cluster.map_attribute(
+            "occupied_heating_setpoint", input_val
+        )
+        assert result == {0x0210: expected}, (
+            f"Input {input_val} should map to {expected}"
+        )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_system_mode(zigpy_device_from_quirk, quirk, caplog):
+    """Test MoesBHT6 error handling for unsupported system modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "system_mode", thermostat_cluster.SystemMode.Off
+    )
+    assert result == {0x0101: 0}
+
+    result = thermostat_cluster.map_attribute(
+        "system_mode", thermostat_cluster.SystemMode.Heat
+    )
+    assert result == {0x0101: 1}
+
+    # Test unsupported modes - these should call self.error() and fall through to super()
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "system_mode", thermostat_cluster.SystemMode.Cool
+        )
+        # self.error() logs but doesn't prevent super().map_attribute() from being called
+        # super() returns {} for unsupported attributes
+        assert result == {}
+        assert "Unsupported value for SystemMode" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "system_mode", thermostat_cluster.SystemMode.Auto
+        )
+        assert result == {}
+        assert "Unsupported value for SystemMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_programming_mode(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported programming modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "programing_oper_mode", thermostat_cluster.ProgrammingOperationMode.Simple
+    )
+    assert result == {0x0402: 0}
+
+    result = thermostat_cluster.map_attribute(
+        "programing_oper_mode",
+        thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode,
+    )
+    assert result == {0x0402: 1}
+
+    # Test unsupported mode
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        # Try an unsupported programming mode if available
+        # ProgrammingOperationMode only has Simple (0) and Schedule_programming_mode (1)
+        # Test with an invalid value
+        result = thermostat_cluster.map_attribute("programing_oper_mode", 0xFF)
+        assert result == {}
+        assert "Unsupported value for ProgrammingOperationMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_running_state(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported running states."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported states first
+    result = thermostat_cluster.map_attribute(
+        "running_state", thermostat_cluster.RunningState.Idle
+    )
+    assert result == {0x0424: 1}
+
+    result = thermostat_cluster.map_attribute(
+        "running_state", thermostat_cluster.RunningState.Heat_State_On
+    )
+    assert result == {0x0424: 0}
+
+    # Test unsupported state
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "running_state", thermostat_cluster.RunningState.Cool_State_On
+        )
+        assert result == {}
+        assert "Unsupported value for RunningState" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_running_mode(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported running modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "running_mode", thermostat_cluster.RunningMode.Off
+    )
+    assert result == {0x0424: 1}
+
+    result = thermostat_cluster.map_attribute(
+        "running_mode", thermostat_cluster.RunningMode.Heat
+    )
+    assert result == {0x0424: 0}
+
+    # Test unsupported mode
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "running_mode", thermostat_cluster.RunningMode.Cool
+        )
+        assert result == {}
+        assert "Unsupported value for RunningMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_program_change_modes(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 program_change with various mode strings."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test manual mode
+    thermostat_cluster.program_change("manual")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Simple
+    )
+
+    # Test scheduled mode (any non-"manual" string)
+    thermostat_cluster.program_change("scheduled")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
+
+    # Test other strings also map to scheduled
+    thermostat_cluster.program_change("schedule")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
+
+    thermostat_cluster.program_change("auto")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_child_lock_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 child lock reporting."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+    ui_cluster = electric_dev.endpoints[1].thermostat_ui
+
+    from tests.common import ClusterListener
+
+    ui_listener = ClusterListener(ui_cluster)
+
+    # Test child lock on
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_CHILD_LOCK_ON)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(ui_listener.attribute_updates) == 1
+    assert ui_listener.attribute_updates[0][0] == 0x0001  # child_lock attribute
+    assert ui_listener.attribute_updates[0][1] == 1  # Locked
+
+    ui_listener.attribute_updates.clear()
+
+    # Test child lock off
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_CHILD_LOCK_OFF)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(ui_listener.attribute_updates) == 1
+    assert ui_listener.attribute_updates[0][0] == 0x0001  # child_lock attribute
+    assert ui_listener.attribute_updates[0][1] == 0  # Unlocked
