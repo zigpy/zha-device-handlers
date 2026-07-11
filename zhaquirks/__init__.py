@@ -16,6 +16,7 @@ from zha.quirks import (
     DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
     DeviceMatch,
     ModelInfo,
+    QuirkPriority,
     QuirkRegistryEntry,
     QuirkSource,
     ReplaceZigpyDevice,
@@ -549,6 +550,9 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
         ),
         zigpy_transforms=(ReplaceZigpyDevice(cls),),
         zha_device_factory=None,
+        # v1 quirks match after v2 quirks, so a stale custom v1 quirk cannot
+        # shadow its built-in v2 replacement (issues #5161/#5167).
+        priority=QuirkPriority.V1,
         source=QuirkSource.from_class(cls),
     )
 
