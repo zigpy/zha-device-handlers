@@ -1,5 +1,8 @@
 """Xiaomi aqara magic cube device."""
 
+from typing import Final
+
+from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -11,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -33,6 +37,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -183,6 +188,36 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
+    """Power configuration cluster matching the Aqara T1 cube's battery voltage range."""
+
+    MIN_VOLTS_MV = 2850
+    MAX_VOLTS_MV = 3000
+
+
+class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer specific cluster for the T1 cube.
+
+    The T1 cube reports its battery voltage as an individual attribute on
+    this cluster instead of using the legacy Xiaomi attribute blob on the
+    Basic cluster, so it is not picked up by XiaomiPowerConfiguration on its
+    own. This cluster is not present in the device's signature, but the
+    device communicates on it regardless.
+    """
+
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        battery_voltage_mv: Final = ZCLAttributeDef(
+            id=0x0001, type=t.uint16_t, is_manufacturer_specific=True
+        )
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.battery_voltage_mv.id:
+            self.endpoint.power.battery_reported(value)
+        super()._update_attribute(attrid, value)
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -349,7 +384,7 @@ class CubeAQGL01(XiaomiCustomDevice):
     }
 
 
-class CubeCAGL02(XiaomiCustomDevice):
+class CubeCAGL02FPO(XiaomiCustomDevice):
     """Aqara T1 magic cube device."""
 
     def __init__(self, *args, **kwargs):
@@ -413,10 +448,11 @@ class CubeCAGL02(XiaomiCustomDevice):
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    XiaomiPowerConfiguration,
+                    CubeT1PowerConfiguration,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     MultistateInput.cluster_id,
+                    CubeT1ManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
