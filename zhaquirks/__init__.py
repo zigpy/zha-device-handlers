@@ -15,6 +15,7 @@ from typing import Any
 from zha.quirks import (
     DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
     DeviceMatch,
+    DeviceRegistry,
     ModelInfo,
     QuirkRegistryEntry,
     QuirkSource,
@@ -578,6 +579,45 @@ def _register_pending_quirks() -> None:
     PENDING_LEGACY_QUIRKS.clear()
 
 
+def _sort_registry_by_priority(
+    custom_quirks_root: pathlib.Path | None,
+    registry: DeviceRegistry = ZHA_DEVICE_REGISTRY,
+) -> None:
+    """Reorder ZHA's registry so quirks match in a fixed priority order.
+
+    Matching alone is registration-ordered (the most recently registered quirk
+    wins), which lets a stale custom v1 quirk shadow its built-in v2
+    replacement (issues #5161/#5167). Instead, restore the pre-2.0 "v2 before
+    v1" matching, with custom quirks beating built-in quirks within each
+    generation:
+
+        custom v2 > built-in v2 > custom v1 > built-in v1
+
+    Matching scans each model's entry list front to back, so a stable sort of
+    the lists by tier is sufficient; within a tier, later-registered quirks
+    keep beating earlier-registered ones.
+    """
+
+    def sort_key(entry: QuirkRegistryEntry) -> tuple[bool, bool]:
+        # v1 entries are compiled by `_legacy_quirk_to_registry_entry`, which
+        # leaves `zha_device_factory` unset; v2 entries always carry a factory.
+        is_v2 = entry.zha_device_factory is not None
+        is_custom = (
+            custom_quirks_root is not None
+            and entry.source is not None
+            and entry.source.file is not None
+            and pathlib.Path(entry.source.file).is_relative_to(custom_quirks_root)
+        )
+        # False sorts first, so negate: highest-priority tier ends up in front.
+        return (not is_v2, not is_custom)
+
+    for entries in (
+        *registry._registry.values(),  # noqa: SLF001
+        registry._wildcard_registry,  # noqa: SLF001
+    ):
+        entries.sort(key=sort_key)
+
+
 def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy and ZHA, including optional custom quirks.
 
@@ -587,6 +627,10 @@ def setup(custom_quirks_path: str | None = None) -> None:
     manufacturer/model but were never added to the registry, and loads custom
     quirks from `custom_quirks_path`. Owned here (rather than ZHA's gateway) so
     ZHA never imports zhaquirks.
+
+    Once everything is registered, ZHA's registry is reordered so quirks match
+    with priority `custom v2 > built-in v2 > custom v1 > built-in v1` (see
+    `_sort_registry_by_priority`).
     """
     if custom_quirks_path is not None:
         path = pathlib.Path(custom_quirks_path)
@@ -607,6 +651,7 @@ def setup(custom_quirks_path: str | None = None) -> None:
     _register_pending_quirks()
 
     if custom_quirks_path is None:
+        _sort_registry_by_priority(None)
         return
 
     path = pathlib.Path(custom_quirks_path)
@@ -631,6 +676,8 @@ def setup(custom_quirks_path: str | None = None) -> None:
     # Custom quirks queued new v1/v2 registrations during the import above; drain
     # them too, or they never reach ZHA's registry and silently fail to resolve.
     _register_pending_quirks()
+
+    _sort_registry_by_priority(path)
 
     if loaded:
         _LOGGER.warning(

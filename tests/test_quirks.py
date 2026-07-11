@@ -9,7 +9,13 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from zha.quirks import DeviceRegistry
+from zha.quirks import (
+    DeviceMatch,
+    DeviceRegistry,
+    ModelInfo,
+    QuirkRegistryEntry,
+    QuirkSource,
+)
 from zigpy import zcl
 import zigpy.device
 import zigpy.endpoint
@@ -579,6 +585,116 @@ class TestReplacementISWZPR1WP13(CustomDevice):
     # custom quirk imported after the initial drain must still reach ZHA's registry.
     resolved = zhaquirks.ZHA_DEVICE_REGISTRY.resolve(device)
     assert type(resolved).__name__ == "TestReplacementISWZPR1WP13"
+
+
+def test_sort_registry_by_priority(tmp_path: Path) -> None:
+    """Registry entries sort to custom v2 > built-in v2 > custom v1 > built-in v1."""
+
+    registry = DeviceRegistry()
+    key = ModelInfo("manufacturer", "model")
+
+    def make_entry(label: str, *, v2: bool, custom: bool) -> QuirkRegistryEntry:
+        file = tmp_path / "custom.py" if custom else Path(zhaquirks.__file__)
+        return QuirkRegistryEntry(
+            device_match=DeviceMatch(applies_to=(key,)),
+            # A unique transform keeps otherwise-identical entries from
+            # deduplicating on registration.
+            zigpy_transforms=(lambda device: device,),
+            zha_device_factory=(lambda: None) if v2 else None,
+            source=QuirkSource(module="module", file=str(file), line=1, label=label),
+        )
+
+    # Register fully inverted: with LIFO matching, the last registered would win.
+    registry.register(make_entry("custom v2 old", v2=True, custom=True))
+    registry.register(make_entry("custom v2 new", v2=True, custom=True))
+    registry.register(make_entry("built-in v2", v2=True, custom=False))
+    registry.register(make_entry("custom v1", v2=False, custom=True))
+    registry.register(make_entry("built-in v1", v2=False, custom=False))
+
+    zhaquirks._sort_registry_by_priority(tmp_path, registry)
+
+    assert [entry.source.label for entry in registry._registry[key]] == [
+        # Within a tier, later-registered entries still match first.
+        "custom v2 new",
+        "custom v2 old",
+        "built-in v2",
+        "custom v1",
+        "built-in v1",
+    ]
+
+
+def test_custom_v1_quirk_does_not_shadow_builtin_v2_quirk(
+    zigpy_device_from_quirk, tmp_path: Path
+) -> None:
+    """Quirks match with priority custom v2 > built-in v2 > custom v1 > built-in v1."""
+
+    # Plain ints so the dict's `repr` round-trips into the custom quirk module below
+    v1_signature = {
+        MODELS_INFO: [("PriorityManuf", "PriorityModel")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0100,
+                INPUT_CLUSTERS: [0x0000],
+                OUTPUT_CLUSTERS: [],
+            }
+        },
+    }
+
+    # A "built-in" v1 quirk (defined outside the custom quirks path)
+    class BuiltinV1PriorityQuirk(CustomDevice):
+        signature = v1_signature
+        replacement = {ENDPOINTS: v1_signature[ENDPOINTS]}
+
+    # A "built-in" v2 quirk
+    QuirkBuilder("PriorityManuf", "PriorityModel").add_to_registry()
+
+    custom_quirks = tmp_path / "custom_zha_quirks"
+    custom_quirks.mkdir()
+
+    (custom_quirks / "custom_priority_quirk.py").write_text(
+        f'''
+"""Custom v1 and v2 quirks for the priority test device."""
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.const import ENDPOINTS
+from zhaquirks.legacy import CustomDevice
+
+SIGNATURE = {v1_signature!r}
+
+
+class CustomV1PriorityQuirk(CustomDevice):
+    """Custom v1 quirk."""
+
+    signature = SIGNATURE
+    replacement = {{ENDPOINTS: SIGNATURE[ENDPOINTS]}}
+
+
+# `skip_configuration` distinguishes this quirk from the "built-in" v2 quirk:
+# entries that compare equal deduplicate on registration.
+QuirkBuilder("PriorityManuf", "PriorityModel").skip_configuration().add_to_registry()
+'''
+    )
+
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+
+    device = zigpy_device_from_quirk(BuiltinV1PriorityQuirk, apply_quirk=False)
+    assert type(device) is zigpy.device.Device
+
+    # The custom v2 quirk wins
+    entry = zhaquirks.ZHA_DEVICE_REGISTRY.match_entry(device)
+    assert entry.zha_device_factory is not None  # v2
+    assert Path(entry.source.file).is_relative_to(custom_quirks)  # custom
+
+    # And the full ranking is custom v2 > built-in v2 > custom v1 > built-in v1
+    key = ModelInfo("PriorityManuf", "PriorityModel")
+    ranking = [
+        (
+            e.zha_device_factory is not None,
+            Path(e.source.file).is_relative_to(custom_quirks),
+        )
+        for e in zhaquirks.ZHA_DEVICE_REGISTRY._registry[key]
+    ]
+    assert ranking == [(True, True), (True, False), (False, True), (False, False)]
 
 
 def test_zigpy_custom_cluster_pollution() -> None:
