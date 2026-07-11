@@ -1,7 +1,8 @@
 """Tests for the SONOFF MINI-ZB1GP device."""
 
 from zha.quirks import DEVICE_REGISTRY
-from zigpy.zcl import ClusterType
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -9,9 +10,20 @@ from zigpy.zcl.clusters.smartenergy import Metering
 import zhaquirks
 from zhaquirks.sonoff.mini_zb1gp import (
     SonoffMiniZb1gpCluster,
+    centi_to_value,
     metering_communication_error,
     milli_to_value,
+    overheat_protection,
     overload_protection,
+    protection_auto_recover,
+    protection_external_switch_restore,
+    protection_notification,
+    protection_over_current,
+    protection_over_voltage,
+    protection_over_voltage_enabled,
+    protection_overload,
+    protection_under_voltage,
+    protection_under_voltage_enabled,
     signed_int32_milli_to_value,
 )
 
@@ -48,10 +60,14 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.power.id == 0x7006
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_today.id == 0x7009
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_month.id == 0x700A
+    assert SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.id == 0x7016
     assert SonoffMiniZb1gpCluster.AttributeDefs.output_energy_today.id == 0x7018
     assert SonoffMiniZb1gpCluster.AttributeDefs.output_energy_month.id == 0x7019
+    assert SonoffMiniZb1gpCluster.AttributeDefs.daily_run_time.id == 0x701C
+    assert SonoffMiniZb1gpCluster.AttributeDefs.total_run_time.id == 0x701D
     assert SonoffMiniZb1gpCluster.AttributeDefs.total_energy.id == 0x701E
     assert SonoffMiniZb1gpCluster.AttributeDefs.total_output_energy.id == 0x701F
+    assert SonoffMiniZb1gpCluster.AttributeDefs.voltage_frequency.id == 0x7029
 
 
 def test_mini_zb1gp_milli_value_converters():
@@ -61,16 +77,74 @@ def test_mini_zb1gp_milli_value_converters():
     assert milli_to_value(238678) == 238.678
     assert signed_int32_milli_to_value(93255) == 93.255
     assert signed_int32_milli_to_value(0xFFFFFC18) == -1.0
+    assert centi_to_value(5000) == 50.0
 
 
 def test_mini_zb1gp_fault_code_converters():
     """Test MINI-ZB1GP fault code bit converters."""
 
     assert metering_communication_error(0x07020000) is False
+    assert overheat_protection(0x07020000) is False
     assert overload_protection(0x07020000) is False
     assert metering_communication_error(0x07020002) is True
+    assert overheat_protection(0x07020001) is True
     assert overload_protection(0x07020004) is True
+    assert overheat_protection(0x07020005) is True
     assert metering_communication_error(0x00000002) is False
+
+
+def _fast_scene_array(payload: list[int]) -> foundation.Array:
+    """Wrap a fast-scene payload in its ZCL array representation."""
+
+    return foundation.Array(
+        type=foundation.DataTypeId.uint8,
+        value=t.LVList[t.uint8_t, t.uint16_t](payload),
+    )
+
+
+def test_mini_zb1gp_protection_converters():
+    """Test decoding the protection TLV from the composite attribute."""
+
+    over_voltage = 250000 | 0x80000000
+    under_voltage = 190000
+    protection_data = bytes(
+        [1]
+        + list((16000).to_bytes(4, "little"))
+        + list((3680000).to_bytes(4, "little"))
+        + [1]
+        + list(over_voltage.to_bytes(4, "little"))
+        + list(under_voltage.to_bytes(4, "little"))
+        + [1, 0]
+    )
+    value = _fast_scene_array(
+        [1, 1, 1, 0x01, 2, 0xAA, 0xBB, 0x02, 20, *protection_data]
+    )
+
+    assert protection_over_current(value) == 16000
+    assert protection_overload(value) == 3680000
+    assert protection_external_switch_restore(value) is True
+    assert protection_over_voltage(value) == 250000
+    assert protection_over_voltage_enabled(value) is True
+    assert protection_under_voltage(value) == 190000
+    assert protection_under_voltage_enabled(value) is False
+    assert protection_auto_recover(value) is True
+    assert protection_notification(value) is False
+
+
+def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
+    """Test malformed or incomplete protection payloads remain unavailable."""
+
+    invalid_values = (
+        None,
+        b"\x01\x01",
+        b"\x01\x01\x01\x02\x14\x00",
+        b"\x01\x01\x01\x02\x13" + bytes(19),
+        b"\x01\x01\x01\x01\x01\x00",
+    )
+
+    for value in invalid_values:
+        assert protection_over_current(value) is None
+        assert protection_auto_recover(value) is None
 
 
 def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_quirk):
@@ -109,7 +183,7 @@ def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_q
 
 
 def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
-    """Test optional export energy and diagnostic fault entities."""
+    """Test optional measurement, protection, and fault entities."""
 
     device = zigpy_device_from_v2_quirk(
         "SONOFF",
@@ -133,6 +207,17 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     assert metadata_by_name["Export energy today"].initially_disabled is True
     assert metadata_by_name["Export energy this month"].initially_disabled is True
     assert metadata_by_name["Total export energy"].initially_disabled is True
+    assert metadata_by_name["Daily run time"].initially_disabled is True
+    assert metadata_by_name["Total run time"].initially_disabled is True
+    assert metadata_by_name["Voltage frequency"].initially_disabled is True
+    assert (
+        metadata_by_name["Protection over-current threshold"].initially_disabled is True
+    )
+    assert (
+        metadata_by_name["Protection over-current threshold"].entity_type.value
+        == "config"
+    )
+    assert "Protection scene enabled" not in metadata_by_name
     assert (
         metadata_by_name["Metering communication error"].resolved_unique_id_suffix
         == "metering_communication_error"
@@ -140,4 +225,8 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     assert (
         metadata_by_name["Overload protection error"].resolved_unique_id_suffix
         == "overload_protection"
+    )
+    assert (
+        metadata_by_name["Overheat protection error"].resolved_unique_id_suffix
+        == "overheat_protection"
     )
