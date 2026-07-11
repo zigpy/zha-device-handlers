@@ -121,6 +121,11 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             manufacturer_code=None,
         )
 
+    async def apply_custom_configuration(self, *args, **kwargs) -> None:
+        """Read the composite protection configuration during setup."""
+
+        await self.read_attributes([self.AttributeDefs.protection_configuration.id])
+
 
 def signed_int32_milli_to_value(value: int) -> float:
     """Convert SONOFF signed 32-bit millivalue encoded in a uint32."""

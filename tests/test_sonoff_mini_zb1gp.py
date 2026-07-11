@@ -1,5 +1,7 @@
 """Tests for the SONOFF MINI-ZB1GP device."""
 
+from unittest.mock import AsyncMock
+
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -49,6 +51,26 @@ def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
     assert isinstance(
         device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
         SonoffMiniZb1gpCluster,
+    )
+
+
+async def test_mini_zb1gp_reads_protection_configuration(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the composite protection attribute is read during configuration."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    cluster.read_attributes = AsyncMock()
+
+    await cluster.apply_custom_configuration()
+
+    cluster.read_attributes.assert_awaited_once_with(
+        [SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.id]
     )
 
 
