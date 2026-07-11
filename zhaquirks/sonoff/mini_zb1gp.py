@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import AttributeReadEvent, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -121,6 +121,22 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             manufacturer_code=None,
         )
 
+    def __init__(self, *args, **kwargs):
+        """Listen for raw protection configuration read results."""
+
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
+
+    def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
+        """Cache a raw protection array when normal decoding did not succeed."""
+
+        if event.attribute_id != self.AttributeDefs.protection_configuration.id:
+            return
+        if _protection_data(event.value) is not None:
+            return
+        if _protection_data(event.raw_value) is not None:
+            self._update_attribute(event.attribute_id, event.raw_value)
+
     async def apply_custom_configuration(self, *args, **kwargs) -> None:
         """Read the composite protection configuration during setup."""
 
@@ -156,6 +172,9 @@ def _protection_data(value: Any) -> bytes | None:
         payload = bytes(value.value)
     elif isinstance(value, (bytes, bytearray, list, t.LVList)):
         payload = bytes(value)
+        if len(payload) >= 3 and payload[0] == foundation.DataTypeId.uint8:
+            length = int.from_bytes(payload[1:3], "little")
+            payload = payload[3 : 3 + length]
     else:
         return None
 
@@ -491,7 +510,8 @@ fault_reporting = ReportingConfig(
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         unit="mA",
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_over_current",
         translation_key="protection_over_current",
         fallback_name="Protection over-current threshold",
@@ -505,7 +525,8 @@ fault_reporting = ReportingConfig(
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         unit="mW",
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_overload",
         translation_key="protection_overload",
         fallback_name="Protection overload threshold",
@@ -519,7 +540,8 @@ fault_reporting = ReportingConfig(
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit="mV",
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_over_voltage",
         translation_key="protection_over_voltage",
         fallback_name="Protection over-voltage threshold",
@@ -533,7 +555,8 @@ fault_reporting = ReportingConfig(
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit="mV",
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_under_voltage",
         translation_key="protection_under_voltage",
         fallback_name="Protection under-voltage threshold",
@@ -543,7 +566,8 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_external_switch_restore,
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_external_switch_restore",
         translation_key="protection_external_switch_restore",
         fallback_name="Protection external switch restore",
@@ -553,7 +577,8 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_over_voltage_enabled,
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_over_voltage_enabled",
         translation_key="protection_over_voltage_enabled",
         fallback_name="Over-voltage protection enabled",
@@ -563,7 +588,8 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_under_voltage_enabled,
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_under_voltage_enabled",
         translation_key="protection_under_voltage_enabled",
         fallback_name="Under-voltage protection enabled",
@@ -573,7 +599,8 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_auto_recover,
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_auto_recover",
         translation_key="protection_auto_recover",
         fallback_name="Protection auto recover",
@@ -583,7 +610,8 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_notification,
-        entity_type=EntityType.CONFIG,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_initialized_from_cache=False,
         unique_id_suffix="protection_notification",
         translation_key="protection_notification",
         fallback_name="Protection notification",

@@ -1,6 +1,6 @@
 """Tests for the SONOFF MINI-ZB1GP device."""
 
-from unittest.mock import AsyncMock
+from unittest import mock
 
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
@@ -51,26 +51,6 @@ def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
     assert isinstance(
         device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
         SonoffMiniZb1gpCluster,
-    )
-
-
-async def test_mini_zb1gp_reads_protection_configuration(
-    zigpy_device_from_v2_quirk,
-):
-    """Test the composite protection attribute is read during configuration."""
-
-    device = zigpy_device_from_v2_quirk(
-        "SONOFF",
-        "MINI-ZB1GP",
-        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
-    )
-    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
-    cluster.read_attributes = AsyncMock()
-
-    await cluster.apply_custom_configuration()
-
-    cluster.read_attributes.assert_awaited_once_with(
-        [SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.id]
     )
 
 
@@ -152,6 +132,11 @@ def test_mini_zb1gp_protection_converters():
     assert protection_auto_recover(value) is True
     assert protection_notification(value) is False
 
+    serialized = bytes(
+        [foundation.DataTypeId.uint8, len(value.value), 0, *bytes(value.value)]
+    )
+    assert protection_over_current(serialized) == 16000
+
 
 def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
     """Test malformed or incomplete protection payloads remain unavailable."""
@@ -167,6 +152,45 @@ def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
     for value in invalid_values:
         assert protection_over_current(value) is None
         assert protection_auto_recover(value) is None
+
+
+async def test_mini_zb1gp_reads_and_caches_raw_protection_configuration(
+    zigpy_device_from_v2_quirk,
+):
+    """Test setup reads 0x7016 and a valid raw result is cached."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    attribute = SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration
+    payload = bytes([1, 1, 1, 2, 20, 1, *bytes(19)])
+
+    with mock.patch.object(cluster, "read_attributes", mock.AsyncMock()) as read:
+        await cluster.apply_custom_configuration()
+    read.assert_awaited_once_with([attribute.id])
+
+    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=payload)
+    with mock.patch.object(cluster, "_update_attribute") as update:
+        cluster._handle_attribute_read(event)
+    update.assert_called_once_with(attribute.id, payload)
+
+    event = mock.Mock(attribute_id=0x0001, value=None, raw_value=payload)
+    with mock.patch.object(cluster, "_update_attribute") as update:
+        cluster._handle_attribute_read(event)
+    update.assert_not_called()
+
+    event = mock.Mock(attribute_id=attribute.id, value=payload, raw_value=None)
+    with mock.patch.object(cluster, "_update_attribute") as update:
+        cluster._handle_attribute_read(event)
+    update.assert_not_called()
+
+    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=None)
+    with mock.patch.object(cluster, "_update_attribute") as update:
+        cluster._handle_attribute_read(event)
+    update.assert_not_called()
 
 
 def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_quirk):
@@ -242,7 +266,20 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     )
     assert (
         metadata_by_name["Protection over-current threshold"].entity_type.value
-        == "config"
+        == "diagnostic"
+    )
+    protection_metadata = [
+        metadata
+        for metadata in metadata_by_name.values()
+        if metadata.attribute_name == "protection_configuration"
+    ]
+    assert len(protection_metadata) == 9
+    assert all(
+        metadata.attribute_initialized_from_cache is False
+        for metadata in protection_metadata
+    )
+    assert all(
+        metadata.entity_type.value == "diagnostic" for metadata in protection_metadata
     )
     assert "Protection scene enabled" not in metadata_by_name
     assert (
