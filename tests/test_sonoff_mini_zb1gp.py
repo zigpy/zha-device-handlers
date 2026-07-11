@@ -204,6 +204,11 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
         for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
     }
 
+    assert all(
+        metadata.translation_key is not None and metadata.fallback_name is not None
+        for metadata in metadata_by_name.values()
+    )
+
     assert metadata_by_name["Export energy today"].initially_disabled is True
     assert metadata_by_name["Export energy this month"].initially_disabled is True
     assert metadata_by_name["Total export energy"].initially_disabled is True
@@ -229,4 +234,7 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     assert (
         metadata_by_name["Overheat protection error"].resolved_unique_id_suffix
         == "overheat_protection"
+    )
+    assert (
+        metadata_by_name["Overheat protection error"].entity_type.value == "diagnostic"
     )
