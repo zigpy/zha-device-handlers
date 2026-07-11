@@ -80,6 +80,8 @@ ROTATE_RIGHT = "rotate_right"
 ROTATED = "device_rotated"
 SHAKE = "shake"
 SHAKE_VALUE = 0
+SIDE_UP = "side_up"
+SIDE_UPPED = "device_side_up"
 SLID = "device_slid"
 SLIDE = "slide"
 
@@ -200,11 +202,11 @@ class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
 class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific cluster for the T1 cube.
 
-    The T1 cube reports its battery voltage as an individual attribute on
-    this cluster instead of using the legacy Xiaomi attribute blob on the
-    Basic cluster, so it is not picked up by XiaomiPowerConfiguration on its
-    own. This cluster is not present in the device's signature, but the
-    device communicates on it regardless.
+    The T1 cube reports manufacturer specific attributes as individual
+    attributes on this cluster instead of using the legacy Xiaomi attribute
+    blob on the Basic cluster. This cluster is not present in the device's
+    signature, but the device communicates on it regardless, from both
+    endpoint 1 (e.g. battery voltage) and endpoint 2 (e.g. side_up).
     """
 
     class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
@@ -214,9 +216,20 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             id=0x0001, type=t.uint16_t, is_manufacturer_specific=True
         )
 
+        # Reported only in scene_mode, when the cube is picked up, rotated to
+        # a new face, and set back down without being flipped or dropped.
+        side_up: Final = ZCLAttributeDef(
+            id=0x0149, type=t.uint8_t, is_manufacturer_specific=True
+        )
+
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.battery_voltage_mv.id:
-            self.endpoint.power.battery_reported(value)
+            if hasattr(self.endpoint, "power"):
+                self.endpoint.power.battery_reported(value)
+        elif attrid == self.AttributeDefs.side_up.id:
+            self.listener_event(
+                ZHA_SEND_EVENT, SIDE_UP, {ACTIVATED_FACE: value + 1}
+            )
         super()._update_attribute(attrid, value)
 
 
@@ -462,7 +475,7 @@ class CubeCAGL02FPO(XiaomiCustomDevice):
             },
             2: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
-                INPUT_CLUSTERS: [MultistateInputCluster],
+                INPUT_CLUSTERS: [MultistateInputCluster, CubeT1ManufacturerCluster],
                 OUTPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
                 ],
@@ -477,4 +490,13 @@ class CubeCAGL02FPO(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = CubeAQGL01.device_automation_triggers
+    device_automation_triggers = {
+        **CubeAQGL01.device_automation_triggers,
+        (SIDE_UPPED, FACE_ANY): {COMMAND: SIDE_UP},
+        (SIDE_UPPED, FACE_1): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 1}},
+        (SIDE_UPPED, FACE_2): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 2}},
+        (SIDE_UPPED, FACE_3): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 3}},
+        (SIDE_UPPED, FACE_4): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 4}},
+        (SIDE_UPPED, FACE_5): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 5}},
+        (SIDE_UPPED, FACE_6): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 6}},
+    }
