@@ -420,7 +420,7 @@ class CubeAQGL01(XiaomiCustomDevice):
     }
 
 
-class CubeCAGL02FPO(XiaomiCustomDevice):
+class CubeCAGL02(XiaomiCustomDevice):
     """Aqara T1 magic cube device."""
 
     def __init__(self, *args, **kwargs):
