@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.sonoff.mini_zb1gp import (
+    SonoffExternalSwitchTriggerType,
     SonoffMiniZb1gpCluster,
     centi_to_value,
     metering_communication_error,
@@ -33,25 +34,68 @@ zhaquirks.setup()
 
 
 def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
-    """Test that the Sonoff manufacturer cluster is replaced."""
+    """Test that the Sonoff manufacturer cluster is replaced for both models."""
 
-    device = zigpy_device_from_v2_quirk(
-        "SONOFF",
-        "MINI-ZB1GP",
-        cluster_ids={
-            1: {
-                OnOff.cluster_id: ClusterType.Server,
-                Metering.cluster_id: ClusterType.Server,
-                ElectricalMeasurement.cluster_id: ClusterType.Server,
-                SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server,
-            }
-        },
-    )
+    for model in ("MINI-ZB1GP", "MINI-ZB1GSP"):
+        device = zigpy_device_from_v2_quirk(
+            "SONOFF",
+            model,
+            cluster_ids={
+                1: {
+                    OnOff.cluster_id: ClusterType.Server,
+                    Metering.cluster_id: ClusterType.Server,
+                    ElectricalMeasurement.cluster_id: ClusterType.Server,
+                    SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server,
+                }
+            },
+        )
 
-    assert isinstance(
-        device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
-        SonoffMiniZb1gpCluster,
+        assert isinstance(
+            device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
+            SonoffMiniZb1gpCluster,
+        )
+
+
+def test_mini_zb1gsp_relay_and_trigger_metadata(zigpy_device_from_v2_quirk):
+    """Test model-specific relay suppression and trigger-mode metadata."""
+
+    entries = {}
+    for model in ("MINI-ZB1GP", "MINI-ZB1GSP"):
+        device = zigpy_device_from_v2_quirk(
+            "SONOFF",
+            model,
+            cluster_ids={
+                1: {
+                    OnOff.cluster_id: ClusterType.Server,
+                    Metering.cluster_id: ClusterType.Server,
+                    ElectricalMeasurement.cluster_id: ClusterType.Server,
+                    SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server,
+                }
+            },
+        )
+        entries[model] = DEVICE_REGISTRY.match_entry(device)
+
+    gp_definition = entries["MINI-ZB1GP"].zha_device_factory.quirk_definition
+    gsp_definition = entries["MINI-ZB1GSP"].zha_device_factory.quirk_definition
+
+    assert any(
+        metadata.cluster_id == OnOff.cluster_id
+        for metadata in gp_definition.disabled_default_entities
     )
+    assert all(
+        metadata.cluster_id != OnOff.cluster_id
+        for metadata in gsp_definition.disabled_default_entities
+    )
+    assert all(
+        metadata.attribute_name != "external_trigger_mode"
+        for metadata in gp_definition.entity_metadata
+    )
+    trigger_metadata = next(
+        metadata
+        for metadata in gsp_definition.entity_metadata
+        if metadata.attribute_name == "external_trigger_mode"
+    )
+    assert trigger_metadata.enum is SonoffExternalSwitchTriggerType
 
 
 def test_mini_zb1gp_attribute_definitions():

@@ -27,6 +27,15 @@ from zhaquirks.builder import (
 from zhaquirks.clusters import CustomCluster
 
 
+class SonoffExternalSwitchTriggerType(t.enum8):
+    """External switch trigger type."""
+
+    Edge_trigger = 0x00
+    Pulse_trigger = 0x01
+    Normally_off_follow_trigger = 0x02
+    Normally_on_follow_trigger = 0x82
+
+
 class SonoffMiniZb1gpCluster(CustomCluster):
     """SONOFF/eWeLink manufacturer cluster for MINI-ZB1GP measurements."""
 
@@ -48,6 +57,11 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         turbo_mode = ZCLAttributeDef(
             id=0x0012,
             type=t.int16s,
+            manufacturer_code=None,
+        )
+        external_trigger_mode = ZCLAttributeDef(
+            id=0x0016,
+            type=SonoffExternalSwitchTriggerType,
             manufacturer_code=None,
         )
         current = ZCLAttributeDef(
@@ -338,13 +352,11 @@ fault_reporting = ReportingConfig(
 )
 
 
-(
-    QuirkBuilder("SONOFF", "MINI-ZB1GP")
+common_quirk = (
+    QuirkBuilder()
     .replaces(SonoffMiniZb1gpCluster)
-    # The device exposes an OnOff cluster but is a monitor, not a relay.
-    # Its standard metering clusters also expose sentinel values; the real
+    # The standard metering clusters expose sentinel values; the real
     # measurements are in the eWeLink manufacturer cluster 0xFC11 below.
-    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=Metering.cluster_id)
     .prevent_default_entity_creation(
         endpoint_id=1, cluster_id=ElectricalMeasurement.cluster_id
@@ -662,6 +674,26 @@ fault_reporting = ReportingConfig(
         on_value=20,
         translation_key="turbo_mode",
         fallback_name="Turbo mode",
+    )
+)
+
+(
+    common_quirk.clone()
+    .applies_to("SONOFF", "MINI-ZB1GP")
+    # This model is a monitor, so its OnOff cluster is not a relay entity.
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
+    .add_to_registry()
+)
+
+(
+    common_quirk.clone()
+    .applies_to("SONOFF", "MINI-ZB1GSP")
+    .enum(
+        SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_mode.name,
+        SonoffExternalSwitchTriggerType,
+        SonoffMiniZb1gpCluster.cluster_id,
+        translation_key="external_trigger_mode",
+        fallback_name="External trigger mode",
     )
     .add_to_registry()
 )
