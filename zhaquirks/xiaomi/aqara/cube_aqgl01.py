@@ -252,9 +252,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             if hasattr(self.endpoint, "power"):
                 self.endpoint.power.battery_reported(value)
         elif attrid == self.AttributeDefs.side_up.id:
-            self.listener_event(
-                ZHA_SEND_EVENT, SIDE_UP, {ACTIVATED_FACE: value + 1}
-            )
+            self.listener_event(ZHA_SEND_EVENT, SIDE_UP, {ACTIVATED_FACE: value + 1})
         super()._update_attribute(attrid, value)
 
 
