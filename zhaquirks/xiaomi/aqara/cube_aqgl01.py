@@ -62,6 +62,9 @@ FLIP_BEGIN = 50
 FLIP_DEGREES = "flip_degrees"
 FLIP_END = 180
 FLIPPED = "device_flipped"
+HELD = "device_held"
+HOLD = "hold"
+HOLD_VALUE = 4
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
@@ -103,6 +106,7 @@ XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 
 MOVEMENT_TYPE = {
     SHAKE_VALUE: SHAKE,
+    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: SLIDE,
     SLIDE_2_VALUE: SLIDE,
@@ -120,6 +124,7 @@ MOVEMENT_TYPE = {
 
 MOVEMENT_TYPE_DESCRIPTION = {
     SHAKE_VALUE: SHAKE,
+    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
@@ -492,6 +497,7 @@ class CubeCAGL02FPO(XiaomiCustomDevice):
 
     device_automation_triggers = {
         **CubeAQGL01.device_automation_triggers,
+        (HELD, TURN_ON): {COMMAND: HOLD},
         (SIDE_UPPED, FACE_ANY): {COMMAND: SIDE_UP},
         (SIDE_UPPED, FACE_1): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 1}},
         (SIDE_UPPED, FACE_2): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 2}},
