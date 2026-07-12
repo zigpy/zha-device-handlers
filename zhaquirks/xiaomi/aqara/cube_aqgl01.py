@@ -65,6 +65,8 @@ FLIPPED = "device_flipped"
 HELD = "device_held"
 HOLD = "hold"
 HOLD_VALUE = 4
+INACTIVITY = "1_min_inactivity"
+INACTIVITY_VALUE = 2
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
@@ -76,6 +78,7 @@ KNOCK_6_VALUE = 517  # aqara facing me upright
 
 KNOCKED = "device_knocked"
 LEFT = "left"
+MOVED_AFTER_INACTIVITY = "device_moved_after_inactivity"
 RELATIVE_DEGREES = "relative_degrees"
 RIGHT = "right"
 ROTATE_LEFT = "rotate_left"
@@ -168,6 +171,10 @@ extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
+    # Subclasses may override this to map additional/different raw values,
+    # since the same raw value can mean different things on different cubes.
+    MOVEMENT_TYPE = MOVEMENT_TYPE
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
@@ -176,7 +183,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == STATUS_TYPE_ATTR:
-            self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(value)
+            self._current_state[STATUS_TYPE_ATTR] = action = self.MOVEMENT_TYPE.get(
+                value
+            )
             event_args = {VALUE: value}
             if action is not None:
                 if action in (SLIDE, KNOCK):
@@ -195,6 +204,17 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class CubeT1MultistateInputCluster(MultistateInputCluster):
+    """Multistate input cluster for the Aqara T1 cube.
+
+    Raw value 2 means the cube was moved after standing still for a minute,
+    unlike the older cube (CubeAQGL01), where the same raw value means
+    "wakeup" instead.
+    """
+
+    MOVEMENT_TYPE = {**MOVEMENT_TYPE, INACTIVITY_VALUE: INACTIVITY}
 
 
 class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
@@ -480,7 +500,10 @@ class CubeCAGL02FPO(XiaomiCustomDevice):
             },
             2: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
-                INPUT_CLUSTERS: [MultistateInputCluster, CubeT1ManufacturerCluster],
+                INPUT_CLUSTERS: [
+                    CubeT1MultistateInputCluster,
+                    CubeT1ManufacturerCluster,
+                ],
                 OUTPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
                 ],
@@ -498,6 +521,7 @@ class CubeCAGL02FPO(XiaomiCustomDevice):
     device_automation_triggers = {
         **CubeAQGL01.device_automation_triggers,
         (HELD, TURN_ON): {COMMAND: HOLD},
+        (MOVED_AFTER_INACTIVITY, TURN_ON): {COMMAND: INACTIVITY},
         (SIDE_UPPED, FACE_ANY): {COMMAND: SIDE_UP},
         (SIDE_UPPED, FACE_1): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 1}},
         (SIDE_UPPED, FACE_2): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 2}},
