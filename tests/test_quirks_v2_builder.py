@@ -27,7 +27,11 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.builder.device import QuirkV2Device
-from zhaquirks.builder.metadata import QuirkDefinition, recursive_freeze
+from zhaquirks.builder.metadata import (
+    QuirkDefinition,
+    ReportingConfig,
+    recursive_freeze,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
 from zhaquirks.device import CustomZigpyDevice
@@ -428,6 +432,44 @@ async def test_quirks_v2_no_multicast_groups(device_mock):
     quirked = registry.resolve(device_mock)
     entry = registry.match_entry(quirked)
     assert entry.zha_device_factory.quirk_definition.multicast_groups == ()
+
+
+async def test_quirks_v2_cluster_configs_coalesce(device_mock):
+    """Test bind/reporting/writes for one cluster coalesce into a single record."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .binds_cluster(OnOff.cluster_id)
+        .writes_attributes(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            attributes={OnOff.AttributeDefs.start_up_on_off: 0x01},
+        )
+        .configures_reporting(
+            PowerConfiguration.cluster_id,
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
+            reporting_config=ReportingConfig(
+                min_interval=30, max_interval=900, reportable_change=1
+            ),
+        )
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    entry = registry.match_entry(quirked)
+    configs = entry.zha_device_factory.quirk_definition.cluster_configs
+    by_key = {(c.cluster_id, c.cluster_type): c for c in configs}
+
+    # OnOff bind + write collapse into one record for the (cluster, type)
+    assert len(configs) == 2
+    on_off = by_key[(OnOff.cluster_id, ClusterType.Server)]
+    assert on_off.bind is True
+    assert on_off.attribute_writes == {OnOff.AttributeDefs.start_up_on_off: 0x01}
+
+    power = by_key[(PowerConfiguration.cluster_id, ClusterType.Server)]
+    assert power.bind is True
+    assert len(power.attributes) == 1
 
 
 async def test_quirks_v2_subscribes_to_multicast_group_on_configure():

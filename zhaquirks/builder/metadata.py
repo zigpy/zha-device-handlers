@@ -23,6 +23,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorStateClass,
 )
 from zigpy.zcl import ClusterType
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 # pylint: disable=too-many-instance-attributes
 
@@ -224,6 +225,35 @@ class ChangedEntityMetadata:
     new_fallback_name: str | None = attrs.field(default=None)
 
 
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class AttributeReportingConfigMetadata:
+    """Reporting / read-on-startup config for a single attribute, without an entity."""
+
+    attribute_name: str = attrs.field()
+    reporting_config: ReportingConfig | None = attrs.field(default=None)
+    read_on_startup: bool = attrs.field(default=False)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ClusterConfigMetadata:
+    """Entity-less cluster configuration: bind, write attributes, and/or set up reporting.
+
+    Realized as a config-only virtual entity that ZHA's cluster-config
+    aggregation picks up, without the cluster being surfaced as an entity.
+    """
+
+    cluster_id: int = attrs.field()
+    endpoint_id: int = attrs.field(default=1)
+    cluster_type: ClusterType = attrs.field(default=ClusterType.Server)
+    bind: bool = attrs.field(default=False)
+    attributes: tuple[AttributeReportingConfigMetadata, ...] = attrs.field(
+        factory=tuple
+    )
+    attribute_writes: frozendict[ZCLAttributeDef, Any] = attrs.field(
+        factory=frozendict, converter=frozendict
+    )
+
+
 def recursive_freeze(obj: Any) -> Any:
     """Recursively convert mutable collections to immutable ones."""
     if isinstance(obj, dict):
@@ -258,3 +288,4 @@ class QuirkDefinition:
     )
     skip_configuration: bool = attrs.field(default=False)
     multicast_groups: tuple[int, ...] = attrs.field(factory=tuple, converter=tuple)
+    cluster_configs: tuple[ClusterConfigMetadata, ...] = attrs.field(factory=tuple)
