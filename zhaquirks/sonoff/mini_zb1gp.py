@@ -205,16 +205,18 @@ def _protection_u32(value: Any, offset: int) -> int | None:
     return int.from_bytes(data[offset : offset + 4], "little")
 
 
-def protection_over_current(value: Any) -> int | None:
-    """Decode the configured over-current threshold in milliamperes."""
+def protection_over_current(value: Any) -> float | None:
+    """Decode the configured over-current threshold in amperes."""
 
-    return _protection_u32(value, 1)
+    raw_value = _protection_u32(value, 1)
+    return None if raw_value is None else milli_to_value(raw_value)
 
 
-def protection_overload(value: Any) -> int | None:
-    """Decode the configured overload threshold in milliwatts."""
+def protection_overload(value: Any) -> float | None:
+    """Decode the configured overload threshold in watts."""
 
-    return _protection_u32(value, 5)
+    raw_value = _protection_u32(value, 5)
+    return None if raw_value is None else milli_to_value(raw_value)
 
 
 def protection_external_switch_restore(value: Any) -> bool | None:
@@ -224,11 +226,11 @@ def protection_external_switch_restore(value: Any) -> bool | None:
     return None if data is None else bool(data[9])
 
 
-def _protection_voltage(value: Any, offset: int) -> int | None:
-    """Decode a voltage threshold without its enable flag."""
+def _protection_voltage(value: Any, offset: int) -> float | None:
+    """Decode a voltage threshold in volts without its enable flag."""
 
     raw_value = _protection_u32(value, offset)
-    return None if raw_value is None else raw_value & 0x7FFFFFFF
+    return None if raw_value is None else milli_to_value(raw_value & 0x7FFFFFFF)
 
 
 def _protection_voltage_enabled(value: Any, offset: int) -> bool | None:
@@ -238,8 +240,8 @@ def _protection_voltage_enabled(value: Any, offset: int) -> bool | None:
     return None if raw_value is None else bool(raw_value & 0x80000000)
 
 
-def protection_over_voltage(value: Any) -> int | None:
-    """Decode the configured over-voltage threshold in millivolts."""
+def protection_over_voltage(value: Any) -> float | None:
+    """Decode the configured over-voltage threshold in volts."""
 
     return _protection_voltage(value, 10)
 
@@ -250,8 +252,8 @@ def protection_over_voltage_enabled(value: Any) -> bool | None:
     return _protection_voltage_enabled(value, 10)
 
 
-def protection_under_voltage(value: Any) -> int | None:
-    """Decode the configured under-voltage threshold in millivolts."""
+def protection_under_voltage(value: Any) -> float | None:
+    """Decode the configured under-voltage threshold in volts."""
 
     return _protection_voltage(value, 14)
 
@@ -506,10 +508,10 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_over_current,
-        suggested_display_precision=0,
+        suggested_display_precision=3,
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="mA",
+        unit=UnitOfElectricCurrent.AMPERE,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         unique_id_suffix="protection_over_current",
@@ -521,10 +523,10 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_overload,
-        suggested_display_precision=0,
+        suggested_display_precision=3,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="mW",
+        unit=UnitOfPower.WATT,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         unique_id_suffix="protection_overload",
@@ -536,10 +538,10 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_over_voltage,
-        suggested_display_precision=0,
+        suggested_display_precision=3,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="mV",
+        unit=UnitOfElectricPotential.VOLT,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         unique_id_suffix="protection_over_voltage",
@@ -551,10 +553,10 @@ fault_reporting = ReportingConfig(
         SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.name,
         SonoffMiniZb1gpCluster.cluster_id,
         attribute_converter=protection_under_voltage,
-        suggested_display_precision=0,
+        suggested_display_precision=3,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="mV",
+        unit=UnitOfElectricPotential.VOLT,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         unique_id_suffix="protection_under_voltage",

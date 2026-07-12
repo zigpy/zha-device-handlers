@@ -122,12 +122,12 @@ def test_mini_zb1gp_protection_converters():
         [1, 1, 1, 0x01, 2, 0xAA, 0xBB, 0x02, 20, *protection_data]
     )
 
-    assert protection_over_current(value) == 16000
-    assert protection_overload(value) == 3680000
+    assert protection_over_current(value) == 16.0
+    assert protection_overload(value) == 3680.0
     assert protection_external_switch_restore(value) is True
-    assert protection_over_voltage(value) == 250000
+    assert protection_over_voltage(value) == 250.0
     assert protection_over_voltage_enabled(value) is True
-    assert protection_under_voltage(value) == 190000
+    assert protection_under_voltage(value) == 190.0
     assert protection_under_voltage_enabled(value) is False
     assert protection_auto_recover(value) is True
     assert protection_notification(value) is False
@@ -135,7 +135,7 @@ def test_mini_zb1gp_protection_converters():
     serialized = bytes(
         [foundation.DataTypeId.uint8, len(value.value), 0, *bytes(value.value)]
     )
-    assert protection_over_current(serialized) == 16000
+    assert protection_over_current(serialized) == 16.0
 
 
 def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
@@ -268,6 +268,10 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
         metadata_by_name["Protection over-current threshold"].entity_type.value
         == "diagnostic"
     )
+    assert metadata_by_name["Protection over-current threshold"].unit == "A"
+    assert metadata_by_name["Protection overload threshold"].unit == "W"
+    assert metadata_by_name["Protection over-voltage threshold"].unit == "V"
+    assert metadata_by_name["Protection under-voltage threshold"].unit == "V"
     protection_metadata = [
         metadata
         for metadata in metadata_by_name.values()
