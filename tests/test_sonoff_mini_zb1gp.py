@@ -216,7 +216,8 @@ async def test_mini_zb1gp_reads_and_caches_raw_protection_configuration(
         await cluster.apply_custom_configuration()
     read.assert_awaited_once_with([attribute.id])
 
-    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=payload)
+    raw_value = t.LVList[t.uint8_t, t.uint16_t](payload)
+    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=raw_value)
     with mock.patch.object(cluster, "_update_attribute") as update:
         cluster._handle_attribute_read(event)
     update.assert_called_once_with(attribute.id, payload)

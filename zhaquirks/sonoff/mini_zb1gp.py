@@ -148,8 +148,17 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             return
         if _protection_data(event.value) is not None:
             return
-        if _protection_data(event.raw_value) is not None:
-            self._update_attribute(event.attribute_id, event.raw_value)
+
+        raw_value = event.raw_value
+        if isinstance(raw_value, foundation.Array):
+            raw_value = raw_value.value
+        if raw_value is None:
+            return
+
+        payload = bytes(raw_value)
+        if _protection_data(payload) is not None:
+            # Zigpy's app database cannot persist Array or LVList values.
+            self._update_attribute(event.attribute_id, payload)
 
     async def apply_custom_configuration(self, *args, **kwargs) -> None:
         """Read the composite protection configuration during setup."""
