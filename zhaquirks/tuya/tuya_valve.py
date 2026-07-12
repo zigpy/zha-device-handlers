@@ -214,17 +214,26 @@ def giex_string_to_td(v: str) -> int:
     return timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second).seconds
 
 
-def giex_string_to_dt(v: str) -> datetime | None:
-    """Convert Giex String Duration datetime."""
+def giex_string_to_ts(v: str) -> int | None:
+    """Convert a Giex time-of-day string to a ZCL timestamp.
+
+    Returns seconds since the ZCL epoch (2000-01-01 UTC). Storing an integer
+    rather than a ``datetime`` object keeps the value round-trip safe through
+    zigpy's SQLite attribute cache; ZHA converts it back to a ``datetime`` for
+    the ``timestamp`` sensor. See home-assistant/core#148202.
+    """
     dev_tz = timezone(timedelta(hours=4))
     dev_dt = datetime.now(dev_tz)
 
     try:
-        dt = datetime.strptime(v, "%H:%M:%S").replace(tzinfo=dev_tz)
+        dt = datetime.strptime(v, "%H:%M:%S")
     except ValueError:
         return None  # on initial start the device will return '--:--:--'
-    else:
-        return dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
+
+    dev_dt = dev_dt.replace(
+        hour=dt.hour, minute=dt.minute, second=dt.second, microsecond=0
+    )
+    return int(dev_dt.timestamp()) - UNIX_EPOCH_TO_ZCL_EPOCH
 
 
 gx02_base_quirk = (
@@ -276,8 +285,8 @@ gx02_base_quirk = (
     .tuya_sensor(
         dp_id=101,
         attribute_name="irrigation_start_time",
-        type=t.CharacterString,
-        converter=giex_string_to_dt,
+        type=t.uint32_t,
+        converter=giex_string_to_ts,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation start time",
@@ -285,8 +294,8 @@ gx02_base_quirk = (
     .tuya_sensor(
         dp_id=102,
         attribute_name="irrigation_end_time",
-        type=t.CharacterString,
-        converter=giex_string_to_dt,
+        type=t.uint32_t,
+        converter=giex_string_to_ts,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation end time",
