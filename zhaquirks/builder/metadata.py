@@ -257,3 +257,4 @@ class QuirkDefinition:
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )
     skip_configuration: bool = attrs.field(default=False)
+    multicast_groups: tuple[int, ...] = attrs.field(factory=tuple, converter=tuple)

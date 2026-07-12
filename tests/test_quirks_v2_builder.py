@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, sentinel
+from unittest.mock import AsyncMock, MagicMock, call, patch, sentinel
 
 from frozendict import frozendict
 import pytest
@@ -26,7 +26,8 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
-from zhaquirks.builder.metadata import recursive_freeze
+from zhaquirks.builder.device import QuirkV2Device
+from zhaquirks.builder.metadata import QuirkDefinition, recursive_freeze
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
 from zhaquirks.device import CustomZigpyDevice
@@ -393,6 +394,62 @@ async def test_quirks_v2_skip_configuration(device_mock):
     # definition rather than on the resolved zigpy device.
     entry = registry.match_entry(quirked)
     assert entry.zha_device_factory.quirk_definition.skip_configuration is True
+
+
+async def test_quirks_v2_subscribes_to_multicast_group(device_mock):
+    """Test a quirk's declared multicast groups land on the quirk definition."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .subscribes_to_multicast_group(0x549A)
+        .subscribes_to_multicast_group(0x1234)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    entry = registry.match_entry(quirked)
+    assert entry.zha_device_factory.quirk_definition.multicast_groups == (
+        0x549A,
+        0x1234,
+    )
+
+
+async def test_quirks_v2_no_multicast_groups(device_mock):
+    """Test a quirk that declares no multicast groups has an empty tuple."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(OnOff.cluster_id)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    entry = registry.match_entry(quirked)
+    assert entry.zha_device_factory.quirk_definition.multicast_groups == ()
+
+
+async def test_quirks_v2_subscribes_to_multicast_group_on_configure():
+    """Test `async_configure` subscribes the coordinator to the declared groups."""
+    definition = QuirkDefinition(multicast_groups=(0x549A, 0x549B))
+
+    # Build a bare QuirkV2Device without ZHA's heavy `Device.__init__`; only the
+    # quirk definition and gateway are needed to exercise the override.
+    device = object.__new__(QuirkV2Device)
+    device._quirk_definition = definition
+
+    app = MagicMock()
+    app.subscribe_to_multicast_group = AsyncMock()
+    device._gateway = MagicMock(application_controller=app)
+
+    with patch(
+        "zhaquirks.builder.device.Device.async_configure", AsyncMock()
+    ) as super_configure:
+        await device.async_configure()
+
+    assert super_configure.mock_calls == [call()]
+    assert app.subscribe_to_multicast_group.mock_calls == [call(0x549A), call(0x549B)]
 
 
 async def test_quirks_v2_device_automation_triggers_on_zigpy_device(device_mock):
