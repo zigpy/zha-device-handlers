@@ -315,6 +315,19 @@ class SetModelInfo:
         return device
 
 
+@dataclass(frozen=True)
+class SetDeviceAutomationTriggers:
+    """Set the quirk-defined device automation triggers on a device."""
+
+    triggers: frozendict[tuple[str, str], frozendict[str, str]]
+
+    def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
+        """Apply this operation to the given zigpy device."""
+        device.device_automation_triggers = dict(self.triggers)
+
+        return device
+
+
 class QuirkBuilder:
     """Builder compiling a declarative quirk into a registered `Device` subclass."""
 
@@ -1089,7 +1102,20 @@ class QuirkBuilder:
         # modifications, so the bare device is left intact for persistence.
         clone = ReplaceZigpyDevice(self.custom_zigpy_device_class)
 
-        zigpy_transforms = (clone, *self._compile_transformations())
+        ops = self._compile_transformations()
+
+        # Stamp the triggers onto the resolved zigpy device (matching v1 quirks,
+        # where they are a class attribute) so consumers reading only the zigpy
+        # device — e.g. HA's early device trigger cache — see them too.
+        if quirk_definition.device_automation_triggers:
+            ops = (
+                *ops,
+                SetDeviceAutomationTriggers(
+                    triggers=quirk_definition.device_automation_triggers
+                ),
+            )
+
+        zigpy_transforms = (clone, *ops)
 
         entry = QuirkRegistryEntry(
             device_match=device_match,
