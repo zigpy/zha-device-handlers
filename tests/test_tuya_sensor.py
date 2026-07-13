@@ -1,12 +1,14 @@
 """Tests for Tuya Sensor quirks."""
 
+import math
+
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 import zhaquirks
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
@@ -155,6 +157,52 @@ async def test_handle_get_data_enum_batt(
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+@pytest.mark.parametrize(
+    "raw_battery_state,expected_percent",
+    [
+        (0, 40),  # Low
+        (1, 120),  # Middle
+        (2, 200),  # High
+        (99, 0),  # unmapped/unexpected raw value -> defaults to 0 rather than raising
+    ],
+)
+async def test_soil_sensor_0ints6wl(
+    zigpy_device_from_v2_quirk, raw_battery_state, expected_percent
+):
+    """Test _TZE284_0ints6wl: enum battery (dp=14) and illuminance (dp=102).
+
+    This variant differs from the _TZE284_aao3yzhs group: battery is a 3-tier
+    enum on dp=14 (not a 0-100 percentage on dp=15), and it also reports
+    illuminance on dp=102, which no known upstream quirk maps.
+    """
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_0ints6wl", "TS0601")
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    tuya_cluster = ep.tuya_manufacturer
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[
+                TuyaDatapointData(5, TuyaData(215)),  # temperature, scale 10
+                TuyaDatapointData(3, TuyaData(42)),  # soil moisture, default scale 100
+                TuyaDatapointData(102, TuyaData(6377)),  # illuminance, raw lux
+                TuyaDatapointData(14, TuyaData(raw_battery_state)),  # battery enum
+            ],
+        )
+    )
+
+    assert ep.temperature.get("measured_value") == 2150
+    assert ep.soil_moisture.get("measured_value") == 4200
+    assert ep.illuminance.get("measured_value") == 10000 * math.log10(6377) + 1
+    assert ep.power.get("battery_percentage_remaining") == expected_percent
 
 
 def test_valid_attributes(zigpy_device_from_v2_quirk):
