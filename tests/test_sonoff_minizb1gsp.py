@@ -1,5 +1,7 @@
 """Tests for Sonoff MINI-ZB1GSP quirks."""
 
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -7,18 +9,27 @@ from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.sonoff.minizb1gsp import (
-    FAST_SCENE_PACKET_MODIFY,
-    FAST_SCENE_PACKET_REPORT,
-    FastSceneProtection,
-    FastSceneState,
-    SonoffCluster,
-    SonoffFastSceneConfigCluster,
-    decode_fast_scene_payload,
-    encode_fast_scene_payload,
-    fast_scene_array_from_payload,
-    fast_scene_payload_from_array,
+
+_MINI_ZB1GSP_PATH = (
+    Path(__file__).resolve().parents[1] / "zhaquirks" / "sonoff" / "mini-zb1gsp.py"
 )
+_MINI_ZB1GSP_SPEC = spec_from_file_location(
+    "zhaquirks.sonoff.mini_zb1gsp_test_module", _MINI_ZB1GSP_PATH
+)
+assert _MINI_ZB1GSP_SPEC is not None and _MINI_ZB1GSP_SPEC.loader is not None
+mini_zb1gsp = module_from_spec(_MINI_ZB1GSP_SPEC)
+_MINI_ZB1GSP_SPEC.loader.exec_module(mini_zb1gsp)
+
+FAST_SCENE_PACKET_MODIFY = mini_zb1gsp.FAST_SCENE_PACKET_MODIFY
+FAST_SCENE_PACKET_REPORT = mini_zb1gsp.FAST_SCENE_PACKET_REPORT
+FastSceneProtection = mini_zb1gsp.FastSceneProtection
+FastSceneState = mini_zb1gsp.FastSceneState
+SonoffCluster = mini_zb1gsp.SonoffCluster
+SonoffFastSceneConfigCluster = mini_zb1gsp.SonoffFastSceneConfigCluster
+decode_fast_scene_payload = mini_zb1gsp.decode_fast_scene_payload
+encode_fast_scene_payload = mini_zb1gsp.encode_fast_scene_payload
+fast_scene_array_from_payload = mini_zb1gsp.fast_scene_array_from_payload
+fast_scene_payload_from_array = mini_zb1gsp.fast_scene_payload_from_array
 
 zhaquirks.setup()
 
@@ -135,7 +146,9 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
         cluster.get(cluster.AttributeDefs.protection_only_ext_mode_restore.id) is True
     )
     assert cluster.get(cluster.AttributeDefs.protection_over_voltage_mv.id) == 250000
-    assert cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
+    assert (
+        cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
+    )
     assert cluster.get(cluster.AttributeDefs.protection_under_voltage_mv.id) == 180000
     assert (
         cluster.get(cluster.AttributeDefs.protection_under_voltage_enabled.id) is True
@@ -147,26 +160,8 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
 @pytest.mark.parametrize(
     ("result", "expected"),
     [
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.SUCCESS
-                    )
-                ]
-            ],
-            True,
-        ),
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.FAILURE
-                    )
-                ]
-            ],
-            False,
-        ),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]], True),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]], False),
         ([], False),
         (None, False),
     ],
@@ -211,9 +206,7 @@ async def test_sonoff_minizb1gsp_fast_scene_propagation(zigpy_device_from_v2_qui
         == 567890
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is True
     )
     assert (
@@ -336,9 +329,7 @@ async def test_sonoff_minizb1gsp_fast_scene_write_attributes_logic(
         == 1600
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is False
     )
     assert local_cluster.get(local_cluster.AttributeDefs.protection_notify.id) is False
