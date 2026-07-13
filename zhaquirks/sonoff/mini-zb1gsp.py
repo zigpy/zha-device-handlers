@@ -530,7 +530,7 @@ class SonoffExternalTriggerMode(types.enum8):
         SonoffNetworkLedSetType,
         SonoffCluster.cluster_id,
         translation_key="network_led",
-        fallback_name="Network led",
+        fallback_name="Network LED",
     )
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
