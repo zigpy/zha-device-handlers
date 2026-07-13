@@ -129,57 +129,31 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
     """Decoded fast scene state is exposed as local attributes."""
 
     cluster = object.__new__(SonoffFastSceneConfigCluster)
-    cluster._attr_cache = {}
-    cluster._fast_scene_state = FastSceneState()
+    object.__setattr__(cluster, "_fast_scene_state", FastSceneState())
+    object.__setattr__(cluster, "_update_attribute", mock.MagicMock())
 
     state = _sample_fast_scene_state()
     cluster.update_fast_scene_state(state)
 
     assert cluster._fast_scene_state == state
-    assert (
-        cluster.get(cluster.AttributeDefs.protection_over_current_ma.id)
-        == state.protection.over_current_ma
-    )
-    assert (
-        cluster.get(cluster.AttributeDefs.protection_over_load_mw.id)
-        == state.protection.over_load_mw
-    )
-    assert (
-        cluster.get(cluster.AttributeDefs.protection_only_ext_mode_restore.id) is True
-    )
-    assert cluster.get(cluster.AttributeDefs.protection_over_voltage_mv.id) == 250000
-    assert cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
-    assert cluster.get(cluster.AttributeDefs.protection_under_voltage_mv.id) == 180000
-    assert (
-        cluster.get(cluster.AttributeDefs.protection_under_voltage_enabled.id) is True
-    )
-    assert cluster.get(cluster.AttributeDefs.protection_auto_recover.id) is True
-    assert cluster.get(cluster.AttributeDefs.protection_notify.id) is True
+    assert cluster._update_attribute.call_args_list == [
+        mock.call(cluster.AttributeDefs.protection_over_current_ma.id, 1234),
+        mock.call(cluster.AttributeDefs.protection_over_load_mw.id, 567890),
+        mock.call(cluster.AttributeDefs.protection_only_ext_mode_restore.id, True),
+        mock.call(cluster.AttributeDefs.protection_over_voltage_mv.id, 250000),
+        mock.call(cluster.AttributeDefs.protection_over_voltage_enabled.id, True),
+        mock.call(cluster.AttributeDefs.protection_under_voltage_mv.id, 180000),
+        mock.call(cluster.AttributeDefs.protection_under_voltage_enabled.id, True),
+        mock.call(cluster.AttributeDefs.protection_auto_recover.id, True),
+        mock.call(cluster.AttributeDefs.protection_notify.id, True),
+    ]
 
 
 @pytest.mark.parametrize(
     ("result", "expected"),
     [
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.SUCCESS
-                    )
-                ]
-            ],
-            True,
-        ),
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.FAILURE
-                    )
-                ]
-            ],
-            False,
-        ),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]], True),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]], False),
         ([], False),
         (None, False),
     ],
@@ -224,9 +198,7 @@ async def test_sonoff_minizb1gsp_fast_scene_propagation(zigpy_device_from_v2_qui
         == 567890
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is True
     )
     assert (
@@ -349,9 +321,7 @@ async def test_sonoff_minizb1gsp_fast_scene_write_attributes_logic(
         == 1600
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is False
     )
     assert local_cluster.get(local_cluster.AttributeDefs.protection_notify.id) is False
