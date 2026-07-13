@@ -705,3 +705,142 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class TuyaCoverSchedule(t.enum8):
+    """Tuya cover schedule mode."""
+
+    Morning = 0x00
+    Night = 0x01
+
+
+class TuyaCoverNudge(t.enum8):
+    """Tuya cover single-step nudge control."""
+
+    Up = 0x00
+    Down = 0x01
+
+
+# _TZE200_68nvbio9 (roller blinds) and _TZE200_cf1sl3tj (curtains) share an
+# identical DP layout, confirmed via the Tuya cloud API's local_strategy
+# mapping. Both are already covered by the legacy TuyaMoesCover0601 quirk
+# above (dp1/2/3/4/5 only, shared with 15 other manufacturer IDs) - v2 quirks
+# are matched before legacy ones, so this block takes over for these two IDs
+# specifically without needing to touch the legacy quirk's device list.
+#
+# This exposes the rest of the DP map that TuyaMoesCover0601 leaves unwired:
+# battery (dp13), motor fault (dp12), schedule mode (dp4), motor direction
+# (dp5), the OEM app's travel-limit calibration commands (dp16, "border" -
+# useful if a cover settles a few percent short of true open/closed), a
+# favourite/preset position (dp19), and a single-step nudge control (dp20).
+# dp7 (work_state) and dp11 (situation) are also defined in the cloud
+# product template but never observed reporting on real hardware across full
+# command-triggered open/close cycles with debug logging active - omitted
+# rather than left as permanently-unknown entities.
+for _manufacturer in ("_TZE200_68nvbio9", "_TZE200_cf1sl3tj"):
+    (
+        TuyaQuirkBuilder(_manufacturer, "TS0601")
+        .tuya_cover(
+            control_dp=1, position_state_dp=3, position_control_dp=2, invert=True
+        )
+        .tuya_enum(
+            dp_id=4,
+            attribute_name="schedule_mode",
+            enum_class=TuyaCoverSchedule,
+            translation_key="schedule_mode",
+            fallback_name="Schedule mode",
+        )
+        .tuya_enum(
+            dp_id=5,
+            attribute_name="motor_direction",
+            enum_class=MotorDirection,
+            translation_key="motor_direction",
+            fallback_name="Motor direction",
+        )
+        .tuya_binary_sensor(
+            dp_id=12,
+            attribute_name="motor_fault",
+            translation_key="motor_fault",
+            fallback_name="Motor fault",
+        )
+        .tuya_battery(dp_id=13)
+        .tuya_dp_attribute(
+            dp_id=16,
+            attribute_name="border",
+            type=BorderSetting,
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Up,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_up",
+            translation_key="set_upper_limit",
+            fallback_name="Set upper limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Down,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_down",
+            translation_key="set_lower_limit",
+            fallback_name="Set lower limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Up_delete,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_up_delete",
+            translation_key="delete_upper_limit",
+            fallback_name="Delete upper limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Down_delete,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_down_delete",
+            translation_key="delete_lower_limit",
+            fallback_name="Delete lower limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Remove_top_bottom,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_remove_all",
+            translation_key="delete_all_limits",
+            fallback_name="Delete all limits",
+        )
+        .tuya_number(
+            dp_id=19,
+            attribute_name="position_best",
+            type=t.uint8_t,
+            unit="%",
+            min_value=0,
+            max_value=100,
+            step=1,
+            translation_key="position_best",
+            fallback_name="Favourite position",
+        )
+        .tuya_dp_attribute(
+            dp_id=20,
+            attribute_name="click_control",
+            type=TuyaCoverNudge,
+        )
+        .write_attr_button(
+            attribute_name="click_control",
+            attribute_value=TuyaCoverNudge.Up,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="nudge_up",
+            translation_key="nudge_up",
+            fallback_name="Nudge up",
+        )
+        .write_attr_button(
+            attribute_name="click_control",
+            attribute_value=TuyaCoverNudge.Down,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="nudge_down",
+            translation_key="nudge_down",
+            fallback_name="Nudge down",
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )

@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
@@ -10,7 +11,13 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import (
+    BorderSetting,
+    MotorDirection,
+    TuyaCoverNudge,
+    TuyaCoverSchedule,
+    TuyaMoesCover0601,
+)
 
 zhaquirks.setup()
 
@@ -223,3 +230,56 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+@pytest.mark.parametrize("manufacturer", ["_TZE200_68nvbio9", "_TZE200_cf1sl3tj"])
+async def test_moes_full_dp_cover(zigpy_device_from_v2_quirk, manufacturer):
+    """Test the full-DP _TZE200_68nvbio9/_TZE200_cf1sl3tj quirk.
+
+    Covers the entities this quirk adds beyond the legacy TuyaMoesCover0601
+    quirk that also matches these manufacturer IDs: battery, motor fault,
+    schedule mode, and motor direction. Position/open/close/stop are already
+    exercised generically by tuya_cover() and aren't repeated here.
+    """
+
+    quirked = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    assert cover_cluster is not None
+    assert isinstance(cover_cluster, TuyaWindowCovering)
+
+    tuya_cluster = ep.tuya_manufacturer
+    assert tuya_cluster is not None
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[
+                TuyaDatapointData(3, TuyaData(0)),  # position: fully open (inverted)
+                TuyaDatapointData(4, TuyaData(1)),  # schedule mode: Night
+                TuyaDatapointData(5, TuyaData(1)),  # motor direction: Back
+                TuyaDatapointData(12, TuyaData(1)),  # motor fault
+                TuyaDatapointData(13, TuyaData(100)),  # battery
+            ],
+        )
+    )
+
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 100
+    )
+    assert tuya_cluster.get("schedule_mode") == TuyaCoverSchedule.Night
+    assert tuya_cluster.get("motor_direction") == MotorDirection.Back
+    assert tuya_cluster.get("motor_fault") == 1
+    assert ep.power.get("battery_percentage_remaining") == 200
+
+    # border/click_control are write-only calibration commands (no reportable
+    # state) - verify the attribute is defined with the right type rather than
+    # simulating a report.
+    assert tuya_cluster.attributes_by_name["border"].type is BorderSetting
+    assert tuya_cluster.attributes_by_name["click_control"].type is TuyaCoverNudge
