@@ -8,20 +8,19 @@ from typing import Any, Final
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
+    EntityPlatform,
     EntityType,
-    NumberDeviceClass,
     QuirkBuilder,
     SensorDeviceClass,
     SensorStateClass,
-    EntityPlatform,
 )
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
+    UnitOfFrequency,
     UnitOfPower,
     UnitOfTime,
-    UnitOfFrequency,
 )
 import zigpy.types as t
 from zigpy.zcl import (
@@ -131,7 +130,9 @@ def _encode_voltage(value: int, enabled: int) -> int:
     return raw_value
 
 
-def decode_fast_scene_payload(payload: bytes | list[int] | foundation.Array) -> FastSceneState:
+def decode_fast_scene_payload(
+    payload: bytes | list[int] | foundation.Array,
+) -> FastSceneState:
     """Decode a Sonoff fast scene payload."""
 
     data = fast_scene_payload_from_array(payload)
@@ -168,7 +169,9 @@ def decode_fast_scene_payload(payload: bytes | list[int] | foundation.Array) -> 
 
         if scene_type == 2 and len(scene_data) >= 20:
             scene_switch = scene_data[0]
-            over_voltage_mv, over_voltage_en = _decode_voltage(_u32_le(scene_data[10:14]))
+            over_voltage_mv, over_voltage_en = _decode_voltage(
+                _u32_le(scene_data[10:14])
+            )
             under_voltage_mv, under_voltage_en = _decode_voltage(
                 _u32_le(scene_data[14:18])
             )
@@ -209,9 +212,7 @@ def encode_fast_scene_payload(
             *_put_u32_le(protection.over_load_mw),
             protection.only_ext_mode_restore,
             *_put_u32_le(
-                _encode_voltage(
-                    protection.over_voltage_mv, protection.over_voltage_en
-                )
+                _encode_voltage(protection.over_voltage_mv, protection.over_voltage_en)
             ),
             *_put_u32_le(
                 _encode_voltage(
@@ -228,10 +229,11 @@ def encode_fast_scene_payload(
 
 class SonoffErrorCodeType(types.bitmap32):
     """Fault Code Type."""
-    Normal = 0x07020000,
-    Overheat = 0x07020001,
-    Overload = 0x07020004,
-    Overload_And_Overheat = 0x07020005,
+
+    Normal = (0x07020000,)
+    Overheat = (0x07020001,)
+    Overload = (0x07020004,)
+    Overload_And_Overheat = (0x07020005,)
 
 
 class SonoffCluster(CustomCluster):
@@ -367,7 +369,9 @@ class SonoffCluster(CustomCluster):
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Read fast scene configuration during pairing to populate entities."""
-        await self.read_attributes([self.AttributeDefs.local_fast_scene_configuration.id])
+        await self.read_attributes(
+            [self.AttributeDefs.local_fast_scene_configuration.id]
+        )
 
     @property
     def _is_manuf_specific(self):
@@ -383,22 +387,14 @@ class SonoffFastSceneConfigCluster(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        protection_over_current_ma: Final = ZCLAttributeDef(
-            id=0x0010, type=t.uint32_t
-        )
+        protection_over_current_ma: Final = ZCLAttributeDef(id=0x0010, type=t.uint32_t)
         protection_over_load_mw: Final = ZCLAttributeDef(id=0x0011, type=t.uint32_t)
         protection_only_ext_mode_restore: Final = ZCLAttributeDef(
             id=0x0012, type=t.Bool
         )
-        protection_over_voltage_mv: Final = ZCLAttributeDef(
-            id=0x0013, type=t.uint32_t
-        )
-        protection_over_voltage_enabled: Final = ZCLAttributeDef(
-            id=0x0014, type=t.Bool
-        )
-        protection_under_voltage_mv: Final = ZCLAttributeDef(
-            id=0x0015, type=t.uint32_t
-        )
+        protection_over_voltage_mv: Final = ZCLAttributeDef(id=0x0013, type=t.uint32_t)
+        protection_over_voltage_enabled: Final = ZCLAttributeDef(id=0x0014, type=t.Bool)
+        protection_under_voltage_mv: Final = ZCLAttributeDef(id=0x0015, type=t.uint32_t)
         protection_under_voltage_enabled: Final = ZCLAttributeDef(
             id=0x0016, type=t.Bool
         )
@@ -470,9 +466,7 @@ class SonoffFastSceneConfigCluster(LocalDataCluster):
         payload = encode_fast_scene_payload(state)
         zcl_array = fast_scene_array_from_payload(payload)
         result = await self.endpoint.sonoff_cluster.write_attributes(
-            {
-                SonoffCluster.AttributeDefs.local_fast_scene_configuration.id: zcl_array
-            }
+            {SonoffCluster.AttributeDefs.local_fast_scene_configuration.id: zcl_array}
         )
         if self._write_succeeded(result):
             self.update_fast_scene_state(state)
