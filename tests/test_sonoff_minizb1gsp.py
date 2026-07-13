@@ -2,6 +2,7 @@
 
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+import sys
 from unittest import mock
 
 import pytest
@@ -18,6 +19,7 @@ _MINI_ZB1GSP_SPEC = spec_from_file_location(
 )
 assert _MINI_ZB1GSP_SPEC is not None and _MINI_ZB1GSP_SPEC.loader is not None
 mini_zb1gsp = module_from_spec(_MINI_ZB1GSP_SPEC)
+sys.modules[_MINI_ZB1GSP_SPEC.name] = mini_zb1gsp
 _MINI_ZB1GSP_SPEC.loader.exec_module(mini_zb1gsp)
 
 FAST_SCENE_PACKET_MODIFY = mini_zb1gsp.FAST_SCENE_PACKET_MODIFY
@@ -34,7 +36,7 @@ fast_scene_payload_from_array = mini_zb1gsp.fast_scene_payload_from_array
 zhaquirks.setup()
 
 
-def _sample_fast_scene_state() -> FastSceneState:
+def _sample_fast_scene_state():
     """Return a representative fast scene configuration."""
 
     return FastSceneState(
@@ -146,7 +148,9 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
         cluster.get(cluster.AttributeDefs.protection_only_ext_mode_restore.id) is True
     )
     assert cluster.get(cluster.AttributeDefs.protection_over_voltage_mv.id) == 250000
-    assert cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
+    assert (
+        cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
+    )
     assert cluster.get(cluster.AttributeDefs.protection_under_voltage_mv.id) == 180000
     assert (
         cluster.get(cluster.AttributeDefs.protection_under_voltage_enabled.id) is True
@@ -158,26 +162,8 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
 @pytest.mark.parametrize(
     ("result", "expected"),
     [
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.SUCCESS
-                    )
-                ]
-            ],
-            True,
-        ),
-        (
-            [
-                [
-                    foundation.WriteAttributesStatusRecord(
-                        status=foundation.Status.FAILURE
-                    )
-                ]
-            ],
-            False,
-        ),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]], True),
+        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]], False),
         ([], False),
         (None, False),
     ],
@@ -222,9 +208,7 @@ async def test_sonoff_minizb1gsp_fast_scene_propagation(zigpy_device_from_v2_qui
         == 567890
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is True
     )
     assert (
@@ -347,9 +331,7 @@ async def test_sonoff_minizb1gsp_fast_scene_write_attributes_logic(
         == 1600
     )
     assert (
-        local_cluster.get(
-            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
-        )
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
         is False
     )
     assert local_cluster.get(local_cluster.AttributeDefs.protection_notify.id) is False
