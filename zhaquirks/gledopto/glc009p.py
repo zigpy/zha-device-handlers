@@ -1,7 +1,8 @@
 """Gledopto GL-C-009P quirk."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.lighting import Color
+
+from zhaquirks.builder import QuirkBuilder
 
 # remove Color cluster so multimode devices don't show color options in ZHA
 (
