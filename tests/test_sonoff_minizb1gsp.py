@@ -135,9 +135,7 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
         cluster.get(cluster.AttributeDefs.protection_only_ext_mode_restore.id) is True
     )
     assert cluster.get(cluster.AttributeDefs.protection_over_voltage_mv.id) == 250000
-    assert (
-        cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
-    )
+    assert cluster.get(cluster.AttributeDefs.protection_over_voltage_enabled.id) is True
     assert cluster.get(cluster.AttributeDefs.protection_under_voltage_mv.id) == 180000
     assert (
         cluster.get(cluster.AttributeDefs.protection_under_voltage_enabled.id) is True
@@ -149,8 +147,26 @@ def test_sonoff_fast_scene_config_update_fast_scene_state():
 @pytest.mark.parametrize(
     ("result", "expected"),
     [
-        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]], True),
-        ([[foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]], False),
+        (
+            [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.SUCCESS
+                    )
+                ]
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.FAILURE
+                    )
+                ]
+            ],
+            False,
+        ),
         ([], False),
         (None, False),
     ],
@@ -195,7 +211,9 @@ async def test_sonoff_minizb1gsp_fast_scene_propagation(zigpy_device_from_v2_qui
         == 567890
     )
     assert (
-        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
+        local_cluster.get(
+            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
+        )
         is True
     )
     assert (
@@ -318,7 +336,9 @@ async def test_sonoff_minizb1gsp_fast_scene_write_attributes_logic(
         == 1600
     )
     assert (
-        local_cluster.get(local_cluster.AttributeDefs.protection_over_voltage_enabled.id)
+        local_cluster.get(
+            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
+        )
         is False
     )
     assert local_cluster.get(local_cluster.AttributeDefs.protection_notify.id) is False
