@@ -6,13 +6,13 @@ import logging
 import time
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     BUTTON,

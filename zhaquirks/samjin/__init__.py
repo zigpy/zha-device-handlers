@@ -2,11 +2,11 @@
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 DOUBLE = 2
