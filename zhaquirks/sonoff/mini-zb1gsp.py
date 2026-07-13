@@ -647,13 +647,6 @@ class SonoffExternalTriggerMode(types.enum8):
         translation_key="protection_auto_recover",
         fallback_name="Protection auto recover",
     )
-    # .switch(
-    #     SonoffFastSceneConfigCluster.AttributeDefs.protection_notify.name,
-    #     SonoffFastSceneConfigCluster.cluster_id,
-    #     entity_type=EntityType.CONFIG,
-    #     translation_key="protection_notify",
-    #     fallback_name="Protection notification",
-    # )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.accurrent_current_value.name,
         cluster_id=SonoffCluster.cluster_id,
@@ -691,7 +684,7 @@ class SonoffExternalTriggerMode(types.enum8):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         translation_key="daily_forward_energy",
-        fallback_name="daily forward energy",
+        fallback_name="Daily forward energy",
         divisor=1000,
     )
     .sensor(
@@ -702,7 +695,7 @@ class SonoffExternalTriggerMode(types.enum8):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         divisor=1000,
         translation_key="monthly_forward_energy",
-        fallback_name="monthly forward energy",
+        fallback_name="Monthly forward energy",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.daily_reverse_energy.name,
@@ -712,7 +705,7 @@ class SonoffExternalTriggerMode(types.enum8):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         divisor=1000,
         translation_key="daily_reverse_energy",
-        fallback_name="daily reverse energy",
+        fallback_name="Daily reverse energy",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.monthly_reverse_energy.name,
@@ -721,7 +714,7 @@ class SonoffExternalTriggerMode(types.enum8):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         translation_key="monthly_reverse_energy",
-        fallback_name="monthly reverse energy",
+        fallback_name="Monthly reverse energy",
         divisor=1000,
     )
     .sensor(
@@ -732,7 +725,7 @@ class SonoffExternalTriggerMode(types.enum8):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         divisor=1000,
         translation_key="total_forward_energy",
-        fallback_name="total forward energy",
+        fallback_name="Total forward energy",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.total_reverse_energy.name,
@@ -742,7 +735,7 @@ class SonoffExternalTriggerMode(types.enum8):
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         divisor=1000,
         translation_key="total_reverse_energy",
-        fallback_name="total reverse energy",
+        fallback_name="Total reverse energy",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.total_run_time.name,
@@ -751,7 +744,7 @@ class SonoffExternalTriggerMode(types.enum8):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTime.SECONDS,
         translation_key="total_run_time",
-        fallback_name="total run time",
+        fallback_name="Total run time",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.daily_run_time.name,
@@ -760,7 +753,7 @@ class SonoffExternalTriggerMode(types.enum8):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTime.SECONDS,
         translation_key="daily_run_time",
-        fallback_name="daily run time",
+        fallback_name="Daily run time",
     )
     .sensor(
         attribute_name=SonoffCluster.AttributeDefs.voltage_frequency.name,
@@ -769,7 +762,7 @@ class SonoffExternalTriggerMode(types.enum8):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfFrequency.HERTZ,
         translation_key="voltage_frequency",
-        fallback_name="voltage frequency",
+        fallback_name="Voltage frequency",
     )
     .enum(
         SonoffCluster.AttributeDefs.fault_code.name,
@@ -778,7 +771,7 @@ class SonoffExternalTriggerMode(types.enum8):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="fault_code",
-        fallback_name="fault code",
+        fallback_name="Fault code",
     )
     .add_to_registry()
 )
