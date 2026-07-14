@@ -4,7 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import DEGREE, UnitOfTime
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
