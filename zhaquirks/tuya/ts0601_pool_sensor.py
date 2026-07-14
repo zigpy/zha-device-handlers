@@ -3,18 +3,16 @@
 import asyncio
 from typing import Final
 
-from zha.application.platforms.number.device_class import NumberDeviceClass
-from zha.application.platforms.sensor.device_class import (
+import zigpy.types as t
+
+from zhaquirks.builder import (
+    CONCENTRATION_PARTS_PER_MILLION,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
-)
-from zha.units import (
-    CONCENTRATION_PARTS_PER_MILLION,
     UnitOfElectricPotential,
     UnitOfTime,
 )
-import zigpy.types as t
-
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
@@ -52,9 +50,13 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self._update_timer_handle = None
+        self._check_timer_handle = None
         self.check_interval = 60
         self.next_refresh_interval = 0
         self._loop = asyncio.get_running_loop()
+        self.endpoint.device._on_remove_callbacks.append(
+            self.handle_auto_update_timers_cancel
+        )
         self.handle_auto_update_check_change()
 
     def handle_auto_update_cancel(self):
@@ -62,6 +64,17 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         if self._update_timer_handle:
             self._update_timer_handle.cancel()
             self._update_timer_handle = None
+
+    def handle_auto_update_check_cancel(self):
+        """Auto update interval check timer cancel."""
+        if self._check_timer_handle:
+            self._check_timer_handle.cancel()
+            self._check_timer_handle = None
+
+    def handle_auto_update_timers_cancel(self):
+        """Cancel all auto update timers."""
+        self.handle_auto_update_cancel()
+        self.handle_auto_update_check_cancel()
 
     def handle_auto_update_setup_next_call(self, force_new_interval=False):
         """Auto update schedule next update."""
@@ -77,7 +90,8 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
 
         if force_new_interval and self.next_refresh_interval > 0:
             self.debug(
-                "using refresh interval of %d minutes", self.next_refresh_interval
+                "using refresh interval of %d minutes",
+                self.next_refresh_interval // 60,
             )
             self._update_timer_handle = self._loop.call_later(
                 self.next_refresh_interval, self.handle_auto_update_timer_wrapper
@@ -86,7 +100,9 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
     def handle_auto_update_check_change(self):
         """Auto update schedule next interval check."""
         self.handle_auto_update_setup_next_call()
-        self._loop.call_later(self.check_interval, self.handle_auto_update_check_change)
+        self._check_timer_handle = self._loop.call_later(
+            self.check_interval, self.handle_auto_update_check_change
+        )
 
     def handle_auto_update_timer_wrapper(self):
         """Auto update handle refresh and schedule next update."""

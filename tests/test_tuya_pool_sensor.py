@@ -134,11 +134,13 @@ async def test_auto_refresh_interval_change(pool_sensor):
     previous_timer = Mock()
     pool_sensor._update_timer_handle = previous_timer
     pool_sensor._loop = Mock()
+    pool_sensor.debug = Mock()
 
     pool_sensor.handle_auto_update_setup_next_call()
 
     previous_timer.cancel.assert_called_once_with()
     assert pool_sensor.next_refresh_interval == 300
+    pool_sensor.debug.assert_called_once_with("using refresh interval of %d minutes", 5)
     pool_sensor._loop.call_later.assert_called_once_with(
         300, pool_sensor.handle_auto_update_timer_wrapper
     )
@@ -158,3 +160,22 @@ async def test_auto_refresh_timer_wrapper(pool_sensor):
     pool_sensor.handle_auto_update_setup_next_call.assert_called_once_with(
         force_new_interval=True
     )
+
+
+async def test_auto_refresh_timers_cancel_on_device_removal(pool_sensor):
+    """Device removal cancels the refresh and interval-check timers."""
+    pool_sensor.handle_auto_update_check_cancel()
+    pool_sensor.handle_auto_update_setup_next_call = Mock()
+    pool_sensor._loop = Mock()
+    pool_sensor.handle_auto_update_check_change()
+    check_timer = pool_sensor._check_timer_handle
+    update_timer = Mock()
+    pool_sensor._update_timer_handle = update_timer
+
+    pool_sensor.endpoint.device.on_remove()
+
+    pool_sensor.handle_auto_update_setup_next_call.assert_called_once_with()
+    check_timer.cancel.assert_called_once_with()
+    update_timer.cancel.assert_called_once_with()
+    assert pool_sensor._check_timer_handle is None
+    assert pool_sensor._update_timer_handle is None
