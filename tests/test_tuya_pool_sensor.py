@@ -1,6 +1,6 @@
 """Tests for the Tuya pool sensor."""
 
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
 from zigpy.zcl import ClusterType
@@ -124,3 +124,37 @@ async def test_auto_refresh(pool_sensor):
     pool_sensor.command.assert_awaited_once_with(TUYA_QUERY_DATA)
     assert isinstance(pool_sensor, TuyaPoolManufCluster)
     assert pool_sensor.cluster_id == TuyaNewManufCluster.cluster_id
+
+
+async def test_auto_refresh_interval_change(pool_sensor):
+    """A changed refresh interval cancels and replaces the timer."""
+    pool_sensor._update_attribute(
+        pool_sensor.attributes_by_name["auto_refresh_interval"].id, 5
+    )
+    previous_timer = Mock()
+    pool_sensor._update_timer_handle = previous_timer
+    pool_sensor._loop = Mock()
+
+    pool_sensor.handle_auto_update_setup_next_call()
+
+    previous_timer.cancel.assert_called_once_with()
+    assert pool_sensor.next_refresh_interval == 300
+    pool_sensor._loop.call_later.assert_called_once_with(
+        300, pool_sensor.handle_auto_update_timer_wrapper
+    )
+    assert pool_sensor._update_timer_handle is pool_sensor._loop.call_later.return_value
+
+
+async def test_auto_refresh_timer_wrapper(pool_sensor):
+    """The timer wrapper starts a refresh and schedules the next one."""
+    refresh_task = Mock()
+    pool_sensor.handle_auto_update = Mock(return_value=refresh_task)
+    pool_sensor.create_catching_task = Mock()
+    pool_sensor.handle_auto_update_setup_next_call = Mock()
+
+    pool_sensor.handle_auto_update_timer_wrapper()
+
+    pool_sensor.create_catching_task.assert_called_once_with(refresh_task)
+    pool_sensor.handle_auto_update_setup_next_call.assert_called_once_with(
+        force_new_interval=True
+    )
