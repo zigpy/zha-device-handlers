@@ -53,10 +53,6 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         self._check_timer_handle = None
         self.check_interval = 60
         self.next_refresh_interval = 0
-        self._loop = asyncio.get_running_loop()
-        self.endpoint.device._on_remove_callbacks.append(
-            self.handle_auto_update_timers_cancel
-        )
         self.handle_auto_update_check_change()
 
     def handle_auto_update_cancel(self):
@@ -76,6 +72,16 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         self.handle_auto_update_cancel()
         self.handle_auto_update_check_cancel()
 
+    async def _handle_auto_update_delay(self, delay: int):
+        """Wait before running the next auto update."""
+        await asyncio.sleep(delay)
+        self.handle_auto_update_timer_wrapper()
+
+    async def _handle_auto_update_check_delay(self):
+        """Wait before checking the auto update interval again."""
+        await asyncio.sleep(self.check_interval)
+        self.handle_auto_update_check_change()
+
     def handle_auto_update_setup_next_call(self, force_new_interval=False):
         """Auto update schedule next update."""
         tuya_cluster = self.endpoint.device.endpoints[1].in_clusters.get(
@@ -93,15 +99,15 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
                 "using refresh interval of %d minutes",
                 self.next_refresh_interval // 60,
             )
-            self._update_timer_handle = self._loop.call_later(
-                self.next_refresh_interval, self.handle_auto_update_timer_wrapper
+            self._update_timer_handle = self.endpoint.device.create_task(
+                self._handle_auto_update_delay(self.next_refresh_interval)
             )
 
     def handle_auto_update_check_change(self):
         """Auto update schedule next interval check."""
         self.handle_auto_update_setup_next_call()
-        self._check_timer_handle = self._loop.call_later(
-            self.check_interval, self.handle_auto_update_check_change
+        self._check_timer_handle = self.endpoint.device.create_task(
+            self._handle_auto_update_check_delay()
         )
 
     def handle_auto_update_timer_wrapper(self):
@@ -360,7 +366,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         type=t.int32s,
     )
     .command_button(
-        command_name="query_data",
+        command_name=TuyaNewManufCluster.ServerCommandDefs.query_data.name,
         cluster_id=TuyaNewManufCluster.cluster_id,
         translation_key="update",
         fallback_name="Update",

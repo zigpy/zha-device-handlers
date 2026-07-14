@@ -1,5 +1,6 @@
 """Tests for the Tuya pool sensor."""
 
+import asyncio
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
@@ -28,7 +29,10 @@ async def pool_sensor(zigpy_device_from_v2_quirk):
         "TS0601",
         cluster_ids={1: {TuyaMCUCluster.cluster_id: ClusterType.Server}},
     )
-    return device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    pool_sensor = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    yield pool_sensor
+    pool_sensor.handle_auto_update_timers_cancel()
+    await asyncio.sleep(0)
 
 
 def test_pool_sensor_entities(device_mock):
@@ -127,13 +131,15 @@ async def test_auto_refresh(pool_sensor):
 
 
 async def test_auto_refresh_interval_change(pool_sensor):
-    """A changed refresh interval cancels and replaces the timer."""
+    """A changed refresh interval cancels and replaces the device task."""
     pool_sensor._update_attribute(
         pool_sensor.attributes_by_name["auto_refresh_interval"].id, 5
     )
     previous_timer = Mock()
     pool_sensor._update_timer_handle = previous_timer
-    pool_sensor._loop = Mock()
+    delay = Mock()
+    pool_sensor._handle_auto_update_delay = Mock(return_value=delay)
+    pool_sensor.endpoint.device.create_task = Mock()
     pool_sensor.debug = Mock()
 
     pool_sensor.handle_auto_update_setup_next_call()
@@ -141,10 +147,12 @@ async def test_auto_refresh_interval_change(pool_sensor):
     previous_timer.cancel.assert_called_once_with()
     assert pool_sensor.next_refresh_interval == 300
     pool_sensor.debug.assert_called_once_with("using refresh interval of %d minutes", 5)
-    pool_sensor._loop.call_later.assert_called_once_with(
-        300, pool_sensor.handle_auto_update_timer_wrapper
+    pool_sensor._handle_auto_update_delay.assert_called_once_with(300)
+    pool_sensor.endpoint.device.create_task.assert_called_once_with(delay)
+    assert (
+        pool_sensor._update_timer_handle
+        is pool_sensor.endpoint.device.create_task.return_value
     )
-    assert pool_sensor._update_timer_handle is pool_sensor._loop.call_later.return_value
 
 
 async def test_auto_refresh_timer_wrapper(pool_sensor):
@@ -162,20 +170,43 @@ async def test_auto_refresh_timer_wrapper(pool_sensor):
     )
 
 
+async def test_auto_refresh_delay(pool_sensor):
+    """The refresh task waits before invoking its timer wrapper."""
+    pool_sensor.handle_auto_update_timer_wrapper = Mock()
+
+    with patch(
+        "zhaquirks.tuya.ts0601_pool_sensor.asyncio.sleep", new=AsyncMock()
+    ) as sleep:
+        await pool_sensor._handle_auto_update_delay(300)
+
+    sleep.assert_awaited_once_with(300)
+    pool_sensor.handle_auto_update_timer_wrapper.assert_called_once_with()
+
+
+async def test_auto_refresh_check_delay(pool_sensor):
+    """The interval-check task waits before checking again."""
+    pool_sensor.handle_auto_update_check_change = Mock()
+
+    with patch(
+        "zhaquirks.tuya.ts0601_pool_sensor.asyncio.sleep", new=AsyncMock()
+    ) as sleep:
+        await pool_sensor._handle_auto_update_check_delay()
+
+    sleep.assert_awaited_once_with(60)
+    pool_sensor.handle_auto_update_check_change.assert_called_once_with()
+
+
 async def test_auto_refresh_timers_cancel_on_device_removal(pool_sensor):
-    """Device removal cancels the refresh and interval-check timers."""
-    pool_sensor.handle_auto_update_check_cancel()
-    pool_sensor.handle_auto_update_setup_next_call = Mock()
-    pool_sensor._loop = Mock()
-    pool_sensor.handle_auto_update_check_change()
+    """Device removal cancels refresh tasks created through the public API."""
     check_timer = pool_sensor._check_timer_handle
-    update_timer = Mock()
-    pool_sensor._update_timer_handle = update_timer
+    pool_sensor._update_attribute(
+        pool_sensor.attributes_by_name["auto_refresh_interval"].id, 5
+    )
+    pool_sensor.handle_auto_update_setup_next_call(force_new_interval=True)
+    update_timer = pool_sensor._update_timer_handle
 
     pool_sensor.endpoint.device.on_remove()
+    await asyncio.sleep(0)
 
-    pool_sensor.handle_auto_update_setup_next_call.assert_called_once_with()
-    check_timer.cancel.assert_called_once_with()
-    update_timer.cancel.assert_called_once_with()
-    assert pool_sensor._check_timer_handle is None
-    assert pool_sensor._update_timer_handle is None
+    assert check_timer.cancelled()
+    assert update_timer.cancelled()
