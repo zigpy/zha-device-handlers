@@ -12,29 +12,30 @@ AEOTEC_MANUFACTURER_ID = 0x1310  # 4880, "AEOTEC LIMITED"
 
 
 class AeotecSwitchType(t.enum8):
-    """External switch type."""
+    """Physical type of the wired external switch."""
 
-    Toggle = 0x00
-    Momentary = 0x01
-    Auto_Recognize = 0x04
+    Toggle = 0x00  # maintained / rocker switch
+    Momentary = 0x01  # push button
+    Auto_Detect = 0x04  # device figures out the switch type on its own
 
 
 class AeotecSwitchActions(t.enum8):
-    """Mapping of external switch state to the resulting relay action.
+    """How the external switch state drives the relay.
 
-    Described as (State 2 press / State 1 release) in the specification.
+    Spec table is (State 2 press / State 1 release): 0x00 On/Off, 0x01 Off/On,
+    0x02 Toggle/Toggle.
     """
 
-    On_Off = 0x00
-    Off_On = 0x01
-    Toggle_Toggle = 0x02
+    Follow = 0x00  # relay mirrors switch position (closed = on, open = off)
+    Invert = 0x01  # relay is the inverse of switch position
+    Toggle = 0x02  # every switch edge toggles the relay, position-independent
 
 
 class AeotecControls(t.enum8):
     """Whether the external switch can control the relay locally."""
 
-    Local_Disable = 0x00
-    Local_Enable = 0x01
+    Disabled = 0x00
+    Enabled = 0x01
 
 
 class AeotecSwitchTypeConfigCluster(CustomCluster):
