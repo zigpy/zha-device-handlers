@@ -149,8 +149,8 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
             raw_value,
             calibration_dp,
         )
-        await self._write_dp_value(calibration_dp, int(raw_value))
         try:
+            await self._write_dp_value(calibration_dp, int(raw_value))
             await asyncio.sleep(self.CALIBRATION_SETTLE_DELAY)
         finally:
             await self._write_dp_value(calibration_dp, 0)

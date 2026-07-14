@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
+from zha.application.platforms.button import Button
 from zigpy.zcl import ClusterType
 
 import zhaquirks
@@ -116,6 +117,53 @@ async def test_calibration_without_measurement(pool_sensor):
         await pool_sensor.calibrate_ph()
 
     pool_sensor._write_dp_value.assert_awaited_once_with(DP_CALIBRATION_KEEP_AWAKE, 1)
+    pool_sensor.command.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "method_name", ["calibrate_ph", "calibrate_ec", "calibrate_orp"]
+)
+async def test_calibration_button_press(pool_sensor, method_name):
+    """Calibration command buttons invoke the local cluster coroutine."""
+    method = AsyncMock()
+    setattr(pool_sensor, method_name, method)
+    button = Mock(
+        _cluster=pool_sensor,
+        _command_name=method_name,
+        args=[],
+        kwargs={},
+    )
+
+    await Button.async_press(button)
+
+    method.assert_awaited_once_with()
+
+
+@pytest.mark.parametrize(
+    "error", [RuntimeError("write failed"), asyncio.CancelledError()]
+)
+async def test_calibration_clears_failed_value_write(pool_sensor, error):
+    """A failed or cancelled value write still attempts to clear the data point."""
+    pool_sensor._update_attribute(
+        pool_sensor.attributes_by_name["ph_measured_value"].id, 58
+    )
+    pool_sensor._write_dp_value = AsyncMock(side_effect=[None, error, None])
+    pool_sensor.command = AsyncMock()
+
+    with (
+        patch(
+            "zhaquirks.tuya.ts0601_pool_sensor.asyncio.sleep", new=AsyncMock()
+        ) as sleep,
+        pytest.raises(type(error)),
+    ):
+        await pool_sensor.calibrate_ph()
+
+    assert pool_sensor._write_dp_value.await_args_list == [
+        call(DP_CALIBRATION_KEEP_AWAKE, 1),
+        call(DP_PH_CALIBRATION, 58),
+        call(DP_PH_CALIBRATION, 0),
+    ]
+    sleep.assert_awaited_once_with(6)
     pool_sensor.command.assert_not_awaited()
 
 
