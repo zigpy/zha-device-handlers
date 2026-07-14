@@ -2,16 +2,13 @@
 
 from typing import Final
 
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant import DEGREE, UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
-from zhaquirks import CustomCluster
-
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1
 
 
 class ThirdRealityVibrationSensorCluster(CustomCluster):
@@ -57,7 +54,7 @@ class ThirdRealityVibrationSensorCluster(CustomCluster):
         attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.cool_down_time.name,
         cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
         min_value=0,
-        max_value=3600,
+        max_value=7200,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
         translation_key="cool_down_time",
