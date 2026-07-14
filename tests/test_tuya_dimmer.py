@@ -386,6 +386,13 @@ async def test_ts110e_k1msuvg6_cache_only_reads(ts110e_k1msuvg6):
         assert m1.call_count == 0
         assert succ["on_off"] == 1
 
+        # reading by attribute id is guarded the same way as by name
+        succ, fail = await on_off_cluster.read_attributes(
+            [OnOff.AttributeDefs.on_off.id]
+        )
+        assert m1.call_count == 0
+        assert succ[OnOff.AttributeDefs.on_off.id] == 1
+
         # reads of other attributes still go to the device
         await on_off_cluster.read_attributes(["start_up_on_off"])
         assert m1.call_count == 1
