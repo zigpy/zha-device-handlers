@@ -10,9 +10,6 @@ from zhaquirks.builder import EntityType, QuirkBuilder
 (
     QuirkBuilder("AEOTEC", "ZGA003")
     .friendly_name(model="Pico Duo Switch", manufacturer="Aeotec")
-    # Two relay outputs live on endpoints 1 and 2. 0xFD00 lives on the two
-    # scene-controller endpoints, one per external switch input:
-    # S1 -> endpoint 3, S2 -> endpoint 4.
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=3)
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=4)
     .enum(

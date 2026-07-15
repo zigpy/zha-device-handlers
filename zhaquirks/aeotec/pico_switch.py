@@ -20,11 +20,7 @@ class AeotecSwitchType(t.enum8):
 
 
 class AeotecSwitchActions(t.enum8):
-    """How the external switch state drives the relay.
-
-    Spec table is (State 2 press / State 1 release): 0x00 On/Off, 0x01 Off/On,
-    0x02 Toggle/Toggle.
-    """
+    """How the external switch state drives the relay."""
 
     Follow = 0x00  # relay mirrors switch position (closed = on, open = off)
     Invert = 0x01  # relay is the inverse of switch position
