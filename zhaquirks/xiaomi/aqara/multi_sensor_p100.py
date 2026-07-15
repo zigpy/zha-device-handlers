@@ -169,15 +169,20 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
+        power = getattr(self.endpoint, "power", None)
         if attrid == self.STATIC_STATE_ATTR_ID and value == 1:
             self.listener_event(ZHA_SEND_EVENT, ACTION_STATIC, {})
         elif attrid == self.AttributeDefs.battery_voltage.id:
             # Voltage in mV; XiaomiPowerConfigurationPercent uses it for the
             # voltage attribute only, not for the percentage.
-            self.endpoint.power.battery_reported(value)
+            if hasattr(power, "battery_reported") and callable(power.battery_reported):
+                power.battery_reported(value)
         elif attrid == self.AttributeDefs.battery_percentage.id:
             # Already a 0-100 percentage; the power cluster scales to 0-200.
-            self.endpoint.power.battery_percent_reported(value)
+            if hasattr(power, "battery_percent_reported") and callable(
+                power.battery_percent_reported
+            ):
+                power.battery_percent_reported(value)
 
 
 class P100ActionCluster(CustomCluster, DoorLock):
