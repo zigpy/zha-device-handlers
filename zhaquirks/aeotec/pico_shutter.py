@@ -172,6 +172,7 @@ class AeotecWindowConfigCluster(CustomCluster):
 
 (
     QuirkBuilder("AEOTEC", "ZGA004")
+    .friendly_name(model="Pico Shutter", manufacturer="Aeotec")
     # Lift on endpoint 1, tilt on endpoint 2 (standard Window Covering).
     # 0xFD03 window configuration lives on endpoint 1.
     .replaces(AeotecWindowConfigCluster, endpoint_id=1)

@@ -73,6 +73,7 @@ class AeotecSwitchTypeConfigCluster(CustomCluster):
 
 (
     QuirkBuilder("AEOTEC", "ZGA002")
+    .friendly_name(model="Pico Switch", manufacturer="Aeotec")
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=2)
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=3)
     .enum(
