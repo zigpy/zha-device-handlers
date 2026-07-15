@@ -107,56 +107,56 @@ class AeotecWindowConfigCluster(CustomCluster):
             type=AeotecOperatingMode,
             zcl_type=DataTypeId.uint8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         # units of 0.01 s
         slats_tilt_full_turn_time: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         slats_return: Final = ZCLAttributeDef(
             id=0x0003,
             type=AeotecSlatsReturn,
             zcl_type=DataTypeId.uint8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         # units of 0.01 s
         motor_travel_time: Final = ZCLAttributeDef(
             id=0x0004,
             type=t.uint16_t,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         # units of 1 ms
         momentary_movement_time: Final = ZCLAttributeDef(
             id=0x0005,
             type=t.uint16_t,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         movement_type: Final = ZCLAttributeDef(
             id=0x0006,
             type=AeotecMovementType,
             zcl_type=DataTypeId.uint8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         # units of 0.01 s
         motor_response_time: Final = ZCLAttributeDef(
             id=0x0007,
             type=t.uint8_t,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
         limit_verification: Final = ZCLAttributeDef(
             id=0x0008,
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=None,
         )
 
     class ServerCommandDefs(BaseCommandDefs):
