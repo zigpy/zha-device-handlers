@@ -1,8 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zhaquirks.builder import EntityType, BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
