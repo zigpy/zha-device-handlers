@@ -9,7 +9,6 @@ Shared classes for ubisys device quirks:
 
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
@@ -17,6 +16,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 from zigpy.zdo.types import MultiAddress
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 
 
 class UbisysCluster(CustomCluster):
