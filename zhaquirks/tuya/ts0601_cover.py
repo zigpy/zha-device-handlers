@@ -1,10 +1,10 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
-from zhaquirks.builder import EntityType, BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
