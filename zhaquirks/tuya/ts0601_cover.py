@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -20,6 +21,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -737,13 +739,38 @@ class TuyaCoverNudge(t.enum8):
 # product template but never observed reporting on real hardware across full
 # command-triggered open/close cycles with debug logging active - omitted
 # rather than left as permanently-unknown entities.
-for _manufacturer in ("_TZE200_68nvbio9", "_TZE200_cf1sl3tj"):
-    (
-        TuyaQuirkBuilder(_manufacturer, "TS0601")
-        .tuya_cover(
-            control_dp=1, position_state_dp=3, position_control_dp=2, invert=True
-        )
-        .tuya_enum(
+#
+# Position wiring is NOT shared between the two IDs (see _add_shared_entities
+# below for what is). tuya_cover()'s position_control_dp and position_state_dp
+# both map to the same ZCL current_position_lift_percentage attribute - dp2
+# (position_control, the target the motor was just told to go to) and dp3
+# (position_state, the motor's real measured position) race to set it.
+# On _TZE200_cf1sl3tj (curtains), dp2's echo of the target lands first,
+# displaying the curtain as having instantly reached the target, before dp3's
+# genuine report corrects it a moment later - confirmed on real hardware via
+# raw Zigbee debug log, exact-millisecond correlation between the dp2 report
+# and the erroneous state change, and the whole "closes then reopens" cycle
+# completing in well under a second, far faster than the motor's real ~2.7s
+# full-travel time. Dropping dp2 from the position wiring for this ID only
+# (dp3 alone drives position) fixes it - live-tested clean across several
+# full open/close cycles.
+#
+# Dropping dp2 for _TZE200_68nvbio9 too was tried and reverted: live-tested,
+# it left a real device stuck in the "closing" state for over a minute -
+# unlike the curtains, this manufacturer ID does not reliably send dp3
+# promptly (or at all) on every movement, so dp2 is load-bearing for its
+# responsiveness rather than just a source of the same bug. Two manufacturer
+# IDs sharing an identical documented DP layout does not mean they share
+# real device behaviour - hence the split below instead of a single shared
+# loop, and instead of changing tuya_cover()'s default behaviour (which
+# would risk regressing other quirks using it that may rely on the same
+# dp2 fallback _TZE200_68nvbio9 does).
+
+
+def _add_shared_entities(builder):
+    """DPs 4/5/12/13/16/19/20 - identical wiring for both manufacturer IDs."""
+    return (
+        builder.tuya_enum(
             dp_id=4,
             attribute_name="schedule_mode",
             enum_class=TuyaCoverSchedule,
@@ -844,3 +871,32 @@ for _manufacturer in ("_TZE200_68nvbio9", "_TZE200_cf1sl3tj"):
         .skip_configuration()
         .add_to_registry()
     )
+
+
+# _TZE200_68nvbio9 (roller blinds) - dp2 is load-bearing for responsiveness,
+# keep the standard tuya_cover() wiring (dp2 and dp3 both drive position).
+_add_shared_entities(
+    TuyaQuirkBuilder("_TZE200_68nvbio9", "TS0601").tuya_cover(
+        control_dp=1, position_state_dp=3, position_control_dp=2, invert=True
+    )
+)
+
+# _TZE200_cf1sl3tj (curtains) - dp2 dropped from position wiring (see comment
+# above); only dp3 drives current_position_lift_percentage.
+_add_shared_entities(
+    TuyaQuirkBuilder("_TZE200_cf1sl3tj", "TS0601")
+    .tuya_dp(
+        1,
+        TuyaWindowCovering.ep_attribute,
+        TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
+    )
+    .tuya_dp(
+        3,
+        TuyaWindowCovering.ep_attribute,
+        WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+        converter=lambda x: 100 - x,
+        dp_converter=lambda x: 100 - x,
+    )
+    .adds(TuyaWindowCovering)
+    .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
+)

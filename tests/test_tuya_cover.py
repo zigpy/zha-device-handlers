@@ -283,3 +283,72 @@ async def test_moes_full_dp_cover(zigpy_device_from_v2_quirk, manufacturer):
     # simulating a report.
     assert tuya_cluster.attributes_by_name["border"].type is BorderSetting
     assert tuya_cluster.attributes_by_name["click_control"].type is TuyaCoverNudge
+
+
+async def test_moes_full_dp_cover_position_source(zigpy_device_from_v2_quirk):
+    """Test that dp2 (target) and dp3 (real position) are wired differently per manufacturer ID.
+
+    tuya_cover()'s position_control_dp (dp2) and position_state_dp (dp3) both
+    map to the same current_position_lift_percentage attribute by design - on
+    real _TZE200_cf1sl3tj hardware, dp2's echo of a just-sent target lands
+    before dp3's genuine position report and gets briefly displayed as the
+    real position, logged as an instant (and false) reopen-after-close. dp3
+    alone drives position for this manufacturer ID as a result.
+
+    _TZE200_68nvbio9 keeps the standard tuya_cover() wiring (both dp2 and
+    dp3 update position) - live-tested on real hardware to not reliably send
+    dp3 promptly on every movement, so dp2 is load-bearing for its
+    responsiveness rather than just a source of the same bug.
+    """
+
+    # _TZE200_cf1sl3tj: dp2 alone must NOT update position, only dp3 should.
+    quirked = zigpy_device_from_v2_quirk("_TZE200_cf1sl3tj", "TS0601")
+    cover_cluster = quirked.endpoints[1].window_covering
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(2, TuyaData(0))],  # dp2: target, open
+        )
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        is None
+    )
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(3, TuyaData(0))],  # dp3: real, open
+        )
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 100
+    )
+
+    # _TZE200_68nvbio9: dp2 alone DOES update position (unchanged behaviour).
+    quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
+    cover_cluster = quirked.endpoints[1].window_covering
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(2, TuyaData(0))],  # dp2: target, open
+        )
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 100
+    )
