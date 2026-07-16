@@ -229,7 +229,7 @@ async def test_zemismart_zm25el_quirk(zigpy_device_from_v2_quirk):
     """Test Zemismart ZM25EL cover motor v2 quirk."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
-    assert isinstance(quirked, CustomDeviceV2)
+    assert isinstance(quirked, CustomZigpyDevice)
 
     ep = quirked.endpoints[1]
 
