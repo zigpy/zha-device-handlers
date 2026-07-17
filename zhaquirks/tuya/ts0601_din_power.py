@@ -17,6 +17,12 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.builder import (
+    PERCENTAGE,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfEnergy,
+)
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
