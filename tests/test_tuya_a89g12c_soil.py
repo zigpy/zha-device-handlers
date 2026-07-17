@@ -6,15 +6,22 @@ that soil_moisture / illuminance / soil_conductivity decode correctly and
 that the duplicate RelativeHumidity cluster is removed.
 """
 
-import pytest
+from zha.quirks import DEVICE_REGISTRY
+from zha.units import UnitOfConductivity
 
-import zhaquirks.tuya.tuya_a89g12c_soil  # noqa: F401  (registers the quirk)
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
+import zhaquirks.tuya.tuya_a89g12c_soil  # noqa: F401  (registers the quirk)
 
 
 def test_quirk_matches_removes_humidity_and_decodes_datapoints(
     zigpy_device_from_v2_quirk,
 ):
+    """Check that the quirk removes RelativeHumidity and decodes datapoints.
+
+    Applying the quirk should remove the duplicate humidity cluster and
+    correctly decode soil_moisture / illuminance / soil_conductivity from
+    their Tuya datapoints.
+    """
     device = zigpy_device_from_v2_quirk(
         "A89G12C",
         "Arteco",
@@ -31,7 +38,9 @@ def test_quirk_matches_removes_humidity_and_decodes_datapoints(
     )
 
     ep = device.endpoints[1]
-    assert 0x0405 not in ep.in_clusters, "RelativeHumidity cluster should have been removed"
+    assert 0x0405 not in ep.in_clusters, (
+        "RelativeHumidity cluster should have been removed"
+    )
     assert 0x0402 in ep.in_clusters, "Temperature cluster should stay untouched"
     assert 0x0001 in ep.in_clusters, "Power (battery) cluster should stay untouched"
 
@@ -41,8 +50,8 @@ def test_quirk_matches_removes_humidity_and_decodes_datapoints(
         status=0,
         tsn=1,
         datapoints=[
-            TuyaDatapointData(3, TuyaData(42)),      # soil_moisture
-            TuyaDatapointData(102, TuyaData(850)),   # illuminance
+            TuyaDatapointData(3, TuyaData(42)),  # soil_moisture
+            TuyaDatapointData(102, TuyaData(850)),  # illuminance
             TuyaDatapointData(112, TuyaData(1200)),  # soil_conductivity
         ],
     )
@@ -61,10 +70,6 @@ def test_soil_conductivity_has_device_class_and_correct_unit():
     against the device_class's allowed units. Both must be set correctly
     or the entity silently won't show up as selectable.
     """
-    from zha.units import UnitOfConductivity
-
-    from zha.quirks import DEVICE_REGISTRY
-
     matches = [
         q
         for q in DEVICE_REGISTRY
