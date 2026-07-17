@@ -594,7 +594,7 @@ class ZM6LT1ManufCluster(TuyaMCUCluster):
         super().__init__(*args, **kwargs)
         self._poll_task = None
         try:
-            asyncio.get_running_loop()
+            loop = asyncio.get_running_loop()
         except RuntimeError:
             return  # no event loop (e.g. import-time tooling); skip polling
 
@@ -602,7 +602,7 @@ class ZM6LT1ManufCluster(TuyaMCUCluster):
         prev = ZM6LT1ManufCluster._pollers.pop(ieee, None)
         if prev is not None and not prev.done():
             prev.cancel()
-        self._poll_task = self.create_catching_task(self._poll_loop())
+        self._poll_task = loop.create_task(self._poll_loop())
         ZM6LT1ManufCluster._pollers[ieee] = self._poll_task
 
     async def _poll_loop(self):

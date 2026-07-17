@@ -1,5 +1,9 @@
 """Tests for Tuya quirks."""
 
+import asyncio
+import contextlib
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 
@@ -114,3 +118,56 @@ async def test_zm6lt1_phase_dp_converter(zigpy_device_from_v2_quirk):
     assert electrical_meas_cluster.get("reactive_power") == 37
     assert electrical_meas_cluster.get("apparent_power") == 40
     assert electrical_meas_cluster.get("power_factor") == 39
+
+
+async def test_zm6lt1_poll_loop(zigpy_device_from_v2_quirk):
+    """Test the ZM6LT1 periodic data-query poll loop."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+
+    # instantiating the cluster inside a running loop starts the poller
+    assert cluster._poll_task is not None
+    cluster._poll_task.cancel()
+
+    calls = []
+
+    async def fake_command(command_id, expect_reply=True):
+        calls.append(command_id)
+        if len(calls) == 1:
+            # first poll fails (e.g. radio not ready), the loop must retry
+            raise RuntimeError("ApplicationController is not running")
+        raise asyncio.CancelledError
+
+    with (
+        mock.patch.object(type(cluster), "POLL_INTERVAL", 0),
+        mock.patch.object(cluster, "command", fake_command),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await cluster._poll_loop()
+
+    assert calls == [zhaquirks.tuya.TUYA_QUERY_DATA] * 2
+
+
+async def test_zm6lt1_poller_replaced_on_new_cluster(zigpy_device_from_v2_quirk):
+    """Test that re-instantiating the cluster cancels the previous poller."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+    first_task = cluster._poll_task
+    assert first_task is not None
+
+    new_cluster = type(cluster)(cluster.endpoint)
+    with contextlib.suppress(asyncio.CancelledError):
+        await first_task
+    assert first_task.cancelled()
+
+    new_cluster._poll_task.cancel()
+
+
+def test_zm6lt1_no_poller_without_event_loop(zigpy_device_from_v2_quirk):
+    """Test that no poller is started when there is no running event loop."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_2fnssffc", "TS0601")
+    cluster = quirked.endpoints[1].tuya_manufacturer
+    assert cluster._poll_task is None
