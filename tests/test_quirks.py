@@ -595,6 +595,30 @@ def test_zigpy_custom_cluster_pollution() -> None:
         )
 
 
+def test_all_quirk_directories_are_packages() -> None:
+    """Ensure every directory containing Python modules is a package.
+
+    ``zhaquirks.setup()`` discovers quirks with ``pkgutil.walk_packages``, which
+    silently skips directories without an ``__init__.py``. A quirk in such a
+    directory is never imported: it doesn't register, no test ever sees it, and
+    CI stays green while the quirk is silently inert.
+    """
+
+    root = Path(zhaquirks.__file__).parent
+    missing = set()
+    for py_file in root.rglob("*.py"):
+        directory = py_file.parent
+        while directory != root:
+            if not (directory / "__init__.py").exists():
+                missing.add(str(directory.relative_to(root)))
+            directory = directory.parent
+
+    assert not missing, (
+        "Directories with Python modules but no __init__.py "
+        f"(quirks in them are never loaded): {sorted(missing)}"
+    )
+
+
 @pytest.mark.parametrize(
     "module_name",
     sorted({q.__module__ for q in ALL_QUIRK_CLASSES}),
