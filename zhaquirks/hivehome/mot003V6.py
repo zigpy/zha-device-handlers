@@ -1,7 +1,6 @@
 """Device handler for hivehome.com MOT003 sensors."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -24,6 +23,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.hivehome import HIVEHOME, MotionCluster
+from zhaquirks.legacy import CustomDevice
 
 
 class MOT003(CustomDevice):
