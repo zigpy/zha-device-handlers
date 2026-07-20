@@ -2,13 +2,13 @@
 
 import asyncio
 import time
-from typing import Any, Union
+from typing import Any, Final, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import BaseCommandDefs, foundation
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 
@@ -62,28 +62,25 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
         ),
     }
 
-    # Define the server commands to send "Start Spatial Learning"
-    server_commands = {
-        CMD_SPATIAL_LEARNING: (
-            "spatial_learning",
-            (t.uint8_t, t.uint64_t),
-            False,
-        ),
-        CMD_START_LEARNING_NOW: (
-            "start_learning_now",
-            (),
-            False,
-        ),
-    }
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
 
-    # Define client commands for incoming spatial learning reports
-    client_commands = {
-        CMD_SPATIAL_LEARNING: (
-            "spatial_learning",
-            (t.uint8_t, t.uint64_t),
-            False,
-        ),
-    }
+        spatial_learning: Final = foundation.ZCLCommandDef(
+            id=CMD_SPATIAL_LEARNING,
+            schema={"param1": t.uint8_t, "param2": t.uint64_t},
+        )
+        start_learning_now: Final = foundation.ZCLCommandDef(
+            id=CMD_START_LEARNING_NOW,
+            schema={},
+        )
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        spatial_learning: Final = foundation.ZCLCommandDef(
+            id=CMD_SPATIAL_LEARNING,
+            schema={"param1": t.uint8_t, "param2": t.uint64_t},
+        )
 
     # Virtual attributes for zone enabling (0x1000 - 0x1007)
     # These effectively map to bits 0-7 of ATTR_SONOFF_ZONE_ENABLE (0x2016)
