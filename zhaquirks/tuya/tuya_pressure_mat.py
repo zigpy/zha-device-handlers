@@ -1,4 +1,5 @@
 """Custom ZHA Quirk for Tuya TS0601 _TZE200_seq9cm6u Pressure/Occupancy Mat."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota, Time
