@@ -12,7 +12,7 @@ from tests.common import ClusterListener
 import zhaquirks
 
 _MINI_ZB1_FAMILY_PATH = (
-    Path(__file__).resolve().parents[1] / "zhaquirks" / "sonoff" / "MINI-ZB1 Family.py"
+    Path(__file__).resolve().parents[1] / "zhaquirks" / "sonoff" / "mini-zb1 family.py"
 )
 _MINI_ZB1_FAMILY_SPEC = spec_from_file_location(
     "zhaquirks.sonoff.mini_zb1_family_test_module", _MINI_ZB1_FAMILY_PATH
