@@ -366,8 +366,8 @@ class SonoffCluster(CustomCluster):
             id=0x701F,
             type=t.uint32_t,
         )
-        voltage_frequency = ZCLAttributeDef(
-            name="voltage_frequency",
+         = ZCLAttributeDef(
+            name="",
             id=0x7029,
             type=t.uint32_t,
         )
@@ -821,6 +821,7 @@ EXTERNAL_TRIGGER_MAP = {
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfFrequency.HERTZ,
+        divisor=100,
         translation_key="voltage_frequency",
         fallback_name="Voltage frequency",
     )
@@ -1112,6 +1113,7 @@ EXTERNAL_TRIGGER_MAP = {
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfFrequency.HERTZ,
+        divisor=100,
         translation_key="voltage_frequency",
         fallback_name="Voltage frequency",
     )
