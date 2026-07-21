@@ -7,15 +7,19 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import RelativeHumidity
 
 from zhaquirks.builder import (
+    LIGHT_LUX,
     PERCENTAGE,
+    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
 )
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
+    BatterySize,
     TuyaPowerConfigurationCluster2AAA,
     TuyaTimePayload,
 )
