@@ -5,7 +5,6 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -38,7 +37,6 @@ class MotionAQ2(XiaomiQuickInitDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         self.battery_size = BatterySize.CR2450
-        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

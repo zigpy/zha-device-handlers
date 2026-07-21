@@ -294,6 +294,41 @@ async def test_handle_get_data(
         ]
 
 
+async def test_moes_trv_system_mode_write_with_uncached_preset(
+    zigpy_device_from_v2_quirk,
+):
+    """A converter may intentionally ignore an uncached companion attribute."""
+    device = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
+    endpoint = device.endpoints[1]
+
+    assert endpoint.tuya_manufacturer.get("preset_mode") is None
+
+    with mock.patch.object(
+        endpoint.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as request_mock:
+        (status,) = await endpoint.thermostat.write_attributes(
+            {"system_mode": Thermostat.SystemMode.Heat}
+        )
+        await wait_for_zigpy_tasks()
+
+    request_mock.assert_called_once_with(
+        cluster=0xEF00,
+        sequence=1,
+        data=b"\x01\x01\x00\x00\x01\x02\x04\x00\x01\x03",
+        command_id=0,
+        timeout=5,
+        expect_reply=False,
+        use_ieee=False,
+        ask_for_ack=None,
+        priority=None,
+        retries=None,
+        retry_delay=None,
+    )
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+
+
 @pytest.mark.parametrize(
     "manuf,msg,dp_id,value",
     [

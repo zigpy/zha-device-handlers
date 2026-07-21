@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ast
 import collections
 import importlib
 import json
 from pathlib import Path
+import re
 from unittest import mock
 
 import pytest
@@ -74,6 +76,61 @@ del quirk, model_quirk_list, manufacturer
 
 
 ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
+
+
+def test_no_legacy_bus_usage():
+    """Prevent reintroduction of the removed cluster-routing mechanism."""
+    source_root = Path(zhaquirks.__file__).parent
+    violations = []
+
+    for path in source_root.rglob("*.py"):
+        tree = ast.parse(path.read_text(), filename=str(path))
+        for node in ast.walk(tree):
+            name = None
+            if isinstance(node, ast.ClassDef):
+                name = node.name
+            elif isinstance(node, ast.Name):
+                name = node.id
+            elif isinstance(node, ast.Attribute):
+                name = node.attr
+            elif isinstance(node, ast.arg):
+                name = node.arg
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    for imported_name in (alias.name, alias.asname):
+                        if imported_name == "Bus" or (
+                            imported_name is not None and imported_name.endswith("_bus")
+                        ):
+                            violations.append(
+                                f"{path.relative_to(source_root.parent)}:{node.lineno}:"
+                                f" {imported_name}"
+                            )
+
+            if name == "Bus" or (name is not None and name.endswith("_bus")):
+                violations.append(
+                    f"{path.relative_to(source_root.parent)}:{node.lineno}: {name}"
+                )
+
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in {"getattr", "setattr", "hasattr"}
+                and len(node.args) >= 2
+                and isinstance(node.args[1], ast.Constant)
+                and isinstance(node.args[1].value, str)
+                and node.args[1].value.endswith("_bus")
+            ):
+                violations.append(
+                    f"{path.relative_to(source_root.parent)}:{node.lineno}: "
+                    f"{node.args[1].value}"
+                )
+
+    readme = source_root.parent / "README.md"
+    old_readme_patterns = re.findall(
+        r"\bBus\b|\b[A-Za-z_][A-Za-z0-9_]*_bus\b", readme.read_text()
+    )
+    assert not violations
+    assert not old_readme_patterns
 
 
 SIGNATURE_ALLOWED = {

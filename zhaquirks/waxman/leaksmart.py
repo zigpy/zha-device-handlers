@@ -18,7 +18,7 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseCommandDefs
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_COMMAND,
@@ -45,11 +45,6 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
     _CONSTANT_ATTRIBUTES = {
         ZONE_TYPE: MOISTURE_TYPE,
     }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.ias_bus.add_listener(self)
 
     async def bind(self):
         """Bind cluster."""
@@ -96,16 +91,11 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         if hdr.command_id == WAXMAN_CMDID:
             state = bool(args[1] & 0x1000)
 
-            self.endpoint.device.ias_bus.listener_event("update_state", state)
+            self.endpoint.ias_zone.update_state(state)
 
 
 class WAXMANleakSMARTv2(CustomDevice):
     """Custom device representing WAXMAN leakSMART v2."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
@@ -153,11 +143,6 @@ class WAXMANleakSMARTv2(CustomDevice):
 
 class WAXMANleakSMARTv2NOPOLL(CustomDevice):
     """Custom WAXMAN leakSMART v2 without PollControl cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770

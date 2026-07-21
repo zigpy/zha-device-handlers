@@ -14,7 +14,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -31,12 +31,6 @@ TINT_SCENE_ATTR = 0x4005
 
 class TintRemoteScenesCluster(LocalDataCluster, Scenes):
     """Tint remote cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-        self.endpoint.device.scene_bus.add_listener(self)
 
     def change_scene(self, value):
         """Change scene attribute to new value."""
@@ -56,16 +50,11 @@ class TintRemoteBasicCluster(CustomCluster, Basic):
             return
 
         value = attr.value.value
-        self.endpoint.device.scene_bus.listener_event("change_scene", value)
+        self.endpoint.out_clusters[Scenes.cluster_id].change_scene(value)
 
 
 class TintRemote(CustomDevice):
     """Tint remote quirk."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.scene_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # endpoint=1 profile=260 device_type=2048 device_version=1 input_clusters=[0, 3, 4096]

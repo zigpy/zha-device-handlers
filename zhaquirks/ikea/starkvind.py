@@ -19,7 +19,6 @@ from zigpy.zcl.clusters.hvac import Fan
 from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import Bus
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -71,14 +70,13 @@ class IkeaAirpurifier(CustomCluster):
         """Init."""
         self._current_state = {}
         super().__init__(*args, **kwargs)
-        self.endpoint.device.change_fan_mode_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         if attrid == 0x0004:
             if (
                 value is not None and value < 5500
             ):  # > 5500 = out of scale; if value is 65535 (0xFFFF), device is off
-                self.endpoint.device.pm25_bus.listener_event("update_state", value)
+                self.endpoint.pm25.update_state(value)
         elif attrid in (0x0006, 0x0007):
             if value >= 10 and value <= 50:
                 value = value // 5
@@ -100,11 +98,6 @@ class IkeaAirpurifier(CustomCluster):
 
 class PM25Cluster(CustomCluster, PM25):
     """PM25 input cluster, only used to show PM2.5 values from IKEA cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.pm25_bus.add_listener(self)
 
     def update_state(self, value):
         """25pm reported."""
@@ -136,13 +129,6 @@ class PM25Cluster(CustomCluster, PM25):
 
 class IkeaSTARKVIND(CustomDevice):
     """STARKVIND Air purifier by IKEA of Sweden."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.pm25_bus = Bus()
-        self.change_fan_mode_bus = Bus()
-        self.change_fan_mode_ha_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)

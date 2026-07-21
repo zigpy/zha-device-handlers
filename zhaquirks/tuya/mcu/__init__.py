@@ -14,11 +14,10 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks import Bus, DoublingPowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster
 
 # add EnchantedDevice import for custom quirks backwards compatibility
 from zhaquirks.tuya import (
-    TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
     DPToAttributeMapping as DpToAttributeMappingBase,
@@ -30,6 +29,7 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
+    get_tuya_mcu_cluster,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,10 +130,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
                 expect_reply=False,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
@@ -234,10 +231,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     if hasattr(dp_mapping, "dp_converter") and dp_mapping.dp_converter:
                         self._attributes_to_dp_converters[dp] = dp_mapping.dp_converter
 
-        # Cluster for endpoint: 1 (listen MCU commands)
-        self.endpoint.device.command_bus = Bus()
-        self.endpoint.device.command_bus.add_listener(self)
-
     def from_cluster_data(self, data: TuyaClusterData) -> list[TuyaCommand]:
         """Convert from cluster data to a tuya data payload."""
 
@@ -254,23 +247,36 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         tuya_commands: list[TuyaCommand] = []
         for dp in dp_mapping:
             val = data.attr_value
+            converter_args: list[Any] | None = None
 
-            if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
-                args = []
-                for dp_attr in self._dp_to_attributes[dp]:
-                    if dp_attr.attribute_name == data.cluster_attr:
-                        args.append(val)
-                        continue
-                    endpoint = self.endpoint
-                    if dp_attr.endpoint_id:
-                        endpoint = endpoint.device.endpoints[dp_attr.endpoint_id]
-                    cluster = getattr(endpoint, dp_attr.ep_attribute)
-                    args.append(cluster.get(dp_attr.attribute_name))
-                val = attr_to_dp_converter(*args)
-            self.debug("value: %s", val)
+            try:
+                if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
+                    converter_args = []
+                    for dp_attr in self._dp_to_attributes[dp]:
+                        if dp_attr.attribute_name == data.cluster_attr:
+                            converter_args.append(val)
+                            continue
+                        endpoint = self.endpoint
+                        if dp_attr.endpoint_id:
+                            endpoint = endpoint.device.endpoints[dp_attr.endpoint_id]
+                        cluster = getattr(endpoint, dp_attr.ep_attribute)
+                        converter_args.append(cluster.get(dp_attr.attribute_name))
+                    val = attr_to_dp_converter(*converter_args)
+                self.debug("value: %s", val)
 
-            dpd = TuyaDatapointData(dp, val)
-            self.debug("raw: %s", dpd.data.raw)
+                dpd = TuyaDatapointData(dp, val)
+                self.debug("raw: %s", dpd.data.raw)
+            except Exception as exc:  # noqa: BLE001
+                if converter_args is None or all(
+                    arg is not None for arg in converter_args
+                ):
+                    raise
+                self.debug(
+                    "Cannot build DP %s from an incomplete attribute cache: %s",
+                    dp,
+                    exc,
+                )
+                return []
 
             tuya_commands.append(
                 TuyaCommand(
@@ -420,10 +426,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -483,10 +486,7 @@ class TuyaWindowCovering(WindowCovering, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -501,10 +501,7 @@ class TuyaWindowCovering(WindowCovering, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -519,10 +516,7 @@ class TuyaWindowCovering(WindowCovering, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -537,10 +531,7 @@ class TuyaWindowCovering(WindowCovering, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -735,10 +726,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
 
         # level 0 --> switched off
         if command_id == 0x0004 and not on_off:
@@ -756,10 +744,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)

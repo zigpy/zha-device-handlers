@@ -3,7 +3,7 @@
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.legacy import CustomDevice
 
@@ -15,11 +15,6 @@ class ElkoThermostatCluster(CustomCluster, Thermostat):
 
     class AttributeDefs(Thermostat.AttributeDefs):
         """Cluster attributes."""
-
-    def __init__(self, *args, **kwargs):
-        """Init thermostat cluster."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.add_listener(self)
 
     def heating_active_change(self, value):
         """State update from device."""
@@ -37,11 +32,6 @@ class ElkoThermostatCluster(CustomCluster, Thermostat):
 class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
     """User interface cluster for Elko Thermostats."""
 
-    def __init__(self, *args, **kwargs):
-        """Init UI cluster."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.ui_bus.add_listener(self)
-
     def child_lock_change(self, mode):
         """Enable/disable child lock."""
         if mode:
@@ -57,11 +47,6 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     ACTIVE_POWER_ID = 0x050B
 
-    def __init__(self, *args, **kwargs):
-        """Init electrical measurement cluster."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.power_bus.add_listener(self)
-
     def power_reported(self, value):
         """Report consumption."""
         self._update_attribute(self.ACTIVE_POWER_ID, value)
@@ -69,10 +54,3 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
 class ElkoThermostat(CustomDevice):
     """Generic Elko Thermostat device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.thermostat_bus = Bus()
-        self.ui_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)

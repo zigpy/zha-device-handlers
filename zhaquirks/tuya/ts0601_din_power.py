@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.builder import (
     PERCENTAGE,
     SensorDeviceClass,
@@ -37,8 +37,6 @@ TUYA_CURRENT_ATTR = 0x0212
 TUYA_POWER_ATTR = 0x0213
 TUYA_VOLTAGE_ATTR = 0x0214
 TUYA_DIN_SWITCH_ATTR = 0x0101
-
-SWITCH_EVENT = "switch_event"
 
 """Hiking Power Meter Attributes"""
 HIKING_DIN_SWITCH_ATTR = 0x0110
@@ -85,9 +83,7 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
         elif attrid == TUYA_VOLTAGE_ATTR:
             self.endpoint.electrical_measurement.voltage_reported(value / 10)
         elif attrid == TUYA_DIN_SWITCH_ATTR:
-            self.endpoint.device.switch_bus.listener_event(
-                SWITCH_EVENT, self.endpoint.endpoint_id, value
-            )
+            self.endpoint.on_off.switch_event(self.endpoint.endpoint_id, value)
 
 
 class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
@@ -204,7 +200,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == HIKING_DIN_SWITCH_ATTR:
-            self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, 16, value)
+            self.endpoint.device.endpoints[16].on_off.switch_event(16, value)
         elif attrid == HIKING_TOTAL_ENERGY_DELIVERED_ATTR:
             self.endpoint.smartenergy_metering.energy_deliver_reported(value / 100)
         elif attrid == HIKING_TOTAL_ENERGY_RECEIVED_ATTR:
@@ -228,11 +224,6 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
 
 class TuyaPowerMeter(TuyaSwitch):
     """Tuya power meter device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.switch_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098

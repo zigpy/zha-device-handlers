@@ -6,13 +6,12 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks import LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
-    MOTION_EVENT,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
@@ -37,16 +36,11 @@ class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
         dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Handle cluster request."""
-        self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+        self.motion_event()
 
 
 class TuyaVibration(CustomDevice):
     """Tuya vibration sensor."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.motion_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0,
@@ -86,11 +80,6 @@ class TuyaVibration(CustomDevice):
 
 class TuyaVibration_TO(CustomDevice):
     """Tuya vibration sensor (TO)."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.motion_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODEL: "TS0210",

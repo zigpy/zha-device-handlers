@@ -25,7 +25,6 @@ import zigpy.device
 import zigpy.endpoint
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.util import ListenableMixin
 from zigpy.zcl import (
     AttributeReportedEvent,
     AttributeUnsupportedEvent,
@@ -56,9 +55,7 @@ from .const import (
     MANUFACTURER,
     MODEL,
     MODELS_INFO,
-    MOTION_EVENT,
     NODE_DESCRIPTOR,
-    OCCUPANCY_EVENT,
     OCCUPANCY_STATE,
     OFF,
     ON,
@@ -71,15 +68,6 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class Bus(ListenableMixin):
-    """Event bus implementation."""
-
-    def __init__(self, *args, **kwargs):
-        """Init event bus."""
-        super().__init__(*args, **kwargs)
-        self._listeners = {}
 
 
 class LocalDataCluster(CustomCluster):
@@ -338,7 +326,7 @@ class _Motion(CustomCluster, IasZone):
 class MotionWithReset(_Motion):
     """Self reset Motion cluster.
 
-    Optionally send event over device bus.
+    Optionally update a co-resident occupancy cluster.
     """
 
     send_occupancy_event: bool = False
@@ -357,18 +345,13 @@ class MotionWithReset(_Motion):
                 self._timer_handle.cancel()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
             if self.send_occupancy_event:
-                self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
+                self.endpoint.occupancy.occupancy_event()
 
 
 class MotionOnEvent(_Motion):
     """Motion based on received events from occupancy."""
 
     reset_s: int = 120
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.motion_bus.add_listener(self)
 
     def motion_event(self):
         """Motion event."""
@@ -401,12 +384,7 @@ class _Occupancy(CustomCluster, OccupancySensing):
 
 
 class OccupancyOnEvent(_Occupancy):
-    """Self reset occupancy from bus."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.occupancy_bus.add_listener(self)
+    """Self reset occupancy from another cluster."""
 
     def occupancy_event(self):
         """Occupancy event."""
@@ -419,7 +397,7 @@ class OccupancyOnEvent(_Occupancy):
 
 
 class OccupancyWithReset(_Occupancy):
-    """Self reset Occupancy cluster and send event on motion bus."""
+    """Self reset Occupancy cluster and update the IAS motion cluster."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -434,7 +412,7 @@ class OccupancyWithReset(_Occupancy):
         if event.attribute_id == OCCUPANCY_STATE and event.value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+            self.endpoint.ias_zone.motion_event()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
 
 

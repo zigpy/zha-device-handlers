@@ -19,7 +19,7 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
-from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
@@ -55,9 +55,6 @@ TUYA_SET_TIME = 0x24
 TUYA_MCU_VERSION_REQ = 0x10
 TUYA_MCU_VERSION_RSP = 0x11
 TUYA_LEVEL_COMMAND = 514
-
-LEVEL_EVENT = "level_event"
-TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # Rotating for remotes
 STOP = "stop"  # To constants
@@ -107,7 +104,6 @@ WINDOW_COVER_COMMAND_CUSTOM = 0x0006
 # ---------------------------------------------------------
 # TUYA Cover Custom Values
 # ---------------------------------------------------------
-COVER_EVENT = "cover_event"
 ATTR_COVER_POSITION = 0x0008
 ATTR_COVER_DIRECTION = 0x8001
 ATTR_COVER_INVERTED = 0x8002
@@ -115,7 +111,6 @@ ATTR_COVER_INVERTED = 0x8002
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
 # ---------------------------------------------------------
-SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
 TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
@@ -134,6 +129,11 @@ TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def get_tuya_mcu_cluster(endpoint):
+    """Return the endpoint 1 Tuya manufacturer cluster for a device."""
+    return endpoint.device.endpoints[1].in_clusters[TUYA_CLUSTER_ID]
 
 
 class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
@@ -411,12 +411,6 @@ class TuyaManufCluster(CustomCluster):
             id=0x0024, schema={"param": t.data16}, manufacturer_code=None
         )
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.command_bus = Bus()
-        self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
-
     def tuya_mcu_command(self, command: Command):  # type:ignore[valid-type]
         """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
 
@@ -608,11 +602,6 @@ class EnchantedDevice(CustomDevice, BaseEnchantedDevice):
 class TuyaOnOff(CustomCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.switch_bus.add_listener(self)
-
     def switch_event(self, channel, state):
         """Switch event."""
         _LOGGER.debug(
@@ -645,10 +634,7 @@ class TuyaOnOff(CustomCluster, OnOff):
             cmd_payload.function = 0
             cmd_payload.data = [1, command_id]
 
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cmd_payload,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cmd_payload)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -676,11 +662,12 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
                 self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
             tuya_payload = args[0]
-            self.endpoint.device.switch_bus.listener_event(
-                SWITCH_EVENT,
-                tuya_payload.command_id - TUYA_CMD_BASE,
-                tuya_payload.data[1],
-            )
+            channel = tuya_payload.command_id - TUYA_CMD_BASE
+            endpoint = self.endpoint.device.endpoints.get(channel)
+            if endpoint is not None:
+                on_off_cluster = endpoint.in_clusters.get(OnOff.cluster_id)
+                if isinstance(on_off_cluster, TuyaOnOff):
+                    on_off_cluster.switch_event(channel, tuya_payload.data[1])
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             _LOGGER.debug("TUYA_SET_TIME --> hdr: %s, args: %s", hdr, args)
@@ -692,19 +679,9 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
 class TuyaSwitch(CustomDevice):
     """Tuya switch device."""
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.switch_bus = Bus()
-        super().__init__(*args, **kwargs)
-
 
 class TuyaDimmerSwitch(TuyaSwitch):
     """Tuya dimmer switch device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.dimmer_bus = Bus()
-        super().__init__(*args, **kwargs)
 
 
 class TuyaThermostatCluster(LocalDataCluster, Thermostat):
@@ -714,11 +691,6 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
     class AttributeDefs(Thermostat.AttributeDefs):
         """Cluster attributes."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.add_listener(self)
 
     def temperature_change(self, attr, value):
         """Local or target temperature change from device."""
@@ -838,11 +810,6 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
     class AttributeDefs(UserInterface.AttributeDefs):
         """Cluster attributes."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.ui_bus.add_listener(self)
-
     def child_lock_change(self, mode):
         """Change of child lock setting."""
         if mode == 0:
@@ -938,13 +905,6 @@ class TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        # listening to battery_bus required for legacy and custom Tuya TRV quirks
-        if hasattr(self.endpoint.device, "battery_bus"):
-            self.endpoint.device.battery_bus.add_listener(self)
-
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
         self.update_attribute("battery_percentage_remaining", value * 2)
@@ -1002,13 +962,6 @@ class TuyaPowerConfigurationClusterOther(PowerConfiguration, TuyaLocalCluster):
 
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.thermostat_bus = Bus()
-        self.ui_bus = Bus()
-        self.battery_bus = Bus()
-        super().__init__(*args, **kwargs)
 
 
 # Tuya Zigbee OnOff Cluster Attribute Implementation
@@ -1223,25 +1176,20 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                 TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL,
             ]
             if tuya_payload.command_id in ids:
-                self.endpoint.device.cover_bus.listener_event(
-                    COVER_EVENT,
-                    ATTR_COVER_POSITION,
-                    tuya_payload.data[4],
+                self.endpoint.window_covering.cover_event(
+                    ATTR_COVER_POSITION, tuya_payload.data[4]
                 )
             elif (
                 tuya_payload.command_id
                 == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_DIRECTION_CHANGE
             ):
-                self.endpoint.device.cover_bus.listener_event(
-                    COVER_EVENT,
-                    ATTR_COVER_DIRECTION,
-                    tuya_payload.data[1],
+                self.endpoint.window_covering.cover_event(
+                    ATTR_COVER_DIRECTION, tuya_payload.data[1]
                 )
             elif (
                 tuya_payload.command_id == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_COVER_INVERTED
             ):
-                self.endpoint.device.cover_bus.listener_event(
-                    COVER_EVENT,
+                self.endpoint.window_covering.cover_event(
                     ATTR_COVER_INVERTED,
                     tuya_payload.data[1],  # Check this
                 )
@@ -1266,11 +1214,6 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
         motor_direction: Final = ZCLAttributeDef(id=ATTR_COVER_DIRECTION, type=t.Bool)
         cover_inverted: Final = ZCLAttributeDef(id=ATTR_COVER_INVERTED, type=t.Bool)
-
-    def __init__(self, *args, **kwargs):
-        """Initialize instance."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.cover_bus.add_listener(self)
 
     def cover_event(self, attribute, value):
         """Event listener for cover events."""
@@ -1387,11 +1330,6 @@ class TuyaWindowCover(CustomDevice):
     # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
     tuya_cover_inverted_by_default = False
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.cover_bus = Bus()
-        super().__init__(*args, **kwargs)
-
 
 class TuyaManufacturerLevelControl(TuyaManufCluster):
     """Manufacturer Specific Cluster for cover device."""
@@ -1420,32 +1358,31 @@ class TuyaManufacturerLevelControl(TuyaManufCluster):
 
         if hdr.command_id in (0x0002, 0x0001):
             if tuya_payload.command_id == TUYA_LEVEL_COMMAND:
-                self.endpoint.device.dimmer_bus.listener_event(
-                    LEVEL_EVENT,
-                    tuya_payload.command_id,
-                    tuya_payload.data,
-                )
+                for endpoint_id, endpoint in self.endpoint.device.endpoints.items():
+                    if endpoint_id == 0:
+                        continue
+                    level_cluster = endpoint.in_clusters.get(LevelControl.cluster_id)
+                    if isinstance(level_cluster, TuyaLevelControl):
+                        level_cluster.level_event(
+                            tuya_payload.command_id, tuya_payload.data
+                        )
             else:
-                self.endpoint.device.switch_bus.listener_event(
-                    SWITCH_EVENT,
-                    tuya_payload.command_id - TUYA_CMD_BASE,
-                    tuya_payload.data[1],
-                )
+                channel = tuya_payload.command_id - TUYA_CMD_BASE
+                endpoint = self.endpoint.device.endpoints.get(channel)
+                if endpoint is not None:
+                    on_off_cluster = endpoint.in_clusters.get(OnOff.cluster_id)
+                    if isinstance(on_off_cluster, TuyaOnOff):
+                        on_off_cluster.switch_event(channel, tuya_payload.data[1])
 
 
 class TuyaLevelControl(CustomCluster, LevelControl):
     """Tuya Level cluster for dimmable device."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.dimmer_bus.add_listener(self)
-
     def level_event(self, channel, state):
         """Level event."""
         level = (((state[3] << 8) + state[4]) * 255) // 1000
         _LOGGER.debug(
-            "%s - Received level event message, channel: %d, level: %d, data: %d",
+            "%s - Received level event message, channel: %d, level: %d, data: %s",
             self.endpoint.device.ieee,
             channel,
             level,
