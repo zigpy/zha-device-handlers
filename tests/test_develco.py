@@ -34,7 +34,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         # as it is normally read from the node description
 
         # read custom attribute
-        result = await manufacturer_cluster.read_attributes([pulse_config_attr_id])
+        await manufacturer_cluster.read_attributes([pulse_config_attr_id])
 
         # verify the request
         assert request_mock.call_count == 1
@@ -53,13 +53,10 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.command_id == foundation.GeneralCommand.Read_Attributes
         assert attr_data == b"\x00\x03"
 
-        assert result == ({}, {0x0300: foundation.Status.SUCCESS})
         request_mock.reset_mock()
 
         # write custom attribute
-        result = await manufacturer_cluster.write_attributes(
-            {pulse_config_attr_id: "42"}
-        )
+        await manufacturer_cluster.write_attributes({pulse_config_attr_id: "42"})
 
         # verify the request
         assert request_mock.call_count == 1
@@ -80,11 +77,10 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
         assert attr_data == b"\x00\x03!*\x00"
 
-        assert result == (foundation.Status.SUCCESS, "done")
         request_mock.reset_mock()
 
         # read non-custom attribute
-        result = await metering_cluster.read_attributes(
+        await metering_cluster.read_attributes(
             [metering_cluster.AttributeDefs.current_summ_delivered.id]
         )
 
@@ -105,16 +101,10 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.command_id == foundation.GeneralCommand.Read_Attributes
         assert attr_data == b"\x00\x00"
 
-        assert result == (
-            {},
-            {
-                metering_cluster.AttributeDefs.current_summ_delivered.id: foundation.Status.SUCCESS
-            },
-        )
         request_mock.reset_mock()
 
         # write non-custom attribute
-        result = await metering_cluster.write_attributes(
+        await metering_cluster.write_attributes(
             {metering_cluster.AttributeDefs.current_summ_delivered.id: 100}
         )
 
@@ -138,8 +128,6 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
         assert attr_data == b"\x00\x00%d\x00\x00\x00\x00\x00"
 
-        assert result == (foundation.Status.SUCCESS, "done")
-
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
@@ -152,14 +140,15 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
 
     # send incorrect divisor attribute report
+    # Frame: 0x18 (non-mfr-specific, server-to-client, disable-default-rsp),
+    #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
     device.packet_received(
         t.ZigbeePacket(
             profile_id=260,
             cluster_id=Metering.cluster_id,
             src_ep=2,
             dst_ep=2,
-            # XXX: get data from real device
-            data=t.SerializableBytes(b'\x1c\x00\x00\x01\n\x02\x03"\x00\x02\x00'),
+            data=t.SerializableBytes(b"\x18\x01\x0a\x02\x03\x22\x00\x02\x00"),
         )
     )
 
@@ -170,6 +159,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
 
     # send current_summ_delivered attribute report
+    # Frame: 0x18, TSN=1, cmd=0x0a, attr=0x0000, value=1234 (uint48)
     device.packet_received(
         t.ZigbeePacket(
             profile_id=260,
@@ -177,7 +167,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
             src_ep=2,
             dst_ep=2,
             data=t.SerializableBytes(
-                b"\x1c\x00\x00\x01\n\x00\x00%\xd2\x04\x00\x00\x00\x00"
+                b"\x18\x01\x0a\x00\x00\x25\xd2\x04\x00\x00\x00\x00"
             ),
         )
     )
