@@ -27,7 +27,9 @@ from zhaquirks.tuya import (
     TUYA_GET_DATA,
     TUYA_LEVEL_COMMAND,
     TuyaLevelControl,
+    TuyaManufacturerClusterOnOff,
     TuyaManufacturerLevelControl,
+    TuyaOnOff,
 )
 from zhaquirks.tuya.ts0601_cover import (
     TuyaZemismartSmartCover0601,
@@ -67,6 +69,7 @@ from zhaquirks.tuya.ts0601_trv import (
     MOES_WINDOW_DETECT_ATTR,
     SITERWELL_BATTERY_ATTR,
     SITERWELL_CHILD_LOCK_ATTR,
+    SITERWELL_VALVE_STATE_ATTR,
     ZONNSMART_BATTERY_ATTR,
     ZONNSMART_BOOST_TIME_ATTR,
     ZONNSMART_CHILD_LOCK_ATTR,
@@ -150,6 +153,42 @@ def test_legacy_level_report_routes_to_level_clusters_without_visiting_zdo(
     assert (
         second_level_cluster.get(LevelControl.AttributeDefs.current_level.name) == 127
     )
+
+
+@pytest.mark.parametrize(
+    "manufacturer_cluster_type",
+    (TuyaManufacturerClusterOnOff, TuyaManufacturerLevelControl),
+)
+def test_legacy_switch_report_routes_to_matching_endpoint(
+    device_mock, manufacturer_cluster_type
+):
+    """Legacy switch reports must update only the endpoint named by the channel."""
+    first_endpoint = device_mock.endpoints[1]
+    manufacturer_cluster = manufacturer_cluster_type(first_endpoint)
+    first_on_off = TuyaOnOff(first_endpoint)
+    first_endpoint.add_input_cluster(
+        manufacturer_cluster.cluster_id, manufacturer_cluster
+    )
+    first_endpoint.add_input_cluster(OnOff.cluster_id, first_on_off)
+
+    second_endpoint = device_mock.add_endpoint(2)
+    second_on_off = TuyaOnOff(second_endpoint)
+    second_endpoint.add_input_cluster(OnOff.cluster_id, second_on_off)
+
+    payload = mock.Mock(
+        status=0,
+        tsn=1,
+        command_id=TUYA_CMD_BASE + second_endpoint.endpoint_id,
+        function=0,
+        data=[1, 1],
+    )
+    header = mock.Mock(command_id=TUYA_GET_DATA)
+    header.frame_control.disable_default_response = True
+
+    manufacturer_cluster.handle_cluster_request(header, [payload])
+
+    assert first_on_off.get(OnOff.AttributeDefs.on_off.name) is None
+    assert second_on_off.get(OnOff.AttributeDefs.on_off.name) == 1
 
 
 @pytest.mark.parametrize(
@@ -349,6 +388,24 @@ def test_siterwell_lock_and_battery_reports(zigpy_device_from_quirk, quirk):
 
     assert device.endpoints[1].thermostat_ui.get("keypad_lockout") == 1
     assert device.endpoints[1].power.get("battery_percentage_remaining") == 152
+
+
+@pytest.mark.parametrize("quirk", (SiterwellGS361_Type1, SiterwellGS361_Type2))
+def test_siterwell_valve_state_reports_update_running_state(
+    zigpy_device_from_quirk, quirk
+):
+    """Siterwell valve reports must drive thermostat running mode and state."""
+    device = zigpy_device_from_quirk(quirk)
+    source = device.endpoints[1].tuya_manufacturer
+    thermostat = device.endpoints[1].thermostat
+
+    source.update_attribute(SITERWELL_VALVE_STATE_ATTR, 50)
+    assert thermostat.get("running_mode") == Thermostat.RunningMode.Heat
+    assert thermostat.get("running_state") == Thermostat.RunningState.Heat_State_On
+
+    source.update_attribute(SITERWELL_VALVE_STATE_ATTR, 0)
+    assert thermostat.get("running_mode") == Thermostat.RunningMode.Off
+    assert thermostat.get("running_state") == Thermostat.RunningState.Idle
 
 
 @pytest.mark.parametrize("quirk", (MoesHY368_Type1new, MoesHY368_Type2))

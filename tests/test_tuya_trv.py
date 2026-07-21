@@ -329,6 +329,28 @@ async def test_moes_trv_system_mode_write_with_uncached_preset(
     assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
 
 
+async def test_moes_trv_complete_converter_error_is_not_deferred(
+    zigpy_device_from_v2_quirk,
+):
+    """Complete compound conversions must surface invalid values and send nothing."""
+    device = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
+    endpoint = device.endpoints[1]
+    endpoint.tuya_manufacturer.update_attribute("preset_mode", 0)
+
+    with (
+        mock.patch.object(
+            endpoint.tuya_manufacturer.endpoint,
+            "request",
+        ) as request_mock,
+        pytest.raises(KeyError),
+    ):
+        await endpoint.thermostat.write_attributes(
+            {"system_mode": Thermostat.SystemMode.Cool}
+        )
+
+    request_mock.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "manuf,msg,dp_id,value",
     [
