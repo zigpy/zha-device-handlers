@@ -366,7 +366,7 @@ class SonoffCluster(CustomCluster):
             id=0x701F,
             type=t.uint32_t,
         )
-         = ZCLAttributeDef(
+        voltage_frequency = ZCLAttributeDef(
             name="voltage_frequency",
             id=0x7029,
             type=t.uint32_t,
