@@ -199,7 +199,7 @@ class HY08WEThermostat(TuyaThermostatCluster):
         """Attribute definitions."""
 
         unoccupied_duration_days: Final = ZCLAttributeDef(
-            id=0x4007, type=t.uint32_t, is_manufacturer_specific=True
+            id=0x4007, type=t.uint32_t, manufacturer_code=None
         )
 
     DIRECT_MAPPING_ATTRS = {

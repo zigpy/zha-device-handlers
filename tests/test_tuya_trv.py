@@ -329,13 +329,15 @@ async def test_moes_trv_system_mode_write_with_uncached_preset(
     assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
 
 
-async def test_moes_trv_complete_converter_error_is_not_deferred(
-    zigpy_device_from_v2_quirk,
+@pytest.mark.parametrize("preset_mode", (None, 0))
+async def test_moes_trv_converter_error_is_not_deferred(
+    zigpy_device_from_v2_quirk, preset_mode
 ):
-    """Complete compound conversions must surface invalid values and send nothing."""
+    """Compound conversions must surface invalid values and send nothing."""
     device = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
     endpoint = device.endpoints[1]
-    endpoint.tuya_manufacturer.update_attribute("preset_mode", 0)
+    if preset_mode is not None:
+        endpoint.tuya_manufacturer.update_attribute("preset_mode", preset_mode)
 
     with (
         mock.patch.object(

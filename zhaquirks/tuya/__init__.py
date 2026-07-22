@@ -7,8 +7,9 @@ import dataclasses
 import datetime
 import enum
 import logging
-from typing import Any, Final
+from typing import Any, Final, Protocol, cast
 
+import zigpy.endpoint
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -131,9 +132,39 @@ TUYA_CMD_BASE = 0x0100
 _LOGGER = logging.getLogger(__name__)
 
 
-def get_tuya_mcu_cluster(endpoint):
-    """Return the endpoint 1 Tuya manufacturer cluster for a device."""
-    return endpoint.device.endpoints[1].in_clusters[TUYA_CLUSTER_ID]
+class _TuyaMCUCommandCluster(Protocol):
+    """Cluster capable of handling a local Tuya MCU command."""
+
+    def tuya_mcu_command(self, command: Any) -> Any:
+        """Handle a local Tuya MCU command."""
+
+
+def get_tuya_mcu_cluster(
+    endpoint: zigpy.endpoint.Endpoint,
+) -> _TuyaMCUCommandCluster:
+    """Return the endpoint 1 Tuya MCU (0xEF00) input cluster for a device.
+
+    Tuya command routing requires the physical MCU cluster on endpoint 1. Local
+    clusters on synthetic or secondary endpoints route their commands there.
+    """
+    endpoint_1 = endpoint.device.endpoints.get(1)
+    if endpoint_1 is None:
+        raise RuntimeError(
+            f"{endpoint.device.ieee}: no Tuya MCU cluster "
+            f"(0x{TUYA_CLUSTER_ID:04X}) on endpoint 1; "
+            "direct Tuya command routing requires it"
+        )
+
+    endpoint_1 = cast(zigpy.endpoint.Endpoint, endpoint_1)
+    cluster = endpoint_1.in_clusters.get(TUYA_CLUSTER_ID)
+    if cluster is None or not hasattr(cluster, "tuya_mcu_command"):
+        raise RuntimeError(
+            f"{endpoint.device.ieee}: no Tuya MCU cluster "
+            f"(0x{TUYA_CLUSTER_ID:04X}) on endpoint 1; "
+            "direct Tuya command routing requires it"
+        )
+
+    return cast(_TuyaMCUCommandCluster, cluster)
 
 
 class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
@@ -664,7 +695,7 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
             tuya_payload = args[0]
             channel = tuya_payload.command_id - TUYA_CMD_BASE
             endpoint = self.endpoint.device.endpoints.get(channel)
-            if endpoint is not None:
+            if isinstance(endpoint, zigpy.endpoint.Endpoint):
                 on_off_cluster = endpoint.in_clusters.get(OnOff.cluster_id)
                 if isinstance(on_off_cluster, TuyaOnOff):
                     on_off_cluster.switch_event(channel, tuya_payload.data[1])
@@ -1369,7 +1400,7 @@ class TuyaManufacturerLevelControl(TuyaManufCluster):
             else:
                 channel = tuya_payload.command_id - TUYA_CMD_BASE
                 endpoint = self.endpoint.device.endpoints.get(channel)
-                if endpoint is not None:
+                if isinstance(endpoint, zigpy.endpoint.Endpoint):
                     on_off_cluster = endpoint.in_clusters.get(OnOff.cluster_id)
                     if isinstance(on_off_cluster, TuyaOnOff):
                         on_off_cluster.switch_event(channel, tuya_payload.data[1])

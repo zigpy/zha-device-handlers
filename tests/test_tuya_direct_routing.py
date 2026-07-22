@@ -18,6 +18,7 @@ from zhaquirks.tuya import (
     ATTR_COVER_DIRECTION,
     ATTR_COVER_INVERTED,
     ATTR_COVER_POSITION,
+    TUYA_CLUSTER_ID,
     TUYA_CMD_BASE,
     TUYA_DP_ID_COVER_INVERTED,
     TUYA_DP_ID_DIRECTION_CHANGE,
@@ -30,6 +31,7 @@ from zhaquirks.tuya import (
     TuyaManufacturerClusterOnOff,
     TuyaManufacturerLevelControl,
     TuyaOnOff,
+    get_tuya_mcu_cluster,
 )
 from zhaquirks.tuya.ts0601_cover import (
     TuyaZemismartSmartCover0601,
@@ -122,6 +124,29 @@ async def test_hiking_endpoint_16_command_routes_to_endpoint_1_ef00(
     assert payload.data == [1, OnOff.ServerCommandDefs.on.id]
 
 
+def test_get_tuya_mcu_cluster_returns_endpoint_1_ef00(device_mock):
+    """Tuya command routing must return the endpoint 1 MCU cluster."""
+    endpoint = device_mock.endpoints[1]
+    tuya_cluster = TuyaManufacturerClusterOnOff(endpoint)
+    endpoint.add_input_cluster(TUYA_CLUSTER_ID, tuya_cluster)
+
+    assert get_tuya_mcu_cluster(endpoint) is tuya_cluster
+
+
+@pytest.mark.parametrize("remove_endpoint", (False, True))
+def test_get_tuya_mcu_cluster_rejects_missing_topology(device_mock, remove_endpoint):
+    """Missing endpoint 1 MCU topology must produce a legible failure."""
+    endpoint = device_mock.endpoints[1]
+    if remove_endpoint:
+        device_mock.endpoints.pop(1)
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"no Tuya MCU cluster \(0xEF00\) on endpoint 1",
+    ):
+        get_tuya_mcu_cluster(endpoint)
+
+
 def test_legacy_level_report_routes_to_level_clusters_without_visiting_zdo(
     device_mock,
 ):
@@ -189,6 +214,35 @@ def test_legacy_switch_report_routes_to_matching_endpoint(
 
     assert first_on_off.get(OnOff.AttributeDefs.on_off.name) is None
     assert second_on_off.get(OnOff.AttributeDefs.on_off.name) == 1
+
+
+@pytest.mark.parametrize(
+    "manufacturer_cluster_type",
+    (TuyaManufacturerClusterOnOff, TuyaManufacturerLevelControl),
+)
+def test_legacy_switch_report_ignores_zdo_channel(
+    device_mock, manufacturer_cluster_type
+):
+    """Legacy channel zero reports must remain harmless no-ops."""
+    endpoint = device_mock.endpoints[1]
+    manufacturer_cluster = manufacturer_cluster_type(endpoint)
+    on_off_cluster = TuyaOnOff(endpoint)
+    endpoint.add_input_cluster(manufacturer_cluster.cluster_id, manufacturer_cluster)
+    endpoint.add_input_cluster(OnOff.cluster_id, on_off_cluster)
+
+    payload = mock.Mock(
+        status=0,
+        tsn=1,
+        command_id=TUYA_CMD_BASE,
+        function=0,
+        data=[1, 1],
+    )
+    header = mock.Mock(command_id=TUYA_GET_DATA)
+    header.frame_control.disable_default_response = True
+
+    manufacturer_cluster.handle_cluster_request(header, [payload])
+
+    assert on_off_cluster.get(OnOff.AttributeDefs.on_off.name) is None
 
 
 @pytest.mark.parametrize(

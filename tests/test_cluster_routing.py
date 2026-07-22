@@ -133,6 +133,13 @@ def test_sengled_actions_route_to_output_clusters(
     other_listener.zha_send_event.assert_not_called()
 
 
+def test_sengled_unknown_action_does_not_resolve_output_clusters(device_mock):
+    """Unknown Sengled actions must remain inert without requiring output clusters."""
+    source = SengledE1EG7FManufacturerSpecificCluster(device_mock.endpoints[1])
+
+    source.handle_cluster_request(mock.Mock(command_id=0), [99, 0, 0, 0])
+
+
 async def test_terncy_motion_routes_by_side_and_updates_occupancy(
     zigpy_device_from_quirk,
 ):

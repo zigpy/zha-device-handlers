@@ -430,13 +430,6 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
 
     tuya_cluster = ep1.tuya_manufacturer
 
-    # Pre-set rms_current on endpoint 2 to a known value
-    ep2_meas = ep2.electrical_measurement
-    ep2_meas.update_attribute("rms_current", 42)
-    assert ep2_meas.get("rms_current") == 42
-
-    # Call from_cluster_data as if writing active_power=7 on ep1.
-    # The converter should read rms_current from ep2 (not ep1).
     cluster_data = TuyaClusterData(
         endpoint_id=1,
         cluster_name=Ep1Measurement.ep_attribute,
@@ -446,6 +439,17 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
         manufacturer=-1,
     )
 
+    # The converter requires rms_current and must defer while that companion
+    # value is absent from the endpoint 2 cache.
+    assert tuya_cluster.from_cluster_data(cluster_data) == []
+
+    # Pre-set rms_current on endpoint 2 to a known value
+    ep2_meas = ep2.electrical_measurement
+    ep2_meas.update_attribute("rms_current", 42)
+    assert ep2_meas.get("rms_current") == 42
+
+    # Call from_cluster_data as if writing active_power=7 on ep1.
+    # The converter should read rms_current from ep2 (not ep1).
     result = tuya_cluster.from_cluster_data(cluster_data)
     assert len(result) == 1
     assert result[0].datapoints[0].dp == 1

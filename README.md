@@ -335,6 +335,17 @@ def power_reported(self, value):
 
 For cross-endpoint relays, resolve the destination through `self.endpoint.device.endpoints[...]`. Do not cache destination clusters in a cluster constructor because replacement endpoints and clusters may not yet exist. For output clusters, use `self.endpoint.out_clusters[...]` instead of endpoint attributes.
 
+#### Migrating custom quirks from legacy Bus routing
+
+The top-level `zhaquirks.Bus` helper and the Tuya `TUYA_MCU_COMMAND`, `SWITCH_EVENT`, `LEVEL_EVENT`, and `COVER_EVENT` constants are no longer available. Device-level attributes such as `command_bus`, `switch_bus`, and other legacy `*_bus` routing channels are likewise no longer created. Custom quirks using those interfaces must route to concrete clusters instead:
+
+- For a server/input cluster on the same endpoint, call `self.endpoint.<ep_attribute>.<method>(...)`.
+- For a server/input cluster on another endpoint, call `self.endpoint.device.endpoints[endpoint_id].<ep_attribute>.<method>(...)`.
+- For a client/output cluster, resolve it from `self.endpoint.out_clusters[ClusterClass.cluster_id]`.
+- For a Tuya local cluster sending an MCU command, place the physical EF00 input cluster on endpoint 1 and route through `get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(...)`.
+
+Resolve the destination when the report or command is handled. An import-only compatibility alias would not preserve the old runtime device attributes or listener registrations, so legacy custom quirks must be migrated as a unit.
+
 Once we have created our `CustomCluster` implementations we have to tell the `CustomDevice` implementation to use them. We do this in the `replacement` dict in the quirk definition. Start by copying the `signature` dict and remove the `models_info` from it. Then we replace the cluster ids that we want to override with the names of our `CustomCluster` implementations that we have created. The result looks like this:
 
 ```python

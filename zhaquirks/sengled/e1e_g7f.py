@@ -79,39 +79,48 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
     ):
         """Handle cluster request."""
 
-        on_off_cluster = self.endpoint.out_clusters[OnOff.cluster_id]
-        level_control_cluster = self.endpoint.out_clusters[LevelControl.cluster_id]
-
         if args[0] == 1:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, COMMAND_ON, [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, COMMAND_ON, []
+            )
         elif args[0] == 2:
             if args[2] == 2:
-                level_control_cluster.listener_event(
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
                     ZHA_SEND_EVENT, COMMAND_STEP, [0, 2, 0]
                 )
             else:
-                level_control_cluster.listener_event(
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
                     ZHA_SEND_EVENT, COMMAND_STEP, [0, 1, 0]
                 )
         elif args[0] == 3:
             if args[2] == 2:
-                level_control_cluster.listener_event(
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
                     ZHA_SEND_EVENT, COMMAND_STEP, [1, 2, 0]
                 )
             else:
-                level_control_cluster.listener_event(
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
                     ZHA_SEND_EVENT, COMMAND_STEP, [1, 1, 0]
                 )
         elif args[0] == 4:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, COMMAND_OFF, [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, COMMAND_OFF, []
+            )
         elif args[0] == 5:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, "on_double", [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "on_double", []
+            )
         elif args[0] == 6:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, "on_long", [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "on_long", []
+            )
         elif args[0] == 7:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, "off_double", [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "off_double", []
+            )
         elif args[0] == 8:
-            on_off_cluster.listener_event(ZHA_SEND_EVENT, "off_long", [])
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "off_long", []
+            )
 
 
 class SengledE1EG7F(CustomDevice):
