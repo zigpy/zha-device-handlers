@@ -57,16 +57,16 @@ class TamperState(t.enum8):
 class AlarmSoundType(t.enum8):
     """Alarm sound type enum."""
 
-    SOUND_0 = 0x00
-    SOUND_1 = 0x01
-    SOUND_2 = 0x02
-    SOUND_3 = 0x03
-    SOUND_4 = 0x04
-    SOUND_5 = 0x05
-    SOUND_6 = 0x06
-    SOUND_7 = 0x07
-    SOUND_8 = 0x08
-    SOUND_9 = 0x09
+    Classic_Siren = 0x00
+    Steady_Siren = 0x01
+    Rising_Siren = 0x03
+    Warning_Siren = 0x05
+    Rapid_Siren = 0x06
+    Emergency_Siren = 0x08
+    Chirp_Tone = 0x02
+    Hi_Lo_Tone = 0x04
+    Intermittent_Tone = 0x07
+    Pulse_Tone = 0x09
 
 
 class AlarmVolumeLevel(t.enum8):
@@ -75,7 +75,7 @@ class AlarmVolumeLevel(t.enum8):
     LOW = 0x00
     MEDIUM = 0x01
     HIGH = 0x02
-    MAXIMUM = 0x03
+    MAX = 0x03
 
 
 class SonoffSNZB09PPowerConfigurationCluster(CustomCluster, PowerConfiguration):
