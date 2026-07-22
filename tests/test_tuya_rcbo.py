@@ -134,7 +134,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
         (  # TuyaDatapointData(dp=105, data=TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\x1d\x00\x00\x00', *payload=29))
             b"\x09\x09\x01\x02\x03i\x02\x00\x04\x00\x00\x00\x1d",
             "device_temperature",
-            {0x0000: 2900},
+            {0x0000: 29},
         ),
         (  # TuyaDatapointData(dp=106, data=TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\x00\x00\x00\x00', *payload=0))
             b"\x09\x0a\x01\x02\x03j\x02\x00\x04\x00\x00\x00\x00",

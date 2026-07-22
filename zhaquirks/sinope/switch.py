@@ -44,11 +44,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.sinope import (
-    SINOPE,
-    SINOPE_MANUFACTURER_CLUSTER_ID,
-    CustomDeviceTemperatureCluster,
-)
+from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 
 
 class KeypadLock(t.enum8):
@@ -458,7 +454,7 @@ class SinopeTechnologiesLoadController_V2(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -736,7 +732,7 @@ class SinopeTechnologiesCalypso(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
