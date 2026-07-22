@@ -264,9 +264,11 @@ class TS110ELevelControlCluster(
     class AttributeDefs(LevelControl.AttributeDefs):
         """Attribute definitions."""
 
-        # 0xFC02, the bulb type on other TS110E variants
+        # 0xFC02, the bulb type on other TS110E variants; declared as uint8
+        # because the device rejects enum8 writes with INVALID_DATA_TYPE
+        # (Zigbee2MQTT also writes it as data type 0x20)
         external_switch_type: Final = ZCLAttributeDef(
-            id=TUYA_SWITCH_TYPE_ATTRIBUTE, type=TS110EExternalSwitchType
+            id=TUYA_SWITCH_TYPE_ATTRIBUTE, type=t.uint8_t
         )
 
     async def command(
@@ -278,14 +280,23 @@ class TS110ELevelControlCluster(
         tsn: Union[int, t.uint8_t] | None = None,
         **kwargs: Any,
     ):
-        """Send an explicit on() before switching on via a level command.
+        """Guard the level commands against firmware bugs.
 
         When the light is turned on with just move_to_level_with_on_off, the
         physical switch cannot turn it off afterwards, see
-        https://github.com/Koenkk/zigbee2mqtt/issues/15902
+        https://github.com/Koenkk/zigbee2mqtt/issues/15902 - so an explicit
+        on() is sent first.
+
+        move_to_level_with_on_off with level=0 (which is what "off with
+        transition" compiles to) permanently zeroes the brightness the device
+        restores on turn-on, even when the light is already off - the next
+        physical switch press then turns the light on at 0%, i.e. dark. Such
+        commands are sent as a plain off() instead, sacrificing the fade-out.
         """
         if command_id == self.ServerCommandDefs.move_to_level_with_on_off.id:
             level = kwargs["level"] if "level" in kwargs else args[0] if args else None
+            if level is not None and not level:
+                return await self.endpoint.on_off.off()
             if level:
                 await self.endpoint.on_off.on()
         return await super().command(

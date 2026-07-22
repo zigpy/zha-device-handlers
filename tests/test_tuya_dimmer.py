@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
@@ -417,7 +418,9 @@ async def test_ts110e_k1msuvg6_on_before_brightness(ts110e_k1msuvg6):
             LevelControl.cluster_id,
         ]
 
-    # level 0 turns the light off: no on() beforehand
+    # level 0 (= "off with transition") would permanently zero the
+    # brightness the device restores on turn-on; a plain off() is sent
+    # instead and the level command never reaches the device
     with mock.patch.object(
         level_cluster.endpoint, "request", mock.AsyncMock(return_value=None)
     ) as m2:
@@ -428,9 +431,7 @@ async def test_ts110e_k1msuvg6_on_before_brightness(ts110e_k1msuvg6):
         )
         await wait_for_zigpy_tasks()
 
-        assert [call.kwargs["cluster"] for call in m2.mock_calls] == [
-            LevelControl.cluster_id
-        ]
+        assert [call.kwargs["cluster"] for call in m2.mock_calls] == [OnOff.cluster_id]
 
 
 async def test_ts110e_k1msuvg6_unknown_brightness_forced(ts110e_k1msuvg6):
@@ -476,4 +477,6 @@ def test_ts110e_k1msuvg6_switch_type_attribute(ts110e_k1msuvg6):
 
     attr_def = level_cluster.attributes_by_name["external_switch_type"]
     assert attr_def.id == 0xFC02
-    assert attr_def.type is TS110EExternalSwitchType
+    # uint8, not enum8: the device rejects enum8 writes with INVALID_DATA_TYPE
+    assert attr_def.type is t.uint8_t
+    assert TS110EExternalSwitchType.State == 0x02
