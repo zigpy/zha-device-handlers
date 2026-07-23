@@ -68,6 +68,7 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
         "entity_type": entity_metadata.entity_type,
         "primary": entity_metadata.primary,
         "initially_disabled": entity_metadata.initially_disabled,
+        "only_if_supported": entity_metadata.only_if_supported,
     }
 
 
@@ -194,12 +195,6 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
             **_generic_kwargs(entity_metadata),
             **_platform_kwargs(entity_metadata),
         )
-
-        if entity_metadata.only_if_supported:
-            # Opt this entity back into ZHA's per-platform supported checks
-            # (quirk entities are otherwise assumed always supported), so it is
-            # not created while the device marks the attribute as unsupported.
-            entity._attr_always_supported = False
 
         # Translate quirks v2 reporting/attribute-init metadata into a
         # per-instance cluster config that the cluster_config aggregator picks up
