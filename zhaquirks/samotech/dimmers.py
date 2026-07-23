@@ -9,11 +9,10 @@ Attribute access uses the device's own manufacturer code (0x100B,
 Samotech) from the node descriptor.
 """
 
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 
@@ -69,9 +68,22 @@ class SamotechBasicCluster(CustomCluster, Basic):
 )
 
 # SM309-S-2CH - two-channel inline dimmer
+#
+# The firmware advertises four functional endpoints: endpoints 1 and 2 are the
+# two real dimmer channels (device_type 0x0101, Dimmable Light), while
+# endpoints 3 and 4 are phantom duplicates (device_type 0xffff) that mirror the
+# same On/Off + Level Control clusters. Left in place, ZHA cannot map the
+# 0xffff endpoints as lights and instead creates two extra switch entities plus
+# duplicate "On level" / "On/Off transition time" / "Power-on behaviour" /
+# "Power-on level" config entities. Strip the entity-producing clusters from the
+# phantom endpoints so only the two genuine channels remain.
 (
     QuirkBuilder("Samotech", "SM309-S-2CH")
     .replaces(SamotechBasicCluster)
+    .removes(OnOff.cluster_id, endpoint_id=3)
+    .removes(LevelControl.cluster_id, endpoint_id=3)
+    .removes(OnOff.cluster_id, endpoint_id=4)
+    .removes(LevelControl.cluster_id, endpoint_id=4)
     .enum(
         attribute_name=SamotechBasicCluster.AttributeDefs.external_switch_type.name,
         enum_class=ExternalSwitchType,
