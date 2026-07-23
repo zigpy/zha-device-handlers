@@ -9,11 +9,12 @@ Attribute access uses the device's own manufacturer code (0x100B,
 Samotech) from the node descriptor.
 """
 
-from zhaquirks.builder import EntityType, QuirkBuilder
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.builder import EntityType, QuirkBuilder
 
 
 class ExternalSwitchType(t.enum8):
