@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, sentinel
+from unittest.mock import AsyncMock, MagicMock, sentinel
 
 from frozendict import frozendict
 import pytest
@@ -26,6 +26,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder.discovery import discover_quirks_v2_entities
 from zhaquirks.builder.metadata import recursive_freeze
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
@@ -629,6 +630,70 @@ async def test_quirks_v2_also_applies_to(device_mock):
     device_mock.manufacturer = "manufacturer3"
     device_mock.model = "model3"
     assert isinstance(registry.resolve(device_mock), CustomTestDevice)
+
+
+async def test_quirks_v2_only_if_supported(device_mock):
+    """Test only_if_supported opting entities into ZHA's supported checks."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(OnOff.cluster_id)
+        .switch(
+            OnOff.AttributeDefs.start_up_on_off.name,
+            OnOff.cluster_id,
+            unique_id_suffix="checked",
+            translation_key="start_up_on_off",
+            fallback_name="Start up on/off",
+            only_if_supported=True,
+        )
+        .switch(
+            OnOff.AttributeDefs.start_up_on_off.name,
+            OnOff.cluster_id,
+            unique_id_suffix="always",
+            translation_key="start_up_on_off",
+            fallback_name="Start up on/off",
+        )
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    definition = registry.match_entry(quirked).zha_device_factory.quirk_definition
+
+    checked_metadata, always_metadata = definition.entity_metadata
+    assert checked_metadata.only_if_supported is True
+    assert always_metadata.only_if_supported is False
+
+    # Build the ZHA entities from the metadata against a mocked ZHA device
+    # wrapping the real quirked zigpy device.
+    cluster = quirked.endpoints[1].in_clusters[OnOff.cluster_id]
+    zha_endpoint = MagicMock()
+    zha_endpoint.id = 1
+    zha_endpoint.zigpy_endpoint = quirked.endpoints[1]
+    zha_device = MagicMock()
+    zha_device.quirk_metadata = definition
+    zha_device.endpoints = {1: zha_endpoint}
+
+    checked_entity, always_entity = discover_quirks_v2_entities(zha_device)
+    assert checked_entity._attr_always_supported is False
+    assert always_entity._attr_always_supported is True
+
+    # The opted-in entity follows ZHA's standard supported checks: no cached
+    # value yet, so it is not supported...
+    assert not checked_entity.is_supported()
+
+    # ...until the attribute has a value...
+    cluster.update_attribute(
+        OnOff.AttributeDefs.start_up_on_off.id, OnOff.StartUpOnOff.On
+    )
+    assert checked_entity.is_supported()
+
+    # ...and not once the device marks the attribute as unsupported.
+    cluster.add_unsupported_attribute(OnOff.AttributeDefs.start_up_on_off.id)
+    assert not checked_entity.is_supported()
+
+    # The entity without the flag keeps the always-supported assumption.
+    assert always_entity.is_supported()
 
 
 @pytest.mark.parametrize(

@@ -631,11 +631,16 @@ class QuirkBuilder:
         fallback_name: str | None = None,
         primary: bool | None = None,
         *,
+        only_if_supported: bool = False,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
         This method allows exposing an enum based entity in Home Assistant.
+
+        If only_if_supported is True, the entity is only created once ZHA
+        considers it supported, like ZHA-native entities — e.g. not while the
+        device marks the attribute as unsupported.
         """
         self._add_entity_metadata(
             ZCLEnumMetadata(
@@ -646,6 +651,7 @@ class QuirkBuilder:
                 entity_type=entity_type,
                 initially_disabled=initially_disabled,
                 attribute_initialized_from_cache=attribute_initialized_from_cache,
+                only_if_supported=only_if_supported,
                 reporting_config=reporting_config,
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
@@ -680,11 +686,16 @@ class QuirkBuilder:
         fallback_name: str | None = None,
         primary: bool | None = None,
         *,
+        only_if_supported: bool = False,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
+
+        If only_if_supported is True, the entity is only created once ZHA
+        considers it supported, like ZHA-native entities — e.g. not while the
+        device marks the attribute as unsupported.
         """
         self._add_entity_metadata(
             ZCLSensorMetadata(
@@ -695,6 +706,7 @@ class QuirkBuilder:
                 entity_type=entity_type,
                 initially_disabled=initially_disabled,
                 attribute_initialized_from_cache=attribute_initialized_from_cache,
+                only_if_supported=only_if_supported,
                 reporting_config=reporting_config,
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
@@ -733,11 +745,16 @@ class QuirkBuilder:
         fallback_name: str | None = None,
         primary: bool | None = None,
         *,
+        only_if_supported: bool = False,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
         This method allows exposing a switch entity in Home Assistant.
+
+        If only_if_supported is True, the entity is only created once ZHA
+        considers it supported, like ZHA-native entities — e.g. not while the
+        device marks the attribute as unsupported.
         """
         self._add_entity_metadata(
             SwitchMetadata(
@@ -748,6 +765,7 @@ class QuirkBuilder:
                 entity_type=entity_type,
                 initially_disabled=initially_disabled,
                 attribute_initialized_from_cache=attribute_initialized_from_cache,
+                only_if_supported=only_if_supported,
                 reporting_config=reporting_config,
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
@@ -785,11 +803,16 @@ class QuirkBuilder:
         fallback_name: str | None = None,
         primary: bool | None = None,
         *,
+        only_if_supported: bool = False,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
         This method allows exposing a number entity in Home Assistant.
+
+        If only_if_supported is True, the entity is only created once ZHA
+        considers it supported, like ZHA-native entities — e.g. not while the
+        device marks the attribute as unsupported.
         """
         self._add_entity_metadata(
             NumberMetadata(
@@ -800,6 +823,7 @@ class QuirkBuilder:
                 entity_type=entity_type,
                 initially_disabled=initially_disabled,
                 attribute_initialized_from_cache=attribute_initialized_from_cache,
+                only_if_supported=only_if_supported,
                 reporting_config=reporting_config,
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,

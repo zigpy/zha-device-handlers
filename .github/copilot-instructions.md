@@ -118,6 +118,7 @@ All entity methods require `fallback_name`. Common parameters:
 - `fallback_name`: English name in sentence case (always required)
 - `entity_type`: `EntityType.STANDARD`, `CONFIG`, or `DIAGNOSTIC`
 - `initially_disabled`: Start disabled in HA
+- `only_if_supported`: Opt-in, keyword-only, on `.sensor()`/`.switch()`/`.number()`/`.enum()`: only create the entity when ZHA considers it supported, like ZHA-native ZCL entities — e.g. not while the device marks the attribute as unsupported. Switch/select/number entities additionally require a cached attribute value before they are created.
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
 - `unique_id_suffix`: Suffix appended to the entity's unique_id. Defaults to `attribute_name` (or `command_name` for command-based entities). Required when creating multiple entities from the same attribute/command on the same endpoint, since otherwise the default suffixes collide. See **Entity unique_id format** below before changing this on existing quirks.
