@@ -5,7 +5,11 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Any, Final
 
-from zha.application.platforms.number.device_class import NumberMode
+try:
+    from zha.application.platforms.number import NumberMode
+except ImportError:
+    # Keep custom quirks compatible with older ZHA releases.
+    from zha.application.platforms.number.device_class import NumberMode
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -17,15 +21,27 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks.builder import (
-    EntityPlatform,
-    EntityType,
-    NumberDeviceClass,
-    QuirkBuilder,
-    UnitOfTemperature,
-    UnitOfTime,
-)
-from zhaquirks.clusters import CustomCluster
+try:
+    from zhaquirks.builder import (
+        EntityPlatform,
+        EntityType,
+        NumberDeviceClass,
+        QuirkBuilder,
+        UnitOfTemperature,
+        UnitOfTime,
+    )
+    from zhaquirks.clusters import CustomCluster
+except ModuleNotFoundError:
+    # Keep custom quirks compatible with the builder layout in older HA releases.
+    from homeassistant.const import UnitOfTemperature, UnitOfTime
+
+    from zhaquirks import CustomCluster
+    from zhaquirks.tuya.builder import (
+        EntityPlatform,
+        EntityType,
+        NumberDeviceClass,
+        QuirkBuilder,
+    )
 
 SONOFF_PRIVATE_CLUSTER_ID = 0xFC11
 DEVICE_WORK_MODE_SOURCE_ATTR_ID = 0x0018
