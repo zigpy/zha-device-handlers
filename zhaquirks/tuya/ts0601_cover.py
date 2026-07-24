@@ -1,7 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import EntityType
+from zhaquirks.builder import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
