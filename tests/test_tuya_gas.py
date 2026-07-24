@@ -45,6 +45,12 @@ zhaquirks.setup()
             ZCL_TUYA_GAS_CLEAR_ENUM,
         ),
         (
+            "_TZE204_qvxrkeif",
+            "TS0601",
+            ZCL_TUYA_GAS_PRESENT_ENUM,
+            ZCL_TUYA_GAS_CLEAR_ENUM,
+        ),
+        (
             "_TZE200_ggev5fsl",
             "TS0601",
             ZCL_TUYA_GAS_PRESENT_ENUM,
@@ -58,6 +64,12 @@ zhaquirks.setup()
         ),
         (
             "_TZE200_kvpwq8z7",
+            "TS0601",
+            ZCL_TUYA_GAS_PRESENT_ENUM,
+            ZCL_TUYA_GAS_CLEAR_ENUM,
+        ),
+        (
+            "_TZE204_uo8qcagc",
             "TS0601",
             ZCL_TUYA_GAS_PRESENT_ENUM,
             ZCL_TUYA_GAS_CLEAR_ENUM,
