@@ -1,15 +1,10 @@
 """Smart button."""
 
-from typing import Final
-
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 
 
