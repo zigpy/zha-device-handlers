@@ -76,6 +76,7 @@ class ManufacturerMetering(CustomCluster):
         unit=UnitOfEnergy.WATT_HOUR,
         mode="box",
         device_class=NumberDeviceClass.ENERGY,
+        unique_id_suffix="current_summation_delivered",
         translation_key="current_summation",
         fallback_name="Current summation delivered",
     )
