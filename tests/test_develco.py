@@ -157,7 +157,7 @@ async def test_frient_emi_current_summation_write_request(zigpy_device_from_v2_q
     with request_patch as request_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
-        await manufacturer_cluster.write_attributes({current_summation_attr_id: 1234})
+        await manufacturer_cluster.write_attributes({current_summation_attr_id: 42})
 
         assert request_mock.call_count == 1
         assert request_mock.call_args.kwargs["cluster"] == Metering.cluster_id
@@ -171,7 +171,7 @@ async def test_frient_emi_current_summation_write_request(zigpy_device_from_v2_q
         assert zcl_header.frame_control.is_manufacturer_specific == 1
         assert zcl_header.manufacturer == 1234
         assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
-        assert attr_data == b"\x01\x03%\xd2\x04\x00\x00\x00\x00"
+        assert attr_data == b"\x01\x03%*\x00\x00\x00\x00\x00"
 
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):

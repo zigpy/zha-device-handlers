@@ -32,19 +32,19 @@ class ManufacturerMetering(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    async def write_attributes(self, attributes, allow_response=True, **kwargs):
+    async def write_attributes(self, attributes, **kwargs):
         """Write attributes and cache values locally on success."""
         result = await super().write_attributes(attributes, **kwargs)
-        if (
-            result
-            and isinstance(result[0], list)
-            and all(r.status == Status.SUCCESS for r in result[0])
-        ):
+        if result and all(r.status == Status.SUCCESS for r in result[0]):
             for k, v in attributes.items():
-                if isinstance(k, str) and k in self.attributes_by_name:
-                    self._attr_cache[self.attributes_by_name[k].id] = v
-                elif k in self.attributes:
-                    self._attr_cache[k] = v
+                if isinstance(k, ZCLAttributeDef):
+                    attr_id = k.id
+                elif isinstance(k, str) and k in self.attributes_by_name:
+                    attr_id = self.attributes_by_name[k].id
+                else:
+                    attr_id = k
+                if attr_id in self.attributes:
+                    self._update_attribute(attr_id, v)
         return result
 
 
