@@ -1,7 +1,6 @@
 """Smoke Sensor."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -24,6 +23,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.heiman import HEIMAN
+from zhaquirks.legacy import CustomDevice
 
 
 class HeimanSmokYDLV10(CustomDevice):

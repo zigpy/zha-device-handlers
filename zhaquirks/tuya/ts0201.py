@@ -4,7 +4,6 @@ from typing import Final
 
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.measurement import (
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,6 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class ValueAlarm(t.enum8):

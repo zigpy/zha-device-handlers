@@ -2,12 +2,17 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.clusters.general import PollControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import (
+    PERCENTAGE,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfTemperature,
+)
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityCluster(CustomCluster):
