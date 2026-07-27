@@ -12,9 +12,17 @@ import sys
 import typing
 from typing import Any
 
+from zha.quirks import (
+    DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
+    DeviceMatch,
+    ModelInfo,
+    QuirkRegistryEntry,
+    QuirkSource,
+    ReplaceZigpyDevice,
+)
+from zigpy.const import SIG_MANUFACTURER, SIG_MODEL, SIG_MODELS_INFO
 import zigpy.device
 import zigpy.endpoint
-from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
@@ -28,6 +36,14 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
+
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.legacy import (
+    DEVICE_REGISTRY,
+    PENDING_LEGACY_QUIRKS,
+    CustomDevice,
+    signature_matches,
+)
 
 from .const import (
     ATTRIBUTE_ID,
@@ -506,11 +522,78 @@ class NoReplyMixin:
         return rsp
 
 
-def setup(custom_quirks_path: str | None = None) -> None:
-    """Register all quirks with zigpy, including optional custom quirks."""
+def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEntry:
+    """Compile a legacy v1 `CustomDevice` subclass into a ZHA registry entry."""
+    signature = cls.signature
+    models_info = signature.get(SIG_MODELS_INFO)
 
+    if models_info:
+        applies_to = tuple(
+            ModelInfo(manufacturer=manuf, model=model) for manuf, model in models_info
+        )
+    else:
+        manufacturer = signature.get(SIG_MANUFACTURER)
+        model = signature.get(SIG_MODEL)
+
+        # A v1 quirk with neither manufacturer nor model matches on endpoint
+        # signature alone; an empty `applies_to` makes it a wildcard entry.
+        if manufacturer is None and model is None:
+            applies_to = ()
+        else:
+            applies_to = (ModelInfo(manufacturer=manufacturer, model=model),)
+
+    return QuirkRegistryEntry(
+        device_match=DeviceMatch(
+            applies_to=applies_to,
+            filters=(signature_matches(signature),),
+        ),
+        zigpy_transforms=(ReplaceZigpyDevice(cls),),
+        zha_device_factory=None,
+        source=QuirkSource.from_class(cls),
+    )
+
+
+def _register_pending_quirks() -> None:
+    """Drain quirks queued by a round of imports into ZHA's unified registry."""
+
+    # Imported lazily: `zhaquirks.builder` pulls in `zha.application` (discovery and the
+    # platform modules), which participates in an import cycle and so must not be
+    # imported while `zhaquirks` itself is still being imported.
+    from zhaquirks.builder import UNBUILT_QUIRK_BUILDERS  # noqa: PLC0415
+
+    # TODO: remove this hack. Adding to the registry was only missing from the public
+    # API for a short period of time. We don't need to keep this around forever.
+    for builder in list(UNBUILT_QUIRK_BUILDERS):
+        if builder.manufacturer_model_metadata:
+            _LOGGER.warning(
+                "Found a v2 quirk that was not added to the registry: %s", builder
+            )
+            builder.add_to_registry()
+
+    UNBUILT_QUIRK_BUILDERS.clear()
+
+    for cls in PENDING_LEGACY_QUIRKS:
+        ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+
+    PENDING_LEGACY_QUIRKS.clear()
+
+
+def setup(custom_quirks_path: str | None = None) -> None:
+    """Register all quirks with zigpy and ZHA, including optional custom quirks.
+
+    Imports every `zhaquirks` module (firing the registration side effects of v1
+    `CustomDevice` subclasses into zigpy's registry and v2 `QuirkBuilder`
+    definitions into ZHA's), flushes any v2 builders that defined a
+    manufacturer/model but were never added to the registry, and loads custom
+    quirks from `custom_quirks_path`. Owned here (rather than ZHA's gateway) so
+    ZHA never imports zhaquirks.
+    """
     if custom_quirks_path is not None:
-        DEVICE_REGISTRY.purge_custom_quirks(custom_quirks_path)
+        path = pathlib.Path(custom_quirks_path)
+        # Remove stale custom quirks from both the v1 (zigpy) and v2 (ZHA)
+        # registries before re-importing.
+        DEVICE_REGISTRY.purge_custom_quirks(path)
+        ZHA_DEVICE_REGISTRY.purge_custom_quirks(path)
 
     # Import all quirks in the `zhaquirks` package first
     for _importer, modname, _ispkg in pkgutil.walk_packages(
@@ -519,6 +602,9 @@ def setup(custom_quirks_path: str | None = None) -> None:
     ):
         _LOGGER.debug("Loading quirks module %r", modname)
         importlib.import_module(modname)
+
+    # Drain the quirks queued by the imports above into ZHA's registry.
+    _register_pending_quirks()
 
     if custom_quirks_path is None:
         return
@@ -541,6 +627,10 @@ def setup(custom_quirks_path: str | None = None) -> None:
             _LOGGER.exception("Unexpected exception importing custom quirk %r", modname)
         else:
             loaded = True
+
+    # Custom quirks queued new v1/v2 registrations during the import above; drain
+    # them too, or they never reach ZHA's registry and silently fail to resolve.
+    _register_pending_quirks()
 
     if loaded:
         _LOGGER.warning(
