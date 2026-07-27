@@ -271,6 +271,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .applies_to(
+        "_TZE2841000000_nhgdf6qr", "TS0601"
+    )  # Giex GX04, corrupted manufacturer ID
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
     .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
