@@ -86,7 +86,7 @@ def test_snzb02dr2_reset_button_metadata():
     )
     assert reset_button.attribute_name == "reset_max_min_record"
     assert reset_button.attribute_value == 1
-    assert reset_button.fallback_name == "Reset maximum and minimum records"
+    assert reset_button.fallback_name == "Reset min/max records"
 
 
 def test_remote_array_helpers(sonoff_cluster):

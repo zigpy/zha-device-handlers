@@ -19,7 +19,7 @@ from zhaquirks.builder import (
 )
 from zhaquirks.clusters import CustomCluster
 
-CONFIGURATION_TIP = "Before configuring the device, briefly press the device button to wake it up."
+CONFIGURATION_TIP = "Briefly press the device button to wake it before configuring."
 LOGGER = logging.getLogger(__name__)
 
 REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA = 0x03
@@ -687,7 +687,7 @@ class CustomSonoffCluster(CustomCluster):
         1,
         CustomSonoffCluster.cluster_id,
         translation_key="reset_max_min_record",
-        fallback_name="Reset maximum and minimum records",
+        fallback_name="Reset min/max records",
     )
     .switch(
         CustomSonoffCluster.AttributeDefs.temp_humi_source_status.name,
