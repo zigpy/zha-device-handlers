@@ -1,9 +1,12 @@
 """Fixtures for all tests."""
 
+from collections.abc import AsyncGenerator
 import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from zha.application.gateway import Gateway
+from zha.application.helpers import CoordinatorConfiguration, ZHAConfiguration, ZHAData
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.application
 import zigpy.device
@@ -86,6 +89,12 @@ class MockApp(zigpy.application.ControllerApplication):
     async def add_endpoint(self, descriptor):
         """Mock add_endpoint."""
 
+    async def subscribe_to_multicast_group(self, *args, **kwargs) -> None:
+        """Mock subscribe_to_multicast_group."""
+
+    async def unsubscribe_from_multicast_group(self, *args, **kwargs) -> None:
+        """Mock unsubscribe_from_multicast_group."""
+
     mrequest = AsyncMock()
     request = AsyncMock(return_value=(foundation.Status.SUCCESS, None))
 
@@ -96,6 +105,26 @@ def app_controller_mock():
     config = {"device": {"path": "/dev/ttyUSB0"}, "database": None}
     app = MockApp(config)
     return app
+
+
+@pytest.fixture(name="zha_gateway")
+async def zha_gateway_fixture(
+    MockAppController: MockApp,
+) -> AsyncGenerator[Gateway, None]:
+    """ZHA gateway driving the mock controller application."""
+    gateway = Gateway(
+        ZHAData(
+            config=ZHAConfiguration(
+                coordinator_configuration=CoordinatorConfiguration(path="/dev/ttyUSB0"),
+            )
+        )
+    )
+    gateway.application_controller = MockAppController
+
+    try:
+        yield gateway
+    finally:
+        await gateway.shutdown()
 
 
 @pytest.fixture
