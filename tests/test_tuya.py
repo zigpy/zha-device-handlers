@@ -2119,7 +2119,10 @@ async def test_ts1201_ir_send_bounded_and_guarded(zigpy_device_from_quirk):
     ):
         # Many consecutive sends must not grow the pending dict without bound.
         for _ in range(12):
-            await control_cluster.command(0x0002, code=ir_code_to_send)
+            await control_cluster.command(
+                zhaquirks.tuya.ts1201.ZosungIRControl.ServerCommandDefs.IRSend.id,
+                code=ir_code_to_send,
+            )
         await wait_for_zigpy_tasks()
         assert len(dev.ir_msg_to_send) <= 8
 
