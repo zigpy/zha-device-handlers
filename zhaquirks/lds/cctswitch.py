@@ -1,7 +1,6 @@
 """Device handler for CCS-Switch-D0001 remote control."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -39,6 +38,7 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.lds import MANUFACTURER
+from zhaquirks.legacy import CustomDevice
 
 
 class CCTSwitch(CustomDevice):

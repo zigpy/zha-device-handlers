@@ -1,7 +1,6 @@
 """Device handler for Aurora dimmer switch, battery powered."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -33,6 +32,7 @@ from zhaquirks.const import (
     RIGHT,
     SHORT_PRESS,
 )
+from zhaquirks.legacy import CustomDevice
 
 COLOR_UP = "color_up"
 COLOR_DOWN = "color_down"

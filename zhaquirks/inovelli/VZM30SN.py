@@ -1,8 +1,8 @@
 """VZM30-SN Smart On/Off Switch."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM30SNCluster
 
 (
