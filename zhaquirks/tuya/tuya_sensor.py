@@ -392,7 +392,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 (
     TuyaQuirkBuilder("PIRIV01", "Excellux")
-    .applies_to("PIRIV01", "Excellux")
     .tuya_battery(dp_id=4)
     .tuya_illuminance(dp_id=20)
     .tuya_binary_sensor(
