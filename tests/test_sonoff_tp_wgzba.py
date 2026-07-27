@@ -408,6 +408,7 @@ def test_tp_wgzba_diagnostic_decoders(tp_wgzba_device, payload, expected):
 def test_tp_wgzba_private_attribute_mirrors(tp_wgzba_device):
     """Test raw private attributes update their virtual diagnostic mirrors."""
     private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    assert private_cluster.AttributeDefs.relay_output_type_bitmap.type is t.bitmap8
 
     private_cluster._update_attribute(
         private_cluster.AttributeDefs.temperature_control_threshold.id,

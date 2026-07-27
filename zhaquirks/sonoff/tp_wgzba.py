@@ -730,7 +730,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             manufacturer_code=None,
         )
         relay_output_type_bitmap: Final = ZCLAttributeDef(
-            id=0x6028, type=t.uint8_t, access="rw", manufacturer_code=None
+            id=0x6028, type=t.bitmap8, access="rw", manufacturer_code=None
         )
         hvac_message_notification: Final = ZCLAttributeDef(
             id=0x6030, type=RawBytes, access="rp", manufacturer_code=None
@@ -2933,7 +2933,7 @@ _BUILDER = (
         SonoffTPWGZBAPrivateCluster.cluster_id,
         min_value=20.0,
         max_value=50.0,
-        step=0.01,
+        step=0.5,
         unit=UnitOfTemperature.CELSIUS,
         mode=NumberMode.SLIDER,
         multiplier=0.01,
