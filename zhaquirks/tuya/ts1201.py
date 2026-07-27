@@ -128,7 +128,13 @@ class ZosungIRControl(CustomCluster):
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
             seq = self.endpoint.device.next_seq()
-            self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
+            self.endpoint.device.ir_msg_to_send[seq] = ir_msg
+            # Keep only the most recent pending messages so the dict cannot grow
+            # unbounded, while still surviving the async ACK from sleepy devices
+            # (the previous code replaced the whole dict, dropping in-flight sends).
+            pending = self.endpoint.device.ir_msg_to_send
+            for old_seq in list(pending)[:-8]:
+                del pending[old_seq]
             self.create_catching_task(
                 self.endpoint.zosung_irtransmit.command(
                     0x00,
@@ -299,14 +305,21 @@ class ZosungIRTransmit(CustomCluster):
             )
             _LOGGER.debug(
                 "Message to send: %s, to %s",
-                self.endpoint.device.ir_msg_to_send[args.seq],
+                self.endpoint.device.ir_msg_to_send.get(args.seq),
                 self.endpoint.device.ieee,
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
             maxlen = args.maxlen
-            irmsg = self.endpoint.device.ir_msg_to_send[seq]
+            irmsg = self.endpoint.device.ir_msg_to_send.get(seq)
+            if irmsg is None:
+                _LOGGER.debug(
+                    "Ignoring IR frame 0x02 for unknown seq %s from %s",
+                    seq,
+                    self.endpoint.device.ieee,
+                )
+                return
             msgpart = irmsg[position : position + maxlen]
             calculated_crc = 0
             for x in msgpart:
@@ -403,6 +416,7 @@ class ZosungIRBlaster(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.seq = 0
+        self.ir_msg_to_send = {}
         super().__init__(*args, **kwargs)
 
     def next_seq(self):

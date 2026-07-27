@@ -2095,3 +2095,41 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+async def test_ts1201_ir_send_bounded_and_guarded(zigpy_device_from_quirk):
+    """Test TS1201 bounds the pending IR-message dict and guards unknown seqs.
+
+    Regression test for https://github.com/zigpy/zha-device-handlers/issues/4641.
+    """
+    quirk = zhaquirks.tuya.ts1201.ZosungIRBlaster
+    ir_code_to_send = "B3wPfA/5AcoH4AUDAeUDgAPAC+AHB+AHA+ADN+ALBw=="  # codespell:ignore
+
+    dev = zigpy_device_from_quirk(quirk)
+    control_cluster = dev.endpoints[1].zosung_ircontrol
+    transmit_cluster = dev.endpoints[1].zosung_irtransmit
+
+    # ir_msg_to_send is initialised per instance, not shared at class level.
+    assert dev.ir_msg_to_send == {}
+
+    with mock.patch.object(
+        control_cluster.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ):
+        # Many consecutive sends must not grow the pending dict without bound.
+        for _ in range(12):
+            await control_cluster.command(
+                zhaquirks.tuya.ts1201.ZosungIRControl.ServerCommandDefs.IRSend.id,
+                code=ir_code_to_send,
+            )
+        await wait_for_zigpy_tasks()
+        assert len(dev.ir_msg_to_send) <= 8
+
+        # An ACK frame for a sequence with no pending message must be ignored,
+        # not raise KeyError (previously crashed on sleepy devices).
+        dev.ir_msg_to_send.clear()
+        # receive_ir_frame_02 frame for seq 1 (b"g" + position + maxlen).
+        hdr, args = transmit_cluster.deserialize(bytes.fromhex("11670201000000000040"))
+        transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
