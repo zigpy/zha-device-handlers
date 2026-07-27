@@ -2599,6 +2599,14 @@ _BUILDER = (
         cluster_id=Thermostat.cluster_id,
         unique_id_suffix="local_temperature_calibration",
     )
+    .prevent_default_entity_creation(
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="min_heat_setpoint_limit",
+    )
+    .prevent_default_entity_creation(
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="max_heat_setpoint_limit",
+    )
     .enum(
         SonoffTPWGZBAPrivateCluster.AttributeDefs.tp_wgzba_ui_system_mode.name,
         TPWGZBASystemMode,
@@ -2643,7 +2651,7 @@ _BUILDER = (
         Thermostat.cluster_id,
         min_value=-10.0,
         max_value=10.0,
-        step=0.1,
+        step=0.2,
         unit=UnitOfTemperature.CELSIUS,
         mode=NumberMode.SLIDER,
         unique_id_suffix="local_temperature_calibration_slider",
