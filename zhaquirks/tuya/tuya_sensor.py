@@ -6,6 +6,8 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 
 from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    SensorStateClass,
     PERCENTAGE,
     EntityPlatform,
     EntityType,
@@ -44,6 +46,10 @@ class TuyaNousTempHumiAlarm(t.enum8):
     UpperAlarm = 0x01
     Canceled = 0x02
 
+class TuyaIlluminanceAlarm(t.enum8):
+    None = 0x00
+    Low = 0x01
+    High = 0x02
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
@@ -375,6 +381,77 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         fallback_name="Display unit",
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("PIRIV01","Excellux")
+    .applies_to("PIRIV01","Excellux")
+    .tuya_battery(dp_id=4)
+    .tuya_illuminance(dp_id=20)
+    .tuya_binary_sensor(
+        dp_id=1,
+        attribute_name="on_off",
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.MOTION,
+        fallback_name="Occupancy",
+    )
+    .tuya_binary_sensor(
+        dp_id=3,
+        attribute_name="vibration_detected",
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.VIBRATION,
+        fallback_name="Vibration",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="sampling_cycle",
+        type=t.uint32_t,
+        min_value=5,
+        max_value=1200,
+        step=5,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.DURATION,
+        unit="s",
+        translation_key="sampling_cycle",
+        fallback_name="sampling cycle"
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="illuminance_v0",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=10000,
+        step=100,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        translation_key="illuminance_v0",
+        fallback_name="illuminance v0"
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="illuminance_v1",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=10000,
+        step=100,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        translation_key="illuminance_v1",
+        fallback_name="illuminance v1"
+    )
+    .tuya_sensor(
+        dp_id=50,
+        attribute_name="vibration_count",
+        type=t.uint32_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit="times",
+        fallback_name="Vibration count"
+    )
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
