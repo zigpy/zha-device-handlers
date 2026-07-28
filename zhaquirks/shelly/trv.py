@@ -75,7 +75,6 @@ class ShellyTRVModeCluster(CustomCluster):
     .command_button(
         command_name=ShellyTRVModeCluster.ServerCommandDefs.calibrate.name,
         cluster_id=ShellyTRVModeCluster.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
         translation_key="calibrate_valve",
         fallback_name="Calibrate valve",
     )
