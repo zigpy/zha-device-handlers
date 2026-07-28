@@ -11,6 +11,54 @@ import zhaquirks
 zhaquirks.setup()
 
 
+def test_tuya_double_dimmer_tze284_signature(assert_signature_matches_quirk):
+    """Test the _TZE284_jtbgusdc device signature."""
+
+    signature = {
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x0051",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0004",
+                    "0x0005",
+                    "0xed00",
+                    "0xef00",
+                ],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "_TZE284_jtbgusdc",
+        "model": "TS0601",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmerGPWithED00,
+        signature,
+    )
+
+
+def test_tuya_double_dimmer_tze284_replacement(zigpy_device_from_quirk):
+    """Test the replacement endpoints for the _TZE284_jtbgusdc dimmer."""
+
+    dimmer = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmerGPWithED00
+    )
+
+    assert dimmer.endpoints[1].on_off is not None
+    assert dimmer.endpoints[1].level is not None
+    assert dimmer.endpoints[2].on_off is not None
+    assert dimmer.endpoints[2].level is not None
+    assert 0x0021 in dimmer.endpoints[242].out_clusters
+
+
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
