@@ -9,6 +9,7 @@ from zhaquirks.builder import (
     QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfLength,
 )
 from zhaquirks.clusters import CustomCluster
@@ -52,6 +53,7 @@ class ShellyDistanceCluster(CustomCluster):
         attribute_name=ShellyDistanceCluster.AttributeDefs.distance.name,
         cluster_id=ShellyDistanceCluster.cluster_id,
         device_class=SensorDeviceClass.DISTANCE,
+        state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfLength.MILLIMETERS,
         reporting_config=ReportingConfig(
             min_interval=15, max_interval=300, reportable_change=1
