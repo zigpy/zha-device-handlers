@@ -3,7 +3,7 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
@@ -11,52 +11,43 @@ import zhaquirks
 zhaquirks.setup()
 
 
-def test_tuya_double_dimmer_tze284_signature(assert_signature_matches_quirk):
-    """Test the _TZE284_jtbgusdc device signature."""
+async def test_tuya_double_dimmer_tze284_v2(zigpy_device_from_v2_quirk):
+    """Test the v2 quirk for the _TZE284_jtbgusdc dimmer."""
 
-    signature = {
-        "endpoints": {
-            "1": {
-                "profile_id": 0x0104,
-                "device_type": "0x0051",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0004",
-                    "0x0005",
-                    "0xed00",
-                    "0xef00",
-                ],
-                "out_clusters": ["0x000a", "0x0019"],
-            },
-            "242": {
-                "profile_id": 0xA1E0,
-                "device_type": "0x0061",
-                "in_clusters": [],
-                "out_clusters": ["0x0021"],
-            },
+    dimmer = zigpy_device_from_v2_quirk(
+        "_TZE284_jtbgusdc",
+        "TS0601",
+        endpoint_ids=[1, 242],
+        cluster_ids={
+            1: {0xED00: ClusterType.Server, 0xEF00: ClusterType.Server},
+            242: {0x0021: ClusterType.Client},
         },
-        "manufacturer": "_TZE284_jtbgusdc",
-        "model": "TS0601",
-    }
-
-    assert_signature_matches_quirk(
-        zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmerGPWithED00,
-        signature,
     )
 
-
-def test_tuya_double_dimmer_tze284_replacement(zigpy_device_from_quirk):
-    """Test the replacement endpoints for the _TZE284_jtbgusdc dimmer."""
-
-    dimmer = zigpy_device_from_quirk(
-        zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmerGPWithED00
-    )
-
+    tuya_cluster = dimmer.endpoints[1].tuya_manufacturer
     assert dimmer.endpoints[1].on_off is not None
     assert dimmer.endpoints[1].level is not None
     assert dimmer.endpoints[2].on_off is not None
     assert dimmer.endpoints[2].level is not None
-    assert 0x0021 in dimmer.endpoints[242].out_clusters
+    assert dimmer.endpoints[242].out_clusters[0x0021] is not None
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        await dimmer.endpoints[2].on_off.command(0x0001)
+        await wait_for_zigpy_tasks()
+
+    request.assert_called_once()
+    assert request.call_args.kwargs["cluster"] == 0xEF00
+    assert (
+        request.call_args.kwargs["data"] == b"\x01\x01\x00\x00\x01\x07\x01\x00\x01\x01"
+    )
+
+    hdr, args = tuya_cluster.deserialize(
+        b"\tV\x02\x01y\x08\x02\x00\x04\x00\x00\x02\x29"
+    )
+    assert tuya_cluster.handle_get_data(args.data) == foundation.Status.SUCCESS
+    assert dimmer.endpoints[2].level.get("current_level") == 141
 
 
 @pytest.mark.parametrize(

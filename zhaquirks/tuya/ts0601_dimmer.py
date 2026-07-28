@@ -11,7 +11,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya import NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
@@ -282,43 +283,6 @@ class TuyaDoubleSwitchDimmerGP(TuyaDimmerSwitch):
     }
 
 
-class TuyaDoubleSwitchDimmerGPWithED00(TuyaDoubleSwitchDimmerGP):
-    """Tuya double channel dimmer with an additional ED00 cluster."""
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE284_jtbgusdc", "TS0601"),  # Avatto DMS16/ZDMS16
-        ],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
-            # device_version=1
-            # input_clusters=[0, 4, 5, 60672, 61184]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TUYA_CLUSTER_ED00_ID,
-                    TuyaLevelControlManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # input_clusters=[]
-            # output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
 class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
     """Tuya triple channel dimmer device."""
 
@@ -395,3 +359,43 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
             },
         }
     }
+
+
+(
+    TuyaQuirkBuilder("_TZE284_jtbgusdc", "TS0601")
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds(TuyaOnOffNM, endpoint_id=1)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=1)
+    .adds(TuyaOnOffNM, endpoint_id=2)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=2)
+    .tuya_dp(
+        1,
+        TuyaOnOffNM.ep_attribute,
+        "on_off",
+        endpoint_id=1,
+    )
+    .tuya_dp(
+        2,
+        TuyaInWallLevelControlNM.ep_attribute,
+        "current_level",
+        converter=lambda value: (value * 255) // 1000,
+        dp_converter=lambda value: (value * 1000) // 255,
+        endpoint_id=1,
+    )
+    .tuya_dp(
+        7,
+        TuyaOnOffNM.ep_attribute,
+        "on_off",
+        endpoint_id=2,
+    )
+    .tuya_dp(
+        8,
+        TuyaInWallLevelControlNM.ep_attribute,
+        "current_level",
+        converter=lambda value: (value * 255) // 1000,
+        dp_converter=lambda value: (value * 1000) // 255,
+        endpoint_id=2,
+    )
+    .add_to_registry()
+)
