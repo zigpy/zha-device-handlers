@@ -28,13 +28,13 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
         translation_key="light_level",
         fallback_name="Light level",
     )
-    # Disable the default ZHA IAS Zone entity (unique_id ends with
-    # "{endpoint_id}-{cluster_id}") since the Door/Tilt sensors replace it.
-    .change_entity_metadata(
+    # Remove the default ZHA IAS Zone entity, so the Door sensor below can take over
+    # its unique id. The function filter is required: the rule would otherwise also
+    # match the Door sensor itself, since that now ends in the same suffix.
+    .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=IasZone.cluster_id,
-        unique_id_suffix=f"1-{IasZone.cluster_id}",
-        new_entity_registry_enabled_default=False,
+        function=lambda entity: entity.__class__.__name__ == "IASZone",
     )
     .binary_sensor(
         attribute_name=IasZone.AttributeDefs.zone_status.name,
@@ -44,6 +44,9 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
         attribute_converter=lambda value: bool(
             value & (IasZone.ZoneStatus.Alarm_1 | IasZone.ZoneStatus.Alarm_2)
         ),
+        # Reuse the default IAS Zone entity's unique id ("{ieee}-1-1280"), so existing
+        # users keep their entity id and history, upgraded in place to `device_class: door`.
+        unique_id_suffix=str(IasZone.cluster_id),
         fallback_name="Door",
     )
     .binary_sensor(
