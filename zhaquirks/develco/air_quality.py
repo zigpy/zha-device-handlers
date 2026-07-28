@@ -21,6 +21,13 @@ from zhaquirks.clusters import CustomCluster
 from zhaquirks.develco import DevelcoPowerConfiguration
 
 
+class AQSZB110PowerConfiguration(DevelcoPowerConfiguration):
+    """PowerConfiguration with device-specific voltage bounds."""
+
+    MIN_VOLTS = 2.5
+    MAX_VOLTS = 3.0
+
+
 class DevelcoVOCMeasurement(CustomCluster):
     """Develco VOC cluster definition."""
 
@@ -63,15 +70,39 @@ class DevelcoVOCMeasurement(CustomCluster):
         reporting_status: Final = ZCL_REPORTING_STATUS_ATTR
 
 
+def measured_value_converter(value: int) -> int | None:
+    """Ignore invalid value sent after initiation."""
+    new_value = value if value < 0xFFFF else None
+    return new_value
+
+
+def value_to_caqi(value: int) -> str | None:
+    """Convert raw VOC value to CAQI (0-5500 scale)."""
+    if measured_value_converter(value) is None:
+        return None
+
+    if value < 66:
+        return "Excellent"
+    elif value < 221:
+        return "Good"
+    elif value < 661:
+        return "Moderate"
+    elif value < 2201:
+        return "Poor"
+    else:
+        return "Unhealthy"
+
+
 (
     QuirkBuilder("frient A/S", "AQSZB-110")
     .applies_to("Develco Products A/S", "AQSZB-110")
     .replaces(DevelcoVOCMeasurement, endpoint_id=38)
-    .replaces(DevelcoPowerConfiguration, endpoint_id=38)
+    .replaces(AQSZB110PowerConfiguration, endpoint_id=38)
     .sensor(
         attribute_name=DevelcoVOCMeasurement.AttributeDefs.measured_value.name,
         cluster_id=DevelcoVOCMeasurement.cluster_id,
         endpoint_id=38,
+        attribute_converter=measured_value_converter,
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_BILLION,
@@ -82,6 +113,17 @@ class DevelcoVOCMeasurement(CustomCluster):
             max_interval=900,
             reportable_change=10,  # TVOC fluctuates a lot
         ),
+    )
+    .sensor(
+        attribute_name=DevelcoVOCMeasurement.AttributeDefs.measured_value.name,
+        cluster_id=DevelcoVOCMeasurement.cluster_id,
+        endpoint_id=38,
+        attribute_converter=value_to_caqi,
+        device_class=SensorDeviceClass.ENUM,
+        unit=None,  # No unit for enum values
+        translation_key="air_quality",
+        fallback_name="Air quality",
+        unique_id_suffix="air_quality",
     )
     .add_to_registry()
 )

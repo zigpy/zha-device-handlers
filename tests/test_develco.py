@@ -2,12 +2,19 @@
 
 from unittest import mock
 
+import pytest
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.air_quality import (
+    AQSZB110PowerConfiguration,
+    measured_value_converter,
+    value_to_caqi,
+)
 
 zhaquirks.setup()
 
@@ -177,3 +184,51 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+async def test_aqszb110_power_config_battery_percent_from_voltage(
+    zigpy_device_from_v2_quirk,
+):
+    """Test battery percent is derived from cached voltage."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "AQSZB-110",
+        endpoint_ids=[38],
+        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    )
+
+    power = device.endpoints[38].power
+    assert isinstance(power, AQSZB110PowerConfiguration)
+
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
+    expected = power._calculate_battery_percentage(28)
+
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == expected
+    )
+
+
+def test_air_quality_measured_value_converter():
+    """Test VOC measured value converter returns None for sentinel."""
+    assert measured_value_converter(0xFFFF) is None
+    assert measured_value_converter(123) == 123
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (0xFFFF, None),
+        (65, "Excellent"),
+        (66, "Good"),
+        (220, "Good"),
+        (221, "Moderate"),
+        (660, "Moderate"),
+        (661, "Poor"),
+        (2200, "Poor"),
+        (2201, "Unhealthy"),
+    ],
+)
+def test_air_quality_value_to_caqi(value, expected):
+    """Test VOC value to air quality mapping thresholds."""
+    assert value_to_caqi(value) == expected
