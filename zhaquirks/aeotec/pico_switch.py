@@ -3,12 +3,12 @@
 from typing import Final
 
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
-AEOTEC_MANUFACTURER_ID = 0x1310  # 4880, "AEOTEC LIMITED"
+AEOTEC_MANUFACTURER_CODE = 0x1310  # 4880, "AEOTEC LIMITED"
 
 
 class AeotecSwitchType(t.enum8):
@@ -47,29 +47,26 @@ class AeotecSwitchTypeConfigCluster(CustomCluster):
         switch_type: Final = ZCLAttributeDef(
             id=0x0000,
             type=AeotecSwitchType,
-            zcl_type=DataTypeId.enum8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=AEOTEC_MANUFACTURER_CODE,
         )
         switch_actions: Final = ZCLAttributeDef(
             id=0x0010,
             type=AeotecSwitchActions,
-            zcl_type=DataTypeId.enum8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=AEOTEC_MANUFACTURER_CODE,
         )
         controls: Final = ZCLAttributeDef(
             id=0x0011,
             type=AeotecControls,
-            zcl_type=DataTypeId.enum8,
             access="rw",
-            manufacturer_code=AEOTEC_MANUFACTURER_ID,
+            manufacturer_code=AEOTEC_MANUFACTURER_CODE,
         )
 
 
 (
     QuirkBuilder("AEOTEC", "ZGA002")
-    .friendly_name(model="Pico Switch", manufacturer="Aeotec")
+    .friendly_name(manufacturer="Aeotec", model="Pico Switch")
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=2)
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=3)
     .enum(
