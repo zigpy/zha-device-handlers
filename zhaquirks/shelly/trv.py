@@ -10,7 +10,7 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks.builder import PERCENTAGE, EntityType, QuirkBuilder, ReportingConfig
+from zhaquirks.builder import PERCENTAGE, QuirkBuilder, ReportingConfig
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 
