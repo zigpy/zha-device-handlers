@@ -6,10 +6,9 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 
 import base64
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
@@ -24,6 +23,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,6 +32,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,9 +101,9 @@ class ZosungIRControl(CustomCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
         **kwargs: Any,
     ):
         """Override the default cluster command."""
@@ -127,7 +128,13 @@ class ZosungIRControl(CustomCluster):
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
             seq = self.endpoint.device.next_seq()
-            self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
+            self.endpoint.device.ir_msg_to_send[seq] = ir_msg
+            # Keep only the most recent pending messages so the dict cannot grow
+            # unbounded, while still surviving the async ACK from sleepy devices
+            # (the previous code replaced the whole dict, dropping in-flight sends).
+            pending = self.endpoint.device.ir_msg_to_send
+            for old_seq in list(pending)[:-8]:
+                del pending[old_seq]
             self.create_catching_task(
                 self.endpoint.zosung_irtransmit.command(
                     0x00,
@@ -257,9 +264,7 @@ class ZosungIRTransmit(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
 
@@ -300,14 +305,21 @@ class ZosungIRTransmit(CustomCluster):
             )
             _LOGGER.debug(
                 "Message to send: %s, to %s",
-                self.endpoint.device.ir_msg_to_send[args.seq],
+                self.endpoint.device.ir_msg_to_send.get(args.seq),
                 self.endpoint.device.ieee,
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
             maxlen = args.maxlen
-            irmsg = self.endpoint.device.ir_msg_to_send[seq]
+            irmsg = self.endpoint.device.ir_msg_to_send.get(seq)
+            if irmsg is None:
+                _LOGGER.debug(
+                    "Ignoring IR frame 0x02 for unknown seq %s from %s",
+                    seq,
+                    self.endpoint.device.ieee,
+                )
+                return
             msgpart = irmsg[position : position + maxlen]
             calculated_crc = 0
             for x in msgpart:
@@ -404,6 +416,7 @@ class ZosungIRBlaster(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.seq = 0
+        self.ir_msg_to_send = {}
         super().__init__(*args, **kwargs)
 
     def next_seq(self):
