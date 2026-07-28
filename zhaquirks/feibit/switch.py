@@ -1,7 +1,6 @@
 """Quirk for FeiBit light switches to remove the LevelControl cluster."""
 
 from zigpy.profiles import zll
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -22,6 +21,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.feibit import FEIBIT
+from zhaquirks.legacy import CustomDevice
 
 
 class FeiBitOneWaySwitch(CustomDevice):
