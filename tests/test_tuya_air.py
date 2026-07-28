@@ -350,6 +350,9 @@ PKPFN9HC_REPORTS = (
 # The unsolicited Basic report this device emits periodically and after a reboot.
 PKPFN9HC_BASIC_REPORT = b"\x08\x63\x0a\x01\x00\x20\x4a\xe2\xff\x20\x38\xe4\xff\x20\x00"
 
+# Its reply to one of the reads in the Tuya read attributes spell.
+PKPFN9HC_READ_ATTRS_RSP = b"\x18\x02\x01\xfe\xff\x00\x30\x00"
+
 
 @pytest.fixture
 def pkpfn9hc_device(zigpy_device_from_v2_quirk):
@@ -423,3 +426,24 @@ async def test_pkpfn9hc_does_not_requery_reporting_mcu(pkpfn9hc_device):
     assert created == []
     # The flag is cleared, so a second silent interval does trigger a query.
     assert not tuya_cluster.reported_since_last_check
+
+
+async def test_pkpfn9hc_ignores_non_attribute_reports(pkpfn9hc_device):
+    """Other Basic general commands do not re-query the MCU.
+
+    The MCU is silent here, so a Report_Attributes would trigger a query. Only
+    that command may do so, otherwise the read attributes spell would make the
+    device query itself in a loop.
+    """
+    tuya_cluster = pkpfn9hc_device.endpoints[1].in_clusters[TUYA_CLUSTER_ID]
+    assert not tuya_cluster.reported_since_last_check
+
+    created = []
+    with mock.patch.object(
+        pkpfn9hc_device,
+        "create_task",
+        side_effect=lambda coro, name=None: created.append(coro),
+    ):
+        _receive(pkpfn9hc_device, Basic.cluster_id, PKPFN9HC_READ_ATTRS_RSP)
+
+    assert created == []
