@@ -11,7 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
