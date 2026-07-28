@@ -5,7 +5,7 @@ from typing import Final
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
 AEOTEC_MANUFACTURER_CODE = 0x1310  # 4880, "AEOTEC LIMITED"
@@ -74,52 +74,52 @@ class AeotecSwitchTypeConfigCluster(CustomCluster):
         enum_class=AeotecSwitchType,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=2,
-        entity_type=EntityType.CONFIG,
-        translation_key="s1_switch_type",
+        translation_key="switch_type_id",
         fallback_name="S1 switch type",
+        translation_placeholders={"id": "S1"},
     )
     .enum(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.switch_actions.name,
         enum_class=AeotecSwitchActions,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=2,
-        entity_type=EntityType.CONFIG,
-        translation_key="s1_switch_actions",
+        translation_key="switch_actions_id",
         fallback_name="S1 switch actions",
+        translation_placeholders={"id": "S1"},
     )
     .switch(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.controls.name,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=2,
-        entity_type=EntityType.CONFIG,
-        translation_key="s1_local_control",
+        translation_key="local_control_id",
         fallback_name="S1 local control",
+        translation_placeholders={"id": "S1"},
     )
     .enum(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.switch_type.name,
         enum_class=AeotecSwitchType,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=3,
-        entity_type=EntityType.CONFIG,
-        translation_key="s2_switch_type",
+        translation_key="switch_type_id",
         fallback_name="S2 switch type",
+        translation_placeholders={"id": "S2"},
     )
     .enum(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.switch_actions.name,
         enum_class=AeotecSwitchActions,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=3,
-        entity_type=EntityType.CONFIG,
-        translation_key="s2_switch_actions",
+        translation_key="switch_actions_id",
         fallback_name="S2 switch actions",
+        translation_placeholders={"id": "S2"},
     )
     .switch(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.controls.name,
         cluster_id=AeotecSwitchTypeConfigCluster.cluster_id,
         endpoint_id=3,
-        entity_type=EntityType.CONFIG,
-        translation_key="s2_local_control",
+        translation_key="local_control_id",
         fallback_name="S2 local control",
+        translation_placeholders={"id": "S2"},
     )
     .add_to_registry()
 )
