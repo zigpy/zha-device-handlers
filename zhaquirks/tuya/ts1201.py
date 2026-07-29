@@ -166,10 +166,6 @@ class ZosungIRTransmit(CustomCluster):
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
-    current_position = 0
-    msg_length = 0
-    ir_msg = []
-
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
@@ -258,6 +254,13 @@ class ZosungIRTransmit(CustomCluster):
             },
             manufacturer_code=None,
         )
+
+    def __init__(self, *args, **kwargs):
+        """Init cluster and its per-instance learn state."""
+        super().__init__(*args, **kwargs)
+        self.current_position = 0
+        self.msg_length = 0
+        self.ir_msg: list[int] = []
 
     def handle_cluster_request(
         self,
@@ -409,14 +412,13 @@ class ZosungIRTransmit(CustomCluster):
 class ZosungIRBlaster(CustomDevice):
     """Zosung IR Blaster."""
 
-    seq = -1
-    ir_msg_to_send = {}
     last_learned_ir_code = t.CharacterString("")
 
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.seq = 0
-        self.ir_msg_to_send = {}
+        # Mutated in place, so it must be per instance, not class level.
+        self.ir_msg_to_send: dict[int, str] = {}
         super().__init__(*args, **kwargs)
 
     def next_seq(self):
