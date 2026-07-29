@@ -3,8 +3,9 @@
 Maps MultistateValue (0x0014) presentValue → max_moisture number entity
 """
 
-from zhaquirks.builder import QuirkBuilder, EntityType
 from zigpy.zcl.clusters.general import MultistateValue
+
+from zhaquirks.builder import EntityType, QuirkBuilder
 
 (
     QuirkBuilder("PushOk Hardware", "POK002")

@@ -6,8 +6,9 @@ Maps MultistateValue (0x0014) present_value → stall time number
 
 import enum
 
-from zhaquirks.builder import QuirkBuilder, EntityPlatform, EntityType
 from zigpy.zcl.clusters.general import MultistateInput, MultistateValue
+
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
 
 
 class ValveStatus(enum.IntEnum):
