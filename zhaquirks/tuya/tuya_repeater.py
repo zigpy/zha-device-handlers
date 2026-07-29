@@ -5,11 +5,11 @@ from zigpy.zcl.clusters.general import Groups, OnOff, Scenes
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 
 # MG-ZJQ100
 (
-    TuyaQuirkBuilder("_TZ3000_wn65ixz9", "TS0001")
+    QuirkBuilder("_TZ3000_wn65ixz9", "TS0001")
     .applies_to("_TZ3000_n0lphcok", "TS0001")
     .applies_to("_TZ3000_trdx8uxs", "TS0001")
     .applies_to("_TZ3000_gdsvhfao", "TS0001")
