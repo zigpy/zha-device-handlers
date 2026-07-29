@@ -813,7 +813,6 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
 
             if not base_attr_names <= quirk_attr_names and cluster not in (
                 # XXX: Test to be updated for mf-attributes with same ID as ZCL ones
-                zhaquirks.innr.innr_sp120_plug.MeteringClusterInnrSP120,
                 zhaquirks.philips.PhilipsOccupancySensing,
             ):
                 pytest.fail(

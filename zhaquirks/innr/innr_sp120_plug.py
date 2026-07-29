@@ -46,7 +46,7 @@ class MeteringClusterInnrSP120(MeteringClusterInnrOld):
     class AttributeDefs(Metering.AttributeDefs):
         """Metering attributes plus the manufacturer-specific summation reported."""
 
-        current_summ_delivered_mfg = ZCLAttributeDef(
+        current_mfg_summ_delivered = ZCLAttributeDef(
             id=0x0000,
             type=t.uint48_t,
             manufacturer_code=0x1166,
@@ -59,7 +59,7 @@ class MeteringClusterInnrSP120(MeteringClusterInnrOld):
 
     def _mirror_summation(self, event: AttributeReportedEvent) -> None:
         """Mirror the manufacturer-specific summation onto the ZCL attribute."""
-        if event.attribute_name == self.AttributeDefs.current_summ_delivered_mfg.name:
+        if event.attribute_name == self.AttributeDefs.current_mfg_summ_delivered.name:
             self.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered, event.value
             )
