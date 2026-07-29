@@ -1,7 +1,7 @@
 """Quirk for Tuya TS0202 IAS Zone motion sensors."""
 
-from zhaquirks.builder import QuirkBuilder
 from zhaquirks import MotionWithReset
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.tuya import TuyaPowerConfigurationCluster2AAA
 
 (
