@@ -29,7 +29,8 @@ REMOTE_SENSOR_STATE_ONLINE = 0x01
 REMOTE_SENSOR_STATE_OFFLINE = 0x02
 REMOTE_SENSOR_VALUE_LENGTH = 0x02
 REMOTE_PACKET_TIMEOUT_SECONDS = 30
-SUPPORTED_VIRTUAL_SENSOR_IDS = frozenset({0x01, 0x02})
+# The firmware maps SensorId 0/1 to the EXT1/EXT2 display slots.
+SUPPORTED_VIRTUAL_SENSOR_IDS = frozenset({0x00, 0x01})
 
 RemoteAttributeArrayValues = t.LVList[t.uint8_t, t.uint16_t]
 
@@ -168,25 +169,25 @@ class CustomSonoffCluster(CustomCluster):
         REMOTE_SENSOR_TYPE_HUMIDITY: AttributeDefs.remote_humidity_data,
     }
     _SENSOR_DISPLAY_ATTRIBUTES = {
-        (REMOTE_SENSOR_TYPE_TEMPERATURE, 0x01): AttributeDefs.remote_temperature_data,
-        (REMOTE_SENSOR_TYPE_HUMIDITY, 0x01): AttributeDefs.remote_humidity_data,
+        (REMOTE_SENSOR_TYPE_TEMPERATURE, 0x00): AttributeDefs.remote_temperature_data,
+        (REMOTE_SENSOR_TYPE_HUMIDITY, 0x00): AttributeDefs.remote_humidity_data,
         (
             REMOTE_SENSOR_TYPE_TEMPERATURE,
-            0x02,
+            0x01,
         ): AttributeDefs.remote_temperature_data_2,
-        (REMOTE_SENSOR_TYPE_HUMIDITY, 0x02): AttributeDefs.remote_humidity_data_2,
+        (REMOTE_SENSOR_TYPE_HUMIDITY, 0x01): AttributeDefs.remote_humidity_data_2,
     }
     _ATTRIBUTE_TO_SENSOR_KEY = {
         AttributeDefs.remote_temperature_data.id: (
             REMOTE_SENSOR_TYPE_TEMPERATURE,
-            0x01,
+            0x00,
         ),
-        AttributeDefs.remote_humidity_data.id: (REMOTE_SENSOR_TYPE_HUMIDITY, 0x01),
+        AttributeDefs.remote_humidity_data.id: (REMOTE_SENSOR_TYPE_HUMIDITY, 0x00),
         AttributeDefs.remote_temperature_data_2.id: (
             REMOTE_SENSOR_TYPE_TEMPERATURE,
-            0x02,
+            0x01,
         ),
-        AttributeDefs.remote_humidity_data_2.id: (REMOTE_SENSOR_TYPE_HUMIDITY, 0x02),
+        AttributeDefs.remote_humidity_data_2.id: (REMOTE_SENSOR_TYPE_HUMIDITY, 0x01),
     }
     _BINDING_ATTRIBUTE_TO_SENSOR_TYPE = {
         AttributeDefs.remote_temperature_sensor_id.id: REMOTE_SENSOR_TYPE_TEMPERATURE,

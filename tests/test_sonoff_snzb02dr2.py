@@ -110,11 +110,11 @@ def test_remote_array_helpers(sonoff_cluster):
 )
 def test_remote_sensor_packet_round_trip(sonoff_cluster, sensor_type, raw_value):
     """Encode online sensor data into the firmware packet format."""
-    packet = sonoff_cluster._encode_remote_sensor_packet(sensor_type, 1, raw_value)
+    packet = sonoff_cluster._encode_remote_sensor_packet(sensor_type, 0, raw_value)
     payload = sonoff_cluster._array_payload(packet)
     _, _, attributes = sonoff_cluster._parse_packet(payload)
     assert sonoff_cluster._parse_sensor_tlv(attributes[0][1]) == [
-        (sensor_type, 1, REMOTE_SENSOR_STATE_ONLINE, raw_value)
+        (sensor_type, 0, REMOTE_SENSOR_STATE_ONLINE, raw_value)
     ]
 
     with pytest.raises(ValueError, match="unsupported remote sensor type"):
@@ -186,7 +186,7 @@ def test_remote_values_are_hidden_until_source_is_enabled(sonoff_cluster):
                 REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA,
                 _sensor_tlv(
                     REMOTE_SENSOR_TYPE_TEMPERATURE,
-                    1,
+                    0,
                     REMOTE_SENSOR_STATE_ONLINE,
                     1234,
                 )[2:],
@@ -207,7 +207,7 @@ async def test_remote_packet_reassembly(sonoff_cluster):
     cluster = sonoff_cluster
     cluster._update_attribute(cluster.AttributeDefs.temp_humi_source_status.id, 1)
     tlv = _sensor_tlv(
-        REMOTE_SENSOR_TYPE_TEMPERATURE, 1, REMOTE_SENSOR_STATE_ONLINE, 2500
+        REMOTE_SENSOR_TYPE_TEMPERATURE, 0, REMOTE_SENSOR_STATE_ONLINE, 2500
     )
     first = _packet([tlv], packet_count=2, packet_index=0)
     second = _packet([], packet_count=2, packet_index=1)
@@ -245,9 +245,9 @@ async def test_remote_virtual_attribute_write(sonoff_cluster):
     temp_id = cluster.AttributeDefs.remote_temperature_sensor_id.name
     temp_data = cluster.AttributeDefs.remote_temperature_data.name
 
-    result = await cluster.write_attributes({temp_id: 1})
+    result = await cluster.write_attributes({temp_id: 0})
     assert result[0][0].status == foundation.Status.SUCCESS
-    assert cluster.get(temp_id) == 1
+    assert cluster.get(temp_id) == 0
 
     invalid = await cluster.write_attributes({temp_id: 3})
     assert invalid[0][0].status == foundation.Status.INVALID_VALUE
@@ -264,6 +264,11 @@ async def test_remote_virtual_attribute_write(sonoff_cluster):
         result = await cluster.write_attributes({temp_data: 2345})
     assert result[0][0].status == foundation.Status.SUCCESS
     write_value.assert_awaited_once()
+    assert write_value.await_args.args[:3] == (
+        REMOTE_SENSOR_TYPE_TEMPERATURE,
+        0,
+        2345,
+    )
 
 
 async def test_remote_virtual_attribute_write_failures(sonoff_cluster):
@@ -271,7 +276,7 @@ async def test_remote_virtual_attribute_write_failures(sonoff_cluster):
     cluster = sonoff_cluster
     temp_binding = cluster.AttributeDefs.remote_temperature_sensor_id.name
     temp_data = cluster.AttributeDefs.remote_temperature_data.name
-    await cluster.write_attributes({temp_binding: 1})
+    await cluster.write_attributes({temp_binding: 0})
 
     invalid = await cluster.write_attributes({temp_data: 40000})
     assert invalid[0][-1].status == foundation.Status.INVALID_VALUE
@@ -321,7 +326,7 @@ async def test_remote_sensor_value_write_handles_firmware_responses(sonoff_clust
     ):
         assert (
             await cluster._write_remote_sensor_value(
-                REMOTE_SENSOR_TYPE_TEMPERATURE, 1, 100, None
+                REMOTE_SENSOR_TYPE_TEMPERATURE, 0, 100, None
             )
             == foundation.Status.SUCCESS
         )
@@ -342,7 +347,7 @@ async def test_remote_sensor_value_write_handles_firmware_responses(sonoff_clust
     ):
         assert (
             await cluster._write_remote_sensor_value(
-                REMOTE_SENSOR_TYPE_TEMPERATURE, 1, 100, None
+                REMOTE_SENSOR_TYPE_TEMPERATURE, 0, 100, None
             )
             == foundation.Status.FAILURE
         )
