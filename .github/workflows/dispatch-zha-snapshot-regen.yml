@@ -1,0 +1,25 @@
+name: Dispatch ZHA snapshot regen
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  dispatch:
+    name: Trigger pending-snapshots regen in zigpy/zha
+    if: github.repository == 'zigpy/zha-device-handlers'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send repository_dispatch to zigpy/zha
+        # Needs a cross-repo token (fine-grained PAT or GitHub App token with
+        # contents: write on zigpy/zha) stored as the ZHA_DISPATCH_TOKEN secret.
+        # Without it, this is a no-op and zigpy/zha's scheduled run catches up.
+        env:
+          GH_TOKEN: ${{ secrets.ZHA_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::ZHA_DISPATCH_TOKEN is not configured; skipping dispatch. zigpy/zha's scheduled regen will catch up."
+            exit 0
+          fi
+          gh api repos/zigpy/zha/dispatches -f event_type=quirks-dev-push

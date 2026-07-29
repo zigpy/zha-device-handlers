@@ -45,20 +45,67 @@ jobs:
           enable-cache: true
           cache-dependency-glob: zha-lib/uv.lock
 
-      - name: Set up ZHA test environment with local quirks
+      - name: Set up ZHA test environment
+        working-directory: zha-lib
+        run: uv sync --group ci
+
+      - name: Regenerate baseline snapshots from the PR base branch
+        if: github.event_name == 'pull_request'
         working-directory: zha-lib
         run: |
-          uv sync --group ci
-          # Replace the locked, published zha-quirks with this checkout. Use
-          # .venv/bin/ directly afterwards: `uv run`/`uv sync` would revert this.
+          git -C .. fetch --depth 1 origin "$GITHUB_BASE_REF"
+          git -C .. worktree add --detach "$RUNNER_TEMP/quirks-base" FETCH_HEAD
+          uv pip install -e "$RUNNER_TEMP/quirks-base"
+          ./.venv/bin/python -m tools.regenerate_diagnostics > "$RUNNER_TEMP/regen-base.log" 2>&1 \
+            || { tail -50 "$RUNNER_TEMP/regen-base.log"; exit 1; }
+          git add tests/data/devices
+          git -c user.name=ci -c user.email=ci@invalid \
+            commit --allow-empty -q -m "Baseline snapshots from quirks $GITHUB_BASE_REF"
+
+      - name: Regenerate snapshots with these quirks
+        working-directory: zha-lib
+        run: |
+          # Replace the installed zha-quirks with this checkout. Use .venv/bin/
+          # directly afterwards: `uv run`/`uv sync` would revert this.
           uv pip install -e ..
+          ./.venv/bin/python -m tools.regenerate_diagnostics > "$RUNNER_TEMP/regen-pr.log" 2>&1 \
+            || { tail -50 "$RUNNER_TEMP/regen-pr.log"; exit 1; }
+
+      - name: Summarize snapshot changes
+        working-directory: zha-lib
+        run: |
+          git diff --stat tests/data/devices > "$RUNNER_TEMP/snapshot-diff.stat"
+          git diff tests/data/devices > "$RUNNER_TEMP/snapshot-diff.patch"
+          {
+            echo "## ZHA device snapshot changes"
+            if [ -s "$RUNNER_TEMP/snapshot-diff.patch" ]; then
+              echo "Effect of this quirks tree on ZHA's device snapshots, relative to the PR base branch (or to ZHA dev's committed snapshots on branch pushes)."
+              echo '```'
+              cat "$RUNNER_TEMP/snapshot-diff.stat"
+              echo '```'
+              echo '<details><summary>Full diff (also in the zha-snapshot-diff artifact; display truncated at 500 kB)</summary>'
+              echo
+              echo '```diff'
+              head -c 500000 "$RUNNER_TEMP/snapshot-diff.patch"
+              echo '```'
+              echo '</details>'
+            else
+              echo "No snapshot changes. Note: a PR adding a brand-new quirk shows no diff here, because ZHA has no snapshot for that device yet."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload snapshot diff
+        uses: actions/upload-artifact@v7
+        with:
+          name: zha-snapshot-diff
+          path: ${{ runner.temp }}/snapshot-diff.patch
+          if-no-files-found: ignore
 
       - name: Run ZHA tests, measuring zhaquirks coverage
         id: zha-pytest
-        # Entity-changing quirks PRs legitimately fail ZHA's device snapshot
-        # tests until the ZHA-side snapshots are regenerated after a quirks
-        # release. Keep going so coverage is still collected and uploaded;
-        # the final step re-fails the job on test failures.
+        # Snapshots were regenerated above, so failures here are real
+        # incompatibilities, not stale snapshots. Keep going so coverage is
+        # still collected and uploaded; the final step re-fails the job.
         continue-on-error: true
         working-directory: zha-lib
         run: |
@@ -93,5 +140,5 @@ jobs:
       - name: Fail if ZHA tests failed
         if: ${{ steps.zha-pytest.outcome == 'failure' }}
         run: |
-          echo "::warning::ZHA's test suite failed against this quirks checkout. If this PR changes entities, ZHA's device snapshots are stale until they are regenerated after the next quirks release; otherwise this may be a real regression."
+          echo "::error::ZHA's test suite failed against this quirks tree even with freshly regenerated snapshots, which points at a real incompatibility rather than stale snapshots."
           exit 1
