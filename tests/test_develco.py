@@ -4,6 +4,7 @@ from unittest import mock
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
@@ -176,4 +177,17 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert len(metering_listener.attribute_updates) == 1
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    )
+
+
+def test_wiszb_138_tamper_attribute_converter() -> None:
+    """Test WISZB-138 tamper attribute converter logic."""
+    assert bool(IasZone.ZoneStatus.Tamper & IasZone.ZoneStatus.Tamper) is True
+    assert bool(IasZone.ZoneStatus.Alarm_1 & IasZone.ZoneStatus.Tamper) is False
+    assert (
+        bool(
+            (IasZone.ZoneStatus.Tamper | IasZone.ZoneStatus.Alarm_1)
+            & IasZone.ZoneStatus.Tamper
+        )
+        is True
     )

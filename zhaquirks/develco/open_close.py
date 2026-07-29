@@ -5,8 +5,7 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
-
-from . import DevelcoIasZone
+from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone
 
 
 class DevelcoPowerConfiguration(PowerConfigurationCluster):
@@ -17,11 +16,21 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 
 
 (
-    QuirkBuilder("frient A/S", "WISZB-131")
-    .applies_to("Develco Products A/S", "WISZB-120")
-    .applies_to("frient A/S", "WISZB-120")
-    .applies_to("Develco Products A/S", "WISZB-121")
-    .applies_to("frient A/S", "WISZB-121")
+    QuirkBuilder(FRIENT, "WISZB-131")
+    .applies_to(DEVELCO, "WISZB-121")
+    .applies_to(FRIENT, "WISZB-121")
+    .applies_to(DEVELCO, "WISZB-131")
+    .replaces(DevelcoIasZone, endpoint_id=35)
+    .replaces(DevelcoPowerConfiguration, endpoint_id=35)
+    # The binary input cluster is a duplicate
+    .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
+    .add_to_registry()
+)
+(
+    QuirkBuilder(FRIENT, "WISZB-138")
+    .applies_to(DEVELCO, "WISZB-138")
+    .applies_to(FRIENT, "WISZB-120")
+    .applies_to(DEVELCO, "WISZB-120")
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     # The binary input cluster is a duplicate
