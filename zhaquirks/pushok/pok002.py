@@ -22,7 +22,6 @@ from zhaquirks.builder import EntityType, QuirkBuilder
         entity_type=EntityType.CONFIG,
         fallback_name="Max moisture",
         translation_key="max_moisture",
-        initially_disabled=False,
     )
     .add_to_registry()
 )

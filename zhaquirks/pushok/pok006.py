@@ -8,7 +8,7 @@ import enum
 
 from zigpy.zcl.clusters.general import MultistateInput, MultistateValue
 
-from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, UnitOfTime
 
 
 class ValveStatus(enum.IntEnum):
@@ -32,7 +32,6 @@ class ValveStatus(enum.IntEnum):
         entity_type=EntityType.STANDARD,
         fallback_name="Valve status",
         translation_key="valve_status",
-        initially_disabled=False,
     )
     .number(
         attribute_name="present_value",
@@ -42,11 +41,10 @@ class ValveStatus(enum.IntEnum):
         min_value=0,
         max_value=60,
         step=1,
-        unit="s",
+        unit=UnitOfTime.SECONDS,
         entity_type=EntityType.CONFIG,
         fallback_name="Stall time",
         translation_key="stall_time",
-        initially_disabled=False,
     )
     .add_to_registry()
 )
