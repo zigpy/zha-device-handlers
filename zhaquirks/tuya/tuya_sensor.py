@@ -2,8 +2,6 @@
 
 import datetime
 
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.quirks.v2.homeassistant import (
     PERCENTAGE,
     EntityPlatform,
@@ -11,10 +9,10 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from zigpy.quirks.v2.homeassistant.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+from zigpy.zcl import foundation
+
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
