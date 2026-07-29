@@ -48,7 +48,7 @@ class QuirkV2Device(Device):
         yield from discover_quirks_v2_entities(self)
 
     async def async_initialize(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the device, then subscribe the coordinator to its groups."""
+        """Device initialize override."""
         app = self.gateway.application_controller
 
         # Subscribe to groups before we hand off to zigpy, in case downstream init
