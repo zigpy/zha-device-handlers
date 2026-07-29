@@ -20,8 +20,8 @@ CURRENT_ID = ElectricalMeasurement.AttributeDefs.rms_current.id
 VOLTAGE_ID = ElectricalMeasurement.AttributeDefs.rms_voltage.id
 ON_OFF_ID = OnOff.AttributeDefs.on_off.id
 
-# OnOff and ElectricalMeasurement are needed as stock clusters for the post-v2.0.3
-# quirk, which (unlike the pre-v2.0.3 quirk) does not replace them.
+# the quirk for the fixed firmware does not replace these clusters,
+# so the test device needs to provide them itself
 S60_CLUSTERS = {
     1: {
         OnOff.cluster_id: ClusterType.Server,
@@ -31,86 +31,76 @@ S60_CLUSTERS = {
 
 
 @pytest.mark.parametrize(
-    "fw_version",
+    ("firmware_version", "power_fix_applied"),
     [
-        None,  # device does not report a firmware version
-        S60_POWER_FIX_FW_VERSION - 1,  # firmware before the power fix
-        0x00002002,  # v2.0.2
+        # a device that does not report a firmware version gets the workaround
+        (None, True),
+        (0x00002002, True),  # v2.0.2, still affected
+        (S60_POWER_FIX_FW_VERSION, False),  # v2.0.3 fixed the bug
+        (S60_POWER_FIX_FW_VERSION + 1, False),
     ],
 )
-def test_sonoff_plug_power_fix(zigpy_device_from_v2_quirk, fw_version):
-    """Test Sonoff plug power measurement overrides on pre-v2.0.3 firmware."""
-    device = zigpy_device_from_v2_quirk(
-        "SONOFF", "S60ZBTPF", cluster_ids=S60_CLUSTERS, firmware_version=fw_version
-    )
-
-    electrical_cluster = device.endpoints[1].electrical_measurement
-    on_off_cluster = device.endpoints[1].on_off
-
-    # the workaround clusters are applied
-    assert isinstance(on_off_cluster, SonoffS60OnOff)
-    assert isinstance(electrical_cluster, SonoffS60ElectricalMeasurement)
-
-    electrical_cluster.update_attribute(POWER_ID, 300)
-    electrical_cluster.update_attribute(CURRENT_ID, 13)
-    electrical_cluster.update_attribute(VOLTAGE_ID, 263)
-    assert electrical_cluster.get(POWER_ID) == 300
-    assert electrical_cluster.get(CURRENT_ID) == 13
-    assert electrical_cluster.get(VOLTAGE_ID) == 263
-
-    on_off_cluster.update_attribute(ON_OFF_ID, False)
-    assert electrical_cluster.get(POWER_ID) == 0
-    assert electrical_cluster.get(CURRENT_ID) == 0
-    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
-
-    electrical_cluster.update_attribute(POWER_ID, 300)
-    electrical_cluster.update_attribute(CURRENT_ID, 13)
-    electrical_cluster.update_attribute(VOLTAGE_ID, 263)
-    assert electrical_cluster.get(POWER_ID) == 0
-    assert electrical_cluster.get(CURRENT_ID) == 0
-    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
-
-    on_off_cluster.update_attribute(ON_OFF_ID, True)
-    assert electrical_cluster.get(POWER_ID) == 0
-    assert electrical_cluster.get(CURRENT_ID) == 0
-    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
-
-    electrical_cluster.update_attribute(POWER_ID, 300)
-    electrical_cluster.update_attribute(CURRENT_ID, 13)
-    electrical_cluster.update_attribute(VOLTAGE_ID, 263)
-    assert electrical_cluster.get(POWER_ID) == 300
-    assert electrical_cluster.get(CURRENT_ID) == 13
-    assert electrical_cluster.get(VOLTAGE_ID) == 263
-
-
-@pytest.mark.parametrize(
-    "fw_version",
-    [
-        S60_POWER_FIX_FW_VERSION,  # v2.0.3, the version that fixed the bug
-        S60_POWER_FIX_FW_VERSION + 1,  # newer than the fix
-    ],
-)
-def test_sonoff_plug_no_power_fix_on_new_firmware(
-    zigpy_device_from_v2_quirk, fw_version
+def test_sonoff_plug_quirk_selection(
+    zigpy_device_from_v2_quirk, firmware_version, power_fix_applied
 ):
-    """Test the power workaround is not applied on v2.0.3 and newer firmware."""
+    """Test the power measurement workaround is only used on affected firmware."""
     device = zigpy_device_from_v2_quirk(
-        "SONOFF", "S60ZBTPF", cluster_ids=S60_CLUSTERS, firmware_version=fw_version
+        "SONOFF",
+        "S60ZBTPF",
+        cluster_ids=S60_CLUSTERS,
+        firmware_version=firmware_version,
+    )
+
+    on_off_cluster = device.endpoints[1].on_off
+    electrical_cluster = device.endpoints[1].electrical_measurement
+
+    assert isinstance(on_off_cluster, SonoffS60OnOff) is power_fix_applied
+    assert (
+        isinstance(electrical_cluster, SonoffS60ElectricalMeasurement)
+        is power_fix_applied
+    )
+
+
+def test_sonoff_plug_power_fix(zigpy_device_from_v2_quirk):
+    """Test Sonoff plug power measurement overrides."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF", "S60ZBTPF", cluster_ids=S60_CLUSTERS, firmware_version=0x00002002
     )
 
     electrical_cluster = device.endpoints[1].electrical_measurement
     on_off_cluster = device.endpoints[1].on_off
 
-    # the workaround clusters are NOT applied, stock ZHA clusters are used
-    assert not isinstance(on_off_cluster, SonoffS60OnOff)
-    assert not isinstance(electrical_cluster, SonoffS60ElectricalMeasurement)
-
     electrical_cluster.update_attribute(POWER_ID, 300)
     electrical_cluster.update_attribute(CURRENT_ID, 13)
     electrical_cluster.update_attribute(VOLTAGE_ID, 263)
+    assert electrical_cluster.get(POWER_ID) == 300
+    assert electrical_cluster.get(CURRENT_ID) == 13
+    assert electrical_cluster.get(VOLTAGE_ID) == 263
 
-    # turning the socket off does not reset the power readings
+    # turning the socket off resets the power readings
     on_off_cluster.update_attribute(ON_OFF_ID, t.Bool.false)
+    assert electrical_cluster.get(POWER_ID) == 0
+    assert electrical_cluster.get(CURRENT_ID) == 0
+    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
+
+    # updates are blocked while the socket stays off
+    electrical_cluster.update_attribute(POWER_ID, 300)
+    electrical_cluster.update_attribute(CURRENT_ID, 13)
+    electrical_cluster.update_attribute(VOLTAGE_ID, 263)
+    assert electrical_cluster.get(POWER_ID) == 0
+    assert electrical_cluster.get(CURRENT_ID) == 0
+    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
+
+    # turning the socket back on does not restore readings on its own
+    on_off_cluster.update_attribute(ON_OFF_ID, t.Bool.true)
+    assert electrical_cluster.get(POWER_ID) == 0
+    assert electrical_cluster.get(CURRENT_ID) == 0
+    assert electrical_cluster.get(VOLTAGE_ID) == foundation.DataType.uint16.non_value
+
+    # the next report is passed through again
+    electrical_cluster.update_attribute(POWER_ID, 300)
+    electrical_cluster.update_attribute(CURRENT_ID, 13)
+    electrical_cluster.update_attribute(VOLTAGE_ID, 263)
     assert electrical_cluster.get(POWER_ID) == 300
     assert electrical_cluster.get(CURRENT_ID) == 13
     assert electrical_cluster.get(VOLTAGE_ID) == 263
