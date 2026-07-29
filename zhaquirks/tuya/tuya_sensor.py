@@ -2,9 +2,9 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zha.application import BinarySensorDeviceClass, EntityPlatform, EntityType
+from zha.application import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zha.application import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
@@ -46,21 +46,6 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
-
-
-class TuyaBatteryState(t.enum8):
-    """Tuya battery state enum."""
-
-    Low = 0x00
-    Medium = 0x01
-    Full = 0x02
-
-
-class TuyaTimeFormat(t.enum8):
-    """Tuya time format enum."""
-
-    Format24h = 0x00
-    Format12h = 0x01
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -421,10 +406,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=3,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
         attribute_name="battery_percentage_remaining",
+<<<<<<< HEAD
         converter=lambda x: {0: 20, 1: 50, 2: 100}[x],
+=======
+        converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 0),
+>>>>>>> b89de27 (Code review fixes)
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
-    # External temperature sensor (DP 38, value needs to be divided by 100 to get correct temperature)
+    # External temperature sensor (DP 38, value needs to be divided by 10 to get correct temperature)
     .tuya_sensor(
         dp_id=38,
         attribute_name="temperature_external",
