@@ -2,17 +2,16 @@
 
 import datetime
 
-from zha.application import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zha.application import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zha.application import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
 from zhaquirks.builder import (
     PERCENTAGE,
+    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
 )
