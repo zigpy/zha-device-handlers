@@ -6,8 +6,7 @@ Maps MultistateValue (0x0014) present_value → stall time number
 
 import enum
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zhaquirks.builder import QuirkBuilder, EntityPlatform, EntityType
 from zigpy.zcl.clusters.general import MultistateInput, MultistateValue
 
 

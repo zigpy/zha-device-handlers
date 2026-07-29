@@ -3,8 +3,7 @@
 Maps MultistateValue (0x0014) presentValue → max_moisture number entity
 """
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
+from zhaquirks.builder import QuirkBuilder, EntityType
 from zigpy.zcl.clusters.general import MultistateValue
 
 (
