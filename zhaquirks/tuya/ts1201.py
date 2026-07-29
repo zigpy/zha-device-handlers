@@ -256,13 +256,7 @@ class ZosungIRTransmit(CustomCluster):
         )
 
     def __init__(self, *args, **kwargs):
-        """Init cluster and its per-instance learn state.
-
-        `ir_msg` collects the IR code the device sends while learning, one part per
-        `receive_ir_frame_03`, and is mutated in place. As a class attribute it was
-        shared by every `ZosungIRTransmit` instance, so two devices learning at the
-        same time wrote into the same list.
-        """
+        """Init cluster and its per-instance learn state."""
         super().__init__(*args, **kwargs)
         self.current_position = 0
         self.msg_length = 0
@@ -423,8 +417,7 @@ class ZosungIRBlaster(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.seq = 0
-        # Per instance: `ir_msg_to_send` is mutated in place, so a class-level
-        # dict would be shared by every TS1201 (and by ZosungIRBlaster_ZS06).
+        # Mutated in place, so it must be per instance, not class level.
         self.ir_msg_to_send: dict[int, str] = {}
         super().__init__(*args, **kwargs)
 
