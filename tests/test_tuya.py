@@ -2133,3 +2133,44 @@ async def test_ts1201_ir_send_bounded_and_guarded(zigpy_device_from_quirk):
         hdr, args = transmit_cluster.deserialize(bytes.fromhex("11670201000000000040"))
         transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
+
+
+async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
+    """Test TS1201 learn state is per cluster instance, not shared class state."""
+    dev1 = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts1201.ZosungIRBlaster,
+        ieee=t.EUI64.convert("11:11:11:11:11:11:11:11"),
+    )
+    dev2 = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts1201.ZosungIRBlaster_ZS06,
+        ieee=t.EUI64.convert("22:22:22:22:22:22:22:22"),
+    )
+    transmit1 = dev1.endpoints[1].zosung_irtransmit
+    transmit2 = dev2.endpoints[1].zosung_irtransmit
+
+    assert transmit1.ir_msg is not transmit2.ir_msg
+    assert dev1.ir_msg_to_send is not dev2.ir_msg_to_send
+
+    # A learn on the first device must not leak into the second one.
+    with mock.patch.object(
+        transmit1.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ):
+        # receive_ir_frame_00 for seq 1, announcing a four byte message
+        hdr, args = transmit1.deserialize(
+            bytes.fromhex("016b00") + struct.pack("<HIIHBBH", 1, 4, 0, 0xE004, 1, 4, 0)
+        )
+        transmit1.handle_message(hdr, args)
+        # receive_ir_frame_03 carrying the whole message at position 0
+        hdr, args = transmit1.deserialize(
+            bytes.fromhex("016c03")
+            + struct.pack("<BHI", 0, 1, 0)
+            + b"\x04\xde\xad\xbe\xef"
+            + struct.pack("<B", 0x38)
+        )
+        transmit1.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+    assert bytes(transmit1.ir_msg) == b"\xde\xad\xbe\xef"
+    assert transmit1.msg_length == 4
+    assert transmit2.ir_msg == []
+    assert transmit2.msg_length == 0
