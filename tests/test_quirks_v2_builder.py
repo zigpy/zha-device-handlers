@@ -433,10 +433,10 @@ async def test_quirks_v2_no_multicast_groups(device_mock):
     assert entry.zha_device_factory.quirk_definition.multicast_groups == ()
 
 
-async def test_quirks_v2_subscribes_to_multicast_group_on_configure(
+async def test_quirks_v2_subscribes_to_multicast_group_on_initialize(
     MockAppController: MockApp, device_mock: Device, zha_gateway: Gateway
 ) -> None:
-    """Test `async_configure` subscribes the coordinator to the declared groups."""
+    """Test `async_initialize` subscribes the coordinator to the declared groups."""
     registry = DeviceRegistry()
 
     (
@@ -449,14 +449,13 @@ async def test_quirks_v2_subscribes_to_multicast_group_on_configure(
     zha_device = zha_gateway.get_or_create_device(registry.resolve(device_mock))
     assert isinstance(zha_device, QuirkV2Device)
 
-    with patch.object(
-        MockAppController,
-        "subscribe_to_multicast_group",
-        wraps=MockAppController.subscribe_to_multicast_group,
-    ) as subscribe:
-        await zha_device.async_configure()
+    with patch.object(MockAppController, "_subscribe_to_multicast_group") as subscribe:
+        await zha_device.async_initialize(from_cache=True)
 
-    assert subscribe.mock_calls == [call(0x549A), call(0x549B)]
+    assert subscribe.mock_calls == [
+        call(group_id=0x549A, endpoint_id=1),
+        call(group_id=0x549B, endpoint_id=1),
+    ]
 
 
 async def test_quirks_v2_device_automation_triggers_on_zigpy_device(device_mock):

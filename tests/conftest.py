@@ -89,12 +89,6 @@ class MockApp(zigpy.application.ControllerApplication):
     async def add_endpoint(self, descriptor):
         """Mock add_endpoint."""
 
-    async def subscribe_to_multicast_group(self, *args, **kwargs) -> None:
-        """Mock subscribe_to_multicast_group."""
-
-    async def unsubscribe_from_multicast_group(self, *args, **kwargs) -> None:
-        """Mock unsubscribe_from_multicast_group."""
-
     mrequest = AsyncMock()
     request = AsyncMock(return_value=(foundation.Status.SUCCESS, None))
 

@@ -47,16 +47,16 @@ class QuirkV2Device(Device):
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
 
-    async def async_configure(self) -> None:
-        """Configure the device, then subscribe the coordinator to its groups."""
-        await super().async_configure()
-
+    async def async_initialize(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the device, then subscribe the coordinator to its groups."""
         app = self.gateway.application_controller
 
-        # Coordinators with old firmware still filter group commands unless manually
-        # added
+        # Subscribe to groups before we hand off to zigpy, in case downstream init
+        # requires group membership
         for group_id in self._quirk_definition.multicast_groups:
             await app.subscribe_to_multicast_group(group_id)
+
+        await super().async_initialize(*args, **kwargs)
 
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
