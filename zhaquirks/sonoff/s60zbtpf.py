@@ -75,20 +75,21 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 # firmware version that fixed the power reporting bug (max_version is exclusive)
 S60_POWER_FIX_FW_VERSION = 0x00002003
 
-# base for both firmware variants below, holding what applies to every firmware version.
-# It has no manufacturer/model, so it is not registered on its own.
-s60_base_quirk = QuirkBuilder().prevent_default_entity_creation(
-    endpoint_id=1,
-    cluster_id=Metering.cluster_id,
-    unique_id_suffix="1-1794",  # no actual suffix for this
+# base for both firmware variants below, holding what applies to every firmware version
+s60_base_quirk = (
+    QuirkBuilder("SONOFF", "S60ZBTPF")
+    .applies_to("SONOFF", "S60ZBTPG")
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Metering.cluster_id,
+        unique_id_suffix="1-1794",  # no actual suffix for this
+    )
 )
 
 (
     # firmware before the fix, and devices not reporting a firmware version at all,
     # get the power reporting workaround
-    s60_base_quirk.clone()
-    .applies_to("SONOFF", "S60ZBTPF")
-    .applies_to("SONOFF", "S60ZBTPG")
+    s60_base_quirk.clone(omit_man_model_data=False)
     .firmware_version_filter(max_version=S60_POWER_FIX_FW_VERSION, allow_missing=True)
     .replaces(SonoffS60OnOff)
     .replaces(SonoffS60ElectricalMeasurement)
@@ -96,10 +97,11 @@ s60_base_quirk = QuirkBuilder().prevent_default_entity_creation(
 )
 
 (
-    # the fixed firmware and newer only need the metering entity prevention
-    s60_base_quirk.clone()
-    .applies_to("SONOFF", "S60ZBTPF")
-    .applies_to("SONOFF", "S60ZBTPG")
-    .firmware_version_filter(min_version=S60_POWER_FIX_FW_VERSION, allow_missing=False)
-    .add_to_registry()
+    # the fixed firmware and newer only need the metering entity prevention the base
+    # already has, so the base itself becomes that quirk. It must not be left over as
+    # an unregistered builder with model data: `zhaquirks.setup()` would then register
+    # it as a third quirk without a firmware filter, shadowing the one above.
+    s60_base_quirk.firmware_version_filter(
+        min_version=S60_POWER_FIX_FW_VERSION, allow_missing=False
+    ).add_to_registry()
 )
