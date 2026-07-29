@@ -4,15 +4,16 @@ import datetime
 
 import zigpy.types as t
 from zigpy.zcl import foundation
-
-from zhaquirks.builder import (
+from zigpy.quirks.v2.homeassistant import (
     PERCENTAGE,
     EntityPlatform,
     EntityType,
-    SensorDeviceClass,
-    SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
+)
+from zigpy.quirks.v2.homeassistant.sensor import (
+    SensorDeviceClass,
+    SensorStateClass,
 )
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
@@ -44,6 +45,13 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class TuyaTimeFormat(t.enum8):
+    """Tuya clock display time format enum."""
+
+    Time_24h = 0x00
+    Time_12h = 0x01
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -412,12 +420,21 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=38,
         attribute_name="temperature_external",
         type=t.int32s,
-        converter=lambda x: x / 10,  # Divide by 10 to get correct temperature
+        converter=lambda x: x / 10,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="temperature_external",
-        fallback_name="Temperature Probe",
+        fallback_name="Temperature probe",
+    )
+    # Clock display time format (DP 17: 0=24h, 1=12h)
+    .tuya_enum(
+        dp_id=17,
+        attribute_name="time_format",
+        enum_class=TuyaTimeFormat,
+        entity_type=EntityType.CONFIG,
+        translation_key="time_format",
+        fallback_name="Time format",
     )
     .skip_configuration()
     .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
