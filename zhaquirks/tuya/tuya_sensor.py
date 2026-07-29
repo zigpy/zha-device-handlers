@@ -7,7 +7,6 @@ from zigpy.zcl import foundation
 
 from zhaquirks.builder import (
     PERCENTAGE,
-    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
     SensorDeviceClass,
