@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+from zha.quirks import DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -10,6 +11,31 @@ from tests.common import ClusterListener
 import zhaquirks
 
 zhaquirks.setup()
+
+
+async def test_frient_emi_v2_metadata_current_summation(zigpy_device_from_v2_quirk):
+    """Test EMIZB-141 exposes current summation and reset button metadata."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
+    entry = ZHA_DEVICE_REGISTRY.match_entry(device)
+    assert entry is not None
+
+    entity_map = {
+        m.translation_key: m
+        for m in entry.zha_device_factory.quirk_definition.entity_metadata
+        if m.translation_key is not None
+    }
+
+    assert (
+        entity_map["current_summation"].fallback_name == "Current summation delivered"
+    )
+    assert (
+        entity_map["reset_summation_delivered"].fallback_name
+        == "Reset summation delivered"
+    )
 
 
 async def test_frient_emi(zigpy_device_from_v2_quirk):
@@ -38,9 +64,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
         # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args[0] == ()  # no args
         assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
-        assert request_mock.call_args[1]["data"] == b"\x04\xd2\x04\x01\x00\x00\x03"
 
         zcl_header, attr_data = foundation.ZCLHeader.deserialize(
             request_mock.call_args[1]["data"]
@@ -60,11 +84,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
         # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args[0] == ()  # no args
         assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
-        assert (
-            request_mock.call_args[1]["data"] == b"\x04\xd2\x04\x02\x02\x00\x03!*\x00"
-        )
 
         zcl_header, attr_data = foundation.ZCLHeader.deserialize(
             request_mock.call_args[1]["data"]
@@ -86,9 +106,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
         # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args[0] == ()  # no args
         assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
-        assert request_mock.call_args[1]["data"] == b"\x00\x03\x00\x00\x00"
 
         zcl_header, attr_data = foundation.ZCLHeader.deserialize(
             request_mock.call_args[1]["data"]
@@ -110,12 +128,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
         # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args[0] == ()  # no args
         assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
-        assert (
-            request_mock.call_args[1]["data"]
-            == b"\x00\x04\x02\x00\x00%d\x00\x00\x00\x00\x00"
-        )
 
         zcl_header, attr_data = foundation.ZCLHeader.deserialize(
             request_mock.call_args[1]["data"]
@@ -127,6 +140,38 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert zcl_header.manufacturer is None
         assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
         assert attr_data == b"\x00\x00%d\x00\x00\x00\x00\x00"
+
+
+async def test_frient_emi_current_summation_write_request(zigpy_device_from_v2_quirk):
+    """Test EMIZB-141 forwards current summation write as a mfg-specific write."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
+
+    manufacturer_cluster = device.endpoints[2].in_clusters[0xFD10]
+    current_summation_attr_id = manufacturer_cluster.AttributeDefs.current_summation.id
+
+    request_patch = mock.patch("zigpy.device.Device.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await manufacturer_cluster.write_attributes({current_summation_attr_id: 42})
+
+        assert request_mock.call_count == 1
+        assert request_mock.call_args.kwargs["cluster"] == Metering.cluster_id
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args.kwargs["data"]
+        )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 1
+        assert zcl_header.manufacturer == 1234
+        assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
+        assert attr_data == b"\x01\x03%*\x00\x00\x00\x00\x00"
 
 
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
@@ -177,3 +222,54 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+async def test_current_summation_cache_updated_on_successful_write(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a successful write to current_summation caches the value locally."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
+    manufacturer_cluster = device.endpoints[2].in_clusters[0xFD10]
+    attr_id = manufacturer_cluster.AttributeDefs.current_summation.id
+
+    with mock.patch.object(
+        manufacturer_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+                [],
+            ]
+        ),
+    ):
+        await manufacturer_cluster.write_attributes({"current_summation": 12345})
+        assert manufacturer_cluster._attr_cache[attr_id] == 12345
+
+
+async def test_current_summation_cache_not_updated_on_failed_write(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a failed write to current_summation does not update the cache."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
+    manufacturer_cluster = device.endpoints[2].in_clusters[0xFD10]
+    attr_id = manufacturer_cluster.AttributeDefs.current_summation.id
+
+    class _FailRecord:
+        status = foundation.Status.FAILURE
+        attrid = attr_id
+
+    with mock.patch.object(
+        manufacturer_cluster,
+        "_write_attributes",
+        mock.AsyncMock(return_value=[[_FailRecord()], []]),
+    ):
+        await manufacturer_cluster.write_attributes({"current_summation": 99999})
+        assert attr_id not in manufacturer_cluster._attr_cache

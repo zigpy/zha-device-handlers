@@ -4,9 +4,9 @@ from typing import Final
 
 import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfEnergy
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.develco import ManufacturerDeviceV2
 
@@ -32,6 +32,21 @@ class ManufacturerMetering(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+    async def write_attributes(self, attributes, **kwargs):
+        """Write attributes and cache values locally on success."""
+        result = await super().write_attributes(attributes, **kwargs)
+        if result and all(r.status == Status.SUCCESS for r in result[0]):
+            for k, v in attributes.items():
+                if isinstance(k, ZCLAttributeDef):
+                    attr_id = k.id
+                elif isinstance(k, str) and k in self.attributes_by_name:
+                    attr_id = self.attributes_by_name[k].id
+                else:
+                    attr_id = k
+                if attr_id in self.attributes:
+                    self._update_attribute(attr_id, v)
+        return result
+
 
 (
     QuirkBuilder("frient A/S", "EMIZB-141")
@@ -48,6 +63,22 @@ class ManufacturerMetering(CustomCluster):
         mode="box",
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
+    )
+    .number(
+        # Allow a user to set the current summation value,
+        # so it can show the same value as the physical meter.
+        attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
+        cluster_id=ManufacturerMetering.cluster_id,
+        endpoint_id=2,
+        min_value=0,
+        max_value=0xFFFFFFFFFFFF,  # uint48 max value
+        step=1,
+        unit=UnitOfEnergy.WATT_HOUR,
+        mode="box",
+        device_class=NumberDeviceClass.ENERGY,
+        unique_id_suffix="current_summation_delivered",
+        translation_key="current_summation",
+        fallback_name="Current summation delivered",
     )
     .write_attr_button(
         attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
