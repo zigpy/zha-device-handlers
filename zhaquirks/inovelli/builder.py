@@ -29,6 +29,7 @@ from zhaquirks.builder import (
 from zhaquirks.inovelli import InovelliCluster
 
 INOVELLI_CLUSTER_ID = InovelliCluster.cluster_id  # 0xFC31 == 64561
+INOVELLI_MMWAVE_CLUSTER_ID = 0xFC32  # 64562, VZM32-SN mmWave cluster
 
 
 class InovelliOutputMode(t.enum1):
@@ -98,19 +99,77 @@ class InovelliOverheatedState(t.enum8):
     Overheated = 0x01
 
 
-class InovelliQuirkBuilder(QuirkBuilder):
-    """``QuirkBuilder`` subclass exposing Inovelli ``0xFC31`` entities.
+class InovelliVZM32SwitchType(t.enum8):
+    """Inovelli VZM32-SN switch type."""
 
-    Each ``inovelli_*`` method adds a single entity that mirrors the metadata of
-    the entity the ZHA library previously created for it, including its
-    ``unique_id`` (see module docstring).
+    Single_Pole = 0x00
+    Three_Way_AUX = 0x01
+
+
+class InovelliLightOnPresenceBehavior(t.enum8):
+    """Inovelli light on presence behavior."""
+
+    Disabled = 0x00
+    On_When_Occupied_Off_When_Unoccupied = 0x01
+    Off_When_Vacant = 0x02
+    On_When_Occupied = 0x03
+    On_When_Vacant_Off_When_Occupied = 0x04
+    On_When_Vacant = 0x05
+    Off_When_Occupied = 0x06
+
+
+class InovelliMmwaveRoomSizePreset(t.enum8):
+    """Inovelli mmWave room size preset."""
+
+    Custom = 0x00
+    X_Small = 0x01
+    Small = 0x02
+    Medium = 0x03
+    Large = 0x04
+    X_Large = 0x05
+
+
+class InovelliMmwaveSensitivity(t.enum8):
+    """Inovelli mmWave detection sensitivity."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
+class InovelliMmwaveTargetSpeed(t.enum8):
+    """Inovelli mmWave target speed."""
+
+    Low = 0x00
+    Medium = 0x01
+    Fast = 0x02
+
+
+class InovelliQuirkBuilder(QuirkBuilder):
+    """``QuirkBuilder`` subclass exposing Inovelli entities.
+
+    Each ``inovelli_*`` method adds a single entity on the Inovelli manufacturer
+    cluster (``0xFC31``) or, for the VZM32-SN mmWave entities, the mmWave cluster
+    (``0xFC32``). Entities ported from the ZHA library mirror the metadata and
+    ``unique_id`` ZHA previously produced (see module docstring); the mmWave
+    entities are new and use the same ``<cluster_id>-<attribute>`` suffix scheme.
     """
 
-    def _inovelli_suffix(self, attribute_name: str | None = None) -> str:
-        """Return the unique_id suffix matching the old ZHA-native entity."""
+    def _inovelli_suffix(
+        self,
+        attribute_name: str | None = None,
+        *,
+        cluster_id: int = INOVELLI_CLUSTER_ID,
+    ) -> str:
+        """Return the unique_id suffix matching the old ZHA-native entity.
+
+        ZHA-native entities included the cluster id in their unique_id; replicate
+        that here so existing entities are preserved (and stay consistent for new
+        entities on the mmWave cluster).
+        """
         if attribute_name is None:
-            return f"{INOVELLI_CLUSTER_ID}"
-        return f"{INOVELLI_CLUSTER_ID}-{attribute_name}"
+            return f"{cluster_id}"
+        return f"{cluster_id}-{attribute_name}"
 
     def _inovelli_number(
         self,
@@ -120,14 +179,17 @@ class InovelliQuirkBuilder(QuirkBuilder):
         max_value: float,
         fallback_name: str,
         endpoint_id: int = 1,
+        cluster_id: int = INOVELLI_CLUSTER_ID,
     ) -> Self:
         return self.number(
             attribute_name=attribute_name,
-            cluster_id=INOVELLI_CLUSTER_ID,
+            cluster_id=cluster_id,
             endpoint_id=endpoint_id,
             min_value=min_value,
             max_value=max_value,
-            unique_id_suffix=self._inovelli_suffix(attribute_name),
+            unique_id_suffix=self._inovelli_suffix(
+                attribute_name, cluster_id=cluster_id
+            ),
             translation_key=attribute_name,
             fallback_name=fallback_name,
         )
@@ -139,12 +201,15 @@ class InovelliQuirkBuilder(QuirkBuilder):
         fallback_name: str,
         translation_key: str | None = None,
         endpoint_id: int = 1,
+        cluster_id: int = INOVELLI_CLUSTER_ID,
     ) -> Self:
         return self.switch(
             attribute_name=attribute_name,
-            cluster_id=INOVELLI_CLUSTER_ID,
+            cluster_id=cluster_id,
             endpoint_id=endpoint_id,
-            unique_id_suffix=self._inovelli_suffix(attribute_name),
+            unique_id_suffix=self._inovelli_suffix(
+                attribute_name, cluster_id=cluster_id
+            ),
             translation_key=translation_key or attribute_name,
             fallback_name=fallback_name,
         )
@@ -156,13 +221,16 @@ class InovelliQuirkBuilder(QuirkBuilder):
         *,
         fallback_name: str,
         endpoint_id: int = 1,
+        cluster_id: int = INOVELLI_CLUSTER_ID,
     ) -> Self:
         return self.enum(
             attribute_name=attribute_name,
             enum_class=enum_class,
-            cluster_id=INOVELLI_CLUSTER_ID,
+            cluster_id=cluster_id,
             endpoint_id=endpoint_id,
-            unique_id_suffix=self._inovelli_suffix(attribute_name),
+            unique_id_suffix=self._inovelli_suffix(
+                attribute_name, cluster_id=cluster_id
+            ),
             translation_key=attribute_name,
             fallback_name=fallback_name,
         )
@@ -594,4 +662,140 @@ class InovelliQuirkBuilder(QuirkBuilder):
             unique_id_suffix=self._inovelli_suffix("overheated"),
             translation_key="overheated",
             fallback_name="Overheat protection",
+        )
+
+    # --- VZM32-SN specific entities (0xFC31) -----------------------------
+
+    def inovelli_remote_protection(self, endpoint_id: int = 1):
+        """Add the remote protection switch entity."""
+        return self._inovelli_switch(
+            "remote_protection",
+            fallback_name="Remote protection",
+            endpoint_id=endpoint_id,
+        )
+
+    def inovelli_vzm32_switch_type(self, endpoint_id: int = 1):
+        """Add the VZM32-SN switch type select entity."""
+        return self._inovelli_select(
+            "switch_type",
+            InovelliVZM32SwitchType,
+            fallback_name="Switch type",
+            endpoint_id=endpoint_id,
+        )
+
+    def inovelli_light_on_presence_behavior(self, endpoint_id: int = 1):
+        """Add the light on presence behavior select entity."""
+        return self._inovelli_select(
+            "light_on_presence_behavior",
+            InovelliLightOnPresenceBehavior,
+            fallback_name="Light on presence behavior",
+            endpoint_id=endpoint_id,
+        )
+
+    def inovelli_mmwave_room_size_preset(self, endpoint_id: int = 1):
+        """Add the mmWave room size preset select entity."""
+        return self._inovelli_select(
+            "mmwave_room_size_preset",
+            InovelliMmwaveRoomSizePreset,
+            fallback_name="mmWave room size preset",
+            endpoint_id=endpoint_id,
+        )
+
+    # --- VZM32-SN mmWave cluster entities (0xFC32) -----------------------
+
+    def inovelli_mmwave_height_minimum_floor(self, endpoint_id: int = 1):
+        """Add the mmWave minimum height (floor) number entity."""
+        return self._inovelli_number(
+            "mmwave_height_minimum_floor",
+            min_value=-600,
+            max_value=600,
+            fallback_name="mmWave height minimum (floor)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_height_maximum_ceiling(self, endpoint_id: int = 1):
+        """Add the mmWave maximum height (ceiling) number entity."""
+        return self._inovelli_number(
+            "mmwave_height_maximum_ceiling",
+            min_value=-600,
+            max_value=600,
+            fallback_name="mmWave height maximum (ceiling)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_width_minimum_left(self, endpoint_id: int = 1):
+        """Add the mmWave minimum width (left) number entity."""
+        return self._inovelli_number(
+            "mmwave_width_minimum_left",
+            min_value=-600,
+            max_value=600,
+            fallback_name="mmWave width minimum (left)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_width_maximum_right(self, endpoint_id: int = 1):
+        """Add the mmWave maximum width (right) number entity."""
+        return self._inovelli_number(
+            "mmwave_width_maximum_right",
+            min_value=-600,
+            max_value=600,
+            fallback_name="mmWave width maximum (right)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_depth_minimum_near(self, endpoint_id: int = 1):
+        """Add the mmWave minimum depth (near) number entity."""
+        return self._inovelli_number(
+            "mmwave_depth_minimum_near",
+            min_value=0,
+            max_value=600,
+            fallback_name="mmWave depth minimum (near)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_depth_maximum_far(self, endpoint_id: int = 1):
+        """Add the mmWave maximum depth (far) number entity."""
+        return self._inovelli_number(
+            "mmwave_depth_maximum_far",
+            min_value=0,
+            max_value=600,
+            fallback_name="mmWave depth maximum (far)",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_detect_sensitivity(self, endpoint_id: int = 1):
+        """Add the mmWave detection sensitivity select entity."""
+        return self._inovelli_select(
+            "mmwave_detect_sensitivity",
+            InovelliMmwaveSensitivity,
+            fallback_name="mmWave sensitivity",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_detect_trigger(self, endpoint_id: int = 1):
+        """Add the mmWave target speed select entity."""
+        return self._inovelli_select(
+            "mmwave_detect_trigger",
+            InovelliMmwaveTargetSpeed,
+            fallback_name="mmWave target speed",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
+        )
+
+    def inovelli_mmwave_hold_time(self, endpoint_id: int = 1):
+        """Add the mmWave hold time number entity."""
+        return self._inovelli_number(
+            "mmwave_hold_time",
+            min_value=0,
+            max_value=4294967295,
+            fallback_name="mmWave hold time",
+            endpoint_id=endpoint_id,
+            cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
         )
