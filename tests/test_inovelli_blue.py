@@ -1,5 +1,6 @@
 """Tests for inovelli blue series manufacturer cluster."""
 
+import struct
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -112,7 +113,7 @@ def test_vzm32_mmwave_report_stay_area_roundtrip():
 
 
 def test_vzm32_mmwave_report_target_info_variable_length():
-    """report_target_info (client 0x01) reads a list of 10-byte target structs."""
+    """report_target_info (client 0x01) reads a list of 9-byte target structs."""
     report_target = InovelliVZM32SNMMWaveCluster.ClientCommandDefs.report_target_info.with_compiled_schema().schema
     instance = report_target(
         target_num=2,
@@ -122,8 +123,12 @@ def test_vzm32_mmwave_report_target_info_variable_length():
         ],
     )
     raw = instance.serialize()
-    # 1 byte target_num + 2 targets * 10 bytes
-    assert len(raw) == 1 + 2 * 10
+    # 1 byte target_num + 2 targets * 9 bytes (x/y/z/dop int16 + id int8,
+    # matching Z2M's stride for this report)
+    assert len(raw) == 1 + 2 * 9
+    assert raw == bytes([2]) + struct.pack("<hhhhb", 100, 200, -50, 5, 1) + struct.pack(
+        "<hhhhb", -100, 300, 0, -3, 2
+    )
 
     parsed, rest = report_target.deserialize(raw)
     assert rest == b""

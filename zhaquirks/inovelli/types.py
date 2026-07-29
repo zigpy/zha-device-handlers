@@ -30,7 +30,7 @@ class MMWaveTarget(types.Struct):
     y: types.int16s
     z: types.int16s
     dop: types.int16s
-    target_id: types.int16s
+    target_id: types.int8s
 
 
 class AllLEDEffectType(types.enum8):
