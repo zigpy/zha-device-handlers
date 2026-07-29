@@ -119,6 +119,8 @@ class NumberMetadata(EntityMetadata):
     """Metadata for exposed number entity."""
 
     attribute_name: str = attrs.field()
+    attribute_converter: Callable[[Any], Any] | None = attrs.field(default=None)
+    value_converter: Callable[[Any], Any] | None = attrs.field(default=None)
     reporting_config: ReportingConfig | None = attrs.field(default=None)
     min: float | None = attrs.field(default=None)
     max: float | None = attrs.field(default=None)
@@ -127,6 +129,17 @@ class NumberMetadata(EntityMetadata):
     mode: str | None = attrs.field(default=None)
     multiplier: float | None = attrs.field(default=None)
     device_class: NumberDeviceClass | None = attrs.field(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the number metadata."""
+        super().__attrs_post_init__()
+        # A number is writable, so a one-way converter would show a converted
+        # value but write an unconverted one. Require both directions.
+        if (self.attribute_converter is None) != (self.value_converter is None):
+            raise ValueError(
+                "NumberMetadata must have both attribute_converter and "
+                f"value_converter, or neither: {self}"
+            )
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
