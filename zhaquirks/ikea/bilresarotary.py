@@ -7,22 +7,20 @@ from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
-    COMMAND_MOVE,
+    COMMAND_MOVE_TO_LEVEL,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
-    DIM_DOWN,
-    DIM_UP,
     DOUBLE_PRESS,
     ENDPOINT_ID,
-    LONG_PRESS,
-    LONG_RELEASE,
     PARAMS,
+    ROTARY_KNOB,
+    ROTATED,
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
+from zhaquirks.ikea import IKEA, ScenesCluster
 
 (
     QuirkBuilder(IKEA, "09BA")
@@ -31,7 +29,6 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
     .subscribes_to_multicast_group(0x549C)
     .subscribes_to_multicast_group(0xFF09)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
-    .replace_cluster_occurrences(IkeaBilresaLevelControl)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
@@ -44,29 +41,14 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
                 CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 1,
             },
-            (LONG_PRESS, DIM_UP): {
-                COMMAND: COMMAND_MOVE,
-                CLUSTER_ID: LevelControl.cluster_id,
-                ENDPOINT_ID: 1,
-                PARAMS: {"move_mode": 0},
-            },
-            (LONG_RELEASE, DIM_UP): {
-                COMMAND: "move_up_release",
+            # The scroll wheel reports an absolute level, so neither the direction
+            # it turned nor a release can be recovered from the command
+            (ROTATED, ROTARY_KNOB): {
+                COMMAND: COMMAND_MOVE_TO_LEVEL,
                 CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
             },
-            (LONG_PRESS, DIM_DOWN): {
-                COMMAND: COMMAND_MOVE,
-                CLUSTER_ID: LevelControl.cluster_id,
-                ENDPOINT_ID: 1,
-                PARAMS: {"move_mode": 1},
-            },
-            (LONG_RELEASE, DIM_DOWN): {
-                COMMAND: "move_down_release",
-                CLUSTER_ID: LevelControl.cluster_id,
-                ENDPOINT_ID: 1,
-            },
-            (DOUBLE_PRESS, DIM_UP): {
+            (DOUBLE_PRESS, TURN_ON): {
                 COMMAND: COMMAND_PRESS,
                 CLUSTER_ID: Scenes.cluster_id,
                 ENDPOINT_ID: 1,
@@ -76,7 +58,7 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
                     "param3": 0,
                 },
             },
-            (DOUBLE_PRESS, DIM_DOWN): {
+            (DOUBLE_PRESS, TURN_OFF): {
                 COMMAND: COMMAND_PRESS,
                 CLUSTER_ID: Scenes.cluster_id,
                 ENDPOINT_ID: 1,
