@@ -554,7 +554,7 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
 
 
 def _register_pending_quirks() -> None:
-    """Drain quirks queued by a round of imports into ZHA's unified registry."""
+    """Drain legacy v1 quirks queued by imports into ZHA's unified registry."""
 
     for cls in PENDING_LEGACY_QUIRKS:
         ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
