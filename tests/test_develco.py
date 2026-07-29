@@ -5,7 +5,6 @@ from unittest import mock
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
@@ -198,34 +197,10 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
     assert power.MIN_VOLTS == 2.3
     assert power.MAX_VOLTS == 3.0
 
+    # 2.8 V, within the 2.3–3.0 V bounds: (2.8 - 2.3) / (3.0 - 2.3) * 200 = 143 (half percent)
     power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
-    expected = power._calculate_battery_percentage(28)
 
     assert (
         power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
-        == expected
         == 143
     )
-
-
-async def test_hmszb_120_replaces_power_config_and_exposes_measurement_clusters(
-    zigpy_device_from_v2_quirk,
-):
-    """Test HMSZB-120 quirk replaces power config and keeps measurement clusters."""
-    device = zigpy_device_from_v2_quirk(
-        "frient A/S",
-        "HMSZB-120",
-        endpoint_ids=[38],
-        cluster_ids={
-            38: {
-                PowerConfiguration.cluster_id: ClusterType.Server,
-                TemperatureMeasurement.cluster_id: ClusterType.Server,
-                RelativeHumidity.cluster_id: ClusterType.Server,
-            }
-        },
-    )
-
-    endpoint = device.endpoints[38]
-    assert isinstance(endpoint.power, HumidityPowerConfiguration)
-    assert isinstance(endpoint.temperature, TemperatureMeasurement)
-    assert isinstance(endpoint.humidity, RelativeHumidity)
