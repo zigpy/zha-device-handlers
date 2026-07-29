@@ -19,3 +19,79 @@ jobs:
       PYTHON_MATRIX: '"3.12", "3.13"'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  zha-tests:
+    name: Run ZHA tests with these quirks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out zha-device-handlers
+        uses: actions/checkout@v6
+
+      - name: Check out zigpy/zha
+        uses: actions/checkout@v6
+        with:
+          repository: zigpy/zha
+          ref: dev
+          path: zha-lib
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: zha-lib/uv.lock
+
+      - name: Set up ZHA test environment with local quirks
+        working-directory: zha-lib
+        run: |
+          uv sync --group ci
+          # Replace the locked, published zha-quirks with this checkout. Use
+          # .venv/bin/ directly afterwards: `uv run`/`uv sync` would revert this.
+          uv pip install -e ..
+
+      - name: Run ZHA tests, measuring zhaquirks coverage
+        id: zha-pytest
+        # Entity-changing quirks PRs legitimately fail ZHA's device snapshot
+        # tests until the ZHA-side snapshots are regenerated after a quirks
+        # release. Keep going so coverage is still collected and uploaded;
+        # the final step re-fails the job on test failures.
+        continue-on-error: true
+        working-directory: zha-lib
+        run: |
+          ./.venv/bin/pytest \
+            -n auto \
+            -qq \
+            --timeout=20 \
+            --durations=10 \
+            --cov zhaquirks \
+            --cov-config ../pyproject.toml \
+            -o console_output_style=count \
+            -p no:sugar \
+            tests
+
+      - name: Remap coverage paths to this repo
+        # [tool.coverage.paths] in pyproject.toml remaps the editable-install
+        # paths recorded during the ZHA run to repo-relative zhaquirks/ paths.
+        run: |
+          ./zha-lib/.venv/bin/coverage combine zha-lib/.coverage
+          ./zha-lib/.venv/bin/coverage xml
+          ./zha-lib/.venv/bin/coverage report
+
+      - name: Upload coverage to Codecov
+        if: ${{ github.event.repository.fork == false }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: zha-tests
+          fail_ci_if_error: true
+
+      - name: Fail if ZHA tests failed
+        if: ${{ steps.zha-pytest.outcome == 'failure' }}
+        run: |
+          echo "::warning::ZHA's test suite failed against this quirks checkout. If this PR changes entities, ZHA's device snapshots are stale until they are regenerated after the next quirks release; otherwise this may be a real regression."
+          exit 1

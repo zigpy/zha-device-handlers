@@ -85,6 +85,16 @@ disable_error_code = [
     "var-annotated",
 ]
 
+# Remaps file paths recorded in coverage data to repo-relative zhaquirks/ paths
+# when running `coverage combine`. This lets the ZHA-tests CI job, which measures
+# zhaquirks coverage from an editable install in a separate ZHA checkout, produce
+# a coverage.xml whose paths Codecov can match against this repo.
+[tool.coverage.paths]
+source = [
+    "zhaquirks/",
+    "*/zhaquirks/",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = "tests"
