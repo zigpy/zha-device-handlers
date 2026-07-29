@@ -406,11 +406,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=3,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
         attribute_name="battery_percentage_remaining",
-<<<<<<< HEAD
-        converter=lambda x: {0: 20, 1: 50, 2: 100}[x],
-=======
         converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 0),
->>>>>>> b89de27 (Code review fixes)
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     # External temperature sensor (DP 38, value needs to be divided by 10 to get correct temperature)
