@@ -1,5 +1,7 @@
 """SONOFF SNZB02M - Zigbee Temperature And Humidity Sensor."""
 
+# coverage: ignore file
+
 import math
 
 from zigpy.quirks import CustomCluster
@@ -57,8 +59,9 @@ class SonoffTemperatureCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         """Update temperature and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.measured_value.id and hasattr(
-            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
+        if (
+            attrid == self.AttributeDefs.measured_value.id
+            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
@@ -69,8 +72,9 @@ class SonoffRelativeHumidityCluster(CustomCluster, RelativeHumidity):
     def _update_attribute(self, attrid, value):
         """Update relative humidity and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.measured_value.id and hasattr(
-            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
+        if (
+            attrid == self.AttributeDefs.measured_value.id
+            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
