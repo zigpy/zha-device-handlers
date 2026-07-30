@@ -1,7 +1,6 @@
 """Device handler for centralite 3305."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import OccupancySensing, TemperatureMeasurement
@@ -17,6 +16,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class CentraLite3305S(CustomDevice):

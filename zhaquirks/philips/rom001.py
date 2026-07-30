@@ -1,7 +1,6 @@
 """Philips ROM001 device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -27,6 +26,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
     SIGNIFY,

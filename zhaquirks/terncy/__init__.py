@@ -4,7 +4,6 @@ from collections import deque
 import math
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
@@ -14,6 +13,7 @@ from zigpy.zcl.clusters.measurement import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import LocalDataCluster, OccupancyOnEvent, _Motion
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     CLUSTER_COMMAND,

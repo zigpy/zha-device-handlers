@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from zigpy.device import ResponseKey
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-SHELLY_MANUFACTURER_CODE = 0x1490
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.device import CustomZigpyDevice
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
+
 SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
 SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
 SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
@@ -93,7 +95,7 @@ class ShellyWiFiSetupCluster(CustomCluster):
         )
 
 
-class ShellyCustomProfileDevice(CustomDeviceV2):
+class ShellyCustomProfileDevice(CustomZigpyDevice):
     """Handle Shelly responses sent on their custom endpoint profile."""
 
     def _parse_packet_header(
