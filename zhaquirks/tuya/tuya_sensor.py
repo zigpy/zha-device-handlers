@@ -676,7 +676,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         entity_platform=EntityPlatform.SELECT,
         entity_type=EntityType.CONFIG,
         translation_key="mode",
-        fallback_name="mode",
+        fallback_name="Mode",
     )
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
