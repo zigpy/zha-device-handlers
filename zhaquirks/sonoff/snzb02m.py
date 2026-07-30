@@ -51,28 +51,30 @@ class CustomSonoffCluster(CustomCluster):
         return False
 
 
-class SonoffTemperatureCluster(CustomCluster, TemperatureMeasurement):  # pragma: no cover
+class SonoffTemperatureCluster(
+    CustomCluster, TemperatureMeasurement
+):  # pragma: no cover
     """Temperature cluster that refreshes calculated climate values."""
 
     def _update_attribute(self, attrid, value):
         """Update temperature and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if (
-            attrid == self.AttributeDefs.measured_value.id
-            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
+        if attrid == self.AttributeDefs.measured_value.id and hasattr(
+            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
 
-class SonoffRelativeHumidityCluster(CustomCluster, RelativeHumidity):  # pragma: no cover
+class SonoffRelativeHumidityCluster(
+    CustomCluster, RelativeHumidity
+):  # pragma: no cover
     """Relative humidity cluster that refreshes calculated climate values."""
 
     def _update_attribute(self, attrid, value):
         """Update relative humidity and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if (
-            attrid == self.AttributeDefs.measured_value.id
-            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
+        if attrid == self.AttributeDefs.measured_value.id and hasattr(
+            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
