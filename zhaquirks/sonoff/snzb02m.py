@@ -1,7 +1,5 @@
 """SONOFF SNZB02M - Zigbee Temperature And Humidity Sensor."""
 
-# coverage: ignore file
-
 import math
 
 from zigpy.quirks import CustomCluster
@@ -49,35 +47,37 @@ class CustomSonoffCluster(CustomCluster):
         )
 
     @property
-    def _is_manuf_specific(self):
+    def _is_manuf_specific(self):  # pragma: no cover
         return False
 
 
-class SonoffTemperatureCluster(CustomCluster, TemperatureMeasurement):
+class SonoffTemperatureCluster(CustomCluster, TemperatureMeasurement):  # pragma: no cover
     """Temperature cluster that refreshes calculated climate values."""
 
     def _update_attribute(self, attrid, value):
         """Update temperature and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.measured_value.id and hasattr(
-            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
+        if (
+            attrid == self.AttributeDefs.measured_value.id
+            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
 
-class SonoffRelativeHumidityCluster(CustomCluster, RelativeHumidity):
+class SonoffRelativeHumidityCluster(CustomCluster, RelativeHumidity):  # pragma: no cover
     """Relative humidity cluster that refreshes calculated climate values."""
 
     def _update_attribute(self, attrid, value):
         """Update relative humidity and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.measured_value.id and hasattr(
-            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
+        if (
+            attrid == self.AttributeDefs.measured_value.id
+            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
 
-class SonoffCalculatedClimateCluster(LocalDataCluster):
+class SonoffCalculatedClimateCluster(LocalDataCluster):  # pragma: no cover
     """Local cluster exposing values calculated from temperature and humidity."""
 
     cluster_id = 0xFC12
