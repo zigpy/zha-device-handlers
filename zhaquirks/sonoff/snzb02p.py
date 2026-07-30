@@ -30,7 +30,7 @@ class CustomSonoffCluster(CustomCluster):
         )
 
     @property
-    def _is_manuf_specific(self):
+    def _is_manuf_specific(self):  # pragma: no cover
         return False
 
 
