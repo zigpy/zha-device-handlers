@@ -1,20 +1,24 @@
 """Smart button."""
 
+from typing import Final
+
+import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityType, QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 
 
 class LedColors(t.enum8):
     """LED color options."""
 
-    OFF = 0
-    RED = 1
-    GREEN = 2
-    YELLOW = 3
+    Off = 0
+    Red = 1
+    Green = 2
+    Yellow = 3
 
 
 class CustomOnOff(CustomCluster, OnOff):
@@ -37,13 +41,6 @@ class CustomOnOff(CustomCluster, OnOff):
             access="rw",
             manufacturer_code=0x1015,
         )
-
-
-class ButtonState(t.enum8):
-    """Button state values."""
-
-    Released = 0
-    Pressed = 1
 
 
 (
@@ -70,8 +67,7 @@ class ButtonState(t.enum8):
         unit=UnitOfTime.MILLISECONDS,
         step=1,
         mode="box",
-        unique_id_suffix="button_press_action_delay",
-        translation_key="frient_button_press_action_delay",
+        translation_key="button_press_action_delay",
         fallback_name="Button press action delay",
     )
     .enum(
@@ -83,16 +79,6 @@ class ButtonState(t.enum8):
         entity_type=EntityType.CONFIG,
         translation_key="button_press_blink_led",
         fallback_name="LED color",
-    )
-    .enum(
-        attribute_name=BinaryInput.AttributeDefs.present_value.name,
-        enum_class=ButtonState,
-        cluster_id=BinaryInput.cluster_id,
-        endpoint_id=32,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.STANDARD,
-        translation_key="button_state",
-        fallback_name="Button state",
     )
     .device_automation_triggers(
         {
