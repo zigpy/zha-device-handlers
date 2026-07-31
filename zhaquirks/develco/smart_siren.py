@@ -1,20 +1,19 @@
 """Smart siren."""
 
+from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.security import IasWd, IasZone
+
 from zhaquirks.builder import (
+    PERCENTAGE,
     BinarySensorDeviceClass,
     EntityType,
     NumberDeviceClass,
-    PERCENTAGE,
     QuirkBuilder,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfTime,
 )
-from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.security import IasWd, IasZone
-
 from zhaquirks.develco import DEVELCO, FRIENT
-
 
 BASE_SIREN_QUIRK = (
     QuirkBuilder()
@@ -28,10 +27,12 @@ BASE_SIREN_QUIRK = (
     .prevent_default_entity_creation(
         endpoint_id=43,
         cluster_id=IasWd.cluster_id,
-        function=lambda entity: entity.translation_key
-        in (
-            "default_strobe_level",
-            "default_strobe",
+        function=lambda entity: (
+            entity.translation_key
+            in (
+                "default_strobe_level",
+                "default_strobe",
+            )
         ),
     )
     # Allow setting IAS WD max warning duration in seconds.
