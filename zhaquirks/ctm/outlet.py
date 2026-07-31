@@ -2,7 +2,13 @@
 
 from zigpy.zcl import ClusterType
 
-from zhaquirks.builder import EntityType, QuirkBuilder, UnitOfTime
+from zhaquirks.builder import (
+    EntityType,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTime,
+)
 from zhaquirks.ctm import (
     CTM_MANUF_NAME,
     CTMCooktopGuardCluster,
@@ -22,6 +28,7 @@ from zhaquirks.ctm import (
         attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="reboot_counter",
@@ -31,6 +38,7 @@ from zhaquirks.ctm import (
         attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_click_counter.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="button_click_counter",
@@ -41,6 +49,7 @@ from zhaquirks.ctm import (
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
         unit=UnitOfTime.MILLISECONDS,
+        device_class=SensorDeviceClass.DURATION,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="button_click_duration",

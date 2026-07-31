@@ -5,6 +5,7 @@ from typing import Final
 from zigpy import types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
+    ZCL_CLUSTER_REVISION_ATTR,
     BaseAttributeDefs,
     BaseCommandDefs,
     DataTypeId,
@@ -99,12 +100,7 @@ class CTMDiagnosticsCluster(CustomCluster):
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
-        ctm_cluster_revision: Final = ZCLAttributeDef(
-            id=0xFFFD,
-            type=t.uint16_t,
-            access="r",
-            manufacturer_code=CTM_MANUF_CODE,
-        )
+        cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
 
 
 class CTMCooktopGuardCluster(CustomCluster):
@@ -121,19 +117,19 @@ class CTMCooktopGuardCluster(CustomCluster):
             id=0x0001,
             type=AlarmStatus,
             zcl_type=DataTypeId.uint8,
-            access="r",
+            access="rp",
             manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_battery_alarm: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
-            access="r",
+            access="rp",
             manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_cooktop_temperature: Final = ZCLAttributeDef(
             id=0x0003,
             type=t.uint16_t,
-            access="r",
+            access="rp",
             manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_ambient_temperature: Final = ZCLAttributeDef(
@@ -145,7 +141,7 @@ class CTMCooktopGuardCluster(CustomCluster):
         ctm_cooktop_active: Final = ZCLAttributeDef(
             id=0x0005,
             type=t.uint8_t,
-            access="r",
+            access="rp",
             manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_runtime: Final = ZCLAttributeDef(
@@ -239,12 +235,7 @@ class CTMCooktopGuardCluster(CustomCluster):
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
-        ctm_cluster_revision: Final = ZCLAttributeDef(
-            id=0xFFFD,
-            type=t.uint16_t,
-            access="r",
-            manufacturer_code=CTM_MANUF_CODE,
-        )
+        cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions (commands received by the server)."""
@@ -254,7 +245,7 @@ class CTMCooktopGuardCluster(CustomCluster):
             schema={
                 "relayAddress": t.EUI64,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_relay_status: Final = ZCLCommandDef(
             id=0x3,
@@ -266,7 +257,7 @@ class CTMCooktopGuardCluster(CustomCluster):
                 "sensorAlarm": t.uint8_t,
                 "relayAlarm": t.uint8_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
 
     class ClientCommandDefs(BaseCommandDefs):
@@ -277,24 +268,24 @@ class CTMCooktopGuardCluster(CustomCluster):
             schema={
                 "sensorAddress": t.EUI64,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_relay_status_request: Final = ZCLCommandDef(
             id=0x2,
             schema={},
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_on_command: Final = ZCLCommandDef(
             id=0x4,
             schema={},
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
         ctm_alarm_command: Final = ZCLCommandDef(
             id=0x6,
             schema={
                 "alarmCode": t.uint8_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=CTM_MANUF_CODE,
         )
 
 

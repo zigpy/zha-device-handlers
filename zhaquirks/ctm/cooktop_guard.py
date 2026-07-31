@@ -7,6 +7,7 @@ from zhaquirks.builder import (
     QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfTemperature,
 )
 from zhaquirks.ctm import (
@@ -27,6 +28,7 @@ from zhaquirks.ctm import (
         cluster_id=CTMCooktopGuardCluster.cluster_id,
         endpoint_id=1,
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,
         reporting_config=ReportingConfig(
             min_interval=0,
@@ -85,6 +87,7 @@ from zhaquirks.ctm import (
         attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_paired_with_address.name,
         cluster_id=CTMCooktopGuardCluster.cluster_id,
         endpoint_id=1,
+        attribute_converter=str,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="relay_address",
@@ -94,6 +97,7 @@ from zhaquirks.ctm import (
         attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
+        state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         translation_key="reboot_counter",
