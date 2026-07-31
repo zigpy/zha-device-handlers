@@ -11,7 +11,6 @@ from zhaquirks.schneiderelectric import (
     SEControlMode,
     SEDimmingCurve,
     SEOnOff,
-    SEOnTimeReloadOptions,
     SESwitchAction,
     SESwitchConfiguration,
     SESwitchIndication,
@@ -23,26 +22,6 @@ base_micro_dimmer = (
     .replaces(SEBasic, endpoint_id=3)
     .replaces(SEBallast, endpoint_id=3)
     .replaces(SEOnOff, endpoint_id=3)
-    .number(
-        attribute_name=SEBallast.AttributeDefs.min_level.name,
-        cluster_id=SEBallast.cluster_id,
-        endpoint_id=3,
-        min_value=1,
-        max_value=254,
-        step=1,
-        translation_key="min_level",
-        fallback_name="Min light level",
-    )
-    .number(
-        attribute_name=SEBallast.AttributeDefs.max_level.name,
-        cluster_id=SEBallast.cluster_id,
-        endpoint_id=3,
-        min_value=1,
-        max_value=254,
-        step=1,
-        translation_key="max_level",
-        fallback_name="Max light level",
-    )
     .number(
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload.name,
         cluster_id=SEOnOff.cluster_id,
@@ -66,14 +45,6 @@ base_micro_dimmer = (
         device_class=NumberDeviceClass.DURATION,
         translation_key="pre_warning_time",
         fallback_name="Pre warning time",
-    )
-    .enum(
-        attribute_name=SEOnOff.AttributeDefs.se_on_time_reload_options.name,
-        enum_class=SEOnTimeReloadOptions,
-        cluster_id=SEOnOff.cluster_id,
-        endpoint_id=3,
-        translation_key="on_time_reload_options",
-        fallback_name="On time reload options",
     )
     .enum(
         attribute_name=SEBallast.AttributeDefs.se_control_mode.name,

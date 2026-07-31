@@ -8,7 +8,6 @@ from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBasic,
     SEOnOff,
-    SEOnTimeReloadOptions,
     SESwitchAction,
     SESwitchConfiguration,
     SESwitchIndication,
@@ -41,14 +40,6 @@ base_micro_switch = (
         device_class=NumberDeviceClass.DURATION,
         translation_key="pre_warning_time",
         fallback_name="Pre warning time",
-    )
-    .enum(
-        attribute_name=SEOnOff.AttributeDefs.se_on_time_reload_options.name,
-        enum_class=SEOnTimeReloadOptions,
-        cluster_id=SEOnOff.cluster_id,
-        endpoint_id=1,
-        translation_key="on_time_reload_options",
-        fallback_name="On time reload options",
     )
 )
 
