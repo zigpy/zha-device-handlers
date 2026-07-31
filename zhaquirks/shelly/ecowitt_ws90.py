@@ -16,10 +16,11 @@ from zhaquirks.builder import (
     UnitOfSpeed,
 )
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 
 
 class ShellyWindCluster(CustomCluster):
-    """Wind measurement cluster for Shelly WS90."""
+    """Wind measurement cluster for Shelly devices."""
 
     cluster_id = 0xFC01
     name = "Shelly Wind Cluster"
@@ -32,24 +33,24 @@ class ShellyWindCluster(CustomCluster):
             id=0x0000,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
         wind_direction = ZCLAttributeDef(
             id=0x0004,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
         gust_speed = ZCLAttributeDef(
             id=0x0007,
             type=types.uint16_t,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
 
 
 class ShellyUVCluster(CustomCluster):
-    """UV index measurement cluster for Shelly WS90."""
+    """UV index measurement cluster for Shelly devices."""
 
     cluster_id = 0xFC02
     name = "Shelly UV Cluster"
@@ -62,12 +63,12 @@ class ShellyUVCluster(CustomCluster):
             id=0x0000,
             type=types.uint8_t,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
 
 
 class ShellyRainCluster(CustomCluster):
-    """Rain measurement cluster for Shelly WS90."""
+    """Rain measurement cluster for Shelly devices."""
 
     cluster_id = 0xFC03
     name = "Shelly Rain Cluster"
@@ -80,13 +81,13 @@ class ShellyRainCluster(CustomCluster):
             id=0x0000,
             type=types.Bool,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
         precipitation = ZCLAttributeDef(
             id=0x0001,
             type=types.uint24_t,
             access="rp",
-            manufacturer_code=0x1490,
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
 
 
@@ -103,7 +104,7 @@ class ShellyRainCluster(CustomCluster):
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=10, max_interval=900, reportable_change=5
         ),
         fallback_name="Wind speed",
     )
@@ -115,7 +116,7 @@ class ShellyRainCluster(CustomCluster):
         device_class=SensorDeviceClass.WIND_DIRECTION,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=10, max_interval=900, reportable_change=50
         ),
         fallback_name="Wind direction",
     )
@@ -127,7 +128,7 @@ class ShellyRainCluster(CustomCluster):
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=10, max_interval=900, reportable_change=10
         ),
         translation_key="gust_speed",
         fallback_name="Gust speed",
@@ -138,7 +139,7 @@ class ShellyRainCluster(CustomCluster):
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=300, max_interval=900, reportable_change=1
         ),
         translation_key="uv_index",
         fallback_name="UV index",
@@ -151,7 +152,7 @@ class ShellyRainCluster(CustomCluster):
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=300, max_interval=900, reportable_change=1
         ),
         fallback_name="Precipitation",
     )
@@ -160,7 +161,7 @@ class ShellyRainCluster(CustomCluster):
         cluster_id=ShellyRainCluster.cluster_id,
         device_class=BinarySensorDeviceClass.MOISTURE,
         reporting_config=ReportingConfig(
-            min_interval=10, max_interval=900, reportable_change=1
+            min_interval=0, max_interval=900, reportable_change=1
         ),
         translation_key="rain_detected",
         fallback_name="Rain detected",
