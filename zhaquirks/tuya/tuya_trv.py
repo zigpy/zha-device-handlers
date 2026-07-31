@@ -3,13 +3,17 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
@@ -355,6 +359,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=15,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="min_temperature",
         fallback_name="Min temperature",
     )
@@ -366,6 +371,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=35,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="max_temperature",
         fallback_name="Max temperature",
     )
@@ -541,6 +547,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=30,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="holiday_temperature",
         fallback_name="Holiday temperature",
     )
@@ -606,6 +613,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=30,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="antifrost_temperature",
         fallback_name="Antifrost temperature",
     )
@@ -624,6 +632,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=30,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="eco_temperature",
         fallback_name="Eco temperature",
     )
@@ -635,6 +644,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=30,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
+        multiplier=0.1,
         translation_key="comfort_temperature",
         fallback_name="Comfort temperature",
     )
@@ -682,7 +692,8 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
-        step=1,
+        step=0.1,
+        multiplier=0.1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
