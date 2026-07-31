@@ -52,7 +52,7 @@ class CTMDiagnosticsCluster(CustomCluster):
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
-        ctm_reboot_counter: Final = ZCLAttributeDef(
+        ctm_rebooted_count: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
             access="r",
@@ -82,7 +82,7 @@ class CTMDiagnosticsCluster(CustomCluster):
             access="r",
             manufacturer_code=CTM_MANUF_CODE,
         )
-        ctm_button_0_click_counter: Final = ZCLAttributeDef(
+        ctm_button_0_click_count: Final = ZCLAttributeDef(
             id=0x0010,
             type=t.uint16_t,
             access="r",

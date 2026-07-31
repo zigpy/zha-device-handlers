@@ -32,7 +32,7 @@ from zhaquirks.ctm import (
         unit=UnitOfTemperature.CELSIUS,
         reporting_config=ReportingConfig(
             min_interval=0,
-            max_interval=0,
+            max_interval=3600,
             reportable_change=1,
         ),
         translation_key="cooktop_temperature",
@@ -47,7 +47,7 @@ from zhaquirks.ctm import (
         entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
-            max_interval=0,
+            max_interval=3600,
             reportable_change=1,
         ),
         translation_key="alarm_status",
@@ -62,7 +62,7 @@ from zhaquirks.ctm import (
         entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
-            max_interval=0,
+            max_interval=3600,
             reportable_change=1,
         ),
         translation_key="battery_alarm",
@@ -77,7 +77,7 @@ from zhaquirks.ctm import (
         entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
-            max_interval=0,
+            max_interval=3600,
             reportable_change=1,
         ),
         translation_key="cooktop_active",
@@ -94,14 +94,14 @@ from zhaquirks.ctm import (
         fallback_name="Relay address",
     )
     .sensor(
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_rebooted_count.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
-        translation_key="reboot_counter",
-        fallback_name="Reboot counter",
+        translation_key="rebooted_count",
+        fallback_name="Rebooted count",
     )
     .add_to_registry()
 )

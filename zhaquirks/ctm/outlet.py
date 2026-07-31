@@ -25,24 +25,24 @@ from zhaquirks.ctm import (
     .replaces(CTMCooktopGuardCluster, cluster_type=ClusterType.Client)
     .replaces(CTMDiagnosticsCluster)
     .sensor(
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_reboot_counter.name,
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_rebooted_count.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
-        translation_key="reboot_counter",
-        fallback_name="Reboot counter",
+        translation_key="rebooted_count",
+        fallback_name="Rebooted count",
     )
     .sensor(
-        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_click_counter.name,
+        attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_click_count.name,
         cluster_id=CTMDiagnosticsCluster.cluster_id,
         endpoint_id=1,
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
-        translation_key="button_click_counter",
-        fallback_name="Button click counter",
+        translation_key="button_click_count",
+        fallback_name="Button click count",
     )
     .sensor(
         attribute_name=CTMDiagnosticsCluster.AttributeDefs.ctm_button_0_ms_click_duration.name,
