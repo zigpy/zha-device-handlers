@@ -6,7 +6,7 @@ import pytest
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, OnOff
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 import zhaquirks
@@ -16,6 +16,7 @@ from zhaquirks.shelly.wifi import (
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
     ShellyCustomProfileDevice,
+    ShellyInputOnOffCluster,
     ShellyWiFiSetupCluster,
 )
 
@@ -76,6 +77,49 @@ def test_shelly_wifi_setup_cluster_replaced(zigpy_device_from_v2_quirk, model) -
     )
     assert cluster.AttributeDefs.action.access == ZCLAttributeAccess.Write
     assert cluster.AttributeDefs.action.type is t.uint8_t
+
+
+@pytest.mark.parametrize("model", ["1PM", "Mini1PM", "Mini1"])
+def test_shelly_input_commands_update_binary_sensor_state(
+    zigpy_device_from_v2_quirk, model
+) -> None:
+    """Ensure firmware 2.0 input commands update the exposed input state."""
+
+    quirked = zigpy_device_from_v2_quirk(
+        "Shelly",
+        model,
+        endpoint_ids=[1, 2, SHELLY_WIFI_SETUP_ENDPOINT_ID],
+        cluster_ids={
+            2: {OnOff.cluster_id: ClusterType.Client},
+            SHELLY_WIFI_SETUP_ENDPOINT_ID: {
+                SHELLY_WIFI_SETUP_CLUSTER_ID: ClusterType.Server,
+            },
+        },
+    )
+
+    cluster = quirked.endpoints[2].out_clusters[OnOff.cluster_id]
+    assert isinstance(cluster, ShellyInputOnOffCluster)
+
+    for command, expected_state in (
+        (OnOff.ServerCommandDefs.on, True),
+        (OnOff.ServerCommandDefs.off, False),
+        (OnOff.ServerCommandDefs.toggle, True),
+    ):
+        cluster.handle_cluster_request(
+            foundation.ZCLHeader.cluster(tsn=1, command_id=command.id),
+            [],
+        )
+        assert cluster.get(OnOff.AttributeDefs.on_off.name) is expected_state
+
+    (metadata,) = (
+        quirked._quirk_registry_entry.zha_device_factory.quirk_definition.entity_metadata
+    )
+    assert metadata.entity_platform.value == "binary_sensor"
+    assert metadata.entity_type.value == "standard"
+    assert metadata.endpoint_id == 2
+    assert metadata.cluster_id == OnOff.cluster_id
+    assert metadata.cluster_type is ClusterType.Client
+    assert metadata.attribute_name == OnOff.AttributeDefs.on_off.name
 
 
 @pytest.mark.parametrize("model", ["1PM", "2PM"])
