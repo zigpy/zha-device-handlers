@@ -47,7 +47,9 @@ class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
         """Attribute definitions."""
 
         backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
-        backlight_switch: Final = ZCLAttributeDef(id=0x5000, type=BacklightSwitch)
+        backlight_switch: Final = ZCLAttributeDef(
+            id=0x5000, type=BacklightSwitch, is_manufacturer_specific=True
+        )
 
 
 class MotorMode(t.enum8):
