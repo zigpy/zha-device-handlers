@@ -30,6 +30,23 @@ class SonoffContactCluster(CustomCluster):
         )
 
 
+class SonoffContactClusterPR2(CustomCluster):
+    """SONOFF SNZB-04PR2 cluster carrying the rear tamper-switch state."""
+
+    cluster_id = 64529  # 0xfc11
+    name = "Sonoff PR2 contact cluster"
+    ep_attribute = "sonoff_contact_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        tamper = ZCLAttributeDef(
+            id=0x2000,
+            type=types.Bool,
+            is_manufacturer_specific=False,
+        )
+
+
 (
     #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
     #  device_version=0
@@ -41,6 +58,23 @@ class SonoffContactCluster(CustomCluster):
     .binary_sensor(
         "tamper",
         SonoffContactCluster.cluster_id,
+        endpoint_id=1,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=900, reportable_change=1
+        ),
+        device_class=BinarySensorDeviceClass.TAMPER,
+        entity_type=EntityType.DIAGNOSTIC,
+        fallback_name="Tamper",
+    )
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder("SONOFF", "SNZB-04PR2")
+    .replaces(SonoffContactClusterPR2, endpoint_id=1)
+    .binary_sensor(
+        "tamper",
+        SonoffContactClusterPR2.cluster_id,
         endpoint_id=1,
         reporting_config=ReportingConfig(
             min_interval=0, max_interval=900, reportable_change=1

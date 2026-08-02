@@ -19,6 +19,21 @@ from zhaquirks.sonoff.zbm5 import (
 zhaquirks.setup()
 
 
+async def test_snzb04pr2_tamper_attribute_is_standard_zcl(
+    zigpy_device_from_v2_quirk,
+):
+    """SNZB-04PR2 reports the tamper attribute in a standard ZCL frame."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="SNZB-04PR2",
+        cluster_ids={1: {0xFC11: ClusterType.Server}},
+    )
+
+    tamper_attr = device.endpoints[1].sonoff_contact_cluster.AttributeDefs.tamper
+
+    assert tamper_attr.is_manufacturer_specific is False
+
+
 @pytest.mark.parametrize(
     ("mask", "expected_states"),
     [
