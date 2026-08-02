@@ -4,7 +4,7 @@ import datetime
 
 from zha.application import EntityPlatform, EntityType
 from zha.units import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zha.application.platforms.sensor.device_class import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
