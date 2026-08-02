@@ -40,6 +40,7 @@ import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
+import zhaquirks.tuya.ts1002
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
 import zhaquirks.tuya.tuya_valve
@@ -1535,6 +1536,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_TZ3400_cdyjhasw"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_TZ3400_pdyjhapl"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_some_random_manuf"),
+        (zhaquirks.tuya.ts1002.TuyaSmartRemote1002, "_TZ3000_te34fjg4"),
     ),
 )
 async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufacturer):
@@ -1545,6 +1547,26 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
 
     quirked_dev = get_device(zigpy_dev)
     assert isinstance(quirked_dev, quirk)
+
+
+async def test_ts1002_fd_button_dispatch(zigpy_device_from_quirk):
+    """TS1002 routes 0xFD commands to the matching button endpoint."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[3].TS004X_cluster.add_listener(zha_listener)
+
+    hdr = mock.MagicMock()
+    hdr.command_id = 0xFD
+    hdr.tsn = 1
+    hdr.frame_control.disable_default_response = True
+    cluster.handle_cluster_request(
+        hdr,
+        [cluster.commands_by_name["press_type"].schema(press_type=0, zero=0, button=3)],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
 
 
 def test_multiple_attributes_report():
