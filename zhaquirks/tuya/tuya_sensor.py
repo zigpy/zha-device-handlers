@@ -5,7 +5,7 @@ import datetime
 from zha.application import (
     EntityPlatform,
     EntityType,
-}
+)
 
 from zha.units import (
     PERCENTAGE,
