@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -81,7 +82,7 @@ class TuyaTS1002NoBindMixin:
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
 
-class TuyaTS1002SceneCluster(TuyaTS1002NoBindMixin, Scenes):
+class TuyaTS1002SceneCluster(TuyaTS1002NoBindMixin, CustomCluster, Scenes):
     """Map recall_scene to button endpoints."""
 
     def handle_cluster_request(
@@ -110,7 +111,7 @@ class TuyaTS1002SceneCluster(TuyaTS1002NoBindMixin, Scenes):
                 return
 
 
-class TuyaTS1002LevelCluster(TuyaTS1002NoBindMixin, LevelControl):
+class TuyaTS1002LevelCluster(TuyaTS1002NoBindMixin, CustomCluster, LevelControl):
     """Map step commands to buttons 3-4."""
 
     def handle_cluster_request(
@@ -139,7 +140,7 @@ class TuyaTS1002LevelCluster(TuyaTS1002NoBindMixin, LevelControl):
                 return
 
 
-class TuyaTS1002ColorCluster(TuyaTS1002NoBindMixin, Color):
+class TuyaTS1002ColorCluster(TuyaTS1002NoBindMixin, CustomCluster, Color):
     """Map step_color_temp to buttons 1-2."""
 
     def handle_cluster_request(
