@@ -2,10 +2,13 @@
 
 import datetime
 
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
+from zha.application import (
     EntityPlatform,
     EntityType,
+}
+
+from zha.units import (
+    PERCENTAGE,
     UnitOfTemperature,
     UnitOfTime,
 )
