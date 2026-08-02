@@ -100,6 +100,15 @@ def test_shelly_input_commands_update_binary_sensor_state(
     cluster = quirked.endpoints[2].out_clusters[OnOff.cluster_id]
     assert isinstance(cluster, ShellyInputOnOffCluster)
 
+    cluster.handle_cluster_request(
+        foundation.ZCLHeader.cluster(
+            tsn=1,
+            command_id=OnOff.ServerCommandDefs.toggle.id,
+        ),
+        [],
+    )
+    assert cluster.get(OnOff.AttributeDefs.on_off.name) is None
+
     for command, expected_state in (
         (OnOff.ServerCommandDefs.on, True),
         (OnOff.ServerCommandDefs.off, False),
@@ -110,6 +119,12 @@ def test_shelly_input_commands_update_binary_sensor_state(
             [],
         )
         assert cluster.get(OnOff.AttributeDefs.on_off.name) is expected_state
+
+    cluster.handle_cluster_request(
+        foundation.ZCLHeader.cluster(tsn=1, command_id=0xFF),
+        [],
+    )
+    assert cluster.get(OnOff.AttributeDefs.on_off.name) is True
 
     (metadata,) = (
         quirked._quirk_registry_entry.zha_device_factory.quirk_definition.entity_metadata
