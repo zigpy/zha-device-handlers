@@ -38,16 +38,23 @@ Cluster summary:
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig as EntityReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
 from zigpy.zcl.helpers import ReportingConfig
+
+from zhaquirks.builder import (
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig as EntityReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 
 PLUGWISE: Final = "Plugwise"
 PLUGWISE_MFG_CODE: Final = 0x1172
@@ -153,14 +160,12 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
             type=t.uint16_t,
             access=_READ_WRITE,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         external_heat_demand_timeout: Final = ZCLAttributeDef(
             id=ATTR_EXT_HEAT_DEMAND_TIMEOUT,
             type=t.uint16_t,
             access=_READ_WRITE,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
 
         # ── OpenTherm boiler readings (R only) ────────────────────────────────
@@ -169,35 +174,30 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
             type=t.int16s,
             access=_READ_ONLY,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         dhw_temperature: Final = ZCLAttributeDef(
             id=ATTR_DHW_TEMP,
             type=t.int16s,
             access=_READ_ONLY,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         return_water_temperature: Final = ZCLAttributeDef(
             id=ATTR_RETURN_WATER_TEMP,
             type=t.int16s,
             access=_READ_ONLY,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         application_fault_code: Final = ZCLAttributeDef(
             id=ATTR_APP_FAULT_CODE,
             type=EmmaApplicationFaultCode,
             access=_READ_ONLY,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         oem_fault_code: Final = ZCLAttributeDef(
             id=ATTR_OEM_FAULT_CODE,
             type=t.uint8_t,
             access=_READ_ONLY,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
 
         # ── Max setpoints from boiler (R/W, write requires Unlocked External Control) ──
@@ -206,14 +206,12 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
             type=t.int16s,
             access=_READ_WRITE,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
         max_boiler_setpoint: Final = ZCLAttributeDef(
             id=ATTR_MAX_BOILER_SETPOINT,
             type=t.int16s,
             access=_READ_WRITE,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
 
     async def configure_reporting_multiple(
@@ -287,7 +285,6 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
             type=EmmaBatteryType,
             access=_READ_WRITE,
             manufacturer_code=PLUGWISE_MFG_CODE,
-            is_manufacturer_specific=True,
         )
 
     async def configure_reporting_multiple(
@@ -336,8 +333,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     # "OnOff", or "Wireless") into product_code (0x000A) at runtime, and the
     # product family is also encoded in product_url (e.g. ".../emma-wired-pro").
     .sensor(
-        Basic.AttributeDefs.product_code.name,
-        Basic.cluster_id,
+        attribute_name=Basic.AttributeDefs.product_code.name,
+        cluster_id=Basic.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         attribute_converter=lambda value: bytes(value).decode(
@@ -354,8 +351,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="Product code",
     )
     .sensor(
-        Basic.AttributeDefs.product_url.name,
-        Basic.cluster_id,
+        attribute_name=Basic.AttributeDefs.product_url.name,
+        cluster_id=Basic.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         attribute_initialized_from_cache=False,
         translation_key="product_url",
@@ -365,13 +362,10 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     # with a write-attribute button. Emma firmware reacts to writes on the
     # identify_time attribute (0x0000) and ignores the Identify command, so
     # pressing the standard button does nothing. This pair hides the default
-    # button and adds one that writes 10 seconds into identify_time, which the
-    # firmware reads back and uses to drive the e-paper identify indicator.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=Identify.cluster_id,
-        function=lambda entity: type(entity).__name__ == "IdentifyButton",
-    )
+    # button (ZHA's only Identify-cluster entity) and adds one that writes 10
+    # seconds into identify_time, which the firmware reads back and uses to
+    # drive the e-paper identify indicator.
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=Identify.cluster_id)
     .write_attr_button(
         attribute_name=Identify.AttributeDefs.identify_time.name,
         attribute_value=10,
@@ -392,8 +386,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         new_entity_registry_enabled_default=True,
     )
     .sensor(
-        Basic.AttributeDefs.sw_build_id.name,
-        Basic.cluster_id,
+        attribute_name=Basic.AttributeDefs.sw_build_id.name,
+        cluster_id=Basic.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="sw_build_id",
         fallback_name="Firmware version",
@@ -411,8 +405,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     # raw value and the temperature interpretation. ``unique_id_suffix`` keeps
     # the new entity's unique id distinct from the auto-discovered one.
     .sensor(
-        Thermostat.AttributeDefs.pi_heating_demand.name,
-        Thermostat.cluster_id,
+        attribute_name=Thermostat.AttributeDefs.pi_heating_demand.name,
+        cluster_id=Thermostat.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -422,8 +416,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     )
     # ── OpenTherm boiler temperature sensors (hundredths-°C → °C) ─────────
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.boiler_water_temperature.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.boiler_water_temperature.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         divisor=100,
         suggested_display_precision=1,
         unit=UnitOfTemperature.CELSIUS,
@@ -433,8 +427,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="Boiler water temperature",
     )
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.dhw_temperature.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.dhw_temperature.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         divisor=100,
         suggested_display_precision=1,
         unit=UnitOfTemperature.CELSIUS,
@@ -444,8 +438,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="DHW temperature",
     )
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.return_water_temperature.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.return_water_temperature.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         divisor=100,
         suggested_display_precision=1,
         unit=UnitOfTemperature.CELSIUS,
@@ -456,23 +450,23 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     )
     # ── Boiler fault code sensors (diagnostic) ────────────────────────────
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.application_fault_code.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.application_fault_code.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="application_fault_code",
         fallback_name="Application fault code",
     )
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.oem_fault_code.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.oem_fault_code.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="oem_fault_code",
         fallback_name="OEM fault code",
     )
     # ── Max DHW / boiler setpoints (hundredths-°C → °C, writable when unlocked) ──
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.max_dhw_setpoint.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_dhw_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         divisor=100,
         suggested_display_precision=1,
         unit=UnitOfTemperature.CELSIUS,
@@ -482,8 +476,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="Max DHW setpoint",
     )
     .number(
-        EmmaThermostatCluster.AttributeDefs.max_dhw_setpoint.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_dhw_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         min_value=0.0,
         max_value=100.0,
         step=0.01,
@@ -493,8 +487,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="Max DHW setpoint",
     )
     .sensor(
-        EmmaThermostatCluster.AttributeDefs.max_boiler_setpoint.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_boiler_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         divisor=100,
         suggested_display_precision=1,
         unit=UnitOfTemperature.CELSIUS,
@@ -504,8 +498,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="Max boiler setpoint",
     )
     .number(
-        EmmaThermostatCluster.AttributeDefs.max_boiler_setpoint.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_boiler_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         min_value=0.0,
         max_value=100.0,
         step=0.01,
@@ -518,8 +512,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     # multiplier=0.01: raw_device_value * 0.01 = displayed_°C
     #                  displayed_°C / 0.01 = raw_device_value written
     .number(
-        EmmaThermostatCluster.AttributeDefs.external_heat_demand.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.external_heat_demand.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         min_value=0.0,
         max_value=90.0,
         step=0.01,
@@ -529,8 +523,8 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         fallback_name="External heat demand",
     )
     .number(
-        EmmaThermostatCluster.AttributeDefs.external_heat_demand_timeout.name,
-        EmmaThermostatCluster.cluster_id,
+        attribute_name=EmmaThermostatCluster.AttributeDefs.external_heat_demand_timeout.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
         min_value=300,
         max_value=3600,
         step=1,
@@ -540,9 +534,9 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
     )
     # ── Battery chemistry selection ───────────────────────────────────────
     .enum(
-        EmmaPowerConfigCluster.AttributeDefs.battery_type.name,
-        EmmaBatteryType,
-        EmmaPowerConfigCluster.cluster_id,
+        attribute_name=EmmaPowerConfigCluster.AttributeDefs.battery_type.name,
+        enum_class=EmmaBatteryType,
+        cluster_id=EmmaPowerConfigCluster.cluster_id,
         translation_key="battery_type",
         fallback_name="Battery type",
     )
