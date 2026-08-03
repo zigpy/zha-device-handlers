@@ -8,12 +8,17 @@ Adds manufacturer attributes:
 - 0x0007: uint8_t = 49, maybe low temp Celsius (rwp)
 """
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import (
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+)
+from zhaquirks.builder.metadata import ReportingConfig
+from zhaquirks.clusters import CustomCluster
 
 STELLO_MANUFACTURER_ID = 4759
 
