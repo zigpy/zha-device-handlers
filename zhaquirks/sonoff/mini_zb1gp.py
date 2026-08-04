@@ -64,6 +64,11 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             type=SonoffExternalSwitchTriggerType,
             manufacturer_code=None,
         )
+        detach_relay = ZCLAttributeDef(
+            id=0x0019,
+            type=t.bitmap8,
+            manufacturer_code=None,
+        )
         current = ZCLAttributeDef(
             id=0x7004,
             type=t.uint32_t,
@@ -703,6 +708,15 @@ common_quirk = (
         SonoffMiniZb1gpCluster.cluster_id,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
+    )
+    .switch(
+        SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        off_value=0,
+        on_value=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="detach_relay",
+        fallback_name="Detach relay",
     )
     .add_to_registry()
 )

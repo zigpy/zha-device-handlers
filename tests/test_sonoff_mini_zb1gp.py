@@ -90,12 +90,24 @@ def test_mini_zb1gsp_relay_and_trigger_metadata(zigpy_device_from_v2_quirk):
         metadata.attribute_name != "external_trigger_mode"
         for metadata in gp_definition.entity_metadata
     )
+    assert all(
+        metadata.attribute_name != "detach_relay"
+        for metadata in gp_definition.entity_metadata
+    )
     trigger_metadata = next(
         metadata
         for metadata in gsp_definition.entity_metadata
         if metadata.attribute_name == "external_trigger_mode"
     )
     assert trigger_metadata.enum is SonoffExternalSwitchTriggerType
+    detach_relay_metadata = next(
+        metadata
+        for metadata in gsp_definition.entity_metadata
+        if metadata.attribute_name == "detach_relay"
+    )
+    assert detach_relay_metadata.entity_type.value == "config"
+    assert detach_relay_metadata.off_value == 0
+    assert detach_relay_metadata.on_value == 1
 
 
 def test_mini_zb1gp_attribute_definitions():
@@ -104,6 +116,7 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.current.id == 0x7004
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage.id == 0x7005
     assert SonoffMiniZb1gpCluster.AttributeDefs.power.id == 0x7006
+    assert SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.id == 0x0019
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_today.id == 0x7009
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_month.id == 0x700A
     assert SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.id == 0x7016
