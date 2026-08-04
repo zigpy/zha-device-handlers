@@ -3,6 +3,8 @@
 import asyncio
 
 import pytest
+from zha.application import EntityPlatform
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -10,7 +12,13 @@ from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 import zhaquirks
-from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
+from zhaquirks.builder.device import QuirkV2Factory
+from zhaquirks.builder.metadata import ZCLEnumMetadata
+from zhaquirks.shelly import (
+    SHELLY_MANUFACTURER_CODE,
+    LightLevel,
+    ShellyLightLevelCluster,
+)
 from zhaquirks.shelly.wifi import (
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
@@ -157,3 +165,49 @@ def test_shelly_wifi_standard_profile_packet_delegated(
     assert rsp_key is not None
     assert rsp_key.endpoint_id == 1
     assert rsp_key.cluster_id == Basic.cluster_id
+
+
+def test_presence_quirk_light_level_cluster(zigpy_device_from_v2_quirk):
+    """Test that the Shelly Presence quirk replaces the ShellyLightLevelCluster."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="Shelly",
+        model="Presence",
+        cluster_ids={
+            1: {ShellyLightLevelCluster.cluster_id: ClusterType.Server},
+        },
+    )
+
+    ep = device.endpoints[1]
+    assert hasattr(ep, ShellyLightLevelCluster.ep_attribute)
+    assert isinstance(
+        ep.in_clusters[ShellyLightLevelCluster.cluster_id], ShellyLightLevelCluster
+    )
+
+
+def test_presence_quirk_light_level_sensor_entity():
+    """Test that the Shelly Presence quirk registers the light level enum sensor."""
+
+    entry = next(
+        e
+        for e in DEVICE_REGISTRY
+        if isinstance(e.zha_device_factory, QuirkV2Factory)
+        and "presence" in str(e.source.file).lower()
+    )
+
+    definition = entry.zha_device_factory.quirk_definition
+    entity_metadata = [
+        em
+        for em in definition.entity_metadata
+        if em.endpoint_id == 1
+        and em.cluster_id == ShellyLightLevelCluster.cluster_id
+        and em.entity_platform == EntityPlatform.SENSOR
+    ]
+
+    assert len(entity_metadata) == 1
+    em = entity_metadata[0]
+    assert isinstance(em, ZCLEnumMetadata)
+    assert em.entity_platform == EntityPlatform.SENSOR
+    assert em.endpoint_id == 1
+    assert em.cluster_id == ShellyLightLevelCluster.cluster_id
+    assert em.enum is LightLevel
