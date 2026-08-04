@@ -29,6 +29,7 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
 )
 
+MODE = 0x0009
 BUZZER_MANUAL_MUTE = 0x0126
 SELF_TEST = 0x0127
 SMOKE = 0x013A
@@ -59,6 +60,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
     attributes = {
+        MODE: ("mode", types.uint8_t, True),
         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
         SELF_TEST: ("self_test", types.Bool, True),
         SMOKE: ("smoke", types.uint8_t, True),
@@ -70,6 +72,20 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         LINKAGE_ALARM_STATE: ("linkage_alarm_state", types.uint8_t, True),
         SMOKE_DENSITY_DBM: ("smoke_density_dbm", types.Single, True),
     }
+
+    # Until this is written the device sends no manufacturer-specific reports at
+    # all, so the smoke attribute never arrives. Other Aqara quirks (plug_eu,
+    # opple_remote) write the same attribute for the same reason.
+    attr_config = {MODE: 0x01}
+
+    async def bind(self):
+        """Bind cluster and enable manufacturer-specific reporting."""
+        result = await super().bind()
+        # This is a sleepy device, so the write frequently times out even when the
+        # device applies it. Best effort only: a failure must not break binding,
+        # enrollment or the battery path.
+        self.create_catching_task(self.write_attributes(self.attr_config))
+        return result
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Pass attribute update to another cluster if necessary."""
