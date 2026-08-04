@@ -181,7 +181,7 @@ class CustomHeimanCluster(CustomCluster):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="alarm_level",
-        fallback_name="Alarm Level",
+        fallback_name="Alarm level",
     )
     .enum(
         CustomHeimanCluster.AttributeDefs.sensor_life_state.name,
@@ -190,7 +190,7 @@ class CustomHeimanCluster(CustomCluster):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="sensor_expiration",
-        fallback_name="Sensor Expiration",
+        fallback_name="Sensor expiration",
     )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
