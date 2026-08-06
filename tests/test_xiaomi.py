@@ -47,6 +47,8 @@ from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
     BUTTON_2,
+    CLUSTER_ID,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -71,6 +73,7 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiQuickInitDevice,
     handle_quick_init,
@@ -2738,20 +2741,51 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
 # ---------------------------------------------------------------------------
 
 
-async def test_vibration_agl01_device_creation(zigpy_device_from_quirk):
-    """Test that VibrationAGL01 can be created from its signature."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+def _vibration_agl01_device(zigpy_device_from_v2_quirk):
+    """Create the Aqara Vibration Sensor T1 from its reported clusters."""
+    return zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.vibration.agl01",
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            1: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            },
+            2: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            },
+        },
+    )
+
+
+async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
+    """Test that VibrationAGL01 is migrated using the v2 quirk registry."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
     assert isinstance(device, VibrationAGL01)
     # EP1: MotionCluster exposes the binary_sensor entity
     assert device.endpoints[1].ias_zone is not None
     # EP2: vibration event clusters
     assert device.endpoints[2].multistate_input is not None
     assert device.endpoints[2].opple_cluster is not None
+    assert device.device_automation_triggers == {
+        ("vibration", "vibration"): {
+            COMMAND: "vibration",
+            CLUSTER_ID: XiaomiAqaraE1Cluster.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        ("triple_tap", "triple_tap"): {
+            COMMAND: "triple_tap",
+            CLUSTER_ID: MultistateInput.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+    }
 
 
-async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_quirk):
+async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_v2_quirk):
     """Test XiaomiVibrationCluster fires vibration event on attr 0x0118 value=1."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     cluster = device.endpoints[2].opple_cluster
     listener = mock.MagicMock()
@@ -2767,10 +2801,10 @@ async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_quirk):
 
 
 async def test_xiaomi_vibration_cluster_no_event_for_other_values(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
 ):
     """Test XiaomiVibrationCluster does not fire for attr 0x0118 with value != 1."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     cluster = device.endpoints[2].opple_cluster
     listener = mock.MagicMock()
@@ -2786,9 +2820,9 @@ async def test_xiaomi_vibration_cluster_no_event_for_other_values(
     listener.zha_send_event.assert_not_called()
 
 
-async def test_vibration_multistate_input_triple_tap(zigpy_device_from_quirk):
+async def test_vibration_multistate_input_triple_tap(zigpy_device_from_v2_quirk):
     """Test VibrationMultistateInput fires triple_tap on present_value=1."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     cluster = device.endpoints[2].multistate_input
     listener = mock.MagicMock()
@@ -2806,10 +2840,10 @@ async def test_vibration_multistate_input_triple_tap(zigpy_device_from_quirk):
 
 
 async def test_vibration_multistate_input_no_event_for_other_values(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
 ):
     """Test VibrationMultistateInput does not fire events for present_value != 1."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     cluster = device.endpoints[2].multistate_input
     listener = mock.MagicMock()
@@ -2842,9 +2876,9 @@ async def test_vibration_multistate_input_no_event_for_other_values(
     ],
     ids=["xiaomi_vibration_attr", "multistate_triple_tap"],
 )
-async def test_vibration_triggers_binary_sensor(zigpy_device_from_quirk, trigger):
+async def test_vibration_triggers_binary_sensor(zigpy_device_from_v2_quirk, trigger):
     """Test that both event paths activate the EP1 binary_sensor (MotionCluster)."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
@@ -2861,9 +2895,9 @@ async def test_vibration_triggers_binary_sensor(zigpy_device_from_quirk, trigger
     assert motion_listener.cluster_commands[-1][2][0] == OFF
 
 
-async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_quirk):
+async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_v2_quirk):
     """Test MotionCluster fires ON on motion_event and resets after reset_s."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
@@ -2883,10 +2917,10 @@ async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_quirk):
 
 
 async def test_vibration_motion_cluster_repeated_events_reset_timer(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
 ):
     """Test that a second motion event cancels the pending reset timer."""
-    device = zigpy_device_from_quirk(VibrationAGL01)
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)

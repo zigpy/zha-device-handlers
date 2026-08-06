@@ -15,15 +15,9 @@ in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4
 
 from typing import Final
 
-from zigpy.profiles import zha
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    MultistateInput,
-    Ota,
-    PowerConfiguration,
-)
+from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -31,14 +25,8 @@ from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
-    DEVICE_TYPE,
     ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
     MOTION_EVENT,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     ZHA_SEND_EVENT,
     ZONE_TYPE,
 )
@@ -46,7 +34,6 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
 
@@ -103,7 +90,7 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     reset_s = 70
 
 
-class VibrationAGL01(XiaomiCustomDevice):
+class VibrationAGL01(CustomDeviceV2):
     """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01."""
 
     def __init__(self, *args, **kwargs):
@@ -111,73 +98,33 @@ class VibrationAGL01(XiaomiCustomDevice):
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.vibration.agl01")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    PowerConfiguration.cluster_id,  # 0x0001
-                    Identify.cluster_id,  # 0x0003
-                    IasZone.cluster_id,  # 0x0500
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,  # 0x0003
-                    Ota.cluster_id,  # 0x0019
-                ],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    MultistateInput.cluster_id,  # 0x0012
-                    IasZone.cluster_id,  # 0x0500
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    XiaomiPowerConfiguration,
-                    XiaomiAqaraE1Cluster,
-                    Identify.cluster_id,
-                    MotionCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
+(
+    QuirkBuilder(LUMI, "lumi.vibration.agl01")
+    .device_class(VibrationAGL01)
+    .replaces(BasicCluster)
+    .replaces(XiaomiPowerConfiguration)
+    .adds(XiaomiAqaraE1Cluster)
+    .replaces(MotionCluster)
+    .replaces(VibrationMultistateInput, endpoint_id=2)
+    .replaces(
+        XiaomiVibrationCluster,
+        cluster_id=IasZone.cluster_id,
+        endpoint_id=2,
+    )
+    .device_automation_triggers(
+        {
+            (VIBRATION, VIBRATION): {
+                COMMAND: VIBRATION,
+                CLUSTER_ID: XiaomiAqaraE1Cluster.cluster_id,
+                ENDPOINT_ID: 2,
             },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    VibrationMultistateInput,
-                    XiaomiVibrationCluster,
-                ],
-                OUTPUT_CLUSTERS: [],
+            (TRIPLE_TAP, TRIPLE_TAP): {
+                COMMAND: TRIPLE_TAP,
+                CLUSTER_ID: MultistateInput.cluster_id,
+                ENDPOINT_ID: 2,
             },
-        },
-    }
-
-    device_automation_triggers = {
-        (VIBRATION, VIBRATION): {
-            COMMAND: VIBRATION,
-            CLUSTER_ID: XiaomiAqaraE1Cluster.cluster_id,
-            ENDPOINT_ID: 2,
-        },
-        (TRIPLE_TAP, TRIPLE_TAP): {
-            COMMAND: TRIPLE_TAP,
-            CLUSTER_ID: MultistateInput.cluster_id,
-            ENDPOINT_ID: 2,
-        },
-    }
+        }
+    )
+    .add_to_registry()
+)
