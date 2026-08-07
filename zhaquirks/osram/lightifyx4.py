@@ -3,7 +3,6 @@
 import copy
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -20,6 +19,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -40,6 +40,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.osram import OSRAM
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
