@@ -15,13 +15,13 @@ in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4
 
 from typing import Final
 
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -30,6 +30,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     ZONE_TYPE,
 )
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
@@ -90,7 +91,7 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     reset_s = 70
 
 
-class VibrationAGL01(CustomDeviceV2):
+class VibrationAGL01(CustomZigpyDevice):
     """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01."""
 
     def __init__(self, *args, **kwargs):
