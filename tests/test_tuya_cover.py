@@ -10,7 +10,7 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import MotorDirection, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -223,3 +223,229 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+async def test_leisguar_ys_mt750_quirk(zigpy_device_from_v2_quirk):
+    """Test Leisguar YS-MT750 cover motor v2 quirk."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    assert cover_cluster is not None
+    assert isinstance(cover_cluster, TuyaWindowCovering)
+
+    tuya_cluster = ep.tuya_manufacturer
+    assert tuya_cluster is not None
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+    assert tuya_cluster.attributes_by_name["motor_direction"].id == 0xEF05
+    assert tuya_cluster.attributes_by_name["motor_speed"].id == 0xEF69
+
+
+async def test_leisguar_ys_mt750_position_report(zigpy_device_from_v2_quirk):
+    """Test that incoming DP3 position reports update the cover position with no inversion."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    cover_listener = ClusterListener(cover_cluster)
+
+    tuya_cluster = ep.tuya_manufacturer
+
+    # DP3 reports raw 25 (25% closed). No inversion: ZCL value must also be 25.
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(3, TuyaData(25))],
+        )
+    )
+
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 25
+    )
+    assert len(cover_listener.attribute_updates) == 1
+    assert (
+        cover_listener.attribute_updates[0][0]
+        == WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    assert cover_listener.attribute_updates[0][1] == 25
+
+
+async def test_leisguar_ys_mt750_open_command(zigpy_device_from_v2_quirk):
+    """Test that the open command sends DP1 with value 0 (Open)."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[-1:] == b"\x00"  # Value = Open (0)
+
+
+async def test_leisguar_ys_mt750_close_command(zigpy_device_from_v2_quirk):
+    """Test that the close command sends DP1 with value 2 (Close)."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.down_close.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[-1:] == b"\x02"  # Value = Close (2)
+
+
+async def test_leisguar_ys_mt750_stop_command(zigpy_device_from_v2_quirk):
+    """Test that the stop command sends DP1 with value 1 (Stop)."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.stop.id)
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[-1:] == b"\x01"  # Value = Stop (1)
+
+
+async def test_leisguar_ys_mt750_go_to_lift_percentage(zigpy_device_from_v2_quirk):
+    """Test that go_to_lift_percentage sends the raw (non-inverted) position on DP2."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 25
+        )
+        await wait_for_zigpy_tasks()
+
+        # Multiple calls expected (DP 3 for state and DP 2 for control both mapped)
+        assert req_mock.call_count >= 1
+        # Check that at least one call has DP 2 with the correct position value
+        found_correct_position = False
+        for call in req_mock.call_args_list:
+            call_data = call[1]["data"]
+            # DP 2 (position control) with value 25 (0x19)
+            if b"\x02" in call_data and call_data[-1:] == b"\x19":
+                found_correct_position = True
+        assert found_correct_position, "Expected DP 2 with value 25 (0x19) in sent data"
+
+
+async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
+    """Test that setting motor_direction sends DP5 as an ENUM write."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        (status,) = await tuya_cluster.write_attributes(
+            {"motor_direction": MotorDirection.Reversed}
+        )
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x05" in call_data  # DP ID 5
+        assert call_data[-1:] == b"\x01"  # Value = Reversed (1)
+        assert req_mock.call_args[1]["expect_reply"] is False
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+    assert tuya_listener.attribute_updates[0][0] == 0xEF05
+    assert tuya_listener.attribute_updates[0][1] == MotorDirection.Reversed
+
+
+async def test_leisguar_ys_mt750_direction_report(zigpy_device_from_v2_quirk):
+    """Test that an incoming DP5 report updates motor_direction (read-back)."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(5, TuyaData(MotorDirection.Reversed))],
+        )
+    )
+
+    assert tuya_cluster.get("motor_direction") == MotorDirection.Reversed
+    assert tuya_listener.attribute_updates[0][0] == 0xEF05
+    assert tuya_listener.attribute_updates[0][1] == MotorDirection.Reversed
+
+
+async def test_leisguar_ys_mt750_speed_write(zigpy_device_from_v2_quirk):
+    """Test that setting motor_speed sends DP105 as a VALUE write. Write-only: no echo test."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_xu4a5rhj", "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        (status,) = await tuya_cluster.write_attributes({"motor_speed": 128})
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        assert b"\x69" in call_data  # DP ID 105 (0x69)
+        assert call_data[-1:] == b"\x80"  # Value = 128 (0x80)
+        assert req_mock.call_args[1]["expect_reply"] is False
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+    assert tuya_listener.attribute_updates[0][0] == 0xEF69
+    assert tuya_listener.attribute_updates[0][1] == 128

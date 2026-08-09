@@ -705,3 +705,39 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class MotorDirection(t.enum8):
+    """Motor direction values."""
+
+    Normal = 0x00
+    Reversed = 0x01
+
+
+(
+    TuyaQuirkBuilder("_TZE200_xu4a5rhj", "TS0601")
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=3,
+        position_control_dp=2,
+        invert=False,
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_number(
+        dp_id=105,
+        type=t.uint8_t,
+        attribute_name="motor_speed",
+        min_value=0,
+        max_value=255,
+        step=1,
+        translation_key="motor_speed",
+        fallback_name="Motor speed",
+    )
+    .add_to_registry()
+)
