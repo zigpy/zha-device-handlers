@@ -707,7 +707,7 @@ class BorderSetting(t.enum8):
 )
 
 
-class MotorDirection(t.enum8):
+class LeisguarMotorDirection(t.enum8):
     """Motor direction values."""
 
     Normal = 0x00
@@ -725,7 +725,7 @@ class MotorDirection(t.enum8):
     .tuya_enum(
         dp_id=5,
         attribute_name="motor_direction",
-        enum_class=MotorDirection,
+        enum_class=LeisguarMotorDirection,
         translation_key="motor_direction",
         fallback_name="Motor direction",
     )

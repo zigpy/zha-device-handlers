@@ -10,7 +10,7 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import MotorDirection, TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import LeisguarMotorDirection, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -384,7 +384,7 @@ async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as req_mock:
         (status,) = await tuya_cluster.write_attributes(
-            {"motor_direction": MotorDirection.Reversed}
+            {"motor_direction": LeisguarMotorDirection.Reversed}
         )
         await wait_for_zigpy_tasks()
 
@@ -398,7 +398,7 @@ async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
         ]
 
     assert tuya_listener.attribute_updates[0][0] == 0xEF05
-    assert tuya_listener.attribute_updates[0][1] == MotorDirection.Reversed
+    assert tuya_listener.attribute_updates[0][1] == LeisguarMotorDirection.Reversed
 
 
 async def test_leisguar_ys_mt750_direction_report(zigpy_device_from_v2_quirk):
@@ -414,13 +414,15 @@ async def test_leisguar_ys_mt750_direction_report(zigpy_device_from_v2_quirk):
         TuyaCommand(
             status=0,
             tsn=1,
-            datapoints=[TuyaDatapointData(5, TuyaData(MotorDirection.Reversed))],
+            datapoints=[
+                TuyaDatapointData(5, TuyaData(LeisguarMotorDirection.Reversed))
+            ],
         )
     )
 
-    assert tuya_cluster.get("motor_direction") == MotorDirection.Reversed
+    assert tuya_cluster.get("motor_direction") == LeisguarMotorDirection.Reversed
     assert tuya_listener.attribute_updates[0][0] == 0xEF05
-    assert tuya_listener.attribute_updates[0][1] == MotorDirection.Reversed
+    assert tuya_listener.attribute_updates[0][1] == LeisguarMotorDirection.Reversed
 
 
 async def test_leisguar_ys_mt750_speed_write(zigpy_device_from_v2_quirk):
