@@ -1,7 +1,6 @@
 """Schneider Electric dimmers and switches quirks."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBallast,
@@ -27,6 +26,7 @@ from zhaquirks.schneiderelectric import (
 (
     QuirkBuilder(SE_MANUF_NAME, "NHPB/SWITCH/1")
     .applies_to(SE_MANUF_NAME, "CH2AX/SWITCH/1")
+    .applies_to(SE_MANUF_NAME, "CH10AX/SWITCH/1")
     .replaces(SEBasic)
     .replaces(SEOnOff)
     .replaces(SEBasic, endpoint_id=21)
