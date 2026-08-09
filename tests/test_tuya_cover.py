@@ -296,7 +296,7 @@ async def test_leisguar_ys_mt750_open_command(zigpy_device_from_v2_quirk):
 
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
-        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[5] == 1  # DP ID 1 (positional, not a substring match)
         assert call_data[-1:] == b"\x00"  # Value = Open (0)
 
 
@@ -317,7 +317,7 @@ async def test_leisguar_ys_mt750_close_command(zigpy_device_from_v2_quirk):
 
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
-        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[5] == 1  # DP ID 1 (positional, not a substring match)
         assert call_data[-1:] == b"\x02"  # Value = Close (2)
 
 
@@ -338,7 +338,7 @@ async def test_leisguar_ys_mt750_stop_command(zigpy_device_from_v2_quirk):
 
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
-        assert b"\x01" in call_data  # DP ID 1
+        assert call_data[5] == 1  # DP ID 1 (positional, not a substring match)
         assert call_data[-1:] == b"\x01"  # Value = Stop (1)
 
 
@@ -359,16 +359,24 @@ async def test_leisguar_ys_mt750_go_to_lift_percentage(zigpy_device_from_v2_quir
         )
         await wait_for_zigpy_tasks()
 
-        # Multiple calls expected (DP 3 for state and DP 2 for control both mapped)
-        assert req_mock.call_count >= 1
-        # Check that at least one call has DP 2 with the correct position value
-        found_correct_position = False
-        for call in req_mock.call_args_list:
-            call_data = call[1]["data"]
-            # DP 2 (position control) with value 25 (0x19)
-            if b"\x02" in call_data and call_data[-1:] == b"\x19":
-                found_correct_position = True
-        assert found_correct_position, "Expected DP 2 with value 25 (0x19) in sent data"
+        # position_state_dp (DP3) and position_control_dp (DP2) are both mapped to
+        # current_position_lift_percentage, so writing it fires two Tuya DP writes.
+        # Pin that two-write behavior explicitly rather than filtering it away.
+        assert req_mock.call_count == 2
+
+        # Identify the DP2 (position_control_dp) frame positionally by its DP-id
+        # byte, not by call order (send order across the two DP mappings is not
+        # part of the plan's contract) and not by substring "in" checks (DP-id
+        # values can also appear as datatype/length bytes elsewhere in the frame).
+        dp2_frames = [
+            call[1]["data"]
+            for call in req_mock.call_args_list
+            if call[1]["data"][5] == 2
+        ]
+        assert len(dp2_frames) == 1, (
+            "Expected exactly one DP2 (position_control_dp) frame"
+        )
+        assert dp2_frames[0][-1:] == b"\x19"  # Value = 25 (0x19)
 
 
 async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
@@ -390,7 +398,7 @@ async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
 
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
-        assert b"\x05" in call_data  # DP ID 5
+        assert call_data[5] == 5  # DP ID 5 (positional, not a substring match)
         assert call_data[-1:] == b"\x01"  # Value = Reversed (1)
         assert req_mock.call_args[1]["expect_reply"] is False
         assert status == [
@@ -442,7 +450,7 @@ async def test_leisguar_ys_mt750_speed_write(zigpy_device_from_v2_quirk):
 
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
-        assert b"\x69" in call_data  # DP ID 105 (0x69)
+        assert call_data[5] == 0x69  # DP ID 105 (positional, not a substring match)
         assert call_data[-1:] == b"\x80"  # Value = 128 (0x80)
         assert req_mock.call_args[1]["expect_reply"] is False
         assert status == [
