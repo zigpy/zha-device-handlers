@@ -708,10 +708,15 @@ class BorderSetting(t.enum8):
 
 
 class LeisguarMotorDirection(t.enum8):
-    """Motor direction values."""
+    """Motor direction values.
 
-    Normal = 0x00
-    Reversed = 0x01
+    Confirmed against a real device: raw DP5 value 1 is the motor's normal
+    (as-installed) rotation direction, and 0 is reversed — the opposite of
+    what the DP name convention elsewhere in this codebase might suggest.
+    """
+
+    Normal = 0x01
+    Reversed = 0x00
 
 
 (

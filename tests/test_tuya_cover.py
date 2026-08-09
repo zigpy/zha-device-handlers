@@ -399,7 +399,7 @@ async def test_leisguar_ys_mt750_direction_write(zigpy_device_from_v2_quirk):
         req_mock.assert_called_once()
         call_data = req_mock.call_args[1]["data"]
         assert call_data[5] == 5  # DP ID 5 (positional, not a substring match)
-        assert call_data[-1:] == b"\x01"  # Value = Reversed (1)
+        assert call_data[-1:] == b"\x00"  # Value = Reversed (0)
         assert req_mock.call_args[1]["expect_reply"] is False
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
