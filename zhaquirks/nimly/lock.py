@@ -64,11 +64,16 @@ class NimlyDoorLock(CustomCluster, DoorLock):
 # Example: 0x02020003
 #   source = 0x02 (keypad), action = 0x02 (unlock), user = 3
 
+# Source encoding differs between models/firmware. NimlyPRO (fw 1.x) reports
+# 0x00 for Zigbee and 0x0A for auto-relock; NimlyCodePRO (fw 4.8) reports 0x05
+# for Zigbee, auto-relock and the interior keypad button alike, with no way to
+# tell them apart from the payload.
 _SOURCES: dict[int, str] = {
     0x00: "zigbee",
     0x02: "keypad",
     0x03: "fingerprint",
     0x04: "rfid",
+    0x05: "unattributed",
     0x0A: "auto",
 }
 
@@ -167,6 +172,7 @@ def last_action_user_converter(value: int) -> int:
     .applies_to(NIMLY, "NimlyTouch")
     .applies_to(NIMLY, "NimlyIn")
     .applies_to(NIMLY, "NimlyShared")
+    .applies_to(NIMLY, "NimlyCodePRO")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
     .replaces(DoublingPowerConfigurationCluster, endpoint_id=11)
     .replaces(NimlyDoorLock, endpoint_id=11)

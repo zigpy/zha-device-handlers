@@ -19,6 +19,7 @@ zhaquirks.setup()
         (0x02020003, "keypad"),
         (0x03010001, "fingerprint"),
         (0x04020005, "rfid"),
+        (0x05010000, "unattributed"),
         (0x0A010000, "auto"),
         (0x99010001, "unknown"),
     ],
