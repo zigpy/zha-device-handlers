@@ -10,7 +10,9 @@ from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 
 from tests.common import ClusterListener
+from tests.test_xiaomi import create_aqara_attr_report
 import zhaquirks
+from zhaquirks.xiaomi import XIAOMI_AQARA_ATTRIBUTE_E1
 from zhaquirks.xiaomi.aqara.multi_sensor_p100 import (
     ACTION_FALL,
     ACTION_MOVEMENT,
@@ -100,8 +102,13 @@ def test_p100_entities_created(p100_device):
     assert p100_device.endpoints[1].power is not None
 
 
-def test_p100_battery_direct_attributes(p100_device):
-    """Direct battery attributes (0x17/0x18) feed the power cluster."""
+def test_p100_battery_from_heartbeat(p100_device):
+    """Battery tags in the Aqara heartbeat (0x00F7) feed the power cluster.
+
+    The P100 reports battery data in the periodic Aqara blob, using tag 23 for
+    voltage in mV and tag 24 for percentage. This exercises the heartbeat parsing
+    path observed on real hardware.
+    """
     opple_cluster = p100_device.endpoints[1].opple_cluster
     power_cluster = p100_device.endpoints[1].power
     power_listener = ClusterListener(power_cluster)
@@ -109,17 +116,18 @@ def test_p100_battery_direct_attributes(p100_device):
     voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
     percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
 
-    # 0x18: 0-100 percentage -> stored as 0-200 (ZCL half-percent).
+    # Values taken from a real P100 heartbeat: 2903 mV, 100 %.
     opple_cluster.update_attribute(
-        P100ManufacturerCluster.AttributeDefs.battery_percentage.id, 80
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({12: 10, 13: 24, 23: 2903, 24: 100, 101: 3}),
     )
-    assert (percent_id, 160) in power_listener.attribute_updates
 
-    # 0x17: voltage in mV -> stored as deci-volts on the voltage attribute.
-    opple_cluster.update_attribute(
-        P100ManufacturerCluster.AttributeDefs.battery_voltage.id, 3000
-    )
-    assert (voltage_id, 30) in power_listener.attribute_updates
+    # Voltage in mV is stored as deci-volts on the voltage attribute.
+    assert (voltage_id, 29.0) in power_listener.attribute_updates
+    # The 0-100 percentage is stored as 0-200 (ZCL half-percent) and, because
+    # XiaomiPowerConfigurationPercent is used, is taken from tag 24 rather than
+    # being derived from the voltage.
+    assert (percent_id, 200) in power_listener.attribute_updates
 
 
 def test_p100_default_switch_filter():

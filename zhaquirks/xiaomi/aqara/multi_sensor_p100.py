@@ -154,14 +154,6 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
         static_state: Final = ZCLAttributeDef(
             id=0x01F3, type=t.uint8_t, access="rp", is_manufacturer_specific=True
         )
-        # Battery reported as direct attributes (as used by the Z2M converter)
-        # in addition to / instead of the Aqara heartbeat blob below.
-        battery_voltage: Final = ZCLAttributeDef(
-            id=0x0017, type=t.uint16_t, access="rp", is_manufacturer_specific=True
-        )
-        battery_percentage: Final = ZCLAttributeDef(
-            id=0x0018, type=t.uint8_t, access="rp", is_manufacturer_specific=True
-        )
         # Aqara heartbeat blob carrying battery voltage/percentage.
         aqara_attributes: Final = ZCLAttributeDef(
             id=0x00F7, type=t.LVBytes, is_manufacturer_specific=True
@@ -169,20 +161,8 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        power = getattr(self.endpoint, "power", None)
         if attrid == self.STATIC_STATE_ATTR_ID and value == 1:
             self.listener_event(ZHA_SEND_EVENT, ACTION_STATIC, {})
-        elif attrid == self.AttributeDefs.battery_voltage.id:
-            # Voltage in mV; XiaomiPowerConfigurationPercent uses it for the
-            # voltage attribute only, not for the percentage.
-            if hasattr(power, "battery_reported") and callable(power.battery_reported):
-                power.battery_reported(value)
-        elif attrid == self.AttributeDefs.battery_percentage.id:
-            # Already a 0-100 percentage; the power cluster scales to 0-200.
-            if hasattr(power, "battery_percent_reported") and callable(
-                power.battery_percent_reported
-            ):
-                power.battery_percent_reported(value)
 
 
 class P100ActionCluster(CustomCluster, DoorLock):
