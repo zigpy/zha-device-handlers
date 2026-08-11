@@ -13,7 +13,7 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -30,8 +30,15 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice, get_device
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    ExternalSwitchType,
+    PowerOnState,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
@@ -2174,3 +2181,112 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+def test_ts000f_switch_type_values():
+    """Test TS000F external switch type values differ from the shared Tuya enum.
+
+    The TS000F relay modules report the switch type on the OnOff cluster using a
+    value order that does not match the 0xE001 based `ExternalSwitchType`, so the
+    two enums must not be used interchangeably.
+    """
+    switch_type = zhaquirks.tuya.ts000f.Ts000fExternalSwitchType
+
+    assert switch_type.Momentary == 0x00
+    assert switch_type.Toggle == 0x01
+    assert switch_type.State == 0x02
+
+    assert ExternalSwitchType.Toggle == 0x00
+    assert ExternalSwitchType.State == 0x01
+    assert ExternalSwitchType.Momentary == 0x02
+
+
+async def test_ts000f_attribute_defs(zigpy_device_from_v2_quirk):
+    """Test TS000F quirk replaces the OnOff cluster with the manufacturer attributes."""
+    device: Device = zigpy_device_from_v2_quirk("_TZ3218_hdc8bbha", "TS000F")
+    onoff_cluster = device.endpoints[1].on_off
+
+    assert isinstance(onoff_cluster, zhaquirks.tuya.ts000f.Ts000fOnOffCluster)
+
+    switch_type = onoff_cluster.AttributeDefs.switch_type
+    assert switch_type.id == 0x8001
+    assert switch_type.type is zhaquirks.tuya.ts000f.Ts000fExternalSwitchType
+
+    power_on_state = onoff_cluster.AttributeDefs.power_on_state
+    assert power_on_state.id == 0x8002
+    assert power_on_state.type is PowerOnState
+
+    # neither attribute is manufacturer specific, so zigpy decodes the reports the
+    # device actually sends; declaring a manufacturer code would decode them raw
+    assert switch_type.is_manufacturer_specific is None
+    assert power_on_state.is_manufacturer_specific is None
+
+
+@pytest.mark.parametrize(
+    "attribute,value,expected_data",
+    [
+        (
+            "switch_type",
+            zhaquirks.tuya.ts000f.Ts000fExternalSwitchType.Toggle,
+            b"\x00\x01\x02" + b"\x01\x80\x30\x01",
+        ),
+        (
+            "power_on_state",
+            PowerOnState.LastState,
+            b"\x00\x01\x02" + b"\x02\x80\x30\x02",
+        ),
+    ],
+)
+async def test_ts000f_write_attribute(
+    zigpy_device_from_v2_quirk, attribute, value, expected_data
+):
+    """Test TS000F attributes are written without a manufacturer code.
+
+    Frame control 0x00, sequence 1, write attributes. The device accepts both
+    attributes with and without the Tuya manufacturer code.
+    """
+    device: Device = zigpy_device_from_v2_quirk("_TZ3218_hdc8bbha", "TS000F")
+    onoff_cluster = device.endpoints[1].on_off
+
+    async def async_success(*args, **kwargs):
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        onoff_cluster.endpoint, "request", side_effect=async_success
+    ) as request_mock:
+        (status,) = await onoff_cluster.write_attributes({attribute: value})
+
+    assert status[0].status == foundation.Status.SUCCESS
+
+    assert request_mock.mock_calls[0].kwargs["cluster"] == OnOff.cluster_id
+    assert request_mock.mock_calls[0].kwargs["data"] == expected_data
+
+
+@pytest.mark.parametrize(
+    "data,attribute,expected_value",
+    [
+        (
+            b"\x18\x01\x0a\x01\x80\x30\x00",
+            "switch_type",
+            zhaquirks.tuya.ts000f.Ts000fExternalSwitchType.Momentary,
+        ),
+        (
+            b"\x18\x01\x0a\x02\x80\x30\x02",
+            "power_on_state",
+            PowerOnState.LastState,
+        ),
+    ],
+)
+async def test_ts000f_attribute_report(
+    zigpy_device_from_v2_quirk, data, attribute, expected_value
+):
+    """Test TS000F attribute reports are deserialized into their enums."""
+    device: Device = zigpy_device_from_v2_quirk("_TZ3218_hdc8bbha", "TS000F")
+    onoff_cluster = device.endpoints[1].on_off
+    listener = ClusterListener(onoff_cluster)
+
+    onoff_cluster.handle_message(*onoff_cluster.deserialize(data))
+
+    attr_id = onoff_cluster.attributes_by_name[attribute].id
+    assert listener.attribute_updates == [(attr_id, expected_value)]
+    assert isinstance(listener.attribute_updates[0][1], type(expected_value))
