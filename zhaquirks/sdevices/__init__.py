@@ -533,6 +533,10 @@ class SDevicesTwoButtonCluster(_SDevicesBaseButtonCluster):
 
 
 class SDevicesDeviceTemperatureCluster(
-    _SDevicesBindOnlyMixin, CustomCluster, DeviceTemperature
+    _SDevicesFirmwareReportingMixin, CustomCluster, DeviceTemperature
 ):
-    """Device temperature using the reporting table shipped by the firmware."""
+    """Device temperature using the reporting table shipped by the firmware.
+
+    ZHA's standard DeviceTemperature cluster handler already binds this cluster,
+    so only suppress its Configure Reporting command here.
+    """
