@@ -4,9 +4,9 @@ from unittest import mock
 
 import pytest
 from zigpy.profiles import zha
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import ClusterType, ReportingConfig, foundation
 from zigpy.zcl.clusters.closures import WindowCovering, WindowCoveringMode
-from zigpy.zcl.clusters.general import MultistateInput, OnOff
+from zigpy.zcl.clusters.general import DeviceTemperature, MultistateInput, OnOff
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 import zhaquirks
@@ -22,9 +22,12 @@ from zhaquirks.const import (
 from zhaquirks.sdevices import (
     SDevicesButtonCluster,
     SDevicesCluster,
+    SDevicesDeviceTemperatureCluster,
+    SDevicesOnOffCluster,
     SDevicesTwoButtonCluster,
     SDevicesWindowCoveringCluster,
 )
+from zhaquirks.sdevices.socket import _socket
 from zhaquirks.sdevices.switch import _single_button_switch, _two_button_switch
 
 zhaquirks.setup()
@@ -104,6 +107,60 @@ def test_two_button_relays_are_switches(zigpy_device_from_v2_quirk, model):
         assert device.endpoints[endpoint].device_type == zha.DeviceType.ON_OFF_OUTPUT
 
 
+def test_socket_relay_is_switch(zigpy_device_from_v2_quirk):
+    """The socket is a Mains Power Outlet (0x0009) - a switch, not a light."""
+    device = zigpy_device_from_v2_quirk("SDevices", "SBDV-00202")
+    assert device.endpoints[1].device_type == zha.DeviceType.MAIN_POWER_OUTLET
+
+
+def test_socket_emergency_flags_split_from_bitmap(zigpy_device_from_v2_quirk):
+    """The emergency bitmap is split into per-flag attributes on attribute update."""
+    device = zigpy_device_from_v2_quirk("SDevices", "SBDV-00202")
+    cluster = device.endpoints[1].sdevices_cluster
+
+    # one flag at a time -> only that flag's synthetic attribute flips
+    for attr_name, bitmap in (
+        ("emergency_overvoltage", 0x01),
+        ("emergency_undervoltage", 0x02),
+        ("emergency_overcurrent", 0x04),
+        ("emergency_overheat", 0x08),
+    ):
+        cluster.update_attribute(0x3001, bitmap)
+        assert cluster.get(attr_name) is True
+        others = {
+            "emergency_overvoltage",
+            "emergency_undervoltage",
+            "emergency_overcurrent",
+            "emergency_overheat",
+        } - {attr_name}
+        assert all(cluster.get(other) is False for other in others)
+
+    # all flags at once -> all set
+    cluster.update_attribute(0x3001, 0x0F)
+    assert all(
+        cluster.get(n) is True
+        for n in (
+            "emergency_overvoltage",
+            "emergency_undervoltage",
+            "emergency_overcurrent",
+            "emergency_overheat",
+        )
+    )
+
+    # each flag is its own binary sensor on its synthetic attribute, not the bitmap
+    binary_attrs = {
+        entity.attribute_name
+        for entity in _socket("SDevices", "SBDV-00202").entity_metadata
+        if type(entity).__name__ == "BinarySensorMetadata"
+    }
+    assert binary_attrs == {
+        "emergency_overvoltage",
+        "emergency_undervoltage",
+        "emergency_overcurrent",
+        "emergency_overheat",
+    }
+
+
 @pytest.mark.parametrize("model", ("SBDV-00199", "SBDV-00200"))
 def test_cover_mode(zigpy_device_from_v2_quirk, model):
     """Covering-mode instance (EP3 WindowCovering) matches the cover quirk."""
@@ -151,6 +208,17 @@ async def test_button_clusters_bind(zigpy_device_from_v2_quirk):
     diagnostic_cluster.bind = mock.AsyncMock()
     await diagnostic_cluster.apply_custom_configuration()
     diagnostic_cluster.bind.assert_awaited_once()
+
+    socket = zigpy_device_from_v2_quirk("SDevices", "SBDV-00202")
+    socket_reporting_cluster = socket.endpoints[1].sdevices_cluster
+    socket_reporting_cluster.bind = mock.AsyncMock()
+    await socket_reporting_cluster.apply_custom_configuration()
+    socket_reporting_cluster.bind.assert_awaited_once()
+
+    device_temperature_cluster = socket.endpoints[1].device_temperature
+    device_temperature_cluster.bind = mock.AsyncMock()
+    await device_temperature_cluster.apply_custom_configuration()
+    device_temperature_cluster.bind.assert_not_awaited()
 
     dual = zigpy_device_from_v2_quirk(
         "SDevices",
@@ -211,6 +279,69 @@ async def test_manufacturer_cluster_binding_matches_report_sources(
     cover_cluster.bind = mock.AsyncMock()
     await cover_cluster.apply_custom_configuration()
     cover_cluster.bind.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_clusters_retain_firmware_reporting_configuration(
+    zigpy_device_from_v2_quirk,
+):
+    """SDevices clusters acknowledge reporting setup without sending a command."""
+    socket = zigpy_device_from_v2_quirk("SDevices", "SBDV-00202")
+    clusters_and_attributes = (
+        (
+            socket.endpoints[1].on_off,
+            OnOff.AttributeDefs.on_off,
+            SDevicesOnOffCluster,
+        ),
+        (
+            socket.endpoints[1].device_temperature,
+            DeviceTemperature.AttributeDefs.current_temperature,
+            SDevicesDeviceTemperatureCluster,
+        ),
+        (
+            socket.endpoints[1].sdevices_cluster,
+            SDevicesCluster.AttributeDefs.rms_voltage_mv,
+            SDevicesCluster,
+        ),
+    )
+
+    for cluster, attribute, cluster_class in clusters_and_attributes:
+        assert isinstance(cluster, cluster_class)
+        cluster._configure_reporting = mock.AsyncMock()
+        result = await cluster.configure_reporting_multiple(
+            {
+                attribute: ReportingConfig(
+                    min_interval=1,
+                    max_interval=2,
+                    reportable_change=1,
+                )
+            }
+        )
+        assert result == {attribute: foundation.Status.SUCCESS}
+        cluster._configure_reporting.assert_not_awaited()
+
+    cover = zigpy_device_from_v2_quirk(
+        "SDevices",
+        "SBDV-00199",
+        endpoint_ids=[3],
+        cluster_ids={
+            3: {WindowCovering.cluster_id: ClusterType.Server},
+        },
+    )
+    cover_cluster = cover.endpoints[3].window_covering
+    cover_cluster._configure_reporting = mock.AsyncMock()
+    attribute = WindowCovering.AttributeDefs.current_position_lift_percentage
+    result = await cover_cluster.configure_reporting_multiple(
+        {
+            attribute: ReportingConfig(
+                min_interval=1,
+                max_interval=2,
+                reportable_change=1,
+            )
+        }
+    )
+    assert result == {attribute: foundation.Status.SUCCESS}
+    cover_cluster._configure_reporting.assert_not_awaited()
 
 
 def test_device_automation_triggers_use_standard_types():
@@ -337,6 +468,7 @@ def test_config_entities_request_initial_values():
     builders = (
         _single_button_switch("SDevices", "SBDV-00197", optional_neutral=True),
         _two_button_switch("SDevices", "SBDV-00200", optional_neutral=True),
+        _socket("SDevices", "SBDV-00202"),
     )
     local_cover_mode_attributes = {
         "cover_calibration_mode",
@@ -426,3 +558,67 @@ def test_switch_diagnostic_counter_mapping():
         attribute_name == "persistent_memory_writes"
         for _, attribute_name in dual_diagnostics
     )
+
+
+def test_unsupported_flash_writes_entity_is_not_declared_for_socket():
+    """The firmware does not support Diagnostic persistent memory writes."""
+    assert not any(
+        entity.attribute_name == "persistent_memory_writes"
+        for entity in _socket("SDevices", "SBDV-00202").entity_metadata
+    )
+
+
+def test_socket_device_temperature_unique_id_is_preserved():
+    """The replacement matches ZHA's native `{ieee}-1-2` unique ID."""
+    (metadata,) = (
+        entity
+        for entity in _socket("SDevices", "SBDV-00202").entity_metadata
+        if entity.cluster_id == DeviceTemperature.cluster_id
+        and entity.attribute_name == "current_temperature"
+    )
+    assert metadata.unique_id_suffix == str(DeviceTemperature.cluster_id)
+
+
+def test_socket_scaling_and_reporting_metadata():
+    """Socket declarations leave reporting intervals to the firmware."""
+    metadata = _socket("SDevices", "SBDV-00202").entity_metadata
+    numbers = {
+        entity.attribute_name: entity
+        for entity in metadata
+        if isinstance(entity, NumberMetadata)
+    }
+    assert (
+        numbers["upper_voltage_threshold"].min,
+        numbers["upper_voltage_threshold"].max,
+    ) == (230, 260)
+    assert numbers["upper_voltage_threshold"].multiplier == 0.001
+    assert (
+        numbers["lower_voltage_threshold"].min,
+        numbers["lower_voltage_threshold"].max,
+    ) == (100, 230)
+    assert numbers["lower_voltage_threshold"].multiplier == 0.001
+    assert (
+        numbers["upper_current_threshold"].min,
+        numbers["upper_current_threshold"].max,
+    ) == (0.1, 16)
+    assert numbers["upper_current_threshold"].multiplier == 0.001
+    assert (
+        numbers["upper_temp_threshold"].min,
+        numbers["upper_temp_threshold"].max,
+    ) == (10, 100)
+
+    sensors = {
+        entity.attribute_name: entity
+        for entity in metadata
+        if type(entity).__name__ == "ZCLSensorMetadata"
+    }
+    for attr_name in ("rms_voltage_mv", "rms_current_ma", "active_power_mw"):
+        sensor = sensors[attr_name]
+        assert sensor.divisor == 1000
+        assert sensor.reporting_config is None
+        assert sensor.attribute_initialized_from_cache is False
+
+    emergency = sensors["emergency_shutoff_state"]
+    assert emergency.initially_disabled is True
+    assert emergency.reporting_config is None
+    assert emergency.attribute_initialized_from_cache is False
