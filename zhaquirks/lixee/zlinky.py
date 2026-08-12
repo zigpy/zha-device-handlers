@@ -7,7 +7,13 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import (
+    EntityType,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricCurrent,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 
@@ -213,5 +219,62 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     .adds(PowerConfiguration.cluster_id, endpoint_id=1)
     .replaces(ZLinkyTICMetering, endpoint_id=1)
     .replaces(ZLinkyTICManufacturerCluster, endpoint_id=1)
+    # PTEC: tariff period currently in effect, e.g. "TH.." on the Base tariff or
+    # "HC.."/"HP.." on the off-peak/peak tariff. Reported in both TIC modes from
+    # firmware v15. This is what automations need in order to follow the tariff
+    # period rather than a hardcoded schedule.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_tariff_period.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        translation_key="linky_tariff_period",
+        fallback_name="Tariff period",
+    )
+    # OPTARIF: tariff option the contract is subscribed to, e.g. "BASE" or
+    # "HC..". Complements PTEC: one gives the contract, the other the period
+    # currently in effect.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_tariff_option_or_std_supplier_price_schedule_name.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        translation_key="linky_tariff_option",
+        fallback_name="Tariff option",
+    )
+    # ADPS: warning raised when the subscribed power is exceeded, in amperes.
+    # Zero when there is no overload.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_subscribed_power_exceeding_warning.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        suggested_display_precision=0,
+        translation_key="linky_subscribed_power_exceeding_warning",
+        fallback_name="Subscribed power exceeding warning",
+    )
+    # HHPHC: off-peak hours schedule group the meter is assigned to. Only
+    # meaningful once an off-peak tariff is subscribed.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_schedule_peak_hours_off_peak_hours.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_off_peak_hours_schedule",
+        fallback_name="Off-peak hours schedule",
+    )
+    # MOTDETAT: meter status register, "000000" when nominal.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_status.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_status",
+        fallback_name="Meter status",
+    )
+    # TIC mode the meter emits: 0 is historical, 1 is standard. Tells users
+    # which of the hist_/std_ attribute sets their meter populates.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_mode.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_mode",
+        fallback_name="TIC mode",
+    )
     .add_to_registry()
 )
