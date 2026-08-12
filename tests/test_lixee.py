@@ -1,5 +1,6 @@
 """Tests for LiXee ZLinky_TIC quirks."""
 
+import pytest
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -16,8 +17,8 @@ def test_zlinky_clusters_replaced(zigpy_device_from_v2_quirk) -> None:
         "ZLinky_TIC",
         cluster_ids={
             1: {
-                Metering.cluster_id: None,
-                ZLINKY_MANUFACTURER_CLUSTER_ID: None,
+                Metering.cluster_id: ClusterType.Server,
+                ZLINKY_MANUFACTURER_CLUSTER_ID: ClusterType.Server,
             }
         },
     )
@@ -31,20 +32,25 @@ def test_zlinky_clusters_replaced(zigpy_device_from_v2_quirk) -> None:
     assert PowerConfiguration.cluster_id in endpoint.in_clusters
 
 
-def test_zlinky_tuya_cluster_removed(zigpy_device_from_v2_quirk) -> None:
+@pytest.mark.parametrize("cluster_type", [ClusterType.Server, ClusterType.Client])
+def test_zlinky_tuya_cluster_removed(zigpy_device_from_v2_quirk, cluster_type) -> None:
     """Test that the Tuya cluster firmware v14+ reports is removed.
 
     The v1 quirk dropped it implicitly, by listing it in the FWV14 and FWV15
     signatures but not in their replacements. That is what the two ZLinky
     entries in test_suspicious_cluster_moves recorded; this test replaces them.
+
+    Parametrized over both directions: the device reports the cluster as an
+    input and an output cluster, and each removal has to be exercised on its
+    own or the assertion for the other direction passes vacuously.
     """
     device = zigpy_device_from_v2_quirk(
         LIXEE,
         "ZLinky_TIC",
         cluster_ids={
             1: {
-                ZLINKY_MANUFACTURER_CLUSTER_ID: None,
-                TuyaManufCluster.cluster_id: ClusterType.Server,
+                ZLINKY_MANUFACTURER_CLUSTER_ID: ClusterType.Server,
+                TuyaManufCluster.cluster_id: cluster_type,
             }
         },
     )
