@@ -3,6 +3,7 @@
 from typing import Final
 
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -16,6 +17,7 @@ from zhaquirks.builder import (
 )
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
+from zhaquirks.tuya import TuyaManufCluster
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -217,6 +219,13 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     QuirkBuilder(LIXEE, "ZLinky_TIC")
     # Not all firmware variants have a power configuration cluster
     .adds(PowerConfiguration.cluster_id, endpoint_id=1)
+    # Firmware v14 and later report a Tuya cluster the device does not
+    # implement, as the v1 signatures for those variants recorded. Removing it
+    # keeps the v1 replacement behaviour; it is a no-op on older firmware.
+    .removes(TuyaManufCluster.cluster_id, endpoint_id=1)
+    .removes(
+        TuyaManufCluster.cluster_id, endpoint_id=1, cluster_type=ClusterType.Client
+    )
     .replaces(ZLinkyTICMetering, endpoint_id=1)
     .replaces(ZLinkyTICManufacturerCluster, endpoint_id=1)
     # PTEC: tariff period currently in effect, e.g. "TH.." on the Base tariff or
