@@ -1,7 +1,9 @@
 """Tuya TS0052 2-channel dimmer quirk."""
 
+from typing import Final
+
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
@@ -20,10 +22,10 @@ class TuyaSwitchTypeCluster(CustomCluster):
 
     cluster_id = 0xE001
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        switch_type = foundation.ZCLAttributeDef(
+        switch_type: Final = ZCLAttributeDef(
             id=0xD030,
             type=SwitchType,
             access="rw",
