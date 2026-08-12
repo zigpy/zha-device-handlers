@@ -1,10 +1,10 @@
 """Tuya TS0052 2-channel dimmer quirk."""
 
 import zigpy.types as t
-from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 
 from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SwitchType(t.enum8):
