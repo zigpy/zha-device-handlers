@@ -32,7 +32,12 @@ def test_zlinky_clusters_replaced(zigpy_device_from_v2_quirk) -> None:
 
 
 def test_zlinky_tuya_cluster_removed(zigpy_device_from_v2_quirk) -> None:
-    """Test that the Tuya cluster firmware v14+ reports is removed."""
+    """Test that the Tuya cluster firmware v14+ reports is removed.
+
+    The v1 quirk dropped it implicitly, by listing it in the FWV14 and FWV15
+    signatures but not in their replacements. That is what the two ZLinky
+    entries in test_suspicious_cluster_moves recorded; this test replaces them.
+    """
     device = zigpy_device_from_v2_quirk(
         LIXEE,
         "ZLinky_TIC",

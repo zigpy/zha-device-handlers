@@ -209,9 +209,15 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
 
+# The v1 quirk carried four subclasses matching firmware variants by exact
+# cluster list: the base signature, plus PowerConfiguration on v12, Time and a
+# Tuya cluster on v14, and a different device type on v15. Matching on
+# manufacturer and model covers every variant, and v2 only states the
+# differences, so clusters the device already reports are kept untouched.
 (
     QuirkBuilder(LIXEE, "ZLinky_TIC")
-    # Not all firmware variants have a power configuration cluster
+    # Added for every variant, as the v1 replacements did: not all firmware
+    # versions report a power configuration cluster.
     .adds(PowerConfiguration.cluster_id, endpoint_id=1)
     # Firmware v14 and later report a Tuya cluster the device does not
     # implement, as the v1 signatures for those variants recorded. Removing it
