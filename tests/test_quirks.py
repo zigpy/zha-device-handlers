@@ -903,9 +903,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1,
             #
             # -- IKEA devices --
-            # swap PM25 cluster from output to input cluster (IKEA Starkvind):
-            zhaquirks.ikea.starkvind.IkeaSTARKVIND,
-            zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
             # removes Group input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
             zhaquirks.ikea.somrigsmartbtn.IkeaSomrigSmartButton,
