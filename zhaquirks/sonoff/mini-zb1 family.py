@@ -255,10 +255,10 @@ def encode_fast_scene_payload(
 class SonoffErrorCodeType(types.bitmap32):
     """Fault Code Type."""
 
-    Normal = (0x07020000,)
-    Overheat = (0x07020001,)
-    Overload = (0x07020004,)
-    Overload_And_Overheat = (0x07020005,)
+    Electrical_Status_Normal = (0x07020000,)
+    Electrical_Status_Overheat = (0x07020001,)
+    Electrical_Status_Overload = (0x07020004,)
+    Electrical_Status_Overload_And_Overheat = (0x07020005,)
 
 
 class SonoffCluster(CustomCluster):
