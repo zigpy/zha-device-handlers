@@ -444,7 +444,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         type=t.uint16_t,
         unit=UnitOfTime.SECONDS,
         min_value=5,
-        max_value=360,
+        max_value=3600,
         step=1,
         entity_type=EntityType.CONFIG,
         device_class=NumberDeviceClass.DURATION,
@@ -460,7 +460,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         max_value=30,
         step=1,
         entity_type=EntityType.CONFIG,
-        device_class=NumberDeviceClass.HUMIDITY,
+        device_class=NumberDeviceClass.MOISTURE,
         translation_key="soil_moisture_calibration",
         fallback_name="Soil moisture Calibration",
     )
