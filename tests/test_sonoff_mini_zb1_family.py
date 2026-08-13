@@ -35,9 +35,7 @@ FAULT_EVENT_MAP = mini_zb1_family.FAULT_EVENT_MAP
 FastSceneProtection = mini_zb1_family.FastSceneProtection
 FastSceneState = mini_zb1_family.FastSceneState
 SonoffCluster = mini_zb1_family.SonoffCluster
-SonoffElectricalStatusEventCluster = (
-    mini_zb1_family.SonoffElectricalStatusEventCluster
-)
+SonoffElectricalStatusEventCluster = mini_zb1_family.SonoffElectricalStatusEventCluster
 SonoffFastSceneConfigCluster = mini_zb1_family.SonoffFastSceneConfigCluster
 decode_fast_scene_payload = mini_zb1_family.decode_fast_scene_payload
 encode_fast_scene_payload = mini_zb1_family.encode_fast_scene_payload
@@ -74,9 +72,7 @@ def _emit_fault_report(cluster, value, *, attribute_id=None):
     """Emit the zigpy event produced by an incoming attribute report."""
 
     fault_attribute = cluster.AttributeDefs.fault_code
-    reported_attribute_id = (
-        fault_attribute.id if attribute_id is None else attribute_id
-    )
+    reported_attribute_id = fault_attribute.id if attribute_id is None else attribute_id
     cluster.emit(
         AttributeReportedEvent.event_type,
         AttributeReportedEvent(
@@ -256,9 +252,7 @@ async def test_electrical_status_initial_fault_report(
 
     _emit_fault_report(cluster, fault_code)
 
-    listener.zha_send_event.assert_called_once_with(
-        FAULT_EVENT_MAP[fault_code], []
-    )
+    listener.zha_send_event.assert_called_once_with(FAULT_EVENT_MAP[fault_code], [])
 
 
 async def test_electrical_status_ignores_non_fault_reports(
@@ -292,9 +286,7 @@ async def test_electrical_status_ignores_non_fault_reports(
 
     # Ignored values do not poison transition tracking for the next valid report.
     _emit_fault_report(cluster, 0x07020004)
-    listener.zha_send_event.assert_called_once_with(
-        FAULT_EVENT_MAP[0x07020004], []
-    )
+    listener.zha_send_event.assert_called_once_with(FAULT_EVENT_MAP[0x07020004], [])
 
 
 def test_sonoff_fast_scene_config_update_fast_scene_state():
