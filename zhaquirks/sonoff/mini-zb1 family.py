@@ -8,7 +8,6 @@ from typing import Any, Final
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
-    EntityPlatform,
     EntityType,
     NumberDeviceClass,
     QuirkBuilder,
@@ -261,6 +260,14 @@ class SonoffErrorCodeType(types.bitmap32):
     Electrical_Status_Overload_And_Overheat = (0x07020005,)
 
 
+FAULT_EVENT_MAP: Final = {
+    0x07020000: "Electrical_Status Normal",
+    0x07020001: "Electrical_Status Overheat",
+    0x07020004: "Electrical_Status Overload",
+    0x07020005: "Electrical_Status Overload And Overheat",
+}
+
+
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
@@ -436,6 +443,40 @@ class SonoffCluster(CustomCluster):
                 self.listener_event(ZHA_SEND_EVENT, action, {"value": value})
 
 
+class SonoffElectricalStatusEventCluster(SonoffCluster):
+    """Sonoff cluster which reports electrical status as ZHA events."""
+
+    def __init__(self, *args, **kwargs):
+        """Listen only for device reports, not attribute reads during startup."""
+        super().__init__(*args, **kwargs)
+        self._last_fault_code: int | None = None
+        self.on_event(AttributeReportedEvent.event_type, self._handle_fault_report)
+
+    def _handle_fault_report(self, event: AttributeReportedEvent) -> None:
+        """Fire a friendly ZHA event when the electrical status is reported."""
+        if event.attribute_id != self.AttributeDefs.fault_code.id:
+            return
+
+        try:
+            fault_code = int(event.value)
+        except (TypeError, ValueError):
+            return
+
+        action = FAULT_EVENT_MAP.get(fault_code)
+        if action is None:
+            return
+
+        if fault_code == self._last_fault_code:
+            return
+
+        previous_fault_code = self._last_fault_code
+        self._last_fault_code = fault_code
+        if previous_fault_code is None and fault_code == 0x07020000:
+            return
+
+        self.listener_event(ZHA_SEND_EVENT, action, [])
+
+
 class SonoffFastSceneConfigCluster(LocalDataCluster):
     """Local cluster for individual fast scene configuration entities."""
 
@@ -580,7 +621,7 @@ EXTERNAL_TRIGGER_MAP = {
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB1GSP")
-    .replaces(SonoffCluster)
+    .replaces(SonoffElectricalStatusEventCluster)
     .adds(SonoffFastSceneConfigCluster)
     .removes(0x0B04)
     .removes(0x0702)
@@ -825,15 +866,6 @@ EXTERNAL_TRIGGER_MAP = {
         translation_key="voltage_frequency",
         fallback_name="Voltage frequency",
     )
-    .enum(
-        SonoffCluster.AttributeDefs.fault_code.name,
-        SonoffErrorCodeType,
-        SonoffCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="fault_code",
-        fallback_name="Fault code",
-    )
     .device_automation_triggers(
         {
             trigger_tuple: {COMMAND: command, ENDPOINT_ID: 1}
@@ -845,7 +877,7 @@ EXTERNAL_TRIGGER_MAP = {
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB1GS")
-    .replaces(SonoffCluster)
+    .replaces(SonoffElectricalStatusEventCluster)
     .adds(SonoffFastSceneConfigCluster)
     .removes(0x0B04)
     .removes(0x0702)
@@ -900,15 +932,6 @@ EXTERNAL_TRIGGER_MAP = {
         translation_key="detach_relay",
         fallback_name="Detach relay",
     )
-    .enum(
-        SonoffCluster.AttributeDefs.fault_code.name,
-        SonoffErrorCodeType,
-        SonoffCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="fault_code",
-        fallback_name="Fault code",
-    )
     .device_automation_triggers(
         {
             trigger_tuple: {COMMAND: command, ENDPOINT_ID: 1}
@@ -920,11 +943,15 @@ EXTERNAL_TRIGGER_MAP = {
 
 (
     QuirkBuilder("SONOFF", "MINI-ZB1GP")
-    .replaces(SonoffCluster)
+    .replaces(SonoffElectricalStatusEventCluster)
     .adds(SonoffFastSceneConfigCluster)
     .removes(0x0B04)
     .removes(0x0702)
     .removes(0x0006)
+    .prevent_default_entity_creation(
+    endpoint_id=1,
+    cluster_id=0x0006,
+    )
     .switch(
         SonoffCluster.AttributeDefs.network_led.name,
         SonoffCluster.cluster_id,
@@ -1116,15 +1143,6 @@ EXTERNAL_TRIGGER_MAP = {
         divisor=100,
         translation_key="voltage_frequency",
         fallback_name="Voltage frequency",
-    )
-    .enum(
-        SonoffCluster.AttributeDefs.fault_code.name,
-        SonoffErrorCodeType,
-        SonoffCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="fault_code",
-        fallback_name="Fault code",
     )
     .add_to_registry()
 )
