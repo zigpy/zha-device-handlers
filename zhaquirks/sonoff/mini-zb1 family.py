@@ -949,8 +949,8 @@ EXTERNAL_TRIGGER_MAP = {
     .removes(0x0702)
     .removes(0x0006)
     .prevent_default_entity_creation(
-    endpoint_id=1,
-    cluster_id=0x0006,
+        endpoint_id=1,
+        cluster_id=0x0006,
     )
     .switch(
         SonoffCluster.AttributeDefs.network_led.name,
