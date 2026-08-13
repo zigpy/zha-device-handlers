@@ -6,7 +6,12 @@ import sys
 from unittest import mock
 
 import pytest
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    ClusterType,
+    foundation,
+)
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -26,9 +31,13 @@ FAST_SCENE_PACKET_MODIFY = mini_zb1_family.FAST_SCENE_PACKET_MODIFY
 FAST_SCENE_PACKET_REPORT = mini_zb1_family.FAST_SCENE_PACKET_REPORT
 COMMAND_DOUBLE = mini_zb1_family.COMMAND_DOUBLE
 EXTERNAL_TRIGGER_MAP = mini_zb1_family.EXTERNAL_TRIGGER_MAP
+FAULT_EVENT_MAP = mini_zb1_family.FAULT_EVENT_MAP
 FastSceneProtection = mini_zb1_family.FastSceneProtection
 FastSceneState = mini_zb1_family.FastSceneState
 SonoffCluster = mini_zb1_family.SonoffCluster
+SonoffElectricalStatusEventCluster = (
+    mini_zb1_family.SonoffElectricalStatusEventCluster
+)
 SonoffFastSceneConfigCluster = mini_zb1_family.SonoffFastSceneConfigCluster
 decode_fast_scene_payload = mini_zb1_family.decode_fast_scene_payload
 encode_fast_scene_payload = mini_zb1_family.encode_fast_scene_payload
@@ -57,6 +66,53 @@ def _sample_fast_scene_state():
             under_voltage_en=1,
             auto_recover_en=1,
             notify_en=1,
+        ),
+    )
+
+
+def _emit_fault_report(cluster, value, *, attribute_id=None):
+    """Emit the zigpy event produced by an incoming attribute report."""
+
+    fault_attribute = cluster.AttributeDefs.fault_code
+    reported_attribute_id = (
+        fault_attribute.id if attribute_id is None else attribute_id
+    )
+    cluster.emit(
+        AttributeReportedEvent.event_type,
+        AttributeReportedEvent(
+            device_ieee=str(cluster.endpoint.device.ieee),
+            endpoint_id=cluster.endpoint.endpoint_id,
+            cluster_type=ClusterType.Server,
+            cluster_id=cluster.cluster_id,
+            attribute_name=(
+                fault_attribute.name
+                if reported_attribute_id == fault_attribute.id
+                else None
+            ),
+            attribute_id=reported_attribute_id,
+            manufacturer_code=None,
+            raw_value=value,
+            value=value,
+        ),
+    )
+
+
+def _emit_fault_read(cluster, value):
+    """Emit the zigpy event produced by reading the fault-code attribute."""
+
+    fault_attribute = cluster.AttributeDefs.fault_code
+    cluster.emit(
+        AttributeReadEvent.event_type,
+        AttributeReadEvent(
+            device_ieee=str(cluster.endpoint.device.ieee),
+            endpoint_id=cluster.endpoint.endpoint_id,
+            cluster_type=ClusterType.Server,
+            cluster_id=cluster.cluster_id,
+            attribute_name=fault_attribute.name,
+            attribute_id=fault_attribute.id,
+            manufacturer_code=None,
+            raw_value=value,
+            value=value,
         ),
     )
 
@@ -134,6 +190,111 @@ def test_convert_signed_power_handles_reverse_flow():
     assert _convert_signed_power(123456) == 123.456
     assert _convert_signed_power(0xFFFFFFFF) == -0.001
     assert _convert_signed_power(0xFFFFF060) == -4.0
+
+
+@pytest.mark.parametrize("model", ["MINI-ZB1GSP", "MINI-ZB1GS", "MINI-ZB1GP"])
+async def test_minizb1_family_uses_electrical_status_event_cluster(
+    zigpy_device_from_v2_quirk, model
+):
+    """All MINI-ZB1 family members use the electrical status event cluster."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model=model,
+        cluster_ids={1: {SonoffCluster.cluster_id: ClusterType.Server}},
+    )
+
+    assert isinstance(
+        device.endpoints[1].sonoff_cluster, SonoffElectricalStatusEventCluster
+    )
+
+
+async def test_electrical_status_report_events(zigpy_device_from_v2_quirk):
+    """Fault reports emit transitions while suppressing startup and duplicates."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="MINI-ZB1GSP",
+        cluster_ids={1: {SonoffCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].sonoff_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    # The normal status commonly reported at startup is not an actionable change.
+    _emit_fault_report(cluster, 0x07020000)
+    listener.zha_send_event.assert_not_called()
+
+    _emit_fault_report(cluster, 0x07020001)
+    _emit_fault_report(cluster, 0x07020001)
+    _emit_fault_report(cluster, 0x07020004)
+    _emit_fault_report(cluster, 0x07020005)
+    _emit_fault_report(cluster, 0x07020000)
+
+    assert listener.zha_send_event.call_args_list == [
+        mock.call(FAULT_EVENT_MAP[0x07020001], []),
+        mock.call(FAULT_EVENT_MAP[0x07020004], []),
+        mock.call(FAULT_EVENT_MAP[0x07020005], []),
+        mock.call(FAULT_EVENT_MAP[0x07020000], []),
+    ]
+
+
+@pytest.mark.parametrize("fault_code", [0x07020001, 0x07020004, 0x07020005])
+async def test_electrical_status_initial_fault_report(
+    zigpy_device_from_v2_quirk, fault_code
+):
+    """An initial non-normal report is emitted immediately."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="MINI-ZB1GP",
+        cluster_ids={1: {SonoffCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].sonoff_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    _emit_fault_report(cluster, fault_code)
+
+    listener.zha_send_event.assert_called_once_with(
+        FAULT_EVENT_MAP[fault_code], []
+    )
+
+
+async def test_electrical_status_ignores_non_fault_reports(
+    zigpy_device_from_v2_quirk,
+):
+    """Only recognized fault-code attribute reports produce ZHA events."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="MINI-ZB1GS",
+        cluster_ids={1: {SonoffCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].sonoff_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    # Cache updates and startup reads are not device reports.
+    cluster.update_attribute(cluster.AttributeDefs.fault_code.id, 0x07020004)
+    _emit_fault_read(cluster, 0x07020004)
+    _emit_fault_report(
+        cluster,
+        0x07020004,
+        attribute_id=cluster.AttributeDefs.network_led.id,
+    )
+    _emit_fault_report(cluster, 0x0702FFFF)
+    _emit_fault_report(cluster, None)
+    _emit_fault_report(cluster, object())
+    _emit_fault_report(cluster, "invalid")
+
+    listener.zha_send_event.assert_not_called()
+
+    # Ignored values do not poison transition tracking for the next valid report.
+    _emit_fault_report(cluster, 0x07020004)
+    listener.zha_send_event.assert_called_once_with(
+        FAULT_EVENT_MAP[0x07020004], []
+    )
 
 
 def test_sonoff_fast_scene_config_update_fast_scene_state():
