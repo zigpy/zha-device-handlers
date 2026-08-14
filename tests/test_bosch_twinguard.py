@@ -43,6 +43,7 @@ from zhaquirks.bosch.twinguard import (
     TwinguardSensitivity,
     TwinguardSirenState,
 )
+from zhaquirks.builder import EntityType
 
 TWINGUARD_CLUSTER_IDS = {
     1: {
@@ -145,6 +146,7 @@ def test_twinguard_quirk_and_entities(zigpy_device_from_v2_quirk):
     assert temperature.divisor == 100
     assert humidity.divisor == 100
     assert battery.divisor == 2
+    assert battery.entity_type is EntityType.DIAGNOSTIC
     assert aqi.attribute_converter is None
     assert eco2.attribute_converter(42) == 920
 

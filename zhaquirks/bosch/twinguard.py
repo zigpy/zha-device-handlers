@@ -538,6 +538,7 @@ class BoschTwinguardSirenControl(LocalDataCluster):
         unit=PERCENTAGE,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_type=EntityType.DIAGNOSTIC,
         fallback_name="Battery",
     )
     .sensor(
