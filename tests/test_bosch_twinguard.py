@@ -149,6 +149,8 @@ def test_twinguard_quirk_and_entities(zigpy_device_from_v2_quirk):
     assert battery.entity_type is EntityType.DIAGNOSTIC
     assert aqi.attribute_converter is None
     assert eco2.attribute_converter(42) == 920
+    assert eco2.device_class is None
+    assert eco2.translation_key == "estimated_co2"
 
 
 def test_twinguard_alternate_manufacturer(zigpy_device_from_v2_quirk):

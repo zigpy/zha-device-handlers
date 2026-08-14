@@ -566,10 +566,10 @@ class BoschTwinguardSirenControl(LocalDataCluster):
         endpoint_id=3,
         attribute_converter=lambda value: value * 10 + 500,
         unit=CONCENTRATION_PARTS_PER_MILLION,
-        device_class=SensorDeviceClass.CO2,
         state_class=SensorStateClass.MEASUREMENT,
         unique_id_suffix="eco2",
-        fallback_name="eCO2",
+        translation_key="estimated_co2",
+        fallback_name="Estimated CO₂",
     )
     .binary_sensor(
         BoschTwinguardAlarmCluster.AttributeDefs.alarm_status.name,
