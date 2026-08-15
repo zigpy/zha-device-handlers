@@ -418,7 +418,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         min_value=-2,
         max_value=2,
         step=0.1,
-        multiplier=10,
+        multiplier=0.1,
         device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
