@@ -388,6 +388,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("HOBEIAN", "ZG-303Z")
     .applies_to("_TZE200_npj9bug3", "TS0601")  # COOLO CS-201Z
+    .applies_to("AOYAN  ", "AY-303Z")  # AOYAN AY-303Z
     .tuya_soil_moisture(dp_id=3)
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_enum(
