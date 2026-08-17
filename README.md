@@ -34,14 +34,19 @@ Reference official Zigbee specification documentation from Connectivity Standard
   - [Zigbee Protocol Specification 2017 (also known as "Zigbee PRO 2017" / Zigbee R22)](https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf)
   - [Zigbee Protocol Specification 2015 (also known as "Zigbee PRO 2015" / Zigbee R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 - Zigbee Device Specifications
-  - [Zigbee Base Device Behavior Specification (v1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
+  - [Zigbee Base Device Behavior v3.1 Specification](https://csa-iot.org/developer-resource/specifications-download-request/)
+  - [Zigbee Base Device Behavior v1.0 Specification](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
   - [Zigbee Lighting & Occupancy Device Specification (v1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
+- Zigbee Device Type Library Specification
+  - [Zigbee Device Type Library v1.0 Specification](https://csa-iot.org/developer-resource/specifications-download-request/)
 - Zigbee Green Power (ZGP "GreenPower" Profile) specifications
+  - [Zigbee PRO Green Power Feature v1.1.2 Specification](https://csa-iot.org/developer-resource/specifications-download-request/)
   - [Zigbee PRO Green Power feature specification Basic functionality set (v1.1.1)](https://csa-iot.org/wp-content/uploads/2022/01/docs-14-0563-18-batt-Green-Power-Basic-specification-v1.1.1.pdf)
   - [Zigbee PRO Green Power feature specification 1.0a (Revision 26)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-09-5499-26-batt-zigbee-green-power-specification.pdf)
 - Zigbee Smart Energy (ZSE / Zigbee SE "Smart Energy" Profile) specifications
-  - Zigbee Smart Energy Standard 1.4
-  - [ZigBee Smart Energy Standard (v1.2a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
+  - Zigbee Smart Energy 1.4.a Standard(https://csa-iot.org/developer-resource/specifications-download-request/)
+  - Zigbee Smart Energy 1.4 Standard(https://csa-iot.org/developer-resource/specifications-download-request/)
+  - [ZigBee Smart Energy v1.2a Standard](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
 
 Additionally, see these third-party and manufacturer specific documents:
 
