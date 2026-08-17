@@ -152,6 +152,25 @@ def test_aqara_fp300_drops_device_battery_reports(zigpy_device_from_v2_quirk):
     assert power_listener.attribute_updates[1][1] == 200
 
 
+@pytest.mark.parametrize("tlv_voltage", (0, 50, 100, 4500))
+def test_aqara_fp300_battery_tlv_out_of_window(
+    zigpy_device_from_v2_quirk, tlv_voltage
+):
+    """Test that implausible TLV voltages leave the cache untouched."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    manu_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({23: tlv_voltage}),
+    )
+
+    assert len(power_listener.attribute_updates) == 0
+
+
 @pytest.mark.parametrize(
     "raw_payload, expected_segments",
     (
