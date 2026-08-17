@@ -7,6 +7,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -43,6 +44,12 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks.builder import EntityType
+from zhaquirks.builder.metadata import (
+    BinarySensorMetadata,
+    SwitchMetadata,
+    WriteAttributeButtonMetadata,
+)
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
@@ -77,6 +84,12 @@ from zhaquirks.xiaomi import (
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
+from zhaquirks.xiaomi.aqara.driver_curtain_e1 import (
+    CLEAR_LIMITS,
+    STORE_CLOSED_LIMIT,
+    STORE_OPEN_LIMIT,
+    XiaomiAqaraDriverE1,
+)
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
     ZCL_CHILD_LOCK,
@@ -2058,6 +2071,41 @@ async def test_xiaomi_e1_driver_light_level(
             == 10000 * math.log10(converted_level) + 1
         )
     )
+
+
+def test_aqara_curtain_agl001_entities(zigpy_device_from_v2_quirk):
+    """Test entities exposed by the Aqara Curtain Driver E1 v2 quirk."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.agl001")
+    entry = DEVICE_REGISTRY.match_entry(device)
+    entity_metadata = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert len(entity_metadata) == 6
+
+    by_suffix = {em.resolved_unique_id_suffix: em for em in entity_metadata}
+
+    limits_stored = by_suffix["positions_stored"]
+    assert isinstance(limits_stored, BinarySensorMetadata)
+    assert limits_stored.translation_key == "limits_stored"
+    assert limits_stored.entity_type == EntityType.DIAGNOSTIC
+
+    clear_button = by_suffix["limits_clear"]
+    assert isinstance(clear_button, WriteAttributeButtonMetadata)
+    assert clear_button.attribute_value == CLEAR_LIMITS
+
+    closed_button = by_suffix["limit_set_closed"]
+    assert isinstance(closed_button, WriteAttributeButtonMetadata)
+    assert closed_button.attribute_value == STORE_CLOSED_LIMIT
+
+    open_button = by_suffix["limit_set_open"]
+    assert isinstance(open_button, WriteAttributeButtonMetadata)
+    assert open_button.attribute_value == STORE_OPEN_LIMIT
+
+    assert isinstance(by_suffix["hand_open"], SwitchMetadata)
+    assert isinstance(by_suffix["hooks_lock"], SwitchMetadata)
+
+    cluster_id = XiaomiAqaraDriverE1.cluster_id
+    for em in entity_metadata:
+        assert em.cluster_id == cluster_id
+        assert em.endpoint_id == 1
 
 
 @pytest.mark.parametrize(
