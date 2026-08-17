@@ -90,10 +90,9 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
         cluster while the TLV voltage needs rescaling, so only values this
         quirk derives from the TLV voltage may enter the attribute cache.
         """
-        if (
-            not self._quirk_battery_update
-            and attrid
-            in (self.BATTERY_VOLTAGE_ATTR, self.BATTERY_PERCENTAGE_REMAINING)
+        if not self._quirk_battery_update and attrid in (
+            self.BATTERY_VOLTAGE_ATTR,
+            self.BATTERY_PERCENTAGE_REMAINING,
         ):
             return
         super()._update_attribute(attrid, value)
