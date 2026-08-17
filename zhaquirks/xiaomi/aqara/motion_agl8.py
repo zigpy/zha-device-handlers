@@ -78,10 +78,40 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
     MIN_VOLTS_MV = 2800
     MAX_VOLTS_MV = 3000
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Init."""
+        self._quirk_battery_update = False
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid: int, value: Any) -> None:
+        """Drop the device's own contradictory battery reports.
+
+        The FP300 pushes a stuck-at-full percentage through the standard power
+        cluster while the TLV voltage needs rescaling, so only values this
+        quirk derives from the TLV voltage may enter the attribute cache.
+        """
+        if (
+            not self._quirk_battery_update
+            and attrid
+            in (self.BATTERY_VOLTAGE_ATTR, self.BATTERY_PERCENTAGE_REMAINING)
+        ):
+            return
+        super()._update_attribute(attrid, value)
+
     def battery_reported(self, voltage_mv: int) -> None:
-        """Update voltage and derived battery percentage from a mV report."""
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 1000, 3))
-        self._update_battery_percentage(voltage_mv)
+        """Update voltage and derived battery percentage from an mV report."""
+        if voltage_mv < 1000:
+            voltage_mv *= 10
+        if not 2000 <= voltage_mv <= 4000:
+            return
+        self._quirk_battery_update = True
+        try:
+            self._update_attribute(
+                self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1)
+            )
+            self._update_battery_percentage(voltage_mv)
+        finally:
+            self._quirk_battery_update = False
 
     def battery_percent_reported(self, battery_percent: int) -> None:
         """Ignore buggy percentage reports from device."""
