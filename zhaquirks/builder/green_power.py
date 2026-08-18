@@ -106,8 +106,11 @@ class GreenPowerEventEntity(BaseEvent):
             initially_disabled=event_metadata.initially_disabled,
         )
 
+    def on_add(self) -> None:
+        """On device add."""
+        super().on_add()
         self._on_remove_callbacks.append(
-            device.device.on_event(
+            self.device.device.on_event(
                 GreenPowerCommandReceived.event_type,
                 self._handle_gp_command_received,
             )
