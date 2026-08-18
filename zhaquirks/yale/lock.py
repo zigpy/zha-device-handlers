@@ -23,6 +23,7 @@ def lang_converter(lang: str) -> str:
     }
     return mapping.get(lang.strip().lower(), lang)
 
+
 def sound_volume_converter(level: int | None) -> str | None:
     """Convert lock volume int into frontend UI strings."""
     if level is None:
@@ -34,6 +35,7 @@ def sound_volume_converter(level: int | None) -> str | None:
         2: "High volume",
     }
     return mapping.get(level, f"Unknown ({level})")
+
 
 (
     QuirkBuilder("Yale", "YRD220/240 TSDB")
