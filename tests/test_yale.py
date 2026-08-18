@@ -7,6 +7,7 @@ from zhaquirks.yale.lock import lang_converter, sound_volume_converter
 
 zhaquirks.setup()
 
+
 @pytest.mark.parametrize(
     ("raw_lang", "expected"),
     [
