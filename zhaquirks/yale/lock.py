@@ -13,9 +13,6 @@ from zhaquirks.builder import (
 
 def lang_converter(lang: str) -> str:
     """Convert language string into frontend UI strings."""
-    if lang is None:
-        return None
-
     mapping = {
         "en": "English",
         "fr": "French",
@@ -26,9 +23,6 @@ def lang_converter(lang: str) -> str:
 
 def sound_volume_converter(level: int | None) -> str | None:
     """Convert lock volume int into frontend UI strings."""
-    if level is None:
-        return None
-
     mapping = {
         0: "Silent",
         1: "Low volume",
