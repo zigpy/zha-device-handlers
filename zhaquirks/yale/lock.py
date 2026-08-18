@@ -41,8 +41,9 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.enable_one_touch_locking.name,
         reporting_config=ReportingConfig(
-            min_interval=300,
-            max_interval=3600,
+            min_interval=30,
+            max_interval=900,
+            reportable_change=1,
         ),
         unique_id_suffix="one_touch_locking_enabled",
         translation_key="one_touch_locking_enabled",
@@ -53,8 +54,9 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.enable_inside_status_led.name,
         reporting_config=ReportingConfig(
-            min_interval=300,
-            max_interval=3600,
+            min_interval=30,
+            max_interval=900,
+            reportable_change=1,
         ),
         unique_id_suffix="inside_status_led_enabled",
         translation_key="inside_status_led_enabled",
@@ -65,8 +67,8 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.auto_relock_time.name,
         reporting_config=ReportingConfig(
-            min_interval=300,
-            max_interval=3600,
+            min_interval=30,
+            max_interval=900,
             reportable_change=1,
         ),
         unique_id_suffix="auto_relock_time",
@@ -80,8 +82,9 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.language.name,
         reporting_config=ReportingConfig(
-            min_interval=300,
-            max_interval=3600,
+            min_interval=30,
+            max_interval=900,
+            reportable_change=1,
         ),
         unique_id_suffix="announcement_language",
         device_class=SensorDeviceClass.ENUM,
@@ -94,8 +97,9 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.sound_volume.name,
         reporting_config=ReportingConfig(
-            min_interval=300,
-            max_interval=3600,
+            min_interval=30,
+            max_interval=900,
+            reportable_change=1
         ),
         unique_id_suffix="keypad_sound_volume",
         device_class=SensorDeviceClass.ENUM,
