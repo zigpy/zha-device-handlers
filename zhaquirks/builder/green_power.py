@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 import inspect
 import pathlib
 from types import FrameType
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 # `discovery` must be imported before `zha.zigbee.device`: the platform modules
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import discovery  # noqa: F401
+from zha.application.platforms import BaseEntity
+from zha.application.platforms.event import BaseEvent
+from zha.application.platforms.event.const import EventDeviceClass
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceRegistry,
@@ -22,10 +26,50 @@ from zha.quirks import (
 )
 from zha.zigbee.device import GreenPowerDevice
 import zigpy.device
-from zigpy.zgp.types import DeviceID, SrcID
+from zigpy.device import GreenPowerCommandReceived
+from zigpy.zgp.types import DeviceID, GPDCommandID, SrcID
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
+
+
+@dataclass(frozen=True)
+class GreenPowerEventTrigger:
+    """A GPD command, with optional payload field values, firing an event type."""
+
+    command_id: GPDCommandID
+    params: Mapping[str, Any] | tuple[tuple[str, Any], ...] = ()
+
+    def __post_init__(self) -> None:
+        """Freeze the payload field constraints."""
+        if not isinstance(self.params, tuple):
+            object.__setattr__(self, "params", tuple(self.params.items()))
+
+    def matches(self, event: GreenPowerCommandReceived) -> bool:
+        """Return True if the received GPD command fires this trigger."""
+        if event.command_id != self.command_id:
+            return False
+
+        assert isinstance(self.params, tuple)
+        return all(
+            event.command is not None and getattr(event.command, name) == value
+            for name, value in self.params
+        )
+
+
+@dataclass(frozen=True)
+class GreenPowerEventMetadata:
+    """Metadata for an event entity fired by GPD commands."""
+
+    event_types: tuple[tuple[str, GreenPowerEventTrigger], ...]
+    fallback_name: str
+    translation_key: str | None = None
+    device_class: EventDeviceClass | None = None
+    unique_id_suffix: str | None = None
+    primary: bool = False
+    initially_disabled: bool = False
+    # A quirk needing more than trigger matching provides its own entity class
+    entity_class: type[GreenPowerEventEntity] | None = None
 
 
 @dataclass(frozen=True)
@@ -34,6 +78,49 @@ class GreenPowerQuirkDefinition:
 
     friendly_manufacturer: str | None = None
     friendly_model: str | None = None
+    events: tuple[GreenPowerEventMetadata, ...] = ()
+
+
+class GreenPowerEventEntity(BaseEvent):
+    """Event entity fired by GPD commands."""
+
+    def __init__(
+        self,
+        device: GreenPowerDevice,
+        *,
+        event_metadata: GreenPowerEventMetadata,
+    ) -> None:
+        """Initialize the event entity."""
+        self._event_metadata = event_metadata
+        self._attr_event_types = [name for name, _ in event_metadata.event_types]
+        self._attr_device_class = event_metadata.device_class
+
+        super().__init__(
+            device,
+            unique_id=str(device.ieee),
+            from_quirk=True,
+            fallback_name=event_metadata.fallback_name,
+            translation_key=event_metadata.translation_key,
+            unique_id_suffix=event_metadata.unique_id_suffix,
+            primary=event_metadata.primary,
+            initially_disabled=event_metadata.initially_disabled,
+        )
+
+        self._on_remove_callbacks.append(
+            device.device.on_event(
+                GreenPowerCommandReceived.event_type,
+                self._handle_gp_command_received,
+            )
+        )
+
+    def _handle_gp_command_received(self, event: GreenPowerCommandReceived) -> None:
+        """Fire the event types triggered by a received GPD command."""
+        for event_type, trigger in self._event_metadata.event_types:
+            if trigger.matches(event):
+                self._trigger_event(
+                    event_type,
+                    event.command.as_dict() if event.command is not None else {},
+                )
 
 
 class QuirkGreenPowerDevice(GreenPowerDevice):
@@ -54,6 +141,15 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
     def quirk_metadata(self) -> GreenPowerQuirkDefinition:
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
+
+    def discover_entities(self) -> Iterator[BaseEntity]:
+        """Yield the quirk's event entities."""
+        yield from super().discover_entities()
+
+        for event_metadata in self._quirk_definition.events:
+            entity_class = event_metadata.entity_class or GreenPowerEventEntity
+
+            yield entity_class(self, event_metadata=event_metadata)
 
     def _resolve_manufacturer(self) -> str:
         if self._quirk_definition.friendly_manufacturer is not None:
@@ -94,6 +190,7 @@ class GreenPowerQuirkBuilder:
         self.filters: list[GreenPowerFilterType] = []
         self.friendly_manufacturer: str | None = None
         self.friendly_model: str | None = None
+        self.events: list[GreenPowerEventMetadata] = []
         self.custom_device_class: type[QuirkGreenPowerDevice] | None = None
 
         current_frame: FrameType = inspect.currentframe()
@@ -151,6 +248,49 @@ class GreenPowerQuirkBuilder:
         self.friendly_model = model
         return self
 
+    def event(
+        self,
+        event_types: Mapping[str, GreenPowerEventTrigger],
+        *,
+        device_class: EventDeviceClass | None = None,
+        unique_id_suffix: str | None = None,
+        primary: bool = False,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        fallback_name: str,
+        entity_class: type[GreenPowerEventEntity] | None = None,
+    ) -> Self:
+        """Add an event entity fired by the given GPD commands."""
+        if translation_key is None and device_class is None:
+            raise ValueError(
+                "A translation key must be provided when no device class is set"
+            )
+
+        if primary and any(metadata.primary for metadata in self.events):
+            raise ValueError("Only one primary entity can be defined per device")
+
+        if any(
+            metadata.unique_id_suffix == unique_id_suffix for metadata in self.events
+        ):
+            raise ValueError(
+                f"An event entity with unique_id_suffix {unique_id_suffix!r} is"
+                " already defined"
+            )
+
+        self.events.append(
+            GreenPowerEventMetadata(
+                event_types=tuple(event_types.items()),
+                fallback_name=fallback_name,
+                translation_key=translation_key,
+                device_class=device_class,
+                unique_id_suffix=unique_id_suffix,
+                primary=primary,
+                initially_disabled=initially_disabled,
+                entity_class=entity_class,
+            )
+        )
+        return self
+
     def device_class(self, custom_device_class: type[QuirkGreenPowerDevice]) -> Self:
         """Set a custom ZHA device class."""
         assert issubclass(custom_device_class, QuirkGreenPowerDevice)
@@ -179,6 +319,7 @@ class GreenPowerQuirkBuilder:
         quirk_definition = GreenPowerQuirkDefinition(
             friendly_manufacturer=self.friendly_manufacturer,
             friendly_model=self.friendly_model,
+            events=tuple(self.events),
         )
 
         base = (
