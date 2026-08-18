@@ -97,7 +97,9 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.sound_volume.name,
         reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
+            min_interval=30,
+            max_interval=900,
+            reportable_change=1,
         ),
         unique_id_suffix="keypad_sound_volume",
         device_class=SensorDeviceClass.ENUM,
