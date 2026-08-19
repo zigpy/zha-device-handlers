@@ -2,14 +2,15 @@
 
 from typing import Final
 
-from zhaquirks.builder import QuirkBuilder
-from zhaquirks.clusters import CustomCluster
-from zigpy.zcl import ClusterType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import DoorLock, OperationEvent
 from zigpy.zcl.clusters.general import Ota, PowerConfiguration
 from zigpy.zcl.foundation import ZCLCommandDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class YaleCluster(CustomCluster):
