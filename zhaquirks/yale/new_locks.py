@@ -2,7 +2,7 @@
 
 from typing import Final
 
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zha.units import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import DoorLock, OperationEvent
