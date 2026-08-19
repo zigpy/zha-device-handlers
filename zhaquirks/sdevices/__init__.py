@@ -7,15 +7,16 @@ their own modules:
 * ``switch.py`` - wall switches (SBDV-00196 / 00197 / 00199 / 00200)
 * ``cover.py``  - window covering mode of the two-button switches (00199 / 00200)
 * ``socket.py`` - wall socket (SBDV-00202)
+* ``thermostat.py`` - smart thermostat SBDV-00205
 
 The manufacturer-specific cluster 0xFCCF (``manuSpecificSDevices``) and the
 manufacturer attributes added to the standard ``OnOff`` (0x0006),
 ``WindowCovering`` (0x0102) and ``Diagnostic`` (0x0B05) clusters all use
 manufacturer code 0x152F (5423).
 
-The 0xFCCF cluster declares the attributes used by the switch and socket
-families. The RTC attributes (used only by the thermostat model, not ported
-yet) are omitted.
+The 0xFCCF cluster declares attributes shared by the device families. The
+thermostat uses its standard ``Time`` client cluster for RTC synchronization,
+so its legacy manufacturer-specific RTC attributes are not required.
 """
 
 from __future__ import annotations
