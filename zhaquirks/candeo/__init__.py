@@ -7,10 +7,7 @@ from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import (
-    DataTypeId,
-    ZCLAttributeDef,
-)
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZONE_TYPE
