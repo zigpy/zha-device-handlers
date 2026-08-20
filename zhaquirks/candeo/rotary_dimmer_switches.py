@@ -1,16 +1,20 @@
 """Candeo rotary dimmer switches."""
 
 from typing import Final
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import Identify, Ota, OnOff, LevelControl
-from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, BaseCommandDefs, ZCLCommandDef
-from zhaquirks.builder import QuirkBuilder
-from zhaquirks.candeo import (
-    CANDEO,
+from zigpy.zcl.clusters.general import Identify, LevelControl, OnOff, Ota
+from zigpy.zcl.foundation import (
+    BaseCommandDefs,
+    DataTypeId,
+    ZCLAttributeDef,
+    ZCLCommandDef,
 )
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.candeo import CANDEO
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -34,6 +38,7 @@ from zhaquirks.const import (
     STARTED_ROTATING,
     STOPPED_ROTATING,
 )
+
 
 class CandeoRemoteDirection(t.enum8):
     """Candeo Remote Direction."""
