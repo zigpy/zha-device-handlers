@@ -88,11 +88,6 @@ def sound_volume_converter(level: int | None) -> str | None:
         endpoint_id=1,
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.language.name,
-        reporting_config=ReportingConfig(
-            min_interval=3600,
-            max_interval=10800,
-            reportable_change=1,
-        ),
         unique_id_suffix="announcement_language",
         device_class=SensorDeviceClass.ENUM,
         attribute_converter=lang_converter,
@@ -103,11 +98,6 @@ def sound_volume_converter(level: int | None) -> str | None:
         endpoint_id=1,
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.sound_volume.name,
-        reporting_config=ReportingConfig(
-            min_interval=3600,
-            max_interval=10800,
-            reportable_change=1,
-        ),
         unique_id_suffix="keypad_sound_volume",
         device_class=SensorDeviceClass.ENUM,
         attribute_converter=sound_volume_converter,
