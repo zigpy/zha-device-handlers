@@ -9,6 +9,7 @@ from zigpy.zcl import ClusterType, foundation
 
 import zhaquirks
 from zhaquirks.builder.metadata import WriteAttributeButtonMetadata
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.sonoff.snzb02dr2 import (
     CONFIGURATION_TIP,
     REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA,
@@ -68,6 +69,7 @@ def test_snzb02dr2_attribute_and_entity_configuration(sonoff_cluster):
     assert reset_attr.id == 0x2013
     assert reset_attr.type is t.uint8_t
     assert sonoff_cluster.get(reset_attr.name) is None
+    assert sonoff_cluster.get("configuration_tip") == 1
     assert TemperatureUnit.Celsius == 0
     assert configuration_tip_converter(None) == CONFIGURATION_TIP
 
@@ -128,7 +130,9 @@ def test_remote_sensor_packet_round_trip(sonoff_cluster, sensor_type, raw_value)
         b"\x00\x00",
         b"\x00\x00\x01",
         b"\x00\x02\x02",
+        b"\x01\x01\x00\x03",
         b"\x01\x01\x00\x03\x05\x01\x02\x03\x04",
+        b"\x00\x01\x00\xff",
     ],
 )
 def test_remote_packet_parser_rejects_malformed_packets(sonoff_cluster, payload):
@@ -146,6 +150,8 @@ def test_remote_packet_parser_rejects_malformed_packets(sonoff_cluster, payload)
         b"\x01\x00\x01\x04\x00",
         b"\x01\x00\x01\x01\x02\x04\x02\x00",
         b"\x01\x00\x01\x04\x02\x00\x00",
+        b"\x01\x00\x00\x01\x01\x00",
+        b"\x01\x00\x00\x02\x01\x00",
     ],
 )
 def test_sensor_tlv_parser_rejects_malformed_values(sonoff_cluster, value):
@@ -179,19 +185,20 @@ def test_remote_values_are_hidden_until_source_is_enabled(sonoff_cluster):
     cluster = sonoff_cluster
     temperature = cluster.AttributeDefs.remote_temperature_data
     source_status = cluster.AttributeDefs.temp_humi_source_status
+    remote_attributes = cluster.AttributeDefs.remote_attributes
 
-    cluster._apply_remote_attributes(
-        [
-            (
-                REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA,
+    cluster._update_attribute(
+        remote_attributes.id,
+        _packet(
+            [
                 _sensor_tlv(
                     REMOTE_SENSOR_TYPE_TEMPERATURE,
                     0,
                     REMOTE_SENSOR_STATE_ONLINE,
                     1234,
-                )[2:],
-            )
-        ]
+                )
+            ]
+        ),
     )
     assert cluster.get(temperature.name) is None
 
@@ -200,6 +207,15 @@ def test_remote_values_are_hidden_until_source_is_enabled(sonoff_cluster):
 
     cluster._update_attribute(source_status.id, 0)
     assert cluster.get(temperature.name) is None
+
+    cluster._apply_remote_attributes(
+        [
+            (
+                REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA,
+                _sensor_tlv(2, 0, REMOTE_SENSOR_STATE_ONLINE, 1234)[2:],
+            )
+        ]
+    )
 
 
 async def test_remote_packet_reassembly(sonoff_cluster):
@@ -235,6 +251,9 @@ def test_remote_packet_reassembly_discards_invalid_sequences(sonoff_cluster):
     cluster._remote_packet_parts = {1: []}
     cluster._handle_remote_attribute_packet(_packet([], 2, 0))
     assert cluster._remote_packet_count == 2
+    cluster._remote_packet_parts = {2: []}
+    cluster._handle_remote_attribute_packet(_packet([], 2, 1))
+    assert cluster._remote_packet_count == 2
     cluster._clear_remote_packet_assembly()
     assert cluster._remote_packet_count is None
 
@@ -244,6 +263,7 @@ async def test_remote_virtual_attribute_write(sonoff_cluster):
     cluster = sonoff_cluster
     temp_id = cluster.AttributeDefs.remote_temperature_sensor_id.name
     temp_data = cluster.AttributeDefs.remote_temperature_data.name
+    source_status = cluster.AttributeDefs.temp_humi_source_status.id
 
     result = await cluster.write_attributes({temp_id: 0})
     assert result[0][0].status == foundation.Status.SUCCESS
@@ -261,12 +281,17 @@ async def test_remote_virtual_attribute_write(sonoff_cluster):
         "_write_remote_sensor_value",
         mock.AsyncMock(return_value=foundation.Status.SUCCESS),
     ) as write_value:
-        result = await cluster.write_attributes({temp_data: 2345})
-    assert result[0][0].status == foundation.Status.SUCCESS
+        cluster._update_attribute(source_status, 1)
+        result = await cluster.write_attributes({temp_id: 1, temp_data: 2345})
+    assert [record.status for record in result[0]] == [
+        foundation.Status.SUCCESS,
+        foundation.Status.SUCCESS,
+    ]
+    assert cluster.get(cluster.AttributeDefs.remote_temperature_data_2.name) == 2345
     write_value.assert_awaited_once()
     assert write_value.await_args.args[:3] == (
         REMOTE_SENSOR_TYPE_TEMPERATURE,
-        0,
+        1,
         2345,
     )
 
@@ -280,6 +305,12 @@ async def test_remote_virtual_attribute_write_failures(sonoff_cluster):
 
     invalid = await cluster.write_attributes({temp_data: 40000})
     assert invalid[0][-1].status == foundation.Status.INVALID_VALUE
+
+    invalid = await cluster.write_attributes({temp_binding: 0, temp_data: 40000})
+    assert [record.status for record in invalid[0]] == [
+        foundation.Status.INVALID_VALUE,
+        foundation.Status.INVALID_VALUE,
+    ]
 
     with mock.patch.object(
         cluster,
@@ -352,6 +383,16 @@ async def test_remote_sensor_value_write_handles_firmware_responses(sonoff_clust
             == foundation.Status.FAILURE
         )
 
+    with mock.patch.object(
+        CustomCluster, "write_attributes", mock.AsyncMock(return_value=[[]])
+    ):
+        assert (
+            await cluster._write_remote_sensor_value(
+                REMOTE_SENSOR_TYPE_TEMPERATURE, 0, 100, None
+            )
+            == foundation.Status.FAILURE
+        )
+
     assert (
         await cluster._write_remote_sensor_value(
             REMOTE_SENSOR_TYPE_TEMPERATURE, 1, 40000, None
@@ -363,5 +404,6 @@ async def test_remote_sensor_value_write_handles_firmware_responses(sonoff_clust
 def test_malformed_remote_report_is_ignored(sonoff_cluster):
     """Ignore malformed physical remote reports without raising."""
     cluster = sonoff_cluster
+    cluster._update_attribute(cluster.AttributeDefs.reset_max_min_record.id, 1)
     cluster._update_attribute(cluster.AttributeDefs.remote_attributes.id, b"\x00")
     assert cluster.get(cluster.AttributeDefs.remote_attributes.name) == b"\x00"
