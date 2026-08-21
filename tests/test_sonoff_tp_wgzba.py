@@ -7,6 +7,7 @@ import pytest
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import DataTypeId
 
@@ -30,6 +31,7 @@ def tp_wgzba_device(zigpy_device_from_v2_quirk):
         model="TP-WGZBA",
         cluster_ids={
             1: {
+                Basic.cluster_id: ClusterType.Server,
                 Thermostat.cluster_id: ClusterType.Server,
                 SONOFF_PRIVATE_CLUSTER_ID: ClusterType.Server,
             }
@@ -62,6 +64,7 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
     assert {
         "tp_wgzba_ui_system_mode",
         "device_work_mode",
+        "reset_fact_default",
         "weekly_schedule_ui_apply",
         "temporary_mode_ui_apply",
     } <= metadata_suffixes

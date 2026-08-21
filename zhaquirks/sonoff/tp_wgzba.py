@@ -12,6 +12,7 @@ except ImportError:
     from zha.application.platforms.number.device_class import NumberMode
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -2871,6 +2872,12 @@ for attr_name, max_value, translation_key, fallback_name in (
 
 _BUILDER = (
     _BUILDER.command_button(
+        Basic.ServerCommandDefs.reset_fact_default.name,
+        Basic.cluster_id,
+        translation_key="factory_reset",
+        fallback_name="Factory reset",
+    )
+    .command_button(
         SonoffTPWGZBAPrivateCluster.ServerCommandDefs.temporary_mode_ui_apply.name,
         SonoffTPWGZBAPrivateCluster.cluster_id,
         translation_key="override_apply",
