@@ -4,6 +4,7 @@ from zigpy.zcl.clusters.closures import DoorLock
 
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.builder import (
+    NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,
@@ -37,53 +38,59 @@ def sound_volume_converter(level: int | None) -> str | None:
     .applies_to("Yale", "YRL220 TS LL")
     .replaces(DoublingPowerConfigurationCluster)
     .binary_sensor(
-        endpoint_id=1,
-        cluster_id=DoorLock.cluster_id,
-        attribute_name=DoorLock.AttributeDefs.enable_one_touch_locking.name,
-        reporting_config=ReportingConfig(
-            min_interval=30,
-            max_interval=900,
-            reportable_change=1,
-        ),
-        unique_id_suffix="one_touch_locking_enabled",
-        translation_key="one_touch_locking_enabled",
-        fallback_name="One touch locking enabled",
-    )
-    .binary_sensor(
-        endpoint_id=1,
-        cluster_id=DoorLock.cluster_id,
-        attribute_name=DoorLock.AttributeDefs.enable_inside_status_led.name,
-        reporting_config=ReportingConfig(
-            min_interval=30,
-            max_interval=900,
-            reportable_change=1,
-        ),
-        unique_id_suffix="inside_status_led_enabled",
-        translation_key="inside_status_led_enabled",
-        fallback_name="Inside status LED enabled",
-    )
-    .sensor(
-        endpoint_id=1,
-        cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.auto_relock_time.name,
+        cluster_id=DoorLock.cluster_id,
+        attribute_converter=lambda value: bool(value > 0),
         reporting_config=ReportingConfig(
-            min_interval=30,
-            max_interval=900,
+            min_interval=3600,
+            max_interval=10800,
             reportable_change=1,
         ),
+        unique_id_suffix="auto_relock_enabled",
+        translation_key="auto_relock_enabled",
+        fallback_name="Auto-relock enabled",
+    )
+    .switch(
+        attribute_name=DoorLock.AttributeDefs.enable_one_touch_locking.name,
+        cluster_id=DoorLock.cluster_id,
+        unique_id_suffix="one_touch_locking",
+        translation_key="one_touch_locking",
+        fallback_name="One touch locking",
+    )
+    .switch(
+        attribute_name=DoorLock.AttributeDefs.enable_inside_status_led.name,
+        cluster_id=DoorLock.cluster_id,
+        unique_id_suffix="inside_status_led",
+        translation_key="inside_status_led",
+        fallback_name="Inside status LED",
+    )
+    .switch(
+        attribute_name=DoorLock.AttributeDefs.enable_privacy_mode_button.name,
+        cluster_id=DoorLock.cluster_id,
+        unique_id_suffix="button_privacy",
+        translation_key="button_privacy",
+        fallback_name="Button privacy",
+    )
+    .number(
+        attribute_name=DoorLock.AttributeDefs.auto_relock_time.name,
+        cluster_id=DoorLock.cluster_id,
+        step=10,
+        min_value=10,
+        max_value=90,
+        multiplier=1,
         unique_id_suffix="auto_relock_time",
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        translation_key="automatic_relock_time",
-        fallback_name="Automatic relock time",
+        translation_key="auto_relock_time",
+        fallback_name="Auto-relock time",
     )
     .sensor(
         endpoint_id=1,
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.language.name,
         reporting_config=ReportingConfig(
-            min_interval=30,
-            max_interval=900,
+            min_interval=3600,
+            max_interval=10800,
             reportable_change=1,
         ),
         unique_id_suffix="announcement_language",
@@ -97,8 +104,8 @@ def sound_volume_converter(level: int | None) -> str | None:
         cluster_id=DoorLock.cluster_id,
         attribute_name=DoorLock.AttributeDefs.sound_volume.name,
         reporting_config=ReportingConfig(
-            min_interval=30,
-            max_interval=900,
+            min_interval=3600,
+            max_interval=10800,
             reportable_change=1,
         ),
         unique_id_suffix="keypad_sound_volume",
