@@ -1,4 +1,4 @@
-"""Sonoff SNZB-02DR2 temperature/humidity sensor with remote attributes."""
+"""Sonoff SNZB-02DR2 temperature/humidity sensor with remote sensor slots."""
 
 import logging
 import time
@@ -29,14 +29,14 @@ REMOTE_SENSOR_STATE_ONLINE = 0x01
 REMOTE_SENSOR_STATE_OFFLINE = 0x02
 REMOTE_SENSOR_VALUE_LENGTH = 0x02
 REMOTE_PACKET_TIMEOUT_SECONDS = 30
-# The firmware maps SensorId 0/1 to the EXT1/EXT2 display slots.
+# The firmware maps sensor IDs 0 and 1 to the device's remote sensor slots 1 and 2.
 SUPPORTED_VIRTUAL_SENSOR_IDS = frozenset({0x00, 0x01})
 
 RemoteAttributeArrayValues = t.LVList[t.uint8_t, t.uint16_t]
 
 
 def configuration_tip_converter(_value: Any) -> str:
-    """Return the fixed configuration reminder."""
+    """Return the fixed reminder shown before configuration."""
     return CONFIGURATION_TIP
 
 
@@ -206,7 +206,7 @@ class CustomSonoffCluster(CustomCluster):
         self._remote_packet_started = 0.0
 
     def get(self, key: int | str, default: Any | None = None) -> Any:
-        """Return cached remote data only while the remote source is enabled."""
+        """Return remote readings only while remote sensor reporting is enabled."""
         attribute = self.find_attribute(key)
         if attribute.id == self.AttributeDefs.configuration_tip.id:
             return 1
@@ -219,12 +219,12 @@ class CustomSonoffCluster(CustomCluster):
         return super().get(key, default)
 
     def _remote_source_enabled(self) -> bool:
-        """Treat every reported nonzero 0x600E state as an active remote source."""
+        """Treat any non-zero 0x600E value as enabled remote sensor reporting."""
         status = super().get(self.AttributeDefs.temp_humi_source_status.name)
         return status is not None and int(status) != 0
 
     def _refresh_remote_display_attributes(self) -> None:
-        """Notify ZHA to re-evaluate cached values after the source status changes."""
+        """Refresh exposed remote readings after their reporting status changes."""
         enabled = self._remote_source_enabled()
         for sensor_key, attribute in self._SENSOR_DISPLAY_ATTRIBUTES.items():
             if enabled and sensor_key in self._remote_sensor_values:
@@ -236,7 +236,7 @@ class CustomSonoffCluster(CustomCluster):
 
     @staticmethod
     def _make_remote_attribute_array(payload: bytes) -> foundation.Array:
-        """Wrap remote attribute bytes in a ZCL Array<uint8>."""
+        """Wrap a remote sensor packet in a ZCL Array<uint8>."""
         return foundation.Array(
             type=DataTypeId.uint8,
             value=RemoteAttributeArrayValues(payload),
@@ -244,7 +244,7 @@ class CustomSonoffCluster(CustomCluster):
 
     @staticmethod
     def _array_payload(value: Any) -> bytes:
-        """Extract remote attribute bytes from a ZCL Array value."""
+        """Extract packet bytes from a ZCL Array value."""
         if isinstance(value, foundation.Array):
             if value.type != DataTypeId.uint8:
                 raise ValueError("remote attribute Array elements must be uint8")
@@ -258,7 +258,7 @@ class CustomSonoffCluster(CustomCluster):
         sensor_id: int,
         raw_value: int,
     ) -> foundation.Array:
-        """Encode one online sensor item as one remote attribute packet."""
+        """Encode one online sensor reading as a remote attribute packet."""
         if sensor_type == REMOTE_SENSOR_TYPE_TEMPERATURE:
             value = int(raw_value).to_bytes(2, "little", signed=True)
         elif sensor_type == REMOTE_SENSOR_TYPE_HUMIDITY:
@@ -286,7 +286,7 @@ class CustomSonoffCluster(CustomCluster):
 
     @staticmethod
     def _parse_packet(payload: bytes) -> tuple[int, int, list[tuple[int, bytes]]]:
-        """Parse and validate one remote attribute packet."""
+        """Parse and validate one remote sensor packet."""
         if len(payload) < 3:
             raise ValueError("remote attribute packet header is truncated")
 
@@ -314,7 +314,7 @@ class CustomSonoffCluster(CustomCluster):
 
     @staticmethod
     def _parse_sensor_tlv(value: bytes) -> list[tuple[int, int, int, int | None]]:
-        """Parse and validate a generic sensor-data TLV value."""
+        """Parse and validate a sensor-data TLV."""
         if not value:
             raise ValueError("sensor data is missing SensorCount")
 
@@ -364,7 +364,7 @@ class CustomSonoffCluster(CustomCluster):
         return sensors
 
     def _apply_remote_attributes(self, attributes: list[tuple[int, bytes]]) -> None:
-        """Validate all supported TLVs, then atomically project virtual values."""
+        """Validate supported TLVs, then update the matching remote sensor slots."""
         sensor_updates: list[tuple[int, int, int, int | None]] = []
         for attr_type, value in attributes:
             if attr_type == REMOTE_ATTRIBUTE_TYPE_SENSOR_DATA:
@@ -383,7 +383,7 @@ class CustomSonoffCluster(CustomCluster):
                     super()._update_attribute(value_attribute.id, raw_value)
 
     def _handle_remote_attribute_packet(self, value: Any) -> None:
-        """Validate, reassemble, and apply a physical remote attribute Array."""
+        """Validate, reassemble, and apply a physical remote sensor packet."""
         payload = self._array_payload(value)
         packet_count, packet_index, attributes = self._parse_packet(payload)
         now = time.monotonic()
@@ -424,7 +424,7 @@ class CustomSonoffCluster(CustomCluster):
         self._apply_remote_attributes(complete_attributes)
 
     def _clear_remote_packet_assembly(self) -> None:
-        """Discard an incomplete remote attribute transfer."""
+        """Discard an incomplete remote sensor transfer."""
         self._remote_packet_count = None
         self._remote_packet_parts = {}
         self._remote_packet_started = 0.0
@@ -434,7 +434,7 @@ class CustomSonoffCluster(CustomCluster):
         attrid: int,
         status: foundation.Status,
     ) -> foundation.WriteAttributesStatusRecord:
-        """Create a normalized write status for a virtual attribute."""
+        """Create a normalized write status for a remote sensor attribute."""
         return foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)
 
     async def _write_remote_sensor_value(
@@ -445,7 +445,7 @@ class CustomSonoffCluster(CustomCluster):
         manufacturer: int | UndefinedType | None,
         **kwargs: Any,
     ) -> foundation.Status:
-        """Write one encoded sensor value to the physical Array attribute."""
+        """Write one encoded sensor reading to the physical Array attribute."""
         try:
             remote_array = self._encode_remote_sensor_packet(
                 sensor_type,
@@ -474,7 +474,7 @@ class CustomSonoffCluster(CustomCluster):
         update_cache: bool = True,
         **kwargs: Any,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Route virtual remote attributes through the physical Array attribute."""
+        """Route remote sensor slot writes through the physical Array attribute."""
         normalized = {
             self.find_attribute(attribute, manufacturer_code=manufacturer).id: value
             for attribute, value in attributes.items()
@@ -586,7 +586,7 @@ class CustomSonoffCluster(CustomCluster):
         attrid: int | t.uint16_t | ZCLAttributeDef,
         value: Any,
     ) -> None:
-        """Decode physical remote attribute reports into virtual attributes."""
+        """Decode physical remote sensor reports into exposed slot readings."""
         attribute_id = attrid.id if isinstance(attrid, ZCLAttributeDef) else int(attrid)
         super()._update_attribute(attrid, value)
 
@@ -696,7 +696,7 @@ class CustomSonoffCluster(CustomCluster):
         off_value=0,
         on_value=1,
         translation_key="temp_humi_source_status",
-        fallback_name="Enable remote temperature and humidity source",
+        fallback_name="Enable remote sensor readings",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.remote_temperature_data.name,
@@ -707,7 +707,7 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         suggested_display_precision=1,
         translation_key="remote_temperature_data",
-        fallback_name="Remote temperature data 1",
+        fallback_name="Remote temperature (slot 1)",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.remote_humidity_data.name,
@@ -718,7 +718,7 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         suggested_display_precision=1,
         translation_key="remote_humidity_data",
-        fallback_name="Remote humidity data 1",
+        fallback_name="Remote humidity (slot 1)",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.remote_temperature_data_2.name,
@@ -729,7 +729,7 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         suggested_display_precision=1,
         translation_key="remote_temperature_data_2",
-        fallback_name="Remote temperature data 2",
+        fallback_name="Remote temperature (slot 2)",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.remote_humidity_data_2.name,
@@ -740,7 +740,7 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         suggested_display_precision=1,
         translation_key="remote_humidity_data_2",
-        fallback_name="Remote humidity data 2",
+        fallback_name="Remote humidity (slot 2)",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.configuration_tip.name,
