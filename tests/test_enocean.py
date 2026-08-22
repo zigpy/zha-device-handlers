@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from zha.application.platforms.event import EntityEventTriggeredEvent
+from zha.application.platforms.event.const import ButtonEventType
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import (
     GreenPowerCommandReceived,
@@ -13,7 +14,7 @@ from zigpy.zgp.commands import GPContactStatusPayload
 from zigpy.zgp.types import ApplicationID, GPDCommandID, SrcID
 
 import zhaquirks
-from zhaquirks.builder.green_power import GreenPowerEvent
+from zhaquirks.enocean.ptm216z import PTM216ZButton
 
 zhaquirks.setup()
 
@@ -38,11 +39,16 @@ def buttons(ptm216z):
     entry = DEVICE_REGISTRY.match_green_power_entry(ptm216z)
     zha_device = entry.zha_device_factory(ptm216z, MagicMock())
 
-    return {
-        entity.unique_id.rsplit("-", 1)[-1]: entity
+    entities = [
+        entity
         for entity in zha_device.discover_entities()
-        if isinstance(entity, GreenPowerEvent)
-    }
+        if isinstance(entity, PTM216ZButton)
+    ]
+
+    for entity in entities:
+        entity.on_add()
+
+    return {entity.unique_id.rsplit("-", 1)[-1]: entity for entity in entities}
 
 
 def emit(device, command_id: GPDCommandID, contact_status: int) -> None:
@@ -81,7 +87,7 @@ def test_ptm216z_entities(buttons):
     """Test that there is one entity per contact."""
     assert list(buttons) == ["button_a0", "button_a1", "button_b0", "button_b1"]
     assert [entity.event_types for entity in buttons.values()] == [
-        ["press", "release"]
+        [ButtonEventType.PRESS_START, ButtonEventType.PRESS_END]
     ] * 4
     assert buttons["button_a0"].primary
     assert not any(entity.primary for entity in list(buttons.values())[1:])
@@ -109,7 +115,9 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
 
     emit(ptm216z, GPDCommandID.Press8BitVector, contact_status)
     assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == expected
-    assert all(event.triggered.event_type == "press" for event in events)
+    assert all(
+        event.triggered.event_type == ButtonEventType.PRESS_START for event in events
+    )
     assert events[0].triggered.event_attributes == {"contact_status": contact_status}
 
     events.clear()
@@ -117,7 +125,9 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
     # The switch only reports that every contact is open again
     emit(ptm216z, GPDCommandID.Release8BitVector, 0)
     assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == expected
-    assert all(event.triggered.event_type == "release" for event in events)
+    assert all(
+        event.triggered.event_type == ButtonEventType.PRESS_END for event in events
+    )
 
 
 def test_ptm216z_release_without_press(ptm216z, buttons):
@@ -141,8 +151,12 @@ def test_ptm216z_captured_sequence(ptm216z, buttons):
         emit(ptm216z, GPDCommandID.Press8BitVector, contact_status)
         emit(ptm216z, GPDCommandID.Release8BitVector, 0)
 
-    presses = [e for e in events if e.triggered.event_type == "press"]
-    releases = [e for e in events if e.triggered.event_type == "release"]
+    presses = [
+        e for e in events if e.triggered.event_type == ButtonEventType.PRESS_START
+    ]
+    releases = [
+        e for e in events if e.triggered.event_type == ButtonEventType.PRESS_END
+    ]
 
     # Four single-contact presses and four two-contact presses, each released once
     assert len(presses) == 4 + 2 * 4
