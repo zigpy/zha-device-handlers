@@ -4,10 +4,11 @@ from types import SimpleNamespace
 from unittest import mock
 
 import pytest
-from zha.application import Platform
+from zha.application import EntityPlatform, EntityType, Platform
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import DoorLock
-from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, OnOff, PowerConfiguration
 
 from tests.common import ClusterListener
 from tests.test_xiaomi import create_aqara_attr_report
@@ -100,6 +101,60 @@ def test_p100_entities_created(p100_device):
     assert isinstance(p100_device.endpoints[1].door_lock, P100ActionCluster)
     # XiaomiPowerConfigurationPercent is added for battery reporting.
     assert p100_device.endpoints[1].power is not None
+
+
+def test_p100_entity_discovery(p100_device):
+    """The quirk exposes the intended HA entities and suppresses the wrong defaults.
+
+    Guards the advertised Home Assistant surface: correct platform/type/primary
+    for the created entities, and removal of the spurious lock/switch/analog-input
+    entities ZHA would otherwise create from the raw signature.
+    """
+    quirk = DEVICE_REGISTRY.match_entry(p100_device).zha_device_factory.quirk_definition
+    by_suffix = {m.resolved_unique_id_suffix: m for m in quirk.entity_metadata}
+
+    # Contact sensor is the primary entity and lives on the OnOff cluster.
+    contact = by_suffix["on_off"]
+    assert contact.entity_platform == EntityPlatform.BINARY_SENSOR
+    assert contact.primary is True
+    assert contact.cluster_id == OnOff.cluster_id
+    assert contact.endpoint_id == 1
+
+    # Writable configuration entities.
+    config_suffixes = {
+        "device_mode",
+        "door_window_type",
+        "sensitivity",
+        "report_interval",
+        "movement_detection",
+        "vibration_detection",
+        "fall_detection",
+        "orientation_detection",
+        "triple_tap_detection",
+    }
+    assert config_suffixes <= by_suffix.keys()
+    assert all(by_suffix[s].entity_type == EntityType.CONFIG for s in config_suffixes)
+
+    # Read-only diagnostic sensors.
+    for suffix in ("orientation", "device_posture"):
+        assert by_suffix[suffix].entity_platform == EntityPlatform.SENSOR
+        assert by_suffix[suffix].entity_type == EntityType.DIAGNOSTIC
+
+    # Default entities ZHA would create from the raw signature must be suppressed.
+    disabled = {(m.cluster_id, m.endpoint_id) for m in quirk.disabled_default_entities}
+    assert (DoorLock.cluster_id, 1) in disabled  # fake lock
+    assert (OnOff.cluster_id, 1) in disabled  # spurious switch
+    assert (AnalogInput.cluster_id, 1) in disabled
+    assert (AnalogInput.cluster_id, 2) in disabled
+
+    # The OnOff suppression is filtered so only the switch is dropped and our
+    # contact binary sensor (same cluster) survives.
+    onoff_rule = next(
+        m
+        for m in quirk.disabled_default_entities
+        if m.cluster_id == OnOff.cluster_id and m.endpoint_id == 1
+    )
+    assert onoff_rule.function is not None
 
 
 def test_p100_battery_from_heartbeat(p100_device):

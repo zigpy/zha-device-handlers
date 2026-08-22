@@ -100,59 +100,65 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
     STATIC_STATE_ATTR_ID = 0x01F3
 
     class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
-        """Attribute definitions."""
+        """Attribute definitions.
+
+        The configuration attributes are read/written by HA, so they carry the
+        fixed Aqara manufacturer code (0x115F) explicitly. The heartbeat blob
+        below is report-only (device -> us), so it keeps the inherited
+        manufacturer handling.
+        """
 
         vibration_detection: Final = ZCLAttributeDef(
-            id=0x0107, type=t.Bool, access="rwp", is_manufacturer_specific=True
+            id=0x0107, type=t.Bool, access="rwp", manufacturer_code=0x115F
         )
         sensitivity: Final = ZCLAttributeDef(
-            id=0x010C, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
+            id=0x010C, type=t.uint8_t, access="rwp", manufacturer_code=0x115F
         )
         device_mode: Final = ZCLAttributeDef(
             id=0x0116,
             type=DeviceMode,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         fall_detection: Final = ZCLAttributeDef(
-            id=0x01D8, type=t.Bool, access="rwp", is_manufacturer_specific=True
+            id=0x01D8, type=t.Bool, access="rwp", manufacturer_code=0x115F
         )
         door_window_type: Final = ZCLAttributeDef(
             id=0x01EB,
             type=DoorWindowType,
             zcl_type=DataTypeId.uint8,
             access="rwp",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         report_interval: Final = ZCLAttributeDef(
-            id=0x01EC, type=t.uint32_t, access="rwp", is_manufacturer_specific=True
+            id=0x01EC, type=t.uint32_t, access="rwp", manufacturer_code=0x115F
         )
         movement_detection: Final = ZCLAttributeDef(
-            id=0x01ED, type=t.Bool, access="rwp", is_manufacturer_specific=True
+            id=0x01ED, type=t.Bool, access="rwp", manufacturer_code=0x115F
         )
         device_posture: Final = ZCLAttributeDef(
             id=0x01EE,
             type=DevicePosture,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         triple_tap_detection: Final = ZCLAttributeDef(
-            id=0x01EF, type=t.Bool, access="rwp", is_manufacturer_specific=True
+            id=0x01EF, type=t.Bool, access="rwp", manufacturer_code=0x115F
         )
         orientation_detection: Final = ZCLAttributeDef(
-            id=0x01F0, type=t.Bool, access="rwp", is_manufacturer_specific=True
+            id=0x01F0, type=t.Bool, access="rwp", manufacturer_code=0x115F
         )
         orientation: Final = ZCLAttributeDef(
             id=0x01F1,
             type=Orientation,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         static_state: Final = ZCLAttributeDef(
-            id=0x01F3, type=t.uint8_t, access="rp", is_manufacturer_specific=True
+            id=0x01F3, type=t.uint8_t, access="rp", manufacturer_code=0x115F
         )
         # Aqara heartbeat blob carrying battery voltage/percentage.
         aqara_attributes: Final = ZCLAttributeDef(
