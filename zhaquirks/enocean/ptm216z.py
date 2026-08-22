@@ -48,23 +48,21 @@ class PTM216ZButton(BaseEvent):
             return
 
         if event.command_id == GPDCommandID.Press8BitVector:
-            if not event.command.contact_status & self._contact:
-                return
-
-            self._pressed = True
-            event_type = ButtonEventType.PRESS_START
+            pressed = bool(event.command.contact_status & self._contact)
         elif event.command_id == GPDCommandID.Release8BitVector:
-            # The switch only reports that every contact is open again, so the
-            # release belongs to whichever contacts this entity saw pressed
-            if not self._pressed:
-                return
-
-            self._pressed = False
-            event_type = ButtonEventType.PRESS_END
+            # The switch only reports that every contact is open again
+            pressed = False
         else:
             return
 
-        self._trigger_event(event_type, event.command.as_dict())
+        if pressed == self._pressed:
+            return
+
+        self._pressed = pressed
+        self._trigger_event(
+            ButtonEventType.PRESS_START if pressed else ButtonEventType.PRESS_END,
+            event.command.as_dict(),
+        )
 
 
 (
