@@ -32,12 +32,14 @@ def sound_volume_converter(level: int | None) -> str | None:
     }
     return mapping.get(level, f"Unknown ({level})")
 
+
 class yale_lock_mode(t.enum8):
     """Lock operation mode enum."""
 
     Normal = 0x00
     Vacation = 0x01
     Privacy = 0x02
+
 
 (
     QuirkBuilder("Yale", "YRD220/240 TSDB")
