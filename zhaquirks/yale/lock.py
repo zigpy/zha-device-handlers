@@ -1,5 +1,6 @@
 """Device handler for Yale Zigbee Network Modules."""
 
+from zigpy import types as t
 from zigpy.zcl.clusters.closures import DoorLock
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -31,6 +32,12 @@ def sound_volume_converter(level: int | None) -> str | None:
     }
     return mapping.get(level, f"Unknown ({level})")
 
+class yale_lock_mode(t.enum8):
+    """Lock operation mode enum."""
+
+    Normal = 0x00
+    Vacation = 0x01
+    Privacy = 0x02
 
 (
     QuirkBuilder("Yale", "YRD220/240 TSDB")
@@ -70,6 +77,14 @@ def sound_volume_converter(level: int | None) -> str | None:
         unique_id_suffix="button_privacy",
         translation_key="button_privacy",
         fallback_name="Button privacy",
+    )
+    .enum(
+        attribute_name=DoorLock.AttributeDefs.operating_mode.name,
+        cluster_id=DoorLock.cluster_id,
+        enum_class=yale_lock_mode,
+        unique_id_suffix="operating_mode",
+        translation_key="operating_mode",
+        fallback_name="Operating mode",
     )
     .number(
         attribute_name=DoorLock.AttributeDefs.auto_relock_time.name,
