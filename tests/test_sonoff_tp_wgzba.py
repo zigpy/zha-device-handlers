@@ -825,6 +825,43 @@ async def test_tp_wgzba_private_virtual_writes(tp_wgzba_device):
     assert private_cluster.get(defs.external_temperature_sensor.name) is True
 
 
+async def test_tp_wgzba_failed_vendor_writes_do_not_update_cache(tp_wgzba_device):
+    """Test failed packed and linkage writes leave their raw caches unchanged."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    writes = (
+        (
+            defs.temperature_control_threshold_low.name,
+            -10,
+            defs.temperature_control_threshold,
+        ),
+        (defs.external_temperature_input.name, 2150, defs.remote_attribute_linkage),
+        (
+            defs.radar_do_not_disturb_period.name,
+            b"bad",
+            defs.radar_do_not_disturb_period,
+        ),
+    )
+
+    # Each virtual write must preserve the corresponding raw cache on failure.
+    for attribute_name, value, raw_attribute in writes:
+        failure = [
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, raw_attribute.id
+                )
+            ]
+        ]
+        with mock.patch.object(
+            private_cluster,
+            "write_attributes_raw",
+            mock.AsyncMock(return_value=failure),
+        ):
+            result = await private_cluster.write_attributes({attribute_name: value})
+        assert result == failure
+        assert private_cluster.get(raw_attribute.name) is None
+
+
 async def test_tp_wgzba_private_ui_commands(tp_wgzba_device):
     """Test temporary and weekly schedule UI command dispatch."""
     endpoint = tp_wgzba_device.endpoints[1]

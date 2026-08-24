@@ -11,7 +11,7 @@ except ImportError:
     # Keep custom quirks compatible with older ZHA releases.
     from zha.application.platforms.number.device_class import NumberMode
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ReportingConfig, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import (
@@ -110,6 +110,10 @@ TEMPORARY_MODE_UI_TARGET_TEMP_MIN_X100 = 500
 TEMPORARY_MODE_UI_TARGET_TEMP_MAX_X100 = 3000
 EXTERNAL_TEMPERATURE_INPUT_MIN_X100 = 0
 EXTERNAL_TEMPERATURE_INPUT_MAX_X100 = 9990
+REMOTE_TEMPERATURE_UNBIND_PAYLOAD = bytes((0x01, 0x01, 0x00, 0x01, 0x01, 0x00))
+REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD = bytes(
+    (0x01, 0x01, 0x00, 0x01, 0x03, 0x02, 0x00, 0x00)
+)
 
 WEEKLY_SCHEDULE_UI_TEMP_MIN_X100 = 500
 WEEKLY_SCHEDULE_UI_TEMP_MAX_X100 = 3000
@@ -471,12 +475,12 @@ class SonoffTPWGZBAThermostatCluster(CustomCluster, Thermostat):
         return await super().write_attributes(mapped_attributes, **kwargs)
 
     async def configure_reporting_multiple(
-        self, config: dict[foundation.ZCLAttributeDef, foundation.ReportingConfig]
+        self, config: dict[foundation.ZCLAttributeDef, ReportingConfig]
     ) -> dict[foundation.ZCLAttributeDef, foundation.Status]:
         """Skip reporting configuration for local_temperature."""
 
         skipped: dict[foundation.ZCLAttributeDef, foundation.Status] = {}
-        remaining: dict[foundation.ZCLAttributeDef, foundation.ReportingConfig] = {}
+        remaining: dict[foundation.ZCLAttributeDef, ReportingConfig] = {}
 
         for attr_def, reporting_config in config.items():
             if attr_def.id == THERMOSTAT_LOCAL_TEMPERATURE_ATTR_ID:
@@ -1049,12 +1053,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             self._update_attribute(attr_def.id, WEEKLY_SCHEDULE_UI_TEMP_MIN_X100)
 
     async def configure_reporting_multiple(
-        self, config: dict[foundation.ZCLAttributeDef, foundation.ReportingConfig]
+        self, config: dict[foundation.ZCLAttributeDef, ReportingConfig]
     ) -> dict[foundation.ZCLAttributeDef, foundation.Status]:
         """Map virtual reporting to real attrs and skip unsupported raw NTC reporting."""
 
         skipped: dict[foundation.ZCLAttributeDef, foundation.Status] = {}
-        remaining: dict[foundation.ZCLAttributeDef, foundation.ReportingConfig] = {}
+        remaining: dict[foundation.ZCLAttributeDef, ReportingConfig] = {}
         hvac_message_attr = self.AttributeDefs.hvac_message_notification
         ntc_temperature_attr = self.AttributeDefs.current_ntc_temperature_raw
         device_work_mode_source_attr = self.AttributeDefs.device_work_mode_source
@@ -1624,6 +1628,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             parsed += 1
 
             if tlv_type != 0x01 or tlv_length != 0x03 or len(data) != 0x03:
+                if tlv_type == 0x01 and tlv_length == 0x01 and data == b"\x00":
+                    return TemperatureSensorSelect.internal, external_temperature
                 continue
 
             try:
@@ -2229,6 +2235,98 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             self._update_device_work_mode_from_system(mode)
         return result
 
+    async def _write_remote_temperature_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs: Any,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Pack virtual remote-temperature fields and write their vendor payload."""
+
+        # Remove virtual fields before forwarding the remaining attributes.
+        has_external_temperature_sensor, external_temperature_sensor_value = (
+            self._pop_attribute_value(
+                attributes, self.AttributeDefs.external_temperature_sensor
+            )
+        )
+        has_sensor_select, sensor_select_value = self._pop_attribute_value(
+            attributes, self.AttributeDefs.temperature_sensor_select
+        )
+        has_external_temperature, external_temperature_value = (
+            self._pop_attribute_value(
+                attributes, self.AttributeDefs.external_temperature_input
+            )
+        )
+        if not (
+            has_external_temperature_sensor
+            or has_sensor_select
+            or has_external_temperature
+        ):
+            return []
+
+        if (
+            has_external_temperature_sensor
+            and not bool(external_temperature_sensor_value)
+            and not has_sensor_select
+            and not has_external_temperature
+        ):
+            raw_value = REMOTE_TEMPERATURE_UNBIND_PAYLOAD
+        elif (
+            has_external_temperature_sensor
+            and bool(external_temperature_sensor_value)
+            and not has_sensor_select
+            and not has_external_temperature
+        ):
+            raw_value = REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD
+        else:
+            current_sensor_select, current_external_temperature = (
+                self._decode_remote_attribute_linkage(
+                    self.get(self.AttributeDefs.remote_attribute_linkage.name)
+                )
+            )
+            new_sensor_select = (
+                TemperatureSensorSelect.external
+                if bool(external_temperature_sensor_value)
+                else TemperatureSensorSelect.internal
+                if has_external_temperature_sensor
+                else TemperatureSensorSelect(int(sensor_select_value))
+                if has_sensor_select
+                else TemperatureSensorSelect.external
+                if has_external_temperature
+                and bool(self.get(self.AttributeDefs.external_temperature_sensor.name))
+                else current_sensor_select
+            )
+            new_external_temperature = (
+                self._clamp(
+                    self._coerce_int(external_temperature_value),
+                    EXTERNAL_TEMPERATURE_INPUT_MIN_X100,
+                    EXTERNAL_TEMPERATURE_INPUT_MAX_X100,
+                )
+                if has_external_temperature
+                else current_external_temperature
+            )
+            if (
+                (has_external_temperature_sensor or has_sensor_select)
+                and new_sensor_select != TemperatureSensorSelect.internal
+                and not has_external_temperature
+                and self.get(self.AttributeDefs.remote_attribute_linkage.name) is None
+            ):
+                raise ValueError(
+                    "external_temperature_input must be set before switching to an external temperature source"
+                )
+            raw_value = self._encode_remote_attribute_linkage(
+                new_sensor_select, new_external_temperature
+            )
+
+        write_result = await super().write_attributes(
+            {self.AttributeDefs.remote_attribute_linkage.id: raw_value},
+            **kwargs,
+        )
+        if _write_succeeded(write_result):
+            self._update_attribute(
+                self.AttributeDefs.remote_attribute_linkage.id, raw_value
+            )
+        return write_result
+
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
@@ -2358,67 +2456,9 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
             )
 
-        has_external_temperature_sensor, external_temperature_sensor_value = (
-            self._pop_attribute_value(
-                remaining_attributes, self.AttributeDefs.external_temperature_sensor
-            )
+        result += await self._write_remote_temperature_attributes(
+            remaining_attributes, **kwargs
         )
-        has_sensor_select, sensor_select_value = self._pop_attribute_value(
-            remaining_attributes, self.AttributeDefs.temperature_sensor_select
-        )
-        has_external_temperature, external_temperature_value = (
-            self._pop_attribute_value(
-                remaining_attributes, self.AttributeDefs.external_temperature_input
-            )
-        )
-        if (
-            has_external_temperature_sensor
-            or has_sensor_select
-            or has_external_temperature
-        ):
-            current_sensor_select, current_external_temperature = (
-                self._decode_remote_attribute_linkage(
-                    self.get(self.AttributeDefs.remote_attribute_linkage.name)
-                )
-            )
-            new_sensor_select = (
-                TemperatureSensorSelect.external
-                if bool(external_temperature_sensor_value)
-                else TemperatureSensorSelect.internal
-                if has_external_temperature_sensor
-                else TemperatureSensorSelect(int(sensor_select_value))
-                if has_sensor_select
-                else current_sensor_select
-            )
-            new_external_temperature = (
-                self._clamp(
-                    self._coerce_int(external_temperature_value),
-                    EXTERNAL_TEMPERATURE_INPUT_MIN_X100,
-                    EXTERNAL_TEMPERATURE_INPUT_MAX_X100,
-                )
-                if has_external_temperature
-                else current_external_temperature
-            )
-            if (
-                (has_external_temperature_sensor or has_sensor_select)
-                and new_sensor_select != TemperatureSensorSelect.internal
-                and not has_external_temperature
-                and self.get(self.AttributeDefs.remote_attribute_linkage.name) is None
-            ):
-                raise ValueError(
-                    "external_temperature_input must be set before switching to an external temperature source"
-                )
-
-            raw_value = self._encode_remote_attribute_linkage(
-                new_sensor_select, new_external_temperature
-            )
-            result += await super().write_attributes(
-                {self.AttributeDefs.remote_attribute_linkage.id: raw_value},
-                **kwargs,
-            )
-            self._update_attribute(
-                self.AttributeDefs.remote_attribute_linkage.id, raw_value
-            )
 
         packed_writes = (
             (
@@ -2476,8 +2516,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             new_first = normalize(first_value) if has_first else current_first
             new_second = normalize(second_value) if has_second else current_second
             raw_value = encode(new_first, new_second)
-            result += await super().write_attributes({raw_attr.id: raw_value}, **kwargs)
-            self._update_attribute(raw_attr.id, raw_value)
+            write_result = await super().write_attributes(
+                {raw_attr.id: raw_value}, **kwargs
+            )
+            result += write_result
+            if _write_succeeded(write_result):
+                self._update_attribute(raw_attr.id, raw_value)
 
         for raw_attr, start_attr, end_attr in (
             (
@@ -2509,8 +2553,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                         0 if cached_end is None else cached_end
                     ),
                 )
-            result += await super().write_attributes({raw_attr.id: raw_bytes}, **kwargs)
-            self._update_attribute(raw_attr.id, raw_bytes)
+            write_result = await super().write_attributes(
+                {raw_attr.id: raw_bytes}, **kwargs
+            )
+            result += write_result
+            if _write_succeeded(write_result):
+                self._update_attribute(raw_attr.id, raw_bytes)
 
         if remaining_attributes:
             result += await super().write_attributes(remaining_attributes, **kwargs)
