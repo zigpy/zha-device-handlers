@@ -630,8 +630,12 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
         pass
 ```
 
-## PR Requirements
+## Pull Request Requirements
 
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
 - Tests should verify entity creation
+
+  AI tools are welcome, but contributors are responsible for *fully*
+  understanding the code before submitting a PR. Please follow our AI policy:
+  https://developers.home-assistant.io/docs/ai_policy
