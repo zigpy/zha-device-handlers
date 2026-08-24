@@ -864,9 +864,6 @@ def _sonoff_trvzbt_build_editor_payload(cluster):
         transitions.append((transition_time, heat_setpoint))
         previous_time = transition_time
 
-    if not transitions:
-        raise ValueError("weekly schedule time slot 1 must be 00:00")
-
     if transitions[0][0] != 0:
         raise ValueError("the first schedule period must start at 00:00")
 
