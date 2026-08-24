@@ -634,3 +634,323 @@ def test_trv_zbt_protocol_error_guards():
         trv_zbt._sonoff_trvzbt_uint16(-1, "value")
     with pytest.raises(ValueError, match="int16"):
         trv_zbt._sonoff_trvzbt_int16(32768, "value")
+
+
+async def test_trv_zbt_schedule_editor_edge_cases(zigpy_device_from_v2_quirk):
+    """Schedule editor normalizes invalid local values and rejects bad payloads."""
+
+    cluster, _thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    day_attr = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_DAY_ATTR
+    first_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[1]
+    second_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[2]
+    first_temperature = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TEMP_ATTRS[1]
+
+    cluster._update_attribute(day_attr, "invalid")
+    assert (
+        trv_zbt._sonoff_trvzbt_get_attr(cluster, day_attr)
+        in trv_zbt.SONOFF_TRVZBT_SCHEDULE_DAY_LOOKUP
+    )
+
+    cluster._update_attribute(
+        first_time, trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_NULL_TIME
+    )
+    with pytest.raises(ValueError, match="slot 1"):
+        trv_zbt._sonoff_trvzbt_validate_schedule_times(cluster)
+    with pytest.raises(ValueError, match="slot 1"):
+        trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+
+    cluster._update_attribute(first_time, 0)
+    cluster._update_attribute(
+        second_time, trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_NULL_TIME
+    )
+    trv_zbt._sonoff_trvzbt_validate_schedule_times(cluster)
+    cluster._update_attribute(second_time, 1440)
+    with pytest.raises(ValueError, match="below"):
+        trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+
+    cluster._update_attribute(second_time, 120)
+    cluster._update_attribute(first_temperature, 400)
+    with pytest.raises(ValueError, match="5.0-30.0"):
+        trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+
+
+async def test_trv_zbt_schedule_editor_ignores_unselected_or_empty_data(
+    zigpy_device_from_v2_quirk,
+):
+    """Schedule responses only populate the selected editor group and day."""
+
+    cluster, _thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    day = trv_zbt._sonoff_trvzbt_get_attr(
+        cluster, trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_DAY_ATTR
+    )
+    empty = {"editor_transitions": []}
+    trv_zbt._sonoff_trvzbt_update_editor_from_schedule(cluster, empty)
+
+    ignored = {
+        "editor_transitions": [(0, 1600)],
+        "active_num": 1,
+        "day_of_week": day,
+    }
+    trv_zbt._sonoff_trvzbt_update_editor_from_schedule(cluster, ignored)
+
+    selected = {
+        "editor_transitions": [(0, 1600), (0, 1700)],
+        "active_num": 0,
+        "day_of_week": day,
+    }
+    trv_zbt._sonoff_trvzbt_update_editor_from_schedule(cluster, selected)
+    assert (
+        cluster._attr_cache[trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_COUNT_ATTR]
+        == 2
+    )
+    assert trv_zbt._sonoff_trvzbt_load_cached_schedule(cluster) is None
+
+
+async def test_trv_zbt_temporary_mode_zero_duration_and_local_failures(
+    zigpy_device_from_v2_quirk,
+):
+    """Zero-duration Boost and unavailable thermostat paths stay deterministic."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    parent_write = mock.AsyncMock(return_value=({}, {}))
+    with (
+        mock.patch.object(trv_zbt.asyncio, "sleep", mock.AsyncMock()),
+        mock.patch.object(trv_zbt.CustomCluster, "write_attributes", parent_write),
+    ):
+        cluster._update_attribute(
+            trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR,
+            trv_zbt.SonoffTemporaryModeEditor.Boost,
+        )
+        cluster._update_attribute(
+            trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 0
+        )
+        await cluster.temporary_mode_apply()
+
+        exit_mode = mock.AsyncMock()
+        with mock.patch.object(cluster, "temporary_mode_exit", exit_mode):
+            cluster._update_attribute(
+                trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR,
+                trv_zbt.SonoffTemporaryModeEditor.None_,
+            )
+            await cluster.temporary_mode_apply()
+        exit_mode.assert_awaited_once()
+
+    cluster.endpoint.in_clusters.pop(thermostat.cluster_id)
+    with pytest.raises(ValueError, match="thermostat cluster"):
+        await cluster.temporary_mode_exit()
+    with pytest.raises(ValueError, match="thermostat cluster"):
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.local_temperature_offset.name: 1}
+        )
+
+
+async def test_trv_zbt_invalid_direct_writes_and_private_fallbacks(
+    zigpy_device_from_v2_quirk,
+):
+    """Direct writes validate duration values and unknown private data is ignored."""
+
+    cluster, _thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    mode = cluster.AttributeDefs.temporary_mode.name
+    duration = cluster.AttributeDefs.temporary_mode_duration.name
+    with pytest.raises(ValueError, match="must not be negative"):
+        await cluster.write_attributes(
+            {mode: trv_zbt.SonoffTemporaryMode.Boost, duration: -1}
+        )
+    with pytest.raises(ValueError, match="whole number"):
+        await cluster.write_attributes(
+            {mode: trv_zbt.SonoffTemporaryMode.Timer, duration: 1}
+        )
+
+    header = foundation.ZCLHeader()
+    with (
+        mock.patch.object(cluster, "_sonoff_trvzbt_schedule_temporary_mode_read"),
+        mock.patch.object(cluster, "_sonoff_trvzbt_schedule_device_work_mode_read"),
+    ):
+        header.command_id = 0x13
+        assert cluster.handle_cluster_request(header, [b"\x01"]) is None
+
+
+async def test_trv_zbt_editor_and_read_guard_paths(zigpy_device_from_v2_quirk):
+    """Invalid editor inputs are normalized and missing clusters do not crash reads."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    day_name = cluster.AttributeDefs.schedule_editor_day.name
+    day_attr = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_DAY_ATTR
+    first_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[1]
+    second_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[2]
+
+    cluster._update_attribute(day_attr, 99)
+    assert (
+        trv_zbt._sonoff_trvzbt_get_attr(cluster, day_attr)
+        in trv_zbt.SONOFF_TRVZBT_SCHEDULE_DAY_LOOKUP
+    )
+    cluster._update_attribute(first_time, 0)
+    cluster._update_attribute(second_time, 1440)
+    with pytest.raises(ValueError, match="below 24:00"):
+        trv_zbt._sonoff_trvzbt_validate_schedule_times(cluster)
+
+    cluster._sonoff_trvzbt_schedule_cache = {}
+    assert trv_zbt._sonoff_trvzbt_load_cached_schedule(cluster) is None
+    replaced = type(
+        "Entity",
+        (),
+        {"unique_id_suffix": "local_temperature_calibration", "cluster_id": None},
+    )()
+    assert trv_zbt._sonoff_trvzbt_is_replaced_default_entity(replaced)
+    assert not trv_zbt._sonoff_trvzbt_is_replaced_default_entity(object())
+
+    await cluster.write_attributes({day_name: "invalid"})
+    await cluster.write_attributes({day_attr: "invalid"})
+    await cluster.write_attributes(
+        {cluster.AttributeDefs.temporary_mode_editor_duration.name: 120}
+    )
+
+    cluster.endpoint.in_clusters.pop(thermostat.cluster_id)
+    success, failure = await cluster.read_attributes(
+        [cluster.AttributeDefs.local_temperature_offset.name]
+    )
+    assert not failure
+    assert cluster.AttributeDefs.local_temperature_offset.name in success
+
+
+async def test_trv_zbt_delayed_reads_and_temporary_state_guards(
+    zigpy_device_from_v2_quirk,
+):
+    """Retry readers and temporary-state helpers handle unavailable data safely."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    completed_task = mock.Mock()
+    completed_task.done.return_value = False
+    cluster._sonoff_trvzbt_temporary_mode_read_task = completed_task
+    cluster._sonoff_trvzbt_device_work_mode_read_task = completed_task
+    cluster._sonoff_trvzbt_schedule_temporary_mode_read()
+    cluster._sonoff_trvzbt_schedule_device_work_mode_read()
+
+    with mock.patch.object(trv_zbt.asyncio, "sleep", mock.AsyncMock()):
+        cluster.read_attributes = mock.AsyncMock(return_value=({}, {}))
+        await cluster._sonoff_trvzbt_read_temporary_mode_later(delay=0)
+        await cluster._sonoff_trvzbt_read_device_work_mode_later(delay=0)
+
+        cluster._update_attribute(
+            cluster.AttributeDefs.temporary_mode.id,
+            trv_zbt.SonoffTemporaryMode.Boost,
+        )
+        await cluster._sonoff_trvzbt_capture_pre_temporary_state()
+        cluster._update_attribute(cluster.AttributeDefs.temporary_mode.id, "invalid")
+
+        cluster.endpoint.in_clusters.pop(thermostat.cluster_id)
+        await cluster._sonoff_trvzbt_capture_pre_temporary_state()
+
+
+async def test_trv_zbt_temporary_timer_and_exit_failure_paths(
+    zigpy_device_from_v2_quirk,
+):
+    """Temporary mode preserves state when the optional thermostat restore fails."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    with mock.patch.object(trv_zbt.asyncio, "sleep", mock.AsyncMock()):
+        cluster._update_attribute(
+            trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR,
+            trv_zbt.SonoffTemporaryModeEditor.Timer,
+        )
+        cluster._update_attribute(
+            trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 1441 * 60
+        )
+        with pytest.raises(ValueError, match="0-1440"):
+            await cluster.temporary_mode_apply()
+
+        cluster._sonoff_trvzbt_pre_temporary_state = {
+            "occupied_heating_setpoint": 2000,
+            "system_mode": 4,
+        }
+        thermostat.sonoff_trvzbt_send_setpoint_signal = mock.AsyncMock(
+            return_value=2000
+        )
+        thermostat.write_attributes = mock.AsyncMock(
+            side_effect=RuntimeError("offline")
+        )
+        with (
+            mock.patch.object(cluster, "_sonoff_trvzbt_schedule_temporary_mode_read"),
+            mock.patch.object(cluster, "_sonoff_trvzbt_schedule_device_work_mode_read"),
+        ):
+            await cluster.temporary_mode_exit()
+    assert cluster._sonoff_trvzbt_pre_temporary_state is not None
+
+
+async def test_trv_zbt_private_command_falls_back_for_unknown_commands(
+    zigpy_device_from_v2_quirk,
+):
+    """Unknown private commands retain the parent cluster behavior."""
+
+    cluster, _thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    header = foundation.ZCLHeader()
+    header.command_id = 0x7F
+    with mock.patch.object(
+        trv_zbt.CustomCluster, "handle_cluster_request", return_value="parent"
+    ):
+        assert cluster.handle_cluster_request(header, []) == "parent"
+
+
+async def test_trv_zbt_remaining_schedule_and_attribute_guards(
+    zigpy_device_from_v2_quirk,
+):
+    """Remaining schedule and local-attribute guards preserve valid editor data."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    first_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[1]
+    second_time = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_PERIOD_TIME_ATTRS[2]
+    day_attr = trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_DAY_ATTR
+
+    cluster._update_attribute(first_time, 0)
+    cluster._update_attribute(
+        second_time, trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_NULL_TIME
+    )
+    trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+    cluster._update_attribute(second_time, 0)
+    with pytest.raises(ValueError, match="strictly increasing"):
+        trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+
+    cluster._update_attribute(
+        second_time, trv_zbt.SONOFF_TRVZBT_SCHEDULE_EDITOR_NULL_TIME
+    )
+    cluster._update_attribute(first_time, 30)
+    with pytest.raises(ValueError, match="first schedule period"):
+        trv_zbt._sonoff_trvzbt_build_editor_payload(cluster)
+
+    cluster.endpoint.in_clusters.pop(trv_zbt.SONOFF_TRVZBT_PRIVATE_CLUSTER_ID)
+    assert not thermostat._is_boost_mode_active()
+    private_cluster = mock.Mock()
+    private_cluster._attr_cache = {
+        trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_ATTR: "not-a-mode"
+    }
+    cluster.endpoint.in_clusters[trv_zbt.SONOFF_TRVZBT_PRIVATE_CLUSTER_ID] = (
+        private_cluster
+    )
+    assert not thermostat._is_boost_mode_active()
+
+    cluster._attr_cache[day_attr] = "invalid"
+    success, failure = await cluster.read_attributes(
+        [cluster.AttributeDefs.schedule_editor_day.name]
+    )
+    assert not failure
+    assert success[cluster.AttributeDefs.schedule_editor_day.name] in (
+        trv_zbt.SONOFF_TRVZBT_SCHEDULE_DAY_LOOKUP
+    )
+
+    cluster._attr_cache[day_attr] = 99
+    success, failure = await cluster.read_attributes(
+        [cluster.AttributeDefs.schedule_editor_day.name]
+    )
+    assert not failure
+    assert success[cluster.AttributeDefs.schedule_editor_day.name] in (
+        trv_zbt.SONOFF_TRVZBT_SCHEDULE_DAY_LOOKUP
+    )
+
+    await cluster.write_attributes({cluster.AttributeDefs.schedule_editor_day.name: 99})
+    await cluster.write_attributes({day_attr: 99})
+    original_second_time = cluster._attr_cache[second_time]
+    with pytest.raises(ValueError, match="at least"):
+        await cluster.write_attributes(
+            {cluster.AttributeDefs.schedule_period_2_time.name: 0}
+        )
+    assert cluster._attr_cache[second_time] == original_second_time
