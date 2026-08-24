@@ -39,7 +39,6 @@ ACTION_MOVEMENT = "movement"
 ACTION_VIBRATION = "vibration"
 ACTION_ORIENTATION = "orientation"
 ACTION_FALL = "fall"
-ACTION_STATIC = "static"
 
 # The five primary events arrive on the DoorLock cluster (0x0101) attribute 0x0055.
 ACTION_ATTR_ID = 0x0055
@@ -90,14 +89,10 @@ class DevicePosture(t.enum8):
 class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer-specific cluster (0xFCC0) for the P100.
 
-    Holds the configuration attributes and the 'static' state flag. Battery is
-    parsed from the periodic Aqara heartbeat blob (0x00F7) by the inherited
-    XiaomiCluster handling and forwarded to XiaomiPowerConfigurationPercent.
+    Holds the configuration attributes. Battery is parsed from the periodic
+    Aqara heartbeat blob (0x00F7) by the inherited XiaomiCluster handling and
+    forwarded to XiaomiPowerConfigurationPercent.
     """
-
-    # The "static" event has no representation on the DoorLock cluster; it is
-    # signalled by attribute 0x01F3 transitioning to 1 once the device settles.
-    STATIC_STATE_ATTR_ID = 0x01F3
 
     class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
         """Attribute definitions.
@@ -157,6 +152,9 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
             access="rp",
             manufacturer_code=0x115F,
         )
+        # Defined for completeness only, deliberately not exposed: upstream
+        # documents that this fires true on every detection and never resets,
+        # so it carries no signal beyond the regular action events.
         static_state: Final = ZCLAttributeDef(
             id=0x01F3, type=t.uint8_t, access="rp", manufacturer_code=0x115F
         )
@@ -164,11 +162,6 @@ class P100ManufacturerCluster(XiaomiAqaraE1Cluster):
         aqara_attributes: Final = ZCLAttributeDef(
             id=0x00F7, type=t.LVBytes, is_manufacturer_specific=True
         )
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.STATIC_STATE_ATTR_ID and value == 1:
-            self.listener_event(ZHA_SEND_EVENT, ACTION_STATIC, {})
 
 
 class P100ActionCluster(CustomCluster, DoorLock):
@@ -323,7 +316,6 @@ def _is_default_switch(entity: Any) -> bool:
             (ACTION_VIBRATION, ACTION_VIBRATION): {COMMAND: ACTION_VIBRATION},
             (ACTION_ORIENTATION, ACTION_ORIENTATION): {COMMAND: ACTION_ORIENTATION},
             (ACTION_FALL, ACTION_FALL): {COMMAND: ACTION_FALL},
-            (ACTION_STATIC, ACTION_STATIC): {COMMAND: ACTION_STATIC},
         }
     )
     .add_to_registry()

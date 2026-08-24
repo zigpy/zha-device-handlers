@@ -18,7 +18,6 @@ from zhaquirks.xiaomi.aqara.multi_sensor_p100 import (
     ACTION_FALL,
     ACTION_MOVEMENT,
     ACTION_ORIENTATION,
-    ACTION_STATIC,
     ACTION_TRIPLE_TAP,
     ACTION_VIBRATION,
     P100ActionCluster,
@@ -78,20 +77,24 @@ def test_p100_unknown_action_is_ignored(p100_device):
     assert zha_listener.zha_send_event.mock_calls == []
 
 
-def test_p100_static_event(p100_device):
-    """The manufacturer cluster 0x01F3 flag emits a 'static' action."""
+def test_p100_no_synthetic_static_event(p100_device):
+    """Repeated 0x01F3 reports must not emit any event.
+
+    Upstream documents that this attribute fires true on every detection and
+    never resets, so treating it as a transition would emit a spurious extra
+    event alongside each real action, duplicated on every repeat report.
+    """
     opple_cluster = p100_device.endpoints[1].opple_cluster
     assert isinstance(opple_cluster, P100ManufacturerCluster)
 
     zha_listener = mock.MagicMock()
     opple_cluster.add_listener(zha_listener)
 
-    opple_cluster.update_attribute(P100ManufacturerCluster.STATIC_STATE_ATTR_ID, 1)
-    assert zha_listener.zha_send_event.mock_calls == [mock.call(ACTION_STATIC, {})]
+    static_state_id = P100ManufacturerCluster.AttributeDefs.static_state.id
+    opple_cluster.update_attribute(static_state_id, 1)
+    opple_cluster.update_attribute(static_state_id, 1)
+    opple_cluster.update_attribute(static_state_id, 0)
 
-    # A 0 value should not emit anything.
-    zha_listener.reset_mock()
-    opple_cluster.update_attribute(P100ManufacturerCluster.STATIC_STATE_ATTR_ID, 0)
     assert zha_listener.zha_send_event.mock_calls == []
 
 
