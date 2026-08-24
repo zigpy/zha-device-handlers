@@ -383,3 +383,18 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+(
+    TuyaQuirkBuilder("_TZE284_hdml1aav", "TS0601")  # ZS-300TF / ZS-301 soil sensor
+    .applies_to("_TZE2841000000_hdml1aav", "TS0601")  # corrupted manufacturer ID
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102, converter=lambda x: x)
+    .tuya_electrical_conductivity(dp_id=112)
+    .tuya_battery(dp_id=15)
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
