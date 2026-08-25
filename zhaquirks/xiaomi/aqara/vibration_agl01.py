@@ -21,7 +21,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -44,6 +44,10 @@ TRIPLE_TAP = "triple_tap"
 
 # Xiaomi manufacturer attribute ID for vibration
 XIAOMI_VIBRATION_ATTR = 0x0118  # Decimal 280
+
+# Local-only IAS Zone attribute used to configure the binary sensor reset timer.
+VIBRATION_RESET_TIMEOUT = 0xFFF0
+DEFAULT_VIBRATION_RESET_TIMEOUT = 70
 
 
 class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
@@ -84,11 +88,39 @@ class VibrationMultistateInput(EventableCluster, MultistateInput):
 class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Exposes vibration as binary_sensor with device_class: vibration.
 
-    Auto-resets to off after 70 seconds.
+    Auto-resets to off after the locally configured timeout.
     """
 
+    class AttributeDefs(IasZone.AttributeDefs):
+        """Attribute definitions."""
+
+        vibration_reset_timeout: Final = ZCLAttributeDef(
+            id=VIBRATION_RESET_TIMEOUT,
+            type=t.uint16_t,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
-    reset_s = 70
+    _DEFAULT_VALUES = {
+        AttributeDefs.vibration_reset_timeout.id: DEFAULT_VIBRATION_RESET_TIMEOUT
+    }
+    reset_s = DEFAULT_VIBRATION_RESET_TIMEOUT
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the reset timeout from the local attribute cache."""
+        super().__init__(*args, **kwargs)
+        self.reset_s = int(
+            self.get(
+                self.AttributeDefs.vibration_reset_timeout.id,
+                DEFAULT_VIBRATION_RESET_TIMEOUT,
+            )
+        )
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == self.AttributeDefs.vibration_reset_timeout.id:
+            self.reset_s = int(value)
 
 
 class VibrationAGL01(CustomZigpyDevice):
@@ -112,6 +144,18 @@ class VibrationAGL01(CustomZigpyDevice):
         XiaomiVibrationCluster,
         cluster_id=IasZone.cluster_id,
         endpoint_id=2,
+    )
+    .number(
+        attribute_name=MotionCluster.AttributeDefs.vibration_reset_timeout.name,
+        cluster_id=IasZone.cluster_id,
+        min_value=1,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        mode="box",
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="vibration_reset_timeout",
+        fallback_name="Vibration reset timeout",
     )
     .device_automation_triggers(
         {

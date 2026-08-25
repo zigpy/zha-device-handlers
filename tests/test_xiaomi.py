@@ -116,7 +116,12 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
-from zhaquirks.xiaomi.aqara.vibration_agl01 import XIAOMI_VIBRATION_ATTR, VibrationAGL01
+from zhaquirks.xiaomi.aqara.vibration_agl01 import (
+    DEFAULT_VIBRATION_RESET_TIMEOUT,
+    XIAOMI_VIBRATION_ATTR,
+    MotionCluster as VibrationMotionCluster,
+    VibrationAGL01,
+)
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
@@ -2766,6 +2771,10 @@ async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
     assert isinstance(device, VibrationAGL01)
     # EP1: MotionCluster exposes the binary_sensor entity
     assert device.endpoints[1].ias_zone is not None
+    assert (
+        device.endpoints[1].ias_zone.get("vibration_reset_timeout")
+        == DEFAULT_VIBRATION_RESET_TIMEOUT
+    )
     # EP2: vibration event clusters
     assert device.endpoints[2].multistate_input is not None
     assert device.endpoints[2].opple_cluster is not None
@@ -2781,6 +2790,22 @@ async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
             ENDPOINT_ID: 2,
         },
     }
+
+
+async def test_vibration_reset_timeout_configuration(zigpy_device_from_v2_quirk):
+    """Test that the local reset timeout can be configured through its attribute."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    motion_cluster = device.endpoints[1].ias_zone
+
+    result = await motion_cluster.write_attributes({"vibration_reset_timeout": 15})
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert motion_cluster.get("vibration_reset_timeout") == 15
+    assert motion_cluster.reset_s == 15
+    assert (
+        VibrationMotionCluster.AttributeDefs.vibration_reset_timeout.id
+        in motion_cluster._attr_cache
+    )
 
 
 async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_v2_quirk):
