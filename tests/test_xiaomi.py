@@ -119,8 +119,10 @@ from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSett
 from zhaquirks.xiaomi.aqara.vibration_agl01 import (
     DEFAULT_VIBRATION_RESET_TIMEOUT,
     XIAOMI_VIBRATION_ATTR,
+    AqaraVibrationSensitivity,
     MotionCluster as VibrationMotionCluster,
     VibrationAGL01,
+    XiaomiVibrationConfigurationCluster,
 )
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -2778,6 +2780,13 @@ async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
     # EP2: vibration event clusters
     assert device.endpoints[2].multistate_input is not None
     assert device.endpoints[2].opple_cluster is not None
+    configuration_cluster = device.endpoints[1].opple_cluster
+    assert isinstance(configuration_cluster, XiaomiVibrationConfigurationCluster)
+    sensitivity = configuration_cluster.AttributeDefs.sensitivity_adjustment
+    assert sensitivity.id == 0x010E
+    assert sensitivity.type is AqaraVibrationSensitivity
+    assert sensitivity.zcl_type is DataTypeId.uint8
+    assert sensitivity.manufacturer_code == 0x115F
     assert device.device_automation_triggers == {
         ("vibration", "vibration"): {
             COMMAND: "vibration",

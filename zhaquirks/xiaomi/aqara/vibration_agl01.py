@@ -18,7 +18,7 @@ from typing import Final
 import zigpy.types as t
 from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster, MotionOnEvent
 from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
@@ -48,6 +48,29 @@ XIAOMI_VIBRATION_ATTR = 0x0118  # Decimal 280
 # Local-only IAS Zone attribute used to configure the binary sensor reset timer.
 VIBRATION_RESET_TIMEOUT = 0xFFF0
 DEFAULT_VIBRATION_RESET_TIMEOUT = 70
+
+
+class AqaraVibrationSensitivity(t.enum8):
+    """Aqara vibration sensitivity levels."""
+
+    High = 0x01
+    Medium = 0x02
+    Low = 0x03
+
+
+class XiaomiVibrationConfigurationCluster(XiaomiAqaraE1Cluster):
+    """Hidden Xiaomi manufacturer cluster used to configure the sensor."""
+
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Manufacturer-specific configuration attributes."""
+
+        sensitivity_adjustment: Final = ZCLAttributeDef(
+            id=0x010E,
+            type=AqaraVibrationSensitivity,
+            zcl_type=DataTypeId.uint8,
+            access="w",
+            manufacturer_code=0x115F,
+        )
 
 
 class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
@@ -137,7 +160,7 @@ class VibrationAGL01(CustomZigpyDevice):
     .device_class(VibrationAGL01)
     .replaces(BasicCluster)
     .replaces(XiaomiPowerConfiguration)
-    .adds(XiaomiAqaraE1Cluster)
+    .adds(XiaomiVibrationConfigurationCluster)
     .replaces(MotionCluster)
     .replaces(VibrationMultistateInput, endpoint_id=2)
     .replaces(
@@ -156,6 +179,13 @@ class VibrationAGL01(CustomZigpyDevice):
         device_class=NumberDeviceClass.DURATION,
         translation_key="vibration_reset_timeout",
         fallback_name="Vibration reset timeout",
+    )
+    .enum(
+        attribute_name=XiaomiVibrationConfigurationCluster.AttributeDefs.sensitivity_adjustment.name,
+        enum_class=AqaraVibrationSensitivity,
+        cluster_id=XiaomiVibrationConfigurationCluster.cluster_id,
+        translation_key="sensitivity_adjustment",
+        fallback_name="Sensitivity adjustment",
     )
     .device_automation_triggers(
         {
