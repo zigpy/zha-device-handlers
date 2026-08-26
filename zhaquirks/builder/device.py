@@ -47,6 +47,17 @@ class QuirkV2Device(Device):
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
 
+    async def async_initialize(self, *args: Any, **kwargs: Any) -> None:
+        """Device initialize override."""
+        app = self.gateway.application_controller
+
+        # Subscribe to groups before we hand off to zigpy, in case downstream init
+        # requires group membership
+        for group_id in self._quirk_definition.multicast_groups:
+            await app.subscribe_to_multicast_group(group_id)
+
+        await super().async_initialize(*args, **kwargs)
+
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
 

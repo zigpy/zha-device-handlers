@@ -2,10 +2,11 @@
 
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, sentinel
+from unittest.mock import AsyncMock, call, patch, sentinel
 
 from frozendict import frozendict
 import pytest
+from zha.application.gateway import Gateway
 from zha.quirks import DeviceRegistry
 from zigpy.const import (
     SIG_ENDPOINTS,
@@ -26,11 +27,14 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.builder.metadata import recursive_freeze
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import signature_matches
+
+from .conftest import MockApp
 
 
 @pytest.fixture(name="device_mock")
@@ -393,6 +397,65 @@ async def test_quirks_v2_skip_configuration(device_mock):
     # definition rather than on the resolved zigpy device.
     entry = registry.match_entry(quirked)
     assert entry.zha_device_factory.quirk_definition.skip_configuration is True
+
+
+async def test_quirks_v2_subscribes_to_multicast_group(device_mock):
+    """Test a quirk's declared multicast groups land on the quirk definition."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .subscribes_to_multicast_group(0x549A)
+        .subscribes_to_multicast_group(0x1234)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    entry = registry.match_entry(quirked)
+    assert entry.zha_device_factory.quirk_definition.multicast_groups == (
+        0x549A,
+        0x1234,
+    )
+
+
+async def test_quirks_v2_no_multicast_groups(device_mock):
+    """Test a quirk that declares no multicast groups has an empty tuple."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(OnOff.cluster_id)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    entry = registry.match_entry(quirked)
+    assert entry.zha_device_factory.quirk_definition.multicast_groups == ()
+
+
+async def test_quirks_v2_subscribes_to_multicast_group_on_initialize(
+    MockAppController: MockApp, device_mock: Device, zha_gateway: Gateway
+) -> None:
+    """Test `async_initialize` subscribes the coordinator to the declared groups."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .subscribes_to_multicast_group(0x549A)
+        .subscribes_to_multicast_group(0x549B)
+        .add_to_registry(registry)
+    )
+
+    zha_device = zha_gateway.get_or_create_device(registry.resolve(device_mock))
+    assert isinstance(zha_device, QuirkV2Device)
+
+    with patch.object(MockAppController, "_subscribe_to_multicast_group") as subscribe:
+        await zha_device.async_initialize(from_cache=True)
+
+    assert subscribe.mock_calls == [
+        call(group_id=0x549A, endpoint_id=1),
+        call(group_id=0x549B, endpoint_id=1),
+    ]
 
 
 async def test_quirks_v2_device_automation_triggers_on_zigpy_device(device_mock):
