@@ -1035,19 +1035,8 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaOnOffCluster(OnOff, EventableCluster):
-    """TuyaOnOffCluster: fire events corresponding to press type."""
-
-    rotate_type = {
-        0x00: RIGHT,
-        0x01: LEFT,
-        0x02: STOP,
-    }
-    press_type = {
-        0x00: SHORT_PRESS,
-        0x01: DOUBLE_PRESS,
-        0x02: LONG_PRESS,
-    }
+class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+    """Tuya Zigbee On Off cluster with extra attributes."""
 
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
@@ -1056,11 +1045,6 @@ class TuyaOnOffCluster(OnOff, EventableCluster):
         backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
         power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.last_tsn = -1
-        super().__init__(*args, **kwargs)
 
     class ServerCommandDefs(OnOff.ServerCommandDefs):
         """Server command definitions."""
@@ -1075,6 +1059,31 @@ class TuyaOnOffCluster(OnOff, EventableCluster):
             schema={"press_type": t.uint8_t},
             is_manufacturer_specific=True,
         )
+
+
+class TuyaSmartRemoteOnOffCluster(TuyaZBOnOffAttributeCluster, EventableCluster):
+    """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type.
+
+    Used on the client side (out_clusters) of Tuya remotes so button
+    presses become zha events, without affecting the plain
+    :class:`TuyaZBOnOffAttributeCluster` used by switches and plugs.
+    """
+
+    rotate_type = {
+        0x00: RIGHT,
+        0x01: LEFT,
+        0x02: STOP,
+    }
+    press_type = {
+        0x00: SHORT_PRESS,
+        0x01: DOUBLE_PRESS,
+        0x02: LONG_PRESS,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.last_tsn = -1
+        super().__init__(*args, **kwargs)
 
     def handle_cluster_request(
         self,
@@ -1097,12 +1106,12 @@ class TuyaOnOffCluster(OnOff, EventableCluster):
             self.debug("TS004X: send default response")
             self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
         # handle command
-        if hdr.command_id == 0xFC:
+        if hdr.command_id == self.ServerCommandDefs.rotate_type.id:
             rotate_type = args[0]
             self.listener_event(
                 ZHA_SEND_EVENT, self.rotate_type.get(rotate_type, "unknown"), []
             )
-        elif hdr.command_id == 0xFD:
+        elif hdr.command_id == self.ServerCommandDefs.press_type.id:
             press_type = args[0]
             self.listener_event(
                 ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []

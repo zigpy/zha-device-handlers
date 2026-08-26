@@ -21,10 +21,10 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
-    TuyaOnOffCluster,
     TuyaSwitch,
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -88,7 +88,7 @@ class Tuya_2G_Switch(TuyaSwitch):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
@@ -101,7 +101,7 @@ class Tuya_2G_Switch(TuyaSwitch):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
@@ -148,7 +148,7 @@ class Tuya_1G_Switch(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },

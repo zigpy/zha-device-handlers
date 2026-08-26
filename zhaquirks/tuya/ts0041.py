@@ -29,8 +29,9 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
-    TuyaOnOffCluster,
+    TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -61,7 +62,7 @@ class TuyaSmartRemote0041TO(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
@@ -103,7 +104,7 @@ class TuyaSmartRemote0041TI(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     Time.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -182,7 +183,7 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
             },
         },
@@ -233,7 +234,7 @@ class TuyaSmartRemote0041_var04(CustomDevice):
                     OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
@@ -287,7 +288,7 @@ class TuyaSmartRemote0041PollControl(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     Ota.cluster_id,
                 ],
             },

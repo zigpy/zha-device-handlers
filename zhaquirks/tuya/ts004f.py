@@ -60,8 +60,9 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNoBindPowerConfigurationCluster,
-    TuyaOnOffCluster,
+    TuyaSmartRemoteOnOffCluster,
     TuyaZBExternalSwitchTypeCluster,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -116,7 +117,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -125,7 +126,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -234,7 +235,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -243,7 +244,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -253,7 +254,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -261,7 +262,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -269,7 +270,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -369,7 +370,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
@@ -378,7 +379,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
                     Time.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -486,7 +487,7 @@ class TuyaSmartRemote004F(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    TuyaOnOffCluster,
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -495,7 +496,7 @@ class TuyaSmartRemote004F(EnchantedDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaOnOffCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
                 ],
