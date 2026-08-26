@@ -258,7 +258,7 @@ class TuyaSmartRemote0043TOPlusA(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -268,7 +268,7 @@ class TuyaSmartRemote0043TOPlusA(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -277,7 +277,7 @@ class TuyaSmartRemote0043TOPlusA(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     TuyaNoBindPowerConfigurationCluster,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
