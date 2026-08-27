@@ -254,7 +254,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -262,7 +262,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -270,7 +270,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
