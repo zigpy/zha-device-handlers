@@ -9,6 +9,13 @@ import enum
 import logging
 from typing import Any, Final
 
+from zha.application.platforms import (
+    AttrConfig,
+    ClusterConfig,
+    ClusterMatch,
+    register_entity,
+    select,
+)
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -1760,3 +1767,30 @@ class TuyaNewManufCluster(CustomCluster):
                     | value.value
                 )
             cluster.update_attribute(mapped_attr.attribute_name, value)
+
+
+@register_entity(TuyaZBOnOffAttributeCluster.cluster_id)
+class TuyaSwitchModeSelectEntity(select.ZCLEnumSelectEntity):
+    """Representation of a ZHA backlight mode select entity."""
+
+    _unique_id_suffix = "switch_mode"
+    _attribute_name = "switch_mode"
+    _enum = SwitchMode
+    _attr_translation_key: str = "switch_mode"
+
+    _cluster_match = ClusterMatch(
+        server_clusters=frozenset({TuyaZBOnOffAttributeCluster.cluster_id}),
+    )
+
+    _server_cluster_config = {
+        TuyaZBOnOffAttributeCluster.cluster_id: ClusterConfig(
+            attributes={
+                "switch_mode": AttrConfig(read_on_startup=False),
+            },
+        ),
+    }
+
+    def _is_supported(self) -> bool:
+        if not isinstance(self.cluster, TuyaZBOnOffAttributeCluster):
+            return False
+        return super()._is_supported()
