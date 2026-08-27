@@ -67,7 +67,7 @@ class STLO23TemperatureCluster(CustomCluster):
             manufacturer_code=STELLO_MANUFACTURER_ID,
         )
         # 0x0005: uint8_t Current temperature, Celsius (rp)
-        current_temp = ZCLAttributeDef(
+        current_temperatureg = ZCLAttributeDef(
             id=0x0005,
             type=t.uint8_t,
             access="rp",
@@ -94,7 +94,7 @@ class STLO23TemperatureCluster(CustomCluster):
     .replaces(STLO23TemperatureCluster)
     # Current temperature
     .sensor(
-        attribute_name=STLO23TemperatureCluster.AttributeDefs.current_temp.name,
+        attribute_name=STLO23TemperatureCluster.AttributeDefs.current_temperatureg.name,
         cluster_id=STLO23TemperatureCluster.cluster_id,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
