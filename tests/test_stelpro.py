@@ -22,14 +22,14 @@ def test_stlo23_temperature_cluster_replaced(zigpy_device_from_v2_quirk):
     assert cluster.ep_attribute == "stlo23_temperature_cluster"
     assert cluster.manufacturer_id_override == STELLO_MANUFACTURER_ID
     assert (
-        cluster.find_attribute("current_temperatureg")
-        == cluster.AttributeDefs.current_temp
+        cluster.find_attribute("current_temperature")
+        == cluster.AttributeDefs.current_temperature
     )
     assert (
-        cluster.AttributeDefs.current_temperatureg.access
+        cluster.AttributeDefs.current_temperature.access
         == foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Report
     )
     assert (
-        cluster.AttributeDefs.current_temperatureg.manufacturer_code
+        cluster.AttributeDefs.current_temperature.manufacturer_code
         == STELLO_MANUFACTURER_ID
     )
