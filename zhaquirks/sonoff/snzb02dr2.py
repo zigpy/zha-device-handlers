@@ -696,7 +696,7 @@ class CustomSonoffCluster(CustomCluster):
         off_value=0,
         on_value=1,
         translation_key="temp_humi_source_status",
-        fallback_name="Enable remote sensor readings",
+        fallback_name="Enable remote sensors",
     )
     .sensor(
         CustomSonoffCluster.AttributeDefs.remote_temperature_data.name,
