@@ -197,9 +197,9 @@ class CustomSonoffCluster(CustomCluster):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize remote attribute state."""
         super().__init__(*args, **kwargs)
-        self._remote_sensor_states: dict[tuple[int, int], int | None] = {
-            sensor_key: None for sensor_key in self._SENSOR_DISPLAY_ATTRIBUTES
-        }
+        self._remote_sensor_states: dict[tuple[int, int], int | None] = dict.fromkeys(
+            self._SENSOR_DISPLAY_ATTRIBUTES
+        )
         self._remote_sensor_values: dict[tuple[int, int], int] = {}
         self._remote_packet_count: int | None = None
         self._remote_packet_parts: dict[int, list[tuple[int, bytes]]] = {}
