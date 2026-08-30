@@ -1,6 +1,7 @@
 """Custom ZHA Quirk for Tuya TS0601 _TZE200_seq9cm6u Pressure/Occupancy Mat."""
 
 from zigpy.zcl.clusters.measurement import OccupancySensing
+
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaPowerConfigurationCluster
 
