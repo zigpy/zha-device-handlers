@@ -209,6 +209,11 @@ def _is_default_switch(entity: Any) -> bool:
         cluster_id=OnOff.cluster_id,
         function=_is_default_switch,
     )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.PLATFORM == Platform.SELECT,
+    )
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=AnalogInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=2, cluster_id=AnalogInput.cluster_id)
     # Custom clusters.
