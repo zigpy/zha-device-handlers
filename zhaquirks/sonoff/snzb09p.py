@@ -2,14 +2,19 @@
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasWd, IasZone
+
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    QuirkBuilder,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 SONOFF_MANUFACTURER_CODE = 0x1286
@@ -25,9 +30,6 @@ ATTR_SONOFF_ALARM_DURATION = 0x2025
 ATTR_SONOFF_ALARM_ACTIVE = 0x3000
 
 CMD_SOUND_AND_LIGHT_ALARM_SETTINGS = 0x0F
-CMD_START_ALARM_NOW = 0xFD
-CMD_STOP_ALARM_NOW = 0xFE
-CMD_START_SCENE_ALARM = 0xFC
 SUBCMD_START_MANUAL_ALARM = 0x00
 SUBCMD_STOP_ALARM = 0x01
 SUBCMD_START_SCENE_ALARM = 0x02
@@ -67,6 +69,11 @@ class AlarmSoundType(t.enum8):
     Hi_Lo_Tone = 0x04
     Intermittent_Tone = 0x07
     Pulse_Tone = 0x09
+    Chime_Doorbell = 0x0A
+    Chime_Classic_Clock = 0x0B
+    Chime_Electronic_Clock = 0x0C
+    Chime_Bright = 0x0D
+    Chime_Soft = 0x0E
 
 
 class AlarmVolumeLevel(t.enum8):
