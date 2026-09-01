@@ -54,10 +54,13 @@ base_air_quality = (
     .tuya_pm25(dp_id=2, pm25_cfg=TuyaPM25ConcentrationIgnoreValues)
     .tuya_formaldehyde(
         dp_id=20,
-        converter=lambda x: round(
-            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
-        )
-        * 1e-6,
+        converter=lambda x: (
+            round(
+                ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS),
+                2,
+            )
+            * 1e-6
+        ),
     )
     .tuya_voc(dp_id=21)
     .tuya_co2(dp_id=22)
@@ -70,10 +73,13 @@ base_air_quality = (
     .applies_to("_TZE200_ryfmq5rl", "TS0601")
     .tuya_formaldehyde(
         dp_id=2,
-        converter=lambda x: round(
-            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
-        )
-        * 1e-8,
+        converter=lambda x: (
+            round(
+                ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS),
+                2,
+            )
+            * 1e-8
+        ),
     )
     .tuya_voc(dp_id=21, scale=1e-7)
     .tuya_co2(dp_id=22)

@@ -7,7 +7,6 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 
@@ -21,6 +20,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     BatterySize,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import (
     LocalIlluminanceMeasurementCluster,
     MotionCluster,
