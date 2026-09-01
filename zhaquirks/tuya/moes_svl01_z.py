@@ -1,4 +1,4 @@
-"""MOES SVL01-Z - DP refresh after initialization/re-interview."""
+"""MOES SVL01-Z DP refresh after initialization/re-interview."""
 
 import asyncio
 
