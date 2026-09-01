@@ -2,20 +2,13 @@
 
 import asyncio
 
+from zha.application import EntityType
+from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.builder import QuirkBuilder
-from zha.application import EntityType
-from zha.application.platforms.binary_sensor.device_class import (
-    BinarySensorDeviceClass,
-)
-
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    TuyaMCUCluster,
-)
-
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 # =========================================================
 # TUYA MCU
@@ -90,9 +83,7 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         try:
             await self.command(TUYA_QUERY_DATA)
 
-            self.debug(
-                "MOES SVL01-Z: Tuya query_data (0x03) sent successfully"
-            )
+            self.debug("MOES SVL01-Z: Tuya query_data (0x03) sent successfully")
 
         except Exception:
             self.debug(
@@ -223,11 +214,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
     QuirkBuilder("_TZE200_llvwkkde", "TS0601")
     .replaces(PresenceSwitchCluster)
     .skip_configuration()
-
     # =====================================================
     # PRESENCE
     # =====================================================
-
     .binary_sensor(
         PresenceSwitchCluster.AttributeDefs.presence.name,
         PresenceSwitchCluster.cluster_id,
@@ -237,11 +226,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Presence",
         translation_key="presence",
     )
-
     # =====================================================
     # SENSITIVITY
     # =====================================================
-
     .number(
         PresenceSwitchCluster.AttributeDefs.sensitivity.name,
         PresenceSwitchCluster.cluster_id,
@@ -252,11 +239,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Sensitivity",
         translation_key="sensitivity",
     )
-
     # =====================================================
     # TRIGGER HOLD
     # =====================================================
-
     .number(
         PresenceSwitchCluster.AttributeDefs.trigger_hold.name,
         PresenceSwitchCluster.cluster_id,
@@ -267,11 +252,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Trigger Hold",
         translation_key="trigger_hold",
     )
-
     # =====================================================
     # POWER-ON BEHAVIOUR
     # =====================================================
-
     .enum(
         PresenceSwitchCluster.AttributeDefs.power_outage_memory.name,
         PowerOnBehavior,
@@ -281,11 +264,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Power-on Behaviour",
         translation_key="power_on_behavior",
     )
-
     # =====================================================
     # BACKLIGHT
     # =====================================================
-
     .switch(
         PresenceSwitchCluster.AttributeDefs.backlight.name,
         PresenceSwitchCluster.cluster_id,
@@ -294,11 +275,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Backlight",
         translation_key="backlight",
     )
-
     # =====================================================
     # AUTO ON
     # =====================================================
-
     .enum(
         PresenceSwitchCluster.AttributeDefs.auto_on.name,
         AutoOnMode,
@@ -308,11 +287,9 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Auto On",
         translation_key="auto_on",
     )
-
     # =====================================================
     # AUTO OFF
     # =====================================================
-
     .enum(
         PresenceSwitchCluster.AttributeDefs.auto_off.name,
         AutoOffMode,
@@ -322,6 +299,5 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         fallback_name="Auto Off",
         translation_key="auto_off",
     )
-
     .add_to_registry()
 )
