@@ -46,7 +46,10 @@ class LegrandNLJWindowCoveringCluster(CustomCluster, WindowCovering):
         manufacturer_code: int | UndefinedType | None = UNDEFINED,
     ):
         """Accept the NLJ's non-compliant global reports for moving state only."""
-        if manufacturer_code is None and name_or_id == cls.AttributeDefs.moving_state.id:
+        if (
+            manufacturer_code is None
+            and name_or_id == cls.AttributeDefs.moving_state.id
+        ):
             return cls.AttributeDefs.moving_state
         return super().find_attribute(name_or_id, manufacturer_code=manufacturer_code)
 
