@@ -15,6 +15,7 @@ from zhaquirks.sonoff.zbminir2 import (
     INCHING_MODE_ATTR,
     INCHING_TIMEOUT_ATTR,
     SONOFF_MANUFACTURER_CODE,
+    OnOff,
 )
 from tests.common import ClusterListener
 
@@ -53,7 +54,7 @@ async def test_inching_write_attributes(zbminir2_device):
         assert mock_send.call_count == 1
         assert cluster._inching_enable is True
 
-        await cluster.write_attributes({"inching_mode": InchingModeBit.Always_open})
+        await cluster.write_attributes({"inching_mode": InchingModeBit.Auto_on})
         assert mock_send.call_count == 2
         assert cluster._inching_mode_bit == 1
 
@@ -64,7 +65,7 @@ async def test_inching_write_attributes(zbminir2_device):
         mock_send.reset_mock()
         await cluster.write_attributes({
             "inching_enable": False,
-            "inching_mode": InchingModeBit.Always_closed,
+            "inching_mode": InchingModeBit.Auto_off,
             "inching_timeout": 5,
         })
         assert mock_send.call_count == 3
@@ -219,9 +220,39 @@ async def test_device_automation_triggers(zbminir2_device):
     """Verify that device_automation_triggers are correctly defined."""
     triggers = zbminir2_device.device_automation_triggers
     assert triggers is not None
-    assert ("relay_detach_key_action", "double_click") in triggers
-    assert ("relay_detach_key_action", "long_press") in triggers
-    trigger_def = triggers[("relay_detach_key_action", "double_click")]
+    assert ("External Switch action", "Single Click") in triggers
+    assert ("External Switch action", "Double Click") in triggers
+    assert ("External Switch action", "Long Press") in triggers
+
+    trigger_def = triggers[("External Switch action", "Double Click")]
     assert trigger_def["cluster_id"] == SonoffCluster.cluster_id
     assert trigger_def["endpoint_id"] == 1
     assert trigger_def["command"] == "Double_click"
+
+
+async def test_onoff_toggle_triggers_single_click(zbminir2_device):
+    """Test that toggle command from OnOff cluster triggers Single_click event."""
+    endpoint = zbminir2_device.endpoints[1]
+    onoff_cluster = endpoint.in_clusters[0x0006]
+    sonoff_cluster = endpoint.in_clusters[SonoffCluster.cluster_id]
+
+    listener = mock.MagicMock()
+    sonoff_cluster.add_listener(listener)
+
+    hdr = ZCLHeader(
+        frame_control=FrameControl(
+            frame_type=FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=False,
+            direction=Direction.Server_to_Client,
+            disable_default_response=False,
+            reserved=0,
+        ),
+        manufacturer=None,
+        tsn=0x01,
+        command_id=OnOff.ServerCommandDefs.toggle.id,
+    )
+    onoff_cluster.handle_cluster_request(hdr, b"")
+
+    listener.zha_send_event.assert_called_once_with("Single_click", {})
+    # 属性缓存存储的是枚举名称字符串，而非数值
+    assert sonoff_cluster._attr_cache.get(0x0028) == RelaySperaKeyAction.Single_click.name

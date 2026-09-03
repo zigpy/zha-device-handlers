@@ -13,6 +13,7 @@ from zigpy.zcl.foundation import (
     FrameType,
     Direction,
 )
+from zigpy.zcl.clusters.general import OnOff
 import logging
 
 from zhaquirks.builder import QuirkBuilder
@@ -52,18 +53,35 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 
 
 class RelaySperaKeyAction(types.enum8):
+    Unknown = 0x00
     Single_click = 0x01
     Double_click = 0x02
     Long_press = 0x03
-    Follow_on = 0x04
-    Follow_off = 0x05
+    # Follow_on = 0x04
+    # Follow_off = 0x05
 
 
 class InchingModeBit(types.enum8):
     """Inching mode bit."""
 
-    Always_closed = 0x00
-    Always_open = 0x01
+    Auto_off = 0x00
+    Auto_on = 0x01
+
+
+class OnOff(OnOff):
+    """Map a `toggle` command received by the gateway into a single-click event."""
+
+    def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+        if hdr.command_id == OnOff.ServerCommandDefs.toggle.id:
+            sonoff_cluster = self.endpoint.in_clusters.get(SonoffCluster.cluster_id)
+            if sonoff_cluster is not None:
+                # Equivalent to one `0x0028 = Single_click` attribute update from the
+                # device: update_attribute -> SonoffCluster._update_attribute
+                #   -> listener_event(ZHA_SEND_EVENT, "Single_click", {})
+                sonoff_cluster.update_attribute(
+                    RELAY_DETACH_ATTR_ID, RelaySperaKeyAction.Single_click.value
+                )
+        return super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class SonoffCluster(CustomCluster):
@@ -140,16 +158,22 @@ class SonoffCluster(CustomCluster):
         self._update_attribute(INCHING_ENABLE_ATTR, self._inching_enable)
         self._update_attribute(INCHING_MODE_ATTR, self._inching_mode_bit)
         self._update_attribute(INCHING_TIMEOUT_ATTR, self._inching_timeout)
+        self._update_attribute(RELAY_DETACH_ATTR_ID, RelaySperaKeyAction(0).name)
 
     def _update_attribute(self, attrid, value):
+        if attrid == RELAY_DETACH_ATTR_ID and isinstance(value, int):
+            try:
+                value = RelaySperaKeyAction(value).name
+            except ValueError:
+                pass
+
         super()._update_attribute(attrid, value)
 
         if attrid == RELAY_DETACH_ATTR_ID:
             try:
-                command = RelaySperaKeyAction(value).name
-                self.listener_event(ZHA_SEND_EVENT, command, {})
-            except ValueError:
-                pass   
+                self.listener_event(ZHA_SEND_EVENT, value, {})
+            except Exception:
+                pass
 
     async def write_attributes(self, attrs, manufacturer=None, **kwargs):
         """Override to handle inching attributes by name."""
@@ -272,6 +296,7 @@ class SonoffCluster(CustomCluster):
     QuirkBuilder("SONOFF", "ZBMINIR2")
     .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
+    .replaces(OnOff, cluster_id=0x0006)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
@@ -326,7 +351,7 @@ class SonoffCluster(CustomCluster):
     .switch(
         SonoffCluster.AttributeDefs.power_on_behavior_delay_enable.name,
         SonoffCluster.cluster_id,
-        translation_key="power_on_behavior_delay_enable",
+        translation_key="power_on_behavior_delay",
         fallback_name="Power-on behavior delay",
     )
     .number(
@@ -342,12 +367,17 @@ class SonoffCluster(CustomCluster):
     )
     .device_automation_triggers(
         {
-            ("relay_detach_key_action", "double_click"): {
+            ("External Switch action", "Single Click"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 1,
+                COMMAND: "Single_click",
+            },
+            ("External Switch action", "Double Click"): {
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 1,
                 COMMAND: "Double_click",
             },
-            ("relay_detach_key_action", "long_press"): {
+            ("External Switch action", "Long Press"): {
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 1,
                 COMMAND: "Long_press",
