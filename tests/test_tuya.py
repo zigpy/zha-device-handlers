@@ -12,9 +12,11 @@ import time_machine
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -32,6 +34,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts0001_switch
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
@@ -2174,3 +2177,30 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+async def test_ts0001_ysiog9xi_plug(zigpy_device_from_v2_quirk):
+    """Test _TZ3000_ysiog9xi is a switch and has no phantom metering sensors."""
+    device = zigpy_device_from_v2_quirk(
+        "_TZ3000_ysiog9xi",
+        "TS0001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    ep = device.endpoints[1]
+
+    # the plug reports itself as an On/Off Light, which makes ZHA build a light
+    # entity; the quirk corrects it so a switch entity is built instead
+    assert ep.profile_id == zha.PROFILE_ID
+    assert ep.device_type == zha.DeviceType.ON_OFF_PLUG_IN_UNIT
+
+    # the metering clusters are advertised but never implemented
+    assert Metering.cluster_id not in ep.in_clusters
+    assert ElectricalMeasurement.cluster_id not in ep.in_clusters
+
+    assert OnOff.cluster_id in ep.in_clusters
