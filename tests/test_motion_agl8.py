@@ -170,6 +170,43 @@ def test_aqara_fp300_battery_tlv_out_of_window(zigpy_device_from_v2_quirk, tlv_v
 
 
 @pytest.mark.parametrize(
+    "payload",
+    (
+        pytest.param(b"", id="empty-payload"),
+        pytest.param(b"\x00", id="stray-null-byte"),
+        pytest.param(create_aqara_attr_report({99: 1234}), id="unknown-tag-only"),
+    ),
+)
+def test_aqara_fp300_battery_tlv_without_voltage_tag_is_noop(
+    zigpy_device_from_v2_quirk, payload
+):
+    """Test that a lifeline payload without a voltage tag keeps the cached battery.
+
+    The FP300 intermittently reports lifelines that parse to an empty dict or
+    contain no voltage tag. These must not clobber the last good reading.
+    """
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+
+    manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+
+    manu_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({23: 306}),
+    )
+    assert len(power_listener.attribute_updates) == 2
+    power_listener.attribute_updates.clear()
+
+    manu_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, payload)
+
+    assert power_listener.attribute_updates == []
+    assert power_cluster.get(zcl_power_voltage_id) == pytest.approx(30.6)
+
+
+@pytest.mark.parametrize(
     "raw_payload, expected_segments",
     (
         (t.LVBytes(bytes.fromhex("0003ffffff")), [True, True, True, True, True, True]),
