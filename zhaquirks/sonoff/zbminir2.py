@@ -1,29 +1,25 @@
 """Sonoff ZBMINIR2 and MINI-ZBD - Zigbee Switches."""
 
+import logging
+
 from zigpy import types
 import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     DataTypeId,
-    ZCLAttributeDef,
-    Status,
-    WriteAttributesStatusRecord,
-    ZCLHeader,
+    Direction,
     FrameControl,
     FrameType,
-    Direction,
+    Status,
+    WriteAttributesStatusRecord,
+    ZCLAttributeDef,
+    ZCLHeader,
 )
-from zigpy.zcl.clusters.general import OnOff
-import logging
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    CLUSTER_ID,
-    COMMAND,
-    ENDPOINT_ID,
-    ZHA_SEND_EVENT,
-)
+from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, ZHA_SEND_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -151,7 +147,7 @@ class SonoffCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._inching_enable = False
-        self._inching_mode_bit = 0   # alwaysClosed
+        self._inching_mode_bit = 0  # alwaysClosed
         self._inching_timeout = 2
         self._cmd_seq = 0
         # Seed attribute cache with default values
@@ -185,22 +181,34 @@ class SonoffCluster(CustomCluster):
             if key == "inching_enable":
                 self._inching_enable = bool(value)
                 await self._send_combined()
-                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR))
+                results.append(
+                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR)
+                )
             elif key == "inching_mode":
                 self._inching_mode_bit = value
                 await self._send_combined()
-                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR))
+                results.append(
+                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR)
+                )
             elif key == "inching_timeout":
                 self._inching_timeout = value
                 await self._send_combined()
-                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR))
+                results.append(
+                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR)
+                )
                 self._update_attribute(INCHING_TIMEOUT_ATTR, value)
             else:
                 real_attrs[key] = value
 
         if real_attrs:
-            parent_results = await super().write_attributes(real_attrs, manufacturer, **kwargs)
-            if parent_results and isinstance(parent_results, list) and parent_results[0]:
+            parent_results = await super().write_attributes(
+                real_attrs, manufacturer, **kwargs
+            )
+            if (
+                parent_results
+                and isinstance(parent_results, list)
+                and parent_results[0]
+            ):
                 if isinstance(parent_results[0], list):
                     results.extend(parent_results[0])
                 else:
@@ -212,7 +220,9 @@ class SonoffCluster(CustomCluster):
     async def _send_combined(self):
         """Send combined inching configuration."""
         # Mode byte: bit7 = enable (1=on, 0=off), bit0 = mode (1=Normally Closed, 0=Normally Open)
-        mode = (0x80 if self._inching_enable else 0x00) | (self._inching_mode_bit & 0x01)
+        mode = (0x80 if self._inching_enable else 0x00) | (
+            self._inching_mode_bit & 0x01
+        )
         await self.set_inching(mode, INCHING_CHANNEL, self._inching_timeout)
 
     async def set_inching(self, mode: int, channel: int, timeout_units: int):
@@ -220,9 +230,11 @@ class SonoffCluster(CustomCluster):
         timeout_units = max(0, min(timeout_units, 0xFFFFFFFF))
         timeout_low = timeout_units & 0xFFFF
         timeout_high = (timeout_units >> 16) & 0xFFFF
-        payload = bytearray([INCHING_CMD, INCHING_SUBCMD, INCHING_LENGTH, 0x80, mode, channel])
-        payload.extend(timeout_low.to_bytes(2, 'little'))
-        payload.extend(timeout_high.to_bytes(2, 'little'))
+        payload = bytearray(
+            [INCHING_CMD, INCHING_SUBCMD, INCHING_LENGTH, 0x80, mode, channel]
+        )
+        payload.extend(timeout_low.to_bytes(2, "little"))
+        payload.extend(timeout_high.to_bytes(2, "little"))
         checksum = 0
         for b in payload:
             checksum ^= b
@@ -276,7 +288,9 @@ class SonoffCluster(CustomCluster):
                 if inching_num >= 1 and offset + 6 <= len(args):
                     channel = args[offset]
                     mode_byte = args[offset + 1]
-                    timeout_units = int.from_bytes(args[offset + 2:offset + 6], 'little')
+                    timeout_units = int.from_bytes(
+                        args[offset + 2 : offset + 6], "little"
+                    )
                     enable = (mode_byte & 0x80) != 0
                     mode_bit = mode_byte & 0x01
                     self._inching_enable = enable
@@ -381,7 +395,7 @@ class SonoffCluster(CustomCluster):
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 1,
                 COMMAND: "Long_press",
-            }
+            },
         }
     )
     .add_to_registry()

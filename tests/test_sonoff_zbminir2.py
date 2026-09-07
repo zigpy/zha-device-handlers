@@ -1,23 +1,23 @@
 """Tests for Sonoff ZBMINIR2 / MINI-ZBD quirks."""
 
-import pytest
 from unittest import mock
-from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLHeader, FrameControl, FrameType, Direction
-import zigpy.types as t
 
+import pytest
+from zigpy.zcl import foundation
+from zigpy.zcl.foundation import Direction, FrameControl, FrameType, ZCLHeader
+
+from tests.common import ClusterListener
 from zhaquirks.sonoff.zbminir2 import (
-    SonoffCluster,
-    SonoffExternalSwitchTriggerType,
-    InchingModeBit,
-    RelaySperaKeyAction,
     INCHING_ENABLE_ATTR,
     INCHING_MODE_ATTR,
     INCHING_TIMEOUT_ATTR,
     SONOFF_MANUFACTURER_CODE,
+    InchingModeBit,
     OnOff,
+    RelaySperaKeyAction,
+    SonoffCluster,
+    SonoffExternalSwitchTriggerType,
 )
-from tests.common import ClusterListener
 
 try:
     from zigpy.zcl import ClusterType
@@ -25,6 +25,7 @@ except ImportError:
     try:
         from zigpy.zcl.foundation import ClusterType
     except ImportError:
+
         class ClusterType:
             Server = 0
             Client = 1
@@ -63,11 +64,13 @@ async def test_inching_write_attributes(zbminir2_device):
         assert cluster._inching_timeout == 10
 
         mock_send.reset_mock()
-        await cluster.write_attributes({
-            "inching_enable": False,
-            "inching_mode": InchingModeBit.Auto_off,
-            "inching_timeout": 5,
-        })
+        await cluster.write_attributes(
+            {
+                "inching_enable": False,
+                "inching_mode": InchingModeBit.Auto_off,
+                "inching_timeout": 5,
+            }
+        )
         assert mock_send.call_count == 3
 
 
@@ -83,8 +86,8 @@ async def test_set_inching_payload(zbminir2_device):
     timeout_low = timeout_units & 0xFFFF
     timeout_high = (timeout_units >> 16) & 0xFFFF
     payload = bytearray([0x01, 0x17, 0x07, 0x80, mode, channel])
-    payload.extend(timeout_low.to_bytes(2, 'little'))
-    payload.extend(timeout_high.to_bytes(2, 'little'))
+    payload.extend(timeout_low.to_bytes(2, "little"))
+    payload.extend(timeout_high.to_bytes(2, "little"))
     checksum = 0
     for b in payload:
         checksum ^= b
@@ -105,7 +108,9 @@ async def test_set_inching_payload(zbminir2_device):
     expected_data = hdr.serialize() + bytes(payload)
 
     with mock.patch.object(cluster.endpoint, "request", mock.AsyncMock()) as mock_req:
-        await cluster.set_inching(mode=mode, channel=channel, timeout_units=timeout_units)
+        await cluster.set_inching(
+            mode=mode, channel=channel, timeout_units=timeout_units
+        )
 
         assert mock_req.call_count == 1
         kwargs = mock_req.call_args[1]
@@ -120,13 +125,7 @@ async def test_handle_message_inching_report(zbminir2_device):
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
     listener = ClusterListener(cluster)
 
-    report_payload = bytes([
-        0x01, 0x17, 0x01,
-        0x80,
-        0x00,
-        0x81,
-        0x05, 0x00, 0x00, 0x00
-    ])
+    report_payload = bytes([0x01, 0x17, 0x01, 0x80, 0x00, 0x81, 0x05, 0x00, 0x00, 0x00])
     hdr = ZCLHeader(
         frame_control=FrameControl(
             frame_type=FrameType.CLUSTER_COMMAND,
@@ -168,13 +167,14 @@ async def test_relay_detach_key_event(zbminir2_device):
 
 
 async def test_inching_write_failure_does_not_revert_cache(zbminir2_device):
-    """
-    Test that even if _send_combined raises an exception, the local cache is updated.
+    """Test that even if _send_combined raises an exception, the local cache is updated.
     This documents current behavior; we may later decide to revert on failure.
     """
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
 
-    with mock.patch.object(cluster, "_send_combined", mock.AsyncMock(side_effect=Exception("Comm error"))):
+    with mock.patch.object(
+        cluster, "_send_combined", mock.AsyncMock(side_effect=Exception("Comm error"))
+    ):
         with pytest.raises(Exception, match="Comm error"):
             await cluster.write_attributes({"inching_mode": 1})
         assert cluster._inching_mode_bit == 1
@@ -185,27 +185,44 @@ async def test_non_inching_attributes_write(zbminir2_device):
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
 
     with mock.patch.object(
-        cluster, "write_attributes_raw", mock.AsyncMock(return_value=[[
-            foundation.WriteAttributesStatusRecord(
-                status=foundation.Status.SUCCESS,
-                attrid=0x0017,
-            )
-        ]])
+        cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.SUCCESS,
+                        attrid=0x0017,
+                    )
+                ]
+            ]
+        ),
     ) as mock_raw:
         await cluster.write_attributes({"detach_relay": True})
         assert mock_raw.call_count == 1
         assert cluster._attr_cache.get(0x0017) is True
 
     with mock.patch.object(
-        cluster, "write_attributes_raw", mock.AsyncMock(return_value=[[
-            foundation.WriteAttributesStatusRecord(
-                status=foundation.Status.SUCCESS,
-                attrid=0x0016,
-            )
-        ]])
+        cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.SUCCESS,
+                        attrid=0x0016,
+                    )
+                ]
+            ]
+        ),
     ):
-        await cluster.write_attributes({"external_trigger_mode": SonoffExternalSwitchTriggerType.Pulse_trigger})
-        assert cluster._attr_cache.get(0x0016) == SonoffExternalSwitchTriggerType.Pulse_trigger
+        await cluster.write_attributes(
+            {"external_trigger_mode": SonoffExternalSwitchTriggerType.Pulse_trigger}
+        )
+        assert (
+            cluster._attr_cache.get(0x0016)
+            == SonoffExternalSwitchTriggerType.Pulse_trigger
+        )
 
 
 async def test_initial_attribute_defaults(zbminir2_device):
@@ -255,4 +272,6 @@ async def test_onoff_toggle_triggers_single_click(zbminir2_device):
 
     listener.zha_send_event.assert_called_once_with("Single_click", {})
     # 属性缓存存储的是枚举名称字符串，而非数值
-    assert sonoff_cluster._attr_cache.get(0x0028) == RelaySperaKeyAction.Single_click.name
+    assert (
+        sonoff_cluster._attr_cache.get(0x0028) == RelaySperaKeyAction.Single_click.name
+    )
