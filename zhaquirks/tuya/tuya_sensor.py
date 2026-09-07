@@ -15,6 +15,7 @@ from zhaquirks.builder import (
 )
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
+    TuyaPowerConfigurationCluster2AA,
     TuyaPowerConfigurationCluster2AAA,
     TuyaTimePayload,
 )
@@ -282,6 +283,28 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    # Battery is a 3-tier enum on dp=14, not a percentage on dp=15 like the
+    # aao3yzhs group above.
+    TuyaQuirkBuilder("_TZE284_0ints6wl", "TS0601")
+    .applies_to("_TZE2841000000_0ints6wl", "TS0601")
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_illuminance(dp_id=102)
+    .tuya_dp(
+        dp_id=14,
+        ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        # Low/Middle/High (raw 0/1/2) -> 20/60/100%, in half-percent units.
+        converter=lambda x: {0: 40, 1: 120, 2: 200}.get(x, 0),
+    )
+    .adds(TuyaPowerConfigurationCluster2AA)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
