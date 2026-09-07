@@ -4,14 +4,13 @@ Maps MultistateInput (0x0012) present_value → valve status enum sensor
 Maps MultistateValue (0x0014) present_value → stall time number
 """
 
-import enum
-
+import zigpy.types as t
 from zigpy.zcl.clusters.general import MultistateInput, MultistateValue
 
 from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, UnitOfTime
 
 
-class ValveStatus(enum.IntEnum):
+class ValveStatus(t.enum16):
     """PushOk POK006 valve status."""
 
     OFF = 0
@@ -23,7 +22,7 @@ class ValveStatus(enum.IntEnum):
 (
     QuirkBuilder("PushOk Hardware", "POK006")
     .enum(
-        attribute_name="present_value",
+        attribute_name=MultistateInput.AttributeDefs.present_value.name,
         unique_id_suffix="valve_status",
         enum_class=ValveStatus,
         cluster_id=MultistateInput.cluster_id,
@@ -34,7 +33,7 @@ class ValveStatus(enum.IntEnum):
         translation_key="valve_status",
     )
     .number(
-        attribute_name="present_value",
+        attribute_name=MultistateValue.AttributeDefs.present_value.name,
         unique_id_suffix="stall_time",
         cluster_id=MultistateValue.cluster_id,
         endpoint_id=1,
