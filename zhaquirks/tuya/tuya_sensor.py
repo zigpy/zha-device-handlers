@@ -288,9 +288,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     # Battery is a 3-tier enum on dp=14, not a percentage on dp=15 like the
     # aao3yzhs group above.
     TuyaQuirkBuilder("_TZE284_0ints6wl", "TS0601")
-    .applies_to(
-        "_TZE2841000000_0ints6wl", "TS0601"
-    )  # same device, corrupted manufacturer ID
+    .applies_to("_TZE2841000000_0ints6wl", "TS0601")
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_soil_moisture(dp_id=3)
     .tuya_illuminance(dp_id=102)
