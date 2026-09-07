@@ -58,7 +58,7 @@ class ThirdRealityPlugCluster(CustomCluster):
             type=t.uint16_t,
             manufacturer_code=0x1407,
         )
-        
+
         # disable onoff
         metering_only_mode: Final = ZCLAttributeDef(
             id=0x0050,
