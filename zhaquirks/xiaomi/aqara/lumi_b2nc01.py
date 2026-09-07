@@ -16,30 +16,16 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks.const import (
-    ARGS,
-    ATTR_ID,
-    BUTTON_1,
-    BUTTON_2,
-    CLUSTER_ID,
-    COMMAND_BUTTON_DOUBLE,
-    COMMAND_BUTTON_HOLD,
-    COMMAND_BUTTON_SINGLE,
-    COMMAND_DOUBLE,
-    COMMAND_SINGLE,
     DEVICE_TYPE,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PRESS_TYPE,
     PROFILE_ID,
-    VALUE,
 )
 from zhaquirks.xiaomi import LUMI, BasicCluster, DeviceTemperatureCluster, OnOffCluster
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import (
-    BOTH_BUTTONS,
     OppleSwitchCluster,
     XiaomiOpple2ButtonSwitchBase,
 )
@@ -80,6 +66,9 @@ class AqaraE1DoubleRockerSwitchBase(XiaomiOpple2ButtonSwitchBase):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            # Endpoint 3 only reports an OnOff cluster and corresponds to no
+            # physical rocker; leave it blank so no light/switch entity is
+            # exposed for it (matches zigbee2mqtt, which is left/right only).
             3: {},
             41: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -116,53 +105,10 @@ class AqaraE1DoubleRockerSwitchBase(XiaomiOpple2ButtonSwitchBase):
         },
     }
 
-    device_automation_triggers = {
-        (COMMAND_BUTTON_SINGLE, BUTTON_1): {
-            ENDPOINT_ID: 41,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
-        },
-        (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
-            ENDPOINT_ID: 41,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-        },
-        (COMMAND_BUTTON_HOLD, BUTTON_1): {
-            ENDPOINT_ID: 41,
-            CLUSTER_ID: 0xFCC0,
-            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-        },
-        (COMMAND_BUTTON_SINGLE, BUTTON_2): {
-            ENDPOINT_ID: 42,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
-        },
-        (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
-            ENDPOINT_ID: 42,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-        },
-        (COMMAND_BUTTON_HOLD, BUTTON_2): {
-            ENDPOINT_ID: 42,
-            CLUSTER_ID: 0xFCC0,
-            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-        },
-        (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): {
-            ENDPOINT_ID: 51,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
-        },
-        (COMMAND_BUTTON_DOUBLE, BOTH_BUTTONS): {
-            ENDPOINT_ID: 51,
-            CLUSTER_ID: 18,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-        },
-        (COMMAND_BUTTON_HOLD, BOTH_BUTTONS): {
-            ENDPOINT_ID: 51,
-            CLUSTER_ID: 0xFCC0,
-            ARGS: {ATTR_ID: 0x00FC, VALUE: 0},
-        },
-    }
+    # device_automation_triggers are inherited from
+    # XiaomiOpple2ButtonSwitchBase: hold is emitted by OppleSwitchCluster on
+    # endpoint 1 (endpoints 41/42/51 host only MultistateInput), with single/
+    # double presses on 41/42/51.
 
 
 # Shared signature components to reduce duplication
@@ -212,17 +158,18 @@ _EP2_SLIM = {
     INPUT_CLUSTERS: _COMMON_INPUT_CLUSTERS,
 }
 
+_EP2_SLIM_CLUSTERS: list = _EP2_SLIM[INPUT_CLUSTERS]
+
 _EP2_FULL = {
     **_EP2_SLIM,
-    INPUT_CLUSTERS: _EP2_SLIM[INPUT_CLUSTERS]
+    INPUT_CLUSTERS: _EP2_SLIM_CLUSTERS
     + [
         MultistateInputCluster.cluster_id,
         OppleSwitchCluster.cluster_id,
     ],
 }
 
-_COMMON_ENDPOINTS = {
-    3: _EP2_SLIM,
+_GPP_ENDPOINT = {
     242: {
         PROFILE_ID: zgp.PROFILE_ID,
         DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
@@ -231,6 +178,11 @@ _COMMON_ENDPOINTS = {
             GreenPowerProxy.cluster_id,
         ],
     },
+}
+
+_COMMON_ENDPOINTS = {
+    3: _EP2_SLIM,
+    **_GPP_ENDPOINT,
 }
 
 _BUTTON_ENDPOINT = {
@@ -256,6 +208,26 @@ class AqaraE1DoubleRockerSwitchFull(AqaraE1DoubleRockerSwitchBase):
             1: _EP1_FULL,
             2: _EP2_FULL,
             **_COMMON_ENDPOINTS,
+        },
+    }
+
+
+class AqaraE1DoubleRockerSwitchFullNoEp3(AqaraE1DoubleRockerSwitchBase):
+    """Aqara E1 Double Rocker Switch (with neutral) - Full variant, no endpoint 3.
+
+    Some devices report endpoints {1, 2, 41, 42, 51, 242} without endpoint 3,
+    which reports only an OnOff cluster and corresponds to no physical rocker.
+    This is the signature seen in the ZHA device snapshot for
+    ``lumi.switch.b2nc01``.
+    """
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.b2nc01")],
+        ENDPOINTS: {
+            1: _EP1_FULL,
+            2: _EP2_FULL,
+            **_EXTRA_BUTTON_ENDPOINTS,
+            **_GPP_ENDPOINT,
         },
     }
 
