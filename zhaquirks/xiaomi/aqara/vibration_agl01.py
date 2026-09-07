@@ -163,11 +163,8 @@ class VibrationAGL01(CustomZigpyDevice):
     .adds(XiaomiVibrationConfigurationCluster)
     .replaces(MotionCluster)
     .replaces(VibrationMultistateInput, endpoint_id=2)
-    .replaces(
-        XiaomiVibrationCluster,
-        cluster_id=IasZone.cluster_id,
-        endpoint_id=2,
-    )
+    .removes(IasZone.cluster_id, endpoint_id=2)
+    .adds(XiaomiVibrationCluster, endpoint_id=2)
     .number(
         attribute_name=MotionCluster.AttributeDefs.vibration_reset_timeout.name,
         cluster_id=IasZone.cluster_id,
