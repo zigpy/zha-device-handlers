@@ -285,12 +285,12 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
-    # Battery is a 3-tier enum (dp=14, low/middle/high), not a 0-100 percentage
-    # like the aao3yzhs group above (dp=15) - confirmed via debug-log capture on
-    # real hardware, dp=15 never reported despite temperature/soil-moisture DPs
-    # firing hourly. Illuminance (dp=102) is present on this variant but is not
-    # mapped by any known upstream quirk.
+    # Battery is a 3-tier enum on dp=14, not a percentage on dp=15 like the
+    # aao3yzhs group above.
     TuyaQuirkBuilder("_TZE284_0ints6wl", "TS0601")
+    .applies_to(
+        "_TZE2841000000_0ints6wl", "TS0601"
+    )  # same device, corrupted manufacturer ID
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_soil_moisture(dp_id=3)
     .tuya_illuminance(dp_id=102)
@@ -298,11 +298,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
         attribute_name="battery_percentage_remaining",
-        # Low/Middle/High (raw 0/1/2) -> stored half-percent ZCL units, chosen
-        # from real percentage bands rather than a linear scale (a linear
-        # scale would map Low=0 -> displayed 0%, reading as "dead" not "low").
-        # Unexpected raw values default to 0 rather than raising, since this
-        # device is known to report other unmapped DPs (e.g. dp=111).
+        # Low/Middle/High (raw 0/1/2) -> 20/60/100%, in half-percent units.
         converter=lambda x: {0: 40, 1: 120, 2: 200}.get(x, 0),
     )
     .adds(TuyaPowerConfigurationCluster2AA)
