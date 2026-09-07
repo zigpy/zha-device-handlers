@@ -1,4 +1,4 @@
-"""Aqara E1 double rocker switch quirks. Adapted from switch_h1_double.py."""
+"""Aqara E1 double rocker switch quirks. Also see switch_h1_double.py for similar H1 rocker switches."""
 
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
@@ -36,54 +36,32 @@ from zhaquirks.const import (
     PROFILE_ID,
     VALUE,
 )
-from zhaquirks.xiaomi import (
-    LUMI,
-    BasicCluster,
-    DeviceTemperatureCluster,
-    OnOffCluster,
-    XiaomiCustomDevice,
-)
+from zhaquirks.xiaomi import LUMI, BasicCluster, DeviceTemperatureCluster, OnOffCluster
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
-from zhaquirks.xiaomi.aqara.opple_switch import BOTH_BUTTONS, OppleSwitchCluster
-
-
-# Helper functions for trigger definitions
-def _trigger(endpoint, press, value):
-    return {
-        ENDPOINT_ID: endpoint,
-        CLUSTER_ID: 18,
-        ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: press, VALUE: value},
-    }
-
-
-def _hold_trigger(endpoint, value=0):
-    return {
-        ENDPOINT_ID: endpoint,
-        CLUSTER_ID: 0xFCC0,
-        ARGS: {ATTR_ID: 0x00FC, VALUE: value},
-    }
-
-
-# Shared replacement clusters
-_REPLACEMENT_INPUT_BASE = [
-    BasicCluster,
-    Identify.cluster_id,
-    Groups.cluster_id,
-    Scenes.cluster_id,
-    OnOffCluster,
-    MultistateInputCluster,
+from zhaquirks.xiaomi.aqara.opple_switch import (
+    BOTH_BUTTONS,
     OppleSwitchCluster,
-]
+    XiaomiOpple2ButtonSwitchBase,
+)
 
 
-class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
+class AqaraE1DoubleRockerSwitchBase(XiaomiOpple2ButtonSwitchBase):
     """Aqara E1 Double Rocker Switch (with neutral) base class."""
 
     replacement = {
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [DeviceTemperatureCluster] + _REPLACEMENT_INPUT_BASE,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    DeviceTemperatureCluster,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOffCluster,
+                    MultistateInputCluster,
+                    OppleSwitchCluster,
+                ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
@@ -91,11 +69,18 @@ class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
             },
             2: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: _REPLACEMENT_INPUT_BASE,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOffCluster,
+                    MultistateInputCluster,
+                    OppleSwitchCluster,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
             3: {},
-            # Button 1 endpoint
             41: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -104,7 +89,6 @@ class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-            # Button 2 endpoint
             42: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -113,7 +97,6 @@ class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-            # Both buttons endpoint
             51: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -134,18 +117,51 @@ class AqaraE1DoubleRockerSwitchWithNeutralBase(XiaomiCustomDevice):
     }
 
     device_automation_triggers = {
-        # Button 1 triggers
-        (COMMAND_BUTTON_SINGLE, BUTTON_1): _trigger(41, COMMAND_SINGLE, 1),
-        (COMMAND_BUTTON_DOUBLE, BUTTON_1): _trigger(41, COMMAND_DOUBLE, 2),
-        (COMMAND_BUTTON_HOLD, BUTTON_1): _hold_trigger(41, False),
-        # Button 2 triggers
-        (COMMAND_BUTTON_SINGLE, BUTTON_2): _trigger(42, COMMAND_SINGLE, 1),
-        (COMMAND_BUTTON_DOUBLE, BUTTON_2): _trigger(42, COMMAND_DOUBLE, 2),
-        (COMMAND_BUTTON_HOLD, BUTTON_2): _hold_trigger(42, False),
-        # Both buttons triggers
-        (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): _trigger(51, COMMAND_SINGLE, 1),
-        (COMMAND_BUTTON_DOUBLE, BOTH_BUTTONS): _trigger(51, COMMAND_DOUBLE, 2),
-        (COMMAND_BUTTON_HOLD, BOTH_BUTTONS): _hold_trigger(51, 0),
+        (COMMAND_BUTTON_SINGLE, BUTTON_1): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BUTTON_1): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 0xFCC0,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        },
+        (COMMAND_BUTTON_SINGLE, BUTTON_2): {
+            ENDPOINT_ID: 42,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
+            ENDPOINT_ID: 42,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BUTTON_2): {
+            ENDPOINT_ID: 42,
+            CLUSTER_ID: 0xFCC0,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        },
+        (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): {
+            ENDPOINT_ID: 51,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BOTH_BUTTONS): {
+            ENDPOINT_ID: 51,
+            CLUSTER_ID: 18,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BOTH_BUTTONS): {
+            ENDPOINT_ID: 51,
+            CLUSTER_ID: 0xFCC0,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: 0},
+        },
     }
 
 
@@ -231,9 +247,7 @@ _EXTRA_BUTTON_ENDPOINTS = {
 }
 
 
-class AqaraE1DoubleRockerSwitchWithNeutral_Full(
-    AqaraE1DoubleRockerSwitchWithNeutralBase
-):
+class AqaraE1DoubleRockerSwitchFull(AqaraE1DoubleRockerSwitchBase):
     """Aqara E1 Double Rocker Switch (with neutral) - Full variant."""
 
     signature = {
@@ -246,23 +260,19 @@ class AqaraE1DoubleRockerSwitchWithNeutral_Full(
     }
 
 
-class AqaraE1DoubleRockerSwitchWithNeutral_Full_Buttons(
-    AqaraE1DoubleRockerSwitchWithNeutral_Full
-):
+class AqaraE1DoubleRockerSwitchFullButtons(AqaraE1DoubleRockerSwitchFull):
     """Aqara E1 Double Rocker Switch (with neutral) - Full variant with extra endpoints."""
 
     signature = {
-        **AqaraE1DoubleRockerSwitchWithNeutral_Full.signature,
+        **AqaraE1DoubleRockerSwitchFull.signature,
         ENDPOINTS: {
-            **AqaraE1DoubleRockerSwitchWithNeutral_Full.signature[ENDPOINTS],
+            **AqaraE1DoubleRockerSwitchFull.signature[ENDPOINTS],
             **_EXTRA_BUTTON_ENDPOINTS,
         },
     }
 
 
-class AqaraE1DoubleRockerSwitchWithNeutral_Slim(
-    AqaraE1DoubleRockerSwitchWithNeutralBase
-):
+class AqaraE1DoubleRockerSwitchSlim(AqaraE1DoubleRockerSwitchBase):
     """Aqara E1 Double Rocker Switch (with neutral) - Slim variant."""
 
     signature = {
@@ -275,29 +285,25 @@ class AqaraE1DoubleRockerSwitchWithNeutral_Slim(
     }
 
 
-class AqaraE1DoubleRockerSwitchWithNeutral_Slim_Buttons(
-    AqaraE1DoubleRockerSwitchWithNeutral_Slim
-):
+class AqaraE1DoubleRockerSwitchSlimButtons(AqaraE1DoubleRockerSwitchSlim):
     """Aqara E1 Double Rocker Switch (with neutral) - Slim variant with extra endpoints."""
 
     signature = {
-        **AqaraE1DoubleRockerSwitchWithNeutral_Slim.signature,
+        **AqaraE1DoubleRockerSwitchSlim.signature,
         ENDPOINTS: {
-            **AqaraE1DoubleRockerSwitchWithNeutral_Slim.signature[ENDPOINTS],
+            **AqaraE1DoubleRockerSwitchSlim.signature[ENDPOINTS],
             **_EXTRA_BUTTON_ENDPOINTS,
         },
     }
 
 
-class AqaraE1DoubleRockerSwitchWithNeutral_Mixed(
-    AqaraE1DoubleRockerSwitchWithNeutral_Slim
-):
+class AqaraE1DoubleRockerSwitchMixed(AqaraE1DoubleRockerSwitchSlim):
     """Aqara E1 Double Rocker Switch (with neutral) - Mixed variant."""
 
     signature = {
-        **AqaraE1DoubleRockerSwitchWithNeutral_Slim.signature,
+        **AqaraE1DoubleRockerSwitchSlim.signature,
         ENDPOINTS: {
-            **AqaraE1DoubleRockerSwitchWithNeutral_Slim.signature[ENDPOINTS],
+            **AqaraE1DoubleRockerSwitchSlim.signature[ENDPOINTS],
             2: _EP2_FULL,
         },
     }
