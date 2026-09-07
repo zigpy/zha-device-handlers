@@ -286,6 +286,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .sensor(
         attribute_name=OppleCluster.AttributeDefs.last_feeding_size.name,
         cluster_id=OppleCluster.cluster_id,
+        unit="portions",
         unique_id_suffix=f"{OppleCluster.cluster_id}-last_feeding_size",
         translation_key="last_feeding_size",
         fallback_name="Last feeding size",
@@ -294,6 +295,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         attribute_name=OppleCluster.AttributeDefs.portions_dispensed.name,
         cluster_id=OppleCluster.cluster_id,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        unit="portions",
         unique_id_suffix=f"{OppleCluster.cluster_id}-portions_dispensed",
         translation_key="portions_dispensed_today",
         fallback_name="Portions dispensed today",
@@ -336,6 +338,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         min_value=1,
         max_value=10,
         mode="box",
+        unit="portions",
         unique_id_suffix=f"{OppleCluster.cluster_id}-serving_size",
         translation_key="serving_size",
         fallback_name="Serving size",
