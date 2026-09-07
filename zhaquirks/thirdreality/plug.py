@@ -59,6 +59,13 @@ class ThirdRealityPlugCluster(CustomCluster):
             manufacturer_code=0x1407,
         )
 
+        # disable onoff
+        metering_only_mode: Final = ZCLAttributeDef(
+            id=0x0050,
+            type=t.uint8_t,
+            manufacturer_code=0x1407,
+        )
+
 
 class ThirdRealityPlugClusterGen2(CustomCluster):
     """Third Reality's plug private cluster."""
@@ -326,6 +333,22 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         translation_key="reset_total_energy_right",
         fallback_name="Reset right total energy",  # ep2 is right
     )
+    .switch(
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.metering_only_mode.name,
+        unique_id_suffix="metering_only_mode",
+        endpoint_id=1,
+        translation_key="metering_only_mode",
+        fallback_name="Metering only mode",
+    )
+    .switch(
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.metering_only_mode.name,
+        unique_id_suffix="metering_only_mode",
+        endpoint_id=2,
+        translation_key="metering_only_mode",
+        fallback_name="Metering only mode",
+    )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
@@ -418,6 +441,22 @@ class ThirdRealityPlugClusterGen3(CustomCluster):
         endpoint_id=2,
         translation_key="reset_total_energy_top",
         fallback_name="Reset top total energy",  # ep2 is top
+    )
+    .switch(
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.metering_only_mode.name,
+        unique_id_suffix="metering_only_mode",
+        endpoint_id=1,
+        translation_key="metering_only_mode",
+        fallback_name="Metering only mode",
+    )
+    .switch(
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.metering_only_mode.name,
+        unique_id_suffix="metering_only_mode",
+        endpoint_id=2,
+        translation_key="metering_only_mode",
+        fallback_name="Metering only mode",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.countdown_to_turn_off.name,
