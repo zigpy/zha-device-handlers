@@ -4,10 +4,12 @@ from unittest import mock
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.humidity import HumidityPowerConfiguration
 
 zhaquirks.setup()
 
@@ -176,4 +178,29 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert len(metering_listener.attribute_updates) == 1
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    )
+
+
+async def test_hmszb_120_power_config_battery_percent_from_voltage(
+    zigpy_device_from_v2_quirk,
+):
+    """Test battery percent is derived from cached voltage."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "HMSZB-120",
+        endpoint_ids=[38],
+        cluster_ids={38: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    )
+
+    power = device.endpoints[38].power
+    assert isinstance(power, HumidityPowerConfiguration)
+    assert power.MIN_VOLTS == 2.3
+    assert power.MAX_VOLTS == 3.0
+
+    # 2.8 V, within the 2.3–3.0 V bounds: (2.8 - 2.3) / (3.0 - 2.3) * 200 = 143 (half percent)
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 28)
+
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == 143
     )
