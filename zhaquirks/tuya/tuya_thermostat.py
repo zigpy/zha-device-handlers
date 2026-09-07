@@ -69,6 +69,13 @@ class PresetModeV04(t.enum8):
     Eco = 0x03
 
 
+class PresetModeV05(t.enum8):
+    """Tuya preset mode v05 enum."""
+
+    Auto = 0x00
+    Manual = 0x01
+
+
 class SensorMode(t.enum8):
     """Tuya sensor mode enum."""
 
@@ -102,6 +109,14 @@ class WorkingDayV02(t.enum8):
     Five_Two = 0x01
     Six_One = 0x02
     Seven = 0x03
+
+
+class WorkingDayV03(t.enum8):
+    """Tuya Working day v03 enum."""
+
+    Five_Two = 0x00
+    Six_One = 0x01
+    Seven = 0x02
 
 
 class TuyaThermostat(Thermostat, TuyaAttributesCluster):
@@ -603,6 +618,95 @@ base_avatto_quirk = (
         off_value=1,
         translation_key="invert_relay",
         fallback_name="Invert relay",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("_TZE204_zxkwaztm", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV05,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_switch(
+        dp_id=10,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        # converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+        converter=lambda x: RunningState.Idle if not x else RunningState.Heat_State_On,
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9.9,
+        max_value=9.9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="regulator_set_point",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="regulator_set_point",
+        fallback_name="Regulator set point",
+    )
+    .tuya_enum(
+        dp_id=31,
+        attribute_name="working_day",
+        enum_class=WorkingDayV03,
+        translation_key="working_day",
+        fallback_name="Working day",
     )
     .adds(TuyaThermostat)
     .skip_configuration()
