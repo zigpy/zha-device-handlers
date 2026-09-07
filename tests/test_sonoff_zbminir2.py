@@ -19,16 +19,12 @@ from zhaquirks.sonoff.zbminir2 import (
     SonoffExternalSwitchTriggerType,
 )
 
-try:
-    from zigpy.zcl import ClusterType
-except ImportError:
-    try:
-        from zigpy.zcl.foundation import ClusterType
-    except ImportError:
 
-        class ClusterType:
-            Server = 0
-            Client = 1
+class ClusterType:
+    """Cluster type enumeration for testing."""
+
+    Server = 0
+    Client = 1
 
 
 @pytest.fixture
@@ -40,6 +36,7 @@ def zbminir2_device(zigpy_device_from_v2_quirk):
         cluster_ids={
             1: {
                 SonoffCluster.cluster_id: ClusterType.Server,
+                0x0006: ClusterType.Server,
             }
         },
     )
@@ -168,6 +165,7 @@ async def test_relay_detach_key_event(zbminir2_device):
 
 async def test_inching_write_failure_does_not_revert_cache(zbminir2_device):
     """Test that even if _send_combined raises an exception, the local cache is updated.
+
     This documents current behavior; we may later decide to revert on failure.
     """
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
@@ -271,7 +269,112 @@ async def test_onoff_toggle_triggers_single_click(zbminir2_device):
     onoff_cluster.handle_cluster_request(hdr, b"")
 
     listener.zha_send_event.assert_called_once_with("Single_click", {})
-    # 属性缓存存储的是枚举名称字符串，而非数值
     assert (
         sonoff_cluster._attr_cache.get(0x0028) == RelaySperaKeyAction.Single_click.name
     )
+
+
+async def test_write_attributes_real_attrs_with_nested_results(zbminir2_device):
+    """Test write_attributes when parent returns nested results."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+
+    with mock.patch.object(
+        cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.SUCCESS,
+                        attrid=0x0017,
+                    )
+                ]
+            ]
+        ),
+    ) as mock_raw:
+        result = await cluster.write_attributes({"detach_relay": True})
+        assert mock_raw.call_count == 1
+        assert len(result[0]) == 1
+        assert result[0][0].status == foundation.Status.SUCCESS
+
+
+async def test_set_inching_sequence_increment_and_wrap(zbminir2_device):
+    """Test set_inching increments _cmd_seq and wraps around 255."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+    cluster._cmd_seq = 255
+
+    with mock.patch.object(cluster.endpoint, "request", mock.AsyncMock()) as mock_req:
+        await cluster.set_inching(mode=0x81, channel=0, timeout_units=5)
+        assert cluster._cmd_seq == 1
+        args = mock_req.call_args[1]
+        assert args["sequence"] == 1
+
+
+async def test_set_inching_request_failure_caught(zbminir2_device):
+    """Test set_inching catches endpoint.request exceptions and re-raises."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+
+    with (
+        mock.patch.object(
+            cluster.endpoint,
+            "request",
+            mock.AsyncMock(side_effect=RuntimeError("Network error")),
+        ),
+        pytest.raises(RuntimeError, match="Network error"),
+    ):
+        await cluster.set_inching(mode=0x81, channel=0, timeout_units=5)
+
+
+async def test_handle_message_inching_parsing_exception(zbminir2_device):
+    """Test handle_message catches parsing errors in inching report."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+    listener = ClusterListener(cluster)
+
+    hdr = ZCLHeader(
+        frame_control=FrameControl(
+            frame_type=FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=True,
+            direction=Direction.Server_to_Client,
+            disable_default_response=False,
+            reserved=0,
+        ),
+        manufacturer=SONOFF_MANUFACTURER_CODE,
+        tsn=0x12,
+        command_id=0x01,
+    )
+    incomplete_payload = bytes([0x01, 0x17, 0x01, 0x80, 0x00])
+    cluster.handle_message(hdr, incomplete_payload)
+    assert len(listener.attribute_updates) == 0
+
+
+async def test_handle_message_non_inching_else_branch(zbminir2_device):
+    """Test handle_message passes non-inching commands to super."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+    listener = ClusterListener(cluster)
+
+    hdr = ZCLHeader(
+        frame_control=FrameControl(
+            frame_type=FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=False,
+            direction=Direction.Server_to_Client,
+            disable_default_response=False,
+            reserved=0,
+        ),
+        manufacturer=None,
+        tsn=0x01,
+        command_id=0x00,  # On command
+    )
+    cluster.handle_message(hdr, b"")
+    assert len(listener.attribute_updates) == 0
+
+
+async def test_send_combined_with_disabled_inching(zbminir2_device):
+    """Test _send_combined when inching is disabled."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+    cluster._inching_enable = False
+    cluster._inching_mode_bit = 0
+    cluster._inching_timeout = 2
+
+    with mock.patch.object(cluster, "set_inching", mock.AsyncMock()) as mock_set:
+        await cluster._send_combined()
+        mock_set.assert_called_once_with(0x00, 0, 2)

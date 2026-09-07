@@ -4,22 +4,28 @@ import logging
 
 from zigpy import types
 import zigpy.types as t
-from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     DataTypeId,
-    Direction,
-    FrameControl,
-    FrameType,
+    ZCLAttributeDef,
     Status,
     WriteAttributesStatusRecord,
-    ZCLAttributeDef,
     ZCLHeader,
+    FrameControl,
+    FrameType,
+    Direction,
 )
+from zigpy.zcl.clusters.general import OnOff as OnOffBase
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, ZHA_SEND_EVENT
+from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    ENDPOINT_ID,
+    ZHA_SEND_EVENT,
+)
+from contextlib import suppress
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +55,8 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 
 
 class RelaySperaKeyAction(types.enum8):
+    """Relay detached key action enumeration."""
+
     Unknown = 0x00
     Single_click = 0x01
     Double_click = 0x02
@@ -64,21 +72,19 @@ class InchingModeBit(types.enum8):
     Auto_on = 0x01
 
 
-class OnOff(OnOff):
+class OnOff(CustomCluster, OnOffBase):
     """Map a `toggle` command received by the gateway into a single-click event."""
 
     def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
-        if hdr.command_id == OnOff.ServerCommandDefs.toggle.id:
+        """Handle cluster request and map toggle command to single-click event."""
+        if hdr.command_id == OnOffBase.ServerCommandDefs.toggle.id:
             sonoff_cluster = self.endpoint.in_clusters.get(SonoffCluster.cluster_id)
             if sonoff_cluster is not None:
-                # Equivalent to one `0x0028 = Single_click` attribute update from the
-                # device: update_attribute -> SonoffCluster._update_attribute
-                #   -> listener_event(ZHA_SEND_EVENT, "Single_click", {})
                 sonoff_cluster.update_attribute(
                     RELAY_DETACH_ATTR_ID, RelaySperaKeyAction.Single_click.value
                 )
         return super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
-
+        
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -145,9 +151,10 @@ class SonoffCluster(CustomCluster):
         )
 
     def __init__(self, *args, **kwargs):
+        """Initialize the Sonoff cluster."""
         super().__init__(*args, **kwargs)
         self._inching_enable = False
-        self._inching_mode_bit = 0  # alwaysClosed
+        self._inching_mode_bit = 0
         self._inching_timeout = 2
         self._cmd_seq = 0
         # Seed attribute cache with default values
@@ -158,18 +165,14 @@ class SonoffCluster(CustomCluster):
 
     def _update_attribute(self, attrid, value):
         if attrid == RELAY_DETACH_ATTR_ID and isinstance(value, int):
-            try:
+            with suppress(ValueError):
                 value = RelaySperaKeyAction(value).name
-            except ValueError:
-                pass
 
         super()._update_attribute(attrid, value)
 
         if attrid == RELAY_DETACH_ATTR_ID:
-            try:
+            with suppress(Exception):
                 self.listener_event(ZHA_SEND_EVENT, value, {})
-            except Exception:
-                pass
 
     async def write_attributes(self, attrs, manufacturer=None, **kwargs):
         """Override to handle inching attributes by name."""
@@ -181,34 +184,22 @@ class SonoffCluster(CustomCluster):
             if key == "inching_enable":
                 self._inching_enable = bool(value)
                 await self._send_combined()
-                results.append(
-                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR)
-                )
+                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR))
             elif key == "inching_mode":
                 self._inching_mode_bit = value
                 await self._send_combined()
-                results.append(
-                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR)
-                )
+                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR))
             elif key == "inching_timeout":
                 self._inching_timeout = value
                 await self._send_combined()
-                results.append(
-                    WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR)
-                )
+                results.append(WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR))
                 self._update_attribute(INCHING_TIMEOUT_ATTR, value)
             else:
                 real_attrs[key] = value
 
         if real_attrs:
-            parent_results = await super().write_attributes(
-                real_attrs, manufacturer, **kwargs
-            )
-            if (
-                parent_results
-                and isinstance(parent_results, list)
-                and parent_results[0]
-            ):
+            parent_results = await super().write_attributes(real_attrs, manufacturer, **kwargs)
+            if parent_results and isinstance(parent_results, list) and parent_results[0]:
                 if isinstance(parent_results[0], list):
                     results.extend(parent_results[0])
                 else:
@@ -219,10 +210,7 @@ class SonoffCluster(CustomCluster):
 
     async def _send_combined(self):
         """Send combined inching configuration."""
-        # Mode byte: bit7 = enable (1=on, 0=off), bit0 = mode (1=Normally Closed, 0=Normally Open)
-        mode = (0x80 if self._inching_enable else 0x00) | (
-            self._inching_mode_bit & 0x01
-        )
+        mode = (0x80 if self._inching_enable else 0x00) | (self._inching_mode_bit & 0x01)
         await self.set_inching(mode, INCHING_CHANNEL, self._inching_timeout)
 
     async def set_inching(self, mode: int, channel: int, timeout_units: int):
@@ -230,11 +218,9 @@ class SonoffCluster(CustomCluster):
         timeout_units = max(0, min(timeout_units, 0xFFFFFFFF))
         timeout_low = timeout_units & 0xFFFF
         timeout_high = (timeout_units >> 16) & 0xFFFF
-        payload = bytearray(
-            [INCHING_CMD, INCHING_SUBCMD, INCHING_LENGTH, 0x80, mode, channel]
-        )
-        payload.extend(timeout_low.to_bytes(2, "little"))
-        payload.extend(timeout_high.to_bytes(2, "little"))
+        payload = bytearray([INCHING_CMD, INCHING_SUBCMD, INCHING_LENGTH, 0x80, mode, channel])
+        payload.extend(timeout_low.to_bytes(2, 'little'))
+        payload.extend(timeout_high.to_bytes(2, 'little'))
         checksum = 0
         for b in payload:
             checksum ^= b
@@ -245,7 +231,6 @@ class SonoffCluster(CustomCluster):
         if self._cmd_seq == 0:
             self._cmd_seq = 1
 
-        # Build ZCL header with manufacturer-specific flag and correct manufacturer code
         hdr = ZCLHeader(
             frame_control=FrameControl(
                 frame_type=FrameType.CLUSTER_COMMAND,
@@ -286,11 +271,8 @@ class SonoffCluster(CustomCluster):
                 inching_num = args[2]
                 offset = 4
                 if inching_num >= 1 and offset + 6 <= len(args):
-                    channel = args[offset]
                     mode_byte = args[offset + 1]
-                    timeout_units = int.from_bytes(
-                        args[offset + 2 : offset + 6], "little"
-                    )
+                    timeout_units = int.from_bytes(args[offset + 2:offset + 6], 'little')
                     enable = (mode_byte & 0x80) != 0
                     mode_bit = mode_byte & 0x01
                     self._inching_enable = enable
@@ -310,7 +292,7 @@ class SonoffCluster(CustomCluster):
     QuirkBuilder("SONOFF", "ZBMINIR2")
     .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
-    .replaces(OnOff, cluster_id=0x0006)
+    .replace_cluster_occurrences(OnOff) 
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
@@ -395,7 +377,7 @@ class SonoffCluster(CustomCluster):
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 1,
                 COMMAND: "Long_press",
-            },
+            }
         }
     )
     .add_to_registry()
