@@ -162,9 +162,10 @@ async def test_tuya_spell_read_is_a_single_frame(zigpy_device_from_quirk):
     """Test that the attribute read spell reaches the radio as one ZCL frame.
 
     The other spell tests mock ``Cluster.request``, which accepts any keyword
-    argument, so an unsupported ``read_attributes`` keyword would be swallowed
-    instead of failing. Mocking one layer lower runs the real frame building, so
-    this test also covers the spell staying compatible with zigpy.
+    argument, so a ``read_attributes`` keyword argument the installed zigpy does not
+    support (``split_requests``) would be swallowed instead of failing. Mocking one
+    layer lower runs the real frame building, so this test also covers the spell
+    staying compatible with zigpy.
     """
     device = zigpy_device_from_quirk(TuyaTestSpellDevice)
 
