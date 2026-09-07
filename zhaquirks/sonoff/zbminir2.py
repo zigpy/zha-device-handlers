@@ -202,15 +202,8 @@ class SonoffCluster(CustomCluster):
             parent_results = await super().write_attributes(
                 real_attrs, manufacturer, **kwargs
             )
-            if (
-                parent_results
-                and isinstance(parent_results, list)
-                and parent_results[0]
-            ):
-                if isinstance(parent_results[0], list):
-                    results.extend(parent_results[0])
-                else:
-                    results.extend(parent_results)
+            if parent_results and isinstance(parent_results, list) and parent_results[0]:
+                results.extend(parent_results[0] if isinstance(parent_results[0], list) else parent_results)
 
         _LOGGER.debug("write_attributes returning: %s", results)
         return [results]
@@ -297,8 +290,7 @@ class SonoffCluster(CustomCluster):
             except Exception:
                 _LOGGER.exception("Failed to process inching report")
             return
-        else:
-            return super().handle_message(hdr, args)
+        return super().handle_message(hdr, args)
 
 
 (
