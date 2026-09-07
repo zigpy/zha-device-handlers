@@ -330,6 +330,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
         MODELS_INFO: [
             ("_TZ3000_kjfzuycl", "TS004F"),
             ("_TZ3000_ja5osu5g", "TS004F"),
+            ("_TZ3000_egvb1p2g", "TS004F"),
         ],
         ENDPOINTS: {
             1: {
