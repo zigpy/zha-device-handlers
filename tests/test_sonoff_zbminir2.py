@@ -378,3 +378,28 @@ async def test_send_combined_with_disabled_inching(zbminir2_device):
     with mock.patch.object(cluster, "set_inching", mock.AsyncMock()) as mock_set:
         await cluster._send_combined()
         mock_set.assert_called_once_with(0x00, 0, 2)
+
+
+async def test_handle_message_inching_report_short_payload(zbminir2_device):
+    """Test handle_message catches IndexError when payload is too short."""
+    cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
+    listener = ClusterListener(cluster)
+
+    hdr = ZCLHeader(
+        frame_control=FrameControl(
+            frame_type=FrameType.CLUSTER_COMMAND,
+            is_manufacturer_specific=True,
+            direction=Direction.Server_to_Client,
+            disable_default_response=False,
+            reserved=0,
+        ),
+        manufacturer=SONOFF_MANUFACTURER_CODE,
+        tsn=0x12,
+        command_id=0x01,
+    )
+    # Payload length 2 (only INCHING_CMD and INCHING_SUBCMD), missing inching_num
+    short_payload = bytes([0x01, 0x17])
+    cluster.handle_message(hdr, short_payload)
+
+    # No attribute updates should occur; exception is caught and logged
+    assert len(listener.attribute_updates) == 0
