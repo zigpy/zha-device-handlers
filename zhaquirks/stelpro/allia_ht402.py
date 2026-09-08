@@ -1,0 +1,91 @@
+"""ZHA Quirk (v2) for Stello HT402.
+
+Adds manufacturer attributes:
+- 0x4008: Instant power (W)
+- 0x4009: Cumulative energy (Wh)
+- 0x4001: Outdoor temperature (°C or °F, read/write)
+"""
+
+from typing import Final
+
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import (
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zigpy.quirks.v2.homeassistant import UnitOfEnergy, UnitOfPower, UnitOfTemperature
+import zigpy.types as t
+from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
+
+MANUFACTURER: Final = "Stello"
+MODEL: Final = "HT402"
+
+
+class AlliaThermostatCluster(Thermostat, CustomCluster):
+    """Thermostat cluster extended with Stello/Allia manufacturer attributes."""
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Vendor-specific attributes added to the Thermostat cluster.
+
+        - 0x4001: outdoor temperature (°C or °F), int16, read/write
+        - 0x4008: instant power (W), uint16, read-only
+        - 0x4009: cumulative energy (Wh), uint32, read-only
+        """
+
+        # 0x4001: Outdoor temperature (int16, read/write)
+        outdoor_temperature = ZCLAttributeDef(
+            id=0x4001,
+            type=t.int16s,
+            access="rpw",  # readable, reportable, writable
+        )
+        # 0x4008: Instant power in Watts (uint16)
+        power_w = ZCLAttributeDef(id=0x4008, type=t.uint16_t, access="rp")
+        # 0x4009: Cumulative energy in Watt-hours (uint32)
+        energy_wh = ZCLAttributeDef(id=0x4009, type=t.uint32_t, access="rp")
+
+
+(
+    QuirkBuilder("Stello", "HT402")
+    .replaces(AlliaThermostatCluster, endpoint_id=25)
+    # Instant Power
+    .sensor(
+        attribute_name=AlliaThermostatCluster.AttributeDefs.power_w.name,
+        cluster_id=AlliaThermostatCluster.cluster_id,
+        endpoint_id=25,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfPower.WATT,
+        reporting_config=ReportingConfig(
+            min_interval=5, max_interval=300, reportable_change=1
+        ),
+        fallback_name="Power",
+    )
+    # Energy (cumulative)
+    .sensor(
+        attribute_name=AlliaThermostatCluster.AttributeDefs.energy_wh.name,
+        cluster_id=AlliaThermostatCluster.cluster_id,
+        endpoint_id=25,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.WATT_HOUR,
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=3600, reportable_change=10
+        ),
+        fallback_name="Energy",
+    )
+    # Outdoor Temperature (0x4001) — read/write
+    .sensor(
+        attribute_name=AlliaThermostatCluster.AttributeDefs.outdoor_temperature.name,
+        cluster_id=AlliaThermostatCluster.cluster_id,
+        endpoint_id=25,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,  # Would need to convert to F
+        translation_key="outdoor_temperature",
+        fallback_name="Outdoor temperature",
+    )
+    .add_to_registry()
+)
