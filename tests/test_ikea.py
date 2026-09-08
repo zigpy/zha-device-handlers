@@ -4,12 +4,12 @@ from unittest import mock
 
 import pytest
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
 from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
+from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, IkeaBilresaScenesCluster
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
 
@@ -324,3 +324,35 @@ async def test_bilresa_direction_tracking(
             if c == mock.call(expected_event, [])
         ]
         assert len(release_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "param1,expected_event",
+    [
+        (256, "double_press_dim_up"),
+        (257, "double_press_dim_down"),
+        (0, None),  # unrecognised param — no double-press event emitted
+    ],
+)
+async def test_bilresa_double_press(zigpy_device_from_v2_quirk, param1, expected_event):
+    """Test IkeaBilresaScenesCluster emits the correct event on double-press."""
+    device = zigpy_device_from_v2_quirk(
+        IKEA,
+        "09B9",
+        cluster_ids={1: {Scenes.cluster_id: ClusterType.Client}},
+    )
+
+    scenes_cluster = device.endpoints[1].out_clusters[Scenes.cluster_id]
+    assert isinstance(scenes_cluster, IkeaBilresaScenesCluster)
+
+    listener = mock.MagicMock()
+    scenes_cluster.add_listener(listener)
+
+    hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=0x0007)
+    scenes_cluster.handle_cluster_request(hdr, [param1, 13, 0])
+
+    if expected_event is None:
+        for call in listener.zha_send_event.call_args_list:
+            assert call[0][0] not in ("double_press_dim_up", "double_press_dim_down")
+    else:
+        listener.zha_send_event.assert_any_call(expected_event, [])
