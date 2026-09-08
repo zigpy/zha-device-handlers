@@ -62,6 +62,10 @@ class TuyaValveStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_81isopgh", "TS0601")
     .applies_to("_TZE200_1n2zev06", "TS0601")
+    .applies_to(
+        "_TZE204_qtnjuoae", "TS0601"
+    )  # SASWELL SAS980SWT-7-Z01, reported same (issue #3287)
+    .applies_to("_TZE200_akjefhj5", "TS0601")  # reported same (discussion #1660)
     .tuya_onoff(dp_id=1)
     .tuya_metering(
         dp_id=5, scale=0.0295735
@@ -80,14 +84,16 @@ class TuyaValveStatus(t.enum8):
         fallback_name="Weather delay",
         initially_disabled=True,
     )
-    .tuya_sensor(
+    # DP 11 raw value is in seconds; expose as a writable countdown in minutes.
+    .tuya_number(
         dp_id=11,
         attribute_name="time_left",
         type=t.uint32_t,
-        converter=lambda x: x / 60,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.DURATION,
-        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=1440,
+        step=1,
+        multiplier=1 / 60,
+        unit=UnitOfTime.MINUTES,
         translation_key="time_left",
         fallback_name="Time left",
     )
