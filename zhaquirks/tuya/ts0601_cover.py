@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -20,6 +21,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -704,4 +706,197 @@ class BorderSetting(t.enum8):
     )
     .skip_configuration()
     .add_to_registry()
+)
+
+
+class TuyaCoverSchedule(t.enum8):
+    """Tuya cover schedule mode."""
+
+    Morning = 0x00
+    Night = 0x01
+
+
+class TuyaCoverNudge(t.enum8):
+    """Tuya cover single-step nudge control."""
+
+    Up = 0x00
+    Down = 0x01
+
+
+# _TZE200_68nvbio9 (roller blinds) and _TZE200_cf1sl3tj (curtains) share an
+# identical DP layout, confirmed via the Tuya cloud API's local_strategy
+# mapping. Both are already covered by the legacy TuyaMoesCover0601 quirk
+# above (dp1/2/3/4/5 only, shared with 15 other manufacturer IDs) - v2 quirks
+# are matched before legacy ones, so this block takes over for these two IDs
+# specifically without needing to touch the legacy quirk's device list.
+#
+# This exposes the rest of the DP map that TuyaMoesCover0601 leaves unwired:
+# battery (dp13), motor fault (dp12), schedule mode (dp4), motor direction
+# (dp5), the OEM app's travel-limit calibration commands (dp16, "border" -
+# useful if a cover settles a few percent short of true open/closed), a
+# favourite/preset position (dp19), and a single-step nudge control (dp20).
+# dp7 (work_state) and dp11 (situation) are also defined in the cloud
+# product template but never observed reporting on real hardware across full
+# command-triggered open/close cycles with debug logging active - omitted
+# rather than left as permanently-unknown entities.
+#
+# Position wiring is NOT shared between the two IDs (see _add_shared_entities
+# below for what is). tuya_cover()'s position_control_dp and position_state_dp
+# both map to the same ZCL current_position_lift_percentage attribute - dp2
+# (position_control, the target the motor was just told to go to) and dp3
+# (position_state, the motor's real measured position) race to set it.
+# On _TZE200_cf1sl3tj (curtains), dp2's echo of the target lands first,
+# displaying the curtain as having instantly reached the target, before dp3's
+# genuine report corrects it a moment later - confirmed on real hardware via
+# raw Zigbee debug log, exact-millisecond correlation between the dp2 report
+# and the erroneous state change, and the whole "closes then reopens" cycle
+# completing in well under a second, far faster than the motor's real ~2.7s
+# full-travel time. Dropping dp2 from the position wiring for this ID only
+# (dp3 alone drives position) fixes it - live-tested clean across several
+# full open/close cycles.
+#
+# Dropping dp2 for _TZE200_68nvbio9 too was tried and reverted: live-tested,
+# it left a real device stuck in the "closing" state for over a minute -
+# unlike the curtains, this manufacturer ID does not reliably send dp3
+# promptly (or at all) on every movement, so dp2 is load-bearing for its
+# responsiveness rather than just a source of the same bug. Two manufacturer
+# IDs sharing an identical documented DP layout does not mean they share
+# real device behaviour - hence the split below instead of a single shared
+# loop, and instead of changing tuya_cover()'s default behaviour (which
+# would risk regressing other quirks using it that may rely on the same
+# dp2 fallback _TZE200_68nvbio9 does).
+
+
+def _add_shared_entities(builder):
+    """DPs 4/5/12/13/16/19/20 - identical wiring for both manufacturer IDs."""
+    return (
+        builder.tuya_enum(
+            dp_id=4,
+            attribute_name="schedule_mode",
+            enum_class=TuyaCoverSchedule,
+            translation_key="schedule_mode",
+            fallback_name="Schedule mode",
+        )
+        .tuya_enum(
+            dp_id=5,
+            attribute_name="motor_direction",
+            enum_class=MotorDirection,
+            translation_key="motor_direction",
+            fallback_name="Motor direction",
+        )
+        .tuya_binary_sensor(
+            dp_id=12,
+            attribute_name="motor_fault",
+            translation_key="motor_fault",
+            fallback_name="Motor fault",
+        )
+        .tuya_battery(dp_id=13)
+        .tuya_dp_attribute(
+            dp_id=16,
+            attribute_name="border",
+            type=BorderSetting,
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Up,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_up",
+            translation_key="set_upper_limit",
+            fallback_name="Set upper limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Down,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_down",
+            translation_key="set_lower_limit",
+            fallback_name="Set lower limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Up_delete,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_up_delete",
+            translation_key="delete_upper_limit",
+            fallback_name="Delete upper limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Down_delete,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_down_delete",
+            translation_key="delete_lower_limit",
+            fallback_name="Delete lower limit",
+        )
+        .write_attr_button(
+            attribute_name="border",
+            attribute_value=BorderSetting.Remove_top_bottom,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="border_remove_all",
+            translation_key="delete_all_limits",
+            fallback_name="Delete all limits",
+        )
+        .tuya_number(
+            dp_id=19,
+            attribute_name="position_best",
+            type=t.uint8_t,
+            unit="%",
+            min_value=0,
+            max_value=100,
+            step=1,
+            translation_key="position_best",
+            fallback_name="Favourite position",
+        )
+        .tuya_dp_attribute(
+            dp_id=20,
+            attribute_name="click_control",
+            type=TuyaCoverNudge,
+        )
+        .write_attr_button(
+            attribute_name="click_control",
+            attribute_value=TuyaCoverNudge.Up,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="nudge_up",
+            translation_key="nudge_up",
+            fallback_name="Nudge up",
+        )
+        .write_attr_button(
+            attribute_name="click_control",
+            attribute_value=TuyaCoverNudge.Down,
+            cluster_id=TUYA_CLUSTER_ID,
+            unique_id_suffix="nudge_down",
+            translation_key="nudge_down",
+            fallback_name="Nudge down",
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+
+# _TZE200_68nvbio9 (roller blinds) - dp2 is load-bearing for responsiveness,
+# keep the standard tuya_cover() wiring (dp2 and dp3 both drive position).
+_add_shared_entities(
+    TuyaQuirkBuilder("_TZE200_68nvbio9", "TS0601").tuya_cover(
+        control_dp=1, position_state_dp=3, position_control_dp=2, invert=True
+    )
+)
+
+# _TZE200_cf1sl3tj (curtains) - dp2 dropped from position wiring (see comment
+# above); only dp3 drives current_position_lift_percentage.
+_add_shared_entities(
+    TuyaQuirkBuilder("_TZE200_cf1sl3tj", "TS0601")
+    .tuya_dp(
+        1,
+        TuyaWindowCovering.ep_attribute,
+        TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
+    )
+    .tuya_dp(
+        3,
+        TuyaWindowCovering.ep_attribute,
+        WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+        converter=lambda x: 100 - x,
+        dp_converter=lambda x: 100 - x,
+    )
+    .adds(TuyaWindowCovering)
+    .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
 )
