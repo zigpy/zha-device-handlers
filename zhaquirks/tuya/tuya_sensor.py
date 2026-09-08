@@ -100,6 +100,57 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .add_to_registry()
 )
 
+(
+    TuyaQuirkBuilder(
+        "_TZE204_navtwmd0", "TS0601"
+    )  # Only temperature with alarm, display and external sensor
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="temperature_alarm",
+        enum_class=TuyaNousTempHumiAlarm,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_alarm",
+        fallback_name="Temperature alarm",
+    )
+    .tuya_number(
+        dp_id=10,
+        attribute_name="alarm_temperature_max",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-20,
+        max_value=60,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        translation_key="alarm_temperature_max",
+        fallback_name="Alarm temperature max",
+    )
+    .tuya_number(
+        dp_id=11,
+        attribute_name="alarm_temperature_min",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-20,
+        max_value=60,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        translation_key="alarm_temperature_min",
+        fallback_name="Alarm temperature min",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
 
 (
     TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
