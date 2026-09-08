@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 
@@ -10,6 +11,11 @@ from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
+from zhaquirks.sonoff.swv import (
+    CustomSonoffFlowCluster,
+    ValveState,
+    swap_endianness_32bit,
+)
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
     SonoffDetachedRelayMask,
@@ -272,3 +278,57 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
 
     cluster.update_attribute(0x0001, 1)
     assert listener.zha_send_event.call_count == 0
+
+
+def test_swv_swap_endianness_32bit():
+    """Test the 32-bit byte-swap helper used for the SWV-ZFE real-time counters."""
+    assert swap_endianness_32bit(0x5E000000) == 94
+    assert swap_endianness_32bit(94) == 0x5E000000
+    assert swap_endianness_32bit(0) == 0
+    assert swap_endianness_32bit(0xFFFFFFFF) == 0xFFFFFFFF
+
+
+@pytest.mark.parametrize("model", ["SWV-ZFE", "SWV-ZFU"])
+async def test_sonoff_swv_zfe_quirk(zigpy_device_from_v2_quirk, model):
+    """Test the SWV-ZFE/SWV-ZFU flow-meter valve quirk entities and converters."""
+    device = zigpy_device_from_v2_quirk("SONOFF", model)
+
+    cluster = device.endpoints[1].in_clusters[CustomSonoffFlowCluster.cluster_id]
+    assert isinstance(cluster, CustomSonoffFlowCluster)
+
+    entry = DEVICE_REGISTRY.match_entry(device)
+    metadata_by_suffix = {
+        metadata.resolved_unique_id_suffix: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+
+    for suffix in (
+        "water_leak_status",
+        "water_supply_status",
+        "real_time_irrigation_volume",
+        "real_time_irrigation_duration",
+        "hour_irrigation_volume",
+        "hour_irrigation_duration",
+    ):
+        assert suffix in metadata_by_suffix
+
+    # the real-time counters are reported big-endian and must be swapped
+    for suffix in ("real_time_irrigation_volume", "real_time_irrigation_duration"):
+        converter = metadata_by_suffix[suffix].attribute_converter
+        assert converter(0x5E000000) == 94
+
+    # the hourly counters are reported little-endian and must not be swapped
+    for suffix in ("hour_irrigation_volume", "hour_irrigation_duration"):
+        assert metadata_by_suffix[suffix].attribute_converter is None
+
+    leak_converter = metadata_by_suffix["water_leak_status"].attribute_converter
+    assert leak_converter(ValveState.Water_Leakage)
+    assert leak_converter(ValveState.Water_Shortage_And_Leakage)
+    assert not leak_converter(ValveState.Water_Shortage)
+    assert not leak_converter(ValveState.Normal)
+
+    supply_converter = metadata_by_suffix["water_supply_status"].attribute_converter
+    assert supply_converter(ValveState.Water_Shortage)
+    assert supply_converter(ValveState.Water_Shortage_And_Leakage)
+    assert not supply_converter(ValveState.Water_Leakage)
+    assert not supply_converter(ValveState.Normal)
