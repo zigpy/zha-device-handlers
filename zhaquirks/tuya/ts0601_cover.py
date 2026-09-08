@@ -1,6 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
+from zigpy.quirks.v2 import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
@@ -703,5 +704,62 @@ class BorderSetting(t.enum8):
         fallback_name="Delete all limits",
     )
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+class LibhtCalibration(t.enum8):
+    """Calibration (set upper limit) values for _TZE200_libht6ua."""
+
+    Start = 0x00
+    Stop = 0x01
+
+
+(
+    TuyaQuirkBuilder("_TZE200_libht6ua", "TS0601")
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=3,
+        position_control_dp=2,
+        invert=False,
+    )
+    .tuya_battery(dp_id=13)
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_dp_attribute(
+        dp_id=102,
+        attribute_name="calibration",
+        type=LibhtCalibration,
+    )
+    .write_attr_button(
+        attribute_name="calibration",
+        attribute_value=LibhtCalibration.Start,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="calibration_start",
+        translation_key="calibration_start",
+        fallback_name="Start calibration",
+    )
+    .write_attr_button(
+        attribute_name="calibration",
+        attribute_value=LibhtCalibration.Stop,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="calibration_stop",
+        translation_key="calibration_stop",
+        fallback_name="Stop calibration",
+    )
+    .skip_configuration()
+    .tuya_enchantment(data_query_spell=True)
     .add_to_registry()
 )
