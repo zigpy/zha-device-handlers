@@ -1,19 +1,10 @@
 """Sonoff ZBM5 - Zigbee Switch Module."""
 
-from typing import Any, Final
-
 import zigpy.types as t
-from zigpy.zcl import (
-    AttributeReadEvent,
-    AttributeReportedEvent,
-    AttributeUpdatedEvent,
-    AttributeWrittenEvent,
-    ClusterType,
-)
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import LocalDataCluster
 from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
@@ -62,89 +53,18 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-    def __init__(self, *args, **kwargs):
-        """Init and listen for mask attribute changes."""
-        super().__init__(*args, **kwargs)
-        self.on_event(AttributeReadEvent.event_type, self._handle_mask_change)
-        self.on_event(AttributeReportedEvent.event_type, self._handle_mask_change)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_mask_change)
-        self.on_event(AttributeWrittenEvent.event_type, self._handle_mask_change)
-
-    def _handle_mask_change(
-        self,
-        event: AttributeReadEvent
-        | AttributeReportedEvent
-        | AttributeUpdatedEvent
-        | AttributeWrittenEvent,
-    ) -> None:
-        """Sync relay states to local config cluster on mask change."""
-        if isinstance(event, AttributeWrittenEvent) and event.status != Status.SUCCESS:
-            return
-        if event.attribute_id == self.AttributeDefs.detach_relay_mask.id:
-            self.endpoint.sonoff_input_config.update_relay_states(event.value)
-
-    async def apply_custom_configuration(self, *args, **kwargs):
-        """Read detach_relay_mask during pairing to populate local relay states."""
-        # XXX: We should have a quirks v2 API for adding attributes to ZCL_INIT_ATTRS
-        await self.read_attributes([self.AttributeDefs.detach_relay_mask.id])
-
-
-class SonoffInputConfigCluster(LocalDataCluster):
-    """Local cluster for individual relay detach switches."""
-
-    cluster_id = 0xFBFE
-    ep_attribute = "sonoff_input_config"
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Attribute definitions."""
-
-        relay_1_detached: Final = ZCLAttributeDef(id=0x0000, type=t.Bool)
-        relay_2_detached: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
-        relay_3_detached: Final = ZCLAttributeDef(id=0x0002, type=t.Bool)
-
-    _RELAY_BITS: dict[int, int] = {
-        AttributeDefs.relay_1_detached.id: SonoffDetachedRelayMask.Relay1,
-        AttributeDefs.relay_2_detached.id: SonoffDetachedRelayMask.Relay2,
-        AttributeDefs.relay_3_detached.id: SonoffDetachedRelayMask.Relay3,
-    }
-
-    _DEFAULT_VALUES = {
-        AttributeDefs.relay_1_detached.id: t.Bool.false,
-        AttributeDefs.relay_2_detached.id: t.Bool.false,
-        AttributeDefs.relay_3_detached.id: t.Bool.false,
-    }
-
-    def update_relay_states(self, mask: int) -> None:
-        """Update individual relay states from a bitmap mask."""
-        for attr_id, bit in self._RELAY_BITS.items():
-            self._update_attribute(attr_id, bool(mask & bit))
-
-    async def write_attributes(
-        self,
-        attributes: dict[str | int | ZCLAttributeDef, Any],
-        **kwargs,
-    ) -> list:
-        """Translate per-relay writes into a mask write on real SonoffCluster."""
-        mask_attr_id = SonoffCluster.AttributeDefs.detach_relay_mask.id
-        mask = self.endpoint.sonoff_cluster.get(mask_attr_id, 0)
-
-        for attr, value in attributes.items():
-            bit = self._RELAY_BITS.get(self.find_attribute(attr).id)
-            if bit is not None:
-                if value:
-                    mask |= bit
-                else:
-                    mask &= ~bit
-
-        return await self.endpoint.sonoff_cluster.write_attributes({mask_attr_id: mask})
-
 
 # Base quirk for 1-channel device
+#
+# Each relay's "detach" switch toggles one bit of the real `detach_relay_mask`
+# bitmap via the builder's `mask=` read-modify-write, so no synthetic per-bit
+# attributes are needed. `attribute_initialized_from_cache=False` makes ZHA read
+# the mask on startup so the switch state is populated. `unique_id_suffix` keeps
+# the entity unique_ids identical to the previous (local shadow cluster) quirk.
 zbm_1c_quirk = (
     QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
     .applies_to("SONOFF", "ZBM5-1C-120")
     .replaces(SonoffCluster)
-    .adds(SonoffInputConfigCluster)
     .adds(OnOff, cluster_type=ClusterType.Client)
     .prevent_default_entity_creation(
         endpoint_id=1,
@@ -161,8 +81,11 @@ zbm_1c_quirk = (
         fallback_name="Work mode",
     )
     .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
-        SonoffInputConfigCluster.cluster_id,
+        SonoffCluster.AttributeDefs.detach_relay_mask.name,
+        SonoffCluster.cluster_id,
+        mask=SonoffDetachedRelayMask.Relay1,
+        attribute_initialized_from_cache=False,
+        unique_id_suffix="relay_1_detached",
         translation_key="detach_relay_id",
         fallback_name="Detach relay 1",
         translation_placeholders={"id": "1"},
@@ -184,8 +107,11 @@ zbm_2c_quirk = (
         function=lambda entity: entity.device_class == "opening",
     )
     .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
-        SonoffInputConfigCluster.cluster_id,
+        SonoffCluster.AttributeDefs.detach_relay_mask.name,
+        SonoffCluster.cluster_id,
+        mask=SonoffDetachedRelayMask.Relay2,
+        attribute_initialized_from_cache=False,
+        unique_id_suffix="relay_2_detached",
         translation_key="detach_relay_id",
         fallback_name="Detach relay 2",
         translation_placeholders={"id": "2"},
@@ -207,8 +133,11 @@ zbm_3c_quirk = (
         function=lambda entity: entity.device_class == "opening",
     )
     .switch(
-        SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
-        SonoffInputConfigCluster.cluster_id,
+        SonoffCluster.AttributeDefs.detach_relay_mask.name,
+        SonoffCluster.cluster_id,
+        mask=SonoffDetachedRelayMask.Relay3,
+        attribute_initialized_from_cache=False,
+        unique_id_suffix="relay_3_detached",
         translation_key="detach_relay_id",
         fallback_name="Detach relay 3",
         translation_placeholders={"id": "3"},
