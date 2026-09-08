@@ -2,10 +2,19 @@
 
 from zigpy import types
 import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
+    COMMAND,
+    COMMAND_TOGGLE,
+    ENDPOINT_ID,
+    SHORT_PRESS,
+)
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
@@ -62,6 +71,16 @@ zb2gs_l_quirk = (
     QuirkBuilder("SONOFF", "MINI-ZB2GS-L")
     .replaces(SonoffCluster, endpoint_id=1)
     .replaces(SonoffCluster, endpoint_id=2)
+    .prevent_default_entity_creation(
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.device_class == "opening",
+    )
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1},
+            (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 2},
+        }
+    )
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
