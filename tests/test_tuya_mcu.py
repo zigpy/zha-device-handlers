@@ -451,3 +451,36 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
     assert result[0].datapoints[0].dp == 1
     # combine_power_and_current(7, 42) = 7 * 1000 + 42 = 7042
     assert result[0].datapoints[0].data.payload == 7042
+
+
+async def test_tuya_cluster_data_string_attr_value(zigpy_device_from_v2_quirk):
+    """Test that string datapoints survive TuyaClusterData and reach the MCU.
+
+    TuyaClusterData.attr_value used to be typed `int`, so zigpy's Struct
+    conversion raised ValueError for any non-numeric value and string
+    datapoints could not be written at all.
+    """
+
+    # Manhot MH03-2Z-OLED exposes the two OLED gang labels as string DPs.
+    device = zigpy_device_from_v2_quirk("_TZE284_dnhhp8ew", "TS0601")
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+
+    cluster_data = TuyaClusterData(
+        endpoint_id=1,
+        cluster_name=tuya_cluster.ep_attribute,
+        cluster_attr="sw1_name",
+        attr_value="Kitchen",
+        expect_reply=False,
+    )
+
+    # The value must not be coerced away from str.
+    assert cluster_data.attr_value == "Kitchen"
+
+    commands = tuya_cluster.from_cluster_data(cluster_data)
+    assert len(commands) == 1
+
+    datapoints = commands[0].datapoints
+    assert len(datapoints) == 1
+    assert datapoints[0].dp == 106
+    assert datapoints[0].data.dp_type == TuyaDPType.STRING
+    assert datapoints[0].data.payload == "Kitchen"
