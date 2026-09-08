@@ -1,31 +1,26 @@
-"""Schneider Electric dimmers and switches quirks."""
+"""Schneider Electric switches quirks."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
-    SEBallast,
     SEBasic,
-    SEControlMode,
-    SEDimmingCurve,
     SEOnOff,
     SESwitchAction,
     SESwitchConfiguration,
     SESwitchIndication,
-    SEWiringMode,
 )
 
-base_micro_dimmer = (
+base_micro_switch = (
     QuirkBuilder()
-    .replaces(SEBasic, endpoint_id=3)
-    .replaces(SEBallast, endpoint_id=3)
-    .replaces(SEOnOff, endpoint_id=3)
+    .replaces(SEBasic)
+    .replaces(SEOnOff)
     .number(
         attribute_name=SEOnOff.AttributeDefs.se_on_time_reload.name,
         cluster_id=SEOnOff.cluster_id,
-        endpoint_id=3,
+        endpoint_id=1,
         min_value=0,
         max_value=0xFFFFFFFF,
         step=1,
@@ -37,7 +32,7 @@ base_micro_dimmer = (
     .number(
         attribute_name=SEOnOff.AttributeDefs.se_pre_warning_time.name,
         cluster_id=SEOnOff.cluster_id,
-        endpoint_id=3,
+        endpoint_id=1,
         min_value=0,
         max_value=6553,
         step=1,
@@ -46,18 +41,13 @@ base_micro_dimmer = (
         translation_key="pre_warning_time",
         fallback_name="Pre warning time",
     )
-    .enum(
-        attribute_name=SEBallast.AttributeDefs.se_control_mode.name,
-        enum_class=SEControlMode,
-        cluster_id=SEBallast.cluster_id,
-        endpoint_id=3,
-        translation_key="control_mode",
-        fallback_name="Control mode",
-    )
 )
 
-base_dimmer = (
-    base_micro_dimmer.clone()
+(
+    base_micro_switch.clone()
+    .applies_to(SE_MANUF_NAME, "NHPB/SWITCH/1")
+    .applies_to(SE_MANUF_NAME, "CH2AX/SWITCH/1")
+    .applies_to(SE_MANUF_NAME, "CH10AX/SWITCH/1")
     .replaces(SEBasic, endpoint_id=21)
     .replaces(SESwitchConfiguration, endpoint_id=21)
     .enum(
@@ -76,43 +66,11 @@ base_dimmer = (
         translation_key="switch_actions",
         fallback_name="Switch actions",
     )
+    .add_to_registry()
 )
 
 (
-    base_micro_dimmer.clone()
-    .applies_to(SE_MANUF_NAME, "PUCK/DIMMER/1")
+    base_micro_switch.clone()
+    .applies_to(SE_MANUF_NAME, "PUCK/SWITCH/1")
     .add_to_registry()
 )  # fmt: skip
-
-(
-    base_dimmer.clone()
-    .applies_to(SE_MANUF_NAME, "NHROTARY/DIMMER/1")
-    .applies_to(SE_MANUF_NAME, "NHPB/DIMMER/1")
-    .applies_to(SE_MANUF_NAME, "CH/DIMMER/1")
-    .add_to_registry()
-)
-
-(
-    base_dimmer.clone()
-    .applies_to(SE_MANUF_NAME, "NHROTARY/UNIDIM/1")
-    .applies_to(SE_MANUF_NAME, "NHPB/UNIDIM/1")
-    .enum(
-        attribute_name=SEBallast.AttributeDefs.se_wiring_mode.name,
-        enum_class=SEWiringMode,
-        cluster_id=SEBallast.cluster_id,
-        endpoint_id=3,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="wiring_mode",
-        fallback_name="Wiring mode",
-    )
-    .enum(
-        attribute_name=SEBallast.AttributeDefs.se_dimming_curve.name,
-        enum_class=SEDimmingCurve,
-        cluster_id=SEBallast.cluster_id,
-        endpoint_id=3,
-        translation_key="dimming_curve",
-        fallback_name="Dimming curve",
-    )
-    .add_to_registry()
-)
