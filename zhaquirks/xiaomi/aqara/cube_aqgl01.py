@@ -1,5 +1,8 @@
 """Xiaomi aqara magic cube device."""
 
+from typing import Final
+
+from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -11,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -33,6 +37,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -57,6 +62,11 @@ FLIP_BEGIN = 50
 FLIP_DEGREES = "flip_degrees"
 FLIP_END = 180
 FLIPPED = "device_flipped"
+HELD = "device_held"
+HOLD = "hold"
+HOLD_VALUE = 4
+INACTIVITY = "1_min_inactivity"
+INACTIVITY_VALUE = 2
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
@@ -68,6 +78,7 @@ KNOCK_6_VALUE = 517  # aqara facing me upright
 
 KNOCKED = "device_knocked"
 LEFT = "left"
+MOVED_AFTER_INACTIVITY = "device_moved_after_inactivity"
 RELATIVE_DEGREES = "relative_degrees"
 RIGHT = "right"
 ROTATE_LEFT = "rotate_left"
@@ -75,6 +86,8 @@ ROTATE_RIGHT = "rotate_right"
 ROTATED = "device_rotated"
 SHAKE = "shake"
 SHAKE_VALUE = 0
+SIDE_UP = "side_up"
+SIDE_UPPED = "device_side_up"
 SLID = "device_slid"
 SLIDE = "slide"
 
@@ -96,6 +109,7 @@ XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 
 MOVEMENT_TYPE = {
     SHAKE_VALUE: SHAKE,
+    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: SLIDE,
     SLIDE_2_VALUE: SLIDE,
@@ -113,6 +127,7 @@ MOVEMENT_TYPE = {
 
 MOVEMENT_TYPE_DESCRIPTION = {
     SHAKE_VALUE: SHAKE,
+    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
@@ -156,6 +171,10 @@ extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
+    # Subclasses may override this to map additional/different raw values,
+    # since the same raw value can mean different things on different cubes.
+    MOVEMENT_TYPE = MOVEMENT_TYPE
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
@@ -164,7 +183,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == STATUS_TYPE_ATTR:
-            self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(value)
+            self._current_state[STATUS_TYPE_ATTR] = action = self.MOVEMENT_TYPE.get(
+                value
+            )
             event_args = {VALUE: value}
             if action is not None:
                 if action in (SLIDE, KNOCK):
@@ -183,6 +204,56 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class CubeT1MultistateInputCluster(MultistateInputCluster):
+    """Multistate input cluster for the Aqara T1 cube.
+
+    Raw value 2 means the cube was moved after standing still for a minute,
+    unlike the older cube (CubeAQGL01), where the same raw value means
+    "wakeup" instead.
+    """
+
+    MOVEMENT_TYPE = {**MOVEMENT_TYPE, INACTIVITY_VALUE: INACTIVITY}
+
+
+class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
+    """Power configuration cluster matching the Aqara T1 cube's battery voltage range."""
+
+    MIN_VOLTS_MV = 2850
+    MAX_VOLTS_MV = 3000
+
+
+class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer specific cluster for the T1 cube.
+
+    The T1 cube reports manufacturer specific attributes as individual
+    attributes on this cluster instead of using the legacy Xiaomi attribute
+    blob on the Basic cluster. This cluster is not present in the device's
+    signature, but the device communicates on it regardless, from both
+    endpoint 1 (e.g. battery voltage) and endpoint 2 (e.g. side_up).
+    """
+
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        battery_voltage_mv: Final = ZCLAttributeDef(
+            id=0x0001, type=t.uint16_t, is_manufacturer_specific=True
+        )
+
+        # Reported only in scene_mode, when the cube is picked up, rotated to
+        # a new face, and set back down without being flipped or dropped.
+        side_up: Final = ZCLAttributeDef(
+            id=0x0149, type=t.uint8_t, is_manufacturer_specific=True
+        )
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.battery_voltage_mv.id:
+            if hasattr(self.endpoint, "power"):
+                self.endpoint.power.battery_reported(value)
+        elif attrid == self.AttributeDefs.side_up.id:
+            self.listener_event(ZHA_SEND_EVENT, SIDE_UP, {ACTIVATED_FACE: value + 1})
+        super()._update_attribute(attrid, value)
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -413,10 +484,11 @@ class CubeCAGL02(XiaomiCustomDevice):
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    XiaomiPowerConfiguration,
+                    CubeT1PowerConfiguration,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     MultistateInput.cluster_id,
+                    CubeT1ManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
@@ -426,7 +498,10 @@ class CubeCAGL02(XiaomiCustomDevice):
             },
             2: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
-                INPUT_CLUSTERS: [MultistateInputCluster],
+                INPUT_CLUSTERS: [
+                    CubeT1MultistateInputCluster,
+                    CubeT1ManufacturerCluster,
+                ],
                 OUTPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
                 ],
@@ -441,4 +516,15 @@ class CubeCAGL02(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = CubeAQGL01.device_automation_triggers
+    device_automation_triggers = {
+        **CubeAQGL01.device_automation_triggers,
+        (HELD, TURN_ON): {COMMAND: HOLD},
+        (MOVED_AFTER_INACTIVITY, TURN_ON): {COMMAND: INACTIVITY},
+        (SIDE_UPPED, FACE_ANY): {COMMAND: SIDE_UP},
+        (SIDE_UPPED, FACE_1): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 1}},
+        (SIDE_UPPED, FACE_2): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 2}},
+        (SIDE_UPPED, FACE_3): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 3}},
+        (SIDE_UPPED, FACE_4): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 4}},
+        (SIDE_UPPED, FACE_5): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 5}},
+        (SIDE_UPPED, FACE_6): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 6}},
+    }
