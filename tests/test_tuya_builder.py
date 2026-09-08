@@ -390,6 +390,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
             # all six attributes must go out in the *first* request: Tuya devices
             # only accept the spell as a single combined read (#5307). Flattening
             # the attributes across requests would also accept a split read.
+            assert read_calls, "attribute read spell was not cast"
             assert read_calls[0][1][3] == [4, 0, 1, 5, 7, 65534]
         else:
             assert not read_calls
