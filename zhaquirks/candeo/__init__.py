@@ -1,19 +1,13 @@
 """Module for Candeo quirks implementations."""
 
 import math
-from typing import Final
 
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import (
-    BaseCommandDefs,
-    DataTypeId,
-    ZCLAttributeDef,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZONE_TYPE
@@ -26,13 +20,6 @@ class CandeoSwitchType(t.enum8):
 
     Momentary = 0x00
     Toggle = 0x01
-
-
-class CandeoRemoteDirection(t.enum8):
-    """Candeo Remote Direction."""
-
-    Right = 0x00
-    Left = 0x01
 
 
 class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement, CustomCluster):
@@ -118,47 +105,3 @@ class CandeoRGBCCTColorCluster(Color, CustomCluster):
         Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes
         + Color.ColorCapabilities.Color_temperature
     }
-
-
-class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
-    """Candeo OnOff Remote Cluster."""
-
-    class ServerCommandDefs(BaseCommandDefs):
-        """overwrite ServerCommandDefs."""
-
-        double: Final = ZCLCommandDef(
-            id=0x00,
-            schema={},
-        )
-        press: Final = ZCLCommandDef(
-            id=0x01,
-            schema={},
-        )
-        hold: Final = ZCLCommandDef(
-            id=0x02,
-            schema={},
-        )
-        release: Final = ZCLCommandDef(
-            id=0x03,
-            schema={},
-        )
-
-
-class CandeoLevelControlRemoteCluster(LevelControl, CustomCluster):
-    """Candeo LevelControl Remote Cluster."""
-
-    class ServerCommandDefs(BaseCommandDefs):
-        """overwrite ServerCommandDefs."""
-
-        started_rotating: Final = ZCLCommandDef(
-            id=0x05,
-            schema={"direction": CandeoRemoteDirection},
-        )
-        continued_rotating: Final = ZCLCommandDef(
-            id=0x06,
-            schema={"direction": CandeoRemoteDirection},
-        )
-        stopped_rotating: Final = ZCLCommandDef(
-            id=0x03,
-            schema={},
-        )
