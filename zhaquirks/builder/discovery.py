@@ -25,10 +25,12 @@ from zha.application.platforms import (
     sensor,
     switch,
 )
+from zha.application.platforms.virtual import VirtualEntity
 from zigpy.zcl import ClusterType, ReportingConfig
 
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
+    ClusterConfigMetadata,
     EntityMetadata,
     NumberMetadata,
     SwitchMetadata,
@@ -127,16 +129,107 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     return {}
 
 
+class QuirkClusterConfigEntity(VirtualEntity):
+    """Entity-less carrier for quirk-declared cluster bind/write/reporting config."""
+
+
+def _discover_cluster_config_entities(
+    device: Device, cluster_configs: tuple[ClusterConfigMetadata, ...]
+) -> Iterator[PlatformEntity]:
+    """Yield config-only virtual entities for entity-less cluster configs."""
+    for cluster_config in cluster_configs:
+        endpoint_id = cluster_config.endpoint_id
+        cluster_id = cluster_config.cluster_id
+        cluster_type = cluster_config.cluster_type
+
+        if endpoint_id not in device.endpoints:
+            _LOGGER.warning(
+                "Device: %s-%s does not have an endpoint with id: %s - unable to "
+                "apply cluster config: %s",
+                str(device.ieee),
+                device.name,
+                endpoint_id,
+                cluster_config,
+            )
+            continue
+
+        endpoint = device.endpoints[endpoint_id]
+        cluster = (
+            endpoint.zigpy_endpoint.in_clusters.get(cluster_id)
+            if cluster_type is ClusterType.Server
+            else endpoint.zigpy_endpoint.out_clusters.get(cluster_id)
+        )
+
+        if cluster is None:
+            _LOGGER.warning(
+                "Device: %s-%s does not have a cluster with id: %s - "
+                "unable to apply cluster config: %s",
+                str(device.ieee),
+                device.name,
+                cluster_id,
+                cluster_config,
+            )
+            continue
+
+        # Attribute names stay strings - quirks can reference manufacturer
+        # specific attributes outside the cluster's schema; the aggregation and
+        # configure flow handle both names and ZCLAttributeDef objects.
+        attributes = {
+            attr.attribute_name: AttrConfig(
+                read_on_startup=attr.read_on_startup,
+                reporting=(
+                    ReportingConfig(
+                        min_interval=attr.reporting_config.min_interval,
+                        max_interval=attr.reporting_config.max_interval,
+                        reportable_change=attr.reporting_config.reportable_change,
+                    )
+                    if attr.reporting_config is not None
+                    else None
+                ),
+            )
+            for attr in cluster_config.attributes
+        }
+        config = {
+            cluster.cluster_id: ClusterConfig(
+                bind=cluster_config.bind,
+                attributes=attributes,
+                attribute_writes=dict(cluster_config.attribute_writes),
+            )
+        }
+
+        # One config record per (endpoint, cluster, type); the suffix only needs
+        # to disambiguate a server and client config on the same cluster.
+        suffix = f"cluster_config-{cluster_id:#06x}-{cluster_type.name.lower()}"
+
+        entity = QuirkClusterConfigEntity(
+            endpoint=endpoint,
+            device=device,
+            cluster=cluster,
+            from_quirk=True,
+            unique_id_suffix=suffix,
+        )
+        if cluster_type is ClusterType.Server:
+            entity._server_cluster_config = config
+        else:
+            entity._client_cluster_config = config
+
+        yield entity
+
+
 def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
-    if quirk_metadata is None or not quirk_metadata.entity_metadata:
+    if quirk_metadata is None or (
+        not quirk_metadata.entity_metadata and not quirk_metadata.cluster_configs
+    ):
         _LOGGER.debug(
             "Device: %s-%s does not expose any quirks v2 entities",
             str(device.ieee),
             device.name,
         )
         return
+
+    yield from _discover_cluster_config_entities(device, quirk_metadata.cluster_configs)
 
     for entity_metadata in quirk_metadata.entity_metadata:
         endpoint_id = entity_metadata.endpoint_id
