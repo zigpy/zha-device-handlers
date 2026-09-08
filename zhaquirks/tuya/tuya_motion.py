@@ -170,6 +170,14 @@ class TuyaMotionFadeTime(t.enum8):
     _120_seconds = 0x03
 
 
+class TuyaMotionFadeTime3Step(t.enum8):
+    """Tuya motion 3 step fade time enum."""
+
+    _15_seconds = 0x00
+    _30_seconds = 0x01
+    _60_seconds = 0x02
+
+
 class TuyaSensitivityMode(t.enum8):
     """Tuya sensitivity mode enum."""
 
@@ -1323,6 +1331,37 @@ base_tuya_motion = (
         min_value=5,
         max_value=3600,
         step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# iHseno Tuya Human Presence Sensor
+(
+    TuyaQuirkBuilder("_TZE284_debczeci", "TS0601")
+    .applies_to("_TZE204_debczeci", "TS0601")
+    .applies_to("_TZE284_1lvln0x6", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_battery(dp_id=4, battery_qty=2)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="presence_sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="fading_time",
+        enum_class=TuyaMotionFadeTime3Step,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
