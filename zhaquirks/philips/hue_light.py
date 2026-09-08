@@ -246,3 +246,91 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCT016")
+    .friendly_name(
+        model="Hue white and color ambiance E26/E27/E14",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCA009")
+    .friendly_name(
+        model="Hue white and color ambiance E26/A19 1600lm",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL001")
+    .friendly_name(
+        model="Hue white and color ambiance LightStrip plus",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929003528702")
+    .friendly_name(
+        model="Hue Sana wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTA008")
+    .friendly_name(
+        model="Hue white ambiance E27 with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTW004")
+    .friendly_name(
+        model="Hue white ambiance E26/E27",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTO005")
+    .friendly_name(
+        model="Hue white ambiance G40 E26 filament globe with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929003531502")
+    .friendly_name(
+        model="Hue white ambiance ceiling white Enrave M with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
