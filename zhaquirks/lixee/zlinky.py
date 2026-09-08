@@ -1,32 +1,21 @@
 """Quirk for ZLinky_TIC."""
 
-from copy import deepcopy
 from typing import Final
 
-from zigpy.profiles import zgp, zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Identify,
-    Ota,
-    PowerConfiguration,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zhaquirks.builder import (
+    EntityType,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricCurrent,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 from zhaquirks.tuya import TuyaManufCluster
 
@@ -226,89 +215,81 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
 
-class ZLinkyTIC(CustomDevice):
-    """ZLinky_TIC from LiXee."""
-
-    signature = {
-        MODELS_INFO: [(LIXEE, "ZLinky_TIC")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Metering.cluster_id,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    ZLinkyTICMetering,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
-class ZLinkyTICFWV12(ZLinkyTIC):
-    """ZLinky_TIC from LiXee with firmware v12.0 & v13.0."""
-
-    signature = deepcopy(ZLinkyTIC.signature)
-
-    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0 & v13.0
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)
-
-
-class ZLinkyTICFWV14(ZLinkyTICFWV12):
-    """ZLinky_TIC from LiXee with firmware v14.0+."""
-
-    signature = deepcopy(ZLinkyTICFWV12.signature)
-    replacement = deepcopy(ZLinkyTICFWV12.replacement)
-
-    # Insert Time configuration cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
-
-    # Insert Tuya cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaManufCluster.cluster_id)
-    signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
-
-    replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
-
-
-class ZLinkyTICFWV15(ZLinkyTICFWV14):
-    """ZLinky_TIC from LiXee with firmware v15.0+."""
-
-    signature = deepcopy(ZLinkyTICFWV14.signature)
-    replacement = deepcopy(ZLinkyTICFWV14.replacement)
-
-    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
-    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+# The v1 quirk carried four subclasses matching firmware variants by exact
+# cluster list: the base signature, plus PowerConfiguration on v12, Time and a
+# Tuya cluster on v14, and a different device type on v15. Matching on
+# manufacturer and model covers every variant, and v2 only states the
+# differences, so clusters the device already reports are kept untouched.
+(
+    QuirkBuilder(LIXEE, "ZLinky_TIC")
+    # Added for every variant, as the v1 replacements did: not all firmware
+    # versions report a power configuration cluster.
+    .adds(PowerConfiguration.cluster_id, endpoint_id=1)
+    # Firmware v14 and later report a Tuya cluster the device does not
+    # implement, as the v1 signatures for those variants recorded. Removing it
+    # keeps the v1 replacement behaviour; it is a no-op on older firmware.
+    .removes(TuyaManufCluster.cluster_id, endpoint_id=1)
+    .removes(
+        TuyaManufCluster.cluster_id, endpoint_id=1, cluster_type=ClusterType.Client
+    )
+    .replaces(ZLinkyTICMetering, endpoint_id=1)
+    .replaces(ZLinkyTICManufacturerCluster, endpoint_id=1)
+    # PTEC: tariff period currently in effect, e.g. "TH.." on the Base tariff or
+    # "HC.."/"HP.." on the off-peak/peak tariff. Reported in both TIC modes from
+    # firmware v15. This is what automations need in order to follow the tariff
+    # period rather than a hardcoded schedule.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_tariff_period.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        translation_key="linky_tariff_period",
+        fallback_name="Tariff period",
+    )
+    # OPTARIF: tariff option the contract is subscribed to, e.g. "BASE" or
+    # "HC..". Complements PTEC: one gives the contract, the other the period
+    # currently in effect.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_tariff_option_or_std_supplier_price_schedule_name.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        translation_key="linky_tariff_option",
+        fallback_name="Tariff option",
+    )
+    # ADPS: warning raised when the subscribed power is exceeded, in amperes.
+    # Zero when there is no overload.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_subscribed_power_exceeding_warning.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        suggested_display_precision=0,
+        translation_key="linky_subscribed_power_exceeding_warning",
+        fallback_name="Subscribed power exceeding warning",
+    )
+    # HHPHC: off-peak hours schedule group the meter is assigned to. Only
+    # meaningful once an off-peak tariff is subscribed.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.hist_schedule_peak_hours_off_peak_hours.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_off_peak_hours_schedule",
+        fallback_name="Off-peak hours schedule",
+    )
+    # MOTDETAT: meter status register, "000000" when nominal.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_status.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_status",
+        fallback_name="Meter status",
+    )
+    # TIC mode the meter emits: 0 is historical, 1 is standard. Tells users
+    # which of the hist_/std_ attribute sets their meter populates.
+    .sensor(
+        attribute_name=ZLinkyTICManufacturerCluster.AttributeDefs.linky_mode.name,
+        cluster_id=ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="linky_mode",
+        fallback_name="TIC mode",
+    )
+    .add_to_registry()
+)
