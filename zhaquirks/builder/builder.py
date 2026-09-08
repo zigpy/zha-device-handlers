@@ -775,6 +775,8 @@ class QuirkBuilder:
         device_class: NumberDeviceClass | None = None,
         initially_disabled: bool = False,
         attribute_initialized_from_cache: bool = True,
+        attribute_converter: Callable[[Any], Any] | None = None,
+        value_converter: Callable[[Any], Any] | None = None,
         reporting_config: ReportingConfig | None = None,
         unique_id_suffix: str | None = None,
         translation_key: str | None = None,
@@ -786,6 +788,11 @@ class QuirkBuilder:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
         This method allows exposing a number entity in Home Assistant.
+
+        `attribute_converter` converts the raw attribute value to the value shown
+        in Home Assistant, `value_converter` converts the value from Home
+        Assistant back to the raw attribute value. As a number can be written,
+        both must be provided together. They take precedence over `multiplier`.
         """
         self._add_entity_metadata(
             NumberMetadata(
@@ -802,6 +809,8 @@ class QuirkBuilder:
                 translation_placeholders=translation_placeholders or {},
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
+                attribute_converter=attribute_converter,
+                value_converter=value_converter,
                 min=min_value,
                 max=max_value,
                 step=step,
