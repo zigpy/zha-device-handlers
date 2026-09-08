@@ -33,6 +33,13 @@ ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 
 
+class BacklightSwitch(t.enum8):
+    """Tuya backlight switch (separate from backlight_mode)."""
+
+    Off = 0x00
+    On = 0x01
+
+
 class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
@@ -40,6 +47,9 @@ class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
         """Attribute definitions."""
 
         backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        backlight_switch: Final = ZCLAttributeDef(
+            id=0x5000, type=BacklightSwitch, is_manufacturer_specific=True
+        )
 
 
 class MotorMode(t.enum8):
