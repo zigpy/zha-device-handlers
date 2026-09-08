@@ -1,6 +1,8 @@
 """Tests for xiaomi."""
 
 import asyncio
+from datetime import datetime
+import json
 import logging
 import math
 from typing import Any
@@ -19,6 +21,8 @@ from zigpy.zcl import (
 )
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
+    UTC,
+    ZIGBEE_EPOCH,
     AnalogInput,
     AnalogOutput,
     DeviceTemperature,
@@ -88,11 +92,13 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_LAST_FEEDING_SOURCE,
     ZCL_PORTION_WEIGHT,
     ZCL_PORTIONS_DISPENSED,
+    ZCL_SCHEDULE,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
-    AqaraFeederAcn001,
+    FeederTimeCluster,
     FeedingMode,
     FeedingSource,
+    OppleCluster,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -1074,11 +1080,20 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
     ],
 )
 async def test_aqara_feeder_write_attrs(
-    zigpy_device_from_quirk, attribute, value, expected_bytes
+    zigpy_device_from_v2_quirk, attribute, value, expected_bytes
 ):
     """Test Aqara C1 pet feeder attr writing."""
 
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
     opple_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -1101,6 +1116,196 @@ async def test_aqara_feeder_write_attrs(
     assert call_args.kwargs["manufacturer"] == 0x115F
 
 
+async def test_aqara_feeder_write_schedule(zigpy_device_from_v2_quirk):
+    """Verify that schedule attribute is encoded and sent correctly."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    schedule_list = [
+        {"days": "everyday", "hour": 11, "minute": 0, "portions": 3},
+        {"days": "everyday", "hour": 16, "minute": 0, "portions": 2},
+    ]
+    schedule_str = json.dumps(schedule_list)
+
+    # attach listener so we can later verify zha_event
+    zha_listener = mock.MagicMock()
+    opple_cluster.add_listener(zha_listener)
+
+    await opple_cluster.write_attributes({"schedule": schedule_str})
+
+    expected_bytes = opple_cluster._encode_schedule(schedule_str)
+    assert expected_bytes is not None
+
+    expected_attr_def = opple_cluster.find_attribute(FEEDER_ATTR)
+    expected = foundation.Attribute(FEEDER_ATTR, foundation.TypeValue())
+    expected.value.type = foundation.DataType.from_python_type(
+        expected_attr_def.type
+    ).type_id
+    expected.value.value = expected_attr_def.type(expected_bytes)
+
+    assert len(opple_cluster._write_attributes.mock_calls) == 1
+    call_args = opple_cluster._write_attributes.mock_calls[0]
+    assert call_args.args[0] == [expected]
+    assert call_args.kwargs["manufacturer"] == 0x115F
+
+    found = False
+    for call in zha_listener.zha_send_event.mock_calls:
+        if len(call.args) > 1 and isinstance(call.args[1], dict):
+            data = call.args[1]
+            attr_id = None
+            if "attribute_id" in data:
+                attr_id = data.get("attribute_id")
+            elif "args" in data:
+                attr_id = data["args"].get("attribute_id")
+            if attr_id == ZCL_SCHEDULE:
+                found = True
+                break
+    assert found, "write_attributes did not fire schedule zha_event"
+
+
+async def test_aqara_feeder_schedule_sensor(zigpy_device_from_v2_quirk):
+    """Test Aqara C1 pet feeder schedule sensor state."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(
+                b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 "
+                b"7F09000100,7F0D000100,7F13000100"
+            ),
+        )
+    )
+
+    assert opple_cluster[ZCL_SCHEDULE] == (
+        '[{"days":"everyday","hour":9,"minute":0,"portions":1},'
+        '{"days":"everyday","hour":13,"minute":0,"portions":1},'
+        '{"days":"everyday","hour":19,"minute":0,"portions":1}]'
+    )
+
+
+async def test_aqara_feeder_malformed_schedule_is_ignored(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara C1 pet feeder ignores malformed schedule payloads."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    schedule = '[{"days":"everyday","hour":9,"minute":0,"portions":1}]'
+    opple_cluster._update_attribute(ZCL_SCHEDULE, schedule)
+
+    opple_cluster._parse_schedule(b"not-a-valid-schedule")
+
+    assert opple_cluster[ZCL_SCHEDULE] == schedule
+
+
+async def test_aqara_feeder_time_response(zigpy_device_from_v2_quirk):
+    """The custom Time cluster should return local time for this device."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    # accessing the time cluster via the endpoint attribute
+    time_cluster = device.endpoints[1].time
+
+    assert isinstance(time_cluster, FeederTimeCluster)
+
+    # call the handler and compare with local-time calculation
+    retval = time_cluster.handle_read_attribute_time()
+
+    now = datetime.now(UTC)
+    tz_offset = datetime.now().astimezone().utcoffset()
+    assert tz_offset is not None
+    expected = int((now + tz_offset - ZIGBEE_EPOCH).total_seconds())
+    assert abs(retval - expected) < 3
+
+
+# helper for constructing a fake attribute report event
+def _make_string_event(device, cluster, attr_id, value):
+
+    return AttributeReportedEvent(
+        device_ieee=device.ieee,
+        endpoint_id=cluster.endpoint.endpoint_id,
+        cluster_type=ClusterType.Server,
+        cluster_id=cluster.cluster_id,
+        attribute_name="feeder_attr",
+        attribute_id=attr_id,
+        manufacturer_code=0x115F,
+        raw_value=None,
+        value=value,
+    )
+
+
+async def test_aqara_feeder_string_event_is_ignored(zigpy_device_from_v2_quirk):
+    """Providing a string value should not crash the parser."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple = device.endpoints[1].opple_cluster
+
+    # populate schedule cache so we can verify it is untouched
+    await opple.write_attributes({"schedule": json.dumps([{"hour": 1}])})
+    before = opple._attr_cache.get(ZCL_SCHEDULE)
+
+    evt = _make_string_event(device, opple, FEEDER_ATTR, "deadbeef")
+    opple._handle_attribute_event(evt)
+
+    assert opple._attr_cache.get(ZCL_SCHEDULE) == before
+
+
 @pytest.mark.parametrize(
     "bytes_received, call_count, calls",
     [
@@ -1117,7 +1322,9 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
+                mock.call(
+                    ZCL_LAST_FEEDING_SOURCE, FeedingSource.HomeAssistant, mock.ANY
+                ),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -1210,13 +1417,25 @@ async def test_aqara_feeder_write_attrs(
     ],
 )
 async def test_aqara_feeder_attr_reports(
-    zigpy_device_from_quirk, bytes_received, call_count, calls
+    zigpy_device_from_v2_quirk, bytes_received, call_count, calls
 ):
     """Test Aqara C1 pet feeder attr reports and parsing."""
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
 
+    # listen for attributes and fired zha events
     attribute_updates: list[tuple[int, Any]] = []
+    zha_listener = mock.MagicMock()
+    opple_cluster.add_listener(zha_listener)
 
     def on_attribute_event(event: AttributeReportedEvent | AttributeUpdatedEvent):
         attribute_updates.append((event.attribute_id, event.value))
@@ -1233,6 +1452,13 @@ async def test_aqara_feeder_attr_reports(
             data=t.SerializableBytes(bytes_received),
         )
     )
+
+    for call in zha_listener.zha_send_event.mock_calls:
+        if len(call.args) > 1 and isinstance(call.args[1], dict):
+            val = call.args[1].get(VALUE)
+            assert not isinstance(val, (bytes, t.LVBytes)), (
+                "zha_send_event value must not be raw bytes"
+            )
 
     # Check the expected attribute updates occurred
     expected_updates = [(c.args[0], c.args[1]) for c in calls]
