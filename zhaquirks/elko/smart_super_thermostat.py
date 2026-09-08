@@ -113,11 +113,9 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
 
     def _update_attribute(self, attrid, value):
         if attrid == HEATING_ACTIVE:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "heating_active_change", value
-            )
+            self.heating_active_change(value)
         elif attrid == CHILD_LOCK:
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+            self.endpoint.thermostat_ui.child_lock_change(value)
         elif attrid == ACTIVE_SENSOR:
             self.active_sensor = value
         elif attrid == LOCAL_TEMP:
@@ -135,7 +133,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
                 attrid = LOCAL_TEMP
         elif attrid == POWER_CONSUMPTION:
             if value is not None and value >= 0:
-                self.endpoint.device.power_bus.listener_event("power_reported", value)
+                self.endpoint.electrical_measurement.power_reported(value)
 
         super()._update_attribute(attrid, value)
 

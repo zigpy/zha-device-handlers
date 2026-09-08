@@ -18,7 +18,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks import LocalDataCluster, MotionOnEvent
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -29,7 +29,6 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    MOTION_EVENT,
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
@@ -51,7 +50,6 @@ DROP_VALUE = 3
 ORIENTATION_ATTR = 0x0508  # decimal = 1288
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
 ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
-SEND_EVENT = "send_event"
 STATIONARY_VALUE = 0
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 TILT_VALUE = 2
@@ -73,11 +71,6 @@ class VibrationAQ1(XiaomiQuickInitDevice):
     quirk_id = XIAOMI_AQARA_VIBRATION_AQ1
 
     manufacturer_id_override = 0x115F
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.motion_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     class VibrationBasicCluster(BasicCluster):
         """Vibration cluster."""
@@ -106,10 +99,10 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     value, UNKNOWN
                 )
                 if value == VIBE_VALUE:
-                    self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+                    self.endpoint.ias_zone.motion_event()
                 elif value == DROP_VALUE:
-                    self.endpoint.device.motion_bus.listener_event(
-                        SEND_EVENT, self._current_state[STATUS_TYPE_ATTR], {}
+                    self.endpoint.ias_zone.send_event(
+                        self._current_state[STATUS_TYPE_ATTR], {}
                     )
             elif attrid == ORIENTATION_ATTR:
                 x = value & 0xFFFF
@@ -122,8 +115,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 angleY = round(math.atan(Y / math.sqrt(X * X + Z * Z)) * 180 / math.pi)
                 angleZ = round(math.atan(Z / math.sqrt(X * X + Y * Y)) * 180 / math.pi)
 
-                self.endpoint.device.motion_bus.listener_event(
-                    SEND_EVENT,
+                self.endpoint.ias_zone.send_event(
                     "current_orientation",
                     {
                         "rawValueX": x,
@@ -135,8 +127,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     },
                 )
             elif attrid == ROTATION_DEGREES_ATTR:
-                self.endpoint.device.motion_bus.listener_event(
-                    SEND_EVENT,
+                self.endpoint.ias_zone.send_event(
                     self._current_state[STATUS_TYPE_ATTR],
                     {"degrees": value},
                 )
@@ -144,8 +135,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 # these seem to be sent every minute when vibration is active
                 strength = value >> 8
                 strength = ((strength & 0xFF) << 8) | ((strength >> 8) & 0xFF)
-                self.endpoint.device.motion_bus.listener_event(
-                    SEND_EVENT,
+                self.endpoint.ias_zone.send_event(
                     "vibration_strength",
                     {"strength": strength},
                 )

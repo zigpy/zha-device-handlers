@@ -20,8 +20,6 @@ from zhaquirks.const import (
     COMMAND,
     DOUBLE_PRESS,
     LEFT,
-    MOTION_EVENT,
-    OCCUPANCY_EVENT,
     ON,
     PRESS_TYPE,
     QUADRUPLE_PRESS,
@@ -101,25 +99,15 @@ class MotionCluster(LocalDataCluster, _Motion):
         self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
 
         if self.send_occupancy_event:
-            self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
+            self.endpoint.device.endpoints[1].occupancy.occupancy_event()
 
 
 class MotionClusterLeft(MotionCluster):
     """Motion cluster."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.motion_left_bus.add_listener(self)
-
 
 class MotionClusterRight(MotionCluster):
     """Motion cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.motion_right_bus.add_listener(self)
 
 
 class TerncyRawCluster(CustomCluster):
@@ -170,9 +158,9 @@ class TerncyRawCluster(CustomCluster):
             state = args[2]
             side = SIDE_LOOKUP[state]
             if side == LEFT:
-                self.endpoint.device.motion_left_bus.listener_event(MOTION_EVENT)
+                self.endpoint.device.endpoints[1].ias_zone.motion_event()
             elif side == RIGHT:
-                self.endpoint.device.motion_right_bus.listener_event(MOTION_EVENT)
+                self.endpoint.device.endpoints[2].ias_zone.motion_event()
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
