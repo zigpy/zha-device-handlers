@@ -1,11 +1,14 @@
 """Tuya Power Meter."""
 
+import asyncio
+
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.builder import (
     PERCENTAGE,
+    BinarySensorDeviceClass,
     EntityType,
     SensorDeviceClass,
     SensorStateClass,
@@ -14,9 +17,9 @@ from zhaquirks.builder import (
     UnitOfPower,
     UnitOfTime,
 )
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import TUYA_QUERY_DATA, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import DPToAttributeMapping
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 def dp_to_power(data: bytes) -> int:
@@ -517,4 +520,221 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     .adds(Tuya3PhaseElectricalMeasurement)
     .skip_configuration()
     .add_to_registry()
+)
+
+
+# Moes ZM6LT1 single-phase energy meter with CT clamp.
+# DP 6 packs phase data into an 18 byte buffer (confirmed from device capture):
+#   [0:2]   constant header
+#   [2:4]   voltage, V * 10 (16-bit)
+#   [4:7]   current, mA (24-bit)
+#   [7:10]  active power, W (24-bit)
+#   [10:13] reactive power, var (24-bit)
+#   [13:16] apparent power, VA (24-bit)
+#   [16]    power factor, %
+#   [17]    padding
+def zm6lt1_dp6_to_voltage(data: bytes) -> int:
+    """Extract voltage (V * 10) from the packed phase datapoint."""
+    return (data[2] << 8) | data[3]
+
+
+def zm6lt1_dp6_to_current(data: bytes) -> int:
+    """Extract current (mA, 24-bit) from the packed phase datapoint."""
+    return (data[4] << 16) | (data[5] << 8) | data[6]
+
+
+def zm6lt1_dp6_to_power(data: bytes) -> int:
+    """Extract active power (W, 24-bit) from the packed phase datapoint."""
+    return (data[7] << 16) | (data[8] << 8) | data[9]
+
+
+def zm6lt1_dp6_to_reactive_power(data: bytes) -> int:
+    """Extract reactive power (var, 24-bit) from the packed phase datapoint."""
+    return (data[10] << 16) | (data[11] << 8) | data[12]
+
+
+def zm6lt1_dp6_to_apparent_power(data: bytes) -> int:
+    """Extract apparent power (VA, 24-bit) from the packed phase datapoint."""
+    return (data[13] << 16) | (data[14] << 8) | data[15]
+
+
+def zm6lt1_dp6_to_power_factor(data: bytes) -> int:
+    """Extract power factor (%) from the packed phase datapoint."""
+    return data[16]
+
+
+class ZM6LT1ElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
+    """Electrical measurement cluster fed by Tuya datapoints."""
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_frequency_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 100,
+    }
+
+
+class ZM6LT1ManufCluster(TuyaMCUCluster):
+    """Tuya MCU cluster that periodically queries the meter for datapoints.
+
+    The ZM6LT1 does not report DP 6 (voltage/current/power) on its own, so a
+    Tuya data-query command is sent every 60 seconds, matching the polling
+    interval Zigbee2MQTT uses for this device.
+    """
+
+    POLL_INTERVAL = 60
+
+    # one poller per device, survives cluster re-instantiation
+    _pollers: dict[t.EUI64, asyncio.Task] = {}
+
+    def __init__(self, *args, **kwargs):
+        """Init and start the polling task."""
+        super().__init__(*args, **kwargs)
+        self._poll_task = None
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return  # no event loop (e.g. import-time tooling); skip polling
+
+        ieee = self.endpoint.device.ieee
+        prev = ZM6LT1ManufCluster._pollers.pop(ieee, None)
+        if prev is not None and not prev.done():
+            prev.cancel()
+        self._poll_task = loop.create_task(self._poll_loop())
+        ZM6LT1ManufCluster._pollers[ieee] = self._poll_task
+
+    async def _poll_loop(self):
+        while True:
+            await asyncio.sleep(self.POLL_INTERVAL)
+            try:
+                # fire-and-forget: the meter answers with DP reports
+                await self.command(TUYA_QUERY_DATA, expect_reply=False)
+            except asyncio.CancelledError:
+                raise
+            except Exception as ex:  # noqa: BLE001 - keep polling on failure
+                self.debug("ZM6LT1 data query failed: %r", ex)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_2fnssffc", "TS0601")  # Moes ZM6LT1
+    .tuya_enchantment(read_attr_spell=True, data_query_spell=True)
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="energy",
+        type=t.uint32_t,
+        divisor=100,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        fallback_name="Total energy",
+    )
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="reverse_energy",
+        type=t.uint32_t,
+        divisor=100,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="reverse_energy",
+        fallback_name="Total reverse energy",
+    )
+    .tuya_dp_multi(
+        dp_id=6,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="rms_voltage",
+                converter=zm6lt1_dp6_to_voltage,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="rms_current",
+                converter=zm6lt1_dp6_to_current,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="active_power",
+                converter=zm6lt1_dp6_to_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="reactive_power",
+                converter=zm6lt1_dp6_to_reactive_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="apparent_power",
+                converter=zm6lt1_dp6_to_apparent_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+                attribute_name="power_factor",
+                converter=zm6lt1_dp6_to_power_factor,
+            ),
+        ],
+    )
+    .tuya_sensor(
+        dp_id=10,
+        attribute_name="fault",
+        type=t.uint32_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="fault",
+        fallback_name="Fault",
+    )
+    .tuya_switch(
+        dp_id=20,
+        attribute_name="clear_event",
+        entity_type=EntityType.CONFIG,
+        translation_key="clear_event",
+        fallback_name="Clear event",
+    )
+    .tuya_binary_sensor(
+        dp_id=44,
+        attribute_name="online_state",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="online_state",
+        fallback_name="Online state",
+    )
+    .tuya_dp(
+        dp_id=49,
+        ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
+        attribute_name="ac_frequency",
+    )
+    .tuya_sensor(
+        dp_id=51,
+        attribute_name="active_energy",
+        type=t.uint32_t,
+        divisor=100,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="active_energy",
+        fallback_name="Total active energy",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="countdown_1",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=2000,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="countdown",
+        fallback_name="Countdown",
+    )
+    .tuya_switch(
+        dp_id=104,
+        attribute_name="device_restart",
+        entity_type=EntityType.CONFIG,
+        translation_key="device_restart",
+        fallback_name="Device restart",
+    )
+    .adds(ZM6LT1ElectricalMeasurement)
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=ZM6LT1ManufCluster)
 )
