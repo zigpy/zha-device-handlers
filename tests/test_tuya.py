@@ -32,6 +32,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts001x
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
@@ -283,6 +284,34 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     rsp = await switch_cluster.command(0x0002)
     await wait_for_zigpy_tasks()
     assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.tuya.ts001x.TuyaSingleNoNeutralSwitch_TZ3000_hhiodade,
+        zhaquirks.tuya.ts001x.TuyaDoubleNoNeutralSwitch_TZ3000_18ejxno0,
+    ),
+)
+async def test_ts001x_no_await_default_response(zigpy_device_from_quirk, quirk):
+    """OnOff commands return synthetic SUCCESS and don't await the ZCL DefaultResponse.
+
+    Verifies that the workaround for the _TZ3000_hhiodade / _TZ3000_18ejxno0
+    firmware bug (intermittent missing DefaultResponse) sends with
+    ``expect_reply=False`` and returns ``[command_id, Status.SUCCESS]`` so
+    ZHA's light handler's ``result[1] is Status.SUCCESS`` check passes.
+    """
+    dev = zigpy_device_from_quirk(quirk)
+    cluster = dev.endpoints[1].on_off
+
+    with mock.patch.object(cluster.endpoint, "request", mock.AsyncMock()) as req:
+        for cmd_id in (0x00, 0x01, 0x02):  # off, on, toggle
+            req.reset_mock()
+            rsp = await cluster.command(cmd_id)
+            await wait_for_zigpy_tasks()
+            assert rsp == [cmd_id, foundation.Status.SUCCESS]
+            assert req.call_count == 1
+            assert req.call_args.kwargs.get("expect_reply") is False
 
 
 def test_ts0121_signature(assert_signature_matches_quirk):
