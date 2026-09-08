@@ -313,3 +313,109 @@ async def test_doubledimmer_state_report(zigpy_device_from_quirk, quirk):
     assert len(dimmer2_listener.attribute_updates) == 2
     assert dimmer2_listener.attribute_updates[1][0] == 0x0000
     assert dimmer2_listener.attribute_updates[1][1] == 170
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaTripleSwitchDimmer,)
+)
+async def test_triple_command(zigpy_device_from_quirk, quirk):
+    """Test write cluster attributes for triple switch dimmer."""
+
+    dimmer_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
+    dimmer1_cluster = dimmer_dev.endpoints[1].level
+    switch2_cluster = dimmer_dev.endpoints[2].on_off
+    switch3_cluster = dimmer_dev.endpoints[3].on_off
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    assert len(tuya_listener.cluster_commands) == 0
+    assert len(tuya_listener.attribute_updates) == 0
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        rsp = await switch2_cluster.command(0x0001)  # turn_on
+        await wait_for_zigpy_tasks()
+
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x07\x01\x00\x01\x01",
+            command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await switch3_cluster.command(0x0001)  # turn_on
+        await wait_for_zigpy_tasks()
+
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x0f\x01\x00\x01\x01",
+            command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await dimmer1_cluster.command(0x0000, 225)  # move_to_level
+        await wait_for_zigpy_tasks()
+
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x02\x02\x00\x04\x00\x00\x03r",
+            command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaTripleSwitchDimmer,)
+)
+async def test_triple_dim_values(zigpy_device_from_quirk, quirk):
+    """Test dimming values for triple switch dimmer."""
+
+    dimmer_dev = zigpy_device_from_quirk(quirk)
+
+    dimmer2_cluster = dimmer_dev.endpoints[2].level
+    dimmer2_listener = ClusterListener(dimmer2_cluster)
+
+    dimmer3_cluster = dimmer_dev.endpoints[3].level
+    dimmer3_listener = ClusterListener(dimmer3_cluster)
+
+    tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
+
+    assert len(dimmer2_listener.attribute_updates) == 0
+    assert len(dimmer3_listener.attribute_updates) == 0
+
+    # Test channel 2 dimming
+    hdr, args = tuya_cluster.deserialize(
+        b"\tV\x02\x01y\x08\x02\x00\x04\x00\x00\x02\x29"
+    )
+    tuya_cluster.handle_message(hdr, args)
+    assert len(dimmer2_listener.attribute_updates) == 1
+    assert dimmer2_listener.attribute_updates[0][0] == 0x0000
+    assert dimmer2_listener.attribute_updates[0][1] == 141
+
+    # Test channel 3 dimming
+    hdr, args = tuya_cluster.deserialize(
+        b"\tV\x02\x01y\x10\x02\x00\x04\x00\x00\x02\xbc"
+    )
+    tuya_cluster.handle_message(hdr, args)
+    assert len(dimmer3_listener.attribute_updates) == 1
+    assert dimmer3_listener.attribute_updates[0][0] == 0x0000
+    assert dimmer3_listener.attribute_updates[0][1] == 178
