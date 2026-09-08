@@ -90,9 +90,9 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
-    AqaraFeederAcn001,
     FeedingMode,
     FeedingSource,
+    OppleCluster,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -1074,11 +1074,20 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
     ],
 )
 async def test_aqara_feeder_write_attrs(
-    zigpy_device_from_quirk, attribute, value, expected_bytes
+    zigpy_device_from_v2_quirk, attribute, value, expected_bytes
 ):
     """Test Aqara C1 pet feeder attr writing."""
 
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
     opple_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -1117,7 +1126,9 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
+                mock.call(
+                    ZCL_LAST_FEEDING_SOURCE, FeedingSource.HomeAssistant, mock.ANY
+                ),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -1210,10 +1221,19 @@ async def test_aqara_feeder_write_attrs(
     ],
 )
 async def test_aqara_feeder_attr_reports(
-    zigpy_device_from_quirk, bytes_received, call_count, calls
+    zigpy_device_from_v2_quirk, bytes_received, call_count, calls
 ):
     """Test Aqara C1 pet feeder attr reports and parsing."""
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
 
     attribute_updates: list[tuple[int, Any]] = []
