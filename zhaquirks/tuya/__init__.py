@@ -1012,12 +1012,12 @@ class TuyaThermostat(CustomDevice):
 
 
 # Tuya Zigbee OnOff Cluster Attribute Implementation
-class SwitchBackLight(t.enum8):
-    """Tuya switch back light mode enum."""
+class IndicatorMode(t.enum8):
+    """Tuya switch indicator mode (attribute 0x8001 on OnOff cluster)."""
 
-    Mode_0 = 0x00
-    Mode_1 = 0x01
-    Mode_2 = 0x02
+    Off = 0x00
+    Status = 0x01
+    Position = 0x02
 
 
 class SwitchMode(t.enum8):
@@ -1042,7 +1042,9 @@ class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
         """Attribute definitions."""
 
         child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
-        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        # `backlight_mode` is an alias to `indicator_mode` kept for HA's auto-discovery lookup.
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=IndicatorMode)
+        indicator_mode: Final = ZCLAttributeDef(id=0x8001, type=IndicatorMode)
         power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
@@ -1066,7 +1068,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
 
-        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=IndicatorMode)
         power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
