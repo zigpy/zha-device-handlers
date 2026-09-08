@@ -1,4 +1,4 @@
-"""Develco smart plugs."""
+"""Namron switches and relays."""
 
 from zigpy.zcl.clusters.general import DeviceTemperature
 
@@ -11,25 +11,27 @@ from zhaquirks.builder import (
 )
 
 (
-    QuirkBuilder("frient A/S", "SPLZB-141")
-    .applies_to("Develco Products A/S", "SPLZB-131")
+    QuirkBuilder("Namron AS", "4512785")
+    # The device reports current_temperature in units of 0.1 °C, violating the
+    # ZCL spec (whole degrees, range -200..200). Replace the default entity with
+    # one that applies the correct divisor.
     .prevent_default_entity_creation(
-        endpoint_id=2,
+        endpoint_id=1,
         cluster_id=DeviceTemperature.cluster_id,
         function=lambda entity: entity.__class__.__name__ == "DeviceTemperature",
     )
     .sensor(
-        endpoint_id=2,
+        endpoint_id=1,
         cluster_id=DeviceTemperature.cluster_id,
         attribute_name=DeviceTemperature.AttributeDefs.current_temperature.name,
+        divisor=10,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,
-        divisor=1,  # This should be 100 but the device does not follow the spec
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="2",  # Replace the ZHA-native entity ({ieee}-1-2)
         translation_key="device_temperature",
         fallback_name="Device temperature",
-        entity_type=EntityType.DIAGNOSTIC,
-        unique_id_suffix="2",  # Replace the ZHA entity
     )
     .add_to_registry()
 )

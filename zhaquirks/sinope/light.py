@@ -54,7 +54,6 @@ from zhaquirks.sinope import (
     SINOPE,
     SINOPE_MANUFACTURER_CLUSTER_ID,
     ButtonAction,
-    CustomDeviceTemperatureCluster,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -280,7 +279,7 @@ class SinopeTechnologieslight(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -344,7 +343,7 @@ class SinopeDM2500ZB(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -411,7 +410,7 @@ class SinopeDM2550ZB(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
