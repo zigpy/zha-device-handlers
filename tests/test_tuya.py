@@ -40,6 +40,7 @@ import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
+import zhaquirks.tuya.ts1002
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
 import zhaquirks.tuya.tuya_valve
@@ -1535,6 +1536,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_TZ3400_cdyjhasw"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_TZ3400_pdyjhapl"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, "_some_random_manuf"),
+        (zhaquirks.tuya.ts1002.TuyaSmartRemote1002, "_TZ3000_te34fjg4"),
     ),
 )
 async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufacturer):
@@ -1545,6 +1547,261 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
 
     quirked_dev = get_device(zigpy_dev)
     assert isinstance(quirked_dev, quirk)
+
+
+async def test_ts1002_fd_button_dispatch(zigpy_device_from_quirk):
+    """TS1002 routes 0xFD commands to the matching button endpoint."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[3].TS004X_cluster.add_listener(zha_listener)
+
+    hdr = mock.MagicMock()
+    hdr.command_id = 0xFD
+    hdr.tsn = 1
+    hdr.frame_control.disable_default_response = True
+    cluster.handle_cluster_request(
+        hdr,
+        [cluster.commands_by_name["press_type"].schema(press_type=0, zero=0, button=3)],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+def _ts1002_hdr(
+    command_id: int = 0xFD, tsn: int = 1, *, disable_default_response: bool = True
+):
+    hdr = mock.MagicMock()
+    hdr.command_id = command_id
+    hdr.tsn = tsn
+    hdr.frame_control.disable_default_response = disable_default_response
+    return hdr
+
+
+@pytest.mark.parametrize(
+    ("button", "press_type", "expected_event"),
+    (
+        (1, 0, "remote_button_short_press"),
+        (2, 1, "remote_button_double_press"),
+        (4, 2, "remote_button_long_press"),
+    ),
+)
+async def test_ts1002_fd_button_press_types(
+    zigpy_device_from_quirk, button, press_type, expected_event
+):
+    """TS1002 routes press types to the correct button endpoint."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    if button == 1:
+        listener_cluster = cluster
+    else:
+        listener_cluster = device.endpoints[button].TS004X_cluster
+
+    zha_listener = mock.MagicMock()
+    listener_cluster.add_listener(zha_listener)
+
+    cluster.handle_cluster_request(
+        _ts1002_hdr(tsn=button + 10),
+        [
+            cluster.commands_by_name["press_type"].schema(
+                press_type=press_type, zero=0, button=button
+            )
+        ],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with(expected_event, [])
+
+
+async def test_ts1002_fd_ignores_duplicate_tsn(zigpy_device_from_quirk):
+    """TS1002 ignores duplicate frames with the same TSN."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[2].TS004X_cluster.add_listener(zha_listener)
+
+    payload = [
+        cluster.commands_by_name["press_type"].schema(press_type=0, zero=0, button=2)
+    ]
+    cluster.handle_cluster_request(_ts1002_hdr(tsn=9), payload)
+    cluster.handle_cluster_request(_ts1002_hdr(tsn=9), payload)
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+async def test_ts1002_fd_sends_default_response(zigpy_device_from_quirk):
+    """TS1002 sends a default response when one is requested."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    with mock.patch.object(cluster, "send_default_rsp") as send_default_rsp:
+        cluster.handle_cluster_request(
+            _ts1002_hdr(tsn=11, disable_default_response=False),
+            [
+                cluster.commands_by_name["press_type"].schema(
+                    press_type=0, zero=0, button=2
+                )
+            ],
+        )
+
+    send_default_rsp.assert_called_once_with(mock.ANY, status=foundation.Status.SUCCESS)
+
+
+async def test_ts1002_fd_defaults_missing_button(zigpy_device_from_quirk):
+    """TS1002 defaults to button 1 when button id is missing."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
+
+    cluster.handle_cluster_request(_ts1002_hdr(tsn=12), [])
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+async def test_ts1002_fd_invalid_button_fallback(zigpy_device_from_quirk):
+    """TS1002 falls back to the source cluster for invalid button ids."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
+
+    cluster.handle_cluster_request(
+        _ts1002_hdr(tsn=13),
+        [cluster.commands_by_name["press_type"].schema(press_type=1, zero=0, button=9)],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with(
+        "remote_button_double_press", []
+    )
+
+
+async def test_ts1002_fd_parse_int_args(zigpy_device_from_quirk):
+    """TS1002 accepts legacy integer argument payloads."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[4].TS004X_cluster.add_listener(zha_listener)
+
+    cluster.handle_cluster_request(_ts1002_hdr(tsn=14), [0, 0, 4])
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+async def test_ts1002_fd_non_fd_command(zigpy_device_from_quirk):
+    """TS1002 delegates unknown commands to the base cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    cluster = device.endpoints[1].out_clusters[6]
+
+    with mock.patch.object(
+        zhaquirks.tuya.TuyaSmartRemoteOnOffCluster,
+        "handle_cluster_request",
+    ) as super_handle:
+        cluster.handle_cluster_request(_ts1002_hdr(command_id=0x01, tsn=15), [])
+
+    super_handle.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("command_id", "scene_id", "endpoint_id"),
+    ((0x00, 2, 2), (0x05, 8, 4)),
+)
+async def test_ts1002_scene_cluster_dispatch(
+    zigpy_device_from_quirk, command_id, scene_id, endpoint_id
+):
+    """TS1002 maps scene cluster commands to button endpoints."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    scene_cluster = device.endpoints[1].out_clusters[5]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[endpoint_id].TS004X_cluster.add_listener(zha_listener)
+
+    scene_cluster.handle_cluster_request(
+        _ts1002_hdr(command_id=command_id, tsn=scene_id),
+        [scene_id],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+@pytest.mark.parametrize(
+    ("step_mode", "endpoint_id"),
+    ((0, 3), (1, 4)),
+)
+async def test_ts1002_level_cluster_dispatch(
+    zigpy_device_from_quirk, step_mode, endpoint_id
+):
+    """TS1002 maps level step commands to buttons 3 and 4."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    level_cluster = device.endpoints[1].out_clusters[8]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[endpoint_id].TS004X_cluster.add_listener(zha_listener)
+
+    step_request = mock.Mock(step_mode=step_mode)
+    level_cluster.handle_cluster_request(
+        _ts1002_hdr(command_id=0x02, tsn=20 + step_mode),
+        [step_request],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+@pytest.mark.parametrize(
+    ("step_mode", "endpoint_id"),
+    ((0, 2), (2, 2)),
+)
+async def test_ts1002_color_cluster_dispatch(
+    zigpy_device_from_quirk, step_mode, endpoint_id
+):
+    """TS1002 maps color temp step commands to button 2."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    color_cluster = device.endpoints[1].out_clusters[0x0300]
+
+    zha_listener = mock.MagicMock()
+    device.endpoints[endpoint_id].TS004X_cluster.add_listener(zha_listener)
+
+    color_cluster.handle_cluster_request(
+        _ts1002_hdr(command_id=0x4C, tsn=30 + step_mode),
+        [mock.Mock(step_mode=step_mode)],
+    )
+
+    zha_listener.zha_send_event.assert_called_once_with("remote_button_short_press", [])
+
+
+async def test_ts1002_color_cluster_button_one_mapping(zigpy_device_from_quirk):
+    """TS1002 maps color temp step modes 1 and 3 to button 1."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    color_cluster = device.endpoints[1].out_clusters[0x0300]
+
+    for step_mode in (1, 3):
+        color_cluster.handle_cluster_request(
+            _ts1002_hdr(command_id=0x4C, tsn=40 + step_mode),
+            [mock.Mock(step_mode=step_mode)],
+        )
+
+
+async def test_ts1002_output_clusters_no_bind(zigpy_device_from_quirk):
+    """TS1002 output clusters skip bind and configure reporting."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts1002.TuyaSmartRemote1002)
+    scene_cluster = device.endpoints[1].out_clusters[5]
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await scene_cluster.bind()
+        await scene_cluster._configure_reporting(0, 3600, 10800, 1)
+
+        assert len(request_mock.mock_calls) == 0
+        assert len(bind_mock.mock_calls) == 0
 
 
 def test_multiple_attributes_report():
