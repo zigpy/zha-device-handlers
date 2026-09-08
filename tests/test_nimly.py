@@ -1,5 +1,7 @@
 """Tests for Nimly lock quirks."""
 
+import pytest
+
 import zhaquirks
 from zhaquirks.nimly.lock import (
     last_action_converter,
@@ -10,37 +12,46 @@ from zhaquirks.nimly.lock import (
 zhaquirks.setup()
 
 
-def test_last_action_source_converter() -> None:
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (0x00020001, "zigbee"),
+        (0x02020003, "keypad"),
+        (0x03010001, "fingerprint"),
+        (0x04020005, "rfid"),
+        (0x05010000, "unattributed"),
+        (0x0A010000, "auto"),
+        (0x99010001, "unknown"),
+    ],
+)
+def test_last_action_source_converter(value: int, expected: str) -> None:
     """Test the last action source converter for Nimly Door Lock cluster."""
-    assert last_action_source_converter(0x00020001) == "zigbee", (
-        "Expected 'zigbee' for value 0x00010001"
-    )
-    assert last_action_source_converter(0x03010001) == "fingerprint", (
-        "Expected 'fingerprint' for value 0x03010001"
-    )
-    assert last_action_source_converter(0x99010001) is None, (
-        "Expected None for value 0x99010001"
-    )
+    assert last_action_source_converter(value) == expected
 
 
-def test_last_action_converter() -> None:
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (0x0A010000, "lock"),
+        (0x00020001, "unlock"),
+        (0x02020003, "unlock"),
+        (0x01030001, "unknown"),
+    ],
+)
+def test_last_action_converter(value: int, expected: str) -> None:
     """Test the last action converter for Nimly Door Lock cluster."""
-    assert last_action_converter(0x0A010001) == "lock", (
-        "Expected 'lock' for value 0x0a010001"
-    )
-    assert last_action_converter(0x00020001) == "unlock", (
-        "Expected 'unlock' for value 0x00020001"
-    )
-    assert last_action_converter(0x01030001) is None, (
-        "Expected None for value 0x01030001"
-    )
+    assert last_action_converter(value) == expected
 
 
-def test_last_action_user_converter() -> None:
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (0x01020001, 1),
+        (0x02020010, 16),
+        (0x02020003, 3),
+        (0x0A010000, 0),
+    ],
+)
+def test_last_action_user_converter(value: int, expected: int) -> None:
     """Test the last action user converter for Nimly Door Lock cluster."""
-    assert last_action_user_converter(0x01020001) == 1, (
-        "Expected user ID 1 for value 0x01020001"
-    )
-    assert last_action_user_converter(0x02020010) == 16, (
-        "Expected user ID 16 for value 0x02020010"
-    )
+    assert last_action_user_converter(value) == expected
