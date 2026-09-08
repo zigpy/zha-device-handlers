@@ -11,6 +11,8 @@ from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
 TUYA_TEMP01_HUM02_BAT03 = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x03\x02\x00\x04\x00\x00\x00\x01"
+# Temp DP 1, Humidity DP 2, Battery DP 3 (state=1), Probe DP 38 (raw=245 → 24.5 °C)
+TUYA_TEMP01_HUM02_BAT03_PROBE38 = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x03\x02\x00\x04\x00\x00\x00\x01\x26\x02\x00\x04\x00\x00\x00\xf5"
 # Temp DP 1, Humidity DP 2, Battery DP 4
 TUYA_TEMP01_HUM02_BAT04 = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x01"
 TUYA_USP = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\xff\x02\x00\x04\x00\x00\x00\x64"
@@ -178,3 +180,45 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE284_hodyryli", "TS0601"),
+        ("_TZE284_8se38w3c", "TS0601"),
+    ],
+)
+async def test_handle_get_data_probe_sensor(zigpy_device_from_v2_quirk, model, manuf):
+    """Test temp/humidity/battery/probe sensor (hodyryli / 8se38w3c)."""
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.basic is not None
+    assert isinstance(ep.basic, Basic)
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(TUYA_TEMP01_HUM02_BAT03_PROBE38)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert ep.temperature.get("measured_value") == 2530  # 253 * 10
+    assert ep.humidity.get("measured_value") == 7100  # 71 * 100
+    assert ep.power.get("battery_percentage_remaining") == 100  # state 1 → 100
+    assert (
+        ep.tuya_manufacturer.get("temperature_probe") == 245
+    )  # raw value, ÷10 for display
+
+    # Battery state 0 maps to 0, not 50 (unlike _TZE200_upagmta9)
+    bat_empty = b"\x09\xe0\x02\x0b\x33\x03\x02\x00\x04\x00\x00\x00\x00"
+    hdr, data = ep.tuya_manufacturer.deserialize(bat_empty)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+    assert ep.power.get("battery_percentage_remaining") == 0
+
+    hdr, data = ep.tuya_manufacturer.deserialize(TUYA_USP)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE

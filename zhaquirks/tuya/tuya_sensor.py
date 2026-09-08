@@ -343,6 +343,33 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
+    TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")  # ZY-ZTH03PRO
+    .applies_to("_TZE284_8se38w3c", "TS0601")  # TZ-ZT01_GA4
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 0, 1: 100, 2: 200}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="temperature_probe",
+        type=t.int16s,
+        divisor=10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_probe",
+        fallback_name="Probe temperature",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
     TuyaQuirkBuilder("_TZE200_upagmta9", "TS0601")
     .applies_to("_TZE204_upagmta9", "TS0601")
     .applies_to("_TZE200_cirvgep4", "TS0601")
