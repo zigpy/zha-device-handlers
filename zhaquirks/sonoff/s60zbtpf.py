@@ -107,7 +107,7 @@ s60_base_quirk = (
         cluster_id=Metering.cluster_id,
         unique_id_suffix="1-1794",  # no actual suffix for this
     )
-    .replaces(SonoffEwelinkCluster)
+    .replaces(SonoffEwelinkCluster, endpoint_id=1)
     .switch(
         attribute_name=SonoffEwelinkCluster.AttributeDefs.network_led.name,
         cluster_id=SonoffEwelinkCluster.cluster_id,
