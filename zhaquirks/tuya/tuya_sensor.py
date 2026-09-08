@@ -2,17 +2,15 @@
 
 import datetime
 
+from zha.application import EntityPlatform, EntityType
+from zha.application.platforms.sensor.device_class import (
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zha.units import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from zhaquirks.builder import (
-    PERCENTAGE,
-    EntityPlatform,
-    EntityType,
-    SensorDeviceClass,
-    UnitOfTemperature,
-    UnitOfTime,
-)
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -45,6 +43,13 @@ class TuyaNousTempHumiAlarm(t.enum8):
     Canceled = 0x02
 
 
+class TuyaTimeFormat(t.enum8):
+    """Tuya clock display time format enum."""
+
+    Time_24h = 0x00
+    Time_12h = 0x01
+
+
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
@@ -58,6 +63,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
             id=TUYA_SET_TIME,
             schema={"time": TuyaTimePayload},
             is_manufacturer_specific=False,
+        )
+
+    class ClientCommandDefs(TuyaMCUCluster.ClientCommandDefs):
+        """Client command definitions."""
+
+        set_time_request = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME, schema={"data": t.data16}, is_manufacturer_specific=False
         )
 
 
@@ -382,4 +394,44 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
+)
+
+# Sensor with clock, internal/external temperature and humidity
+(
+    TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")
+    # Internal temperature (DP 1, scale=10)
+    .tuya_temperature(dp_id=1, scale=10)
+    # Internal humidity (DP 2)
+    .tuya_humidity(dp_id=2)
+    # Battery from battery_state (DP 3: 0=10%, 1=50%, 2=100%)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 0),
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    # External temperature sensor (DP 38, value needs to be divided by 10 to get correct temperature)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="temperature_external",
+        type=t.int32s,
+        converter=lambda x: x / 10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_external",
+        fallback_name="Temperature probe",
+    )
+    # Clock display time format (DP 17: 0=24h, 1=12h)
+    .tuya_enum(
+        dp_id=17,
+        attribute_name="time_format",
+        enum_class=TuyaTimeFormat,
+        entity_type=EntityType.CONFIG,
+        translation_key="time_format",
+        fallback_name="Time format",
+    )
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
