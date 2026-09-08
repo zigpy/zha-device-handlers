@@ -1,14 +1,17 @@
 """Tests for the SONOFF S60ZBTPF device."""
 
 import pytest
+from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 import zhaquirks
+from zhaquirks.builder import EntityPlatform, EntityType
 from zhaquirks.sonoff.s60zbtpf import (
     S60_POWER_FIX_FW_VERSION,
+    SonoffEwelinkCluster,
     SonoffS60ElectricalMeasurement,
     SonoffS60OnOff,
 )
@@ -19,6 +22,7 @@ POWER_ID = ElectricalMeasurement.AttributeDefs.active_power.id
 CURRENT_ID = ElectricalMeasurement.AttributeDefs.rms_current.id
 VOLTAGE_ID = ElectricalMeasurement.AttributeDefs.rms_voltage.id
 ON_OFF_ID = OnOff.AttributeDefs.on_off.id
+NETWORK_LED_ID = SonoffEwelinkCluster.AttributeDefs.network_led.id
 
 # the quirk for the fixed firmware does not replace these clusters,
 # so the test device needs to provide them itself
@@ -26,6 +30,7 @@ S60_CLUSTERS = {
     1: {
         OnOff.cluster_id: ClusterType.Server,
         ElectricalMeasurement.cluster_id: ClusterType.Server,
+        SonoffEwelinkCluster.cluster_id: ClusterType.Server,
     }
 }
 
@@ -59,6 +64,9 @@ def test_sonoff_plug_quirk_selection(
         isinstance(electrical_cluster, SonoffS60ElectricalMeasurement)
         is power_fix_applied
     )
+    ewelink_cluster = device.endpoints[1].sonoff_ewelink
+    assert isinstance(ewelink_cluster, SonoffEwelinkCluster)
+    assert ewelink_cluster.find_attribute(NETWORK_LED_ID).id == NETWORK_LED_ID
 
 
 def test_sonoff_plug_power_fix(zigpy_device_from_v2_quirk):
@@ -104,3 +112,24 @@ def test_sonoff_plug_power_fix(zigpy_device_from_v2_quirk):
     assert electrical_cluster.get(POWER_ID) == 300
     assert electrical_cluster.get(CURRENT_ID) == 13
     assert electrical_cluster.get(VOLTAGE_ID) == 263
+
+
+def test_sonoff_plug_network_indicator_entity(zigpy_device_from_v2_quirk):
+    """Test that the network indicator is exposed as a configuration switch."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "S60ZBTPF",
+        cluster_ids=S60_CLUSTERS,
+        firmware_version=S60_POWER_FIX_FW_VERSION,
+    )
+
+    entry = getattr(device, QUIRK_REGISTRY_ENTRY_ATTR)
+    network_indicator = next(
+        metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if metadata.attribute_name
+        == SonoffEwelinkCluster.AttributeDefs.network_led.name
+    )
+
+    assert network_indicator.entity_type == EntityType.CONFIG
+    assert network_indicator.entity_platform == EntityPlatform.SWITCH

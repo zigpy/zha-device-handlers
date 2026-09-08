@@ -1,4 +1,4 @@
-"""SONOFF S60ZBTPF - Smart Socket with power measurement fix.
+"""SONOFF S60ZBTPF - Smart Socket with power measurement and network LED fixes.
 
 Firmware before v2.0.3 (`0x00002003`) keeps reporting power, current and voltage while
 the socket is turned off. For those versions, the quirk sets `active_power` and
@@ -10,18 +10,22 @@ v2.0.2 also reports `instantaneous_demand` as supported, always with value 0. Th
 metering entity it would create is prevented for all firmware versions, as the device
 never provides a useful value for it.
 
+The eWeLink cluster exposes a writable `networkLed` attribute that controls the
+blue network status indicator.
+
 See https://github.com/zigpy/zigpy-ota/issues/164 for more details.
 """
 
-from typing import Any
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
 
@@ -72,6 +76,24 @@ class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         super()._update_attribute(attrid, value)
 
 
+class SonoffEwelinkCluster(CustomCluster):
+    """Sonoff eWeLink manufacturer-specific cluster."""
+
+    cluster_id = 0xFC11
+    name = "Sonoff eWeLink cluster"
+    ep_attribute = "sonoff_ewelink"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Sonoff eWeLink attributes."""
+
+        network_led: Final = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            access="rw",
+            manufacturer_code=None,
+        )
+
+
 # firmware version that fixed the power reporting bug (max_version is exclusive)
 S60_POWER_FIX_FW_VERSION = 0x00002003
 
@@ -84,6 +106,14 @@ s60_base_quirk = (
         endpoint_id=1,
         cluster_id=Metering.cluster_id,
         unique_id_suffix="1-1794",  # no actual suffix for this
+    )
+    .replaces(SonoffEwelinkCluster)
+    .switch(
+        attribute_name=SonoffEwelinkCluster.AttributeDefs.network_led.name,
+        cluster_id=SonoffEwelinkCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="network_indicator",
+        fallback_name="Network indicator",
     )
 )
 
