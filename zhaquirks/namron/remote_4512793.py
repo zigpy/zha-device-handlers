@@ -25,32 +25,47 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
-BUTTON_ACTION_PRESS = 0x01
-BUTTON_ACTION_HOLD = 0x02
-BUTTON_ACTION_RELEASE = 0x04
+
+class NamronRemoteButton(t.enum8):
+    """Physical button position on the Namron Simplify remote."""
+
+    TopLeft = 0x01
+    BottomLeft = 0x02
+    TopMiddle = 0x03
+    BottomMiddle = 0x04
+    TopRight = 0x05
+    BottomRight = 0x06
+
+
+class NamronRemoteAction(t.enum8):
+    """Button action reported by the private cluster."""
+
+    Press = 0x01
+    Hold = 0x02
+    Release = 0x04
+
 
 PRESS_TYPES = {
-    BUTTON_ACTION_PRESS: SHORT_PRESS,
-    BUTTON_ACTION_HOLD: LONG_PRESS,
-    BUTTON_ACTION_RELEASE: LONG_RELEASE,
+    NamronRemoteAction.Press: SHORT_PRESS,
+    NamronRemoteAction.Hold: LONG_PRESS,
+    NamronRemoteAction.Release: LONG_RELEASE,
 }
 
 BUTTON_MAPPING = {
-    1: BUTTON_1,
-    2: BUTTON_2,
-    3: BUTTON_3,
-    4: BUTTON_4,
-    5: BUTTON_5,
-    6: BUTTON_6,
+    NamronRemoteButton.TopLeft: BUTTON_1,
+    NamronRemoteButton.BottomLeft: BUTTON_2,
+    NamronRemoteButton.TopMiddle: BUTTON_3,
+    NamronRemoteButton.BottomMiddle: BUTTON_4,
+    NamronRemoteButton.TopRight: BUTTON_5,
+    NamronRemoteButton.BottomRight: BUTTON_6,
 }
 
 
 class NamronPrivateRemoteCluster(CustomCluster):
     """Namron private cluster (0xE004) reporting Simplify remote button events.
 
-    Command 0x00 payload is (button: 1-6, action: 0x01=press, 0x02=hold,
-    0x04=release). A short tap sends only `press`; holding sends `hold`
-    then `release`, without a preceding `press`.
+    A short tap sends only `Press`; holding sends `Hold` then `Release`,
+    without a preceding `Press`.
     """
 
     name: str = "Namron Private Remote Cluster"
@@ -62,7 +77,7 @@ class NamronPrivateRemoteCluster(CustomCluster):
 
         button_action: Final = foundation.ZCLCommandDef(
             id=0x00,
-            schema={"button": t.uint8_t, "action": t.uint8_t},
+            schema={"button": NamronRemoteButton, "action": NamronRemoteAction},
         )
 
     def handle_cluster_request(
