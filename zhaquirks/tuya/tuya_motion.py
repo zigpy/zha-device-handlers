@@ -186,6 +186,14 @@ class TuyaMotionDetectionMode(t.enum8):
     Only_radar = 0x03
 
 
+class ExcelluxIlluminanceLevel(t.enum8):
+    """Tuya illuminance level enum."""
+
+    Dark = 0x00
+    Dim = 0x01
+    Bright = 0x02
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -1632,6 +1640,91 @@ base_tuya_motion = (
     .replaces(MotionWithReset)
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Excellux PIRIV-01
+(
+    TuyaQuirkBuilder("PIRIV01", "Excellux")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_vibration(dp_id=3)
+    .tuya_battery(dp_id=4, scale=2)
+    .tuya_number(
+        dp_id=6,
+        attribute_name="vibration_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=50,
+        step=1,
+        translation_key="vibration_sensitivity",
+        fallback_name="Vibration sensitivity",
+    )
+    .tuya_illuminance(dp_id=20)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="report_interval",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1200,
+        step=5,
+        device_class=SensorDeviceClass.DURATION,
+        translation_key="report_interval",
+        fallback_name="Report interval",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="dark_to_dim_threshold",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        unit=LIGHT_LUX,
+        min_value=0,
+        max_value=10000,
+        step=1,
+        translation_key="dark_to_dim_threshold",
+        fallback_name="Dark to dim threshold",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="dim_to_bright_threshold",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        unit=LIGHT_LUX,
+        min_value=0,
+        max_value=10000,
+        step=1,
+        translation_key="dim_to_bright_threshold",
+        fallback_name="Dim to bright threshold",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="illuminance_offset",
+        type=t.int16s,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        unit=LIGHT_LUX,
+        min_value=-1000,
+        max_value=1000,
+        step=1,
+        translation_key="illuminance_offset",
+        fallback_name="Illuminance offset",
+    )
+    .tuya_enum(
+        dp_id=107,
+        attribute_name="ambient_light_category",
+        enum_class=ExcelluxIlluminanceLevel,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="ambient_light_category",
+        fallback_name="Ambient light category",
+    )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
