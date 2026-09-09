@@ -98,12 +98,6 @@ class CustomSonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
-        reset_max_min_record = ZCLAttributeDef(
-            id=0x2013,
-            type=t.uint8_t,
-            manufacturer_code=None,
-        )
-
         temp_humi_source_status = ZCLAttributeDef(
             id=0x600E,
             type=t.uint8_t,
@@ -682,13 +676,6 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         translation_key="humidity_offset",
         fallback_name="Humidity offset",
-    )
-    .write_attr_button(
-        CustomSonoffCluster.AttributeDefs.reset_max_min_record.name,
-        1,
-        CustomSonoffCluster.cluster_id,
-        translation_key="reset_max_min_record",
-        fallback_name="Reset min/max records",
     )
     .switch(
         CustomSonoffCluster.AttributeDefs.temp_humi_source_status.name,

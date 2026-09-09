@@ -3,12 +3,9 @@
 from unittest import mock
 
 import pytest
-from zha.quirks import DEVICE_REGISTRY
-import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 
 import zhaquirks
-from zhaquirks.builder.metadata import WriteAttributeButtonMetadata
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.sonoff.snzb02dr2 import (
     CONFIGURATION_TIP,
@@ -64,31 +61,10 @@ def _packet(attributes, packet_count=1, packet_index=0):
 
 
 def test_snzb02dr2_attribute_and_entity_configuration(sonoff_cluster):
-    """Expose the firmware reset attribute and the configured sensor attributes."""
-    reset_attr = CustomSonoffCluster.AttributeDefs.reset_max_min_record
-    assert reset_attr.id == 0x2013
-    assert reset_attr.type is t.uint8_t
-    assert sonoff_cluster.get(reset_attr.name) is None
+    """Expose the configured sensor attributes."""
     assert sonoff_cluster.get("configuration_tip") == 1
     assert TemperatureUnit.Celsius == 0
     assert configuration_tip_converter(None) == CONFIGURATION_TIP
-
-
-def test_snzb02dr2_reset_button_metadata():
-    """Expose the firmware reset attribute as a configuration button."""
-    raw_device = mock.Mock(
-        manufacturer="SONOFF",
-        model="SNZB-02DR2",
-    )
-    entry = DEVICE_REGISTRY.match_entry(raw_device)
-    assert entry is not None
-    metadata = entry.zha_device_factory.quirk_definition.entity_metadata
-    reset_button = next(
-        item for item in metadata if isinstance(item, WriteAttributeButtonMetadata)
-    )
-    assert reset_button.attribute_name == "reset_max_min_record"
-    assert reset_button.attribute_value == 1
-    assert reset_button.fallback_name == "Reset min/max records"
 
 
 def test_remote_array_helpers(sonoff_cluster):
@@ -404,6 +380,5 @@ async def test_remote_sensor_value_write_handles_firmware_responses(sonoff_clust
 def test_malformed_remote_report_is_ignored(sonoff_cluster):
     """Ignore malformed physical remote reports without raising."""
     cluster = sonoff_cluster
-    cluster._update_attribute(cluster.AttributeDefs.reset_max_min_record.id, 1)
     cluster._update_attribute(cluster.AttributeDefs.remote_attributes.id, b"\x00")
     assert cluster.get(cluster.AttributeDefs.remote_attributes.name) == b"\x00"
