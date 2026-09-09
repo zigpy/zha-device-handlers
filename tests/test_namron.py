@@ -85,3 +85,25 @@ async def test_unknown_button_and_action_discarded(zigpy_device_from_v2_quirk):
     )
 
     assert listener.zha_send_event.call_count == 0
+
+
+async def test_unrelated_command_falls_through(zigpy_device_from_v2_quirk):
+    """A command other than button_action should fall through to the base handler."""
+    device = zigpy_device_from_v2_quirk("Namron AS", "4512793")
+    cluster = device.endpoints[1].namron_private_remote
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    # command_id 0x01, not button_action (0x00)
+    header = b"\x19" + bytes([0x42]) + b"\x01"
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=NamronPrivateRemoteCluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(header),
+        )
+    )
+
+    assert listener.zha_send_event.call_count == 0
