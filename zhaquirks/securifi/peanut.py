@@ -2,6 +2,7 @@
 
 from zigpy.zcl.clusters.general import (
     Basic,
+    Diagnostics,
     Groups,
     Identify,
     OnOff,
@@ -9,7 +10,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
-from zigpy.zcl.clusters.homeautomation import Diagnostics, ElectricalMeasurement
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.builder import QuirkBuilder, SensorDeviceClass
 from zhaquirks.const import (
