@@ -66,9 +66,7 @@ PEANUT_SIGNATURE = {
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=ElectricalMeasurement.cluster_id,
-        function=lambda entity: (
-            entity.device_class == SensorDeviceClass.POWER_FACTOR
-        ),
+        function=lambda entity: entity.device_class == SensorDeviceClass.POWER_FACTOR,
     )
     .add_to_registry()
 )
