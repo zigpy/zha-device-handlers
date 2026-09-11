@@ -40,7 +40,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -69,7 +69,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -149,7 +149,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -184,7 +184,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -268,7 +268,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -312,7 +312,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -405,7 +405,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -454,7 +454,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
@@ -549,7 +549,7 @@ from zhaquirks.tuya.mcu import MoesBacklight
         enum_class=PowerOnState,
         attribute_name="power_on_state",
         translation_key="power_on_state",
-        fallback_name="Power-on state",
+        fallback_name="Power on state",
     )
     .tuya_enum(
         dp_id=15,
