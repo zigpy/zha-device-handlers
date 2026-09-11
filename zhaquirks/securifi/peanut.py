@@ -24,8 +24,8 @@ from zhaquirks.legacy import signature_matches
 PEANUT_SIGNATURE = {
     ENDPOINTS: {
         1: {
-            PROFILE_ID: 0x0104,
-            DEVICE_TYPE: 0x0000,
+            PROFILE_ID: zha.PROFILE_ID,
+            DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
             INPUT_CLUSTERS: [
                 Basic.cluster_id,
                 PowerConfiguration.cluster_id,
