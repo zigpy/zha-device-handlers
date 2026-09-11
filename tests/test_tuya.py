@@ -24,8 +24,6 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    OFF,
-    ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
