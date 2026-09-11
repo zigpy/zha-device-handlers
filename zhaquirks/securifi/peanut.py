@@ -1,5 +1,6 @@
 """ZHA quirk for the Securifi Peanut Plug (PP-WHT-US)."""
 
+import zigpy.profiles.zha as zha
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
