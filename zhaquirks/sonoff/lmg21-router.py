@@ -4,7 +4,6 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks.builder import QuirkBuilder
 
-
 (
     QuirkBuilder("SONOFF", "Dongle-LMG21_ZBRouter")
     .prevent_default_entity_creation(
