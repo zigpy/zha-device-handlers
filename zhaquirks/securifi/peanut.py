@@ -52,6 +52,9 @@ PEANUT_SIGNATURE = {
     }
 }
 
+# The Peanut Plug does not report a model identifier. QuirkBuilder(..., None)
+# matches any model from this manufacturer, so the signature filter below is
+# required to restrict this quirk to the Peanut Plug endpoint signature.
 (
     QuirkBuilder("Securifi Ltd.", None)
     .filter(signature_matches(PEANUT_SIGNATURE))
