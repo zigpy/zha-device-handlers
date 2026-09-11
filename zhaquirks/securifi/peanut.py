@@ -21,7 +21,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.legacy import signature_matches
 
-
 PEANUT_SIGNATURE = {
     ENDPOINTS: {
         1: {
@@ -63,10 +62,12 @@ PEANUT_SIGNATURE = {
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=ElectricalMeasurement.cluster_id,
-        function=lambda entity: entity.device_class
-        in (
-            SensorDeviceClass.FREQUENCY,
-            SensorDeviceClass.POWER_FACTOR,
+        function=lambda entity: (
+            entity.device_class
+            in (
+                SensorDeviceClass.FREQUENCY,
+                SensorDeviceClass.POWER_FACTOR,
+            )
         ),
     )
     .add_to_registry()

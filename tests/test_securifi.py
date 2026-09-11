@@ -37,10 +37,7 @@ def test_peanut_plug_quirk(MockAppController, ieee_mock):
     # Friendly device naming.
     assert quirked.quirk_metadata.friendly_name is not None
     assert quirked.quirk_metadata.friendly_name.manufacturer == "Securifi"
-    assert (
-        quirked.quirk_metadata.friendly_name.model
-        == "Peanut Plug PP-WHT-US"
-    )
+    assert quirked.quirk_metadata.friendly_name.model == "Peanut Plug PP-WHT-US"
 
     # Verify the quirk does not alter the actual Zigbee endpoint structure.
     assert set(quirked.endpoints[1].in_clusters) == set(
@@ -68,20 +65,10 @@ def test_peanut_plug_quirk(MockAppController, ieee_mock):
             self.device_class = device_class
 
     # These two bogus entities should be suppressed.
-    assert entity_filter.function(
-        FakeEntity(SensorDeviceClass.FREQUENCY)
-    )
-    assert entity_filter.function(
-        FakeEntity(SensorDeviceClass.POWER_FACTOR)
-    )
+    assert entity_filter.function(FakeEntity(SensorDeviceClass.FREQUENCY))
+    assert entity_filter.function(FakeEntity(SensorDeviceClass.POWER_FACTOR))
 
     # Useful Electrical Measurement entities must remain enabled.
-    assert not entity_filter.function(
-        FakeEntity(SensorDeviceClass.POWER)
-    )
-    assert not entity_filter.function(
-        FakeEntity(SensorDeviceClass.VOLTAGE)
-    )
-    assert not entity_filter.function(
-        FakeEntity(SensorDeviceClass.CURRENT)
-    )
+    assert not entity_filter.function(FakeEntity(SensorDeviceClass.POWER))
+    assert not entity_filter.function(FakeEntity(SensorDeviceClass.VOLTAGE))
+    assert not entity_filter.function(FakeEntity(SensorDeviceClass.CURRENT))
