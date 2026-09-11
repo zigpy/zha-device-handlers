@@ -1,6 +1,7 @@
 """Tuya DP-based switches."""
 
 import zigpy.types as t
+
 from zhaquirks.builder import (
     EntityType,
     SensorDeviceClass,
@@ -12,7 +13,6 @@ from zhaquirks.builder import (
 from zhaquirks.tuya import PowerOnState
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import MoesBacklight
-
 
 # 1 Gang Moes Switch
 (
