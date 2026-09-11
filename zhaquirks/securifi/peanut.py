@@ -2,7 +2,6 @@
 
 from zigpy.zcl.clusters.general import (
     Basic,
-    Diagnostics,
     Groups,
     Identify,
     OnOff,
@@ -10,7 +9,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 
 from zhaquirks.builder import QuirkBuilder, SensorDeviceClass
 from zhaquirks.const import (
@@ -35,7 +34,7 @@ PEANUT_SIGNATURE = {
                 Scenes.cluster_id,
                 OnOff.cluster_id,
                 ElectricalMeasurement.cluster_id,
-                Diagnostics.cluster_id,
+                Diagnostic.cluster_id,
             ],
             OUTPUT_CLUSTERS: [
                 Basic.cluster_id,
@@ -46,12 +45,11 @@ PEANUT_SIGNATURE = {
                 OnOff.cluster_id,
                 Ota.cluster_id,
                 ElectricalMeasurement.cluster_id,
-                Diagnostics.cluster_id,
+                Diagnostic.cluster_id,
             ],
         }
     }
 }
-
 
 (
     QuirkBuilder("Securifi Ltd.", None)
@@ -63,12 +61,13 @@ PEANUT_SIGNATURE = {
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=ElectricalMeasurement.cluster_id,
+        function=lambda entity: entity.device_class == SensorDeviceClass.FREQUENCY,
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=ElectricalMeasurement.cluster_id,
         function=lambda entity: (
-            entity.device_class
-            in (
-                SensorDeviceClass.FREQUENCY,
-                SensorDeviceClass.POWER_FACTOR,
-            )
+            entity.device_class == SensorDeviceClass.POWER_FACTOR
         ),
     )
     .add_to_registry()
