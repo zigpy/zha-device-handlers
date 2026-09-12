@@ -516,6 +516,12 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
         """Write attributes to the device."""
+        # Every attribute on this cluster is manufacturer specific, so zigpy needs
+        # the manufacturer code to resolve them. ZHA writes without one, which would
+        # otherwise fail with KeyError(None) in Cluster.find_attributes().
+        if manufacturer is None:
+            manufacturer = MANUFACTUER_ID
+
         result = []
 
         if SENSOR in attributes:
