@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from functools import reduce
 import math
 import struct
@@ -50,8 +51,12 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+SENSOR_TEMP = 0x0FFF2
+
 
 XIAOMI_CLUSTER_ID = 0xFCC0
+
+XIAOMI_SENSOR_VALUE = bytes.fromhex("00158d00019d1b98")
 
 DAYS_MAP = {
     "mon": 0x02,
@@ -63,6 +68,8 @@ DAYS_MAP = {
     "sun": 0x80,
 }
 NEXT_DAY_FLAG = 1 << 15
+
+MANUFACTUER_ID = 0x115F
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -374,6 +381,92 @@ class ScheduleSettings(t.LVBytes):
         return result
 
 
+class SensorTemp(t.LVBytes):
+    """Sensor temperature object."""
+
+    @staticmethod
+    def lumi_header(counter: int, params: bytes, action: int) -> bytes:
+        """Create the lumi header."""
+        header = bytearray([0xAA, 0x71, len(params) + 3, 0x44, counter])
+        integrity = 512 - sum(header)
+
+        return bytes(header + bytearray([integrity, action, 0x41, len(params)]))
+
+    @staticmethod
+    def toggle_sensor_serialize(value: Any, ieee: t.EUI64) -> list[bytes]:
+        """Convert sensor write value to bytes."""
+        device = bytes(reversed(ieee))
+        timestamp = struct.pack(">I", int(datetime.now().timestamp()))
+
+        if value == 1:
+            params1 = (
+                timestamp
+                + b"\x3d\x04"
+                + device
+                + XIAOMI_SENSOR_VALUE
+                + b"\x00\x01\x00\x55\x13\x0a\x02\x00\x00\x64\x04\xce\xc2\xb6\xc8\x00\x00\x00\x00\x00\x01\x3d\x64\x65"
+            )
+
+            params2 = (
+                timestamp
+                + b"\x3d\x05"
+                + device
+                + XIAOMI_SENSOR_VALUE
+                + b"\x08\x00\x07\xfd\x16\x0a\x02\x0a\xc9\xe8\xb1\xb8\xd4\xda\xcf\xdf\xc0\xeb\x00\x00\x00\x00\x00\x01\x3d\x04\x65"
+            )
+
+            return [
+                SensorTemp.lumi_header(0x12, params1, 0x02) + params1,
+                SensorTemp.lumi_header(0x13, params2, 0x02) + params2,
+            ]
+        else:
+            params1 = (
+                timestamp
+                + b"\x3d\x05"
+                + device
+                + b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            )
+
+            params2 = (
+                timestamp
+                + b"\x3d\x04"
+                + device
+                + b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            )
+
+            return [
+                SensorTemp.lumi_header(0x12, params1, 0x04) + params1,
+                SensorTemp.lumi_header(0x13, params2, 0x04) + params2,
+            ]
+
+    def __new__(cls, value):
+        """Create SensorTemp object from string, int, float temperature value, or bytes."""
+
+        if isinstance(value, bytes):
+            # If bytes are provided (e.g., from toggle_sensor_serialize), pass through
+            result = value
+        elif isinstance(value, (str, int, float)):
+            # Parse temperature value
+            temp = float(value)
+
+            # Apply bounds: min 0, max 55
+            temp = max(temp, 0)
+            temp = min(temp, 55)
+
+            # Pack as big-endian float (multiplied by 100 and rounded)
+            temp_packed = struct.pack(">f", round(temp * 100))
+
+            # Build the result: XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp
+            params = XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp_packed
+
+            # Add lumi header
+            result = SensorTemp.lumi_header(0x12, params, 0x05) + params
+        else:
+            raise TypeError(f"Cannot create SensorTemp object from type: {type(value)}")
+
+        return super().__new__(cls, result)
+
+
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
@@ -419,6 +512,43 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
         )
+        sensor_temp: Final = ZCLAttributeDef(
+            id=SENSOR_TEMP, type=SensorTemp, is_manufacturer_specific=True
+        )
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes to the device."""
+        # Every attribute on this cluster is manufacturer specific, so zigpy needs
+        # the manufacturer code to resolve them. ZHA writes without one, which would
+        # otherwise fail with KeyError(None) in Cluster.find_attributes().
+        if manufacturer is None:
+            manufacturer = MANUFACTUER_ID
+
+        result = []
+
+        if SENSOR in attributes:
+            values = SensorTemp.toggle_sensor_serialize(
+                attributes[SENSOR], self.endpoint.device.ieee
+            )
+
+            attributes.pop(SENSOR)
+
+            for value in values:
+                result += await super().write_attributes(
+                    {SENSOR_TEMP: value}, manufacturer=MANUFACTUER_ID
+                )
+
+            # keep only last result in list
+            if len(result) > 1:
+                result = result[-1]
+
+        if len(attributes) == 0:
+            return result
+
+        result += await super().write_attributes(attributes, manufacturer)
+        return result
 
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
