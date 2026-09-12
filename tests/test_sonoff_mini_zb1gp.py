@@ -129,6 +129,36 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage_frequency.id == 0x7029
 
 
+def test_mini_zb1gp_ignores_transient_zero_energy_reports(
+    zigpy_device_from_v2_quirk,
+):
+    """Test startup zero reports do not overwrite nonzero energy counters."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+
+    for attribute_id in cluster.energy_attribute_ids:
+        cluster._update_attribute(attribute_id, 1000)
+        cluster._update_attribute(attribute_id, 0)
+        assert cluster.get(attribute_id) == 1000
+
+        cluster._update_attribute(attribute_id, 1001)
+        assert cluster.get(attribute_id) == 1001
+
+    # A zero received before the device has reported a counter is valid.
+    cluster._update_attribute(cluster.AttributeDefs.energy_yesterday.id, 0)
+    assert cluster.get(cluster.AttributeDefs.energy_yesterday.id) == 0
+
+    # Only energy counters are filtered; a zero power report remains valid.
+    cluster._update_attribute(cluster.AttributeDefs.power.id, 1000)
+    cluster._update_attribute(cluster.AttributeDefs.power.id, 0)
+    assert cluster.get(cluster.AttributeDefs.power.id) == 0
+
+
 def test_mini_zb1gp_milli_value_converters():
     """Test converters for raw Sonoff milli-unit values."""
 

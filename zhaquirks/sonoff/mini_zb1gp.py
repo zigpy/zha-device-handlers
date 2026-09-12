@@ -140,11 +140,34 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             manufacturer_code=None,
         )
 
+    energy_attribute_ids = frozenset(
+        (
+            AttributeDefs.energy_today.id,
+            AttributeDefs.energy_month.id,
+            AttributeDefs.output_energy_today.id,
+            AttributeDefs.output_energy_month.id,
+            AttributeDefs.total_energy.id,
+            AttributeDefs.total_output_energy.id,
+        )
+    )
+
     def __init__(self, *args, **kwargs):
         """Listen for raw protection configuration read results."""
 
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
+
+    def _update_attribute(self, attrid, value) -> None:
+        """Ignore transient zero energy reports emitted while the device starts."""
+
+        if (
+            attrid in self.energy_attribute_ids
+            and value == 0
+            and self._attr_cache.get(attrid, 0) != 0
+        ):
+            return
+
+        super()._update_attribute(attrid, value)
 
     def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
         """Cache a raw protection array when normal decoding did not succeed."""
