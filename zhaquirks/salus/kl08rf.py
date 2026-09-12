@@ -163,10 +163,7 @@ from typing import Final
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Ota
-from zigpy.zcl.foundation import (
-    BaseCommandDefs,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLCommandDef
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster

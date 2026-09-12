@@ -555,9 +555,7 @@ class SalusFC00Cluster(CustomCluster):
         setpoint = int.from_bytes(req[14:16], "little")
         self.update_attribute(self.AttributeDefs.local_temperature.id, measured)
         self.update_attribute(self.AttributeDefs.occupied_heating_setpoint.id, setpoint)
-        self.update_attribute(
-            self.AttributeDefs.running_state.id, t.Bool(bool(req[2]))
-        )
+        self.update_attribute(self.AttributeDefs.running_state.id, t.Bool(bool(req[2])))
 
     def _handle_time_announce(self, req: bytes) -> None:
         """Decode a Salus fc00 0x11 date/time-change broadcast and cache the clock.
@@ -575,7 +573,9 @@ class SalusFC00Cluster(CustomCluster):
         secs_since_2000 = int.from_bytes(req[0:4], "little")
         dst_on = req[4] == 0x03  # 0x03/0x01 = DST on; 0x02/0x00 = off
         # Human-readable form for the log only (naive local wall time; see docstring).
-        local = datetime.datetime(2000, 1, 1) + datetime.timedelta(seconds=secs_since_2000)
+        local = datetime.datetime(2000, 1, 1) + datetime.timedelta(
+            seconds=secs_since_2000
+        )
         self.debug(
             "fc00 0x11 date/time-change: device clock -> %s (secs_since_2000=%s, DST=%s)",
             local.isoformat(sep=" "),
@@ -634,7 +634,7 @@ class SalusFC00Cluster(CustomCluster):
             # emulate one ourselves. Echo the box the device asked for (req[0]);
             # default 0x01 if absent.
             box = req[0] if req else 0x01
-            if FORCE_WC_BOX is not None and FORCE_WC_BOX != box:
+            if FORCE_WC_BOX is not None and box != FORCE_WC_BOX:
                 self.debug(
                     "fc00 0x16: device asked for control box 0x%02x, "
                     "answering with FORCED box 0x%02x (experiment)",
