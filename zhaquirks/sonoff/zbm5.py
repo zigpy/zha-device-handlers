@@ -51,6 +51,11 @@ class SonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
         work_mode = ZCLAttributeDef(
             id=0x0018,
             type=SonoffWorkMode,
@@ -159,6 +164,12 @@ zbm_1c_quirk = (
         entity_platform=EntityPlatform.SENSOR,
         translation_key="work_mode",
         fallback_name="Work mode",
+    )
+    .switch(
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
+        translation_key="network_led",
+        fallback_name="Network LED",
     )
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name,
