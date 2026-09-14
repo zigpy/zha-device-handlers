@@ -264,16 +264,16 @@ async def test_frankever_fk_bv05_quirk(zigpy_device_from_v2_quirk, model, manuf)
     }
 
     expected_entities = {
-        "on_off",                    # DP 1 - valve switch
-        "target_opening_percentage", # DP 2 - number 0-100
-        "current_valve_position",    # DP 3 - sensor %
-        "water_temperature",         # DP 22 - temp °F
-        "water_consumed_last",       # DP 5 - sensor L
-        "summation_delivered",       # DP 6 - metering
-        "auto_cycle_mode",           # DP 112 - switch CONFIG
-        "power_off_state",           # DP 110 - enum CONFIG
-        "fault_code",                # DP 4 - sensor DIAG
-        "leak_detected",             # DP 101 - binary_sensor DIAG
+        "on_off",  # DP 1 - valve switch
+        "target_opening_percentage",  # DP 2 - number 0-100
+        "current_valve_position",  # DP 3 - sensor %
+        "water_temperature",  # DP 22 - temp °F
+        "water_consumed_last",  # DP 5 - sensor L
+        "summation_delivered",  # DP 6 - metering
+        "auto_cycle_mode",  # DP 112 - switch CONFIG
+        "power_off_state",  # DP 110 - enum CONFIG
+        "fault_code",  # DP 4 - sensor DIAG
+        "leak_detected",  # DP 101 - binary_sensor DIAG
     }
 
     for suffix in expected_entities:
