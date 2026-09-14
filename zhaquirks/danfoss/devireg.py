@@ -130,7 +130,9 @@ class DeviThermostatCluster(CustomCluster, Thermostat):
         The device only implements Heat; Off is emulated by lowering the setpoint
         to the minimum setpoint limit (frost protection).
         """
-        attributes = dict(attributes)
+        attributes = {
+            self.find_attribute(attr).name: value for attr, value in attributes.items()
+        }
 
         if attributes.get(system_mode.name) == self.SystemMode.Off:
             attributes[system_mode.name] = self.SystemMode.Heat

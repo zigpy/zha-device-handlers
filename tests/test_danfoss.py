@@ -3,6 +3,7 @@
 from typing import cast
 from unittest import mock
 
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Time
@@ -11,8 +12,14 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
 import zhaquirks
+from zhaquirks.builder import SensorDeviceClass
+from zhaquirks.builder.device import QuirkV2Factory
+from zhaquirks.builder.metadata import BinarySensorMetadata, ZCLSensorMetadata
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.danfoss.devireg import DeviThermostatCluster
+from zhaquirks.danfoss.devireg import (
+    DeviTemperatureMeasurementCluster,
+    DeviThermostatCluster,
+)
 from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
 zhaquirks.setup()
@@ -412,3 +419,77 @@ async def test_devireg_time_bind(zigpy_device_from_v2_quirk):
         assert Time.AttributeDefs.time.id in time_cluster._attr_cache
         assert Time.AttributeDefs.time_status.id in time_cluster._attr_cache
         assert Time.AttributeDefs.time_zone.id in time_cluster._attr_cache
+
+
+async def test_devireg_write_attributes_by_id(zigpy_device_from_v2_quirk):
+    """Test the off emulation also applying to writes keyed by attribute id."""
+    device = devireg_device(zigpy_device_from_v2_quirk)
+
+    thermostat = device.endpoints[1].thermostat
+    system_mode = Thermostat.AttributeDefs.system_mode
+    setpoint = Thermostat.AttributeDefs.occupied_heating_setpoint
+
+    written = []
+
+    def mock_write(attributes, manufacturer=None):
+        written.append({record.attrid: record.value.value for record in attributes})
+        records = [
+            WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
+        ]
+        return [records, []]
+
+    thermostat.update_attribute(setpoint.id, 900)
+    with mock.patch.object(
+        thermostat, "_write_attributes", mock.AsyncMock(side_effect=mock_write)
+    ):
+        await thermostat.write_attributes({system_mode.id: Thermostat.SystemMode.Off})
+
+    assert written == [{system_mode.id: Thermostat.SystemMode.Heat, setpoint.id: 500}]
+
+
+def test_devireg_entity_metadata(zigpy_device_from_v2_quirk):
+    """Test the quirk entities referencing attributes of the replaced clusters."""
+    device = devireg_device(zigpy_device_from_v2_quirk)
+    (entry,) = [
+        entry
+        for entry in DEVICE_REGISTRY
+        if isinstance(entry.zha_device_factory, QuirkV2Factory)
+        and str(entry.source.file).endswith("devireg.py")
+    ]
+    definition = entry.zha_device_factory.quirk_definition
+
+    entities = {
+        (metadata.cluster_id, metadata.attribute_name): metadata
+        for metadata in definition.entity_metadata
+    }
+    heater_on = (
+        Thermostat.cluster_id,
+        DeviThermostatCluster.AttributeDefs.heater_on.name,
+    )
+    room_temperature = (
+        TemperatureMeasurement.cluster_id,
+        DeviTemperatureMeasurementCluster.AttributeDefs.room_temperature.name,
+    )
+    floor_temperature = (
+        TemperatureMeasurement.cluster_id,
+        DeviTemperatureMeasurementCluster.AttributeDefs.floor_temperature.name,
+    )
+    assert set(entities) == {heater_on, room_temperature, floor_temperature}
+
+    for (cluster_id, attribute_name), metadata in entities.items():
+        cluster = device.endpoints[1].in_clusters[cluster_id]
+        assert attribute_name in cluster.attributes_by_name
+        assert metadata.endpoint_id == 1
+        assert metadata.reporting_config is not None
+
+    assert isinstance(entities[heater_on], BinarySensorMetadata)
+    for key in (room_temperature, floor_temperature):
+        assert isinstance(entities[key], ZCLSensorMetadata)
+        assert entities[key].divisor == 100
+        assert entities[key].device_class == SensorDeviceClass.TEMPERATURE
+
+    # the default entity for the unusable measured_value is prevented
+    (prevented,) = definition.disabled_default_entities
+    assert prevented.endpoint_id == 1
+    assert prevented.cluster_id == TemperatureMeasurement.cluster_id
+    assert prevented.unique_id_suffix == str(TemperatureMeasurement.cluster_id)
