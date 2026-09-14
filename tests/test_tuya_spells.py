@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, OnOff
 
@@ -90,8 +91,7 @@ async def test_tuya_spell(zigpy_device_from_quirk):
             # ZHA does this during device configuration normally
             await device.apply_custom_configuration()
 
-            # zigpy chunks attribute reads so the read spell may span multiple requests;
-            # collect by command.
+            # collect the requests each spell made, by command
             read_calls = [
                 c
                 for c in request_mock.call_args_list
@@ -106,8 +106,11 @@ async def test_tuya_spell(zigpy_device_from_quirk):
 
             # check 'attribute read spell' was cast correctly (if enabled)
             if device.tuya_spell_read_attributes:
-                read_attrs = [attr for c in read_calls for attr in c.args[3]]
-                assert read_attrs == [4, 0, 1, 5, 7, 65534]
+                # all six attributes must go out in the *first* request: Tuya devices
+                # only accept the spell as a single combined read (#5307). Flattening
+                # the attributes across requests would also accept a split read.
+                assert read_calls, "attribute read spell was not cast"
+                assert read_calls[0].args[3] == [4, 0, 1, 5, 7, 65534]
             else:
                 assert not read_calls
 
@@ -154,3 +157,39 @@ def test_tuya_spell_devices_valid():
             pytest.fail(
                 f"{quirk} set Tuya data query spell but has no cluster subclassing `TuyaNewManufCluster` on endpoint 1"
             )
+
+
+async def test_tuya_spell_read_is_a_single_frame(zigpy_device_from_quirk):
+    """Test that the attribute read spell reaches the radio as one ZCL frame.
+
+    The other spell tests mock ``Cluster.request``, which accepts any keyword
+    argument, so a ``read_attributes`` keyword argument the installed zigpy does not
+    support (``split_requests``) would be swallowed instead of failing. Mocking one
+    layer lower runs the real frame building, so this test also covers the spell
+    staying compatible with zigpy.
+    """
+    device = zigpy_device_from_quirk(TuyaTestSpellDevice)
+
+    with mock.patch.object(
+        type(device),
+        "request",
+        mock.AsyncMock(return_value=(foundation.Status.SUCCESS, "done")),
+    ) as request_mock:
+        await device.apply_custom_configuration()
+
+    basic_frames = [
+        c.kwargs["data"]
+        for c in request_mock.await_args_list
+        if c.kwargs["cluster"] == Basic.cluster_id
+    ]
+    # exactly one frame: the mock answers with a bare status rather than a list of
+    # records, so zigpy marks every attribute failed and its re-read of omitted or
+    # `INSUFFICIENT_SPACE` records (ZCL R8 2.5.2.3) never sends a second request
+    assert len(basic_frames) == 1
+
+    hdr, payload = foundation.ZCLHeader.deserialize(basic_frames[0])
+    assert hdr.frame_control.is_general
+    assert hdr.command_id == foundation.GeneralCommand.Read_Attributes
+
+    attr_ids, _ = t.List[t.uint16_t].deserialize(payload)
+    assert attr_ids == [4, 0, 1, 5, 7, 65534]
