@@ -292,9 +292,7 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
         (25.0, 100.0, 25.0, 0.0),
     ],
 )
-def test_snzb02b_calculated_climate_formulas(
-    temperature, humidity, dew_point, vpd
-):
+def test_snzb02b_calculated_climate_formulas(temperature, humidity, dew_point, vpd):
     """Test SNZB-02B calculated climate values."""
     assert SNZB02BCalculatedClimateCluster.calculate_dew_point(
         temperature,
@@ -370,9 +368,10 @@ async def test_snzb02ul_remote_sensor_report_updates_entities(
         report,
     )
 
-    assert cluster._attr_cache[
-        SNZB02ULCluster.AttributeDefs.remote_temperature_data.id
-    ] == 2150
+    assert (
+        cluster._attr_cache[SNZB02ULCluster.AttributeDefs.remote_temperature_data.id]
+        == 2150
+    )
 
 
 def test_snzb02ul_calculated_climate_handles_missing_measurements():
