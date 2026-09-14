@@ -44,7 +44,10 @@ AURORA_DIAL_CW_FAST = bytes.fromhex(
 AURORA_DIAL_CW_SLOW = bytes.fromhex(
     "1d0b102a00140001300229200021940229e002214209292000219001"
 )
-# Same frame with the rotation field zeroed (never seen on air, synthetic).
+# Synthetic variants of the slow frame: rotation 10 (a single step) and 0.
+AURORA_DIAL_CW_STEP = bytes.fromhex(
+    "1d0b102a001400013002290a0021940229e002214209290a00219001"
+)
 AURORA_DIAL_ZERO = bytes.fromhex(
     "1d0b102a00140001300229000021940229e002214209290000219001"
 )
@@ -170,6 +173,11 @@ def test_aurora_knob_double_press(aurora):
             AURORA_DIAL_CW_SLOW,
             DIAL_ROTATE_CW,
             {"rotation": 32, "direction": "cw", "speed": "slow", "phase": "rotate"},
+        ),
+        (
+            AURORA_DIAL_CW_STEP,
+            DIAL_ROTATE_CW,
+            {"rotation": 10, "direction": "cw", "speed": "step", "phase": "rotate"},
         ),
     ],
 )
