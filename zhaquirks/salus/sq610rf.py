@@ -497,6 +497,7 @@ class SalusFC00Cluster(CustomCluster):
     def handle_cluster_request(
         self, hdr: foundation.ZCLHeader, args, *, dst_addressing=None
     ):
+        """Handle a cluster command received on this cluster."""
         # Any incoming device traffic (join 0x10 handshake, ~10 min 0x12 heartbeat,
         # etc.) is a chance to keep the clock synced; _maybe_auto_sync self-throttles.
         self._maybe_auto_sync()
@@ -709,6 +710,7 @@ class SalusOta(CustomCluster, Ota):
     """
 
     def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+        """Handle a cluster command received on this cluster."""
         if (
             ENABLE_FC00_COMMISSION_REPLY
             and hdr.direction == foundation.Direction.Client_to_Server
@@ -767,6 +769,7 @@ class SalusBasic(CustomCluster, Basic):
     """
 
     def handle_read_attribute_model(self) -> t.CharacterString:
+        """Return the Salus controller model string the device expects."""
         # MUST be a zigpy string type, not a bare `str`: zigpy 2.x serializes the
         # read-attributes reply by calling `.serialize()` on the value, which a
         # plain str lacks ("'str' object has no attribute 'serialize'"). (A bare
@@ -797,6 +800,8 @@ class SalusFC09Cluster(CustomCluster):
     manufacturer_id_override = COMPUTIME
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         operating_mode: Final = ZCLAttributeDef(
             id=0x0000, type=t.uint8_t, access="rp", manufacturer_code=COMPUTIME
         )

@@ -348,6 +348,7 @@ class SalusKL08FC00Cluster(CustomCluster):
     def handle_cluster_request(
         self, hdr: foundation.ZCLHeader, args, *, dst_addressing=None
     ):
+        """Handle a cluster command received on this cluster."""
         req = payload_bytes(args)
 
         if hdr.command_id == 0x10 and ENABLE_FC00_COMMISSION_REPLY:
@@ -434,6 +435,7 @@ class SalusKL08Ota(CustomCluster, Ota):
     """
 
     def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+        """Handle a cluster command received on this cluster."""
         if (
             ENABLE_FC00_COMMISSION_REPLY
             and hdr.direction == foundation.Direction.Client_to_Server
@@ -469,8 +471,7 @@ class SalusKL08Ota(CustomCluster, Ota):
 
 
 class SalusKL08Basic(CustomCluster, Basic):
-    """Basic cluster that answers the coordinator-identity check (mirrors
-    salus_sq610rf.py).
+    """Basic cluster answering the coordinator-identity check (see sq610rf.py).
 
     IF the KL08RF, like the SQ610RF, reads Basic ModelIdentifier from what it
     believes is the coordinator and gates on a Salus controller model string
@@ -481,6 +482,7 @@ class SalusKL08Basic(CustomCluster, Basic):
     """
 
     def handle_read_attribute_model(self) -> t.CharacterString:
+        """Return the Salus controller model string the device expects."""
         # Must be a zigpy string type (zigpy 2.x serializes via .serialize()).
         return t.CharacterString(SALUS_COORD_MODEL)
 
