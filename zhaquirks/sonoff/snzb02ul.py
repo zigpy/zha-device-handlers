@@ -19,7 +19,6 @@ import math
 import time
 from typing import Any
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     NumberDeviceClass,
@@ -27,13 +26,8 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
-
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    UnitOfPressure,
-    UnitOfTemperature,
-)
-
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPressure, UnitOfTemperature
+import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
@@ -420,8 +414,9 @@ class SNZB02ULCluster(CustomCluster):
             else:
                 source_result = await super().write_attributes(
                     {
-                        self.AttributeDefs.remote_attributes:
-                        self._make_remote_attribute_array(REMOTE_SENSOR_UNBIND_PAYLOAD)
+                        self.AttributeDefs.remote_attributes: self._make_remote_attribute_array(
+                            REMOTE_SENSOR_UNBIND_PAYLOAD
+                        )
                     },
                     manufacturer,
                     update_cache=False,
@@ -429,7 +424,9 @@ class SNZB02ULCluster(CustomCluster):
                 )
                 records = source_result[0]
                 status = records[0].status if records else foundation.Status.FAILURE
-                source_switch_results.append(self._write_status(source_switch_id, status))
+                source_switch_results.append(
+                    self._write_status(source_switch_id, status)
+                )
                 if status == foundation.Status.SUCCESS:
                     super()._update_attribute(source_switch_id, False)
                     super()._update_attribute(
@@ -470,10 +467,13 @@ class SNZB02ULCluster(CustomCluster):
             for attrid, value in normalized.items()
             if attrid not in virtual_ids and attrid not in invalid_comfort_ids
         }
-        results: list[foundation.WriteAttributesStatusRecord] = source_switch_results + [
-            self._write_status(attrid, foundation.Status.INVALID_VALUE)
-            for attrid in invalid_comfort_ids
-        ]
+        results: list[foundation.WriteAttributesStatusRecord] = (
+            source_switch_results
+            + [
+                self._write_status(attrid, foundation.Status.INVALID_VALUE)
+                for attrid in invalid_comfort_ids
+            ]
+        )
 
         for sensor_type, value_attribute in self._SENSOR_VALUE_ATTRIBUTES.items():
             if value_attribute.id not in normalized:
@@ -609,9 +609,8 @@ class SonoffTemperatureCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         """Update temperature and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if (
-            attrid == self.AttributeDefs.measured_value.id
-            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
+        if attrid == self.AttributeDefs.measured_value.id and hasattr(
+            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
@@ -622,9 +621,8 @@ class SonoffRelativeHumidityCluster(CustomCluster, RelativeHumidity):
     def _update_attribute(self, attrid, value):
         """Update relative humidity and refresh derived values."""
         super()._update_attribute(attrid, value)
-        if (
-            attrid == self.AttributeDefs.measured_value.id
-            and hasattr(self.endpoint, SonoffCalculatedClimateCluster.ep_attribute)
+        if attrid == self.AttributeDefs.measured_value.id and hasattr(
+            self.endpoint, SonoffCalculatedClimateCluster.ep_attribute
         ):
             self.endpoint.sonoff_calculated_climate.update_calculated_values()
 
