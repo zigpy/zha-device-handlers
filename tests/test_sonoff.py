@@ -1,15 +1,24 @@
-"""Tests for Sonoff ZBM5 quirks."""
+"""Tests for Sonoff quirks."""
 
 from unittest import mock
 
 import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
+from zhaquirks.sonoff.snzb02b import (
+    SonoffCalculatedClimateCluster as SNZB02BCalculatedClimateCluster,
+)
+from zhaquirks.sonoff.snzb02ul import (
+    REMOTE_SENSOR_TYPE_TEMPERATURE,
+    SNZB02ULCluster,
+    SonoffCalculatedClimateCluster as SNZB02ULCalculatedClimateCluster,
+)
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
     SonoffDetachedRelayMask,
@@ -22,10 +31,7 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     ("mask", "expected_states"),
     [
-        (
-            SonoffDetachedRelayMask.Relay1,
-            (True, False, False),
-        ),
+        (SonoffDetachedRelayMask.Relay1, (True, False, False)),
         (
             SonoffDetachedRelayMask.Relay1 | SonoffDetachedRelayMask.Relay2,
             (True, True, False),
@@ -95,7 +101,6 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
     local_cluster = device.endpoints[1].sonoff_input_config
     local_listener = ClusterListener(local_cluster)
 
-    # Mock at the low level so real write_attributes runs and emits events
     write_response = [
         [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
     ]
@@ -108,7 +113,6 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
             {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: True}
         )
 
-        # Verify mask was written to device
         assert mock_write.call_count == 1
         written_attrs = mock_write.call_args[0][0]
         assert len(written_attrs) == 1
@@ -116,7 +120,6 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
             written_attrs[0].attrid == SonoffCluster.AttributeDefs.detach_relay_mask.id
         )
 
-        # Verify local relay states updated via AttributeWrittenEvent
         relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
         relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
         relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
@@ -125,7 +128,6 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
         assert local_listener.attribute_updates[1] == (relay_2_attr, False)
         assert local_listener.attribute_updates[2] == (relay_3_attr, False)
 
-        # Write relay_1_detached = False to test clearing a bit
         local_listener.attribute_updates.clear()
         await local_cluster.write_attributes(
             {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: False}
@@ -158,7 +160,6 @@ async def test_sonoff_cluster_failed_write_does_not_propagate(
     local_cluster = device.endpoints[1].sonoff_input_config
     local_listener = ClusterListener(local_cluster)
 
-    # Mock a failed write
     write_response = [
         [
             foundation.WriteAttributesStatusRecord(
@@ -176,7 +177,6 @@ async def test_sonoff_cluster_failed_write_does_not_propagate(
             {SonoffInputConfigCluster.AttributeDefs.relay_1_detached.name: True}
         )
 
-    # Local relay states should not have been updated
     assert len(local_listener.attribute_updates) == 0
 
 
@@ -200,7 +200,6 @@ async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
     mask_attr = SonoffCluster.AttributeDefs.detach_relay_mask
     mask = SonoffDetachedRelayMask.Relay1 | SonoffDetachedRelayMask.Relay2
 
-    # Mock raw ZCL read so the full read_attributes chain runs and fires events
     read_response = foundation.ReadAttributeRecord(
         attrid=mask_attr.id,
         status=foundation.Status.SUCCESS,
@@ -213,7 +212,6 @@ async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
     ):
         await sonoff_cluster.apply_custom_configuration()
 
-    # Verify local relay states were populated from the read
     relay_1_attr = local_cluster.AttributeDefs.relay_1_detached.id
     relay_2_attr = local_cluster.AttributeDefs.relay_2_detached.id
     relay_3_attr = local_cluster.AttributeDefs.relay_3_detached.id
@@ -237,38 +235,151 @@ async def test_snzb01m_button_events(
     zigpy_device_from_v2_quirk, endpoint_id, value, expected_command
 ):
     """Correct events are emitted for each endpoint and action."""
-
-    device = zigpy_device_from_v2_quirk("SONOFF", "SNZB-01M", endpoint_ids=[1, 2, 3, 4])
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-01M",
+        endpoint_ids=[1, 2, 3, 4],
+    )
     cluster = device.endpoints[endpoint_id].sonoff_button_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
     cluster.update_attribute(
-        SonoffButtonCluster.AttributeDefs.key_action_event.id, value
+        SonoffButtonCluster.AttributeDefs.key_action_event.id,
+        value,
     )
+
     assert listener.zha_send_event.call_count == 1
     listener.zha_send_event.assert_called_with(expected_command, {})
 
 
 async def test_snzb01m_invalid_attribute_update(zigpy_device_from_v2_quirk):
     """Invalid attribute values should not emit events."""
-
-    device = zigpy_device_from_v2_quirk("SONOFF", "SNZB-01M", endpoint_ids=[1, 2, 3, 4])
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-01M",
+        endpoint_ids=[1, 2, 3, 4],
+    )
     cluster = device.endpoints[1].sonoff_button_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
     cluster.update_attribute(SonoffButtonCluster.AttributeDefs.key_action_event.id, 99)
+
     assert listener.zha_send_event.call_count == 0
 
 
 async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
     """Non-button attributes must not generate button events."""
-
-    device = zigpy_device_from_v2_quirk("SONOFF", "SNZB-01M", endpoint_ids=[1, 2, 3, 4])
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-01M",
+        endpoint_ids=[1, 2, 3, 4],
+    )
     cluster = device.endpoints[1].sonoff_button_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
     cluster.update_attribute(0x0001, 1)
+
     assert listener.zha_send_event.call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("temperature", "humidity", "dew_point", "vpd"),
+    [
+        (20.0, 50.0, 9.255, 11.66),
+        (25.0, 100.0, 25.0, 0.0),
+    ],
+)
+def test_snzb02b_calculated_climate_formulas(
+    temperature, humidity, dew_point, vpd
+):
+    """Test SNZB-02B calculated climate values."""
+    assert SNZB02BCalculatedClimateCluster.calculate_dew_point(
+        temperature,
+        humidity,
+    ) == pytest.approx(dew_point, abs=0.01)
+
+    assert SNZB02BCalculatedClimateCluster.calculate_vpd(
+        temperature,
+        humidity,
+    ) == pytest.approx(vpd, abs=0.02)
+
+
+@pytest.mark.parametrize("humidity", [None, 0, -1, 101])
+def test_snzb02b_rejects_invalid_humidity(humidity):
+    """Invalid measurements must not produce derived values."""
+    assert SNZB02BCalculatedClimateCluster.calculate_dew_point(20, humidity) is None
+    assert SNZB02BCalculatedClimateCluster.calculate_vpd(20, humidity) is None
+
+
+def test_snzb02ul_remote_sensor_packet_round_trip():
+    """A remote-temperature packet is encoded and parsed without data loss."""
+    array = SNZB02ULCluster._encode_remote_sensor_packet(
+        REMOTE_SENSOR_TYPE_TEMPERATURE,
+        -123,
+    )
+
+    packet_count, packet_index, attributes = SNZB02ULCluster._parse_packet(
+        SNZB02ULCluster._array_payload(array)
+    )
+
+    assert (packet_count, packet_index) == (1, 0)
+    assert SNZB02ULCluster._parse_sensor_tlv(attributes[0][1]) == [
+        (REMOTE_SENSOR_TYPE_TEMPERATURE, 1, 1, -123)
+    ]
+
+
+def test_snzb02ul_rejects_malformed_remote_packets():
+    """Malformed remote packets must not be accepted."""
+    with pytest.raises(ValueError, match="header is truncated"):
+        SNZB02ULCluster._parse_packet(b"\x01\x01")
+
+    with pytest.raises(ValueError, match="invalid remote attribute packet index"):
+        SNZB02ULCluster._parse_packet(b"\x00\x01\x01")
+
+    with pytest.raises(ValueError, match="SensorCount"):
+        SNZB02ULCluster._parse_sensor_tlv(b"")
+
+
+async def test_snzb02ul_remote_sensor_report_updates_entities(
+    zigpy_device_from_v2_quirk,
+):
+    """A physical 0x601E report updates the local remote-temperature value."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-02UL",
+        cluster_ids={
+            1: {
+                SNZB02ULCluster.cluster_id: ClusterType.Server,
+                TemperatureMeasurement.cluster_id: ClusterType.Server,
+                RelativeHumidity.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    cluster = device.endpoints[1].in_clusters[SNZB02ULCluster.cluster_id]
+    report = SNZB02ULCluster._encode_remote_sensor_packet(
+        REMOTE_SENSOR_TYPE_TEMPERATURE,
+        2150,
+    )
+
+    cluster.update_attribute(
+        SNZB02ULCluster.AttributeDefs.remote_attributes.id,
+        report,
+    )
+
+    assert cluster._attr_cache[
+        SNZB02ULCluster.AttributeDefs.remote_temperature_data.id
+    ] == 2150
+
+
+def test_snzb02ul_calculated_climate_handles_missing_measurements():
+    """No calculation is emitted from incomplete measurements."""
+    assert SNZB02ULCalculatedClimateCluster.calculate_dew_point(None, 50) is None
+    assert (
+        SNZB02ULCalculatedClimateCluster.calculate_saturation_vapor_pressure(None)
+        is None
+    )
+    assert SNZB02ULCalculatedClimateCluster.calculate_vpd(20, None) is None
