@@ -554,23 +554,7 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
 
 
 def _register_pending_quirks() -> None:
-    """Drain quirks queued by a round of imports into ZHA's unified registry."""
-
-    # Imported lazily: `zhaquirks.builder` pulls in `zha.application` (discovery and the
-    # platform modules), which participates in an import cycle and so must not be
-    # imported while `zhaquirks` itself is still being imported.
-    from zhaquirks.builder import UNBUILT_QUIRK_BUILDERS  # noqa: PLC0415
-
-    # TODO: remove this hack. Adding to the registry was only missing from the public
-    # API for a short period of time. We don't need to keep this around forever.
-    for builder in list(UNBUILT_QUIRK_BUILDERS):
-        if builder.manufacturer_model_metadata:
-            _LOGGER.warning(
-                "Found a v2 quirk that was not added to the registry: %s", builder
-            )
-            builder.add_to_registry()
-
-    UNBUILT_QUIRK_BUILDERS.clear()
+    """Drain legacy v1 quirks queued by imports into ZHA's unified registry."""
 
     for cls in PENDING_LEGACY_QUIRKS:
         ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
@@ -583,10 +567,8 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     Imports every `zhaquirks` module (firing the registration side effects of v1
     `CustomDevice` subclasses into zigpy's registry and v2 `QuirkBuilder`
-    definitions into ZHA's), flushes any v2 builders that defined a
-    manufacturer/model but were never added to the registry, and loads custom
-    quirks from `custom_quirks_path`. Owned here (rather than ZHA's gateway) so
-    ZHA never imports zhaquirks.
+    definitions into ZHA's) and loads custom quirks from `custom_quirks_path`.
+    Owned here (rather than ZHA's gateway) so ZHA never imports zhaquirks.
     """
     if custom_quirks_path is not None:
         path = pathlib.Path(custom_quirks_path)

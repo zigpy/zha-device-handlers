@@ -3,6 +3,36 @@
 from zigpy import types
 
 
+class MMWaveArea(types.Struct):
+    """A single mmWave sensor area definition.
+
+    Used for interference, detection, and stay areas on the VZM32-SN. Bounds
+    are in millimeters on the x (width/left-right), y (depth/near-far), and
+    z (height/floor-ceiling) axes, relative to the switch.
+    """
+
+    x_min: types.int16s
+    x_max: types.int16s
+    y_min: types.int16s
+    y_max: types.int16s
+    z_min: types.int16s
+    z_max: types.int16s
+
+
+class MMWaveTarget(types.Struct):
+    """A single detected target reported by the mmWave radar.
+
+    Positions are in millimeters. dop is the Doppler velocity and target_id is
+    a device-assigned tracking identifier.
+    """
+
+    x: types.int16s
+    y: types.int16s
+    z: types.int16s
+    dop: types.int16s
+    target_id: types.int8s
+
+
 class AllLEDEffectType(types.enum8):
     """All LED effect type for Inovelli Blue Series switch."""
 
