@@ -10,6 +10,13 @@ from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
