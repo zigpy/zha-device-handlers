@@ -239,3 +239,63 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE200_nbqnmkee", "TS0601"),
+    ],
+)
+async def test_frankever_fk_bv05_quirk(zigpy_device_from_v2_quirk, model, manuf):
+    """Test FrankEver FK-BV05 Water Valve Quirk."""
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    # Verify all expected entities are registered
+    entry = DEVICE_REGISTRY.match_entry(quirked)
+    metadata_by_suffix = {
+        metadata.resolved_unique_id_suffix: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+
+    expected_entities = {
+        "on_off",                    # DP 1 - valve switch
+        "target_opening_percentage", # DP 2 - number 0-100
+        "current_valve_position",    # DP 3 - sensor %
+        "water_temperature",         # DP 22 - temp °F
+        "water_consumed_last",       # DP 5 - sensor L
+        "summation_delivered",       # DP 6 - metering
+        "auto_cycle_mode",           # DP 112 - switch CONFIG
+        "power_off_state",           # DP 110 - enum CONFIG
+        "fault_code",                # DP 4 - sensor DIAG
+        "leak_detected",             # DP 101 - binary_sensor DIAG
+    }
+
+    for suffix in expected_entities:
+        assert suffix in metadata_by_suffix, f"Missing entity: {suffix}"
+
+    # Verify temperature converter (raw °C -> °F)
+    # Device reports centi-degrees? No, raw °C per zigbee2mqtt
+    temp_metadata = metadata_by_suffix["water_temperature"]
+    assert temp_metadata.device_class == SensorDeviceClass.TEMPERATURE
+    assert temp_metadata.state_class == SensorStateClass.MEASUREMENT
+
+    # Verify auto_cycle_mode is CONFIG
+    auto_cycle_meta = metadata_by_suffix["auto_cycle_mode"]
+    assert auto_cycle_meta.entity_type == EntityType.CONFIG
+
+    # Verify power_off_state enum values
+    power_off_meta = metadata_by_suffix["power_off_state"]
+    assert power_off_meta.entity_type == EntityType.CONFIG
+    assert power_off_meta.entity_platform == EntityPlatform.SELECT
+
+    # Verify leak_detected is binary_sensor with problem class
+    leak_meta = metadata_by_suffix["leak_detected"]
+    assert leak_meta.entity_platform == EntityPlatform.BINARY_SENSOR
+    assert leak_meta.device_class == BinarySensorDeviceClass.PROBLEM
+    assert leak_meta.entity_type == EntityType.DIAGNOSTIC

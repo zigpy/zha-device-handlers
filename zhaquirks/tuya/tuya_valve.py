@@ -769,3 +769,107 @@ class GiexIrrigationStatus(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# FrankEver FK-BV05 Smart Water Valve
+# zigbee-herdsman-converters PR #12988, Tuya Local device config
+(
+    TuyaQuirkBuilder("_TZE200_nbqnmkee", "TS0601")
+    # Valve Control: DP 1 - Open/Close
+    .tuya_onoff(dp_id=1)
+    # Target Opening Percentage: DP 2 (0-100%, step 10)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="target_opening_percentage",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=100,
+        step=10,
+        unit=PERCENTAGE,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Percent Open",
+        translation_key="percent_open",
+    )
+    # Current Physical Valve Position: DP 3 (read-only, 0-100%)
+    .tuya_sensor(
+        dp_id=3,
+        attribute_name="current_valve_position",
+        type=t.uint8_t,
+        unit=PERCENTAGE,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Current Valve Position",
+        translation_key="current_valve_position",
+    )
+    # Water Temperature: DP 22 (raw °C integer → °F for US locale)
+    # Tuya Local & zigbee2mqtt confirm raw integer °C (no scaling)
+    .tuya_sensor(
+        dp_id=22,
+        attribute_name="water_temperature",
+        type=t.int16s,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Water Temperature",
+        translation_key="water_temperature",
+        converter=lambda x: round(x * 9.0 / 5.0 + 32.0, 1),  # raw °C -> °F
+    )
+    # Water Consumption - Last Irrigation: DP 5 (raw dL, multiplier=0.1 → L)
+    # HA auto-converts L → gal for US locale users
+    .tuya_sensor(
+        dp_id=5,
+        attribute_name="water_consumed_last",
+        type=t.uint16_t,
+        unit=UnitOfVolume.LITERS,
+        multiplier=0.1,
+        device_class=SensorDeviceClass.WATER,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Water Consumed Last",
+        translation_key="water_consumed_last",
+    )
+    # Water Consumption - Total: DP 6 (raw L, water metering)
+    # HA auto-converts L → gal for US locale users
+    .tuya_metering(dp_id=6, metering_cfg=TuyaValveWaterConsumed)
+    # CRITICAL: Auto-Cycle Anti-Calc Mode: DP 112 (MUST default OFF to prevent infinite looping)
+    .tuya_switch(
+        dp_id=112,
+        attribute_name="auto_cycle_mode",
+        entity_type=EntityType.CONFIG,
+        fallback_name="Auto Cycle Mode",
+        translation_key="auto_cycle_mode",
+    )
+    # Power-Off Behavior: DP 110 (off / on / maintain)
+    .tuya_enum(
+        dp_id=110,
+        attribute_name="power_off_state",
+        enum_class=t.enum8,
+        enum_values={0: "off", 1: "on", 2: "maintain"},
+        entity_type=EntityType.CONFIG,
+        fallback_name="Power Off State",
+        translation_key="power_off_state",
+    )
+    # Fault Status: DP 4 (fault code sensor)
+    .tuya_sensor(
+        dp_id=4,
+        attribute_name="fault_code",
+        type=t.uint8_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        fallback_name="Fault Code",
+        translation_key="fault_code",
+    )
+    # Leak Detection: DP 101 (0=leak, 1=no leak) - binary sensor
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="leak_detected",
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        fallback_name="Leak Detected",
+        translation_key="leak_detected",
+    )
+    # Enable Tuya data query spell to request all DPs on startup
+    .tuya_enchantment(read_attr_spell=True, data_query_spell=True)
+    # Skip standard Zigbee cluster configuration queries for Tuya MCU endpoints
+    .skip_configuration()
+    # Register Quirk in ZHA Registry
+    .add_to_registry()
+)
