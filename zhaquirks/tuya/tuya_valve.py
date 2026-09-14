@@ -640,7 +640,6 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="single_watering_amount",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLUME,
         unit=UnitOfVolume.LITERS,
         translation_key="single_watering_amount",
         fallback_name="Single watering amount",
