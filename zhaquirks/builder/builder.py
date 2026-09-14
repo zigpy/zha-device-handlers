@@ -68,8 +68,6 @@ from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
 
 _LOGGER = logging.getLogger(__name__)
 
-UNBUILT_QUIRK_BUILDERS: list[QuirkBuilder] = []
-
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-arguments
 
@@ -376,8 +374,6 @@ class QuirkBuilder:
                 manufacturer=manufacturer if manufacturer is not UNDEFINED else None,
                 model=model if model is not UNDEFINED else None,
             )
-
-        UNBUILT_QUIRK_BUILDERS.append(self)
 
     def _add_entity_metadata(self, entity_metadata: EntityMetadata) -> Self:
         """Register new entity metadata and validate config."""
@@ -1131,9 +1127,6 @@ class QuirkBuilder:
 
         (registry or self.registry).register(entry)
 
-        if self in UNBUILT_QUIRK_BUILDERS:
-            UNBUILT_QUIRK_BUILDERS.remove(self)
-
         return entry
 
     def clone(self, omit_man_model_data: bool = True) -> Self:
@@ -1142,5 +1135,4 @@ class QuirkBuilder:
         new_builder.registry = self.registry
         if omit_man_model_data:
             new_builder.manufacturer_model_metadata = []
-        UNBUILT_QUIRK_BUILDERS.append(new_builder)
         return new_builder
