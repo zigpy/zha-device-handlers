@@ -98,6 +98,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     QuirkBuilder()
     .applies_to(SIGNIFY, "4080248U9")
     .applies_to(SIGNIFY, "915005987101")
+    .applies_to(PHILIPS, "915005987101")
     .applies_to(SIGNIFY, "915005987201")
     .applies_to(SIGNIFY, "915005987501")
     .applies_to(SIGNIFY, "915005987601")
