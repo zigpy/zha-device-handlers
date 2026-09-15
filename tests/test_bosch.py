@@ -28,7 +28,7 @@ async def test_bosch_radiator_thermostat_II_write_attributes(
         records = [
             WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
-        return [records, []]
+        return foundation.WriteAttributesResponseSchema(status_records=records)
 
     # data is written to trv
     patch_bosch_trv_write = mock.patch.object(
@@ -47,7 +47,7 @@ async def test_bosch_radiator_thermostat_II_write_attributes(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # data is read from trv
     patch_bosch_trv_read = mock.patch.object(
@@ -400,7 +400,7 @@ async def test_bosch_radiator_thermostat_II_read_attributes_paused(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # data is read from trv
     patch_bosch_trv_read = mock.patch.object(
@@ -466,7 +466,7 @@ async def test_bosch_radiator_thermostat_II_read_attributes_manual_heat(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # data is read from trv
     patch_bosch_trv_read = mock.patch.object(
@@ -514,7 +514,7 @@ async def test_bosch_radiator_thermostat_II_read_attributes_manual_cool(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # data is read from trv
     patch_bosch_trv_read = mock.patch.object(
@@ -551,7 +551,7 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(
         records = [
             WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
-        return [records, []]
+        return foundation.WriteAttributesResponseSchema(status_records=records)
 
     # data is written to trv
     patch_bosch_trv_write = mock.patch.object(

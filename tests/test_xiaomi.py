@@ -954,7 +954,9 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
     p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
 
     with p1 as mock_task, p2 as request_mock:
-        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        request_mock.return_value = foundation.DefaultResponse(
+            status=foundation.Status.SUCCESS, command_id=0
+        )
 
         await opple_cluster.bind()
 
@@ -1081,9 +1083,11 @@ async def test_aqara_feeder_write_attrs(
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
     opple_cluster._write_attributes = mock.AsyncMock(
-        return_value=[
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
-        ]
+        return_value=foundation.WriteAttributesResponseSchema(
+            status_records=[
+                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            ]
+        )
     )
 
     expected_attr_def = opple_cluster.find_attribute(0xFFF1)
@@ -1358,7 +1362,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # patch read commands
     patch_opple_read = mock.patch.object(
@@ -1373,8 +1377,10 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         opple_cluster,
         "_write_attributes",
         mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            return_value=foundation.WriteAttributesResponseSchema(
+                status_records=[
+                    foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+                ]
             )
         ),
     )
@@ -1382,8 +1388,10 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         thermostat_cluster,
         "_write_attributes",
         mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            return_value=foundation.WriteAttributesResponseSchema(
+                status_records=[
+                    foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+                ]
             )
         ),
     )
@@ -2098,7 +2106,7 @@ async def test_xiaomi_e1_roller_commands_1(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # patch read commands
     patch_window_covering_read = mock.patch.object(
@@ -2115,8 +2123,10 @@ async def test_xiaomi_e1_roller_commands_1(
         multistate_cluster,
         "_write_attributes",
         mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            return_value=foundation.WriteAttributesResponseSchema(
+                status_records=[
+                    foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+                ]
             )
         ),
     )
@@ -2197,7 +2207,7 @@ async def test_xiaomi_e1_roller_commands_2(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # patch read commands
     patch_window_covering_read = mock.patch.object(
@@ -2214,8 +2224,10 @@ async def test_xiaomi_e1_roller_commands_2(
         analog_cluster,
         "_write_attributes",
         mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            return_value=foundation.WriteAttributesResponseSchema(
+                status_records=[
+                    foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+                ]
             )
         ),
     )
@@ -2328,7 +2340,7 @@ async def test_xiaomi_e1_roller_window_covering_read_redirection(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     # patch window covering read command
     patch_window_covering_read = mock.patch.object(
@@ -2413,14 +2425,14 @@ async def test_xiaomi_e1_roller_position_updates(
         analog_cluster,
         "_read_attributes",
         mock.AsyncMock(
-            return_value=(
-                [
+            return_value=foundation.ReadAttributesResponse(
+                status_records=[
                     foundation.ReadAttributeRecord(
                         analog_attr.id,
                         foundation.Status.SUCCESS,
                         foundation.TypeValue(None, 40),
                     )
-                ],
+                ]
             )
         ),
     )
