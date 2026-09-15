@@ -227,12 +227,14 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
     bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 
     with request_patch as request_mock, bind_patch as bind_mock:
-        request_mock.return_value = (
-            [
-                foundation.ConfigureReportingResponseRecord(
-                    status=foundation.Status.SUCCESS
-                )
-            ],
+        request_mock.return_value = foundation.ConfigureReportingResponseSchema(
+            status_records=foundation.ConfigureReportingResponse(
+                [
+                    foundation.ConfigureReportingResponseRecord(
+                        status=foundation.Status.SUCCESS
+                    )
+                ]
+            )
         )
 
         await manu_cluster.bind()

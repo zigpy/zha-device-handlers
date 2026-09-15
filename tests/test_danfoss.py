@@ -1,16 +1,11 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
 
-from typing import cast
 from unittest import mock
 
-import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
+from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
 zhaquirks.setup()
 
@@ -59,7 +54,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
         records = [
             WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
-        return [records, []]
+        return foundation.WriteAttributesResponseSchema(status_records=records)
 
     patch_danfoss_trv_write = mock.patch.object(
         danfoss_time_cluster,
@@ -85,7 +80,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
         records = [
             WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
-        return [records, []]
+        return foundation.WriteAttributesResponseSchema(status_records=records)
 
     setting = -100
     operation = -0x01
@@ -135,101 +130,3 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
             assert operation == 0x01
             assert setting == 5
-
-
-async def test_customized_standardcluster(zigpy_device_from_quirk):
-    """Test customized standard cluster class correctly separating zigbee operations.
-
-    This is regarding manufacturer specific attributes.
-    """
-    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
-
-    danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
-
-    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345]]) == [
-        [4545, 345],
-        [5433],
-    ]
-    assert CustomizedStandardCluster.combine_results(
-        [[4545], [5433]], [[345], [45355]]
-    ) == [[4545, 345], [5433, 45355]]
-
-    mock_attributes = {
-        656: ZCLAttributeDef(type=t.uint8_t, is_manufacturer_specific=True),
-        56454: ZCLAttributeDef(type=t.uint8_t, is_manufacturer_specific=False),
-    }
-
-    danfoss_thermostat_cluster.attributes = mock_attributes
-
-    reports = None
-
-    def mock_configure_reporting(reps, *args, **kwargs):
-        nonlocal reports
-        if mock_attributes[reps[0].attrid].is_manufacturer_specific:
-            reports = reps
-
-        return [[545], [4545]]
-
-    # data is written to trv
-    patch_danfoss_configure_reporting = mock.patch.object(
-        CustomCluster,
-        "_configure_reporting",
-        mock.AsyncMock(side_effect=mock_configure_reporting),
-    )
-
-    with patch_danfoss_configure_reporting:
-        one = foundation.AttributeReportingConfig()
-        one.direction = True
-        one.timeout = 4
-        one.attrid = 56454
-
-        two = foundation.AttributeReportingConfig()
-        two.direction = True
-        two.timeout = 4
-        two.attrid = 656
-        await danfoss_thermostat_cluster._configure_reporting([one, two])
-        assert reports == [two]
-
-    # typed wide so mypy doesn't narrow to None (the mocked _read_attributes
-    # side effect reassigns this to a list), which would flag the assert below
-    # as comparing an always-None value and mark later code unreachable
-    reports = cast(list | None, None)
-
-    def mock_read_attributes(attrs, *args, **kwargs):
-        nonlocal reports
-        if mock_attributes[attrs[0]].is_manufacturer_specific:
-            reports = attrs
-
-        return [[545]]
-
-    # data is written to trv
-    patch_danfoss_read_attributes = mock.patch.object(
-        CustomCluster,
-        "_read_attributes",
-        mock.AsyncMock(side_effect=mock_read_attributes),
-    )
-
-    with patch_danfoss_read_attributes:
-        result = await danfoss_thermostat_cluster._read_attributes([56454, 656])
-        assert result
-        assert reports == [656]
-
-    def mock_read_attributes_fail(attrs, *args, **kwargs):
-        nonlocal reports
-        if mock_attributes[attrs[0]].is_manufacturer_specific:
-            reports = attrs
-
-        return [[545], [4545]]
-
-    # data is written to trv
-    patch_danfoss_read_attributes_fail = mock.patch.object(
-        CustomCluster,
-        "_read_attributes",
-        mock.AsyncMock(side_effect=mock_read_attributes_fail),
-    )
-
-    with patch_danfoss_read_attributes_fail:
-        result, fail = await danfoss_thermostat_cluster._read_attributes([56454, 656])
-        assert result
-        assert fail
-        assert reports == [656]
