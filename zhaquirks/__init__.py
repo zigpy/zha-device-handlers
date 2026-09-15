@@ -117,10 +117,23 @@ class LocalDataCluster(CustomCluster):
         self.debug("unbinding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
 
-    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+    async def configure_reporting_raw(
+        self,
+        config_records: list[foundation.AttributeReportingConfig],
+        manufacturer_code: int | None = None,
+        **kwargs,
+    ) -> foundation.ConfigureReportingResponseSchema:
         """Prevent remote configure reporting."""
         self.debug("configuring reporting for LocalDataCluster")
-        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+        return foundation.ConfigureReportingResponseSchema(
+            status_records=foundation.ConfigureReportingResponse(
+                [
+                    foundation.ConfigureReportingResponseRecord(
+                        status=foundation.Status.SUCCESS
+                    )
+                ]
+            )
+        )
 
     async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Prevent remote reads."""
