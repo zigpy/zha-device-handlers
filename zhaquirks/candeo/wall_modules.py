@@ -8,6 +8,7 @@ from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
     .applies_to(CANDEO, "HK-LN-DIM-A")
     .applies_to(CANDEO, "C204")
     .applies_to(CANDEO, "C-ZB-DM204")
+    .applies_to(CANDEO, "C-ZB-DM204V2")
     .applies_to(CANDEO, "C205")
     .replaces(CandeoBasicCluster)
     .enum(
