@@ -1,12 +1,12 @@
 """Fixtures for all tests."""
 
 import logging
-from unittest.mock import AsyncMock, Mock
 
-import pytest
 # Mock zha module for CI environments without Home Assistant
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
+
+import pytest
 
 # Mock the zha module since it's not available in CI
 zha_mock = MagicMock()
@@ -14,13 +14,14 @@ zha_mock.quirks = MagicMock()
 
 # Create a proper DEVICE_REGISTRY mock
 from zhaquirks import DEVICE_REGISTRY as REAL_DEVICE_REGISTRY
+
 device_registry_mock = MagicMock()
 device_registry_mock.resolve = REAL_DEVICE_REGISTRY.resolve
 device_registry_mock.match_entry = REAL_DEVICE_REGISTRY.match_entry
 
 zha_mock.quirks.DEVICE_REGISTRY = device_registry_mock
-sys.modules['zha'] = zha_mock
-sys.modules['zha.quirks'] = zha_mock.quirks
+sys.modules["zha"] = zha_mock
+sys.modules["zha.quirks"] = zha_mock.quirks
 
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.application
