@@ -44,24 +44,8 @@ class QuirkV2Device(Device):
 
     def discover_entities(self) -> Iterator[BaseEntity]:
         """Yield the default entities plus the quirk's exposed v2 entities."""
-        for entity in super().discover_entities():
-            yield self._replace_entity(entity)
-
+        yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
-
-    def _replace_entity(self, entity: BaseEntity) -> BaseEntity:
-        for entity_class in self._quirk_definition.replaced_entities:
-            if type(entity) not in entity_class.__mro__[1:]:
-                continue
-
-            # Built the same way as the default entity so the unique ID is preserved
-            replacement = entity_class(
-                endpoint=entity.endpoint, device=self, cluster=entity.cluster
-            )
-            assert replacement.unique_id == entity.unique_id
-            return replacement
-
-        return entity
 
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}

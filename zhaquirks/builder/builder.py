@@ -21,7 +21,6 @@ from zha.application import (  # noqa: F401
     # cannot be loaded while `zha.zigbee.device` is only partially initialized.
     discovery,
 )
-from zha.application.platforms import PlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
@@ -360,7 +359,6 @@ class QuirkBuilder:
         self.replaces_ops: list[ReplaceCluster] = []
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
-        self.replaced_entities: list[type[PlatformEntity]] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -945,11 +943,6 @@ class QuirkBuilder:
         )
         return self
 
-    def replaces_entity(self, entity_class: type[PlatformEntity]) -> Self:
-        """Replace default entities of a base class of `entity_class` with it."""
-        self.replaced_entities.append(entity_class)
-        return self
-
     def device_automation_triggers(
         self, device_automation_triggers: dict[tuple[str, str], dict[str, str]]
     ) -> Self:
@@ -1093,7 +1086,6 @@ class QuirkBuilder:
             disabled_default_entities=tuple(self.disabled_default_entities),
             changed_entity_metadata=tuple(self.changed_entity_metadata),
             entity_metadata=tuple(self.entity_metadata),
-            replaced_entities=tuple(self.replaced_entities),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
         )

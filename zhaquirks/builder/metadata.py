@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import attrs
 from frozendict import frozendict
@@ -23,9 +23,6 @@ from zha.application.platforms.sensor.device_class import (
     SensorStateClass,
 )
 from zigpy.zcl import ClusterType
-
-if TYPE_CHECKING:
-    from zha.application.platforms import PlatformEntity
 
 # pylint: disable=too-many-instance-attributes
 
@@ -256,7 +253,6 @@ class QuirkDefinition:
         factory=tuple
     )
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
-    replaced_entities: tuple[type[PlatformEntity], ...] = attrs.field(factory=tuple)
     device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )

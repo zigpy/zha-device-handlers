@@ -1,13 +1,10 @@
 """Eurotronic devices."""
 
-from typing import Final
+import logging
+from typing import Any, Final
 
-from zha.application.helpers import write_attributes_safe
-from zha.application.platforms import AttrConfig, ClusterConfig
-from zha.application.platforms.climate import Thermostat as ThermostatEntity
-from zha.application.platforms.climate.const import HVACMode
-from zha.zigbee.cluster_config import ReportingConfig
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -15,124 +12,151 @@ from zhaquirks.clusters import CustomCluster
 
 EUROTRONIC = "Eurotronic"
 
+THERMOSTAT_CHANNEL = "thermostat"
+
 MANUFACTURER = 0x1037  # 4151
 
+OCCUPIED_HEATING_SETPOINT_ATTR = 0x0012
+CTRL_SEQ_OF_OPER_ATTR = 0x001B
+SYSTEM_MODE_ATTR = 0x001C
 
-class HostFlags(t.bitmap24):
-    """Manufacturer-specific TRV flags."""
+TRV_MODE_ATTR = 0x4000
+SET_VALVE_POS_ATTR = 0x4001
+ERRORS_ATTR = 0x4002
+CURRENT_TEMP_SETPOINT_ATTR = 0x4003
+HOST_FLAGS_ATTR = 0x4008
 
-    # unknown, defaults to 1
-    Mirror_Screen = 0b00000010
-    Boost = 0b00000100
-    # unknown
-    Clear_Off_Mode = 0b00010000
-    # reported back as Clear_Off_Mode
-    Set_Off_Mode = 0b00100000
-    # unknown
-    Child_Lock = 0b10000000
+
+# Host Flags
+# unknown (defaults to 1)       = 0b00000001 # 1
+MIRROR_SCREEN_FLAG = 0b00000010  # 2
+BOOST_FLAG = 0b00000100  # 4
+# unknown                       = 0b00001000 # 8
+CLR_OFF_MODE_FLAG = 0b00010000  # 16
+SET_OFF_MODE_FLAG = 0b00100000  # 32, reported back as 16
+# unknown                       = 0b01000000 # 64
+CHILD_LOCK_FLAG = 0b10000000  # 128
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
-    """Thermostat cluster with the manufacturer-specific attributes."""
+    """Thermostat cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        CTRL_SEQ_OF_OPER_ATTR: Thermostat.ControlSequenceOfOperation.Heating_Only,
+    }
 
     class AttributeDefs(Thermostat.AttributeDefs):
         """Attribute definitions."""
 
         trv_mode: Final = ZCLAttributeDef(
-            id=0x4000, type=t.enum8, manufacturer_code=MANUFACTURER
+            id=TRV_MODE_ATTR, type=t.enum8, manufacturer_code=MANUFACTURER
         )
         set_valve_position: Final = ZCLAttributeDef(
-            id=0x4001, type=t.uint8_t, manufacturer_code=MANUFACTURER
+            id=SET_VALVE_POS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         errors: Final = ZCLAttributeDef(
-            id=0x4002, type=t.uint8_t, manufacturer_code=MANUFACTURER
+            id=ERRORS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         current_temperature_setpoint: Final = ZCLAttributeDef(
-            id=0x4003, type=t.int16s, manufacturer_code=MANUFACTURER
+            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, manufacturer_code=MANUFACTURER
         )
         host_flags: Final = ZCLAttributeDef(
-            id=0x4008, type=HostFlags, manufacturer_code=MANUFACTURER
+            id=HOST_FLAGS_ATTR, type=t.uint24_t, manufacturer_code=MANUFACTURER
         )
 
+    def _update_attribute(self, attrid, value):
+        _LOGGER.debug("update attribute %04x to %s... ", attrid, value)
 
-class EurotronicThermostat(ThermostatEntity):
-    """Spirit Zigbee thermostat.
+        if attrid == CURRENT_TEMP_SETPOINT_ATTR:
+            super()._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value)
+        elif attrid == HOST_FLAGS_ATTR:
+            if value & CLR_OFF_MODE_FLAG == CLR_OFF_MODE_FLAG:
+                super()._update_attribute(SYSTEM_MODE_ATTR, 0x0)
+                _LOGGER.debug("set system_mode to [off ]")
+            else:
+                super()._update_attribute(SYSTEM_MODE_ATTR, 0x4)
+                _LOGGER.debug("set system_mode to [heat]")
 
-    The device does not implement `system_mode`, on/off lives in `host_flags`. It
-    reports a bogus `occupied_heating_setpoint`, the real setpoint is
-    `current_temperature_setpoint`. Writes to `occupied_heating_setpoint` do work.
-    """
+        _LOGGER.debug("update attribute %04x to %s... [ ok ]", attrid, value)
+        super()._update_attribute(attrid, value)
 
-    _server_cluster_config = {
-        Thermostat.cluster_id: ClusterConfig(
-            bind=True,
-            attributes={
-                Thermostat.AttributeDefs.local_temperature: AttrConfig(
-                    read_on_startup=True,
-                    reporting=ReportingConfig(
-                        min_interval=30, max_interval=900, reportable_change=25
+    async def read_attributes_raw(
+        self, attributes: list[int], manufacturer: int | None = None, **kwargs
+    ) -> foundation.ReadAttributesResponse | foundation.DefaultResponse:
+        """Serve `system_mode` locally and `occupied_heating_setpoint` from `current_temperature_setpoint`."""
+        if (
+            SYSTEM_MODE_ATTR not in attributes
+            and OCCUPIED_HEATING_SETPOINT_ATTR not in attributes
+        ):
+            return await super().read_attributes_raw(
+                attributes, manufacturer=manufacturer, **kwargs
+            )
+
+        records: list[foundation.ReadAttributeRecord] = []
+
+        if SYSTEM_MODE_ATTR in attributes:
+            # The device does not implement `system_mode`, it is derived from
+            # `host_flags` reports
+            records.append(
+                foundation.ReadAttributeRecord(
+                    attrid=SYSTEM_MODE_ATTR,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(
+                        type=None,
+                        value=self.get(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Heat),
                     ),
-                ),
-                Thermostat.AttributeDefs.pi_heating_demand: AttrConfig(
-                    read_on_startup=True,
-                    reporting=ReportingConfig(
-                        min_interval=30, max_interval=900, reportable_change=1
-                    ),
-                ),
-                ThermostatCluster.AttributeDefs.current_temperature_setpoint: AttrConfig(
-                    read_on_startup=True,
-                    reporting=ReportingConfig(
-                        min_interval=30, max_interval=900, reportable_change=25
-                    ),
-                ),
-                ThermostatCluster.AttributeDefs.host_flags: AttrConfig(
-                    read_on_startup=True,
-                    reporting=ReportingConfig(
-                        min_interval=0, max_interval=900, reportable_change=1
-                    ),
-                ),
-            },
-        )
-    }
+                )
+            )
 
-    @property
-    def _host_flags(self) -> HostFlags | None:
-        return self._cluster.get(ThermostatCluster.AttributeDefs.host_flags.name)
+        if OCCUPIED_HEATING_SETPOINT_ATTR in attributes:
+            # The thermostat reports the wrong value for the standard attribute, the
+            # manufacturer-specific one holds the real setpoint
+            rsp = await super().read_attributes_raw(
+                [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
+            )
+            assert isinstance(rsp, foundation.ReadAttributesResponse)
 
-    @property
-    def _occupied_heating_setpoint(self) -> int | None:
-        return self._cluster.get(
-            ThermostatCluster.AttributeDefs.current_temperature_setpoint.name
-        )
+            for record in rsp.status_records:
+                record.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
+                records.append(record)
 
-    @property
-    def hvac_modes(self) -> list[HVACMode]:
-        """Return the list of available HVAC operation modes."""
-        return [HVACMode.OFF, HVACMode.HEAT]
+        remaining = [
+            a
+            for a in attributes
+            if a not in (SYSTEM_MODE_ATTR, OCCUPIED_HEATING_SETPOINT_ATTR)
+        ]
 
-    @property
-    def hvac_mode(self) -> HVACMode | None:
-        """Return HVAC operation mode."""
-        if self._host_flags is None:
-            return None
+        if remaining:
+            rsp = await super().read_attributes_raw(
+                remaining, manufacturer=manufacturer, **kwargs
+            )
+            assert isinstance(rsp, foundation.ReadAttributesResponse)
+            records.extend(rsp.status_records)
 
-        if self._host_flags & HostFlags.Clear_Off_Mode:
-            return HVACMode.OFF
+        return foundation.ReadAttributesResponse(status_records=records)
 
-        return HVACMode.HEAT
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Override wrong writes to thermostat attributes."""
+        if "system_mode" in attributes:
+            host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
+            _LOGGER.debug("current host_flags: %s", host_flags)
 
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """Set new target operation mode."""
-        flag = (
-            HostFlags.Set_Off_Mode
-            if hvac_mode == HVACMode.OFF
-            else HostFlags.Clear_Off_Mode
-        )
+            if attributes.get("system_mode") == 0x0:
+                return await super().write_attributes(
+                    {"host_flags": host_flags | SET_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
+                )
+            if attributes.get("system_mode") == 0x4:
+                return await super().write_attributes(
+                    {"host_flags": host_flags | CLR_OFF_MODE_FLAG},
+                    manufacturer=MANUFACTURER,
+                )
 
-        host_flags = self._host_flags if self._host_flags is not None else HostFlags(1)
-
-        await write_attributes_safe(
-            self._cluster,
-            {ThermostatCluster.AttributeDefs.host_flags.name: host_flags | flag},
-        )
-        self.maybe_emit_state_changed_event()
+        return await super().write_attributes(attributes, **kwargs)
