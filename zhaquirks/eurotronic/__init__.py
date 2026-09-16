@@ -53,19 +53,19 @@ class ThermostatCluster(CustomCluster, Thermostat):
         """Attribute definitions."""
 
         trv_mode: Final = ZCLAttributeDef(
-            id=TRV_MODE_ATTR, type=t.enum8, is_manufacturer_specific=True
+            id=TRV_MODE_ATTR, type=t.enum8, manufacturer_code=MANUFACTURER
         )
         set_valve_position: Final = ZCLAttributeDef(
-            id=SET_VALVE_POS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=SET_VALVE_POS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         errors: Final = ZCLAttributeDef(
-            id=ERRORS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ERRORS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         current_temperature_setpoint: Final = ZCLAttributeDef(
-            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, is_manufacturer_specific=True
+            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, manufacturer_code=MANUFACTURER
         )
         host_flags: Final = ZCLAttributeDef(
-            id=HOST_FLAGS_ATTR, type=t.uint24_t, is_manufacturer_specific=True
+            id=HOST_FLAGS_ATTR, type=t.uint24_t, manufacturer_code=MANUFACTURER
         )
 
     def _update_attribute(self, attrid, value):
