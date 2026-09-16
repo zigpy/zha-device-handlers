@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import typing
 
+from zigpy.exceptions import InvalidDefaultResponse
 import zigpy.zcl
 from zigpy.zcl import foundation
 
@@ -22,14 +23,14 @@ class CustomCluster(zigpy.zcl.Cluster):
 
     async def read_attributes_raw(
         self, attributes: list[int], manufacturer: int | None = None, **kwargs
-    ):
+    ) -> foundation.ReadAttributesResponse | foundation.DefaultResponse:
         """Read attributes, serving `_CONSTANT_ATTRIBUTES` from the quirk locally."""
         if not self._CONSTANT_ATTRIBUTES:
             return await super().read_attributes_raw(
                 attributes, manufacturer=manufacturer, **kwargs
             )
 
-        succeeded = [
+        records = [
             foundation.ReadAttributeRecord(
                 attrid=attr,
                 status=foundation.Status.SUCCESS,
@@ -47,23 +48,29 @@ class CustomCluster(zigpy.zcl.Cluster):
         ]
 
         if not attrs_to_read:
-            return [succeeded]
+            return foundation.ReadAttributesResponse(status_records=records)
 
-        results = await super().read_attributes_raw(
-            attrs_to_read, manufacturer=manufacturer, **kwargs
-        )
-        if not isinstance(results[0], list):
-            for attrid in attrs_to_read:
-                succeeded.append(  # noqa: PERF401
-                    foundation.ReadAttributeRecord(
-                        attrid,
-                        results[0],
-                        foundation.TypeValue(),
-                    )
-                )
+        try:
+            result = await super().read_attributes_raw(
+                attrs_to_read, manufacturer=manufacturer, **kwargs
+            )
+        except InvalidDefaultResponse as exc:
+            status = exc.status
         else:
-            succeeded.extend(results[0])
-        return [succeeded]
+            if isinstance(result, foundation.DefaultResponse):
+                # A device should never send back a successful default response
+                status = foundation.Status.FAILURE
+            else:
+                records.extend(result.status_records)
+                return foundation.ReadAttributesResponse(status_records=records)
+
+        records.extend(
+            foundation.ReadAttributeRecord(
+                attrid=attr, status=status, value=foundation.TypeValue()
+            )
+            for attr in attrs_to_read
+        )
+        return foundation.ReadAttributesResponse(status_records=records)
 
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute."""

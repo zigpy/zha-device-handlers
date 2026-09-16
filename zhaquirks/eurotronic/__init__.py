@@ -44,23 +44,27 @@ _LOGGER = logging.getLogger(__name__)
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
+    _CONSTANT_ATTRIBUTES = {
+        CTRL_SEQ_OF_OPER_ATTR: Thermostat.ControlSequenceOfOperation.Heating_Only,
+    }
+
     class AttributeDefs(Thermostat.AttributeDefs):
         """Attribute definitions."""
 
         trv_mode: Final = ZCLAttributeDef(
-            id=TRV_MODE_ATTR, type=t.enum8, is_manufacturer_specific=True
+            id=TRV_MODE_ATTR, type=t.enum8, manufacturer_code=MANUFACTURER
         )
         set_valve_position: Final = ZCLAttributeDef(
-            id=SET_VALVE_POS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=SET_VALVE_POS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         errors: Final = ZCLAttributeDef(
-            id=ERRORS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ERRORS_ATTR, type=t.uint8_t, manufacturer_code=MANUFACTURER
         )
         current_temperature_setpoint: Final = ZCLAttributeDef(
-            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, is_manufacturer_specific=True
+            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, manufacturer_code=MANUFACTURER
         )
         host_flags: Final = ZCLAttributeDef(
-            id=HOST_FLAGS_ATTR, type=t.uint24_t, is_manufacturer_specific=True
+            id=HOST_FLAGS_ATTR, type=t.uint24_t, manufacturer_code=MANUFACTURER
         )
 
     def _update_attribute(self, attrid, value):
@@ -79,68 +83,60 @@ class ThermostatCluster(CustomCluster, Thermostat):
         _LOGGER.debug("update attribute %04x to %s... [ ok ]", attrid, value)
         super()._update_attribute(attrid, value)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
-        """Override wrong attribute reports from the thermostat."""
-        success = []
-        error = []
-
-        if CTRL_SEQ_OF_OPER_ATTR in attributes:
-            rar = foundation.ReadAttributeRecord(
-                CTRL_SEQ_OF_OPER_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
+    async def read_attributes_raw(
+        self, attributes: list[int], manufacturer: int | None = None, **kwargs
+    ) -> foundation.ReadAttributesResponse | foundation.DefaultResponse:
+        """Serve `system_mode` locally and `occupied_heating_setpoint` from `current_temperature_setpoint`."""
+        if (
+            SYSTEM_MODE_ATTR not in attributes
+            and OCCUPIED_HEATING_SETPOINT_ATTR not in attributes
+        ):
+            return await super().read_attributes_raw(
+                attributes, manufacturer=manufacturer, **kwargs
             )
-            rar.value.value = 0x2
-            success.append(rar)
+
+        records: list[foundation.ReadAttributeRecord] = []
 
         if SYSTEM_MODE_ATTR in attributes:
-            rar = foundation.ReadAttributeRecord(
-                SYSTEM_MODE_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
+            # The device does not implement `system_mode`, it is derived from
+            # `host_flags` reports
+            records.append(
+                foundation.ReadAttributeRecord(
+                    attrid=SYSTEM_MODE_ATTR,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(
+                        type=None,
+                        value=self.get(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Heat),
+                    ),
+                )
             )
-            rar.value.value = 0x4
-            success.append(rar)
 
         if OCCUPIED_HEATING_SETPOINT_ATTR in attributes:
-            _LOGGER.debug("intercepting OCC_HS")
-
-            values = await super().read_attributes_raw(
+            # The thermostat reports the wrong value for the standard attribute, the
+            # manufacturer-specific one holds the real setpoint
+            rsp = await super().read_attributes_raw(
                 [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
             )
+            assert isinstance(rsp, foundation.ReadAttributesResponse)
 
-            if len(values) == 2:
-                current_temp_setpoint = values[1][0]
-                current_temp_setpoint.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
+            for record in rsp.status_records:
+                record.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
+                records.append(record)
 
-                error.extend(values[1])
-            else:
-                current_temp_setpoint = values[0][0]
-                current_temp_setpoint.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
+        remaining = [
+            a
+            for a in attributes
+            if a not in (SYSTEM_MODE_ATTR, OCCUPIED_HEATING_SETPOINT_ATTR)
+        ]
 
-                success.extend(values[0])
-
-        attributes = list(
-            filter(
-                lambda x: (
-                    x
-                    not in (
-                        CTRL_SEQ_OF_OPER_ATTR,
-                        SYSTEM_MODE_ATTR,
-                        OCCUPIED_HEATING_SETPOINT_ATTR,
-                    )
-                ),
-                attributes,
+        if remaining:
+            rsp = await super().read_attributes_raw(
+                remaining, manufacturer=manufacturer, **kwargs
             )
-        )
+            assert isinstance(rsp, foundation.ReadAttributesResponse)
+            records.extend(rsp.status_records)
 
-        if attributes:
-            values = await super().read_attributes_raw(
-                attributes, manufacturer, **kwargs
-            )
-
-            success.extend(values[0])
-
-            if len(values) == 2:
-                error.extend(values[1])
-
-        return success, error
+        return foundation.ReadAttributesResponse(status_records=records)
 
     async def write_attributes(
         self,

@@ -81,7 +81,9 @@ async def test_tuya_spell(zigpy_device_from_quirk):
     """Test that enchanted Tuya devices have their spells applied during configuration."""
     request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
     with request_patch as request_mock:
-        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        request_mock.return_value = foundation.DefaultResponse(
+            status=foundation.Status.SUCCESS, command_id=0
+        )
 
         for quirk in ENCHANTED_QUIRKS:
             device = zigpy_device_from_quirk(quirk)
@@ -173,7 +175,11 @@ async def test_tuya_spell_read_is_a_single_frame(zigpy_device_from_quirk):
     with mock.patch.object(
         type(device),
         "request",
-        mock.AsyncMock(return_value=(foundation.Status.SUCCESS, "done")),
+        mock.AsyncMock(
+            return_value=foundation.DefaultResponse(
+                status=foundation.Status.SUCCESS, command_id=0
+            )
+        ),
     ) as request_mock:
         await device.apply_custom_configuration()
 
@@ -182,8 +188,8 @@ async def test_tuya_spell_read_is_a_single_frame(zigpy_device_from_quirk):
         for c in request_mock.await_args_list
         if c.kwargs["cluster"] == Basic.cluster_id
     ]
-    # exactly one frame: the mock answers with a bare status rather than a list of
-    # records, so zigpy marks every attribute failed and its re-read of omitted or
+    # exactly one frame: the mock answers with a default response rather than a list
+    # of records, so zigpy marks every attribute failed and its re-read of omitted or
     # `INSUFFICIENT_SPACE` records (ZCL R8 2.5.2.3) never sends a second request
     assert len(basic_frames) == 1
 

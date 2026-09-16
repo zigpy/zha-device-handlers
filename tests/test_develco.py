@@ -28,9 +28,11 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
     request_patch = mock.patch("zigpy.device.Device.request", mock.AsyncMock())
     with request_patch as request_mock:
-        # this is not the correct answer for write/read attributes, so they fail,
-        # but we only care about the request to the device here
-        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        # a default response is not the correct answer for write/read attributes, so
+        # they fail, but we only care about the request to the device here
+        request_mock.return_value = foundation.DefaultResponse(
+            status=foundation.Status.SUCCESS, command_id=0
+        )
 
         # the device uses manufacturer code 4117, but tests fake it as 1234,
         # as it is normally read from the node description

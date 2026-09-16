@@ -117,12 +117,27 @@ class LocalDataCluster(CustomCluster):
         self.debug("unbinding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
 
-    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+    async def configure_reporting_raw(
+        self,
+        config_records: list[foundation.AttributeReportingConfig],
+        manufacturer_code: int | None = None,
+        **kwargs,
+    ) -> foundation.ConfigureReportingResponseSchema:
         """Prevent remote configure reporting."""
         self.debug("configuring reporting for LocalDataCluster")
-        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+        return foundation.ConfigureReportingResponseSchema(
+            status_records=foundation.ConfigureReportingResponse(
+                [
+                    foundation.ConfigureReportingResponseRecord(
+                        status=foundation.Status.SUCCESS
+                    )
+                ]
+            )
+        )
 
-    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
+    async def read_attributes_raw(
+        self, attributes: list[int], manufacturer: int | None = None, **kwargs
+    ) -> foundation.ReadAttributesResponse:
         """Prevent remote reads."""
         msg = "reading attributes for LocalDataCluster"
         self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
@@ -144,7 +159,7 @@ class LocalDataCluster(CustomCluster):
                 or record.attrid in self._VALID_ATTRIBUTES
             ):
                 record.status = foundation.Status.SUCCESS
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
         """Convert attributes dict to list of Attribute records."""

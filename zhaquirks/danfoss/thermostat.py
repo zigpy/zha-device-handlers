@@ -28,7 +28,6 @@ Broken ZCL attributes:
     0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
 """
 
-from collections.abc import Callable
 from datetime import UTC, datetime
 import time
 from typing import Any
@@ -161,75 +160,7 @@ class DanfossPreheatCommandEnum(types.enum8):
     Force = 0
 
 
-class CustomizedStandardCluster(CustomCluster):
-    """Danfoss customized standard clusters by adding custom attributes.
-
-    Danfoss doesn't allow all standard attributes when manufacturer specific is requested.
-    Therefore, this subclass separates manufacturer specific and standard attributes for Zigbee commands allowing
-    manufacturer specific to be passed for specific attributes, but not for standard attributes.
-    """
-
-    @staticmethod
-    def combine_results(*result_lists):
-        """Combine results from 1 or more result lists from zigbee commands."""
-        success_global = []
-        failure_global = []
-        for result in result_lists:
-            if len(result) == 1:
-                success_global.extend(result[0])
-            elif len(result) == 2:
-                success_global.extend(result[0])
-                failure_global.extend(result[1])
-
-        if failure_global:
-            return [success_global, failure_global]
-        else:
-            return [success_global]
-
-    async def split_command(
-        self,
-        records: list[Any],
-        func: Callable,
-        extract_attrid: Callable[[Any], int],
-        *args,
-        **kwargs,
-    ):
-        """Split execution of command in one for manufacturer specific and one for standard attributes."""
-        records_specific = [
-            e
-            for e in records
-            if self.attributes[extract_attrid(e)].is_manufacturer_specific
-        ]
-        records_standard = [
-            e
-            for e in records
-            if not self.attributes[extract_attrid(e)].is_manufacturer_specific
-        ]
-
-        result_specific = (
-            await func(records_specific, *args, **kwargs) if records_specific else []
-        )
-
-        result_standard = (
-            await func(records_standard, *args, **kwargs) if records_standard else []
-        )
-
-        return self.combine_results(result_specific, result_standard)
-
-    async def _configure_reporting(self, records, *args, **kwargs):
-        """Configure reporting ZCL foundation command."""
-        return await self.split_command(
-            records, super()._configure_reporting, lambda x: x.attrid, *args, **kwargs
-        )
-
-    async def _read_attributes(self, attr_ids, *args, **kwargs):
-        """Read attributes ZCL foundation command."""
-        return await self.split_command(
-            attr_ids, super()._read_attributes, lambda x: x, *args, **kwargs
-        )
-
-
-class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
+class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
@@ -395,7 +326,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         return await super().bind()
 
 
-class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
+class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(UserInterface.AttributeDefs):
@@ -409,7 +340,7 @@ class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
         )  # non-configurable reporting
 
 
-class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
+class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(Diagnostic.AttributeDefs):
@@ -460,7 +391,7 @@ class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
         )  # non-configurable reporting
 
 
-class DanfossTimeCluster(CustomizedStandardCluster, Time):
+class DanfossTimeCluster(CustomCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):

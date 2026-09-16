@@ -96,9 +96,11 @@ async def test_sonoff_cluster_write_attributes_logic(zigpy_device_from_v2_quirk)
     local_listener = ClusterListener(local_cluster)
 
     # Mock at the low level so real write_attributes runs and emits events
-    write_response = [
-        [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
-    ]
+    write_response = foundation.WriteAttributesResponseSchema(
+        status_records=[
+            foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)
+        ]
+    )
     with mock.patch.object(
         sonoff_cluster,
         "write_attributes_raw",
@@ -159,14 +161,14 @@ async def test_sonoff_cluster_failed_write_does_not_propagate(
     local_listener = ClusterListener(local_cluster)
 
     # Mock a failed write
-    write_response = [
-        [
+    write_response = foundation.WriteAttributesResponseSchema(
+        status_records=[
             foundation.WriteAttributesStatusRecord(
                 status=foundation.Status.FAILURE,
                 attrid=SonoffCluster.AttributeDefs.detach_relay_mask.id,
             )
         ]
-    ]
+    )
     with mock.patch.object(
         sonoff_cluster,
         "write_attributes_raw",
@@ -209,7 +211,11 @@ async def test_sonoff_cluster_apply_custom_configuration(zigpy_device_from_v2_qu
     with mock.patch.object(
         sonoff_cluster,
         "_read_attributes",
-        mock.AsyncMock(return_value=[[read_response]]),
+        mock.AsyncMock(
+            return_value=foundation.ReadAttributesResponse(
+                status_records=[read_response]
+            )
+        ),
     ):
         await sonoff_cluster.apply_custom_configuration()
 

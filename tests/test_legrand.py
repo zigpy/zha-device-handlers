@@ -6,7 +6,7 @@ import pytest
 import zigpy.types as t
 from zigpy.zcl import AttributeUnsupportedEvent
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.foundation import ReadAttributeRecord, Status
+from zigpy.zcl.foundation import ReadAttributeRecord, ReadAttributesResponse, Status
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
@@ -57,7 +57,9 @@ async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_q
         attrid=t.uint16_t(bpr_attr_id),
         status=Status.UNSUPPORTED_ATTRIBUTE,
     )
-    power_cluster._read_attributes = mock.AsyncMock(return_value=[[unsupported_record]])
+    power_cluster._read_attributes = mock.AsyncMock(
+        return_value=ReadAttributesResponse(status_records=[unsupported_record])
+    )
 
     await power_cluster.read_attributes(
         [PowerConfiguration.AttributeDefs.battery_percentage_remaining.name]

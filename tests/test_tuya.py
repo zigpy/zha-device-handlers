@@ -1602,7 +1602,11 @@ async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
     fan_cluster = device.endpoints[1].fan
 
     with mock.patch.object(fan_cluster.endpoint, "request", mock.AsyncMock()) as m1:
-        m1.return_value = (foundation.Status.SUCCESS, "done")
+        m1.return_value = foundation.WriteAttributesResponseSchema(
+            status_records=[
+                foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)
+            ]
+        )
 
         await fan_cluster.bind()
 

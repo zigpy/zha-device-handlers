@@ -138,7 +138,7 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     patch_ikeacluster_read = mock.patch.object(
         ikea_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
@@ -203,7 +203,7 @@ async def test_double_power_config_firmware(
             )
             for attr in attributes
         ]
-        return (records,)
+        return foundation.ReadAttributesResponse(status_records=records)
 
     p1 = mock.patch.object(power_cluster, "create_catching_task")
     p2 = mock.patch.object(

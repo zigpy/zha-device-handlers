@@ -8,7 +8,11 @@ from zigpy.zcl import AttributeWrittenEvent, ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import Status
+from zigpy.zcl.foundation import (
+    Status,
+    WriteAttributesResponseSchema,
+    WriteAttributesStatusRecord,
+)
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -943,7 +947,11 @@ async def test_j1_config_to_standard_sync(ubisys_j1):
     with mock.patch.object(
         wc_cluster.endpoint,
         "request",
-        mock.AsyncMock(return_value=[0x00]),
+        mock.AsyncMock(
+            return_value=WriteAttributesResponseSchema(
+                status_records=[WriteAttributesStatusRecord(status=Status.SUCCESS)]
+            )
+        ),
     ):
         await wc_cluster.write_attributes(
             {

@@ -368,7 +368,9 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
 
     request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
     with request_patch as request_mock:
-        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        request_mock.return_value = foundation.DefaultResponse(
+            status=foundation.Status.SUCCESS, command_id=0
+        )
 
         # call apply_custom_configuration() on each EnchantedDevice
         # ZHA does this during device configuration normally
