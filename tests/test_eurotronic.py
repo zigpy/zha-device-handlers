@@ -78,6 +78,14 @@ async def test_host_flags_off_bit_sets_system_mode(zigpy_device_from_quirk):
     cluster.update_attribute(HOST_FLAGS_ATTR, CLR_OFF_MODE_FLAG | 1)
     assert cluster.get("system_mode") == Thermostat.SystemMode.Off
 
+    read = mock.AsyncMock()
+
+    with mock.patch.object(cluster, "_read_attributes", read):
+        success, _ = await cluster.read_attributes(["system_mode"])
+
+    assert read.mock_calls == []
+    assert success == {"system_mode": Thermostat.SystemMode.Off}
+
     cluster.update_attribute(HOST_FLAGS_ATTR, 1)
     assert cluster.get("system_mode") == Thermostat.SystemMode.Heat
 

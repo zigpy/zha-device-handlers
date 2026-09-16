@@ -46,7 +46,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
     _CONSTANT_ATTRIBUTES = {
         CTRL_SEQ_OF_OPER_ATTR: Thermostat.ControlSequenceOfOperation.Heating_Only,
-        SYSTEM_MODE_ATTR: Thermostat.SystemMode.Heat,
     }
 
     class AttributeDefs(Thermostat.AttributeDefs):
@@ -87,26 +86,48 @@ class ThermostatCluster(CustomCluster, Thermostat):
     async def read_attributes_raw(
         self, attributes: list[int], manufacturer: int | None = None, **kwargs
     ) -> foundation.ReadAttributesResponse | foundation.DefaultResponse:
-        """Serve `occupied_heating_setpoint` from `current_temperature_setpoint`."""
-        if OCCUPIED_HEATING_SETPOINT_ATTR not in attributes:
+        """Serve `system_mode` locally and `occupied_heating_setpoint` from `current_temperature_setpoint`."""
+        if (
+            SYSTEM_MODE_ATTR not in attributes
+            and OCCUPIED_HEATING_SETPOINT_ATTR not in attributes
+        ):
             return await super().read_attributes_raw(
                 attributes, manufacturer=manufacturer, **kwargs
             )
 
         records: list[foundation.ReadAttributeRecord] = []
 
-        # The thermostat reports the wrong value for the standard attribute, the
-        # manufacturer-specific one holds the real setpoint
-        rsp = await super().read_attributes_raw(
-            [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
-        )
-        assert isinstance(rsp, foundation.ReadAttributesResponse)
+        if SYSTEM_MODE_ATTR in attributes:
+            # The device does not implement `system_mode`, it is derived from
+            # `host_flags` reports
+            records.append(
+                foundation.ReadAttributeRecord(
+                    attrid=SYSTEM_MODE_ATTR,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(
+                        type=None,
+                        value=self.get(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Heat),
+                    ),
+                )
+            )
 
-        for record in rsp.status_records:
-            record.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
-            records.append(record)
+        if OCCUPIED_HEATING_SETPOINT_ATTR in attributes:
+            # The thermostat reports the wrong value for the standard attribute, the
+            # manufacturer-specific one holds the real setpoint
+            rsp = await super().read_attributes_raw(
+                [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
+            )
+            assert isinstance(rsp, foundation.ReadAttributesResponse)
 
-        remaining = [a for a in attributes if a != OCCUPIED_HEATING_SETPOINT_ATTR]
+            for record in rsp.status_records:
+                record.attrid = OCCUPIED_HEATING_SETPOINT_ATTR
+                records.append(record)
+
+        remaining = [
+            a
+            for a in attributes
+            if a not in (SYSTEM_MODE_ATTR, OCCUPIED_HEATING_SETPOINT_ATTR)
+        ]
 
         if remaining:
             rsp = await super().read_attributes_raw(
