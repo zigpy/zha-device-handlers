@@ -1,12 +1,12 @@
 """Device handler for smartthings moistureV4 sensor."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -16,6 +16,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_TYPE,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.smartthings import SMART_THINGS
 
 

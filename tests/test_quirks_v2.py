@@ -1,25 +1,22 @@
 """General quirk v2 tests."""
 
 import collections
-import itertools
 
-import zigpy.quirks
-from zigpy.quirks.v2 import (
-    EntityPlatform,
-    EntityType,
-    QuirksV2RegistryEntry,
-    ZCLEnumMetadata,
-)
+from zha.application import EntityPlatform, EntityType
+from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry
 
 import zhaquirks
+from zhaquirks.builder.device import QuirkV2Factory
+from zhaquirks.builder.metadata import QuirkDefinition, ZCLEnumMetadata
 
 zhaquirks.setup()
 
-# zigpy registry v2 contains duplicates (due to being keyed by manufacturer and model),
-# so to avoid duplicates but maintain insertion order, we use a dict instead of a set
-ALL_QUIRK_V2_CLASSES: dict[QuirksV2RegistryEntry, None] = dict.fromkeys(
-    itertools.chain.from_iterable(zigpy.quirks.DEVICE_REGISTRY.registry_v2.values())
-)
+# Pair each v2 quirk's ZHA registry entry with its `QuirkDefinition`
+ALL_QUIRK_V2: list[tuple[QuirkRegistryEntry, QuirkDefinition]] = [
+    (entry, entry.zha_device_factory.quirk_definition)
+    for entry in DEVICE_REGISTRY
+    if isinstance(entry.zha_device_factory, QuirkV2Factory)
+]
 
 
 def test_translation_key_and_fallback_name_match() -> None:
@@ -33,15 +30,15 @@ def test_translation_key_and_fallback_name_match() -> None:
     translation_key_map: dict[str, set[tuple[str, str]]] = collections.defaultdict(set)
 
     # collect all translation keys and their quirk location and fallback names
-    for quirk in ALL_QUIRK_V2_CLASSES:
-        for entity_metadata in quirk.entity_metadata:
+    for entry, definition in ALL_QUIRK_V2:
+        for entity_metadata in definition.entity_metadata:
             if (translation_key := entity_metadata.translation_key) is None:
                 continue
             # skip entities using translation placeholders: they intentionally share
             # the same translation key with different fallback names
             if entity_metadata.translation_placeholders:
                 continue
-            quirk_location = f"{quirk.quirk_file}:{quirk.quirk_file_line}"
+            quirk_location = f"{entry.source.file}:{entry.source.line}"
             translation_key_map[translation_key].add(
                 (quirk_location, entity_metadata.fallback_name)
             )
@@ -68,13 +65,17 @@ def test_manufacturer_model_metadata_unique() -> None:
         list
     )
 
-    for quirk in ALL_QUIRK_V2_CLASSES:
-        if quirk.fw_version_filter is not None:
+    for entry, _definition in ALL_QUIRK_V2:
+        match = entry.device_match
+        if (
+            match.firmware_version_min is not None
+            or match.firmware_version_max is not None
+        ):
             # skip quirks with firmware filter, as they can share manufacturer/model
             continue
-        for metadata in quirk.manufacturer_model_metadata:
-            man_model_quirk_map[(metadata.manufacturer, metadata.model)].append(
-                f"{quirk.quirk_file}:{quirk.quirk_file_line}"
+        for model_info in match.applies_to:
+            man_model_quirk_map[(model_info.manufacturer, model_info.model)].append(
+                f"{entry.source.file}:{entry.source.line}"
             )
 
     # check that each manufacturer-model pair is unique
@@ -86,8 +87,8 @@ def test_manufacturer_model_metadata_unique() -> None:
 
 def test_enum_sensor_category() -> None:
     """Ensure enum metadata with sensor entity platform has valid entity category."""
-    for quirk in ALL_QUIRK_V2_CLASSES:
-        for entity_metadata in quirk.entity_metadata:
+    for entry, definition in ALL_QUIRK_V2:
+        for entity_metadata in definition.entity_metadata:
             if (
                 isinstance(entity_metadata, ZCLEnumMetadata)
                 and entity_metadata.entity_platform is EntityPlatform.SENSOR
@@ -97,6 +98,6 @@ def test_enum_sensor_category() -> None:
                     EntityType.DIAGNOSTIC,
                 ), (
                     f"Enum sensor '{entity_metadata.translation_key}' in "
-                    f"{quirk.quirk_file}:{quirk.quirk_file_line} "
+                    f"{entry.source.file}:{entry.source.line} "
                     f"has invalid entity type '{entity_metadata.entity_type}'"
                 )
