@@ -7,10 +7,12 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
+    UnitOfEnergy,
     UnitOfPower,
 )
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
@@ -69,6 +71,36 @@ class SonoffCustomCluster(CustomCluster):
 
         ac_power_max_overload = ZCLAttributeDef(
             id=0x7011,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+        daily_forward_energy = ZCLAttributeDef(
+            id=0x7009,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+        monthly_forward_energy = ZCLAttributeDef(
+            id=0x700A,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+        daily_reverse_energy = ZCLAttributeDef(
+            id=0x7018,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+        monthly_reverse_energy = ZCLAttributeDef(
+            id=0x7019,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+        total_reverse_energy = ZCLAttributeDef(
+            id=0x701F,
             type=t.uint32_t,
             manufacturer_code=None,
         )
@@ -205,6 +237,56 @@ class SonoffCustomCluster(CustomCluster):
         device_class=NumberDeviceClass.POWER,
         translation_key="ac_power_max_overload",
         fallback_name="AC power max overload",
+    )
+    .sensor(
+        SonoffCustomCluster.AttributeDefs.daily_forward_energy.name,
+        SonoffCustomCluster.cluster_id,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=1000,
+        translation_key="daily_forward_energy",
+        fallback_name="Daily forward energy",
+    )
+    .sensor(
+        SonoffCustomCluster.AttributeDefs.monthly_forward_energy.name,
+        SonoffCustomCluster.cluster_id,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=1000,
+        translation_key="monthly_forward_energy",
+        fallback_name="Monthly forward energy",
+    )
+    .sensor(
+        SonoffCustomCluster.AttributeDefs.daily_reverse_energy.name,
+        SonoffCustomCluster.cluster_id,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=1000,
+        translation_key="daily_reverse_energy",
+        fallback_name="Daily reverse energy",
+    )
+    .sensor(
+        SonoffCustomCluster.AttributeDefs.monthly_reverse_energy.name,
+        SonoffCustomCluster.cluster_id,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=1000,
+        translation_key="monthly_reverse_energy",
+        fallback_name="Monthly reverse energy",
+    )
+    .sensor(
+        SonoffCustomCluster.AttributeDefs.total_reverse_energy.name,
+        SonoffCustomCluster.cluster_id,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=1000,
+        translation_key="total_reverse_energy",
+        fallback_name="Total reverse energy",
     )
     .add_to_registry()
 )
