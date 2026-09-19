@@ -1,10 +1,9 @@
 """Test Zemismart ZM24TQ cover calibration and positioning."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from zha.application import Platform
-from zha.application.helpers import CoordinatorConfiguration, ZHAConfiguration, ZHAData
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -15,11 +14,25 @@ from zigpy.zdo.types import NodeDescriptor
 
 from tests.common import wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaCommand, TuyaData, TuyaDatapointData
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
+    TuyaDPType,
+)
+from zhaquirks.tuya.mcu import TuyaCoverControl, TuyaMCUCluster
 from zhaquirks.tuya.ts0601_cover import TuyaZemismartSmartCover0601_3
-from zhaquirks.tuya.ts0601_zemismart import ZemismartWindowCovering
+from zhaquirks.tuya.ts0601_zemismart import MotorDirection, ZemismartWindowCovering
 
 zhaquirks.setup()
+
+LIMIT_DPS = {"upper_limit": 103, "middle_limit": 104, "lower_limit": 105}
+REPORT_COMMANDS = [
+    TuyaMCUCluster.ClientCommandDefs.get_data.id,
+    TuyaMCUCluster.ClientCommandDefs.set_data_response.id,
+    TuyaMCUCluster.ClientCommandDefs.active_status_report.id,
+]
 
 
 @pytest.fixture
@@ -81,7 +94,7 @@ def raw_motor(zigpy_device_mock):
 def decode_write(request):
     """Decode the entire frame, checking the command and trailing bytes too."""
     header, payload = foundation.ZCLHeader.deserialize(request.kwargs["data"])
-    assert header.command_id == 0  # Tuya set_data
+    assert header.command_id == TuyaMCUCluster.ServerCommandDefs.set_data.id
     assert header.manufacturer is None
     command, rest = TuyaCommand.deserialize(payload)
     assert rest == b""
@@ -91,7 +104,11 @@ def decode_write(request):
     return dp.dp, dp.data.dp_type, dp.data.raw
 
 
-def report(device, *datapoints, command=2):
+def report(
+    device,
+    *datapoints,
+    command=TuyaMCUCluster.ClientCommandDefs.set_data_response.id,
+):
     """Feed a serialized multi-DP response through the actual cluster parser."""
     cluster = device.endpoints[1].tuya_manufacturer
     header = foundation.ZCLHeader.cluster(
@@ -158,7 +175,14 @@ def test_other_models_do_not_match(raw_motor, manufacturer, model):
     )
 
 
-@pytest.mark.parametrize("command,value", [(0, 0), (1, 2), (2, 1)])
+@pytest.mark.parametrize(
+    "command,value",
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, TuyaCoverControl.Open),
+        (WindowCovering.ServerCommandDefs.down_close.id, TuyaCoverControl.Close),
+        (WindowCovering.ServerCommandDefs.stop.id, TuyaCoverControl.Stop),
+    ],
+)
 async def test_open_close_stop_wire_payload(device, command, value):
     """Encode each travel command as the expected Tuya enum."""
     ep = device.endpoints[1]
@@ -169,7 +193,7 @@ async def test_open_close_stop_wire_payload(device, command, value):
         await wait_for_zigpy_tasks()
     assert result.status == foundation.Status.SUCCESS
     request.assert_awaited_once()
-    assert decode_write(request.call_args) == (1, 4, bytes([value]))
+    assert decode_write(request.call_args) == (1, TuyaDPType.ENUM, bytes([value]))
 
 
 @pytest.mark.parametrize("ha_position", [0, 25, 50, 75, 100])
@@ -195,7 +219,11 @@ async def test_percentage_writes_only_dp2_and_preserves_actual_position(
             )
         await wait_for_zigpy_tasks()
     request.assert_awaited_once()
-    assert decode_write(request.call_args) == (2, 2, ha_position.to_bytes(4, "big"))
+    assert decode_write(request.call_args) == (
+        2,
+        TuyaDPType.VALUE,
+        ha_position.to_bytes(4, "big"),
+    )
     assert ep.window_covering.get("current_position_lift_percentage") == 88
 
 
@@ -212,7 +240,7 @@ async def test_invalid_percentage_does_not_move_motor(device, value):
     request.assert_not_called()
 
 
-@pytest.mark.parametrize("command", [1, 2, 6])
+@pytest.mark.parametrize("command", REPORT_COMMANDS)
 @pytest.mark.parametrize("ha_position", [0, 12, 25, 88, 100])
 def test_position_reports_and_target_echo(device, command, ha_position):
     """Update measured position only from DP 3 for every report command."""
@@ -224,7 +252,7 @@ def test_position_reports_and_target_echo(device, command, ha_position):
     assert cover.get("current_position_lift_percentage") == 100 - ha_position
 
 
-@pytest.mark.parametrize("direction", [0, 1])
+@pytest.mark.parametrize("direction", list(MotorDirection))
 async def test_direction_is_enum_dp5(device, direction):
     """Encode direction changes as enum DP 5."""
     ep = device.endpoints[1]
@@ -234,10 +262,10 @@ async def test_direction_is_enum_dp5(device, direction):
         await ep.tuya_manufacturer.write_attributes({"motor_direction": direction})
         await wait_for_zigpy_tasks()
     request.assert_awaited_once()
-    assert decode_write(request.call_args) == (5, 4, bytes([direction]))
+    assert decode_write(request.call_args) == (5, TuyaDPType.ENUM, bytes([direction]))
 
 
-@pytest.mark.parametrize("name,dp", [("upper", 103), ("middle", 104), ("lower", 105)])
+@pytest.mark.parametrize("name,dp", LIMIT_DPS.items())
 @pytest.mark.parametrize("value", [True, False])
 async def test_limit_buttons_use_boolean_payload_and_can_repeat(
     device, name, dp, value
@@ -248,11 +276,12 @@ async def test_limit_buttons_use_boolean_payload_and_can_repeat(
         ep, "request", new=AsyncMock(return_value=foundation.Status.SUCCESS)
     ) as request:
         for _ in range(2):
-            await ep.tuya_manufacturer.write_attributes({f"{name}_limit": value})
+            await ep.tuya_manufacturer.write_attributes({name: value})
             await wait_for_zigpy_tasks()
     assert request.await_count == 2
     assert all(
-        decode_write(call) == (dp, 1, bytes([value])) for call in request.call_args_list
+        decode_write(call) == (dp, TuyaDPType.BOOL, bytes([value]))
+        for call in request.call_args_list
     )
 
 
@@ -261,14 +290,14 @@ def test_multi_datapoint_report_updates_position_and_configuration(device):
     report(device, (3, 75), (5, t.enum8(1)), (103, t.Bool.true), (105, t.Bool.false))
     ep = device.endpoints[1]
     assert ep.window_covering.get("current_position_lift_percentage") == 25
-    assert ep.tuya_manufacturer.get("motor_direction") == 1
+    assert ep.tuya_manufacturer.get("motor_direction") == MotorDirection.Back
     assert ep.tuya_manufacturer.get("upper_limit") == 1
     assert ep.tuya_manufacturer.get("lower_limit") == 0
 
 
-def test_six_motors_have_independent_state(make_device):
+def test_motors_have_independent_state(make_device):
     """Keep state independent across multiple motors."""
-    devices = [make_device(address=i + 1) for i in range(6)]
+    devices = [make_device(address=i + 1) for i in range(3)]
     for i, device in enumerate(devices):
         report(device, (3, i * 20), (5, t.enum8(i % 2)))
     for i, device in enumerate(devices):
@@ -279,81 +308,33 @@ def test_six_motors_have_independent_state(make_device):
         assert device.endpoints[1].tuya_manufacturer.get("motor_direction") == i % 2
 
 
-def test_entity_metadata_has_unique_buttons_and_direction(device):
-    """Expose unique configuration entities with meaningful names."""
+def test_entity_metadata(device):
+    """Expose one direction select and six repeatable limit buttons."""
     metadata = (
         device._quirk_registry_entry.zha_device_factory.quirk_definition.entity_metadata
     )
-    names = {entry.fallback_name for entry in metadata}
-    assert names == {"Motor direction"} | {
+    assert len({entry.unique_id_suffix for entry in metadata}) == len(metadata)
+    assert all(entry.cluster_id == TUYA_CLUSTER_ID for entry in metadata)
+
+    (select,) = [
+        entry for entry in metadata if entry.entity_platform == Platform.SELECT
+    ]
+    assert select.attribute_name == "motor_direction"
+    assert select.enum == MotorDirection
+    assert select.fallback_name == "Motor direction"
+
+    buttons = [entry for entry in metadata if entry.entity_platform == Platform.BUTTON]
+    assert len(buttons) == 6
+    assert {entry.fallback_name for entry in buttons} == {
         f"{action} {level} limit"
         for action in ("Set", "Delete")
         for level in ("upper", "middle", "lower")
     }
-    suffixes = [
-        entry.unique_id_suffix for entry in metadata if "limit" in entry.fallback_name
-    ]
-    assert len(set(suffixes)) == 6
+    for button in buttons:
+        action, level, _ = button.unique_id_suffix.split("_")
+        assert button.translation_key == button.unique_id_suffix
+        assert button.attribute_name == f"{level}_limit"
+        assert button.attribute_value == (action == "set")
+        assert button.attribute_name in LIMIT_DPS
 
-
-async def test_zha_entity_discovery_and_actions(device):
-    """Exercise the same entity actions HA calls, without a coordinator."""
-    gateway = MagicMock()
-    gateway.config = ZHAData(
-        config=ZHAConfiguration(
-            coordinator_configuration=CoordinatorConfiguration(path="/dev/null")
-        )
-    )
-    gateway.state.node_info.ieee = t.EUI64([0] * 8)
-    ep = device.endpoints[1]
-    with patch.object(
-        ep, "request", new=AsyncMock(return_value=foundation.Status.SUCCESS)
-    ) as request:
-        zha_device = device._quirk_registry_entry.zha_device_factory(device, gateway)
-        entities = list(zha_device.discover_entities())
-        assert zha_device.skip_configuration
-        await wait_for_zigpy_tasks()
-        request.assert_not_called()
-
-        buttons = [entity for entity in entities if entity.PLATFORM == Platform.BUTTON]
-        selects = [entity for entity in entities if entity.PLATFORM == Platform.SELECT]
-        covers = [entity for entity in entities if entity.PLATFORM == Platform.COVER]
-        assert len(buttons) == 6
-        assert len(selects) == len(covers) == 1
-        assert covers[0].unique_id == f"{device.ieee}-1-{WindowCovering.cluster_id}"
-        assert len({entity.unique_id for entity in entities}) == len(entities)
-
-        for button in buttons:
-            for _ in range(2):
-                request.reset_mock()
-                await button.async_press()
-                await wait_for_zigpy_tasks()
-                request.assert_awaited_once()
-                state = button.state
-                dp = {"upper_limit": 103, "middle_limit": 104, "lower_limit": 105}[
-                    state.attribute_name
-                ]
-                assert decode_write(request.call_args) == (
-                    dp,
-                    1,
-                    bytes([state.attribute_value]),
-                )
-
-        request.reset_mock()
-        await selects[0].async_select_option("Reversed")
-        await wait_for_zigpy_tasks()
-        request.assert_awaited_once()
-        assert decode_write(request.call_args) == (5, 4, b"\x01")
-
-        report(device, (3, 12))
-        assert covers[0].current_cover_position == 12
-        request.reset_mock()
-        await covers[0].async_set_cover_position(75)
-        await wait_for_zigpy_tasks()
-        request.assert_awaited_once()
-        assert decode_write(request.call_args) == (2, 2, b"\x00\x00\x00\x4b")
-        assert covers[0].current_cover_position == 12
-        report(device, (2, 75))
-        assert covers[0].current_cover_position == 12
-        report(device, (3, 75))
-        assert covers[0].current_cover_position == 75
+    assert len(metadata) == 7

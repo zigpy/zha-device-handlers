@@ -21,10 +21,10 @@ from zhaquirks.tuya.mcu import TuyaClusterData, TuyaWindowCovering
 
 
 class MotorDirection(t.enum8):
-    """Direction stored by the motor, independent of percentage conversion."""
+    """Motor direction values."""
 
-    Normal = 0
-    Reversed = 1
+    Forward = 0x00
+    Back = 0x01
 
 
 class ZemismartWindowCovering(TuyaWindowCovering):
@@ -34,7 +34,7 @@ class ZemismartWindowCovering(TuyaWindowCovering):
         """Local target used to route writes exclusively to datapoint 2."""
 
         target_position: Final = foundation.ZCLAttributeDef(
-            id=0xEF02, type=t.uint8_t, manufacturer_code=None
+            id=0xEF02, type=t.uint8_t, is_manufacturer_specific=True
         )
 
     async def command(
@@ -72,7 +72,10 @@ class ZemismartWindowCovering(TuyaWindowCovering):
         ].schema(command_id=command_id, status=status)
 
 
-builder = (
+# Limit datapoints are bool, not enum: SET=true / RESET=false. Buttons are
+# repeatable commands; a switch would incorrectly imply the stored limit state
+# can always be read back.
+(
     TuyaQuirkBuilder("_TZE200_fzo2pocs", "TS0601")
     .tuya_dp(
         dp_id=1,
@@ -101,26 +104,72 @@ builder = (
         translation_key="motor_direction",
         fallback_name="Motor direction",
     )
-)
-
-# Bool, not enum: SET=true / RESET=false. Buttons are repeatable commands;
-# a switch would incorrectly imply we can always read the stored limit state.
-for dp_id, label in ((103, "upper"), (104, "middle"), (105, "lower")):
-    attribute_name = f"{label}_limit"
-    builder.tuya_dp_attribute(
-        dp_id=dp_id,
-        attribute_name=attribute_name,
+    .tuya_dp_attribute(
+        dp_id=103,
+        attribute_name="upper_limit",
         type=t.Bool,
         access=foundation.ZCLAttributeAccess.Write,
     )
-    for action, value in (("set", t.Bool.true), ("delete", t.Bool.false)):
-        builder.write_attr_button(
-            attribute_name=attribute_name,
-            attribute_value=value,
-            cluster_id=TUYA_CLUSTER_ID,
-            unique_id_suffix=f"{action}_{label}_limit",
-            translation_key=f"{action}_{label}_limit",
-            fallback_name=f"{action.capitalize()} {label} limit",
-        )
-
-QUIRK = builder.skip_configuration().add_to_registry()
+    .write_attr_button(
+        attribute_name="upper_limit",
+        attribute_value=t.Bool.true,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="set_upper_limit",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="upper_limit",
+        attribute_value=t.Bool.false,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="delete_upper_limit",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .tuya_dp_attribute(
+        dp_id=104,
+        attribute_name="middle_limit",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Write,
+    )
+    .write_attr_button(
+        attribute_name="middle_limit",
+        attribute_value=t.Bool.true,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="set_middle_limit",
+        translation_key="set_middle_limit",
+        fallback_name="Set middle limit",
+    )
+    .write_attr_button(
+        attribute_name="middle_limit",
+        attribute_value=t.Bool.false,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="delete_middle_limit",
+        translation_key="delete_middle_limit",
+        fallback_name="Delete middle limit",
+    )
+    .tuya_dp_attribute(
+        dp_id=105,
+        attribute_name="lower_limit",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Write,
+    )
+    .write_attr_button(
+        attribute_name="lower_limit",
+        attribute_value=t.Bool.true,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="set_lower_limit",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="lower_limit",
+        attribute_value=t.Bool.false,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="delete_lower_limit",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
