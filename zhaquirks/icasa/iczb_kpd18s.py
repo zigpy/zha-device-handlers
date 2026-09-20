@@ -1,7 +1,6 @@
 """icasa KPD18S device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -48,6 +47,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class IcasaKPD18S(CustomDevice):

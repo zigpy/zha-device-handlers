@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zha.quirks import BEGA_LIGHT_SWITCHABLE_WHITE
 import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.quirk_ids import BEGA_LIGHT_SWITCHABLE_WHITE
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class LevelControlBega(CustomCluster, LevelControl):

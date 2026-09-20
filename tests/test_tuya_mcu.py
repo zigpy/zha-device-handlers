@@ -6,13 +6,13 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import CustomDeviceV2
+from zha.quirks import DeviceRegistry
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
@@ -422,8 +422,8 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
         .add_to_registry()
     )
 
-    quirked = registry.get_device(device_mock)
-    assert isinstance(quirked, CustomDeviceV2)
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
 
     ep1 = quirked.endpoints[1]
     ep2 = quirked.endpoints[2]

@@ -1,11 +1,11 @@
 """Device handler for smarthjemmet.dk QUAD-ZIG-SW."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,

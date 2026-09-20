@@ -3,13 +3,13 @@
 import logging
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
 
 _LOGGER = logging.getLogger(__name__)

@@ -1,7 +1,6 @@
 """Candeo modules."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
 
 (
@@ -9,6 +8,7 @@ from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
     .applies_to(CANDEO, "HK-LN-DIM-A")
     .applies_to(CANDEO, "C204")
     .applies_to(CANDEO, "C-ZB-DM204")
+    .applies_to(CANDEO, "C-ZB-DM204V2")
     .applies_to(CANDEO, "C205")
     .replaces(CandeoBasicCluster)
     .enum(

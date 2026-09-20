@@ -1,6 +1,8 @@
 """Common constants for zhaquirks."""
 
-from zigpy.quirks import (
+import zigpy.types as t
+
+from zhaquirks.legacy import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
     SIG_EP_OUTPUT,
@@ -12,7 +14,6 @@ from zigpy.quirks import (
     SIG_NODE_DESC,
     SIG_SKIP_CONFIG,
 )
-import zigpy.types as t
 
 ARGS = "args"
 ATTR_ID = "attr_id"
