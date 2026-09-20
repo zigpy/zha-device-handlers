@@ -6,14 +6,13 @@ from collections.abc import Callable
 from typing import Any
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
@@ -122,6 +121,8 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     ) -> None:
         """Handle attribute read/reported events."""
         if event.attribute_id == self.AttributeDefs.present_value.id:
+            # present_value is never None for a real device read/report
+            assert event.value is not None
             self.endpoint.window_covering.update_attribute(
                 WindowCovering.AttributeDefs.current_position_lift_percentage.id,
                 t.uint8_t(100 - event.value),

@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -18,6 +17,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,

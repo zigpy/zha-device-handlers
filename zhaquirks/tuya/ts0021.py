@@ -1,7 +1,6 @@
 """Device handler for the TS0021."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
@@ -24,6 +23,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import TUYA_CLUSTER_ID, DPToAttributeMapping, TuyaNewManufCluster
 
 BTN_1 = "Button 1"

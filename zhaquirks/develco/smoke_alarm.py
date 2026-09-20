@@ -1,12 +1,11 @@
 """Frient Smoke Alarm."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
+from zha.quirks import SIREN_BASIC
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
-from zhaquirks.quirk_ids import SIREN_BASIC
 
 (
     QuirkBuilder("frient A/S", "SMSZB-120")

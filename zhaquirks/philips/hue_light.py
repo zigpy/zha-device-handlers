@@ -1,7 +1,6 @@
 """Philips Hue devices."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
@@ -138,20 +137,6 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "915005988501")
     .friendly_name(
         model="Hue Play gradient light tube",
-        manufacturer="Philips",
-    )
-    .replaces(PhilipsHueLightCluster, endpoint_id=11)
-    .add_to_registry()
-)
-
-(
-    QuirkBuilder()
-    .applies_to(SIGNIFY, "929003116301")
-    .applies_to(SIGNIFY, "929003116401")
-    .applies_to(SIGNIFY, "929003116501")
-    .applies_to(SIGNIFY, "929003116601")
-    .friendly_name(
-        model="Hue Perifo light tube",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)

@@ -1,17 +1,19 @@
 """Tuya Power Meter."""
 
-from zigpy.quirks.v2 import EntityType, SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import (
+import zigpy.types as t
+from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+
+from zhaquirks.builder import (
     PERCENTAGE,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
     UnitOfElectricCurrent,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTime,
 )
-import zigpy.types as t
-from zigpy.zcl.clusters.general import LevelControl, OnOff
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping

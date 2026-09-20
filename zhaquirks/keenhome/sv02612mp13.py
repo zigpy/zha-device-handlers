@@ -1,7 +1,6 @@
 """Smart vent quirk."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -24,6 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 KEEN1_CLUSTER_ID = 0xFC01  # decimal = 64513
 KEEN2_CLUSTER_ID = 0xFC02  # decimal = 64514
