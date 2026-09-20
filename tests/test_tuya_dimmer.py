@@ -84,6 +84,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -100,6 +102,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -116,6 +120,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -133,6 +139,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -150,6 +158,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -167,6 +177,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         m1.assert_called_with(
             cluster=61184,
@@ -178,6 +190,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -211,6 +225,8 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

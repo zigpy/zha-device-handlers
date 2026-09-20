@@ -1,7 +1,6 @@
 """Philips RWL022 device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -22,6 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import SIGNIFY, PhilipsBasicCluster, PhilipsRwlRemoteCluster
 
 DEVICE_SPECIFIC_UNKNOWN = 64512

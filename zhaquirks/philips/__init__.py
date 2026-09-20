@@ -4,15 +4,15 @@ import asyncio
 import itertools
 import logging
 import time
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     BUTTON,
@@ -190,9 +190,7 @@ class PhilipsRemoteCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         _LOGGER.debug(

@@ -9,7 +9,6 @@ import enum
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -21,6 +20,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
     LEFT,
@@ -30,6 +30,8 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import BaseCustomDevice
+from zhaquirks.legacy import CustomDevice
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -158,7 +160,7 @@ class TuyaData:
 
     def __init__(
         self,
-        value: TuyaDPType | None = None,
+        value: object | None = None,
         function: t.uint8_t = t.uint8_t(0),
         raw: bytes | None = None,
     ):
@@ -587,7 +589,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):

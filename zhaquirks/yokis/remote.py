@@ -1,8 +1,8 @@
 """Modules for Yokis remote."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,

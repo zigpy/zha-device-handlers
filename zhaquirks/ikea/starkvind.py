@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -21,6 +20,7 @@ from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import Bus
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,6 +30,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
+from zhaquirks.legacy import CustomDevice
 
 
 class IkeaAirpurifier(CustomCluster):
