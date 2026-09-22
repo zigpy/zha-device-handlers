@@ -58,6 +58,16 @@ async def test_smoke_co_reports():
     for name in ("smoke_state", "co_state", "battery_state"):
         assert state(name) is None, (name, cluster.get(name))
 
+    # Numeric attribute IDs must preserve unknown states before any report.
+    for name, expected in (
+        ("smoke_state", 3),
+        ("co_state", 255),
+        ("battery_state", 255),
+    ):
+        attribute_id = cluster.attributes_by_name[name].id
+        assert cluster.get(attribute_id) == expected
+        assert q.alarm_state(cluster.get(attribute_id)) is None
+
     def report(dp, value):
         """Round-trip the wire format before updating the cluster."""
         raw = TuyaDatapointData(dp=dp, data=TuyaData(value)).serialize()
