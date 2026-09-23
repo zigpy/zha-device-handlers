@@ -172,7 +172,6 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 
 (
     TuyaQuirkBuilder("_TZE284_rccxox8p", "TS0601")
-    .applies_to("_TZE200_m9skfctm", "TS0601")
     .applies_to("_TZE200_rccxox8p", "TS0601")
     .tuya_smoke(dp_id=1)
     .tuya_sensor(
