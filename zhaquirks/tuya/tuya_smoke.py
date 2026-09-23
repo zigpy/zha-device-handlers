@@ -1,5 +1,7 @@
 """Smoke Sensor."""
 
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -14,8 +16,6 @@ from zhaquirks.tuya import (
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 
 
 class TuyaSensitivityMode(t.enum8):
