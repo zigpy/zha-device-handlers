@@ -14,6 +14,8 @@ from zhaquirks.tuya import (
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 
 
 class TuyaSensitivityMode(t.enum8):
@@ -163,6 +165,52 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
         enum_class=TuyaSensitivityMode,
         translation_key="motion_sensitivity",
         fallback_name="Motion sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("_TZE284_rccxox8p", "TS0601")
+    .applies_to("_TZE200_m9skfctm", "TS0601")
+    .applies_to("_TZE200_rccxox8p", "TS0601")
+    .tuya_smoke(dp_id=1)
+    .tuya_sensor(
+        dp_id=2,
+        type=t.int16s,
+        attribute_name="smoke_concentration",
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        suggested_display_precision=0,
+        translation_key="smoke_concentration",
+        fallback_name="Smoke concentration",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_battery(
+        dp_id=15,
+        battery_type=BatterySize.AA,
+        battery_qty=2,
+    )
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="self_test",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="self_test",
+        fallback_name="Self test result",
     )
     .skip_configuration()
     .add_to_registry()
