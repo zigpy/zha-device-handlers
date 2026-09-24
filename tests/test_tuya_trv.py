@@ -5,7 +5,8 @@ from unittest import mock
 import pytest
 from zigpy.profiles import zha
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
@@ -15,7 +16,9 @@ zhaquirks.setup()
 
 TUYA_SP_V01 = b"\x01\x01\x00\x00\x01\x04\x02\x00\x04\x00\x00\x00\xfa"  # dp 2
 TUYA_SP_V02 = b"\x01\x01\x00\x00\x01g\x02\x00\x04\x00\x00\x00\xfa"  # dp 103
-
+TUYA_SP_S01 = (
+    b"\x01\x01\x00\x00\x01\x6c\x02\x00\x04\x00\x00\x00\xfa"
+)  # dp 108
 
 TUYA_TEST_PLAN_V01 = (
     (
@@ -70,6 +73,55 @@ TUYA_TEST_PLAN_V03 = (
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Off,
     ),  # Set to Off (0x02), dp 2
+)
+
+
+TUYA_TEST_PLAN_S01 = (
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x00",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Auto,
+    ),  # DP2 Auto
+    (
+        b"\t\xc3\x02\x00r\x02\x04\x00\x01\x01",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Heat,
+    ),  # DP2 Manual -> Heat
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x02",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Off,
+    ),  # DP2 Off
+    (
+        b"\t\xc3\x02\x00r\x02\x04\x00\x01\x03",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Heat,
+    ),  # DP2 On -> Heat
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x04",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Auto,
+    ),  # DP2 Holiday -> Auto
+    (
+        b"\t\xc2\x02\x00q\x03\x04\x00\x01\x00",
+        Thermostat.AttributeDefs.running_state,
+        RunningState.Heat_State_On,
+    ),  # DP3 heating
+    (
+        b"\t\xc2\x02\x00q\x03\x04\x00\x01\x01",
+        Thermostat.AttributeDefs.running_state,
+        RunningState.Idle,
+    ),  # DP3 idle
+    (
+        b"\t\xc2\x02\x00q\x6c\x02\x00\x04\x00\x00\x00\xfa",
+        Thermostat.AttributeDefs.occupied_heating_setpoint,
+        2500,
+    ),  # DP108 target 25.0 C
+    (
+        b"\t\xc2\x02\x00q\x6d\x02\x00\x04\x00\x00\x00\xd7",
+        Thermostat.AttributeDefs.local_temperature,
+        2150,
+    ),  # DP109 local temperature 21.5 C
 )
 
 TUYA_SYS_MODE_V01 = {
@@ -141,6 +193,15 @@ TUYA_SYS_MODE_V04 = {
             TUYA_SP_V01,
             TUYA_SYS_MODE_V04,
             None,  # test device has specific device type, real one has SMART_PLUG
+            False,
+        ),
+        (
+            "_TZE200_ivdc0kwl",
+            "TS0601",
+            TUYA_TEST_PLAN_S01,
+            TUYA_SP_S01,
+            TUYA_SYS_MODE_V01,
+            zha.DeviceType.THERMOSTAT,
             False,
         ),
     ),
@@ -346,3 +407,28 @@ async def test_handle_get_data_tmcu(
     assert tmcu_listener.attribute_updates[0][1] == value
 
     assert ep.tuya_manufacturer.get(attr_id) == value
+
+
+async def test_moes_ztrv_s01_battery(zigpy_device_from_v2_quirk):
+    """Test Moes ZTRV-S01 battery percentage."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_ivdc0kwl", "TS0601")
+    ep = quirked.endpoints[1]
+
+    battery_listener = ClusterListener(ep.power)
+
+    # DP6 battery_percentage = 54%. ZCL stores percentage in 0.5% units.
+    msg = b"\t\xc2\x02\x00q\x06\x02\x00\x04\x00\x00\x00\x36"
+
+    hdr, data = ep.tuya_manufacturer.deserialize(msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    attr_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    assert len(battery_listener.attribute_updates) == 1
+    assert battery_listener.attribute_updates[0][0] == attr_id
+    assert battery_listener.attribute_updates[0][1] == 108
+
+    assert ep.power.get(attr_id) == 108
