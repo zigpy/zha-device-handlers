@@ -1764,6 +1764,39 @@ async def test_xiaomi_e1_thermostat_temp_write(
         assert len(opple_cluster._write_attributes.mock_calls) == 1
 
 
+async def test_xiaomi_e1_thermostat_write_without_manufacturer(
+    zigpy_device_from_quirk,
+):
+    """Test Opple cluster writes without a manufacturer code, as ZHA sends them."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    patch_opple_write = mock.patch.object(
+        opple_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with patch_opple_write:
+        await opple_cluster.write_attributes(
+            {zhaquirks.xiaomi.aqara.thermostat_agl001.WINDOW_DETECTION: 1}
+        )
+
+        # the attribute resolves with the Aqara manufacturer code instead of
+        # raising KeyError(None)
+        assert opple_cluster._write_attributes.await_count == 1
+        records = opple_cluster._write_attributes.call_args.args[0]
+        assert (
+            records[0].attrid
+            == zhaquirks.xiaomi.aqara.thermostat_agl001.WINDOW_DETECTION
+        )
+
+
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
     (
