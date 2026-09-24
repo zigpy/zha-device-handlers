@@ -1,4 +1,4 @@
-"""Heiman HS1SA-E smoke sensor."""
+"""Heiman S1-TL smoke sensor."""
 
 from zha.quirks import SIREN_BASIC
 import zigpy.types as t
