@@ -7,7 +7,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
-    EntityPlatform,
     EntityType,
     QuirkBuilder,
     ReportingConfig,
