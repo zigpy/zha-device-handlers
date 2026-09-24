@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -17,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -37,6 +37,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
     SIGNIFY,

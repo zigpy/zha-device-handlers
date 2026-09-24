@@ -1,42 +1,15 @@
-"""Sonoff ZBMINIR2 - Zigbee Switch."""
+"""Sonoff ZBMINIR2 and MINI-ZBD - Zigbee Switches."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
-
-class SonoffCluster(CustomCluster):
-    """Custom Sonoff cluster."""
-
-    cluster_id = 0xFC11
-
-    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
-    class AttributeDefs(BaseAttributeDefs):
-        """Attribute definitions."""
-
-        external_trigger_mode = ZCLAttributeDef(
-            id=0x0016,
-            type=t.uint8_t,
-            is_manufacturer_specific=True,
-        )
-        detach_relay = ZCLAttributeDef(
-            id=0x0017,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
-        turbo_mode = ZCLAttributeDef(
-            id=0x0012,
-            type=t.int16s,
-            is_manufacturer_specific=True,
-        )
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
-    """extern switch trigger type."""
+    """External switch trigger type."""
 
     Edge_trigger = 0x00
     Pulse_trigger = 0x01
@@ -44,8 +17,40 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     Normally_on_follow_trigger = 0x82
 
 
+class SonoffCluster(CustomCluster):
+    """Custom Sonoff cluster."""
+
+    cluster_id = 0xFC11
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        external_trigger_mode = ZCLAttributeDef(
+            id=0x0016,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=DataTypeId.uint8,
+            manufacturer_code=None,
+        )
+        detach_relay = ZCLAttributeDef(
+            id=0x0017,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        turbo_mode = ZCLAttributeDef(
+            id=0x0012,
+            type=t.int16s,
+            manufacturer_code=None,
+        )
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+
+
 (
     QuirkBuilder("SONOFF", "ZBMINIR2")
+    .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
@@ -65,10 +70,14 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     .switch(
         SonoffCluster.AttributeDefs.detach_relay.name,
         SonoffCluster.cluster_id,
-        off_value=0,
-        on_value=1,
         translation_key="detach_relay",
         fallback_name="Detach relay",
+    )
+    .switch(
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
+        translation_key="network_led",
+        fallback_name="Network LED",
     )
     .add_to_registry()
 )

@@ -6,10 +6,9 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 
 import base64
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
@@ -24,6 +23,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,6 +32,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,9 +57,6 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
-    # remove manufacturer id for cluster
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -72,22 +70,24 @@ class ZosungIRControl(CustomCluster):
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={"data": Bytes},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         IRLearn: Final = foundation.ZCLCommandDef(
             id=0x01,
             schema={"on_off": t.Bool},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         IRSend: Final = foundation.ZCLCommandDef(
             id=0x02,
             schema={"code": t.CharacterString},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Read attributes ZCL foundation command."""
         if (
             self.AttributeDefs.last_learned_ir_code.id in attributes
@@ -101,9 +101,9 @@ class ZosungIRControl(CustomCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
         **kwargs: Any,
     ):
         """Override the default cluster command."""
@@ -128,7 +128,13 @@ class ZosungIRControl(CustomCluster):
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
             seq = self.endpoint.device.next_seq()
-            self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
+            self.endpoint.device.ir_msg_to_send[seq] = ir_msg
+            # Keep only the most recent pending messages so the dict cannot grow
+            # unbounded, while still surviving the async ACK from sleepy devices
+            # (the previous code replaced the whole dict, dropping in-flight sends).
+            pending = self.endpoint.device.ir_msg_to_send
+            for old_seq in list(pending)[:-8]:
+                del pending[old_seq]
             self.create_catching_task(
                 self.endpoint.zosung_irtransmit.command(
                     0x00,
@@ -160,13 +166,6 @@ class ZosungIRTransmit(CustomCluster):
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
-    # remove manufacturer id for cluster
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
-    current_position = 0
-    msg_length = 0
-    ir_msg = []
-
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
@@ -181,7 +180,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_01: Final = foundation.ZCLCommandDef(
             id=0x01,
@@ -195,7 +194,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_02: Final = foundation.ZCLCommandDef(
             id=0x02,
@@ -204,7 +203,7 @@ class ZosungIRTransmit(CustomCluster):
                 "position": t.uint32_t,
                 "maxlen": t.uint8_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_03: Final = foundation.ZCLCommandDef(
             id=0x03,
@@ -215,7 +214,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_manufacturer_specific=False,
         )
         receive_ir_frame_04: Final = foundation.ZCLCommandDef(
             id=0x04,
@@ -224,7 +222,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero1": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
         receive_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -232,7 +230,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     class ClientCommandDefs(BaseCommandDefs):
@@ -247,7 +245,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_manufacturer_specific=False,
         )
         resp_ir_frame_05: Final = foundation.ZCLCommandDef(
             id=0x05,
@@ -255,17 +252,22 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
+
+    def __init__(self, *args, **kwargs):
+        """Init cluster and its per-instance learn state."""
+        super().__init__(*args, **kwargs)
+        self.current_position = 0
+        self.msg_length = 0
+        self.ir_msg: list[int] = []
 
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
 
@@ -306,14 +308,21 @@ class ZosungIRTransmit(CustomCluster):
             )
             _LOGGER.debug(
                 "Message to send: %s, to %s",
-                self.endpoint.device.ir_msg_to_send[args.seq],
+                self.endpoint.device.ir_msg_to_send.get(args.seq),
                 self.endpoint.device.ieee,
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
             maxlen = args.maxlen
-            irmsg = self.endpoint.device.ir_msg_to_send[seq]
+            irmsg = self.endpoint.device.ir_msg_to_send.get(seq)
+            if irmsg is None:
+                _LOGGER.debug(
+                    "Ignoring IR frame 0x02 for unknown seq %s from %s",
+                    seq,
+                    self.endpoint.device.ieee,
+                )
+                return
             msgpart = irmsg[position : position + maxlen]
             calculated_crc = 0
             for x in msgpart:
@@ -403,13 +412,13 @@ class ZosungIRTransmit(CustomCluster):
 class ZosungIRBlaster(CustomDevice):
     """Zosung IR Blaster."""
 
-    seq = -1
-    ir_msg_to_send = {}
     last_learned_ir_code = t.CharacterString("")
 
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.seq = 0
+        # Mutated in place, so it must be per instance, not class level.
+        self.ir_msg_to_send: dict[int, str] = {}
         super().__init__(*args, **kwargs)
 
     def next_seq(self):

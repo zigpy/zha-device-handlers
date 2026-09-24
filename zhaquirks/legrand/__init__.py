@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import EffectIdentifier, EffectVariant, Identify
@@ -14,6 +13,7 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.clusters import CustomCluster
 
 LEGRAND = "Legrand"
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513

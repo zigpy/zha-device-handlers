@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
@@ -18,6 +17,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.thirdreality import THIRD_REALITY
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1

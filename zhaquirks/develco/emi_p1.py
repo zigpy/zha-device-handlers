@@ -1,6 +1,7 @@
 """Frient Electricity Meter Interface P1 variant."""
 
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import QuirkBuilder
 
 (
     QuirkBuilder("frient A/S", "EMIZB-151")
@@ -11,5 +12,10 @@ from zigpy.quirks.v2 import QuirkBuilder
     .prevent_default_entity_creation(endpoint_id=65)
     .prevent_default_entity_creation(endpoint_id=66)
     .prevent_default_entity_creation(endpoint_id=67)
+    # No need for battery entity as the device is powered from the meter.
+    .prevent_default_entity_creation(
+        endpoint_id=2,
+        cluster_id=PowerConfigurationCluster.cluster_id,
+    )
     .add_to_registry()
 )
