@@ -7,6 +7,7 @@ from zhaquirks.schneiderelectric import (
     SEBasic,
     SEOnOff,
     SESwitchConfiguration,
+    SESwitchIndication,
 )
 
 (
@@ -19,6 +20,21 @@ from zhaquirks.schneiderelectric import (
     .replaces(SEOnOff, endpoint_id=3)
     .replaces(SEBasic, endpoint_id=21)
     .replaces(SESwitchConfiguration, endpoint_id=21)
+    .add_to_registry()
+)
+
+
+(
+    QuirkBuilder(SE_MANUF_NAME, "CH/DIMMER/1")
+    .replaces(SESwitchConfiguration, endpoint_id=21)
+    .enum(
+        attribute_name=SESwitchConfiguration.AttributeDefs.se_switch_indication.name,
+        enum_class=SESwitchIndication,
+        cluster_id=SESwitchConfiguration.cluster_id,
+        endpoint_id=21,
+        translation_key="switch_indication",
+        fallback_name="Switch indication",
+    )
     .add_to_registry()
 )
 
