@@ -1,10 +1,13 @@
 """Tests for Tuya noise sensor."""
 
+from unittest import mock
+
 import pytest
 from zha.application import EntityPlatform
 from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl import foundation
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.tuya_noise import TuyaNoiseLevel
 
@@ -31,6 +34,27 @@ zhaquirks.setup()
         # DP 101: non-zero values are reported while quiet
         (b"\x09\x04\x02\x00\x04\x65\x04\x00\x01\x01", "noise_detected", False),
         (b"\x09\x05\x02\x00\x05\x65\x04\x00\x01\x03", "noise_detected", False),
+        # Settings
+        (
+            b"\x09\x06\x02\x00\x06\x10\x02\x00\x04\x00\x00\x00\x14",
+            "noise_threshold",
+            20,
+        ),
+        (
+            b"\x09\x07\x02\x00\x07\x14\x02\x00\x04\x00\x00\x00\x28",
+            "loud_threshold",
+            40,
+        ),
+        (
+            b"\x09\x08\x02\x00\x08\x16\x02\x00\x04\x00\x00\x00\x0a",
+            "fading_time",
+            10,
+        ),
+        (
+            b"\x09\x09\x02\x00\x09\x67\x02\x00\x04\x00\x00\x00\x03",
+            "detection_delay",
+            3,
+        ),
     ],
 )
 async def test_tuya_noise_sensor(zigpy_device_from_v2_quirk, frame, attribute, value):
@@ -62,4 +86,38 @@ async def test_tuya_noise_sensor_entities(zigpy_device_from_v2_quirk):
         "sound_pressure": EntityPlatform.SENSOR,
         "noise_level": EntityPlatform.SENSOR,
         "noise_detected": EntityPlatform.BINARY_SENSOR,
+        "noise_threshold": EntityPlatform.NUMBER,
+        "loud_threshold": EntityPlatform.NUMBER,
+        "fading_time": EntityPlatform.NUMBER,
+        "detection_delay": EntityPlatform.NUMBER,
     }
+
+
+@pytest.mark.parametrize(
+    "attribute,dp_id",
+    [
+        ("noise_threshold", 16),
+        ("loud_threshold", 20),
+        ("fading_time", 22),
+        ("detection_delay", 103),
+    ],
+)
+async def test_tuya_noise_sensor_write_settings(
+    zigpy_device_from_v2_quirk, attribute, dp_id
+):
+    """Test writing Tuya noise sensor settings sends the matching datapoint."""
+
+    device = zigpy_device_from_v2_quirk("_TZE204_r6kfl9ta", "TS0601")
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        await tuya_cluster.write_attributes({attribute: 5})
+        await wait_for_zigpy_tasks()
+
+    assert m1.call_count == 1
+    frame = m1.call_args.kwargs["data"]
+    # frame control, tsn, command, tuya seq (2), dp, dp type, length (2), value (4)
+    assert frame[5] == dp_id
+    assert frame[-4:] == b"\x00\x00\x00\x05"
