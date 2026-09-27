@@ -8,7 +8,6 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.builder import (
     PERCENTAGE,
-    BinarySensorDeviceClass,
     EntityType,
     SensorDeviceClass,
     SensorStateClass,
@@ -17,7 +16,7 @@ from zhaquirks.builder import (
     UnitOfPower,
     UnitOfTime,
 )
-from zhaquirks.tuya import TUYA_QUERY_DATA, TuyaLocalCluster
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_QUERY_DATA, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
@@ -586,28 +585,26 @@ class ZM6LT1ManufCluster(TuyaMCUCluster):
 
     POLL_INTERVAL = 60
 
-    # one poller per device, survives cluster re-instantiation
-    _pollers: dict[t.EUI64, asyncio.Task] = {}
-
     def __init__(self, *args, **kwargs):
         """Init and start the polling task."""
         super().__init__(*args, **kwargs)
         self._poll_task = None
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
         except RuntimeError:
             return  # no event loop (e.g. import-time tooling); skip polling
 
-        ieee = self.endpoint.device.ieee
-        prev = ZM6LT1ManufCluster._pollers.pop(ieee, None)
-        if prev is not None and not prev.done():
-            prev.cancel()
-        self._poll_task = loop.create_task(self._poll_loop())
-        ZM6LT1ManufCluster._pollers[ieee] = self._poll_task
+        # tracked by the device: cancelled on removal, re-interview and
+        # controller shutdown (e.g. ZHA reload)
+        self._poll_task = self.endpoint.device.create_task(
+            self._poll_loop(), name=f"zm6lt1_poll_{self.endpoint.device.ieee}"
+        )
 
     async def _poll_loop(self):
         while True:
             await asyncio.sleep(self.POLL_INTERVAL)
+            if self.endpoint.in_clusters.get(self.cluster_id) is not self:
+                return  # superseded by a newer cluster instance
             try:
                 # fire-and-forget: the meter answers with DP reports
                 await self.command(TUYA_QUERY_DATA, expect_reply=False)
@@ -684,55 +681,24 @@ class ZM6LT1ManufCluster(TuyaMCUCluster):
         translation_key="fault",
         fallback_name="Fault",
     )
-    .tuya_switch(
-        dp_id=20,
-        attribute_name="clear_event",
-        entity_type=EntityType.CONFIG,
-        translation_key="clear_event",
-        fallback_name="Clear event",
-    )
-    .tuya_binary_sensor(
-        dp_id=44,
-        attribute_name="online_state",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="online_state",
-        fallback_name="Online state",
-    )
     .tuya_dp(
         dp_id=49,
         ep_attribute=ZM6LT1ElectricalMeasurement.ep_attribute,
         attribute_name="ac_frequency",
     )
-    .tuya_sensor(
-        dp_id=51,
-        attribute_name="active_energy",
-        type=t.uint32_t,
-        divisor=100,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="active_energy",
-        fallback_name="Total active energy",
+    .tuya_dp_attribute(
+        dp_id=20,
+        attribute_name="reset_energy",
+        type=t.Bool,
     )
-    .tuya_number(
-        dp_id=101,
-        attribute_name="countdown_1",
-        type=t.uint16_t,
-        unit=UnitOfTime.SECONDS,
-        min_value=0,
-        max_value=2000,
-        step=1,
+    .write_attr_button(
+        attribute_name="reset_energy",
+        attribute_value=True,  # clears the DP 1 and DP 2 energy counters
+        cluster_id=TUYA_CLUSTER_ID,
         entity_type=EntityType.CONFIG,
-        translation_key="countdown",
-        fallback_name="Countdown",
-    )
-    .tuya_switch(
-        dp_id=104,
-        attribute_name="device_restart",
-        entity_type=EntityType.CONFIG,
-        translation_key="device_restart",
-        fallback_name="Device restart",
+        initially_disabled=True,
+        translation_key="reset_energy",
+        fallback_name="Reset energy",
     )
     .adds(ZM6LT1ElectricalMeasurement)
     .skip_configuration()
