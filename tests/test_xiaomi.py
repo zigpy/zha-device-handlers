@@ -1,16 +1,23 @@
 """Tests for xiaomi."""
 
 import asyncio
+import contextlib
+from datetime import UTC, datetime
+import json
 import logging
 import math
+import os
+import time
 from typing import Any
 from unittest import mock
 
 import pytest
+from zha.application.helpers import convert_zcl_value
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
+    AttributeReadEvent,
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     Cluster,
@@ -19,6 +26,7 @@ from zigpy.zcl import (
 )
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
+    ZIGBEE_EPOCH,
     AnalogInput,
     AnalogOutput,
     DeviceTemperature,
@@ -26,6 +34,7 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -39,7 +48,8 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
+from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue, ZCLAttributeAccess
+from zigpy.zcl.helpers import UnsupportedAttribute
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
@@ -88,9 +98,12 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_LAST_FEEDING_SOURCE,
     ZCL_PORTION_WEIGHT,
     ZCL_PORTIONS_DISPENSED,
+    ZCL_SCHEDULE,
+    ZCL_SCHEDULE_TEXT,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
+    FeederTimeCluster,
     FeedingMode,
     FeedingSource,
 )
@@ -1101,6 +1114,743 @@ async def test_aqara_feeder_write_attrs(
     assert call_args.kwargs["manufacturer"] == 0x115F
 
 
+# A real device report carrying two everyday meals at 09:00 and 13:00.
+FEEDER_SCHEDULE_REPORT = b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100"
+FEEDER_SCHEDULE_JSON = (
+    '[{"d":"everyday","h":9,"m":0,"s":1},{"d":"everyday","h":13,"m":0,"s":1}]'
+)
+FEEDER_SCHEDULE_TEXT = "everyday 09:00 x1; everyday 13:00 x1"
+# The FEEDING TLV the feeder returned from a 0xFFF1 read after a manual feed.
+FEEDER_ATTR_FEEDING_REPORT = b"\x00\x02\x15\x04\x15\x00U\x01\x01"
+
+
+def _feeder_cluster(zigpy_device_from_quirk, **mocks):
+    """Return the quirked feeder's Opple cluster with selected calls mocked out."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    cluster = device.endpoints[1].opple_cluster
+    if "_read_attributes" in mocks:
+        cluster._read_attributes = mock.AsyncMock(return_value=([], None))
+    if "_write_attributes" in mocks:
+        cluster._write_attributes = mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        )
+    return cluster
+
+
+def _written_blob(cluster):
+    """Return the single 0xFFF1 payload passed to the base write path."""
+    return bytes(cluster._write_attributes.mock_calls[0].args[0][0].value.value)
+
+
+@pytest.mark.parametrize(
+    "user_value, expected_schedule_bytes",
+    [
+        ('[{"d":"everyday","h":9,"m":0,"s":1}]', b"7f09000100\x00"),
+        ("[]", b"\x00"),
+        ('[{"d":"mon-wed-fri-sun","h":7,"m":30,"s":2}]', b"55071e0200\x00"),
+        (
+            '[{"d":"sat","h":18,"m":0,"s":1},{"d":"sun","h":8,"m":5,"s":3}]',
+            b"2012000100,4008050300\x00",
+        ),
+        # day sets that have no name of their own
+        ('[{"d":"mon,tue","h":9,"m":0,"s":1}]', b"0309000100\x00"),
+        ('[{"d":"none","h":9,"m":0,"s":1}]', b"0009000100\x00"),
+    ],
+)
+async def test_aqara_feeder_schedule_write_via_zha_service_call(
+    zigpy_device_from_quirk, user_value, expected_schedule_bytes
+):
+    """Schedule writes survive the conversion ZHA applies before the quirk sees them.
+
+    ``zha.set_zigbee_cluster_attribute`` runs the caller's value through
+    ``convert_zcl_value`` against the declared type, and the service schema only
+    accepts ``int``/``bool``/``str``. A bytes type raises ``TypeError: string
+    argument without an encoding`` for every text input, making the documented
+    service call unusable.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    converted = convert_zcl_value(user_value, cluster.find_attribute(ZCL_SCHEDULE).type)
+    await cluster.write_attributes({ZCL_SCHEDULE: converted})
+
+    blob = _written_blob(cluster)
+    assert blob[blob.index(b"\x00\x08\xc8") + 4 :] == expected_schedule_bytes
+
+
+async def test_aqara_feeder_schedule_write_is_encoded(zigpy_device_from_quirk):
+    """Writing the schedule attribute sends an encoded scheduling string blob."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes(
+        {"schedule": '[{"d":"everyday","h":6,"m":30,"s":1}]'}
+    )
+
+    # <hdr 00 02 seq=1> <attr 0x080008C8> <len 0x0b> "7f061e0100" NUL
+    assert _written_blob(cluster) == b"\x00\x02\x01\x08\x00\x08\xc8\x0b7f061e0100\x00"
+    assert cluster._write_attributes.mock_calls[0].kwargs["manufacturer"] == 0x115F
+
+
+async def test_aqara_feeder_schedule_clear_write_is_encoded(zigpy_device_from_quirk):
+    """Clearing the schedule writes a single NUL byte, not an integer value."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes({"schedule": "[]"})
+
+    assert _written_blob(cluster) == b"\x00\x02\x01\x08\x00\x08\xc8\x01\x00"
+
+
+async def test_aqara_feeder_schedule_time_round_trip(zigpy_device_from_quirk):
+    """A captured schedule survives a decode -> encode round trip unchanged."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+    payload = b"7F09000100,7F0D000100,7F13000100"
+
+    cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 " + payload)
+    cached = cluster._attr_cache.get(ZCL_SCHEDULE)
+    assert [(e["h"], e["m"]) for e in json.loads(cached)] == [(9, 0), (13, 0), (19, 0)]
+
+    await cluster.write_attributes({"schedule": cached})
+
+    blob = _written_blob(cluster)
+    assert blob[7] == len(payload) + 1
+    assert blob[8:] == payload.lower() + b"\x00"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"0309000100",  # one slot, days 0x03 -> "mon,tue"
+        b"0009000100",  # one slot, days 0x00 -> "none"
+        b"0F09000100",  # one slot, days 0x0f -> "mon,tue,wed,thu"
+        b"1F09300100",  # one slot, days 0x1f -> "workdays"
+        # two slots: a named preset followed by one needing a day list
+        b"2A12000A00,0309000100",
+    ],
+)
+async def test_aqara_feeder_schedule_day_sets_round_trip(
+    zigpy_device_from_quirk, payload
+):
+    """A day set the feeder reports can be written back unchanged.
+
+    Only the day sets in ``SCHEDULE_DAYS_BY_MASK`` have a name of their own; any
+    other combination is reported as a comma separated day list, and a day
+    bitmask of 0 as ``none``. Those names are not in the encoder's lookup table,
+    so writing a read schedule back failed with "Unknown feeding schedule day",
+    making read -> tweak -> write impossible.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+    cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 " + payload)
+    cached = cluster._attr_cache.get(ZCL_SCHEDULE)
+
+    await cluster.write_attributes({"schedule": cached})
+
+    assert _written_blob(cluster)[8:] == payload.lower() + b"\x00"
+
+
+async def test_aqara_feeder_schedule_rejects_an_unknown_day(
+    zigpy_device_from_quirk,
+):
+    """An unresolvable day name fails instead of writing a wrong schedule."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with pytest.raises(ValueError, match="Unknown feeding schedule day: 'tuex'"):
+        await cluster.write_attributes(
+            {"schedule": '[{"d":"mon,tuex","h":9,"m":0,"s":1}]'}
+        )
+
+    cluster._write_attributes.assert_not_awaited()
+
+
+def _feeder_schedule_json(count, days="everyday"):
+    """Return a JSON schedule string with ``count`` identical slots."""
+    entries = ",".join(f'{{"d":"{days}","h":9,"m":0,"s":1}}' for _ in range(count))
+    return f"[{entries}]"
+
+
+async def test_aqara_feeder_schedule_rejects_more_slots_than_can_be_confirmed(
+    zigpy_device_from_quirk,
+):
+    """A schedule above the verified slot count is refused before anything is sent.
+
+    Four slots are the most that have been confirmed end to end on hardware. The
+    device accepts five and answers ``SUCCESS``, but then reports the applied
+    schedule back as two fragments that cannot be reassembled, so the write
+    cannot be verified: the cache keeps the previous schedule and the UI shows
+    it as current. Refusing the write turns that silent divergence into an
+    error naming the limit and the reason for it.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes({"schedule": _feeder_schedule_json(4)})
+    assert cluster._write_attributes.await_count == 1
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Feeding schedule too long: 5 slots given, at most 4 can be "
+            r"confirmed on this device\. It accepts longer schedules -- up to 22 "
+            r"that the 0xFFF1 attribute can encode -- but does not report them "
+            r"back intact, so they cannot be verified and the reported schedule "
+            r"would be left stale\."
+        ),
+    ):
+        await cluster.write_attributes({"schedule": _feeder_schedule_json(5)})
+
+    assert cluster._write_attributes.await_count == 1
+
+
+@pytest.mark.parametrize(
+    "value, error, message",
+    [
+        (
+            "not json",
+            ValueError,
+            r"Invalid feeding schedule: 'not json'",
+        ),
+        (
+            '{"d":"everyday"}',
+            TypeError,
+            "Feeding schedule must be a JSON list",
+        ),
+        (
+            "[9]",
+            TypeError,
+            "Feeding schedule entry must be an object: 9",
+        ),
+        (
+            '[{"d":"everyday","h":24,"m":0,"s":1}]',
+            ValueError,
+            "Feeding schedule hour out of range: 24",
+        ),
+        (
+            '[{"d":"everyday","h":9,"m":60,"s":1}]',
+            ValueError,
+            "Feeding schedule minute out of range: 60",
+        ),
+        (
+            '[{"d":"everyday","h":9,"m":0,"s":0}]',
+            ValueError,
+            "Feeding schedule size out of range: 0",
+        ),
+        # an empty or blank string is not a clear, so a mistyped service call
+        # cannot wipe every meal; clearing takes an explicit "[]"
+        (
+            "",
+            ValueError,
+            'Feeding schedule cannot be empty: use "\\[\\]" to clear',
+        ),
+        (
+            "  ",
+            ValueError,
+            'Feeding schedule cannot be empty: use "\\[\\]" to clear',
+        ),
+        # a missing days/d key used to die with a NoneType AttributeError
+        (
+            '[{"h":9,"m":0,"s":1}]',
+            ValueError,
+            "Feeding schedule entry is missing its days/d key",
+        ),
+        # a number for days/d used to die with a NoneType AttributeError
+        (
+            '[{"d":1,"h":9,"m":0,"s":1}]',
+            TypeError,
+            "Feeding schedule days/d must be a string, got 1",
+        ),
+        # a missing hour/h key used to die with a raw int(None) TypeError
+        (
+            '[{"d":"everyday","m":0,"s":1}]',
+            ValueError,
+            "Feeding schedule entry is missing its hour/h key",
+        ),
+        # bool and float values used to be silently coerced: true read as
+        # 01:00 and 9.9 was cut to 9
+        (
+            '[{"d":"everyday","h":true,"m":0,"s":1}]',
+            TypeError,
+            "Feeding schedule hour must be an integer, got True",
+        ),
+        (
+            '[{"d":"everyday","h":9.9,"m":0,"s":1}]',
+            TypeError,
+            "Feeding schedule hour must be an integer, got 9.9",
+        ),
+    ],
+)
+async def test_aqara_feeder_schedule_write_rejects_invalid_input(
+    zigpy_device_from_quirk, value, error, message
+):
+    """Malformed schedule input fails with a naming error, never a write.
+
+    The service call is the only supported way to write the schedule, so the
+    encoder bounds what it accepts: text must be a JSON list of objects with
+    a valid day set and integer hour, minute and portion size. Anything
+    else -- including a missing key or a wrongly typed value -- fails before
+    a frame is built, naming the offending value, instead of encoding a
+    schedule the feeder would misinterpret or silently wiping one.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with pytest.raises(error, match=message):
+        await cluster.write_attributes({"schedule": value})
+
+    cluster._write_attributes.assert_not_awaited()
+
+
+async def test_aqara_feeder_schedule_write_accepts_a_list_of_entries(
+    zigpy_device_from_quirk,
+):
+    """A list of entries encodes exactly like the JSON string form.
+
+    ``_encode_feeder_schedule`` also takes a list or tuple directly, which is
+    how a caller holding structured entries writes the schedule without
+    serializing to JSON first.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes(
+        {"schedule": [{"d": "everyday", "h": 6, "m": 30, "s": 1}]}
+    )
+
+    # <hdr 00 02 seq=1> <attr 0x080008C8> <len 0x0b> "7f061e0100" NUL
+    assert _written_blob(cluster) == b"\x00\x02\x01\x08\x00\x08\xc8\x0b7f061e0100\x00"
+
+
+async def test_aqara_feeder_schedule_warns_when_the_device_echoes_a_different_schedule(
+    zigpy_device_from_quirk, caplog
+):
+    """A stored schedule other than the written one is logged as a warning.
+
+    The write is acknowledged before the device commits it and the service call
+    reports success either way, so the echo is the only evidence that a write
+    took effect. Without this a schedule longer than the device can hold is
+    stored truncated and nothing says so.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with caplog.at_level(logging.WARNING):
+        await cluster.write_attributes({"schedule": _feeder_schedule_json(4)})
+        # The device echoes only the first three of the four slots written.
+        cluster._parse_feeder_attribute(
+            b"\x00\x05\x15\x08\x00\x08\xc8 " + b"7f09000100,7f09000100,7f09000100"
+        )
+
+    assert "applied a different feeding schedule than was written" in caplog.text
+    assert "wrote 4 slot(s)" in caplog.text
+    assert "device stored 3 slot(s)" in caplog.text
+
+
+async def test_aqara_feeder_schedule_does_not_warn_on_a_matching_echo(
+    zigpy_device_from_quirk, caplog
+):
+    """The normal write-then-echo path logs nothing."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with caplog.at_level(logging.WARNING):
+        await cluster.write_attributes({"schedule": _feeder_schedule_json(3)})
+        cluster._parse_feeder_attribute(
+            b"\x00\x05\x15\x08\x00\x08\xc8 " + b"7f09000100,7f09000100,7f09000100"
+        )
+
+    assert "applied a different feeding schedule" not in caplog.text
+
+
+async def test_aqara_feeder_schedule_echo_comparison_ignores_day_naming(
+    zigpy_device_from_quirk, caplog
+):
+    """A day set the device names differently still counts as a match.
+
+    The decoder resolves a day mask back to a named preset where one exists, so
+    ``mon,tue,wed,thu,fri`` is echoed ``workdays``. Comparing decoded text would
+    warn on every such write; comparing re-encoded bytes compares the mask.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with caplog.at_level(logging.WARNING):
+        await cluster.write_attributes(
+            {"schedule": '[{"d":"mon,tue,wed,thu,fri","h":7,"m":0,"s":1}]'}
+        )
+        # Mask 0x1f, which the decoder reports as "workdays".
+        cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 1f07000100")
+
+    assert "applied a different feeding schedule" not in caplog.text
+
+
+async def test_aqara_feeder_schedule_echo_without_a_write_is_not_compared(
+    zigpy_device_from_quirk, caplog
+):
+    """A report with nothing pending, e.g. after a restart, is not warned about."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with caplog.at_level(logging.WARNING):
+        cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 7f09000100")
+
+    assert "applied a different feeding schedule" not in caplog.text
+
+
+async def test_aqara_feeder_schedule_failed_write_does_not_leave_a_pending_payload(
+    zigpy_device_from_quirk, caplog
+):
+    """A write that never leaves the host is not compared against a later report."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._write_attributes = mock.AsyncMock(side_effect=Exception("device offline"))
+
+    with caplog.at_level(logging.WARNING):
+        with pytest.raises(Exception, match="device offline"):
+            await cluster.write_attributes({"schedule": _feeder_schedule_json(3)})
+
+        cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 7f09000100")
+
+    assert "applied a different feeding schedule" not in caplog.text
+
+
+async def test_aqara_feeder_schedule_non_success_write_does_not_leave_a_pending_payload(
+    zigpy_device_from_quirk, caplog
+):
+    """A write the device answers with a failure status has no echo coming.
+
+    zigpy does not raise on a non-SUCCESS ``Write_Attributes_rsp`` status, so
+    the result must be inspected: without that, the payload stayed pending and
+    was compared against the next unrelated report -- e.g. the power-on TLVs
+    after a power cycle -- warning about a truncation that never happened.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, attrid=FEEDER_ATTR
+                )
+            ]
+        ]
+    )
+
+    with caplog.at_level(logging.WARNING):
+        await cluster.write_attributes({"schedule": _feeder_schedule_json(3)})
+        assert cluster._pending_schedule is None
+
+        # a later unrelated report must not be compared against the failed write
+        cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8 7f09000100")
+
+    assert "applied a different feeding schedule" not in caplog.text
+
+
+async def test_aqara_feeder_schedule_unencodable_echo_does_not_break_decoding(
+    zigpy_device_from_quirk, caplog
+):
+    """An echo that cannot be re-encoded for comparison is skipped, not warned.
+
+    The echo comparison re-encodes the reported schedule so that day names do
+    not read as divergence. A reported schedule the encoder refuses -- here
+    an hour byte no valid write can produce -- must not take the decoding
+    down with it: the cache still takes the reported schedule and nothing
+    warns, since the comparison, not the schedule, is what failed.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    with caplog.at_level(logging.WARNING):
+        await cluster.write_attributes({"schedule": _feeder_schedule_json(3)})
+        # Hour 0xff decodes but is out of range, so the comparison cannot run.
+        cluster._parse_feeder_attribute(b"\x00\x05\x15\x08\x00\x08\xc8\x0a7fff000100")
+
+    assert "applied a different feeding schedule" not in caplog.text
+    assert cluster._attr_cache.get(ZCL_SCHEDULE) == (
+        '[{"d":"everyday","h":255,"m":0,"s":1}]'
+    )
+
+
+async def test_aqara_feeder_schedule_attribute_access(zigpy_device_from_quirk):
+    """``schedule`` is writable, ``schedule_text`` is a derived read-only view.
+
+    Only ``schedule`` is translated into a ``0xFFF1`` write. A write to
+    ``schedule_text`` would otherwise be forwarded untouched and reach the feeder
+    as a bare ZCL character string for an attribute the device does not have.
+    Nothing enforces the declared access bits on the service-call write path.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    schedule = cluster.find_attribute(ZCL_SCHEDULE)
+    schedule_text = cluster.find_attribute(ZCL_SCHEDULE_TEXT)
+    assert schedule.access is (ZCLAttributeAccess.Read | ZCLAttributeAccess.Write)
+    assert schedule_text.access is ZCLAttributeAccess.Read
+
+    with pytest.raises(UnsupportedAttribute):
+        await cluster.write_attributes({ZCL_SCHEDULE_TEXT: "everyday 09:00 x1"})
+
+    cluster._write_attributes.assert_not_awaited()
+
+
+@pytest.mark.parametrize("cache_kwargs", [{}, {"allow_cache": False}])
+async def test_aqara_feeder_schedule_is_not_read_from_the_device(
+    zigpy_device_from_quirk, cache_kwargs
+):
+    """The schedule is served from the cache, never read from the device.
+
+    ``allow_cache=False`` is what the "Read attribute" button in the ZHA cluster
+    browser sends. ``0xFFF1`` is a single-TLV register, so reading it returns only
+    the most recent inner attribute and can never refresh the schedule.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+    requested = [ZCL_SCHEDULE, ZCL_SCHEDULE_TEXT]
+
+    # before any report the placeholder is served, never an error
+    success, failure = await cluster.read_attributes(requested, **cache_kwargs)
+    assert failure == {}
+    assert success[ZCL_SCHEDULE] == "[]"
+    assert success[ZCL_SCHEDULE_TEXT] == "no schedule"
+
+    # a real report populates the cache
+    cluster._parse_feeder_attribute(FEEDER_SCHEDULE_REPORT)
+
+    success, failure = await cluster.read_attributes(requested, **cache_kwargs)
+    assert failure == {}
+    assert success[ZCL_SCHEDULE] == FEEDER_SCHEDULE_JSON
+    assert success[ZCL_SCHEDULE_TEXT] == FEEDER_SCHEDULE_TEXT
+    cluster._read_attributes.assert_not_awaited()
+
+
+async def test_aqara_feeder_schedule_is_not_clobbered_by_the_placeholder(
+    zigpy_device_from_quirk,
+):
+    """A schedule restored from the zigpy database must survive.
+
+    zigpy restores persisted attributes after the cluster is constructed, so
+    seeding the placeholder in ``__init__`` used to overwrite the persisted
+    schedule on every restart and re-interview.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+
+    # a freshly constructed cluster has no schedule cached yet
+    assert ZCL_SCHEDULE not in cluster._attr_cache
+
+    persisted = (
+        '[{"d":"everyday","h":9,"m":0,"s":1},{"d":"everyday","h":19,"m":0,"s":1}]'
+    )
+    cluster._update_attribute(ZCL_SCHEDULE, persisted)
+    cluster._update_attribute(ZCL_SCHEDULE_TEXT, "everyday 09:00 x1; everyday 19:00 x1")
+
+    success, failure = await cluster.read_attributes([ZCL_SCHEDULE, ZCL_SCHEDULE_TEXT])
+    assert failure == {}
+    assert success[ZCL_SCHEDULE] == persisted
+    assert success[ZCL_SCHEDULE_TEXT] == "everyday 09:00 x1; everyday 19:00 x1"
+
+
+async def test_aqara_feeder_read_of_other_attributes_passes_through(
+    zigpy_device_from_quirk,
+):
+    """Every attribute but the locally answered ones is still read from the device.
+
+    ``read_attributes`` intercepts ``feeding_mode`` and the two schedule
+    attributes; anything else is a real device attribute whose read must
+    reach the feeder unmodified rather than being swallowed by the
+    interception.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+
+    await cluster.read_attributes([ZCL_CHILD_LOCK])
+
+    cluster._read_attributes.assert_awaited_once()
+    forwarded = cluster._read_attributes.mock_calls[0].args[0]
+    assert forwarded == [ZCL_CHILD_LOCK]
+
+
+async def test_aqara_feeder_schedule_read_reports_poisoned_rows(
+    zigpy_device_from_quirk,
+):
+    """A schedule attribute marked unsupported reports the failure, not a value.
+
+    Reads of ``0x1393`` never reach the device, so in practice nothing can
+    poison the row while this quirk is in effect. If a row is poisoned anyway
+    -- e.g. by a read made before the interception existed -- zigpy replays
+    the marker on every start, and unlike ``feeding_mode`` the quirk does not
+    drop it: a schedule has no device-independent value to fall back to, so
+    the read surfaces the failure instead of inventing a placeholder, and
+    still never asks the device.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+    attr_def = cluster.find_attribute(ZCL_SCHEDULE)
+
+    # This is what `_populate_attribute_cache` does for a status!=0 row.
+    cluster._attr_cache.mark_unsupported(attr_def)
+
+    success, failure = await cluster.read_attributes([ZCL_SCHEDULE])
+
+    assert success == {}
+    assert failure[ZCL_SCHEDULE] == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    cluster._read_attributes.assert_not_awaited()
+
+
+async def test_aqara_feeder_attr_ignores_a_non_tlv_value(zigpy_device_from_quirk):
+    """A short non-TLV value in 0xFFF1 must not raise.
+
+    0xFFF1 doubles as a general purpose "last value written" register, so a value
+    that is too short to contain a TLV header is possible. Without the length
+    guard that raises "Data is too short to contain 4 bytes" out of the attribute
+    event handler and fails the whole read.
+
+    This is a synthetic input, not a captured device payload: the length guard is
+    retained as defensive parsing, and no hardware transcript of a non-TLV read
+    was preserved.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._parse_feeder_attribute(FEEDER_SCHEDULE_REPORT)
+
+    cluster._parse_feeder_attribute(b"123")
+
+    assert cluster._attr_cache.get(ZCL_SCHEDULE) == FEEDER_SCHEDULE_JSON
+    success, failure = await cluster.read_attributes([ZCL_SCHEDULE])
+    assert failure == {}
+    assert success[ZCL_SCHEDULE] == FEEDER_SCHEDULE_JSON
+
+
+async def test_aqara_feeder_schedule_survives_unrelated_feeder_blob(
+    zigpy_device_from_quirk,
+):
+    """A 0xFFF1 report that is not the scheduling string leaves the cache alone."""
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._parse_feeder_attribute(FEEDER_SCHEDULE_REPORT)
+
+    # <hdr 00 02 seq=0x15> <attr 0x04150055 FEEDING> <len 0x01> <value 0x01>
+    cluster._parse_feeder_attribute(FEEDER_ATTR_FEEDING_REPORT)
+
+    # the FEEDING TLV still sets the feeding attribute, as observed on hardware
+    assert cluster._attr_cache.get(ZCL_FEEDING) is t.Bool.true
+    assert cluster._attr_cache.get(ZCL_SCHEDULE) == FEEDER_SCHEDULE_JSON
+    assert cluster._attr_cache.get(ZCL_SCHEDULE_TEXT) == FEEDER_SCHEDULE_TEXT
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        # source token not a number
+        b"\x00\x02\x15\x04\x15\x02\xbc\x04zz03",
+        # size token not a hex digit
+        b"\x00\x02\x15\x04\x15\x02\xbc\x0402zz",
+        # too short to hold source and size
+        b"\x00\x02\x15\x04\x15\x02\xbc\x0402",
+        # not decodable as text at all
+        b"\x00\x02\x15\x04\x15\x02\xbc\x02\xff\xfe",
+    ],
+)
+async def test_aqara_feeder_malformed_feeding_report_is_skipped(
+    zigpy_device_from_quirk, payload, caplog
+):
+    """A feeding report that does not parse is skipped and logged, never faked.
+
+    The register also stores arbitrary user written data, so a FEEDING_REPORT
+    value can fail to parse. Silently recording a default source would report
+    a scheduled feeding that never happened, and raising would fail the whole
+    report handler, so the slot is logged and skipped instead. A numeric
+    source outside the enum is not malformed -- zigpy enums resolve those to
+    ``undefined_0xNN`` members -- so only unparsable values are skipped.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+
+    with caplog.at_level(logging.WARNING):
+        cluster._parse_feeder_attribute(payload)
+
+    assert "skipping malformed feeding report" in caplog.text
+    assert cluster._attr_cache.get(ZCL_LAST_FEEDING_SOURCE) is None
+    assert cluster._attr_cache.get(ZCL_LAST_FEEDING_SIZE) is None
+
+
+async def test_aqara_feeder_schedule_parser_skips_broken_slots(zigpy_device_from_quirk):
+    """Broken slots in a reported schedule are skipped, not fatal.
+
+    The device's own token for an unused slot is ``//``, and the fragments of
+    a schedule that did not survive its report path can arrive as non-hex
+    text, an empty group, or a group too short to be an entry. The decoder
+    keeps the valid slots instead of discarding the whole schedule.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+
+    # "//" (unused slot), non-hex text, an empty group, a 2 byte group, and
+    # one valid slot: 7f 09 00 01 00 -> everyday 09:00 x1.
+    cluster._parse_feeder_attribute(
+        b"\x00\x05\x15\x08\x00\x08\xc8\x1e//,zz09000100,,7f09,7F09000100"
+    )
+
+    assert cluster._attr_cache.get(ZCL_SCHEDULE) == (
+        '[{"d":"everyday","h":9,"m":0,"s":1}]'
+    )
+
+
+async def test_aqara_feeder_5_slot_report_fragments_leave_the_cache_intact(
+    zigpy_device_from_quirk,
+):
+    """The two fragments a 5-slot echo arrives as are ignored, not corrupting.
+
+    Captured twice on hardware, byte for byte: a five slot write is answered
+    ``SUCCESS`` and then reported back as two ``Report_Attributes`` frames in
+    an undocumented layout whose inner attribute id sits at offset 5 rather
+    than 3 and whose bodies do not reassemble. The first frame parses to an
+    unknown inner attribute and the second is too short for a header; neither
+    may raise or disturb the cached schedule. This is the device bug the four
+    slot cap works around.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._parse_feeder_attribute(FEEDER_SCHEDULE_REPORT)
+
+    # The two fragments, verbatim from the hardware log.
+    cluster._parse_feeder_attribute(
+        b"\x80\x02\x01\x05\x04\x08\x00\x08\xc8"
+        b"67F09000100,7F0D000100,7F13000100,7F14000100,7F1500010"
+    )
+    cluster._parse_feeder_attribute(b"\x80\x02\x10")
+
+    assert cluster._attr_cache.get(ZCL_SCHEDULE) == FEEDER_SCHEDULE_JSON
+    assert cluster._attr_cache.get(ZCL_SCHEDULE_TEXT) == FEEDER_SCHEDULE_TEXT
+
+
+@contextlib.contextmanager
+def _process_timezone(name: str):
+    """Run a block with the process timezone forced to `name`."""
+    previous = os.environ.get("TZ")
+    os.environ["TZ"] = name
+    time.tzset()
+    try:
+        yield
+    finally:
+        if previous is None:
+            del os.environ["TZ"]
+        else:
+            os.environ["TZ"] = previous
+        time.tzset()
+
+
+@pytest.mark.parametrize("name, expected_hours", [("Etc/GMT-4", 4), ("Etc/GMT-2", 2)])
+def test_aqara_feeder_time_cluster_serves_local_time(
+    zigpy_device_from_quirk, name, expected_hours
+):
+    """The time poll must be answered with local wall clock, not with UTC.
+
+    The feeder stores the value it gets back from attribute 0x0000 as its own
+    local clock and schedules feedings from it, so the spec-correct UTC answer
+    shifts every meal by the UTC offset. The offset must also be recomputed per
+    request rather than cached, otherwise a DST change never reaches the device.
+    """
+    cluster = zigpy_device_from_quirk(AqaraFeederAcn001).endpoints[1].time
+
+    with _process_timezone(name):
+        served = cluster.handle_read_attribute_time()
+        utc_now = int((datetime.now(UTC) - ZIGBEE_EPOCH).total_seconds())
+
+    # Etc/GMT-4 is POSIX-inverted, i.e. a fixed UTC+4 with no DST.
+    assert served - utc_now == expected_hours * 3600
+
+
+def test_feeder_time_cluster_does_not_hijack_global_registry():
+    """Only this device gets the local-time override, not every Time cluster.
+
+    Subclassing a stock cluster without ``_skip_registry`` replaces the entry in
+    zigpy's global cluster registry, which would spread the local-time deviation
+    to every device in the installation.
+    """
+
+    assert FeederTimeCluster._skip_registry is True
+    assert Time._registry[Time.cluster_id] is Time
+
+
 @pytest.mark.parametrize(
     "bytes_received, call_count, calls",
     [
@@ -1198,11 +1948,25 @@ async def test_aqara_feeder_write_attrs(
         ),
         (
             b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
-            1,
+            3,
             [
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                    mock.ANY,
+                ),
+                mock.call(
+                    ZCL_SCHEDULE,
+                    (
+                        '[{"d":"everyday","h":9,"m":0,"s":1},'
+                        '{"d":"everyday","h":13,"m":0,"s":1},'
+                        '{"d":"everyday","h":19,"m":0,"s":1}]'
+                    ),
+                    mock.ANY,
+                ),
+                mock.call(
+                    ZCL_SCHEDULE_TEXT,
+                    "everyday 09:00 x1; everyday 13:00 x1; everyday 19:00 x1",
                     mock.ANY,
                 ),
             ],
@@ -1242,6 +2006,353 @@ async def test_aqara_feeder_attr_reports(
         assert any(u[0] == attr_id and u[1] == value for u in actual_updates), (
             f"Expected ({attr_id}, {value}) in {actual_updates}"
         )
+
+
+async def test_aqara_feeder_schedule_parsed_from_read_response(
+    zigpy_device_from_quirk,
+):
+    """A plain read of 0xFFF1 returns the whole schedule and must populate the cache.
+
+    Verified on hardware: reading attribute 0xFFF1 on cluster 0xFCC0 is answered
+    with the full scheduling TLV, ``7f09000100,7f0d000100,7f13000100``, not just
+    the most recently reported inner attribute. zigpy emits that as an
+    ``AttributeReadEvent``, which is a distinct event type from the report and
+    update events, so without an explicit subscription the schedule stayed empty
+    however often the attribute was read. This is the same read Zigbee2MQTT
+    performs from its ``configure`` to populate the schedule.
+    """
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    assert opple_cluster.get(0x1393) is None, "precondition: cache starts empty"
+    assert opple_cluster.get(0x1394) is None, "precondition: cache starts empty"
+
+    # Exactly the bytes the device returned for a read of 0xFFF1 on hardware.
+    read_response = (
+        b"\x00\x02\x03\x08\x00\x08\xc8\x217f09000100,7f0d000100,7f13000100\x00"
+    )
+
+    opple_cluster._handle_attribute_event(  # noqa: SLF001
+        AttributeReadEvent(
+            event_type="attribute_read",
+            device_ieee=device.ieee,
+            endpoint_id=1,
+            cluster_type=ClusterType.Server,
+            cluster_id=opple_cluster.cluster_id,
+            attribute_name="feeder_attr",
+            attribute_id=0xFFF1,
+            manufacturer_code=0x115F,
+            raw_value=read_response,
+            value=read_response,
+        )
+    )
+
+    assert opple_cluster.get(0x1393) == (
+        '[{"d":"everyday","h":9,"m":0,"s":1},'
+        '{"d":"everyday","h":13,"m":0,"s":1},'
+        '{"d":"everyday","h":19,"m":0,"s":1}]'
+    )
+    assert (
+        opple_cluster.get(0x1394)
+        == "everyday 09:00 x1; everyday 13:00 x1; everyday 19:00 x1"
+    )
+
+
+async def test_aqara_feeder_feeding_mode_is_never_read_from_device(
+    zigpy_device_from_quirk,
+):
+    """A read of ``0x1390`` must be answered locally, never sent to the feeder.
+
+    The feeder accepts a write to ``0x1390`` but answers a read with
+    ``UNSUPPORTED_ATTRIBUTE`` (0x86). zigpy persists that verdict in
+    ``attributes_cache`` with ``status=134``, and on every restart
+    ``_populate_attribute_cache`` calls ``mark_unsupported()`` for it. The attribute
+    cache then raises ``UnsupportedAttribute`` on access, the ZHA device page renders
+    ``"unsupported": true`` with no value, and the Manage Zigbee device panel offers
+    no control -- so a working, writable attribute becomes unconfigurable purely
+    because something once read it.
+
+    ZHA issues that read on every start (seen at ``23:44:26``, in the same cluster
+    pass that read ``attr 0`` on three unrelated OnOff clusters, so it is ZHA's own
+    startup refresh rather than a user action). The poisoned row carried
+    ``status=134`` / ``value=None`` on hardware while every neighbouring attribute on
+    the same cluster stayed ``status=0``.
+
+    Declaring the attribute ``access="w"`` was tried first and is deliberately *not*
+    what fixes this: ``access`` is declarative metadata that the read path does not
+    consult, and a container already running ``access="w"`` still sent
+    ``Read_Attributes(attribute_ids=[5008])`` and re-poisoned the row within seconds
+    of it being cleaned. Interception is the fix; this test is what fails without it.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+
+    # The declared access must stay untouched: 0x1390 really is writable, and
+    # changing the access bits also changes how ZHA presents it for configuration.
+    attr_def = cluster.find_attribute(0x1390)
+    assert attr_def.access & ZCLAttributeAccess.Write
+
+    # A read of 0x1390 alone must not put a frame on the wire.
+    success, failure = await cluster.read_attributes([0x1390])
+    cluster._read_attributes.assert_not_awaited()
+    assert failure == {}, f"expected a local answer, got failures {failure}"
+    assert success[0x1390] == FeedingMode.Manual
+
+    # Mixed with an attribute the device does answer, only that one is forwarded.
+    success, failure = await cluster.read_attributes([0x1390, 0x138F])
+    assert len(cluster._read_attributes.mock_calls) == 1
+    forwarded = [
+        a for call in cluster._read_attributes.mock_calls for a in call.args[0]
+    ]
+    assert forwarded == [0x138F], f"0x1390 leaked to the device: {forwarded}"
+    # 0x138F lands in `failure` only because _read_attributes is stubbed to return
+    # no success records; what matters is that 0x1390 answered locally.
+    assert 0x1390 not in failure
+    assert success[0x1390] == FeedingMode.Manual
+
+
+async def test_aqara_feeder_feeding_mode_recovers_from_poisoned_cache(
+    zigpy_device_from_quirk,
+):
+    """A cached ``status=134`` row must not hide the writable attribute.
+
+    Users upgrading from a zigpy that already read ``0x1390`` keep the poisoned
+    row in their database. Reproducing that here proves the quirk hides the
+    symptom on its own -- the value stays usable without asking the device and
+    without hand-editing ``zigbee.db``. The row itself is only rewritten as a
+    success by a confirmed mode write, not by the local read.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+    attr_def = cluster.find_attribute(0x1390)
+
+    # This is what `_populate_attribute_cache` does for a status!=0 row.
+    cluster._attr_cache.mark_unsupported(attr_def)
+
+    success, failure = await cluster.read_attributes([0x1390])
+
+    assert failure == {}, "a poisoned cache row must not surface as a failure"
+    assert success[0x1390] == FeedingMode.Manual
+    cluster._read_attributes.assert_not_awaited()
+
+    # ZHA checks the marker before ever reading the value, and refuses to build
+    # the entity when it is set.
+    assert cluster.is_attribute_unsupported("feeding_mode") is False
+    assert cluster.get("feeding_mode") == FeedingMode.Manual
+
+
+async def test_aqara_feeder_unsupported_marker_left_alone_for_other_attributes(
+    zigpy_device_from_quirk,
+):
+    """The marker is only overridden for ``feeding_mode``; other markers are kept.
+
+    The override exists for the poisoned ``0x1390`` row, which this quirk
+    answers locally. For any other attribute an unsupported verdict is genuine
+    and must survive, which is what ``super()`` reports.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    attr_def = cluster.find_attribute(ZCL_CHILD_LOCK)
+
+    assert cluster.is_attribute_unsupported(ZCL_CHILD_LOCK) is False
+
+    cluster._attr_cache.mark_unsupported(attr_def)
+
+    assert cluster.is_attribute_unsupported(ZCL_CHILD_LOCK) is True
+
+
+async def test_aqara_feeder_unsupported_check_is_pure(zigpy_device_from_quirk):
+    """``is_attribute_unsupported`` answers the question, it does not heal.
+
+    The check used to drop the in-memory marker as a side effect, which made a
+    query mutate state. It only needs to answer ``False``: ``get()`` already
+    copes with the marker, so the marker is left exactly where it was, and the
+    read still serves the default rather than a failure.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+    attr_def = cluster.find_attribute(0x1390)
+
+    cluster._attr_cache.mark_unsupported(attr_def)
+
+    assert cluster.is_attribute_unsupported("feeding_mode") is False
+    # the marker itself is untouched: only the answer is overridden
+    assert cluster._attr_cache.is_unsupported(attr_def) is True
+    # and the value is still served despite the marker
+    assert cluster.get("feeding_mode") == FeedingMode.Manual
+
+    success, failure = await cluster.read_attributes([0x1390])
+    assert failure == {}
+    assert success[0x1390] == FeedingMode.Manual
+
+
+async def test_aqara_feeder_feeding_mode_survives_attribute_cache_clear(
+    zigpy_device_from_quirk,
+):
+    """``feeding_mode`` must keep a value after zigpy empties the attribute cache.
+
+    Regression test for the Mode dropdown disappearing from the device page.
+
+    ``zigpy.appdb`` clears the whole attribute cache on every start and refills
+    it from the database alone, which throws away the value seeded in
+    ``OppleCluster.__init__``. ZHA then builds ``AqaraPetFeederMode`` through
+    ``_is_supported()``, which skips the entity unless the attribute is present,
+    not marked unsupported, and ``cluster.get(...)`` returns a value. With an
+    empty cache the last condition failed, so the entity was never created and
+    the existing registry entry was reported as "no longer being provided by the
+    zha integration".
+
+    This is the exact state of a healthy database with no ``0x1390`` row, so it
+    must not depend on a database entry at all.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _read_attributes=True)
+
+    # Reproduce zigpy.appdb: clear, then repopulate from the database only.
+    cluster._attr_cache.clear()
+
+    # The three conditions behind ZHA's _is_supported().
+    assert "feeding_mode" in cluster.attributes_by_name
+    assert cluster.is_attribute_unsupported("feeding_mode") is False
+    assert cluster.get("feeding_mode") is not None
+    assert cluster.get("feeding_mode") == FeedingMode.Manual
+
+    # By name, by id and by definition, the way callers reach the attribute.
+    assert cluster.get(0x1390) == FeedingMode.Manual
+    assert cluster.get(cluster.find_attribute(0x1390)) == FeedingMode.Manual
+
+    # Reading it is still answered locally, so the empty cache cannot be
+    # turned into another poisoned row.
+    success, failure = await cluster.read_attributes(["feeding_mode"])
+    assert failure == {}
+    assert success["feeding_mode"] == FeedingMode.Manual
+    cluster._read_attributes.assert_not_awaited()
+
+
+async def test_aqara_feeder_feeding_mode_keeps_a_written_mode(
+    zigpy_device_from_quirk,
+):
+    """A mode written through the quirk must be reported back, not the default.
+
+    The default is only a fallback for a missing value. If ``get()`` ignored the
+    cache the select would snap back to ``Manual`` after the user picked
+    ``Schedule``, which is why this must not be implemented with
+    ``_CONSTANT_ATTRIBUTES``: that returns its value unconditionally and would
+    make the written mode unreadable.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes({0x1390: FeedingMode.Schedule})
+
+    assert cluster.get("feeding_mode") == FeedingMode.Schedule
+    assert cluster.is_attribute_unsupported("feeding_mode") is False
+
+
+async def test_aqara_feeder_feeding_mode_write_still_reaches_device(
+    zigpy_device_from_quirk,
+):
+    """Intercepting reads must not swallow writes.
+
+    The cached-value fallback is easy to get wrong in the other direction: if the
+    interception were applied in ``write_attributes`` too, the mode could never be
+    changed again and the feeder would be stuck in whatever mode it was left in.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+
+    await cluster.write_attributes({0x1390: FeedingMode.Schedule})
+
+    assert cluster._write_attributes.await_count == 1
+    blob = bytes(cluster._write_attributes.mock_calls[0].args[0][0].value.value)
+    # 0x00 0x02 | sequence | int32s_be(0x04180055) | length | value
+    assert blob[:2] == b"\x00\x02"
+    assert blob.endswith(b"\x04\x18\x00\x55\x01\x01"), (
+        f"expected a feeding_mode=Schedule TLV, got {blob!r}"
+    )
+
+
+async def test_aqara_feeder_failed_mode_write_is_not_cached(
+    zigpy_device_from_quirk, caplog
+):
+    """A mode the device did not confirm must not enter the cache.
+
+    ``write_attributes`` used to cache the mode before the write was sent, so
+    a write that raises left the select showing -- and zigpy persisting -- a
+    mode the feeder never took. The cache update belongs after a confirmed
+    write; the device also echoes the mode back as a 0xFFF1 report TLV, so the
+    confirmed path keeps the same result.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._write_attributes = mock.AsyncMock(side_effect=Exception("device offline"))
+
+    with pytest.raises(Exception, match="device offline"):
+        await cluster.write_attributes({0x1390: FeedingMode.Schedule})
+
+    assert cluster.get("feeding_mode") == FeedingMode.Manual
+
+
+async def test_aqara_feeder_non_success_mode_write_is_not_cached(
+    zigpy_device_from_quirk, caplog
+):
+    """A write answered with a failure status is not a confirmed mode change.
+
+    zigpy does not raise on a non-SUCCESS ``Write_Attributes_rsp`` status, so
+    without inspecting the result the mode was cached -- and persisted via the
+    ``AttributeUpdatedEvent`` -- even though the feeder rejected the write.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk)
+    cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.MALFORMED_COMMAND, attrid=FEEDER_ATTR
+                )
+            ]
+        ]
+    )
+
+    await cluster.write_attributes({0x1390: FeedingMode.Schedule})
+
+    assert cluster.get("feeding_mode") == FeedingMode.Manual
+
+
+async def test_aqara_feeder_confirmed_mode_write_clears_a_poisoned_row(
+    zigpy_device_from_quirk,
+):
+    """A confirmed mode write rewrites a poisoned status=134 database row.
+
+    Caching the mode fires the ``AttributeUpdatedEvent`` that zigpy's appdb
+    persists with ``status=0``, so a row replayed as an unsupported marker on
+    every start is rewritten as an ordinary success by the write itself.
+    """
+    cluster = _feeder_cluster(zigpy_device_from_quirk, _write_attributes=True)
+    attr_def = cluster.find_attribute(0x1390)
+    cluster._attr_cache.mark_unsupported(attr_def)
+
+    await cluster.write_attributes({0x1390: FeedingMode.Schedule})
+
+    assert cluster._attr_cache.is_unsupported(attr_def) is False
+    assert cluster.get("feeding_mode") == FeedingMode.Schedule
+
+
+async def test_aqara_feeder_read_event_subscription_registered(
+    zigpy_device_from_quirk,
+):
+    """The cluster must subscribe to the read event, not only report and update.
+
+    Guards the wiring rather than the parsing: a future refactor that drops the
+    ``AttributeReadEvent`` subscription silently reinstates the empty-cache bug
+    while every parsing test still passes.
+    """
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    listeners = opple_cluster._event_listeners  # noqa: SLF001
+    for event_type in (
+        AttributeReadEvent.event_type,
+        AttributeReportedEvent.event_type,
+        AttributeUpdatedEvent.event_type,
+    ):
+        assert event_type in listeners, f"no listener for {event_type!r}"
+        assert any(
+            getattr(listener.callback, "__func__", listener.callback).__name__
+            == "_handle_attribute_event"
+            for listener in listeners[event_type]
+        ), f"{event_type!r} is not routed to _handle_attribute_event"
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
