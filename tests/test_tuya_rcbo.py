@@ -41,6 +41,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -60,6 +61,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -79,6 +81,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -334,6 +337,7 @@ async def test_write_attr_rcbo(
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
