@@ -157,17 +157,40 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
 
-    def _update_attribute(self, attrid, value) -> None:
-        """Ignore transient zero energy reports emitted while the device starts."""
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Any,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Discard the known all-zero startup energy report."""
 
-        if (
-            attrid in self.energy_attribute_ids
-            and value == 0
-            and self._attr_cache.get(attrid, 0) != 0
-        ):
-            return
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            reported_energy = {
+                report.attrid: report.value.value
+                for report in args.attribute_reports
+                if report.attrid in self.energy_attribute_ids
+            }
+            has_cached_nonzero_energy = any(
+                self._attr_cache.get(attrid, 0) != 0
+                for attrid in self.energy_attribute_ids
+            )
 
-        super()._update_attribute(attrid, value)
+            if (
+                reported_energy.keys() == self.energy_attribute_ids
+                and all(value == 0 for value in reported_energy.values())
+                and has_cached_nonzero_energy
+            ):
+                args = args.replace(
+                    attribute_reports=[
+                        report
+                        for report in args.attribute_reports
+                        if report.attrid not in self.energy_attribute_ids
+                    ]
+                )
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
     def _handle_attribute_read(self, event: AttributeReadEvent) -> None:
         """Cache a raw protection array when normal decoding did not succeed."""

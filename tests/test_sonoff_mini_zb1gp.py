@@ -129,10 +129,34 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage_frequency.id == 0x7029
 
 
-def test_mini_zb1gp_ignores_transient_zero_energy_reports(
+def _report_attributes(cluster, values: dict[int, int]) -> None:
+    """Send a Report Attributes command to a cluster."""
+
+    reports = [
+        foundation.Attribute(
+            attrid=attrid,
+            value=foundation.TypeValue(
+                type=cluster.find_attribute(attrid).type,
+                value=value,
+            ),
+        )
+        for attrid, value in values.items()
+    ]
+    args = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema(attribute_reports=reports)
+    hdr = foundation.ZCLHeader.general(
+        tsn=1,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    cluster.handle_cluster_general_request(hdr, args)
+
+
+def test_mini_zb1gp_ignores_all_zero_startup_energy_report(
     zigpy_device_from_v2_quirk,
 ):
-    """Test startup zero reports do not overwrite nonzero energy counters."""
+    """Test the known all-zero startup report preserves energy counters."""
 
     device = zigpy_device_from_v2_quirk(
         "SONOFF",
@@ -141,22 +165,53 @@ def test_mini_zb1gp_ignores_transient_zero_energy_reports(
     )
     cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
 
-    for attribute_id in cluster.energy_attribute_ids:
-        cluster._update_attribute(attribute_id, 1000)
-        cluster._update_attribute(attribute_id, 0)
-        assert cluster.get(attribute_id) == 1000
+    initial_energy = {
+        attribute_id: 1000 + index
+        for index, attribute_id in enumerate(cluster.energy_attribute_ids)
+    }
+    _report_attributes(cluster, initial_energy)
+    _report_attributes(
+        cluster, {**dict.fromkeys(cluster.energy_attribute_ids, 0), 0x7006: 0}
+    )
 
-        cluster._update_attribute(attribute_id, 1001)
-        assert cluster.get(attribute_id) == 1001
-
-    # A zero received before the device has reported a counter is valid.
-    cluster._update_attribute(cluster.AttributeDefs.energy_yesterday.id, 0)
-    assert cluster.get(cluster.AttributeDefs.energy_yesterday.id) == 0
-
-    # Only energy counters are filtered; a zero power report remains valid.
-    cluster._update_attribute(cluster.AttributeDefs.power.id, 1000)
-    cluster._update_attribute(cluster.AttributeDefs.power.id, 0)
+    for attribute_id, value in initial_energy.items():
+        assert cluster.get(attribute_id) == value
     assert cluster.get(cluster.AttributeDefs.power.id) == 0
+
+
+def test_mini_zb1gp_accepts_valid_zero_energy_reports(zigpy_device_from_v2_quirk):
+    """Test midnight, month-boundary, and initial zero reports are accepted."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    daily = cluster.AttributeDefs.energy_today.id
+    monthly = cluster.AttributeDefs.energy_month.id
+
+    _report_attributes(cluster, {daily: 1000, monthly: 2000})
+    _report_attributes(cluster, {daily: 0})
+    assert cluster.get(daily) == 0
+    assert cluster.get(monthly) == 2000
+
+    _report_attributes(cluster, {daily: 1000, monthly: 2000})
+    _report_attributes(cluster, {daily: 0, monthly: 0})
+    assert cluster.get(daily) == 0
+    assert cluster.get(monthly) == 0
+
+    fresh_device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    fresh_cluster = fresh_device.endpoints[1].in_clusters[
+        SonoffMiniZb1gpCluster.cluster_id
+    ]
+    _report_attributes(fresh_cluster, dict.fromkeys(cluster.energy_attribute_ids, 0))
+    for attribute_id in fresh_cluster.energy_attribute_ids:
+        assert fresh_cluster.get(attribute_id) == 0
 
 
 def test_mini_zb1gp_milli_value_converters():
