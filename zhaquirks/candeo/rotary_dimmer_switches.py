@@ -162,17 +162,17 @@ dimmer_v2_quirk = (
         {
             (DOUBLE_PRESS, ROTARY_KNOB): {
                 COMMAND: COMMAND_DOUBLE,
-                CLUSTER_ID: 6,
+                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 2,
             },
             (LONG_PRESS, ROTARY_KNOB): {
                 COMMAND: COMMAND_HOLD,
-                CLUSTER_ID: 6,
+                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 2,
             },
             (LONG_RELEASE, ROTARY_KNOB): {
                 COMMAND: COMMAND_RELEASE,
-                CLUSTER_ID: 6,
+                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 2,
             },
         }
