@@ -1,11 +1,15 @@
 """Tuya TS0601 Thermostat."""
 
+from typing import ClassVar
+
+from zigpy.profiles import zha
 from zigpy.types import t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
+    EntityPlatform,
     EntityType,
     SensorDeviceClass,
     SensorStateClass,
@@ -605,6 +609,263 @@ base_avatto_quirk = (
         fallback_name="Invert relay",
     )
     .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class MoesZhtsrWorkMode(t.enum8):
+    """DP 2 - Work mode."""
+
+    Manual = 0x00
+    Temporary_Manual = 0x01
+    Programming = 0x02
+    Energy_Saving = 0x03
+
+
+class MoesZhtsrSensorChoose(t.enum8):
+    """DP 32 - Sensor selection."""
+
+    In = 0x00
+    All = 0x01
+    Out = 0x02
+
+
+class MoesZhtsrValveState(t.enum8):
+    """DP 47 - Valve state."""
+
+    Close = 0x00
+    Open = 0x01
+
+
+class MoesZhtsrScreenTime(t.enum8):
+    """DP 114 - Screen timeout."""
+
+    Ten_S = 0x00
+    Twenty_S = 0x01
+    Thirty_S = 0x02
+    Forty_S = 0x03
+    Fifty_S = 0x04
+    Sixty_S = 0x05
+
+
+class MoesZhtsrThermostat(Thermostat, TuyaAttributesCluster):
+    """Local thermostat cluster with sane heating-only limits.
+
+    Subclassing TuyaAttributesCluster (not TuyaThermostatCluster) is the v2
+    pattern: TuyaThermostatCluster requires a ``thermostat_bus`` that only the
+    v1 ``TuyaThermostat`` device class creates, and v2 quirks do not use it.
+    """
+
+    _CONSTANT_ATTRIBUTES: ClassVar[dict[int, int]] = {
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 4500,
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: (
+            Thermostat.ControlSequenceOfOperation.Heating_Only
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Quirk definition
+# ---------------------------------------------------------------------------
+(
+    TuyaQuirkBuilder("_TZE204_lpedvtvr", "TS0601")
+    # The device reports device_type 0x0051 (Smart Plug); force thermostat.
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
+    # DP 1 - power switch
+    .tuya_onoff(dp_id=1)
+    # DP 2 - work mode
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="work_mode",
+        enum_class=MoesZhtsrWorkMode,
+        entity_platform=EntityPlatform.SELECT,
+        entity_type=EntityType.CONFIG,
+        translation_key="work_mode",
+        fallback_name="Work mode",
+    )
+    # DP 16 - current temperature (0-900, 1/10 degC)
+    .tuya_temperature(dp_id=16, scale=10)
+    # DP 50 - target temperature (50-450, 1/10 degC)
+    .tuya_number(
+        dp_id=50,
+        attribute_name="temp_set",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=45,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="temp_set",
+        fallback_name="Target temperature",
+    )
+    # DP 18 - minimum temperature (50-150, 1/10 degC)
+    .tuya_number(
+        dp_id=18,
+        attribute_name="lower_temp",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=15,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="lower_temp",
+        fallback_name="Minimum temperature",
+    )
+    # DP 34 - maximum temperature (350-450, 1/10 degC)
+    .tuya_number(
+        dp_id=34,
+        attribute_name="upper_temp",
+        type=t.uint16_t,
+        min_value=35,
+        max_value=45,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="upper_temp",
+        fallback_name="Maximum temperature",
+    )
+    # DP 101 - temperature calibration (-10..10 degC, 1/10)
+    # NOTE: must be int32s, not int16s. ``TuyaData.payload`` decodes every
+    # TuyaDPType.VALUE datapoint as ``t.int32s_be`` regardless of the type
+    # declared here, so a narrower type makes incoming reports raise
+    # ValueError and silently drop the update.
+    .tuya_number(
+        dp_id=101,
+        attribute_name="temp_calibration",
+        type=t.int32s,
+        min_value=-10,
+        max_value=10,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="temp_calibration",
+        fallback_name="Temperature calibration",
+    )
+    # DP 110 - dead zone temperature (5-50, 1/10 degC)
+    .tuya_number(
+        dp_id=110,
+        attribute_name="deadzone_temp",
+        type=t.uint16_t,
+        min_value=0.5,
+        max_value=5,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="deadzone_temp",
+        fallback_name="Dead zone temperature",
+    )
+    # DP 113 - eco temperature (100-300, 1/10 degC)
+    .tuya_number(
+        dp_id=113,
+        attribute_name="eco_temp",
+        type=t.uint16_t,
+        min_value=10,
+        max_value=30,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="eco_temp",
+        fallback_name="Eco temperature",
+    )
+    # DP 111 - high temperature protection (100-700, 1/10 degC)
+    .tuya_number(
+        dp_id=111,
+        attribute_name="high_protect_temp",
+        type=t.uint16_t,
+        min_value=10,
+        max_value=70,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="high_protect_temp",
+        fallback_name="High temperature protection",
+    )
+    # DP 112 - low temperature protection (0-100, 1/10 degC)
+    .tuya_number(
+        dp_id=112,
+        attribute_name="low_protect_temp",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.1,
+        translation_key="low_protect_temp",
+        fallback_name="Low temperature protection",
+    )
+    # DP 109 - floor temperature (0-900, 1/10 degC, read only)
+    .tuya_sensor(
+        dp_id=109,
+        attribute_name="floor_temp",
+        type=t.uint16_t,
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="floor_temp",
+        fallback_name="Floor temperature",
+    )
+    # DP 47 - valve state (read only)
+    .tuya_enum(
+        dp_id=47,
+        attribute_name="valve_state",
+        enum_class=MoesZhtsrValveState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="valve_state",
+        fallback_name="Valve state",
+    )
+    # DP 39 - child lock
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="child_lock",
+        entity_type=EntityType.CONFIG,
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    # DP 32 - sensor selection
+    .tuya_enum(
+        dp_id=32,
+        attribute_name="sensor_choose",
+        enum_class=MoesZhtsrSensorChoose,
+        entity_platform=EntityPlatform.SELECT,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensor_choose",
+        fallback_name="Sensor selection",
+    )
+    # DP 48 - backlight brightness (0-100 %)
+    .tuya_number(
+        dp_id=48,
+        attribute_name="backlight",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="backlight",
+        fallback_name="Backlight brightness",
+    )
+    # DP 114 - screen timeout
+    .tuya_enum(
+        dp_id=114,
+        attribute_name="screen_time",
+        enum_class=MoesZhtsrScreenTime,
+        entity_platform=EntityPlatform.SELECT,
+        entity_type=EntityType.CONFIG,
+        translation_key="screen_time",
+        fallback_name="Screen timeout",
+    )
+    # DP 115 - RGB ambient light
+    .tuya_switch(
+        dp_id=115,
+        attribute_name="rgb_light",
+        entity_type=EntityType.CONFIG,
+        translation_key="rgb_light",
+        fallback_name="RGB ambient light",
+    )
+    # Local thermostat cluster with heating-only limits
+    .adds(MoesZhtsrThermostat)
     .skip_configuration()
     .add_to_registry()
 )
