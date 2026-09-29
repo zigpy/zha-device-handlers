@@ -2172,7 +2172,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "zha", specifier = ">=2.0.0" },
+    { name = "zha", specifier = ">=2.2.0" },
     { name = "zigpy", specifier = ">=2.2.0" },
 ]
 
