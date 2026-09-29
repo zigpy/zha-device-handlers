@@ -5,6 +5,7 @@ from __future__ import annotations
 import collections
 import importlib
 import json
+import math
 from pathlib import Path
 from unittest import mock
 
@@ -994,6 +995,53 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
             pytest.fail(
                 f"Quirk {quirk!r} removed output cluster that has input cluster with same ID on EP {ep_id}: {removed_duplicate_out_clusters!r}"
             )
+
+
+async def test_local_data_cluster_read_does_not_reconvert(device_mock) -> None:
+    """Reading a LocalDataCluster must not re-apply a converting `_update_attribute`.
+
+    `read_attributes_raw` serves values straight from the attribute cache and zigpy
+    feeds every successful read result back through `_update_attribute`. A cluster
+    that converts values there would otherwise convert its own output again on
+    every read, walking the stored value towards the conversion's fixed point.
+    """
+    registry = DeviceRegistry()
+
+    class ConvertingLocalCluster(zhaquirks.LocalDataCluster):
+        """Local cluster that converts values in `_update_attribute`."""
+
+        cluster_id = 0x1235
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            measured_value = foundation.ZCLAttributeDef(id=0, type=t.uint16_t)
+
+        def _update_attribute(self, attrid, value):
+            if attrid == 0 and value > 0:
+                value = int(10000 * math.log10(value) + 1)
+            super()._update_attribute(attrid, value)
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(ConvertingLocalCluster)
+        .add_to_registry(registry)
+    )
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[0x1235]
+
+    # a value from the device is converted once
+    cluster._update_attribute(0, 100)
+    assert cluster.get(0) == 20001
+
+    # repeated reads must keep returning that value, not convert it again
+    for _ in range(4):
+        assert await cluster.read_attributes([0]) == ({0: 20001}, {})
+        assert cluster.get(0) == 20001
+
+    # a genuine new value from the device is still converted
+    cluster._update_attribute(0, 10)
+    assert cluster.get(0) == 10001
 
 
 async def test_local_data_cluster(device_mock) -> None:

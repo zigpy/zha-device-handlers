@@ -96,6 +96,32 @@ class LocalDataCluster(CustomCluster):
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the cluster."""
+        super().__init__(*args, **kwargs)
+        # Attribute ids handed back by the most recent `read_attributes_raw`, waiting
+        # to be echoed into `_update_attribute` by zigpy. See `_update_attribute`.
+        self._read_echo: set[int] = set()
+
+    def _update_attribute(self, attrid: int, value: typing.Any) -> None:
+        """Update an attribute, ignoring zigpy echoing our own read results back.
+
+        `read_attributes_raw` serves values straight from the attribute cache, and
+        zigpy feeds every successful read result back through `_update_attribute`.
+        On a cluster that converts values there, that converts an already converted
+        value a second time and stores the result, so every read corrupts the value
+        further. The cache is the source of truth for a local cluster, so an echo of
+        a value we just returned carries no new information and is dropped.
+
+        The value is not compared, only the attribute id: a subclass overriding
+        `_update_attribute` sits ahead of this one in the MRO and has already
+        transformed the value by the time it gets here.
+        """
+        if attrid in self._read_echo:
+            self._read_echo.discard(attrid)
+            return
+        super()._update_attribute(attrid, value)
+
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
         try:
@@ -144,6 +170,13 @@ class LocalDataCluster(CustomCluster):
                 or record.attrid in self._VALID_ATTRIBUTES
             ):
                 record.status = foundation.Status.SUCCESS
+        # zigpy echoes every successful read result back through
+        # `_update_attribute`; record them so that echo can be recognised there.
+        self._read_echo = {
+            record.attrid
+            for record in records
+            if record.status == foundation.Status.SUCCESS
+        }
         return (records,)
 
     def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
