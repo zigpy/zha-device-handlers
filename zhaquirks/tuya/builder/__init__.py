@@ -881,6 +881,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
+        suggested_display_precision: int = 1,
         *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
@@ -913,6 +914,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
             fallback_name=fallback_name,
+            suggested_display_precision=suggested_display_precision,
         )
 
         return self
