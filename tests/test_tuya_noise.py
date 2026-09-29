@@ -9,6 +9,7 @@ from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.tuya_noise import TuyaNoiseLevel
 
 zhaquirks.setup()
@@ -121,3 +122,45 @@ async def test_tuya_noise_sensor_write_settings(
     # frame control, tsn, command, tuya seq (2), dp, dp type, length (2), value (4)
     assert frame[5] == dp_id
     assert frame[-4:] == b"\x00\x00\x00\x05"
+
+
+async def test_tuya_noise_sensor_queries_sound_pressure(zigpy_device_from_v2_quirk):
+    """Test the sound pressure is queried when the noise state changes."""
+
+    device = zigpy_device_from_v2_quirk("_TZE204_r6kfl9ta", "TS0601")
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+
+    def report(frame: bytes) -> None:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    with mock.patch.object(tuya_cluster, "command") as command:
+        # Noise level loud, reported as set_data_response (0x02)
+        report(b"\x09\x01\x02\x00\x01\x08\x04\x00\x01\x02")
+        await wait_for_zigpy_tasks()
+        assert command.call_count == 1
+        assert command.call_args.args == (TUYA_QUERY_DATA,)
+
+        # Query response contains the sound pressure, no new query
+        report(
+            b"\x09\x02\x01\x00\x02\x01\x02\x00\x04\x00\x00\x00\x2e\x08\x04\x00\x01\x02"
+        )
+        await wait_for_zigpy_tasks()
+        assert command.call_count == 1
+        assert tuya_cluster.get("sound_pressure") == 46
+
+        # Noise detected, but within the minimum query interval
+        report(b"\x09\x03\x02\x00\x03\x65\x04\x00\x01\x00")
+        await wait_for_zigpy_tasks()
+        assert command.call_count == 1
+
+        # Same value again after the interval, no query
+        tuya_cluster._last_query -= tuya_cluster.MIN_QUERY_INTERVAL
+        report(b"\x09\x04\x06\x00\x04\x65\x04\x00\x01\x00")
+        await wait_for_zigpy_tasks()
+        assert command.call_count == 1
+
+        # Changed value via active status report (0x06), new query
+        report(b"\x09\x05\x06\x00\x05\x08\x04\x00\x01\x00")
+        await wait_for_zigpy_tasks()
+        assert command.call_count == 2
