@@ -5,12 +5,7 @@ from typing import Final
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, LevelControl, OnOff, Ota
-from zigpy.zcl.foundation import (
-    BaseCommandDefs,
-    DataTypeId,
-    ZCLAttributeDef,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import CANDEO
@@ -45,13 +40,6 @@ class CandeoRemoteDirection(t.enum8):
 
     Right = 0x00
     Left = 0x01
-
-
-class CandeoRemoteLiteEP2Functionality(t.enum8):
-    """Candeo remote lite EP2 functionality enum."""
-
-    Disabled = 0x00
-    Enabled = 0x01
 
 
 class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
@@ -106,8 +94,7 @@ class CandeoOnOffRemoteLiteEP2FunctionalityCluster(OnOff, CustomCluster):
 
         extra_button_commands = ZCLAttributeDef(
             id=0x8000,
-            type=CandeoRemoteLiteEP2Functionality,
-            zcl_type=DataTypeId.bool_,
+            type=t.Bool,
             access="rw",
             # manufacturer specific attribute, but not marked as such in the device
             manufacturer_code=None,
@@ -137,24 +124,17 @@ class CandeoOnOffRemoteLiteCluster(OnOff, CustomCluster):
 
 dimmer_v2_quirk = (
     QuirkBuilder()
-    .replaces(
-        CandeoOnOffRemoteLiteEP2FunctionalityCluster,
-        endpoint_id=1,
-    )
+    .replaces(CandeoOnOffRemoteLiteEP2FunctionalityCluster, endpoint_id=1)
     .replaces(
         CandeoOnOffRemoteLiteCluster,
         endpoint_id=2,
         cluster_type=ClusterType.Client,
     )
-    .removes(
-        OnOff.cluster_id,
-        endpoint_id=3,
-    )
-    .enum(
+    .removes(OnOff.cluster_id, endpoint_id=3)
+    .switch(
         attribute_name=CandeoOnOffRemoteLiteEP2FunctionalityCluster.AttributeDefs.extra_button_commands.name,
         cluster_id=CandeoOnOffRemoteLiteEP2FunctionalityCluster.cluster_id,
         endpoint_id=1,
-        enum_class=CandeoRemoteLiteEP2Functionality,
         translation_key="extra_button_commands",
         fallback_name="Extra button commands",
     )
@@ -181,11 +161,7 @@ dimmer_v2_quirk = (
 
 remote_quirk = (
     QuirkBuilder()
-    .replaces(
-        CandeoOnOffRemoteCluster,
-        endpoint_id=2,
-        cluster_type=ClusterType.Client,
-    )
+    .replaces(CandeoOnOffRemoteCluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .replaces(
         CandeoLevelControlRemoteCluster,
         endpoint_id=2,
