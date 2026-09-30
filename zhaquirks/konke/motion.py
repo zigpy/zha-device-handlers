@@ -4,7 +4,7 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -21,11 +21,6 @@ KONKE_CLUSTER_ID = 0xFCC0
 
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.occupancy_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -72,11 +67,6 @@ class KonkeMotion(CustomDevice):
 
 class KonkeMotionB(CustomDevice):
     """Custom device representing konke motion sensors."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.occupancy_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

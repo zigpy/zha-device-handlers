@@ -14,7 +14,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from zhaquirks import Bus, DoublingPowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -39,13 +39,6 @@ TERNCY_AWARENESS_DEVICE_TYPE = 0x01F0
 
 class TerncyAwarenessSwitch(CustomDevice):
     """Terncy awareness switch."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.motion_left_bus = Bus()
-        self.motion_right_bus = Bus()
-        self.occupancy_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=496

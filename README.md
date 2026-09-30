@@ -170,13 +170,6 @@ Now that we got that out of the way we can focus on the task at hand: make our d
 class Plug(XiaomiCustomDevice):
     """lumi.plug.maus01 plug."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         MODELS_INFO: [(LUMI, "lumi.plug.maus01")],
         ENDPOINTS: {
@@ -277,21 +270,14 @@ class Plug(XiaomiCustomDevice):
 
 This quirk is for the US version of the Xiaomi plug. Xiaomi is notorious for not following the Zigbee specifications and most of their non Zigbee 3.0 devices need a quirk to function correctly. In this case we are correcting the `ElectricalMeasurement` cluster readings. Xiaomi decided to report the values for this cluster on the `AnalogInput` cluster instead. To fix this we will create a custom cluster to replace the `AnalogInput` and `ElectricalMeasurement` clusters. We will take the values that are reported on the `AnalogInput` cluster and publish them to the `ElectricalMeasurement` cluster. Doing this allows the device to work as if Xiaomi had implemented this in the first place. This is the act of translating that was mentioned in the Google Translate analogy above.
 
-First things first. All device definitions in quirks must extend `CustomDevice` or a derivative of it and all clusters that you define must extend `CustomCluster` or a derivative of it. If you want to send messages between `CustomCluster` definitions as we do here you need to create channels for the communication to flow through. We do this by adding instances of `Bus` on our `CustomDevice` implementation. `Bus` is a utility class used specifically for this purpose and adding it to the device implementation ensures that all clusters that you define will have access to the `Bus` so that they can communicate with each other.
+First things first. All device definitions in quirks must extend `CustomDevice` or a derivative of it and all clusters that you define must extend `CustomCluster` or a derivative of it. Clusters that need to relay data should call the destination cluster directly through their endpoint and device. Resolve the destination when the report or command is handled, after all replacement clusters have been constructed.
 
 ```python
 class Plug(XiaomiCustomDevice):
     """lumi.plug.maus01 plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 ```
 
-You can see that we have extended `XiaomiCustomDevice` which is a derivative of `CustomDevice` shared by Xiaomi devices. You can also see that we have added some instances of `Bus` so that we can pass messages between `CustomCluster` definitions. To be clear, this is not always necessary. Quirks can be used to change formats of data on an existing cluster, to add manufacturer specific attributes or commands to clusters etc. In these instances you just need to create a derivative of `CustomCluster` and add your logic. This is more of an advanced example to illustrate what is possible.
+Here `Plug` extends `XiaomiCustomDevice`, a `CustomDevice` derivative shared by Xiaomi devices. No device-level communication objects are required. The source cluster can reach a server cluster on the same endpoint with `self.endpoint.<ep_attribute>`. For a different endpoint, use `self.endpoint.device.endpoints[endpoint_id].<ep_attribute>`. Client clusters must be resolved through `self.endpoint.out_clusters[cluster_id]` so cluster direction remains correct.
 
 Here are the custom cluster definitions:
 
@@ -309,7 +295,9 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if value is not None and value >= 0:
-            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
+            self.endpoint.device.endpoints[1].electrical_measurement.power_reported(
+                value
+            )
 
 
 class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
@@ -319,13 +307,6 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0500
     CONSUMPTION_ID = 0x0304
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.voltage_bus.add_listener(self)
-        self.endpoint.device.consumption_bus.add_listener(self)
-        self.endpoint.device.power_bus.add_listener(self)
 
     def power_reported(self, value):
         """Power reported."""
@@ -340,15 +321,11 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         self._update_attribute(self.CONSUMPTION_ID, value)
 ```
 
-In the `AnalogInput` cluster we override the `_update_attribute` method so that we can access the data that the cluster receives when the device sends a report and we send the data via an event on a bus to the `ElectricalMeasurement` cluster. This is the line that does the heavy lifting:
+In the `AnalogInput` cluster we override `_update_attribute` so that we can access the data when the device sends a report, then call the `ElectricalMeasurement` cluster on endpoint 1 directly. This line does the heavy lifting:
 
-`self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)`
+`self.endpoint.device.endpoints[1].electrical_measurement.power_reported(value)`
 
-Then in the `ElectricalMeasurement` cluster we need to subscribe to these events and handle them. This is how we subscribe to our custom events:
-
-`self.endpoint.device.power_bus.add_listener(self)`
-
-and this method (the method name must match the event name that you publish EXACTLY):
+The destination method handles updating the attribute on the correct Zigbee cluster:
 
 ```python
 def power_reported(self, value):
@@ -356,7 +333,18 @@ def power_reported(self, value):
     self._update_attribute(self.POWER_ID, value)
 ```
 
-receives the event and handles updating the attribute on the correct zigbee cluster. As you can see there really isn't much here that needs to be done to accomplish our goal.
+For cross-endpoint relays, resolve the destination through `self.endpoint.device.endpoints[...]`. Do not cache destination clusters in a cluster constructor because replacement endpoints and clusters may not yet exist. For output clusters, use `self.endpoint.out_clusters[...]` instead of endpoint attributes.
+
+#### Migrating custom quirks from legacy Bus routing
+
+The top-level `zhaquirks.Bus` helper and the Tuya `TUYA_MCU_COMMAND`, `SWITCH_EVENT`, `LEVEL_EVENT`, and `COVER_EVENT` constants are no longer available. Device-level attributes such as `command_bus`, `switch_bus`, and other legacy `*_bus` routing channels are likewise no longer created. Custom quirks using those interfaces must route to concrete clusters instead:
+
+- For a server/input cluster on the same endpoint, call `self.endpoint.<ep_attribute>.<method>(...)`.
+- For a server/input cluster on another endpoint, call `self.endpoint.device.endpoints[endpoint_id].<ep_attribute>.<method>(...)`.
+- For a client/output cluster, resolve it from `self.endpoint.out_clusters[ClusterClass.cluster_id]`.
+- For a Tuya local cluster sending an MCU command, place the physical EF00 input cluster on endpoint 1 and route through `get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(...)`.
+
+Resolve the destination when the report or command is handled. An import-only compatibility alias would not preserve the old runtime device attributes or listener registrations, so legacy custom quirks must be migrated as a unit.
 
 Once we have created our `CustomCluster` implementations we have to tell the `CustomDevice` implementation to use them. We do this in the `replacement` dict in the quirk definition. Start by copying the `signature` dict and remove the `models_info` from it. Then we replace the cluster ids that we want to override with the names of our `CustomCluster` implementations that we have created. The result looks like this:
 
