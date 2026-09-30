@@ -130,27 +130,33 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=FEEDER_ATTR, type=types.LVBytes, manufacturer_code=0x115F
         )
 
+    _DEFAULT_VALUES: dict[int, Any] = {
+        ZCL_DISABLE_LED_INDICATOR: False,
+        ZCL_CHILD_LOCK: False,
+        ZCL_FEEDING_MODE: FeedingMode.Manual,
+        ZCL_SERVING_SIZE: 1,
+        ZCL_PORTION_WEIGHT: 8,
+        ZCL_ERROR_DETECTED: False,
+        ZCL_PORTIONS_DISPENSED: 0,
+        ZCL_WEIGHT_DISPENSED: 0,
+    }
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Get cached attribute, falling back to feeder defaults."""
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return super().get(key, default)
+
+        value = super().get(key)
+        if value is not None:
+            return value
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
-        # Set default values for attributes
-        if ZCL_DISABLE_LED_INDICATOR not in self._attr_cache:
-            self._update_attribute(ZCL_DISABLE_LED_INDICATOR, False)
-        if ZCL_CHILD_LOCK not in self._attr_cache:
-            self._update_attribute(ZCL_CHILD_LOCK, False)
-        if ZCL_FEEDING_MODE not in self._attr_cache:
-            self._update_attribute(ZCL_FEEDING_MODE, FeedingMode.Manual)
-        if ZCL_SERVING_SIZE not in self._attr_cache:
-            self._update_attribute(ZCL_SERVING_SIZE, 1)
-        if ZCL_PORTION_WEIGHT not in self._attr_cache:
-            self._update_attribute(ZCL_PORTION_WEIGHT, 8)
-        if ZCL_ERROR_DETECTED not in self._attr_cache:
-            self._update_attribute(ZCL_ERROR_DETECTED, False)
-        if ZCL_PORTIONS_DISPENSED not in self._attr_cache:
-            self._update_attribute(ZCL_PORTIONS_DISPENSED, 0)
-        if ZCL_WEIGHT_DISPENSED not in self._attr_cache:
-            self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
 
         # Subscribe to attribute events to parse feeder_attr
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
@@ -265,13 +271,15 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 
 (
-    QuirkBuilder(None, "aqara.feeder.acn001")
-    # device does not provide manufacturer during interview
-    # The v2 entities only take over cleanly once the
-    # native classes are removed (zigpy/zha#883) if the model string matches.
-    .friendly_name(manufacturer="Aqara", model="aqara.feeder.acn001")
+    QuirkBuilder(
+        None, "aqara.feeder.acn001"
+    )  # device does not provide manufacturer during interview
+    .friendly_name(
+        manufacturer="Aqara", model="aqara.feeder.acn001"
+    )  # v2 entities only take over
+    # cleanly once the native classes are removed (zigpy/zha#883) if the model string matches.
     .removes(OnOff.cluster_id)
-    .replaces(Time)
+    .adds(Time)
     .replaces(OppleCluster)
     .enum(
         attribute_name=OppleCluster.AttributeDefs.last_feeding_source.name,

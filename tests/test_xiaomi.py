@@ -1264,6 +1264,33 @@ async def test_aqara_feeder_attr_reports(
         )
 
 
+def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
+    """Test feeder defaults are available after the v2 cluster replacement."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+
+    assert cluster.get(ZCL_DISABLE_LED_INDICATOR) is False
+    assert cluster.get(ZCL_CHILD_LOCK) is False
+    assert cluster.get(ZCL_FEEDING_MODE) == FeedingMode.Manual
+    assert cluster.get(ZCL_SERVING_SIZE) == 1
+    assert cluster.get(ZCL_PORTION_WEIGHT) == 8
+    assert cluster.get(ZCL_ERROR_DETECTED) is False
+    assert cluster.get(ZCL_PORTIONS_DISPENSED) == 0
+    assert cluster.get(ZCL_WEIGHT_DISPENSED) == 0
+
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    assert cluster.get(ZCL_SERVING_SIZE) == 3
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
     """Test update_attribute on Aqara smoke sensor."""
