@@ -3,10 +3,18 @@
 from unittest import mock
 
 import pytest
+from zigpy.exceptions import DeliveryError
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks.adeo.sensor_ldsenk08
+
+SENSITIVITY_ID = IasZone.AttributeDefs.current_zone_sensitivity_level.id
+
+
+def _status_result(status: foundation.Status):
+    """Build a write attributes response with a single status record."""
+    return [[foundation.WriteAttributesStatusRecord(status, SENSITIVITY_ID)]]
 
 
 def test_adeo_ldsenk08_v2_replaces_ias_cluster(zigpy_device_from_v2_quirk):
@@ -288,3 +296,154 @@ async def test_adeo_ldsenk08_apply_pending_sensitivity_on_wake(
         {IasZone.AttributeDefs.current_zone_sensitivity_level.id: 3}
     )
     assert cluster._pending_sensitivity_level is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exception", [TimeoutError, DeliveryError("not delivered")])
+async def test_adeo_ldsenk08_write_attributes_queues_on_retryable_exception(
+    zigpy_device_from_v2_quirk, exception
+):
+    """Test transient delivery errors queue the sensitivity write."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(side_effect=exception),
+    ):
+        result = await cluster.write_attributes({SENSITIVITY_ID: 1})
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert cluster._pending_sensitivity_level == 1
+    assert cluster.get(SENSITIVITY_ID) == 1
+
+
+@pytest.mark.asyncio
+async def test_adeo_ldsenk08_write_attributes_raises_unexpected_exception(
+    zigpy_device_from_v2_quirk,
+):
+    """Test non-transient errors are not masked as queued writes."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+
+    with (
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(side_effect=RuntimeError),
+        ),
+        pytest.raises(RuntimeError),
+    ):
+        await cluster.write_attributes({SENSITIVITY_ID: 1})
+
+    assert cluster._pending_sensitivity_level is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "status", [foundation.Status.FAILURE, foundation.Status.UNSUPPORTED_ATTRIBUTE]
+)
+async def test_adeo_ldsenk08_write_attributes_returns_device_status(
+    zigpy_device_from_v2_quirk, status
+):
+    """Test status records returned by the awake device are not queued."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+    failure = _status_result(status)
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(return_value=failure),
+    ):
+        result = await cluster.write_attributes({SENSITIVITY_ID: 3})
+
+    assert result == failure
+    assert cluster._pending_sensitivity_level is None
+    assert cluster.get(SENSITIVITY_ID) is None
+
+
+def test_adeo_ldsenk08_notification_burst_schedules_single_retry(
+    zigpy_device_from_v2_quirk,
+):
+    """Test only one pending sensitivity retry runs at a time."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+    cluster._pending_sensitivity_level = 3
+    cluster.send_default_rsp = mock.MagicMock()
+    cluster.create_catching_task = mock.MagicMock(side_effect=lambda coro: coro.close())
+
+    header = foundation.ZCLHeader()
+    header.command_id = IasZone.ClientCommandDefs.status_change_notification.id
+    header.frame_control = foundation.FrameControl.cluster()
+    for _ in range(3):
+        cluster.handle_cluster_request(header, [0x01])
+
+    cluster.create_catching_task.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_adeo_ldsenk08_apply_pending_sensitivity_device_status(
+    zigpy_device_from_v2_quirk,
+):
+    """Test any status returned by the awake device clears the pending write."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+    cluster._pending_sensitivity_level = 3
+    cluster._sensitivity_retry_in_flight = True
+
+    with mock.patch(
+        "zigpy.quirks.CustomCluster.write_attributes",
+        new=mock.AsyncMock(
+            return_value=_status_result(foundation.Status.UNSUPPORTED_ATTRIBUTE)
+        ),
+    ):
+        await cluster._apply_pending_sensitivity()
+
+    assert cluster._pending_sensitivity_level is None
+    assert cluster._sensitivity_retry_in_flight is False
+
+
+@pytest.mark.asyncio
+async def test_adeo_ldsenk08_apply_pending_sensitivity_still_asleep(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a retry that is not delivered keeps the write queued."""
+    device = zigpy_device_from_v2_quirk(
+        "ADEO",
+        "LDSENK08",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].ias_zone
+    cluster._pending_sensitivity_level = 3
+    cluster._sensitivity_retry_in_flight = True
+
+    with (
+        mock.patch(
+            "zigpy.quirks.CustomCluster.write_attributes",
+            new=mock.AsyncMock(side_effect=TimeoutError),
+        ),
+        pytest.raises(TimeoutError),
+    ):
+        await cluster._apply_pending_sensitivity()
+
+    assert cluster._pending_sensitivity_level == 3
+    assert cluster._sensitivity_retry_in_flight is False

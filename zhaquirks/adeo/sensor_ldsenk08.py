@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from zigpy.exceptions import DeliveryError
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -28,11 +29,15 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
     SENSITIVITY_LABELS = {"low": 0, "medium": 1, "high": 2}
     SENSITIVITY_MIN = 0
     SENSITIVITY_MAX = 4
+    # Failures expected while the sleepy device is not listening; any status
+    # returned by the device itself is final and reported back as-is.
+    RETRYABLE_EXCEPTIONS = (TimeoutError, DeliveryError)
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize cluster state."""
         super().__init__(*args, **kwargs)
         self._pending_sensitivity_level: int | None = None
+        self._sensitivity_retry_in_flight = False
 
     @classmethod
     def _normalize_sensitivity(cls, value: Any) -> int:
@@ -53,28 +58,28 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
             raise ValueError(msg)
         return normalized_value
 
-    @staticmethod
-    def _write_succeeded(
-        result: list[list[foundation.WriteAttributesStatusRecord]],
-    ) -> bool:
-        """Return True if all write status records are successful."""
-        return all(
-            record.status == foundation.Status.SUCCESS
-            for group in result
-            for record in group
-        )
+    def _queue_sensitivity(
+        self, sensitivity: int
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Queue a sensitivity write for the next wake-up and acknowledge it."""
+        self._pending_sensitivity_level = sensitivity
+        self.update_attribute(self.SENSITIVITY_ATTRIBUTE_ID, sensitivity)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     async def _apply_pending_sensitivity(self) -> None:
         """Retry a queued sensitivity write when the device is awake."""
-        if self._pending_sensitivity_level is None:
-            return
+        try:
+            if self._pending_sensitivity_level is None:
+                return
 
-        pending_sensitivity = self._pending_sensitivity_level
-        result = await super().write_attributes(
-            {self.SENSITIVITY_ATTRIBUTE_ID: pending_sensitivity}
-        )
-        if self._write_succeeded(result):
-            self._pending_sensitivity_level = None
+            pending_sensitivity = self._pending_sensitivity_level
+            await super().write_attributes(
+                {self.SENSITIVITY_ATTRIBUTE_ID: pending_sensitivity}
+            )
+            if self._pending_sensitivity_level == pending_sensitivity:
+                self._pending_sensitivity_level = None
+        finally:
+            self._sensitivity_retry_in_flight = False
 
     async def write_attributes(
         self,
@@ -96,31 +101,20 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
             else:
                 normalized_attributes[attr] = value
 
+        queueable = (
+            normalized_sensitivity is not None and len(normalized_attributes) == 1
+        )
+
         try:
             result = await super().write_attributes(
                 normalized_attributes, manufacturer=manufacturer, **kwargs
             )
-        except Exception:
-            if normalized_sensitivity is not None and len(normalized_attributes) == 1:
-                self._pending_sensitivity_level = normalized_sensitivity
-                self.update_attribute(
-                    self.SENSITIVITY_ATTRIBUTE_ID, normalized_sensitivity
-                )
-                return [
-                    [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
-                ]
+        except self.RETRYABLE_EXCEPTIONS:
+            if queueable:
+                return self._queue_sensitivity(normalized_sensitivity)
             raise
 
-        if (
-            normalized_sensitivity is not None
-            and len(normalized_attributes) == 1
-            and not self._write_succeeded(result)
-        ):
-            self._pending_sensitivity_level = normalized_sensitivity
-            self.update_attribute(self.SENSITIVITY_ATTRIBUTE_ID, normalized_sensitivity)
-            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-        if normalized_sensitivity is not None and self._write_succeeded(result):
+        if normalized_sensitivity is not None:
             self._pending_sensitivity_level = None
         return result
 
@@ -134,7 +128,11 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
         ) = None,
     ) -> None:
         """Handle a cluster command received on this cluster."""
-        if self._pending_sensitivity_level is not None:
+        if (
+            self._pending_sensitivity_level is not None
+            and not self._sensitivity_retry_in_flight
+        ):
+            self._sensitivity_retry_in_flight = True
             self.create_catching_task(self._apply_pending_sensitivity())
 
         if hdr.command_id == self.STATUS_CHANGE_COMMAND_ID and args:
