@@ -50,3 +50,10 @@ class CustomMetering(Metering, CustomCluster):
     .replaces(TuyaZBExternalSwitchTypeCluster)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder("_TZ3210_fhx7lk3d", "TS0001")
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .add_to_registry()
+)
