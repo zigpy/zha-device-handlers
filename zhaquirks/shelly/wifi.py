@@ -117,6 +117,7 @@ class ShellyCustomProfileDevice(CustomZigpyDevice):
 
 (
     QuirkBuilder("Shelly", "1PM")
+    .applies_to("Shelly", "1")
     .applies_to("Shelly", "2PM")
     .applies_to("Shelly", "Mini1PM")
     .applies_to("Shelly", "Mini1")
