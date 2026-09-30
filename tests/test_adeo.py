@@ -3,11 +3,13 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.exceptions import DeliveryError
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks.adeo.sensor_ldsenk08
+from zhaquirks.builder.device import QuirkV2Factory
 
 SENSITIVITY_ID = IasZone.AttributeDefs.current_zone_sensitivity_level.id
 
@@ -28,6 +30,38 @@ def test_adeo_ldsenk08_v2_replaces_ias_cluster(zigpy_device_from_v2_quirk):
         device.endpoints[1].ias_zone,
         zhaquirks.adeo.sensor_ldsenk08.IasMultiZoneCluster,
     )
+
+
+@pytest.mark.parametrize(
+    ("unique_id_suffix", "zone_status_bit"),
+    [
+        ("contact", IasZone.ZoneStatus.Alarm_1),
+        ("vibration", IasZone.ZoneStatus.Alarm_2),
+        ("tamper", IasZone.ZoneStatus.Tamper),
+    ],
+)
+def test_adeo_ldsenk08_zone_status_binary_sensors(unique_id_suffix, zone_status_bit):
+    """Test each binary sensor only reflects its own zone_status bit."""
+    (definition,) = {
+        entry.zha_device_factory.quirk_definition
+        for entry in DEVICE_REGISTRY
+        if isinstance(entry.zha_device_factory, QuirkV2Factory)
+        and str(entry.source.file).endswith("sensor_ldsenk08.py")
+    }
+    (entity,) = (
+        em
+        for em in definition.entity_metadata
+        if em.unique_id_suffix == unique_id_suffix
+    )
+    all_bits = (
+        IasZone.ZoneStatus.Alarm_1
+        | IasZone.ZoneStatus.Alarm_2
+        | IasZone.ZoneStatus.Tamper
+        | IasZone.ZoneStatus.Battery
+    )
+
+    assert entity.attribute_converter(zone_status_bit) is True
+    assert entity.attribute_converter(all_bits & ~zone_status_bit) is False
 
 
 def test_adeo_ldsenk08_cluster_request_updates_zone_status(zigpy_device_from_v2_quirk):
