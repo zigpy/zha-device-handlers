@@ -1290,6 +1290,15 @@ def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
     cluster.update_attribute(ZCL_SERVING_SIZE, 3)
     assert cluster.get(ZCL_SERVING_SIZE) == 3
 
+    missing_attribute_default = object()
+    assert (
+        cluster.get(ZCL_LAST_FEEDING_SIZE, missing_attribute_default)
+        is missing_attribute_default
+    )
+
+    with pytest.raises(KeyError, match="not_a_real_attribute"):
+        cluster.get("not_a_real_attribute", missing_attribute_default)
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
