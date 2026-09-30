@@ -1532,6 +1532,99 @@ base_tuya_motion = (
 )
 
 
+# Tuya 24GHz mmWave presence + T/H/lux sensor, ZG-204ZX
+#
+# Unlike the ZG-204ZM above, this device exposes working standard ZCL clusters
+# alongside the Tuya manufacturer cluster: 0x0400 illuminance, 0x0402 temperature,
+# 0x0405 humidity, 0x0406 occupancy, 0x0500 IAS zone and 0x0001 power. Those DPs
+# (1 presence, 101 humidity, 106 illuminance, 110 battery, 111 temperature) are
+# therefore deliberately NOT mapped here - ZHA already creates those entities from
+# the real clusters, and mapping them again would duplicate them.
+#
+# This quirk only adds the radar tuning datapoints, which are otherwise
+# unreachable because nothing decodes 0xEF00 without a quirk.
+#
+# Note the datapoint map differs from the ZG-204ZM: on the ZG-204ZX, DP 101 is
+# humidity (not human motion state), battery is DP 110 (not DP 121), and there is
+# no human-motion-state datapoint. Map confirmed against a live device and against
+# zigbee-herdsman-converters `src/devices/tuya.ts`, definition `ZG-204ZX`.
+(
+    TuyaQuirkBuilder("_TZE200_w0ap83qu", "ZG-204ZX")
+    .tuya_number(
+        dp_id=2,
+        attribute_name="static_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="static_detection_sensitivity",
+        fallback_name="Static detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="static_detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=5,
+        step=0.1,
+        multiplier=0.01,
+        translation_key="static_detection_distance",
+        fallback_name="Static detection distance",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="anti_interference",
+        entity_type=EntityType.CONFIG,
+        translation_key="anti_interference",
+        fallback_name="Anti interference",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .tuya_switch(
+        dp_id=108,
+        attribute_name="indicator",
+        entity_type=EntityType.CONFIG,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_number(
+        dp_id=123,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 # Tuya mmWave radar 5.8GHz, ZY_HPS01
 (
     TuyaQuirkBuilder("_TZE204_ex3rcdha", "TS0601")
