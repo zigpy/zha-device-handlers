@@ -6,13 +6,23 @@ from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
 
 (
     QuirkBuilder("ADEO", "LDSENK08")
+    # Remove the default ZHA IAS Zone entity, so the Contact sensor below can take
+    # over its unique id. The function filter is required: the rule would otherwise
+    # also match the Contact sensor itself, since that now ends in the same suffix.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=IasZone.cluster_id,
+        function=lambda entity: entity.__class__.__name__ == "IASZone",
+    )
     # Contact/opening from IAS zone_status Alarm_1 (bit 0).
     .binary_sensor(
         attribute_name=IasZone.AttributeDefs.zone_status.name,
         cluster_id=IasZone.cluster_id,
         device_class=BinarySensorDeviceClass.OPENING,
         attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Alarm_1),
-        unique_id_suffix="contact",
+        # Reuse the default IAS Zone entity's unique id ("{ieee}-1-1280"), so existing
+        # users keep their entity id and history.
+        unique_id_suffix=str(IasZone.cluster_id),
         entity_type=EntityType.STANDARD,
         fallback_name="Contact",
     )
@@ -45,13 +55,6 @@ from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
         step=1,
         translation_key="sensitivity",
         fallback_name="Sensitivity",
-    )
-    # Prevent ZHA's stock IAS zone binary (unique id …-1-1280). Quirk binaries use
-    # -contact / -vibration / -tamper and must not match this suffix.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=IasZone.cluster_id,
-        unique_id_suffix="-1-1280",
     )
     .add_to_registry()
 )

@@ -1,5 +1,7 @@
 """Tests for Adeo quirks."""
 
+from unittest import mock
+
 import pytest
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl.clusters.security import IasZone
@@ -22,7 +24,7 @@ def _ldsenk08_definition():
 @pytest.mark.parametrize(
     ("unique_id_suffix", "zone_status_bit"),
     [
-        ("contact", IasZone.ZoneStatus.Alarm_1),
+        (str(IasZone.cluster_id), IasZone.ZoneStatus.Alarm_1),
         ("vibration", IasZone.ZoneStatus.Alarm_2),
         ("tamper", IasZone.ZoneStatus.Tamper),
     ],
@@ -43,3 +45,15 @@ def test_adeo_ldsenk08_zone_status_binary_sensors(unique_id_suffix, zone_status_
 
     assert entity.attribute_converter(zone_status_bit) is True
     assert entity.attribute_converter(all_bits & ~zone_status_bit) is False
+
+
+def test_adeo_ldsenk08_only_removes_default_ias_zone_entity():
+    """Test only ZHA's default IAS Zone entity is removed, not the Contact sensor."""
+    (rule,) = _ldsenk08_definition().disabled_default_entities
+
+    class IASZone:
+        pass
+
+    assert rule.cluster_id == IasZone.cluster_id
+    assert rule.function(IASZone()) is True
+    assert rule.function(mock.Mock()) is False
