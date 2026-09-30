@@ -2729,3 +2729,119 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
+    ),
+)
+async def test_cube_hold(zigpy_device_from_quirk, quirk):
+    """Test cube hold movement event."""
+    device = zigpy_device_from_quirk(quirk)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD,
+            {VALUE: zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE},
+        )
+    ]
+
+
+async def test_cube_t1_moved_after_inactivity(zigpy_device_from_quirk):
+    """Test Aqara T1 cube 1 minute inactivity movement event."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY,
+            {VALUE: zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE},
+        )
+    ]
+
+
+async def test_cube_aqgl01_inactivity_value_not_moved_after_inactivity(
+    zigpy_device_from_quirk,
+):
+    """Test the older cube does not treat raw value 2 as 1 minute inactivity movement.
+
+    Unlike the Aqara T1 cube, raw value 2 means "wakeup" on the older cube, so
+    it is not present in its movement type mapping and no event should fire.
+    """
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+async def test_cube_t1_side_up(zigpy_device_from_quirk):
+    """Test Aqara T1 cube side_up event."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02)
+    manufacturer_cluster = device.endpoints[2].opple_cluster
+    zha_listener = mock.MagicMock()
+    manufacturer_cluster.add_listener(zha_listener)
+
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.side_up.id,
+        3,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.SIDE_UP,
+            {zhaquirks.xiaomi.aqara.cube_aqgl01.ACTIVATED_FACE: 4},
+        )
+    ]
+
+
+async def test_cube_t1_manufacturer_cluster_battery_voltage(zigpy_device_from_quirk):
+    """Test Aqara T1 cube battery voltage reporting on the manufacturer cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02)
+    power_cluster = device.endpoints[1].power
+    manufacturer_cluster = device.endpoints[1].opple_cluster
+
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.battery_voltage_mv.id,
+        2950,
+    )
+
+    assert power_cluster["battery_voltage"] == 29.5
+
+
+async def test_cube_t1_manufacturer_cluster_battery_voltage_no_power_endpoint(
+    zigpy_device_from_quirk,
+):
+    """Test the manufacturer cluster ignores battery voltage on an endpoint without a power cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02)
+    manufacturer_cluster = device.endpoints[2].opple_cluster
+
+    # Should not raise, since endpoint 2 has no "power" cluster.
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.battery_voltage_mv.id,
+        2950,
+    )
