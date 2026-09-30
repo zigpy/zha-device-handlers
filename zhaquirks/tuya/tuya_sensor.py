@@ -400,6 +400,49 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
+    TuyaQuirkBuilder("_TZE284_o9ofysmo", "TS0601")  # Arteco ZS-301Z
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .tuya_dp(
+        dp_id=14,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        # Low/Middle/High (raw 0/1/2) -> 10/50/100%, in half-percent units.
+        converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 100),
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_number(
+        dp_id=103,
+        attribute_name="soil_moisture_calibration",
+        type=t.int32s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        device_class=NumberDeviceClass.MOISTURE,
+        translation_key="soil_moisture_calibration",
+        fallback_name="Soil moisture calibration",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="report_interval",
+        type=t.uint32_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=30,
+        max_value=1200,
+        step=30,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="report_interval",
+        fallback_name="Report interval",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
     TuyaQuirkBuilder("_TZE284_nt4pquef", "TS0601")  # SG502Z
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_enum(
