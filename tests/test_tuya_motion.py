@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -233,11 +234,12 @@ ZCL_ZG204ZX_MOTION_SENS = (
         (ZCL_ZG204ZX_MOTION_SENS, "motion_detection_sensitivity", 5),
     ],
 )
+@pytest.mark.parametrize("manufacturer", ["_TZE200_w0ap83qu", "HOBEIAN"])
 async def test_zg204zx_config_datapoints(
-    zigpy_device_from_v2_quirk, frame, attr_name, expected
+    zigpy_device_from_v2_quirk, manufacturer, frame, attr_name, expected
 ):
     """Test that ZG-204ZX radar tuning datapoints decode to the right attributes."""
-    quirked_device = zigpy_device_from_v2_quirk("_TZE200_w0ap83qu", "ZG-204ZX")
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "ZG-204ZX")
     ep = quirked_device.endpoints[1]
 
     assert ep.tuya_manufacturer is not None
@@ -255,7 +257,10 @@ async def test_zg204zx_config_datapoints(
     assert updates[0][1] == expected
 
 
-async def test_zg204zx_does_not_shadow_standard_clusters(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize("manufacturer", ["_TZE200_w0ap83qu", "HOBEIAN"])
+async def test_zg204zx_does_not_shadow_standard_clusters(
+    zigpy_device_from_v2_quirk, manufacturer
+):
     """ZG-204ZX exposes real ZCL clusters, so the quirk must not re-map their DPs.
 
     Unlike the ZG-204ZM, this device reports presence, temperature, humidity,
@@ -263,8 +268,13 @@ async def test_zg204zx_does_not_shadow_standard_clusters(zigpy_device_from_v2_qu
     therefore deliberately unmapped, and the ZG-204ZM's human_motion_state datapoint
     does not exist on this model at all.
     """
-    quirked_device = zigpy_device_from_v2_quirk("_TZE200_w0ap83qu", "ZG-204ZX")
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "ZG-204ZX")
     ep = quirked_device.endpoints[1]
+
+    # Configuration must run so ZHA enrolls the IAS zone, the only presence source
+    # on the HOBEIAN variant.
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    assert not entry.zha_device_factory.quirk_definition.skip_configuration
 
     assert "human_motion_state" not in ep.tuya_manufacturer.AttributeDefs
 

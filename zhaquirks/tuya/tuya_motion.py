@@ -1616,13 +1616,17 @@ base_tuya_motion = (
 #
 # Unlike the ZG-204ZM above, this device exposes working standard ZCL clusters
 # alongside the Tuya manufacturer cluster: 0x0400 illuminance, 0x0402 temperature,
-# 0x0405 humidity, 0x0406 occupancy, 0x0500 IAS zone and 0x0001 power. Those DPs
-# (1 presence, 101 humidity, 106 illuminance, 110 battery, 111 temperature) are
-# therefore deliberately NOT mapped here - ZHA already creates those entities from
-# the real clusters, and mapping them again would duplicate them.
+# 0x0405 humidity, 0x0500 IAS zone and 0x0001 power. The _TZE200_w0ap83qu variant
+# also exposes 0x0406 occupancy; the HOBEIAN one does not and reports presence
+# only through the IAS zone. Those DPs (1 presence, 101 humidity,
+# 106 illuminance, 110 battery, 111 temperature) are therefore deliberately NOT
+# mapped here - ZHA already creates those entities from the real clusters, and
+# mapping them again would duplicate them.
 #
 # This quirk only adds the radar tuning datapoints, which are otherwise
-# unreachable because nothing decodes 0xEF00 without a quirk.
+# unreachable because nothing decodes 0xEF00 without a quirk. Configuration is
+# not skipped: ZHA must still enroll the IAS zone and set up reporting on the
+# standard clusters.
 #
 # Note the datapoint map differs from the ZG-204ZM: on the ZG-204ZX, DP 101 is
 # humidity (not human motion state), battery is DP 110 (not DP 121), and there is
@@ -1630,6 +1634,7 @@ base_tuya_motion = (
 # zigbee-herdsman-converters `src/devices/tuya.ts`, definition `ZG-204ZX`.
 (
     TuyaQuirkBuilder("_TZE200_w0ap83qu", "ZG-204ZX")
+    .applies_to("HOBEIAN", "ZG-204ZX")
     .tuya_number(
         dp_id=2,
         attribute_name="static_detection_sensitivity",
@@ -1700,7 +1705,6 @@ base_tuya_motion = (
         translation_key="motion_detection_sensitivity",
         fallback_name="Motion detection sensitivity",
     )
-    .skip_configuration()
     .add_to_registry()
 )
 
