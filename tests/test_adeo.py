@@ -131,22 +131,20 @@ def test_adeo_ldsenk08_exposes_standard_sensitivity_attribute(
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("low", 0),
-        ("medium", 1),
-        ("high", 2),
         (0, 0),
         (4, 4),
+        ("3", 3),
     ],
 )
 def test_adeo_ldsenk08_sensitivity_normalization(value, expected):
-    """Test sensitivity normalization supports labels and numeric range."""
+    """Test sensitivity normalization accepts the numeric 0..4 range."""
     assert (
         zhaquirks.adeo.sensor_ldsenk08.IasMultiZoneCluster._normalize_sensitivity(value)
         == expected
     )
 
 
-@pytest.mark.parametrize("value", ["ultra", -1, 5])
+@pytest.mark.parametrize("value", ["high", -1, 5])
 def test_adeo_ldsenk08_sensitivity_normalization_invalid(value):
     """Test invalid sensitivity values are rejected."""
     with pytest.raises(ValueError):
@@ -174,7 +172,7 @@ async def test_adeo_ldsenk08_write_attributes_normalizes_sensitivity_by_name(
         ),
     ) as patched_super:
         result = await cluster.write_attributes(
-            {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "high"}
+            {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "2"}
         )
 
     assert result[0][0].status == foundation.Status.SUCCESS
@@ -251,7 +249,7 @@ async def test_adeo_ldsenk08_write_attributes_queues_sensitivity_on_failure(
         new=mock.AsyncMock(side_effect=TimeoutError),
     ) as patched_super:
         result = await cluster.write_attributes(
-            {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "high"}
+            {IasZone.AttributeDefs.current_zone_sensitivity_level.name: "2"}
         )
 
     assert result[0][0].status == foundation.Status.SUCCESS

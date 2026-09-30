@@ -25,7 +25,7 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Contact_Switch}
     STATUS_CHANGE_COMMAND_ID = IasZone.ClientCommandDefs.status_change_notification.id
     SENSITIVITY_ATTRIBUTE_ID = IasZone.AttributeDefs.current_zone_sensitivity_level.id
-    SENSITIVITY_LABELS = {"low": 0, "medium": 1, "high": 2}
+    # Five levels, matching the vendor gateway (see zigbee2mqtt LDSENK08).
     SENSITIVITY_MIN = 0
     SENSITIVITY_MAX = 4
     # Failures expected while the sleepy device is not listening; any status
@@ -41,13 +41,6 @@ class IasMultiZoneCluster(CustomCluster, IasZone):
     @classmethod
     def _normalize_sensitivity(cls, value: Any) -> int:
         """Normalize sensitivity value accepted by this sensor."""
-        if isinstance(value, str):
-            mapped_value = cls.SENSITIVITY_LABELS.get(value.lower())
-            if mapped_value is None:
-                msg = f"Unsupported sensitivity label: {value}"
-                raise ValueError(msg)
-            return mapped_value
-
         normalized_value = int(value)
         if not cls.SENSITIVITY_MIN <= normalized_value <= cls.SENSITIVITY_MAX:
             msg = (
