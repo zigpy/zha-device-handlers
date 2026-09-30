@@ -4,6 +4,7 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
+from zhaquirks.builder import EntityType
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -701,6 +702,545 @@ class BorderSetting(t.enum8):
         unique_id_suffix="border_remove_all",
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Curtain motor / roller blind motor (standard Tuya cover protocol)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_1.html
+(
+    TuyaQuirkBuilder("_TZE200_5zbp6j0u", "TS0601")
+    .applies_to("_TZE200_nkoabg8w", "TS0601")
+    .applies_to("_TZE200_4vobcgd3", "TS0601")
+    .applies_to("_TZE284_4vobcgd3", "TS0601")
+    .applies_to("_TZE200_r0jdjrvi", "TS0601")
+    .applies_to("_TZE200_pk0sfzvr", "TS0601")
+    .applies_to("_TZE200_fdtjuw7u", "TS0601")
+    .applies_to("_TZE200_bqcqqjpb", "TS0601")
+    .applies_to("_TZE200_rmymn92d", "TS0601")
+    .applies_to("_TZE200_feolm6rk", "TS0601")
+    .applies_to("_TZE200_tvrvdj6o", "TS0601")
+    .applies_to("_TZE200_b2u1drdv", "TS0601")
+    .applies_to("_TZE200_ol5jlkkr", "TS0601")
+    .applies_to("_TZE204_guvc7pdy", "TS0601")
+    .applies_to("_TZE200_zxxfv8wi", "TS0601")
+    .applies_to("_TZE200_1fuxihti", "TS0601")
+    .applies_to("_TZE284_1fuxihti", "TS0601")
+    .applies_to("_TZE204_1fuxihti", "TS0601")
+    .applies_to("_TZE204_57hjqelq", "TS0601")
+    .applies_to("_TZE204_vvvtcehj", "TS0601")
+    .applies_to("_TZE204_m1wl5fvq", "TS0601")
+    .applies_to("_TZE200_en3wvcbx", "TS0601")
+    .applies_to("_TZE200_g5wdnuow", "TS0601")
+    .applies_to("_TZE200_udank5zs", "TS0601")
+    .applies_to("_TZE204_dpqsvdbi", "TS0601")
+    .applies_to("_TZE200_nv6nxo0c", "TS0601")
+    .applies_to("_TZE200_3ylew7b4", "TS0601")
+    .applies_to("_TZE200_llm0epxg", "TS0601")
+    .applies_to("_TZE200_n1aauwb4", "TS0601")
+    .applies_to("_TZE200_xu4a5rhj", "TS0601")
+    .applies_to("_TZE200_bjzrowv2", "TS0601")
+    .applies_to("_TZE284_bjzrowv2", "TS0601")
+    .applies_to("_TZE204_bjzrowv2", "TS0601")
+    .applies_to("_TZE200_axgvo9jh", "TS0601")
+    .applies_to("_TZE284_gaj531w3", "TS0601")
+    .applies_to("_TZE200_yia0p3tr", "TS0601")
+    .applies_to("_TZE200_rsj5pu8y", "TS0601")
+    .applies_to("_TZE200_yrugsphv", "TS0601")
+    .applies_to("_TZE204_yrugsphv", "TS0601")
+    .applies_to("_TZE204_nladmfvf", "TS0601")
+    .applies_to("_TZE204_lh3arisb", "TS0601")
+    .applies_to("_TZE284_udank5zs", "TS0601")
+    .applies_to("_TZE284_b7kbnl6q", "TS0601")
+    .applies_to("_TZE200_7shyddj3", "TS0601")
+    .applies_to("_TZE204_a2jcoyuk", "TS0601")
+    .applies_to("_TZE204_ic7jtutb", "TS0601")
+    .applies_to("_TZE204_odlldrxx", "TS0601")
+    .applies_to("_TZE204_wzre8hu2", "TS0601")
+    .applies_to("_TZE200_odlldrxx", "TS0601")
+    .applies_to("_TZE200_m6lwazh9", "TS0601")
+    .applies_to("_TZE204_zuq5xxib", "TS0601")
+    .applies_to("_TZE204_xu4a5rhj", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Curtain motor with fixed speed
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_2.html
+(
+    TuyaQuirkBuilder("_TZE200_eegnwoyw", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class OpeningMode(t.enum8):
+    """Opening mode values."""
+
+    Tilt = 0x00
+    Lift = 0x01
+
+
+class MotorSide(t.enum8):
+    """Motor side values."""
+
+    Left = 0x00
+    Right = 0x01
+
+
+# Cover motor with battery, illuminance, opening mode
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_6.html
+(
+    TuyaQuirkBuilder("_TZE200_cpbo62rn", "TS0601")
+    .applies_to("_TZE200_libht6ua", "TS0601")
+    .applies_to("_TZE284_libht6ua", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_battery(dp_id=13)
+    .tuya_illuminance(dp_id=104)
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="opening_mode",
+        enum_class=OpeningMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="opening_mode",
+        fallback_name="Opening mode",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motor_side",
+        enum_class=MotorSide,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_side",
+        fallback_name="Motor side",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor with battery
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_7.html
+(
+    TuyaQuirkBuilder("_TZE200_zvo63cmo", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=101)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class CoverMotorDirection(t.enum8):
+    """Cover motor direction values."""
+
+    Forward = 0x00
+    Back = 0x01
+
+
+class MotorWorkingMode(t.enum8):
+    """Motor working mode values."""
+
+    Continuous = 0x00
+    Intermittently = 0x01
+
+
+# Cover motor with direction, fault, and stroke limits
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_8.html
+(
+    TuyaQuirkBuilder("_TZE204_r0jdjrvi", "TS0601")
+    .applies_to("_TZE200_g5xqosu7", "TS0601")
+    .applies_to("_TZE204_g5xqosu7", "TS0601")
+    .applies_to("_TZE284_fzo2pocs", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_enum(
+        dp_id=106,
+        attribute_name="motor_working_mode",
+        enum_class=MotorWorkingMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_working_mode",
+        fallback_name="Motor working mode",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class MotorDirectionNormalReversed(t.enum8):
+    """Motor direction normal/reversed values."""
+
+    Normal = 0x00
+    Reversed = 0x01
+
+
+# Cover motor with battery and motor direction
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_9.html
+(
+    TuyaQuirkBuilder("_TZE200_p2qzzazi", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=101)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor with motor direction
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_10.html
+(
+    TuyaQuirkBuilder("_TZE200_clm4gdw4", "TS0601")
+    .applies_to("_TZE200_2vfxweng", "TS0601")
+    .applies_to("_TZE200_gnw1rril", "TS0601")
+    .applies_to("_TZE204_ycke4deo", "TS0601")
+    .applies_to("_TZE284_koxaopnk", "TS0601")
+    .applies_to("_TZE284_clm4gdw4", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Pro Line Zigbee curtain motor (ZM79E-DT)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/ZM79E-DT.html
+(
+    TuyaQuirkBuilder("_TZE200_ax8a8ahx", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="opening_mode",
+        enum_class=OpeningMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="opening_mode",
+        fallback_name="Opening mode",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motor_side",
+        enum_class=MotorSide,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_side",
+        fallback_name="Motor side",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor (BX82-TYZ1)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/BX82-TYZ1.html
+(
+    TuyaQuirkBuilder("_TZE204_2rvvqjoa", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Cover motor with battery, direction, fault, and border settings
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_3.html
+(
+    TuyaQuirkBuilder("_TZE200_eevqq1uv", "TS0601")
+    .applies_to("_TZE204_ejh6owwz", "TS0601")
+    .applies_to("_TZE200_68nvbi09", "TS0601")
+    .applies_to("_TZE200_vexa5o82", "TS0601")
+    .applies_to("_TZE200_sfqyhvpv", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=13)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Ayvolt Blinds
+# Z2M reference: https://www.zigbee2mqtt.io/devices/_TZE204_q9xty0ad.html
+(
+    TuyaQuirkBuilder("_TZE204_q9xty0ad", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class CoverDotMode(t.enum8):
+    """Cover dot mode values."""
+
+    Single = 0x00
+    Multi = 0x01
+
+
+class CoverBorderMode(t.enum8):
+    """Cover border mode values."""
+
+    Up = 0x00
+    Down = 0x01
+    Delete = 0x02
+
+
+# Cover motor with speed and dot mode
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_11.html
+(
+    TuyaQuirkBuilder("_TZE284_r3szw0xr", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=9, position_control_dp=8)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="motor_direction",
+        enum_class=MotorDirectionNormalReversed,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="motor_speed",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=5,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_speed",
+        fallback_name="Motor speed",
+    )
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="dot_mode",
+        enum_class=CoverDotMode,
+        entity_type=EntityType.CONFIG,
+        translation_key="dot_mode",
+        fallback_name="Dot mode",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Curtain motor with battery and direction
+# Z2M reference: https://www.zigbee2mqtt.io/devices/TS0601_cover_12.html
+(
+    TuyaQuirkBuilder("_TZE200_mlglxwp3", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=103)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Zigbee roller shade motor (RM28-LE)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/RM28-LE.html
+(
+    TuyaQuirkBuilder("_TZE200_fodv6bkr", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=13)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=CoverMotorDirection,
+        entity_type=EntityType.CONFIG,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class CoverControlBack(t.enum8):
+    """Cover control back direction values."""
+
+    Forward = 0x00
+    Back = 0x01
+
+
+# Cover plug-in receiver (PIMS3028)
+# Z2M reference: https://www.zigbee2mqtt.io/devices/PIMS3028.html
+(
+    TuyaQuirkBuilder("_TZE200_eqpaxqdv", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="control_back",
+        enum_class=CoverControlBack,
+        entity_type=EntityType.CONFIG,
+        translation_key="control_back",
+        fallback_name="Motor running direction",
+    )
+    .tuya_switch(
+        dp_id=6,
+        attribute_name="auto_power",
+        entity_type=EntityType.CONFIG,
+        translation_key="auto_power",
+        fallback_name="Auto power",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="fault",
+        translation_key="fault",
+        fallback_name="Fault",
     )
     .skip_configuration()
     .add_to_registry()
