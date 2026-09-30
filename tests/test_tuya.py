@@ -13,24 +13,37 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
+    BUTTON_1,
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
 )
 from zhaquirks.legacy import CustomDevice, get_device
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+    TuyaNoBindPowerConfigurationCluster,
+    TuyaSmartRemoteOnOffCluster,
+    TuyaZBE000Cluster,
+)
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
@@ -1627,6 +1640,87 @@ def test_multiple_attributes_report():
     assert data.data.datapoints[3].dp == 9
 
 
+def test_ts0041_fa9mlvja_signature(assert_signature_matches_quirk):
+    """Match the one-button remote's six advertised endpoints."""
+    signature = {
+        "manufacturer": "_TZ3000_fa9mlvja",
+        "model": "TS0041",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0000",
+                "in_clusters": ["0x0000", "0x0001", "0x0006", "0xe000"],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            **{
+                str(endpoint_id): {
+                    "profile_id": 260,
+                    "device_type": "0x0000",
+                    "in_clusters": ["0x0001", "0x0006"],
+                    "out_clusters": [],
+                }
+                for endpoint_id in range(2, 7)
+            },
+        },
+    }
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB, signature
+    )
+
+
+def test_ts0041_fa9mlvja_replacement(zigpy_device_from_quirk):
+    """Keep only the real endpoint, with battery and remote event clusters."""
+    quirk = zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB
+    raw_device = zigpy_device_from_quirk(quirk, apply_quirk=False)
+    device = get_device(raw_device)
+    assert type(device) is quirk
+    assert set(device.endpoints) == {0, 1}
+
+    endpoint = device.endpoints[1]
+    assert endpoint.profile_id == zha.PROFILE_ID
+    assert endpoint.device_type == zha.DeviceType.ON_OFF_SWITCH
+    assert set(endpoint.in_clusters) == {
+        Basic.cluster_id,
+        PowerConfiguration.cluster_id,
+        TuyaZBE000Cluster.cluster_id,
+    }
+    assert isinstance(endpoint.power, TuyaNoBindPowerConfigurationCluster)
+    assert set(endpoint.out_clusters) == {
+        Time.cluster_id,
+        Ota.cluster_id,
+        OnOff.cluster_id,
+    }
+    assert isinstance(
+        endpoint.out_clusters[OnOff.cluster_id], TuyaSmartRemoteOnOffCluster
+    )
+
+    # Restrict the fix to the confirmed manufacturer.
+    raw_device.manufacturer = "_some_random_manuf"
+    assert get_device(raw_device) is raw_device
+
+
+@pytest.mark.parametrize(
+    "press_type, action",
+    ((0x00, SHORT_PRESS), (0x01, DOUBLE_PRESS), (0x02, LONG_PRESS)),
+)
+async def test_ts0041_fa9mlvja_press(zigpy_device_from_quirk, press_type, action):
+    """Decode each button payload and match its device automation trigger."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB)
+    cluster = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    listener = mock.Mock()
+    cluster.add_listener(listener)
+
+    command_id = TuyaSmartRemoteOnOffCluster.ServerCommandDefs.press_type.id
+    hdr, args = cluster.deserialize(bytes((0x19, 1, command_id, press_type)))
+    cluster.handle_message(hdr, args)
+
+    listener.zha_send_event.assert_called_once_with(action, [])
+    assert device.device_automation_triggers == {
+        (press, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: press}
+        for press in (SHORT_PRESS, DOUBLE_PRESS, LONG_PRESS)
+    }
+
+
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 @pytest.mark.parametrize(
     "quirk",
@@ -1670,7 +1764,10 @@ async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
 
 @pytest.mark.parametrize(
     "quirk",
-    (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,),
+    (
+        zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,
+        zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB,
+    ),
 )
 async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
     """Test that the power configuration cluster is not bound and no attribute reporting is set up."""
