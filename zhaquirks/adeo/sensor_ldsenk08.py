@@ -3,13 +3,12 @@
 from typing import Any
 
 from zigpy.exceptions import DeliveryError
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZONE_STATUS, ZONE_TYPE
 
 

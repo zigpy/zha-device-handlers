@@ -166,7 +166,7 @@ async def test_adeo_ldsenk08_write_attributes_normalizes_sensitivity_by_name(
     cluster = device.endpoints[1].ias_zone
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(
             return_value=[
                 [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
@@ -198,7 +198,7 @@ async def test_adeo_ldsenk08_write_attributes_normalizes_sensitivity_by_id(
     sensitivity_id = IasZone.AttributeDefs.current_zone_sensitivity_level.id
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(
             return_value=[
                 [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
@@ -225,7 +225,7 @@ async def test_adeo_ldsenk08_write_attributes_passthrough_non_sensitivity(
     zone_status_id = IasZone.AttributeDefs.zone_status.id
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(return_value=[[mock.sentinel.ok]]),
     ) as patched_super:
         result = await cluster.write_attributes({zone_status_id: 1})
@@ -247,7 +247,7 @@ async def test_adeo_ldsenk08_write_attributes_queues_sensitivity_on_failure(
     cluster = device.endpoints[1].ias_zone
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(side_effect=TimeoutError),
     ) as patched_super:
         result = await cluster.write_attributes(
@@ -278,7 +278,7 @@ async def test_adeo_ldsenk08_apply_pending_sensitivity_on_wake(
     cluster.create_catching_task = mock.MagicMock(side_effect=lambda coro: coro.close())
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(
             return_value=[
                 [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
@@ -312,7 +312,7 @@ async def test_adeo_ldsenk08_write_attributes_queues_on_retryable_exception(
     cluster = device.endpoints[1].ias_zone
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(side_effect=exception),
     ):
         result = await cluster.write_attributes({SENSITIVITY_ID: 1})
@@ -336,7 +336,7 @@ async def test_adeo_ldsenk08_write_attributes_raises_unexpected_exception(
 
     with (
         mock.patch(
-            "zigpy.quirks.CustomCluster.write_attributes",
+            "zhaquirks.clusters.CustomCluster.write_attributes",
             new=mock.AsyncMock(side_effect=RuntimeError),
         ),
         pytest.raises(RuntimeError),
@@ -363,7 +363,7 @@ async def test_adeo_ldsenk08_write_attributes_returns_device_status(
     failure = _status_result(status)
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(return_value=failure),
     ):
         result = await cluster.write_attributes({SENSITIVITY_ID: 3})
@@ -411,7 +411,7 @@ async def test_adeo_ldsenk08_apply_pending_sensitivity_device_status(
     cluster._sensitivity_retry_in_flight = True
 
     with mock.patch(
-        "zigpy.quirks.CustomCluster.write_attributes",
+        "zhaquirks.clusters.CustomCluster.write_attributes",
         new=mock.AsyncMock(
             return_value=_status_result(foundation.Status.UNSUPPORTED_ATTRIBUTE)
         ),
@@ -438,7 +438,7 @@ async def test_adeo_ldsenk08_apply_pending_sensitivity_still_asleep(
 
     with (
         mock.patch(
-            "zigpy.quirks.CustomCluster.write_attributes",
+            "zhaquirks.clusters.CustomCluster.write_attributes",
             new=mock.AsyncMock(side_effect=TimeoutError),
         ),
         pytest.raises(TimeoutError),
