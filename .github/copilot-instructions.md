@@ -53,8 +53,8 @@ from zhaquirks.builder import QuirkBuilder
 (
     QuirkBuilder("Manufacturer", "Model")
     .applies_to("AltManufacturer", "Model")  # Additional models
-    .replaces(CustomClusterClass)             # Replace standard cluster
-    .device_automation_triggers({...})        # Button/action mappings
+    .replaces(CustomClusterClass)  # Replace standard cluster
+    .device_automation_triggers({...})  # Button/action mappings
     .switch(attribute_name=..., fallback_name=...)  # HA entity
     .add_to_registry()
 )
@@ -436,6 +436,7 @@ class MyDevice(CustomDevice):
 from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.clusters.general import OnOff
 
+
 class CustomOnOffCluster(CustomCluster, OnOff):
     """Custom OnOff with manufacturer-specific attributes."""
 
@@ -451,14 +452,17 @@ class CustomOnOffCluster(CustomCluster, OnOff):
 from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+
 class VOCIndex(CustomCluster):
     """Custom cluster with no ZCL base."""
 
-    cluster_id: t.uint16_t = 0xFC7E       # Manufacturer-specific cluster ID
+    cluster_id: t.uint16_t = 0xFC7E  # Manufacturer-specific cluster ID
     name: str = "IKEA VOC Index"
-    ep_attribute: str = "voc_index"        # Attribute name on endpoint
+    ep_attribute: str = "voc_index"  # Attribute name on endpoint
 
-    class AttributeDefs(BaseAttributeDefs):  # Note: BaseAttributeDefs, not a ZCL cluster
+    class AttributeDefs(
+        BaseAttributeDefs
+    ):  # Note: BaseAttributeDefs, not a ZCL cluster
         measured_value: Final = ZCLAttributeDef(
             id=0x0000, type=t.Single, access="rp", manufacturer_code=0x117C
         )
@@ -477,9 +481,11 @@ class VOCIndex(CustomCluster):
 ```python
 class BoschOperatingMode(t.enum8):
     """Operating mode values."""
+
     Schedule = 0x00
     Manual = 0x01
     Pause = 0x05
+
 
 # Use in attribute definition:
 operating_mode = ZCLAttributeDef(
@@ -524,6 +530,7 @@ quirked = zigpy_device_from_quirk(quirk_class)
 # For v2 quirks
 quirked = zigpy_device_from_v2_quirk(model, manufacturer)
 
+
 # Verify signature matches quirk (useful for v1 quirks)
 def test_my_device_signature(assert_signature_matches_quirk):
     signature = {...}  # From HA device page "Zigbee Device Signature"
@@ -537,10 +544,12 @@ def test_my_device_signature(assert_signature_matches_quirk):
     QuirkBuilder("Manufacturer", "Model")
     .friendly_name(model="Wireless Mini Switch", manufacturer="Acme")
     .replaces(ExistingCustomCluster)
-    .device_automation_triggers({
-        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
-        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
-    })
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
+            (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+        }
+    )
     .add_to_registry()
 )
 ```
@@ -558,21 +567,35 @@ Quirks are organized by manufacturer in `zhaquirks/<manufacturer>/`:
 ```python
 # Constants for signatures
 from zhaquirks.const import (
-    MODELS_INFO, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS,
-    PROFILE_ID, DEVICE_TYPE, SKIP_CONFIGURATION,
+    MODELS_INFO,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    DEVICE_TYPE,
+    SKIP_CONFIGURATION,
 )
 
 # Device automation triggers
 from zhaquirks.const import (
-    SHORT_PRESS, LONG_PRESS, DOUBLE_PRESS, TRIPLE_PRESS,
-    COMMAND, COMMAND_ON, COMMAND_OFF, COMMAND_TOGGLE,
+    SHORT_PRESS,
+    LONG_PRESS,
+    DOUBLE_PRESS,
+    TRIPLE_PRESS,
+    COMMAND,
+    COMMAND_ON,
+    COMMAND_OFF,
+    COMMAND_TOGGLE,
 )
 
 # Quirk building
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.builder import EntityPlatform, EntityType
 from zhaquirks.builder import (  # Unit constants
-    UnitOfTemperature, UnitOfTime, UnitOfEnergy, UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+    UnitOfEnergy,
+    UnitOfPower,
 )
 from zhaquirks.builder import BinarySensorDeviceClass
 from zhaquirks.builder import NumberDeviceClass
@@ -592,16 +615,16 @@ import zigpy.types as t
 
 ```python
 # Good - use cluster and attribute/command references
-Metering.cluster_id                            # Cluster ID (int)
-Metering.AttributeDefs.multiplier.id           # Attribute ID (int)
-Metering.AttributeDefs.multiplier.name         # Attribute name (str)
+Metering.cluster_id  # Cluster ID (int)
+Metering.AttributeDefs.multiplier.id  # Attribute ID (int)
+Metering.AttributeDefs.multiplier.name  # Attribute name (str)
 WindowCovering.ServerCommandDefs.go_to_lift_percentage.id  # Server command ID
-IasZone.ClientCommandDefs.status_change_notification.id    # Client command ID
+IasZone.ClientCommandDefs.status_change_notification.id  # Client command ID
 
 # Bad - magic numbers
 0x0702  # What cluster is this?
 0x0301  # What attribute is this?
-0x00    # What command is this?
+0x00  # What command is this?
 ```
 
 **Accessing clusters on an endpoint** - Use the cluster's `ep_attribute` (e.g., `IasZone.ep_attribute` is `"ias_zone"`):
