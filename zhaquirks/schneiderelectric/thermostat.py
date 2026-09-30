@@ -52,6 +52,9 @@ class SEControlStatus(t.enum8):
     # Demand forced by "emergency" button
     LocalForceOn = 0x61
 
+    # The thermostat is switched off (system mode off)
+    Off = 0x80
+
     # The output is being driven as part of a maintenance operation
     Maintenance = 0x82
 

@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from tests.common import ClusterListener
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
 import zhaquirks.schneiderelectric.outlet
+from zhaquirks.schneiderelectric.thermostat import SEControlStatus, SEThermostat
 
 zhaquirks.setup()
 
@@ -107,3 +108,26 @@ async def test_schneider_device_temp(zigpy_device_from_quirk, quirk):
     assert len(metering_listener.attribute_updates) == 2
     assert metering_listener.attribute_updates[1][0] == summation_delivered_attr_id
     assert metering_listener.attribute_updates[1][1] == 25  # not modified
+
+
+@pytest.mark.parametrize("model", ("EKO07259", "WDE002497", "WDE011680"))
+async def test_thermostat_control_status_off(zigpy_device_from_v2_quirk, model):
+    """Test that control status 0x80, reported while switched off, is known."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=SE_MANUF_NAME,
+        model=model,
+        endpoint_ids=[1, 2, 3, 5],
+    )
+    thermostat_cluster = device.endpoints[1].in_clusters[SEThermostat.cluster_id]
+    assert isinstance(thermostat_cluster, SEThermostat)
+
+    control_status_attr_id = SEThermostat.AttributeDefs.se_control_status.id
+    thermostat_cluster.update_attribute(control_status_attr_id, 0x80)
+
+    # ZHA's enum sensor formats the cached raw value as ``enum(value).name``;
+    # without an ``Off`` member this would be "undefined_0x80", which Home
+    # Assistant rejects as not being one of the sensor's options.
+    value = thermostat_cluster.get(control_status_attr_id)
+    assert SEControlStatus(value) is SEControlStatus.Off
+    assert SEControlStatus(value).name == "Off"
