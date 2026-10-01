@@ -50,6 +50,7 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+FIRMWARE_VERSION = 0x00EE
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
@@ -419,6 +420,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
         )
+        firmware_version: Final = ZCLAttributeDef(
+            id=FIRMWARE_VERSION, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
@@ -430,6 +434,46 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
         super()._update_attribute(attrid, value)
+
+
+class XiaomiE1OtaCluster(CustomCluster, Ota):
+    """OTA cluster that corrects the wrong firmware version reported by the E1 TRV.
+
+    The thermostat reports a low, incorrect ``current_file_version`` in both the OTA
+    attribute (0x0002) and its ``query_next_image`` command, so the device looks
+    permanently out of date and the update entity is stuck on "update available" even
+    right after a successful update. The real, OTA-comparable version is reported on
+    the Aqara manufacturer cluster (attribute 0x00EE); substitute it on both paths.
+
+    This mirrors the ``lumiFileVersion`` override Zigbee2MQTT applies to this model.
+    """
+
+    def _correct_file_version(self) -> int | None:
+        """Return the real firmware version from the Aqara cluster, if known."""
+        return self.endpoint.opple_cluster.get(FIRMWARE_VERSION)
+
+    def _update_attribute(self, attrid, value):
+        """Override the device's wrong ``current_file_version`` attribute value."""
+        if (
+            attrid == Ota.AttributeDefs.current_file_version.id
+            and (real_version := self._correct_file_version()) is not None
+        ):
+            value = real_version
+        super()._update_attribute(attrid, value)
+
+    def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+        """Override the wrong ``current_file_version`` in ``query_next_image``.
+
+        zigpy caches this command as ``last_query_cmd`` and uses its
+        ``current_file_version`` directly to decide whether an image is available, so
+        the value must be corrected before delegating to the base handler.
+        """
+        if (
+            hdr.command_id == self.ServerCommandDefs.query_next_image.id
+            and (real_version := self._correct_file_version()) is not None
+        ):
+            args = args.replace(current_file_version=real_version)
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class AGL001(XiaomiCustomDevice):
@@ -477,7 +521,7 @@ class AGL001(XiaomiCustomDevice):
                     Identify.cluster_id,
                     ThermostatCluster,
                     AqaraThermostatSpecificCluster,
-                    Ota.cluster_id,
+                    XiaomiE1OtaCluster,
                 ],
             }
         }

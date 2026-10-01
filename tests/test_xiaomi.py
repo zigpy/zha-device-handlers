@@ -25,6 +25,7 @@ from zigpy.zcl.clusters.general import (
     MultistateInput,
     MultistateOutput,
     OnOff,
+    Ota,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -1493,6 +1494,58 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
+
+
+async def test_xiaomi_e1_thermostat_ota_file_version_override(zigpy_device_from_quirk):
+    """Test the E1 thermostat's wrong OTA current_file_version is overridden.
+
+    The device reports a low, incorrect current_file_version in both the OTA attribute
+    and its query_next_image command. The real, OTA-comparable version is reported on
+    the Aqara manufacturer cluster (attribute 0x00EE), and the quirk substitutes it on
+    both paths so ZHA's update entity no longer shows a permanent "update available".
+    """
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    ota_cluster = device.endpoints[1].out_clusters[Ota.cluster_id]
+
+    current_file_version_id = Ota.AttributeDefs.current_file_version.id
+    firmware_version_id = zhaquirks.xiaomi.aqara.thermostat_agl001.FIRMWARE_VERSION
+
+    wrong_version = 0x00000019  # device reports a low/wrong value (decimal 25)
+    real_version = 0x00000407  # actual, OTA-comparable firmware version
+
+    # Until the real version is known, the wrong value passes through unchanged.
+    ota_cluster.update_attribute(current_file_version_id, wrong_version)
+    assert ota_cluster.get(current_file_version_id) == wrong_version
+
+    # The device reports its real firmware version on the Aqara cluster (0x00EE).
+    opple_cluster.update_attribute(firmware_version_id, real_version)
+
+    # Now the wrong OTA attribute value is corrected to the real version.
+    ota_cluster.update_attribute(current_file_version_id, wrong_version)
+    assert ota_cluster.get(current_file_version_id) == real_version
+
+    # The wrong version in query_next_image is corrected before zigpy caches it as
+    # last_query_cmd (which drives the "update available" decision).
+    captured_tasks = []
+    ota_cluster.create_catching_task = lambda coro, *args, **kwargs: (
+        captured_tasks.append(coro)
+    )
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=1, command_id=Ota.ServerCommandDefs.query_next_image.id
+    )
+    cmd = Ota.ServerCommandDefs.query_next_image.schema(
+        field_control=Ota.QueryNextImageCommand.FieldControl(0),
+        manufacturer_code=0x115F,
+        image_type=0x0000,
+        current_file_version=wrong_version,
+    )
+    ota_cluster.handle_cluster_request(hdr, cmd)
+    await captured_tasks[0]
+
+    assert ota_cluster.last_query_cmd is not None
+    assert ota_cluster.last_query_cmd.current_file_version == real_version
 
 
 @pytest.mark.parametrize(
