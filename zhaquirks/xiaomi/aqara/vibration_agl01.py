@@ -3,9 +3,10 @@
 Vibration and triple-tap events activate a vibration binary sensor with a
 configurable reset timeout. Sensitivity is configured on endpoint 1.
 
-Endpoint 2 reports vibration via Xiaomi attribute 0x0118 and triple-tap via
-MultistateInput present_value, both with value 1. The redundant IAS Zone
-attribute 0x002D event path is intentionally omitted.
+Endpoint 2 reports movement via Xiaomi attribute 0x0118, exposed as vibration,
+and triple-tap via MultistateInput present_value, both with value 1. IAS Zone
+attribute 0x002D reports shake (1) and triple-tap (2). This path is intentionally
+omitted, so distinct shake events are not supported.
 """
 
 # Based on nachtaap's quirk from zigpy/zha-device-handlers#4137.
