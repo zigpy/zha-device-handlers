@@ -27,6 +27,7 @@ import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
 from zigpy.zcl import (
+    AttributeClearedEvent,
     AttributeReportedEvent,
     AttributeUnsupportedEvent,
     AttributeUpdatedEvent,
@@ -92,7 +93,6 @@ class LocalDataCluster(CustomCluster):
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,18 +133,129 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(
-                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
-                )
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
             ):
                 record.status = foundation.Status.SUCCESS
         return (records,)
+
+    async def _read_non_constant_attributes(
+        self,
+        attributes: dict[
+            int | str | foundation.ZCLAttributeDef, foundation.ZCLAttributeDef
+        ],
+        *,
+        allow_cache: bool,
+        only_cache: bool,
+        manufacturer: int | UndefinedType | None,
+        **kwargs,
+    ) -> typing.Any:
+        """Serve attributes locally, without feeding the values back into the cache.
+
+        zigpy stores every successful read result via `_update_attribute`. For a
+        local cluster, the result already comes from the cache or `_DEFAULT_VALUES`,
+        so that would persist defaults as if the device reported them, and convert
+        values a second time on clusters that convert in `_update_attribute`.
+        """
+        success: dict[typing.Any, typing.Any] = {}
+        failure: dict[typing.Any, typing.Any] = {}
+
+        if allow_cache or only_cache:
+            # Reads served from the cache have no side effects in zigpy
+            success, failure = await super()._read_non_constant_attributes(
+                attributes,
+                allow_cache=True,
+                only_cache=True,
+                manufacturer=manufacturer,
+                **kwargs,
+            )
+
+            if only_cache:
+                return success, failure
+
+            attributes = {
+                attribute: attr_def
+                for attribute, attr_def in attributes.items()
+                if attribute not in success and attribute not in failure
+            }
+
+            if not attributes:
+                return success, failure
+
+        # Local reads are not split into separate requests
+        kwargs.pop("split_requests", None)
+
+        result = await self.read_attributes_raw(
+            [attr_def.id for attr_def in attributes.values()],
+            manufacturer=None if manufacturer is UNDEFINED else manufacturer,
+            **kwargs,
+        )
+
+        if not isinstance(result[0], list):
+            for attribute in attributes:
+                failure[attribute] = result[0]
+
+            return success, failure
+
+        records = {record.attrid: record for record in result[0]}
+
+        for attribute, attr_def in attributes.items():
+            record = records.get(attr_def.id)
+
+            if record is None:
+                # Omitted from the response. zigpy re-reads such attributes alone, but
+                # that can't help for a local read, so fail them right away
+                failure[attribute] = foundation.Status.INSUFFICIENT_SPACE
+                continue
+
+            if record.status == foundation.Status.SUCCESS:
+                value = record.value.value
+                success[attribute] = value if value is None else attr_def.type(value)
+
+                if self._attr_cache.is_unsupported(attr_def):
+                    # Drop a stale unsupported mark, like zigpy does on a read
+                    self._attr_cache.remove_unsupported(attr_def)
+                    self.emit(
+                        AttributeClearedEvent.event_type,
+                        AttributeClearedEvent(
+                            device_ieee=str(self.endpoint.device.ieee),
+                            endpoint_id=self.endpoint.endpoint_id,
+                            cluster_type=self.cluster_type,
+                            cluster_id=self.cluster_id,
+                            attribute_name=attr_def.name,
+                            attribute_id=attr_def.id,
+                            manufacturer_code=self._get_effective_manufacturer_code(
+                                attr_def
+                            ),
+                        ),
+                    )
+
+                continue
+
+            failure[attribute] = record.status
+
+            if record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE:
+                # Keep marking attributes without a value as unsupported, like zigpy
+                self.emit(
+                    AttributeUnsupportedEvent.event_type,
+                    AttributeUnsupportedEvent(
+                        device_ieee=str(self.endpoint.device.ieee),
+                        endpoint_id=self.endpoint.endpoint_id,
+                        cluster_type=self.cluster_type,
+                        cluster_id=self.cluster_id,
+                        attribute_name=attr_def.name,
+                        attribute_id=attr_def.id,
+                        manufacturer_code=self._get_effective_manufacturer_code(
+                            attr_def
+                        ),
+                    ),
+                )
+
+        return success, failure
 
     def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
         """Convert attributes dict to list of Attribute records."""
