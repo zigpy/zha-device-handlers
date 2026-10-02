@@ -1024,9 +1024,13 @@ async def test_local_data_cluster(device_mock) -> None:
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 
-    # reading constant attribute works, without caching it
+    events = []
+    cluster.on_event(zcl.AttributeReadEvent.event_type, events.append)
+
+    # reading constant attribute works, without caching or emitting it
     assert await cluster.read_attributes([1]) == ({1: 10}, {})
     assert 1 not in cluster._attr_cache
+    assert events == []
 
     # reading valid attribute returns None with success status
     assert await cluster.read_attributes([2]) == ({2: None}, {})
@@ -1177,3 +1181,14 @@ async def test_custom_cluster_constant_attributes_not_cached(
     cluster._attr_cache.mark_unsupported(constant_attr)
     assert not cluster.is_attribute_unsupported(constant_attr.name)
     assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )
+
+    # a stale cached value, e.g. persisted under an older quirk, is ignored too
+    cluster._attr_cache.set_value(constant_attr, 99)
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )

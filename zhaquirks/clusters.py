@@ -78,51 +78,6 @@ class CustomCluster(zigpy.zcl.Cluster):
 
         return success, failure
 
-    async def read_attributes_raw(
-        self, attributes: list[int], manufacturer: int | None = None, **kwargs
-    ):
-        """Read attributes, serving `_CONSTANT_ATTRIBUTES` from the quirk locally."""
-        if not self._CONSTANT_ATTRIBUTES:
-            return await super().read_attributes_raw(
-                attributes, manufacturer=manufacturer, **kwargs
-            )
-
-        succeeded = [
-            foundation.ReadAttributeRecord(
-                attrid=attr,
-                status=foundation.Status.SUCCESS,
-                value=foundation.TypeValue(
-                    type=None,
-                    value=self._CONSTANT_ATTRIBUTES[attr],
-                ),
-            )
-            for attr in attributes
-            if attr in self._CONSTANT_ATTRIBUTES
-        ]
-
-        attrs_to_read = [
-            attr for attr in attributes if attr not in self._CONSTANT_ATTRIBUTES
-        ]
-
-        if not attrs_to_read:
-            return [succeeded]
-
-        results = await super().read_attributes_raw(
-            attrs_to_read, manufacturer=manufacturer, **kwargs
-        )
-        if not isinstance(results[0], list):
-            for attrid in attrs_to_read:
-                succeeded.append(  # noqa: PERF401
-                    foundation.ReadAttributeRecord(
-                        attrid,
-                        results[0],
-                        foundation.TypeValue(),
-                    )
-                )
-        else:
-            succeeded.extend(results[0])
-        return [succeeded]
-
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute."""
 
