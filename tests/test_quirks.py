@@ -1024,8 +1024,9 @@ async def test_local_data_cluster(device_mock) -> None:
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 
-    # reading constant attribute works
+    # reading constant attribute works, without caching it
     assert await cluster.read_attributes([1]) == ({1: 10}, {})
+    assert 1 not in cluster._attr_cache
 
     # reading valid attribute returns None with success status
     assert await cluster.read_attributes([2]) == ({2: None}, {})
@@ -1073,3 +1074,101 @@ async def test_local_data_cluster(device_mock) -> None:
     assert (
         configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
     )
+
+
+@pytest.mark.parametrize("use_builder_constants", [False, True])
+async def test_custom_cluster_constant_attributes_not_cached(
+    device_mock, use_builder_constants: bool
+) -> None:
+    """Ensure constant attributes are served on read without being cached."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    if use_builder_constants:
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(
+                TestCluster,
+                constant_attributes={TestCluster.AttributeDefs.constant_attr: 10},
+            )
+            .add_to_registry(registry)
+        )
+    else:
+        TestCluster._CONSTANT_ATTRIBUTES = {
+            TestCluster.AttributeDefs.constant_attr.id: 10
+        }
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(TestCluster)
+            .add_to_registry(registry)
+        )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    constant_attr = TestCluster.AttributeDefs.constant_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    events = []
+    for event_type in (
+        zcl.AttributeReadEvent.event_type,
+        zcl.AttributeUpdatedEvent.event_type,
+    ):
+        cluster.on_event(event_type, events.append)
+
+    rsp = [
+        [
+            foundation.ReadAttributeRecord(
+                attrid=device_attr.id,
+                status=foundation.Status.SUCCESS,
+                value=foundation.TypeValue(type=None, value=t.uint8_t(5)),
+            )
+        ]
+    ]
+
+    with mock.patch.object(
+        cluster, "_read_attributes", mock.AsyncMock(return_value=rsp)
+    ) as read_mock:
+        success, failure = await cluster.read_attributes(
+            [constant_attr.name, device_attr.name]
+        )
+
+    # only the non-constant attribute is read from the device
+    assert read_mock.call_count == 1
+    assert read_mock.mock_calls[0].args[0] == [device_attr.id]
+
+    assert success == {constant_attr.name: 10, device_attr.name: 5}
+    assert failure == {}
+
+    # the constant is neither cached nor emitted, so it is not persisted
+    assert constant_attr.id not in cluster._attr_cache
+    assert device_attr.id in cluster._attr_cache
+    assert [event.attribute_id for event in events] == [device_attr.id]
+
+    # it is still served by `get()` and cache-only reads
+    assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr.id], only_cache=True) == (
+        {constant_attr.id: 10},
+        {},
+    )
+
+    # reading only constant attributes does not send a request at all
+    with mock.patch.object(cluster, "_read_attributes", mock.AsyncMock()) as read_mock:
+        assert await cluster.read_attributes([constant_attr]) == (
+            {constant_attr: 10},
+            {},
+        )
+
+    assert read_mock.call_count == 0
+    assert constant_attr.id not in cluster._attr_cache
