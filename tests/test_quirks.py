@@ -1287,6 +1287,23 @@ async def test_local_data_cluster_reads_not_recached(device_mock) -> None:
 
     assert read_mock.call_count == 0
 
+    # a stale unsupported mark is dropped once the attribute can be read again
+    cleared = []
+    cluster.on_event(zcl.AttributeClearedEvent.event_type, cleared.append)
+    cluster._attr_cache.mark_unsupported(attrs.valid_attr)
+    cluster._attr_cache.mark_unsupported(attrs.default_attr)
+    assert await cluster.read_attributes([attrs.valid_attr, attrs.default_attr]) == (
+        {attrs.valid_attr: None, attrs.default_attr: 42},
+        {},
+    )
+    assert not cluster.is_attribute_unsupported(attrs.valid_attr)
+    assert not cluster.is_attribute_unsupported(attrs.default_attr)
+    assert attrs.default_attr.id not in cluster._attr_cache
+    assert [event.attribute_id for event in cleared] == [
+        attrs.valid_attr.id,
+        attrs.default_attr.id,
+    ]
+
     # a cache-only read does not serve uncached default values, like before
     assert await cluster.read_attributes([attrs.default_attr], only_cache=True) == (
         {},

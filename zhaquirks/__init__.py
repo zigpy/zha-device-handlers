@@ -27,6 +27,7 @@ import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
 from zigpy.zcl import (
+    AttributeClearedEvent,
     AttributeReportedEvent,
     AttributeUnsupportedEvent,
     AttributeUpdatedEvent,
@@ -205,6 +206,25 @@ class LocalDataCluster(CustomCluster):
             if record.status == foundation.Status.SUCCESS:
                 value = record.value.value
                 success[attribute] = value if value is None else attr_def.type(value)
+
+                if self._attr_cache.is_unsupported(attr_def):
+                    # Drop a stale unsupported mark, like zigpy does on a read
+                    self._attr_cache.remove_unsupported(attr_def)
+                    self.emit(
+                        AttributeClearedEvent.event_type,
+                        AttributeClearedEvent(
+                            device_ieee=str(self.endpoint.device.ieee),
+                            endpoint_id=self.endpoint.endpoint_id,
+                            cluster_type=self.cluster_type,
+                            cluster_id=self.cluster_id,
+                            attribute_name=attr_def.name,
+                            attribute_id=attr_def.id,
+                            manufacturer_code=self._get_effective_manufacturer_code(
+                                attr_def
+                            ),
+                        ),
+                    )
+
                 continue
 
             failure[attribute] = record.status
