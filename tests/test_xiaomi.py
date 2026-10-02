@@ -45,6 +45,7 @@ from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
@@ -2729,3 +2730,49 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.mark.parametrize("endpoint_id", [1, 2, 3])
+async def test_aqara_dimmer_h2_us_button_events(
+    zigpy_device_from_v2_quirk, endpoint_id
+):
+    """Test that each H2 US button reports a press as <endpoint>_<press type>."""
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.agl007", endpoint_ids=[1, 2, 3]
+    )
+    cluster = device.endpoints[endpoint_id].multistate_input
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
+
+    cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            f"{endpoint_id}_single",
+            {
+                BUTTON: endpoint_id,
+                PRESS_TYPE: "single",
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: 1,
+            },
+        )
+    ]
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+async def test_aqara_dimmer_h2_us_bind_sets_event_mode(zigpy_device_from_v2_quirk):
+    """Test that binding the H2 US dimmer puts it in event mode.
+
+    Without this write the three buttons never report a press.
+    """
+
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.agl007", endpoint_ids=[1, 2, 3]
+    )
+    cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(cluster, "write_attributes", mock.AsyncMock()) as write_mock:
+        await cluster.bind()
+
+    assert write_mock.mock_calls == [mock.call({"mode": 1}, manufacturer=0x115F)]
