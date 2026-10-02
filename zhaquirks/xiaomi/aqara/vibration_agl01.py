@@ -29,6 +29,7 @@ from zhaquirks.const import (
     MOTION_EVENT,
     ZHA_SEND_EVENT,
     ZONE_TYPE,
+    BatterySize,
 )
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.xiaomi import (
@@ -83,7 +84,7 @@ class XiaomiVibrationCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         vibration_detected: Final = ZCLAttributeDef(
-            id=XIAOMI_VIBRATION_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=XIAOMI_VIBRATION_ATTR, type=t.uint8_t, manufacturer_code=0x115F
         )
 
     def _update_attribute(self, attrid, value):
@@ -121,33 +122,28 @@ class VibrationMotionCluster(LocalDataCluster, MotionOnEvent):
             id=VIBRATION_RESET_TIMEOUT,
             type=t.uint16_t,
             access="rw",
-            is_manufacturer_specific=True,
         )
 
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     _DEFAULT_VALUES = {
         AttributeDefs.vibration_reset_timeout.id: DEFAULT_VIBRATION_RESET_TIMEOUT
     }
-    reset_s = DEFAULT_VIBRATION_RESET_TIMEOUT
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the reset timeout from the local attribute cache."""
-        super().__init__(*args, **kwargs)
-        self.reset_s = int(
+    @property
+    def reset_s(self) -> int:
+        """Read the configured reset timeout when scheduling a reset."""
+        return int(
             self.get(
                 self.AttributeDefs.vibration_reset_timeout.id,
                 DEFAULT_VIBRATION_RESET_TIMEOUT,
             )
         )
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.AttributeDefs.vibration_reset_timeout.id:
-            self.reset_s = int(value)
-
 
 class VibrationAGL01(CustomZigpyDevice):
     """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01."""
+
+    battery_size = BatterySize.CR2032
 
     def __init__(self, *args, **kwargs):
         """Initialize VibrationAGL01."""

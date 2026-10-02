@@ -2771,6 +2771,10 @@ async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
     """Test that VibrationAGL01 is migrated using the v2 quirk registry."""
     device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
     assert isinstance(device, VibrationAGL01)
+    assert (
+        device.endpoints[1].power.get(PowerConfiguration.AttributeDefs.battery_size.id)
+        == BatterySize.CR2032
+    )
     # EP1: VibrationMotionCluster exposes the binary_sensor entity
     assert device.endpoints[1].ias_zone is not None
     assert (
@@ -2815,6 +2819,56 @@ async def test_vibration_reset_timeout_configuration(zigpy_device_from_v2_quirk)
         VibrationMotionCluster.AttributeDefs.vibration_reset_timeout.id
         in motion_cluster._attr_cache
     )
+
+
+@pytest.mark.parametrize("restored_timeout", [None, 15])
+async def test_vibration_reset_timeout_restoration(
+    zigpy_device_from_v2_quirk, restored_timeout
+):
+    """Schedule resets from the attribute cache restored by zigpy after quirk creation."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    motion_cluster = device.endpoints[1].ias_zone
+    motion_cluster._attr_cache.clear()
+    if restored_timeout is not None:
+        motion_cluster._attr_cache.set_value(
+            motion_cluster.AttributeDefs.vibration_reset_timeout, restored_timeout
+        )
+
+    expected_timeout = restored_timeout or DEFAULT_VIBRATION_RESET_TIMEOUT
+    assert motion_cluster.get("vibration_reset_timeout") == expected_timeout
+    with mock.patch.object(motion_cluster._loop, "call_later") as call_later:
+        device.motion_bus.listener_event(MOTION_EVENT)
+    call_later.assert_called_once_with(expected_timeout, motion_cluster._turn_off)
+
+
+@pytest.mark.filterwarnings("error::DeprecationWarning")
+async def test_xiaomi_vibration_manufacturer_report(zigpy_device_from_v2_quirk):
+    """Handle a manufacturer-tagged vibration report without deprecated lookup."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[2].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+    header = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        manufacturer=0x115F,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    report = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema(
+        [
+            foundation.Attribute(
+                attrid=XIAOMI_VIBRATION_ATTR,
+                value=foundation.TypeValue(DataTypeId.uint8, t.uint8_t(1)),
+            )
+        ]
+    )
+    hdr, args = cluster.deserialize(header.serialize() + report.serialize())
+    cluster.handle_message(hdr, args)
+
+    assert cluster.get("vibration_detected") == 1
+    listener.zha_send_event.assert_called_once_with("vibration", {"value": 1})
 
 
 async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_v2_quirk):
@@ -2917,7 +2971,12 @@ async def test_vibration_triggers_binary_sensor(zigpy_device_from_v2_quirk, trig
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
 
-    with mock.patch.object(motion_cluster, "reset_s", 0):
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
         trigger(device)
 
     assert len(motion_listener.cluster_commands) >= 1
@@ -2936,7 +2995,12 @@ async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_v2_quirk)
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
 
-    with mock.patch.object(motion_cluster, "reset_s", 0):
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
         device.motion_bus.listener_event(MOTION_EVENT)
 
     assert len(motion_listener.cluster_commands) == 1
@@ -2959,7 +3023,12 @@ async def test_vibration_motion_cluster_repeated_events_reset_timer(
     motion_cluster = device.endpoints[1].ias_zone
     motion_listener = ClusterListener(motion_cluster)
 
-    with mock.patch.object(motion_cluster, "reset_s", 0):
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
         device.motion_bus.listener_event(MOTION_EVENT)
         device.motion_bus.listener_event(MOTION_EVENT)
 
