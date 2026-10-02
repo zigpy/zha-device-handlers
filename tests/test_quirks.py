@@ -1192,3 +1192,7 @@ async def test_custom_cluster_constant_attributes_not_cached(
         {constant_attr: 10},
         {},
     )
+
+    # reading the same constant attribute twice is rejected, like any other attribute
+    with pytest.raises(ValueError, match="Cannot read the same attribute twice"):
+        await cluster.read_attributes([constant_attr.id, constant_attr.name])

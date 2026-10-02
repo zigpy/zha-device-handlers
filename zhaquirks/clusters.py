@@ -47,6 +47,7 @@ class CustomCluster(zigpy.zcl.Cluster):
         success: dict[typing.Any, typing.Any] = {}
         failure: dict[typing.Any, typing.Any] = {}
         attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
+        constant_defs: set[foundation.ZCLAttributeDef] = set()
 
         for attribute in attributes:
             try:
@@ -62,6 +63,12 @@ class CustomCluster(zigpy.zcl.Cluster):
                 attrs_to_read.append(attribute)
                 continue
 
+            if attr_def in constant_defs:
+                raise ValueError(
+                    f"Cannot read the same attribute twice in the same call: {attr_def}"
+                )
+
+            constant_defs.add(attr_def)
             value = self._CONSTANT_ATTRIBUTES[attr_def.id]
             success[attribute] = value if value is None else attr_def.type(value)
 
