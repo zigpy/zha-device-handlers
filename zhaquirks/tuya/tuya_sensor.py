@@ -32,9 +32,11 @@ class TuyaTempUnitConvert(t.enum8):
 class TuyaSoilLightLevel(t.enum8):
     """Tuya soil sensor light level enum."""
 
-    Low = 0x00
+    Lowest = 0x00
+    Low = 0x01
     Normal = 0x02
-    High = 0x04
+    High = 0x03
+    Highest = 0x04
 
 
 class TuyaNousTempHumiAlarm(t.enum8):
