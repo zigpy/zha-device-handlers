@@ -84,6 +84,12 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
             Thermostat.AttributeDefs.system_mode,
             Thermostat.SystemMode.Heat,
         ),  # Set to heat, dp 1
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x13\x02\x00\x06\x01\x01\x00\x01\x01",
+            Thermostat.AttributeDefs.system_mode,
+            Thermostat.SystemMode.Heat,
+        ),  # Set to heat, dp 1
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, manuf, msg, attr, value):
@@ -156,6 +162,24 @@ async def test_tuya_no_mcu_version(zigpy_device_from_v2_quirk):
             19,
             -99,
         ),  # Local temp calibration to -9.9, dp 19
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x1d\x02\x00\x10\x6d\x02\x00\x04\xff\xff\xff\x9d",
+            109,
+            -99,
+        ),  # Local temp calibration to -9.9, dp 109
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x1d\x02\x00\x10\x02\x02\x00\x04\x00\x00\x00\x01",
+            2,
+            1,
+        ),  # Preset Mode to 1, dp 2
+        (
+            "_TZE204_zxkwaztm",
+            b"\t\x1d\x02\x00\x10\x1f\x02\x00\x04\x00\x00\x00\x02",
+            31,
+            2,
+        ),  # Working Day to 2, dp 31
     ],
 )
 async def test_handle_get_data_tmcu(
