@@ -12,17 +12,20 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
     EnchantedDevice,
+    TuyaLocalCluster,
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
@@ -30,6 +33,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
@@ -89,6 +93,167 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya local TemperatureMeasurement cluster.
+
+    Seeds an initial cached value so ZHA can discover the sensor entity
+    before the first Tuya DP report arrives (e.g. on a Home Assistant
+    restart, where no join-interview DP dump happens). Without this,
+    TuyaLocalCluster returns an unsupported/missing attribute on the first
+    entity-discovery read, and ZHA silently skips creating the entity.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Init and inject initial state to avoid unsupported attribute error."""
+        super().__init__(*args, **kwargs)
+        self._update_attribute(self.attributes_by_name["measured_value"].id, 0)
+
+
+class TemperatureHumidityManufCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with Temperature data points."""
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        102: DPToAttributeMapping(
+            TuyaTemperatureMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 10,  # decidegree to centidegree
+        ),
+    }
+
+    data_point_handlers = {
+        102: "_dp_2_attr_update",
+    }
+
+
+class Tuya_4G_Switch_Temperature(EnchantedDevice):
+    """Tuya 4 gang switch with external temperature probe support."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3218_ya5d6wth", "TS000F")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    TemperatureHumidityManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                    TemperatureHumidityManufCluster,
+                    TuyaTemperatureMeasurement,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
