@@ -1335,6 +1335,22 @@ async def test_local_data_cluster_reads_not_recached(device_mock) -> None:
             {attrs.default_attr: foundation.Status.INSUFFICIENT_SPACE},
         )
 
+    # a (subclassed) local read failing as a whole fails every attribute
+    with mock.patch.object(
+        cluster,
+        "read_attributes_raw",
+        mock.AsyncMock(return_value=(foundation.Status.FAILURE,)),
+    ):
+        assert await cluster.read_attributes(
+            [attrs.default_attr, attrs.valid_attr]
+        ) == (
+            {},
+            {
+                attrs.default_attr: foundation.Status.FAILURE,
+                attrs.valid_attr: foundation.Status.FAILURE,
+            },
+        )
+
     # a cache-only read does not serve uncached default values, like before
     assert await cluster.read_attributes([attrs.default_attr], only_cache=True) == (
         {},
