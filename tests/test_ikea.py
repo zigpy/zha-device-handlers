@@ -222,10 +222,10 @@ async def test_double_power_config_firmware(
         assert request_mock.call_count == 1  # verify request to read sw_build_id
         assert request_mock.mock_calls[0][1][0][0] == sw_build_id
 
-        # battery pct might be updated again when the attribute read returned new firmware, check pct not doubled then
-        # if firmware turned out to be old or still unknown, do not update battery pct again, as we doubled it already
+        # battery pct is updated again when the attribute read returned old firmware, check pct doubled only once then
+        # if firmware turned out to be new or still unknown, do not update battery pct again, as it's correct already
         assert len(power_listener.attribute_updates) == expected_pct_updates
-        if expected_pct_updates > 2:
+        if expected_pct_updates > 1:
             assert power_listener.attribute_updates[1] == (battery_pct_id, pct_correct)
 
         # reset mocks for testing when sw_build_id is known next
