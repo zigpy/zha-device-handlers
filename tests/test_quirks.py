@@ -1304,6 +1304,25 @@ async def test_local_data_cluster_reads_not_recached(device_mock) -> None:
         attrs.default_attr.id,
     ]
 
+    # zigpy's request splitting does not reach local reads
+    with mock.patch.object(
+        cluster, "read_attributes_raw", wraps=cluster.read_attributes_raw
+    ) as read_mock:
+        assert await cluster.read_attributes(
+            [attrs.default_attr], split_requests=False
+        ) == ({attrs.default_attr: 42}, {})
+
+    assert "split_requests" not in read_mock.mock_calls[0].kwargs
+
+    # an attribute omitted from a (subclassed) local read response is a failure
+    with mock.patch.object(
+        cluster, "read_attributes_raw", mock.AsyncMock(return_value=([],))
+    ):
+        assert await cluster.read_attributes([attrs.default_attr]) == (
+            {},
+            {attrs.default_attr: foundation.Status.INSUFFICIENT_SPACE},
+        )
+
     # a cache-only read does not serve uncached default values, like before
     assert await cluster.read_attributes([attrs.default_attr], only_cache=True) == (
         {},

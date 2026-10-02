@@ -186,6 +186,9 @@ class LocalDataCluster(CustomCluster):
             if not attributes:
                 return success, failure
 
+        # Local reads are not split into separate requests
+        kwargs.pop("split_requests", None)
+
         result = await self.read_attributes_raw(
             [attr_def.id for attr_def in attributes.values()],
             manufacturer=None if manufacturer is UNDEFINED else manufacturer,
@@ -201,7 +204,12 @@ class LocalDataCluster(CustomCluster):
         records = {record.attrid: record for record in result[0]}
 
         for attribute, attr_def in attributes.items():
-            record = records[attr_def.id]
+            record = records.get(attr_def.id)
+
+            if record is None:
+                # Omitted from the response, which zigpy treats as a terminal failure
+                failure[attribute] = foundation.Status.INSUFFICIENT_SPACE
+                continue
 
             if record.status == foundation.Status.SUCCESS:
                 value = record.value.value
