@@ -1197,6 +1197,18 @@ async def test_custom_cluster_constant_attributes_not_cached(
     with pytest.raises(ValueError, match="Cannot read the same attribute twice"):
         await cluster.read_attributes([constant_attr.id, constant_attr.name])
 
+    # unknown attributes are left to zigpy, which rejects them before any request
+    for unknown_attr in (0xFFFF, "unknown_attr"):
+        with (
+            mock.patch.object(
+                cluster, "_read_attributes", mock.AsyncMock()
+            ) as read_mock,
+            pytest.raises(KeyError),
+        ):
+            await cluster.read_attributes([constant_attr, unknown_attr])
+
+        assert read_mock.call_count == 0
+
 
 async def test_local_data_cluster_reads_not_recached(device_mock) -> None:
     """Ensure reads from a LocalDataCluster do not feed values back into the cache."""
