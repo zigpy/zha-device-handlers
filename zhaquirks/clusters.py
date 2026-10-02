@@ -141,5 +141,18 @@ class CustomCluster(zigpy.zcl.Cluster):
 
         return super().get(key, default)
 
+    def is_attribute_unsupported(
+        self, attr: int | str | foundation.ZCLAttributeDef
+    ) -> bool:
+        """Return whether an attribute is unsupported."""
+        # Constant attributes are always supported, even if the device was marked as
+        # not supporting them before the quirk was applied
+        if self._CONSTANT_ATTRIBUTES and (
+            self.find_attribute(attr).id in self._CONSTANT_ATTRIBUTES
+        ):
+            return False
+
+        return super().is_attribute_unsupported(attr)
+
     async def apply_custom_configuration(self, *args, **kwargs):
         """Apply custom configuration; overridden by clusters that need it."""
