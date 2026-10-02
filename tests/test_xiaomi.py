@@ -120,8 +120,8 @@ from zhaquirks.xiaomi.aqara.vibration_agl01 import (
     DEFAULT_VIBRATION_RESET_TIMEOUT,
     XIAOMI_VIBRATION_ATTR,
     AqaraVibrationSensitivity,
-    MotionCluster as VibrationMotionCluster,
     VibrationAGL01,
+    VibrationMotionCluster,
     XiaomiVibrationConfigurationCluster,
 )
 import zhaquirks.xiaomi.aqara.weather
@@ -2771,7 +2771,7 @@ async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
     """Test that VibrationAGL01 is migrated using the v2 quirk registry."""
     device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
     assert isinstance(device, VibrationAGL01)
-    # EP1: MotionCluster exposes the binary_sensor entity
+    # EP1: VibrationMotionCluster exposes the binary_sensor entity
     assert device.endpoints[1].ias_zone is not None
     assert (
         device.endpoints[1].ias_zone.get("vibration_reset_timeout")
@@ -2911,7 +2911,7 @@ async def test_vibration_multistate_input_no_event_for_other_values(
     ids=["xiaomi_vibration_attr", "multistate_triple_tap"],
 )
 async def test_vibration_triggers_binary_sensor(zigpy_device_from_v2_quirk, trigger):
-    """Test that both event paths activate the EP1 binary_sensor (MotionCluster)."""
+    """Test that both event paths activate the EP1 vibration binary sensor."""
     device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     motion_cluster = device.endpoints[1].ias_zone
@@ -2930,7 +2930,7 @@ async def test_vibration_triggers_binary_sensor(zigpy_device_from_v2_quirk, trig
 
 
 async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_v2_quirk):
-    """Test MotionCluster fires ON on motion_event and resets after reset_s."""
+    """Test VibrationMotionCluster fires ON on motion_event and resets after reset_s."""
     device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
 
     motion_cluster = device.endpoints[1].ias_zone

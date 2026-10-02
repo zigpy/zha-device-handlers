@@ -1,17 +1,17 @@
 """Aqara Vibration Sensor T1 (DJT12LM) — lumi.vibration.agl01.
 
-Based on nachtaap's quirk from zigpy/zha-device-handlers#4137, enhanced with
-MotionCluster for binary_sensor entity.
+Vibration and triple-tap events activate a vibration binary sensor with a
+configurable reset timeout. Sensitivity is configured on endpoint 1.
 
-Data paths observed:
-- IAS Zone attr 0x002D on EP2→dst EP1: value=1 vibration, value=2 triple-tap
-    -> removed the implementation because it was redundant and seemed to disturb the other two paths
-- manuSpecificLumi attr 0x0118 (280) on EP2: value=1 vibration
-- MultistateInput presentValue on EP2: value=1 triple-tap
-
-Author: @mengwong. Originally shared as GitHub Gist https://gist.github.com/mengwong/b3ca949249405f99f03dce270d3029f5
-in issue https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4205558840
+Endpoint 2 reports vibration via Xiaomi attribute 0x0118 and triple-tap via
+MultistateInput present_value, both with value 1. The redundant IAS Zone
+attribute 0x002D event path is intentionally omitted.
 """
+
+# Based on nachtaap's quirk from zigpy/zha-device-handlers#4137.
+# Author: @mengwong. Originally shared in the following gist and issue comment:
+# https://gist.github.com/mengwong/b3ca949249405f99f03dce270d3029f5
+# https://github.com/zigpy/zha-device-handlers/issues/4137#issuecomment-4205558840
 
 from typing import Final
 
@@ -108,7 +108,7 @@ class VibrationMultistateInput(EventableCluster, MultistateInput):
             self.listener_event(ZHA_SEND_EVENT, TRIPLE_TAP, {"value": value})
 
 
-class MotionCluster(LocalDataCluster, MotionOnEvent):
+class VibrationMotionCluster(LocalDataCluster, MotionOnEvent):
     """Exposes vibration as binary_sensor with device_class: vibration.
 
     Auto-resets to off after the locally configured timeout.
@@ -161,12 +161,12 @@ class VibrationAGL01(CustomZigpyDevice):
     .replaces(BasicCluster)
     .replaces(XiaomiPowerConfiguration)
     .adds(XiaomiVibrationConfigurationCluster)
-    .replaces(MotionCluster)
+    .replaces(VibrationMotionCluster)
     .replaces(VibrationMultistateInput, endpoint_id=2)
     .removes(IasZone.cluster_id, endpoint_id=2)
     .adds(XiaomiVibrationCluster, endpoint_id=2)
     .number(
-        attribute_name=MotionCluster.AttributeDefs.vibration_reset_timeout.name,
+        attribute_name=VibrationMotionCluster.AttributeDefs.vibration_reset_timeout.name,
         cluster_id=IasZone.cluster_id,
         min_value=1,
         max_value=3600,
