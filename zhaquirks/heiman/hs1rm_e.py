@@ -3,7 +3,7 @@
 from typing import Final
 
 import zigpy.types as t
-from zigpy.zcl.clusters.general import DeviceTemperature, OnOffConfiguration
+from zigpy.zcl.clusters.general import OnOffConfiguration
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
@@ -30,21 +30,10 @@ class HeimanSpecialCluster(CustomCluster):
         )
 
 
-class HeimanDeviceTemperature(CustomCluster, DeviceTemperature):
-    """Heiman Device Temperature cluster that scales raw values by 100."""
-
-    def _update_attribute(self, attrid, value):
-        """Scale current_temperature to centidegrees for ZHA's /100 divisor."""
-        if attrid == self.AttributeDefs.current_temperature.id and value is not None:
-            value = value * 100
-        super()._update_attribute(attrid, value)
-
-
 (
     QuirkBuilder()
     .applies_to("HEIMAN", "RelayModule-EF-3.0")
     .friendly_name(manufacturer="HEIMAN", model="HS1RM-E")
-    .replaces(HeimanDeviceTemperature)
     .adds(HeimanSpecialCluster, endpoint_id=1)
     .adds(HeimanSpecialCluster, endpoint_id=2)
     # switch input type (Heiman manufacturer-specific cluster 0xFC90)

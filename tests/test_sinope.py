@@ -6,7 +6,6 @@ import pytest
 from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from tests.common import ClusterListener
@@ -24,36 +23,13 @@ from zhaquirks.sinope.light import (
     SinopeTechnologieslight,
     SinopeTechnologiesManufacturerCluster,
 )
-from zhaquirks.sinope.switch import SinopeTechnologiesCalypso, SinopeTechnologiesValveG2
+from zhaquirks.sinope.switch import SinopeTechnologiesValveG2
 
 zhaquirks.setup()
 
 ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
-
-
-@pytest.mark.parametrize("quirk", (SinopeTechnologiesCalypso,))
-async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
-    """Test that device temperature is multiplied."""
-    device = zigpy_device_from_quirk(quirk)
-
-    dev_temp_cluster = device.endpoints[1].device_temperature
-    dev_temp_listener = ClusterListener(dev_temp_cluster)
-    dev_temp_attr_id = DeviceTemperature.AttributeDefs.current_temperature.id
-    dev_temp_other_attr_id = DeviceTemperature.AttributeDefs.min_temp_experienced.id
-
-    # verify current temperature is multiplied by 100
-    dev_temp_cluster.update_attribute(dev_temp_attr_id, 25)
-    assert len(dev_temp_listener.attribute_updates) == 1
-    assert dev_temp_listener.attribute_updates[0][0] == dev_temp_attr_id
-    assert dev_temp_listener.attribute_updates[0][1] == 2500  # multiplied by 100
-
-    # verify other attributes are not modified
-    dev_temp_cluster.update_attribute(dev_temp_other_attr_id, 25)
-    assert len(dev_temp_listener.attribute_updates) == 2
-    assert dev_temp_listener.attribute_updates[1][0] == dev_temp_other_attr_id
-    assert dev_temp_listener.attribute_updates[1][1] == 25  # not modified
 
 
 @pytest.mark.parametrize("quirk", (SinopeTechnologiesValveG2,))

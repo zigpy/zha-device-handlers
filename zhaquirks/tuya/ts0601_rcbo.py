@@ -376,7 +376,6 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         TUYA_DP_TEMPERATURE: DPToAttributeMapping(
             TuyaRCBODeviceTemperature.ep_attribute,
             "current_temperature",
-            lambda x: x * 100,
         ),
         TUYA_DP_REMAINING_ENERGY: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,

@@ -1765,7 +1765,7 @@ async def test_xiaomi_weather(
         [
             "1C5F11C10A01FF41210121DB0B03281F0421A8430521B60006240B000000000A21CA356410000B210800",
             [
-                3100,  # temperature
+                31,  # temperature
                 9031.899869919436,  # illuminance
                 30.4,  # battery voltage
                 154,  # battery percent * 2
@@ -2717,7 +2717,7 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
 
 def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
-    """Test Aqara air monitor CO2 and temperature attribute scaling."""
+    """Test Aqara air monitor CO2 attribute scaling."""
     device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
 
     co2 = device.endpoints[1].carbon_dioxide_concentration
@@ -2725,7 +2725,3 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
         CarbonDioxideConcentration.AttributeDefs.measured_value.id, 400_000_000
     )
     assert co2.get("measured_value") == 400.0
-
-    temp = device.endpoints[1].device_temperature
-    temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
-    assert temp.get("current_temperature") == 2500

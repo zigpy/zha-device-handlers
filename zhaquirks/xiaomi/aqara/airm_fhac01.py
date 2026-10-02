@@ -1,6 +1,5 @@
 """Quirk for LUMI lumi.airm.fhac01 air quality monitor."""
 
-from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import CarbonDioxideConcentration
 
 from zhaquirks.builder import QuirkBuilder
@@ -19,20 +18,8 @@ class CarbonDioxideConcentrationCluster(CustomCluster, CarbonDioxideConcentratio
         super()._update_attribute(attrid, value)
 
 
-class CustomDeviceTemperature(CustomCluster, DeviceTemperature):
-    """Temperature measurement cluster that fixes the scaling issue."""
-
-    def _update_attribute(self, attrid, value):
-        """Fix temperature scaling by multiplying by 100."""
-        if attrid == DeviceTemperature.AttributeDefs.current_temperature.id:
-            # The device reports temperature divided by 100, so multiply by 100
-            value = value * 100
-        super()._update_attribute(attrid, value)
-
-
 (
     QuirkBuilder(LUMI, "lumi.airm.fhac01")
     .replaces(CarbonDioxideConcentrationCluster)
-    .replaces(CustomDeviceTemperature)
     .add_to_registry()
 )
