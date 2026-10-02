@@ -142,6 +142,92 @@ class LocalDataCluster(CustomCluster):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 
+    async def _read_non_constant_attributes(
+        self,
+        attributes: dict[
+            int | str | foundation.ZCLAttributeDef, foundation.ZCLAttributeDef
+        ],
+        *,
+        allow_cache: bool,
+        only_cache: bool,
+        manufacturer: int | UndefinedType | None,
+        **kwargs,
+    ) -> typing.Any:
+        """Serve attributes locally, without feeding the values back into the cache.
+
+        zigpy stores every successful read result via `_update_attribute`. For a
+        local cluster, the result already comes from the cache or `_DEFAULT_VALUES`,
+        so that would persist defaults as if the device reported them, and convert
+        values a second time on clusters that convert in `_update_attribute`.
+        """
+        success: dict[typing.Any, typing.Any] = {}
+        failure: dict[typing.Any, typing.Any] = {}
+
+        if allow_cache or only_cache:
+            # Reads served from the cache have no side effects in zigpy
+            success, failure = await super()._read_non_constant_attributes(
+                attributes,
+                allow_cache=True,
+                only_cache=True,
+                manufacturer=manufacturer,
+                **kwargs,
+            )
+
+            if only_cache:
+                return success, failure
+
+            attributes = {
+                attribute: attr_def
+                for attribute, attr_def in attributes.items()
+                if attribute not in success and attribute not in failure
+            }
+
+            if not attributes:
+                return success, failure
+
+        result = await self.read_attributes_raw(
+            [attr_def.id for attr_def in attributes.values()],
+            manufacturer=None if manufacturer is UNDEFINED else manufacturer,
+            **kwargs,
+        )
+
+        if not isinstance(result[0], list):
+            for attribute in attributes:
+                failure[attribute] = result[0]
+
+            return success, failure
+
+        records = {record.attrid: record for record in result[0]}
+
+        for attribute, attr_def in attributes.items():
+            record = records[attr_def.id]
+
+            if record.status == foundation.Status.SUCCESS:
+                value = record.value.value
+                success[attribute] = value if value is None else attr_def.type(value)
+                continue
+
+            failure[attribute] = record.status
+
+            if record.status == foundation.Status.UNSUPPORTED_ATTRIBUTE:
+                # Keep marking attributes without a value as unsupported, like zigpy
+                self.emit(
+                    AttributeUnsupportedEvent.event_type,
+                    AttributeUnsupportedEvent(
+                        device_ieee=str(self.endpoint.device.ieee),
+                        endpoint_id=self.endpoint.endpoint_id,
+                        cluster_type=self.cluster_type,
+                        cluster_id=self.cluster_id,
+                        attribute_name=attr_def.name,
+                        attribute_id=attr_def.id,
+                        manufacturer_code=self._get_effective_manufacturer_code(
+                            attr_def
+                        ),
+                    ),
+                )
+
+        return success, failure
+
     def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
         """Convert attributes dict to list of Attribute records."""
         records = []
