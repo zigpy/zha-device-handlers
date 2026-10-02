@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
+from zigpy.zcl.clusters.hvac import Fan
 from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
@@ -16,75 +17,36 @@ from zhaquirks.ikea.starkvind import IkeaAirpurifier
 zhaquirks.setup()
 
 
-def test_ikea_starkvind(assert_signature_matches_quirk):
-    """Test new 'STARKVIND Air purifier table' signature is matched to its quirk."""
-
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4476, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0007",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0003",
-                    "0x0004",
-                    "0x0005",
-                    "0x0202",
-                    "0xfc57",
-                    "0xfc7d",
-                ],
-                "out_clusters": ["0x0019", "0x0400", "0x042a"],
-            },
-            "242": {
-                "profile_id": 41440,
-                "device_type": "0x0061",
-                "in_clusters": [],
-                "out_clusters": ["0x0021"],
-            },
+@pytest.fixture
+def starkvind_device(zigpy_device_from_v2_quirk):
+    """Return a quirked STARKVIND air purifier."""
+    return zigpy_device_from_v2_quirk(
+        IKEA,
+        "STARKVIND Air purifier",
+        cluster_ids={
+            1: {
+                Fan.cluster_id: ClusterType.Server,
+                IkeaAirpurifier.cluster_id: ClusterType.Server,
+                PM25.cluster_id: ClusterType.Client,
+            }
         },
-        "manufacturer": "IKEA of Sweden",
-        "model": "STARKVIND Air purifier",
-        "class": "ikea.starkvind.IkeaSTARKVIND",
-    }
-
-    assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND, signature)
+    )
 
 
-def test_ikea_starkvind_v2(assert_signature_matches_quirk):
-    """Test new 'STARKVIND Air purifier table' signature is matched to its quirk."""
+def test_starkvind_replaced_clusters(starkvind_device):
+    """Test the unimplemented Fan cluster is removed and no PM25 cluster is added."""
 
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4476, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0007",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0003",
-                    "0x0004",
-                    "0x0005",
-                    "0x0202",
-                    "0xfc57",
-                    "0xfc7c",
-                    "0xfc7d",
-                ],
-                "out_clusters": ["0x0019", "0x0400", "0x042a"],
-            },
-            "242": {
-                "profile_id": 41440,
-                "device_type": "0x0061",
-                "in_clusters": [],
-                "out_clusters": ["0x0021"],
-            },
-        },
-        "manufacturer": "IKEA of Sweden",
-        "model": "STARKVIND Air purifier table",
-        "class": "ikea.starkvind.IkeaSTARKVIND_v2",
-    }
+    endpoint = starkvind_device.endpoints[1]
+    assert isinstance(endpoint.in_clusters[IkeaAirpurifier.cluster_id], IkeaAirpurifier)
 
-    assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2, signature)
+    # the device's `Fan` cluster is not implemented, so it must not create an entity
+    assert Fan.cluster_id not in endpoint.in_clusters
+
+    # PM2.5 is read from the manufacturer specific cluster, so no virtual server
+    # side `PM25` cluster is added anymore. The device's own client side cluster
+    # is left alone, as it never created an entity to begin with.
+    assert PM25.cluster_id not in endpoint.in_clusters
+    assert PM25.cluster_id in endpoint.out_clusters
 
 
 @pytest.mark.parametrize("attribute", ["fan_speed", "fan_mode"])
@@ -98,17 +60,10 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
         (50, 10),
     ],
 )
-async def test_fan_speed_mode_update(
-    zigpy_device_from_quirk, attribute, value, expected
-):
+def test_fan_speed_mode_update(starkvind_device, attribute, value, expected):
     """Test reading the fan speed and mode."""
 
-    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
-    assert starkvind_device.model == "STARKVIND Air purifier"
-
-    ikea_cluster = starkvind_device.endpoints[1].in_clusters[
-        zhaquirks.ikea.starkvind.IkeaAirpurifier.cluster_id
-    ]
+    ikea_cluster = starkvind_device.endpoints[1].in_clusters[IkeaAirpurifier.cluster_id]
     ikea_listener = ClusterListener(ikea_cluster)
 
     attr_id = getattr(IkeaAirpurifier.AttributeDefs, attribute).id
@@ -118,46 +73,38 @@ async def test_fan_speed_mode_update(
     assert ikea_listener.attribute_updates[0] == (attr_id, expected)
 
 
-async def test_pm25_cluster_read(zigpy_device_from_quirk):
-    """Test reading from PM25 cluster."""
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (0, 0),  # off
+        (1, 1),  # auto
+        (2, 10),
+        (4, 20),
+        (10, 50),
+        (11, 11),  # out of range, written as-is
+    ],
+)
+async def test_fan_mode_write(starkvind_device, value, expected):
+    """Test writing the fan mode scales it back up to the device's range."""
 
-    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
-    assert starkvind_device.model == "STARKVIND Air purifier"
+    ikea_cluster = starkvind_device.endpoints[1].in_clusters[IkeaAirpurifier.cluster_id]
 
-    pm25_cluster = starkvind_device.endpoints[1].in_clusters[PM25.cluster_id]
-    ikea_cluster = starkvind_device.endpoints[1].in_clusters[
-        zhaquirks.ikea.starkvind.IkeaAirpurifier.cluster_id
-    ]
-
-    # Mock the read attribute to on the IkeaAirpurifier cluster
-    # to always return 6 for anything.
-    def mock_read(attributes, manufacturer=None):
-        records = [
-            foundation.ReadAttributeRecord(
-                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 6)
-            )
-            for attr in attributes
+    write_mock = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
         ]
-        return (records,)
-
-    patch_ikeacluster_read = mock.patch.object(
-        ikea_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
     )
-    with patch_ikeacluster_read:
-        # Reading "measured_value" should read the "air_quality_25pm" value from
-        # the IkeaAirpurifier cluster
-        success, fail = await pm25_cluster.read_attributes(["measured_value"])
-        assert success
-        assert 6 in success.values()
-        assert not fail
+    with mock.patch.object(ikea_cluster, "_write_attributes", write_mock):
+        # other attributes written in the same call are passed through untouched
+        await ikea_cluster.write_attributes({"fan_mode": value, "child_lock": 1})
 
-        # Same call with allow_cache=True; a bug previously prevented this from working
-        success, fail = await pm25_cluster.read_attributes(
-            ["measured_value"], allow_cache=True
-        )
-        assert success
-        assert 6 in success.values()
-        assert not fail
+    written = {
+        attr.attrid: attr.value.value for attr in write_mock.mock_calls[0].args[0]
+    }
+    assert written == {
+        IkeaAirpurifier.AttributeDefs.fan_mode.id: expected,
+        IkeaAirpurifier.AttributeDefs.child_lock.id: 1,
+    }
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
