@@ -101,6 +101,7 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
             "force_inverted": entity_metadata.force_inverted,
             "off_value": entity_metadata.off_value,
             "on_value": entity_metadata.on_value,
+            "mask": entity_metadata.mask,
         }
     if isinstance(entity_metadata, BinarySensorMetadata):
         return {
