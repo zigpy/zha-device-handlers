@@ -1,32 +1,66 @@
 """Schneider Electric (Wiser) Outlet Quirks."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import DeviceManagement, Metering
+from typing import Final
 
+from zigpy import types as t
+from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legacy import CustomDevice
-from zhaquirks.schneiderelectric import SE_MANUF_NAME
+from zhaquirks.schneiderelectric import SE_MANUF_ID, SE_MANUF_NAME, SEBasic
 
 
-class MeteringCluster(CustomCluster, Metering):
+class SEIndicatorMode(t.enum8):
+    """Indicator mode."""
+
+    InverseOfOutput = 0x00
+    FollowsOutput = 0x01
+    AlwaysOff = 0x02
+    AlwaysOn = 0x03
+
+
+class SELocalControlMode(t.enum8):
+    """Local control mode."""
+
+    Active = 0x00
+    Inactive = 0x01
+
+
+class SEOutletConfiguration(CustomCluster):
+    """Schneider Electric Outlet Configuration cluster (VISA config, 0xFC04)."""
+
+    cluster_id = 0xFC04
+    name = "SEOutletConfiguration"
+    ep_attribute = "se_outlet_configuration"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        # IndicatorLuminanceLevel: brightness of the indication front LED.
+        # 0 = 100%, 1 = 80%, 2 = 60%, 3 = 40%, 4 = 20%, 5 = 0%.
+        se_indicator_luminance_level: Final = ZCLAttributeDef(
+            id=0x0000,
+            type=t.uint8_t,
+            access="rw",
+            manufacturer_code=SE_MANUF_ID,
+        )
+        se_indicator_mode: Final = ZCLAttributeDef(
+            id=0x0002,
+            type=SEIndicatorMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            manufacturer_code=SE_MANUF_ID,
+        )
+        se_local_control_mode: Final = ZCLAttributeDef(
+            id=0x0050,
+            type=SELocalControlMode,
+            access="rw",
+            manufacturer_code=SE_MANUF_ID,
+        )
+
+
+class SEMeteringCluster(CustomCluster, Metering):
     """Custom Metering cluster to fix instantaneous demand value multiplied by 1000."""
 
     def _update_attribute(self, attrid, value):
@@ -35,76 +69,37 @@ class MeteringCluster(CustomCluster, Metering):
         super()._update_attribute(attrid, value)
 
 
-class SocketOutlet(CustomDevice):
-    """Schneider Electric Socket outlet WDE002182, WDE002172."""
-
-    signature = {
-        MODELS_INFO: [
-            (SE_MANUF_NAME, "SOCKET/OUTLET/1"),
-            (SE_MANUF_NAME, "SOCKET/OUTLET/2"),
-        ],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=9
-            # device_version=0
-            # input_clusters=[0, 3, 4, 5, 6, 1794, 1800, 2820, 2821, 64516] output_clusters=[25]>
-            6: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    DeviceManagement.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    0xFC04,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            6: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    MeteringCluster,
-                    DeviceManagement.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    0xFC04,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(SE_MANUF_NAME, "SOCKET/OUTLET/1")
+    .applies_to(SE_MANUF_NAME, "SOCKET/OUTLET/2")
+    .replaces(SEBasic, endpoint_id=6)
+    .replaces(SEMeteringCluster, endpoint_id=6)
+    .replaces(SEOutletConfiguration, endpoint_id=6)
+    .number(
+        attribute_name=SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level.name,
+        cluster_id=SEOutletConfiguration.cluster_id,
+        endpoint_id=6,
+        min_value=0,
+        max_value=5,
+        step=1,
+        translation_key="indicator_luminance_level",
+        fallback_name="Indicator luminance level",
+    )
+    .enum(
+        attribute_name=SEOutletConfiguration.AttributeDefs.se_indicator_mode.name,
+        enum_class=SEIndicatorMode,
+        cluster_id=SEOutletConfiguration.cluster_id,
+        endpoint_id=6,
+        translation_key="indicator_mode",
+        fallback_name="Indicator mode",
+    )
+    .enum(
+        attribute_name=SEOutletConfiguration.AttributeDefs.se_local_control_mode.name,
+        enum_class=SELocalControlMode,
+        cluster_id=SEOutletConfiguration.cluster_id,
+        endpoint_id=6,
+        translation_key="local_control_mode",
+        fallback_name="Local control mode",
+    )
+    .add_to_registry()
+)
