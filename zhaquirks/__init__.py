@@ -207,7 +207,8 @@ class LocalDataCluster(CustomCluster):
             record = records.get(attr_def.id)
 
             if record is None:
-                # Omitted from the response, which zigpy treats as a terminal failure
+                # Omitted from the response. zigpy re-reads such attributes alone, but
+                # that can't help for a local read, so fail them right away
                 failure[attribute] = foundation.Status.INSUFFICIENT_SPACE
                 continue
 

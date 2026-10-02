@@ -1197,7 +1197,7 @@ async def test_custom_cluster_constant_attributes_not_cached(
     with pytest.raises(ValueError, match="Cannot read the same attribute twice"):
         await cluster.read_attributes([constant_attr.id, constant_attr.name])
 
-    # unknown attributes are left to zigpy, which rejects them before any request
+    # unknown attributes are rejected before any request, like in zigpy
     for unknown_attr in (0xFFFF, "unknown_attr"):
         with (
             mock.patch.object(
