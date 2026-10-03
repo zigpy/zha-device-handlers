@@ -230,7 +230,8 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             case self.Action.Long_on:
                 return COMMAND_M_LONG_RELEASE, TURN_ON
             case _:
-                self.debug("SINOPE unhandled action: %s", action)
+                # reachable: a zigpy enum can hold an undefined value reported by a device
+                self.debug("SINOPE unhandled action: %s", action)  # type: ignore[unreachable]
                 return None, None
 
 
