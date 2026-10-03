@@ -201,6 +201,8 @@ from zhaquirks.builder import ReportingConfig
     unit=UnitOfTime.SECONDS,          # Optional: unit constant
     mode="box",                       # Optional: "box" for text input, "slider" for slider
     multiplier=1,                     # Optional: scale between HA value and raw attribute (default 1)
+    attribute_converter=lambda x: x,  # Optional: raw attribute -> HA value (needs value_converter)
+    value_converter=lambda x: int(x),  # Optional: HA value -> raw attribute (needs attribute_converter)
     device_class=NumberDeviceClass.DURATION,  # Optional: HA device class
     translation_key="turn_on_delay",
     fallback_name="Turn on delay",
@@ -230,6 +232,23 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 ```
 
 `min_value`/`max_value` are HA-side values (after the multiplier), not raw attribute values. Confirm the device's raw value range and pick HA-side limits accordingly.
+
+**Number `attribute_converter`/`value_converter`:** For conversions a plain `multiplier` cannot express — an inverted scale, an offset, a non-linear mapping. A number can be written, so both directions are needed and both must be given together (passing only one raises `ValueError`): `attribute_converter` maps the raw attribute value to the value shown in HA, `value_converter` maps the value from HA back to the raw attribute value. `value_converter` must return a value the attribute's type accepts, so cast to `int` for integer attributes. A converter takes precedence over `multiplier` (same as for `.sensor()`), so don't combine them.
+
+```python
+# Device stores brightness on an inverted 0..5 scale, where 0 is the brightest.
+# HA shows 0 (off) .. 5 (brightest) instead.
+.number(
+    attribute_name="led_brightness",
+    cluster_id=CustomCluster.cluster_id,
+    min_value=0,
+    max_value=5,
+    attribute_converter=lambda x: 5 - x,
+    value_converter=lambda x: 5 - int(x),
+    translation_key="led_brightness",
+    fallback_name="LED brightness",
+)
+```
 
 ```python
 
