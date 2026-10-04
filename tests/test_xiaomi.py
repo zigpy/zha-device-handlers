@@ -2948,6 +2948,40 @@ def test_dimmer_h2_voltage_divisor(zigpy_device_from_v2_quirk):
     assert cluster.get(attrs.rms_voltage.name) == pytest.approx(2324.57)
 
 
+def test_dimmer_h2_report_keeps_metering(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU attribute report does not overwrite energy.
+
+    Tag 151 follows the power draw rather than energy, so it must not be written
+    to current_summ_delivered.
+    """
+    device = zigpy_device_from_v2_quirk(
+        AQARA,
+        "lumi.switch.agl011",
+        cluster_ids={
+            1: {
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    metering = device.endpoints[1].smartenergy_metering
+    summ_delivered = Metering.AttributeDefs.current_summ_delivered
+    metering.update_attribute(summ_delivered.id, 20)
+
+    # values from a report captured while the load drew about 18 W
+    device.endpoints[1].opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({150: 23398.3, 151: 180.66, 152: 18.0}),
+    )
+
+    assert metering.get(summ_delivered.name) == 20
+    electrical = device.endpoints[1].electrical_measurement
+    attrs = ElectricalMeasurement.AttributeDefs
+    assert electrical.get(attrs.active_power.name) == 180
+    assert electrical.get(attrs.rms_voltage.name) == pytest.approx(2339.83)
+
+
 async def test_dimmer_h2_voltage_read_locally(zigpy_device_from_v2_quirk):
     """Test Aqara dimmer H2 EU never reads rms_voltage from the device.
 
