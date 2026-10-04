@@ -1,18 +1,4 @@
-"""Philips Hue Smart Plug family devices.
-
-The Hue smart plugs are simple on/off relay devices, but Signify presumably
-built their firmware on the same generic Zigbee lighting stack used in their
-dimmable bulbs. As a result, the plugs advertise the standard Level Control
-cluster (``0x0008``) on their main endpoint in addition to the On/Off cluster
-(``0x0006``).
-
-ZHA automatically exposes configuration entities for writable attributes of
-the Level Control cluster, such as the "Power-on level" number (the
-``start_up_current_level`` attribute, ``0x4000``), none of which have any
-effect on a relay plug. The functional power-on setting for these plugs is
-the "Power-on behaviour" select (the ``start_up_on_off`` attribute of the
-On/Off cluster), which remains exposed.
-"""
+"""Philips Hue Smart Plug family devices."""
 
 from zigpy.zcl.clusters.general import LevelControl
 
@@ -42,6 +28,10 @@ from zhaquirks.philips import PHILIPS, SIGNIFY
     .applies_to(SIGNIFY, "LOM010")
     .applies_to(PHILIPS, "LOM011")  # Hue smart plug - AU
     .applies_to(SIGNIFY, "LOM011")
-    .removes(LevelControl.cluster_id, endpoint_id=11)
+    # Hide the dead level configuration entities (e.g. "Power-on level") that
+    # ZHA would otherwise create from the plugs' Level Control cluster. The
+    # functional "Power-on behaviour" setting on the On/Off cluster is not
+    # affected.
+    .prevent_default_entity_creation(endpoint_id=11, cluster_id=LevelControl.cluster_id)
     .add_to_registry()
 )
