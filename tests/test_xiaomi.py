@@ -47,6 +47,13 @@ from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
     BUTTON_2,
+    COMMAND_CONTINUED_ROTATING,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_RELEASE,
+    COMMAND_SINGLE,
+    COMMAND_STARTED_ROTATING,
+    COMMAND_STOPPED_ROTATING,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -110,6 +117,7 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_agl011
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -2729,3 +2737,267 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+def _agl011_device(zigpy_device_from_v2_quirk):
+    return zigpy_device_from_v2_quirk(
+        AQARA,
+        "lumi.switch.agl011",
+        cluster_ids={
+            1: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "value, action",
+    [
+        (0, COMMAND_HOLD),
+        (1, COMMAND_SINGLE),
+        (2, COMMAND_DOUBLE),
+        (255, COMMAND_RELEASE),
+    ],
+)
+def test_dimmer_h2_knob_press(zigpy_device_from_v2_quirk, value, action):
+    """Test Aqara dimmer H2 EU emits events for knob presses."""
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[1].multistate_input
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    attr_id = MultistateInput.AttributeDefs.present_value.id
+    cluster.update_attribute(attr_id, value)
+    listener.zha_send_event.assert_called_once_with(
+        action,
+        {ENDPOINT_ID: 1, PRESS_TYPE: action, ATTR_ID: attr_id, VALUE: value},
+    )
+
+    listener.reset_mock()
+    cluster.update_attribute(attr_id, 3)
+    listener.zha_send_event.assert_not_called()
+
+
+def test_dimmer_h2_knob_press_all_endpoints(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU replaces MultistateInput only where it exists."""
+    agl011 = zhaquirks.xiaomi.aqara.switch_agl011
+    device = zigpy_device_from_v2_quirk(
+        AQARA,
+        "lumi.switch.agl011",
+        endpoint_ids=[1, 2, 3],
+        cluster_ids={
+            1: {MultistateInput.cluster_id: ClusterType.Server},
+            2: {MultistateInput.cluster_id: ClusterType.Server},
+        },
+    )
+
+    for endpoint_id in (1, 2):
+        cluster = device.endpoints[endpoint_id].multistate_input
+        assert isinstance(cluster, agl011.MultistateInputCluster)
+
+        listener = mock.MagicMock()
+        cluster.add_listener(listener)
+        cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
+        assert listener.zha_send_event.call_args[0][1][ENDPOINT_ID] == endpoint_id
+
+    assert MultistateInput.cluster_id not in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize(
+    "endpoint_id, action_value, action, button_state",
+    [
+        # the device sends 0 to start rotating, Zigbee2MQTT documents 1
+        (71, 0, COMMAND_STARTED_ROTATING, "released"),
+        (71, 1, COMMAND_STARTED_ROTATING, "released"),
+        (71, 2, COMMAND_CONTINUED_ROTATING, "released"),
+        (71, 3, COMMAND_STOPPED_ROTATING, "released"),
+        (71, 0x82, COMMAND_CONTINUED_ROTATING, "pressed"),
+        # endpoint 72 is used while the knob is held down
+        (72, 0, COMMAND_STARTED_ROTATING, "pressed"),
+        (72, 2, COMMAND_CONTINUED_ROTATING, "pressed"),
+        (72, 3, COMMAND_STOPPED_ROTATING, "pressed"),
+    ],
+)
+def test_dimmer_h2_knob_rotation(
+    zigpy_device_from_v2_quirk, endpoint_id, action_value, action, button_state
+):
+    """Test Aqara dimmer H2 EU emits buffered rotation events."""
+    agl011 = zhaquirks.xiaomi.aqara.switch_agl011
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[endpoint_id].opple_cluster
+    assert isinstance(cluster, agl011.RotationCluster)
+    assert (cluster.__class__ is agl011.PressedRotationCluster) == (endpoint_id == 72)
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    attrs = agl011.RotationCluster.AttributeDefs
+    cluster.update_attribute(attrs.rotation_angle.id, -18.0)
+    cluster.update_attribute(attrs.rotation_angle_speed.id, 90.0)
+    cluster.update_attribute(attrs.rotation_time.id, 200)
+    cluster.update_attribute(attrs.rotation_percent_speed.id, 50.0)
+    cluster.update_attribute(attrs.rotation_percent.id, -10.0)
+    listener.zha_send_event.assert_not_called()
+
+    cluster.update_attribute(attrs.rotation_action.id, action_value)
+    listener.zha_send_event.assert_called_once_with(
+        action,
+        {
+            "action_rotation_angle": -18.0,
+            "action_rotation_angle_speed": 90.0,
+            "action_rotation_time": 200,
+            "action_rotation_percent_speed": 50.0,
+            "action_rotation_percent": -10.0,
+            "action_rotation_button_state": button_state,
+        },
+    )
+
+    # the buffer is cleared after each event
+    listener.reset_mock()
+    cluster.update_attribute(attrs.rotation_action.id, action_value)
+    listener.zha_send_event.assert_called_once_with(
+        action, {"action_rotation_button_state": button_state}
+    )
+
+
+def test_dimmer_h2_knob_rotation_unknown_action(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU drops telemetry buffered before an unknown action."""
+    agl011 = zhaquirks.xiaomi.aqara.switch_agl011
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[agl011.ROTATION_ENDPOINT].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    attrs = agl011.RotationCluster.AttributeDefs
+    cluster.update_attribute(attrs.rotation_angle.id, 111.0)
+    cluster.update_attribute(attrs.rotation_action.id, 4)
+    listener.zha_send_event.assert_not_called()
+
+    cluster.update_attribute(attrs.rotation_action.id, 2)
+    listener.zha_send_event.assert_called_once_with(
+        COMMAND_CONTINUED_ROTATING, {"action_rotation_button_state": "released"}
+    )
+
+
+async def test_dimmer_h2_knob_rotation_frame(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU decodes a rotation report frame from the device."""
+    agl011 = zhaquirks.xiaomi.aqara.switch_agl011
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[agl011.ROTATION_ENDPOINT].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    attrs = agl011.RotationCluster.AttributeDefs
+    records = [
+        (attrs.rotation_angle, DataTypeId.single, t.Single(-36.0)),
+        (attrs.rotation_angle_speed, DataTypeId.single, t.Single(120.0)),
+        (attrs.rotation_time, DataTypeId.uint32, t.uint32_t(300)),
+        (attrs.rotation_percent_speed, DataTypeId.single, t.Single(66.5)),
+        (attrs.rotation_percent, DataTypeId.single, t.Single(-20.0)),
+        (attrs.rotation_action, DataTypeId.uint8, t.uint8_t(0x82)),
+    ]
+    # manufacturer specific (0x115F) Report_Attributes, server to client
+    data = b"\x1c\x5f\x11\x01\x0a" + b"".join(
+        t.uint16_t(attr.id).serialize() + bytes([type_id]) + value.serialize()
+        for attr, type_id, value in records
+    )
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=agl011.RotationCluster.cluster_id,
+            src_ep=agl011.ROTATION_ENDPOINT,
+            dst_ep=1,
+            data=t.SerializableBytes(data),
+        )
+    )
+
+    listener.zha_send_event.assert_called_once_with(
+        COMMAND_CONTINUED_ROTATING,
+        {
+            "action_rotation_angle": -36.0,
+            "action_rotation_angle_speed": 120.0,
+            "action_rotation_time": 300,
+            "action_rotation_percent_speed": 66.5,
+            "action_rotation_percent": -20.0,
+            "action_rotation_button_state": "pressed",
+        },
+    )
+    assert cluster.get(attrs.rotation_angle.name) == -36.0
+    assert cluster.get(attrs.rotation_time.name) == 300
+
+
+def test_dimmer_h2_voltage_divisor(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU reports rms_voltage in 0.1 V."""
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[1].electrical_measurement
+    attrs = ElectricalMeasurement.AttributeDefs
+    assert cluster.get(attrs.ac_voltage_multiplier.name) == 1
+    assert cluster.get(attrs.ac_voltage_divisor.name) == 10
+
+    # the Xiaomi report sends voltage in 0.01 V
+    device.endpoints[1].opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({150: t.Single(23245.7)}),
+    )
+    assert cluster.get(attrs.rms_voltage.name) == pytest.approx(2324.57)
+
+
+def test_dimmer_h2_report_keeps_metering(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU attribute report does not overwrite energy.
+
+    Tag 151 follows the power draw rather than energy, so it must not be written
+    to current_summ_delivered.
+    """
+    device = zigpy_device_from_v2_quirk(
+        AQARA,
+        "lumi.switch.agl011",
+        cluster_ids={
+            1: {
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    metering = device.endpoints[1].smartenergy_metering
+    summ_delivered = Metering.AttributeDefs.current_summ_delivered
+    metering.update_attribute(summ_delivered.id, 20)
+
+    # values from a report captured while the load drew about 18 W
+    device.endpoints[1].opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({150: 23398.3, 151: 180.66, 152: 18.0}),
+    )
+
+    assert metering.get(summ_delivered.name) == 20
+    electrical = device.endpoints[1].electrical_measurement
+    attrs = ElectricalMeasurement.AttributeDefs
+    assert electrical.get(attrs.active_power.name) == 180
+    assert electrical.get(attrs.rms_voltage.name) == pytest.approx(2339.83)
+
+
+async def test_dimmer_h2_voltage_read_locally(zigpy_device_from_v2_quirk):
+    """Test Aqara dimmer H2 EU never reads rms_voltage from the device.
+
+    The device answers with UNSUPPORTED_ATTRIBUTE, which would make ZHA drop the
+    voltage sensor.
+    """
+    device = _agl011_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[1].electrical_measurement
+    attrs = ElectricalMeasurement.AttributeDefs
+    with mock.patch.object(device, "request") as request_mock:
+        success, failure = await cluster.read_attributes(
+            [attrs.rms_voltage.name, attrs.active_power.name]
+        )
+
+    request_mock.assert_not_called()
+    assert success == {attrs.rms_voltage.name: 0, attrs.active_power.name: 0}
+    assert not failure
+    assert not cluster.is_attribute_unsupported(attrs.rms_voltage.name)
