@@ -3,8 +3,8 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import Cluster
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl import Cluster, ClusterType
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
 from tests.common import ClusterListener
@@ -753,6 +753,58 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
     # update again with the same value and except no new update
     hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
     assert len(on_off_listener.attribute_updates) == 2
+
+
+@pytest.mark.parametrize(
+    "manufacturer, model",
+    (
+        (PHILIPS, "LOM001"),
+        (SIGNIFY, "LOM001"),
+        (PHILIPS, "LOM002"),
+        (SIGNIFY, "LOM002"),
+        (PHILIPS, "LOM003"),
+        (SIGNIFY, "LOM003"),
+        (PHILIPS, "LOM004"),
+        (SIGNIFY, "LOM004"),
+        (PHILIPS, "LOM005"),
+        (SIGNIFY, "LOM005"),
+        (PHILIPS, "LOM006"),
+        (SIGNIFY, "LOM006"),
+        (PHILIPS, "LOM007"),
+        (SIGNIFY, "LOM007"),
+        (PHILIPS, "LOM008"),
+        (SIGNIFY, "LOM008"),
+        (PHILIPS, "LOM009"),
+        (SIGNIFY, "LOM009"),
+        (PHILIPS, "LOM010"),
+        (SIGNIFY, "LOM010"),
+        (PHILIPS, "LOM011"),
+        (SIGNIFY, "LOM011"),
+    ),
+)
+def test_smart_plug_removes_level_control(
+    zigpy_device_from_v2_quirk, manufacturer, model
+):
+    """Ensure the dead Level Control cluster is removed from Hue smart plugs."""
+
+    quirked = zigpy_device_from_v2_quirk(
+        manufacturer,
+        model,
+        endpoint_ids=[11],
+        cluster_ids={
+            11: {
+                Basic.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Server,
+                LevelControl.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    # removing the Level Control cluster stops ZHA from exposing
+    # non-functional level configuration entities like "Power-on level"
+    assert LevelControl.cluster_id not in quirked.endpoints[11].in_clusters
+    # on/off functionality and the "Power-on behaviour" setting must remain
+    assert OnOff.cluster_id in quirked.endpoints[11].in_clusters
 
 
 @pytest.mark.parametrize(
