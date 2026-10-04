@@ -20,7 +20,7 @@ from zhaquirks.builder import QuirkBuilder
 from zhaquirks.philips import PHILIPS, SIGNIFY
 
 (
-    QuirkBuilder(PHILIPS, "LOM001") # Hue smart plug - EU
+    QuirkBuilder(PHILIPS, "LOM001")  # Hue smart plug - EU
     .applies_to(SIGNIFY, "LOM001")
     .applies_to(PHILIPS, "LOM002")  # Hue smart plug bluetooth
     .applies_to(SIGNIFY, "LOM002")
