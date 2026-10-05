@@ -1,13 +1,19 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement,
+    OccupancySensing,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
@@ -20,6 +26,7 @@ ZCL_TUYA_MOTION_V5 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x04"  # DP 1, motion is 0
 ZCL_TUYA_MOTION_V6 = b"\tL\x01\x00\x05\x01\x04\x00\x01\x02"  # DP 1, enum
 ZCL_TUYA_MOTION_V7 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x00"  # DP 1, Inv
 ZCL_TUYA_MOTION_V8 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x00"  # DP 101, Inv
+ZCL_TUYA_MOTION_V9 = b"\tL\x01\x00\x05\x68\x04\x00\x01\x01"  # DP 104, enum
 
 
 zhaquirks.setup()
@@ -69,6 +76,7 @@ zhaquirks.setup()
         ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),
+        ("_TZE200_agumlajc", "TS0601", ZCL_TUYA_MOTION_V9),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
@@ -174,3 +182,54 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+async def test_mercator_combination_sensor(zigpy_device_from_v2_quirk):
+    """Test Mercator Ikuu SSWMPIR-ZB readings and relay mode writes."""
+    quirked_device = zigpy_device_from_v2_quirk("_TZE200_agumlajc", "TS0601")
+    ep = quirked_device.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+
+    temp_listener = ClusterListener(ep.temperature)
+    humidity_listener = ClusterListener(ep.humidity)
+    illum_listener = ClusterListener(ep.illuminance)
+
+    # Captured from a real device: 29.5 C (DP 1, x10), 61 % (DP 2), 6 lx (DP 101)
+    for msg in (
+        b"\tL\x01\x00\x05\x01\x02\x00\x04\x00\x00\x01\x27",
+        b"\tL\x01\x00\x05\x02\x02\x00\x04\x00\x00\x00\x3d",
+        b"\tL\x01\x00\x05\x65\x02\x00\x04\x00\x00\x00\x06",
+    ):
+        hdr, data = tuya_cluster.deserialize(msg)
+        assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    assert temp_listener.attribute_updates == [
+        (TemperatureMeasurement.AttributeDefs.measured_value.id, 2950)
+    ]
+    assert humidity_listener.attribute_updates == [
+        (RelativeHumidity.AttributeDefs.measured_value.id, 6100)
+    ]
+    assert illum_listener.attribute_updates[0][0] == (
+        IlluminanceMeasurement.AttributeDefs.measured_value.id
+    )
+
+    # Relay mode (DP 105) reported by the device
+    hdr, data = tuya_cluster.deserialize(b"\tL\x01\x00\x05\x69\x04\x00\x01\x02")
+    tuya_cluster.handle_get_data(data.data)
+    assert tuya_cluster.get("relay_mode") == 2
+
+    # Writing the relay mode sends DP 105 as an enum
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"relay_mode": 0x01})
+        await wait_for_zigpy_tasks()
+        assert m1.call_args.kwargs["data"].endswith(b"\x69\x04\x00\x01\x01")
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        # Temperature offset (DP 108) is sent in tenths of a degree
+        (status,) = await tuya_cluster.write_attributes({"temperature_offset": 10})
+        await wait_for_zigpy_tasks()
+        assert m1.call_args.kwargs["data"].endswith(b"\x6c\x02\x00\x04\x00\x00\x00\x0a")
