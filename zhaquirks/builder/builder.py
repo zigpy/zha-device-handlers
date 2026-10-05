@@ -49,7 +49,6 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
-from zhaquirks.builder.discovery import QUIRKS_ENTITY_META_TO_ENTITY_CLASS
 from zhaquirks.builder.metadata import (
     AddedEntityMetadata,
     BinarySensorMetadata,
@@ -388,15 +387,6 @@ class QuirkBuilder:
         ):
             raise ValueError("Only one primary entity can be defined per device")
 
-        if entity_metadata.entity_cls is not None:
-            base_cls = QUIRKS_ENTITY_META_TO_ENTITY_CLASS[
-                (Platform(entity_metadata.entity_platform.value), type(entity_metadata))
-            ]
-            if not issubclass(entity_metadata.entity_cls, base_cls):
-                raise TypeError(
-                    f"{entity_metadata.entity_cls!r} is not a subclass of {base_cls!r}"
-                )
-
         self.entity_metadata.append(entity_metadata)
         return self
 
@@ -643,7 +633,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
@@ -666,7 +655,6 @@ class QuirkBuilder:
                 enum=enum_class,
                 attribute_name=attribute_name,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -694,7 +682,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
@@ -723,7 +710,6 @@ class QuirkBuilder:
                 device_class=device_class,
                 state_class=state_class,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -749,7 +735,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
@@ -775,7 +760,6 @@ class QuirkBuilder:
                 off_value=off_value,
                 on_value=on_value,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -803,7 +787,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
@@ -832,7 +815,6 @@ class QuirkBuilder:
                 multiplier=multiplier,
                 device_class=device_class,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -855,7 +837,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
@@ -879,7 +860,6 @@ class QuirkBuilder:
                 attribute_converter=attribute_converter,
                 device_class=device_class,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -900,7 +880,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing WriteAttributeButtonMetadata and return self.
 
@@ -923,7 +902,6 @@ class QuirkBuilder:
                 attribute_name=attribute_name,
                 attribute_value=attribute_value,
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self
@@ -944,7 +922,6 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
-        entity_cls: type[PlatformEntity] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLCommandButtonMetadata and return self.
 
@@ -967,7 +944,6 @@ class QuirkBuilder:
                 args=command_args if command_args is not None else (),
                 kwargs=command_kwargs if command_kwargs is not None else frozendict(),
                 primary=primary,
-                entity_cls=entity_cls,
             )
         )
         return self

@@ -55,7 +55,6 @@ class EntityMetadata:
     )
     fallback_name: str = attrs.field(validator=attrs.validators.instance_of(str))
     primary: bool | None = attrs.field(default=None)
-    entity_cls: type[PlatformEntity] | None = attrs.field(default=None)
 
     def __attrs_post_init__(self) -> None:
         """Validate the entity metadata."""

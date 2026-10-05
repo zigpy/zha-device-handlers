@@ -121,7 +121,6 @@ All entity methods require `fallback_name`. Common parameters:
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
 - `unique_id_suffix`: Suffix appended to the entity's unique_id. Defaults to `attribute_name` (or `command_name` for command-based entities). Required when creating multiple entities from the same attribute/command on the same endpoint, since otherwise the default suffixes collide. See **Entity unique_id format** below before changing this on existing quirks.
-- `entity_cls`: Keyword-only. Subclass of the ZHA entity class the method creates (e.g. a `Sensor` subclass for `.sensor()`). The builder raises `TypeError` otherwise.
 
 **Parameter order convention:** `attribute_name`, `cluster_id`, `endpoint_id` first; `translation_key` and `fallback_name` always last (in that order). Use keyword arguments for clarity.
 
