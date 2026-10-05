@@ -20,8 +20,6 @@ class WholeDegreeDeviceTemperature(DeviceTemperature):
         WholeDegreeDeviceTemperature,
         endpoint_id=2,
         cluster_id=DeviceTemperatureCluster.cluster_id,
-        # Keep the unique ID of the ZHA entity
-        unique_id_suffix="2",
     )
     .add_to_registry()
 )

@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 from zha.application import Platform
+from zha.application.platforms import EntityCategory
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 
@@ -35,6 +36,7 @@ async def test_sonoff_zbm5_detach_relay_switches():
 
             assert type(entity) is DetachRelaySwitch
             assert entity.is_on
+            assert entity.entity_category == EntityCategory.CONFIG
 
 
 async def test_sonoff_zbm5_attach_relay():

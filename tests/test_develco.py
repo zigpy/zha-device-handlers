@@ -3,6 +3,7 @@
 from unittest import mock
 
 from zha.application import Platform
+from zha.application.platforms import EntityCategory
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -222,3 +223,4 @@ async def test_frient_smart_plug_device_temperature():
 
         assert type(entity) is WholeDegreeDeviceTemperature
         assert entity.native_value == 32
+        assert entity.entity_category == EntityCategory.DIAGNOSTIC

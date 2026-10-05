@@ -1019,6 +1019,25 @@ class QuirkBuilder:
         A `ZclPlatformEntity` is bound to the given endpoint and cluster, any other
         `PlatformEntity` only to the device.
         """
+        return self._add_entity(
+            entity_cls,
+            endpoint_id=endpoint_id,
+            cluster_id=cluster_id,
+            cluster_type=cluster_type,
+            replacement=False,
+            **kwargs,
+        )
+
+    def _add_entity(
+        self,
+        entity_cls: type[PlatformEntity],
+        *,
+        endpoint_id: int | None,
+        cluster_id: int | None,
+        cluster_type: ClusterType,
+        replacement: bool,
+        **kwargs: Any,
+    ) -> Self:
         if issubclass(entity_cls, ZclPlatformEntity):
             if endpoint_id is None or cluster_id is None:
                 raise ValueError(
@@ -1035,6 +1054,7 @@ class QuirkBuilder:
                 endpoint_id=endpoint_id,
                 cluster_id=cluster_id,
                 cluster_type=cluster_type,
+                replacement=replacement,
                 kwargs=kwargs,
             )
         )
@@ -1065,11 +1085,12 @@ class QuirkBuilder:
                 cluster_type=cluster_type,
             )
         )
-        return self.adds_entity(
+        return self._add_entity(
             new_cls,
             endpoint_id=endpoint_id,
             cluster_id=cluster_id,
             cluster_type=cluster_type,
+            replacement=True,
             **kwargs,
         )
 

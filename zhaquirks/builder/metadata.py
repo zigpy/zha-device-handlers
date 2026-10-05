@@ -243,6 +243,8 @@ class AddedEntityMetadata:
     endpoint_id: int | None = attrs.field()
     cluster_id: int | None = attrs.field()
     cluster_type: ClusterType = attrs.field()
+    # A replacement keeps the unique ID of the entity it replaces
+    replacement: bool = attrs.field(default=False)
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 

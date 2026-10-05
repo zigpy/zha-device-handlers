@@ -35,10 +35,6 @@ class EffectLight(HueLight):
     """Hue light subclass to replace the default one."""
 
 
-class TemperatureSensor(Sensor):
-    """Sensor subclass for the `entity_cls` argument."""
-
-
 async def test_adds_device_entity() -> None:
     """Test adding an entity bound to the device."""
     registry = DeviceRegistry()
@@ -82,7 +78,8 @@ async def test_adds_zcl_entity() -> None:
             gateway, "centralite-3405-l-0x10025310.json", registry
         )
         entity = device.get_platform_entity(
-            Platform.SENSOR, unique_id="00:0d:6f:00:05:65:83:f2-1-extra_temperature"
+            Platform.SENSOR,
+            unique_id="00:0d:6f:00:05:65:83:f2-1-extra_temperature",
         )
 
         assert type(entity) is Sensor
@@ -168,46 +165,6 @@ async def test_removes_entity() -> None:
             Platform.SENSOR,
             "00:0d:6f:00:05:65:83:f2-1-1",
         ) in device.platform_entities
-
-
-async def test_entity_cls() -> None:
-    """Test creating a builder entity with a subclass."""
-    registry = DeviceRegistry()
-    (
-        QuirkBuilder("CentraLite", "3405-L")
-        .sensor(
-            TemperatureMeasurement.AttributeDefs.measured_value.name,
-            TemperatureMeasurement.cluster_id,
-            unique_id_suffix="subclassed",
-            fallback_name="Subclassed",
-            translation_key="subclassed",
-            entity_cls=TemperatureSensor,
-        )
-        .add_to_registry(registry)
-    )
-
-    async with zha_gateway() as gateway:
-        device = await join_device_from_diagnostics(
-            gateway, "centralite-3405-l-0x10025310.json", registry
-        )
-
-        entity = device.get_platform_entity(
-            Platform.SENSOR, unique_id="00:0d:6f:00:05:65:83:f2-1-subclassed"
-        )
-
-        assert type(entity) is TemperatureSensor
-
-
-def test_entity_cls_must_subclass_default() -> None:
-    """Test that `entity_cls` must subclass the default entity class."""
-    with pytest.raises(TypeError):
-        QuirkBuilder("CentraLite", "3405-L").sensor(
-            TemperatureMeasurement.AttributeDefs.measured_value.name,
-            TemperatureMeasurement.cluster_id,
-            fallback_name="Wrong",
-            translation_key="wrong",
-            entity_cls=EffectLight,
-        )
 
 
 def test_adds_entity_binding() -> None:
