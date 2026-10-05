@@ -384,8 +384,7 @@ Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_k
 Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
 
 - New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster.
-- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`. Check the unique_id stays the same (see **ZHA-native entities**).
-- Changing a builder entity: `entity_cls=cls` on `.switch()`, `.sensor()`, etc.
+- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`.
 
 Example: a switch per relay bit of a mask attribute (`zhaquirks/sonoff/zbm5.py`):
 ```python
