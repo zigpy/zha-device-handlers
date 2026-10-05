@@ -200,7 +200,14 @@ async def join_device_from_diagnostics(
 
         for direction in ("in_clusters", "out_clusters"):
             for cluster_data in ep_data[direction]:
-                cluster = getattr(ep, direction)[int(cluster_data["cluster_id"], 16)]
+                clusters = getattr(ep, direction)
+                cluster_id = int(cluster_data["cluster_id"], 16)
+
+                # The diagnostics can contain clusters that an older quirk added
+                if cluster_id not in clusters:
+                    continue
+
+                cluster = clusters[cluster_id]
                 values = {
                     int(attr["id"], 16): attr["value"]
                     for attr in cluster_data["attributes"]
