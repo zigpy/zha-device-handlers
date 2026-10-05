@@ -9,7 +9,8 @@ from zhaquirks.builder import QuirkBuilder
 class WholeDegreeDeviceTemperature(DeviceTemperature):
     """Device temperature in whole degrees: the device does not follow the spec."""
 
-    _divisor = 1
+    _divisor = None  # Setting it to `1` would make the temperature a float
+    _attr_suggested_display_precision = 0
 
 
 (
