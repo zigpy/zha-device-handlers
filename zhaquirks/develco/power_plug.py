@@ -1,35 +1,25 @@
 """Develco smart plugs."""
 
-from zigpy.zcl.clusters.general import DeviceTemperature
+from zha.application.platforms.sensor import DeviceTemperature
+from zigpy.zcl.clusters.general import DeviceTemperature as DeviceTemperatureCluster
 
-from zhaquirks.builder import (
-    EntityType,
-    QuirkBuilder,
-    SensorDeviceClass,
-    SensorStateClass,
-    UnitOfTemperature,
-)
+from zhaquirks.builder import QuirkBuilder
+
+
+class WholeDegreeDeviceTemperature(DeviceTemperature):
+    """Device temperature in whole degrees: the device does not follow the spec."""
+
+    _divisor = 1
+
 
 (
     QuirkBuilder("frient A/S", "SPLZB-141")
     .applies_to("Develco Products A/S", "SPLZB-131")
-    .prevent_default_entity_creation(
+    .replaces_entity(
+        DeviceTemperature,
+        WholeDegreeDeviceTemperature,
         endpoint_id=2,
-        cluster_id=DeviceTemperature.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "DeviceTemperature",
-    )
-    .sensor(
-        endpoint_id=2,
-        cluster_id=DeviceTemperature.cluster_id,
-        attribute_name=DeviceTemperature.AttributeDefs.current_temperature.name,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfTemperature.CELSIUS,
-        divisor=1,  # This should be 100 but the device does not follow the spec
-        translation_key="device_temperature",
-        fallback_name="Device temperature",
-        entity_type=EntityType.DIAGNOSTIC,
-        unique_id_suffix="2",  # Replace the ZHA entity
+        cluster_id=DeviceTemperatureCluster.cluster_id,
     )
     .add_to_registry()
 )
