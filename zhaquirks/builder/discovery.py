@@ -173,8 +173,9 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
             continue
 
         platform = Platform(entity_metadata.entity_platform.value)
-        entity_class = QUIRKS_ENTITY_META_TO_ENTITY_CLASS.get(
-            (platform, type(entity_metadata))
+        entity_class = (
+            entity_metadata.entity_cls
+            or QUIRKS_ENTITY_META_TO_ENTITY_CLASS.get((platform, type(entity_metadata)))
         )
 
         if entity_class is None:

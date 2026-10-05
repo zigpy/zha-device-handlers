@@ -16,6 +16,7 @@ from typing import Any
 import attrs
 from frozendict import frozendict
 from zha.application import EntityPlatform, EntityType
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
@@ -54,6 +55,7 @@ class EntityMetadata:
     )
     fallback_name: str = attrs.field(validator=attrs.validators.instance_of(str))
     primary: bool | None = attrs.field(default=None)
+    entity_cls: type[PlatformEntity] | None = attrs.field(default=None)
 
     def __attrs_post_init__(self) -> None:
         """Validate the entity metadata."""
@@ -189,25 +191,67 @@ class DeviceAlertMetadata:
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
-class PreventDefaultEntityCreationMetadata:
-    """Metadata to prevent the default creation of an entity."""
+class EntityFilter:
+    """Match entities. Every field that is set must match."""
 
+    entity_cls: type[PlatformEntity] | None = attrs.field(default=None)
+    platform: EntityPlatform | None = attrs.field(default=None)
+    endpoint_id: int | None = attrs.field(default=None)
+    cluster_id: int | None = attrs.field(default=None)
+    cluster_type: ClusterType | None = attrs.field(default=None)
+    unique_id_suffix: str | None = attrs.field(default=None)
+    translation_key: str | None = attrs.field(default=None)
+    device_class: str | None = attrs.field(default=None)
+    function: Callable[[PlatformEntity], bool] | None = attrs.field(default=None)
+
+    def matches(self, entity: PlatformEntity) -> bool:
+        """Return whether the entity matches the filter."""
+        if self.entity_cls is not None and type(entity) is not self.entity_cls:
+            return False
+        if self.platform is not None and self.platform != entity.PLATFORM:
+            return False
+        if self.endpoint_id is not None or self.cluster_id is not None:
+            # Only ZCL entities are bound to an endpoint and a cluster
+            if not isinstance(entity, ZclPlatformEntity):
+                return False
+            if self.endpoint_id is not None and entity.endpoint.id != self.endpoint_id:
+                return False
+            if self.cluster_id is not None and not entity.targets_cluster(
+                self.cluster_id, cluster_type=self.cluster_type
+            ):
+                return False
+        if self.unique_id_suffix is not None and not entity.unique_id.endswith(
+            "-" + self.unique_id_suffix.removeprefix("-")
+        ):
+            return False
+        if (
+            self.translation_key is not None
+            and entity.translation_key != self.translation_key
+        ):
+            return False
+        if self.device_class is not None and entity.device_class != self.device_class:
+            return False
+        if self.function is not None and not self.function(entity):
+            return False
+        return True
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class AddedEntityMetadata:
+    """Metadata to add an entity of a given class."""
+
+    entity_cls: type[PlatformEntity] = attrs.field()
     endpoint_id: int | None = attrs.field()
     cluster_id: int | None = attrs.field()
-    cluster_type: ClusterType | None = attrs.field()
-    unique_id_suffix: str | None = attrs.field()
-    function: Callable[[Any], bool] | None = attrs.field()
+    cluster_type: ClusterType = attrs.field()
+    kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ChangedEntityMetadata:
     """Metadata to change entity metadata for matching entities."""
 
-    endpoint_id: int | None = attrs.field()
-    cluster_id: int | None = attrs.field()
-    cluster_type: ClusterType | None = attrs.field()
-    unique_id_suffix: str | None = attrs.field()
-    function: Callable[[Any], bool] | None = attrs.field()
+    filter: EntityFilter = attrs.field()
     # Entity metadata changes
     new_primary: bool | None = attrs.field(default=None)
     new_unique_id: str | None = attrs.field(default=None)
@@ -246,13 +290,12 @@ class QuirkDefinition:
     friendly_name: FriendlyNameMetadata | None = attrs.field(default=None)
     exposes_features: tuple[ExposesFeatureMetadata, ...] = attrs.field(factory=tuple)
     device_alerts: tuple[DeviceAlertMetadata, ...] = attrs.field(factory=tuple)
-    disabled_default_entities: tuple[PreventDefaultEntityCreationMetadata, ...] = (
-        attrs.field(factory=tuple)
-    )
+    disabled_default_entities: tuple[EntityFilter, ...] = attrs.field(factory=tuple)
     changed_entity_metadata: tuple[ChangedEntityMetadata, ...] = attrs.field(
         factory=tuple
     )
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
+    added_entities: tuple[AddedEntityMetadata, ...] = attrs.field(factory=tuple)
     device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )

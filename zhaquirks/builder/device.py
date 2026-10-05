@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING, Any
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
-from zha.application.platforms import BaseEntity, PlatformEntity
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.zigbee.device import Device
 import zigpy.device
 import zigpy.zcl
+from zigpy.zcl import ClusterType
 
 from zhaquirks.builder.discovery import discover_quirks_v2_entities
-from zhaquirks.builder.metadata import QuirkDefinition
+from zhaquirks.builder.metadata import AddedEntityMetadata, QuirkDefinition
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
@@ -42,10 +43,31 @@ class QuirkV2Device(Device):
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
 
-    def discover_entities(self) -> Iterator[BaseEntity]:
-        """Yield the default entities plus the quirk's exposed v2 entities."""
+    def discover_entities(self) -> Iterator[PlatformEntity]:
+        """Yield the default entities plus the quirk's exposed and added entities."""
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
+
+        for added in self._quirk_definition.added_entities:
+            yield self._create_added_entity(added)
+
+    def _create_added_entity(self, added: AddedEntityMetadata) -> PlatformEntity:
+        if not issubclass(added.entity_cls, ZclPlatformEntity):
+            return added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
+
+        endpoint = self.endpoints[added.endpoint_id]
+        clusters = (
+            endpoint.zigpy_endpoint.in_clusters
+            if added.cluster_type is ClusterType.Server
+            else endpoint.zigpy_endpoint.out_clusters
+        )
+
+        return added.entity_cls(
+            endpoint=endpoint,
+            device=self,
+            cluster=clusters[added.cluster_id],
+            **added.kwargs,
+        )
 
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
@@ -77,39 +99,17 @@ class QuirkV2Device(Device):
         if entity.PLATFORM == Platform.VIRTUAL:
             return False
 
-        for meta in self._quirk_definition.disabled_default_entities:
-            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
-                meta.unique_id_suffix
-            ):
-                continue
-            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
-                continue
-            if meta.cluster_id is not None and not entity.targets_cluster(
-                meta.cluster_id
-            ):
-                continue
-            if meta.function is not None and not meta.function(entity):
-                continue
-            return True
-
-        return False
+        return any(
+            entity_filter.matches(entity)
+            for entity_filter in self._quirk_definition.disabled_default_entities
+        )
 
     def _apply_entity_metadata_changes(self, entity: PlatformEntity) -> None:
         if entity.PLATFORM == Platform.VIRTUAL:
             return
 
         for meta in self._quirk_definition.changed_entity_metadata:
-            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
-                meta.unique_id_suffix
-            ):
-                continue
-            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
-                continue
-            if meta.cluster_id is not None and not entity.targets_cluster(
-                meta.cluster_id, cluster_type=meta.cluster_type
-            ):
-                continue
-            if meta.function is not None and not meta.function(entity):
+            if not meta.filter.matches(entity):
                 continue
 
             if meta.new_primary is not None:
