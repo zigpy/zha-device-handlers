@@ -51,6 +51,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import (
     CustomDevice,
     get_quirk_list,
@@ -118,8 +119,8 @@ XIAOMI_NODE_DESC = NodeDescriptor(
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiCustomDevice(CustomDevice):
-    """Custom device representing xiaomi devices."""
+class XiaomiDeviceMixin:
+    """Behavior shared by xiaomi devices."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -149,6 +150,14 @@ class XiaomiCustomDevice(CustomDevice):
                 ),
                 packet,
             )
+
+
+class XiaomiCustomDevice(XiaomiDeviceMixin, CustomDevice):
+    """Custom device representing xiaomi devices."""
+
+
+class XiaomiCustomDeviceV2(XiaomiDeviceMixin, CustomZigpyDevice):
+    """Xiaomi device for QuirkBuilder quirks."""
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):

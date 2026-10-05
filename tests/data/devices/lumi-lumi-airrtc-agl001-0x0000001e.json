@@ -1,0 +1,866 @@
+{
+  "version": 3,
+  "ieee": "ab:cd:ef:12:ce:61:df:4c",
+  "nwk": "0xF049",
+  "manufacturer": "LUMI",
+  "model": "lumi.airrtc.agl001",
+  "friendly_manufacturer": "LUMI",
+  "friendly_model": "lumi.airrtc.agl001",
+  "name": "LUMI lumi.airrtc.agl001",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.xiaomi.aqara.thermostat_agl001:AGL001",
+  "exposes_features": [],
+  "manufacturer_code": 4447,
+  "power_source": "Battery or Unknown",
+  "lqi": 140,
+  "rssi": -65,
+  "last_seen": "2026-01-14T04:37:29.927773+00:00",
+  "available": true,
+  "device_type": "EndDevice",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "EndDevice",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 128,
+    "manufacturer_code": 4447,
+    "maximum_buffer_size": 127,
+    "maximum_incoming_transfer_size": 100,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 100,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "THERMOSTAT",
+        "id": 769
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0006",
+              "name": "date_code",
+              "zcl_type": "string",
+              "value": "Feb 20 2023"
+            },
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "LUMI"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "lumi.airrtc.agl001"
+            },
+            {
+              "id": "0x4000",
+              "name": "sw_build_id",
+              "zcl_type": "string",
+              "value": "0.0.0_0030"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0001",
+          "endpoint_attribute": "power",
+          "attributes": [
+            {
+              "id": "0x0021",
+              "name": "battery_percentage_remaining",
+              "zcl_type": "uint8",
+              "value": 200
+            },
+            {
+              "id": "0x0033",
+              "name": "battery_quantity",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x0031",
+              "name": "battery_size",
+              "zcl_type": "enum8",
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x000a",
+          "endpoint_attribute": "time",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0201",
+          "endpoint_attribute": "thermostat",
+          "attributes": [
+            {
+              "id": "0x0006",
+              "name": "abs_max_cool_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0004",
+              "name": "abs_max_heat_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0005",
+              "name": "abs_min_cool_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0003",
+              "name": "abs_min_heat_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x001b",
+              "name": "ctrl_sequence_of_oper",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0x0000",
+              "name": "local_temperature",
+              "zcl_type": "int16",
+              "value": 2090
+            },
+            {
+              "id": "0x0010",
+              "name": "local_temperature_calibration",
+              "zcl_type": "int8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0018",
+              "name": "max_cool_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0016",
+              "name": "max_heat_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0017",
+              "name": "min_cool_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0015",
+              "name": "min_heat_setpoint_limit",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0011",
+              "name": "occupied_cooling_setpoint",
+              "zcl_type": "int16",
+              "value": 2600
+            },
+            {
+              "id": "0x0012",
+              "name": "occupied_heating_setpoint",
+              "zcl_type": "int16",
+              "value": 2300
+            },
+            {
+              "id": "0x0030",
+              "name": "setpoint_change_source",
+              "zcl_type": "enum8",
+              "unsupported": true
+            },
+            {
+              "id": "0x001c",
+              "name": "system_mode",
+              "zcl_type": "enum8",
+              "value": 4
+            },
+            {
+              "id": "0x0013",
+              "name": "unoccupied_cooling_setpoint",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0014",
+              "name": "unoccupied_heating_setpoint",
+              "zcl_type": "int16",
+              "unsupported": true
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfcc0",
+          "endpoint_attribute": "opple_cluster",
+          "attributes": [
+            {
+              "id": "0x0279",
+              "name": "away_preset_temperature",
+              "zcl_type": "uint32",
+              "value": 1500
+            },
+            {
+              "id": "0x040a",
+              "name": "battery_percentage",
+              "zcl_type": "uint8",
+              "value": 100
+            },
+            {
+              "id": "0x027b",
+              "name": "calibrated",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x0277",
+              "name": "child_lock",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0272",
+              "name": "preset",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x027d",
+              "name": "schedule",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0276",
+              "name": "schedule_settings",
+              "zcl_type": "octstr",
+              "value": {
+                "__type": "<class 'bytes'>",
+                "repr": "b'\\x04>\\x01\\xe0\\x00\\x00\\t`\\x048\\x00\\x00\\x06\\xa4\\x05d\\x00\\x00\\x08\\x98\\x81\\xe0\\x00\\x00\\x08\\x98'"
+              }
+            },
+            {
+              "id": "0x027e",
+              "name": "sensor",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0271",
+              "name": "system_mode",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x0275",
+              "name": "valve_alarm",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0274",
+              "name": "valve_detection",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0273",
+              "name": "window_detection",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x027a",
+              "name": "window_open",
+              "zcl_type": "uint8",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 30
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0201",
+          "endpoint_attribute": "thermostat",
+          "attributes": [
+            {
+              "id": "0x001b",
+              "name": "ctrl_sequence_of_oper",
+              "zcl_type": "enum8",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfcc0",
+          "endpoint_attribute": "opple_cluster",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "LUMI",
+    "model": "lumi.airrtc.agl001",
+    "node_desc": {
+      "logical_type": 2,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 128,
+      "manufacturer_code": 4447,
+      "maximum_buffer_size": 127,
+      "maximum_incoming_transfer_size": 100,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 100,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0301",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0201",
+          "0x000a",
+          "0x0001",
+          "0xfcc0"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0201",
+          "0xfcc0"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "binary_sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-calibrated",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "AqaraThermostatCalibrated",
+        "translation_key": "calibrated",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": true,
+        "attribute_name": "calibrated"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-sensor",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "AqaraThermostatExternalSensor",
+        "translation_key": "external_sensor",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "sensor"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-valve_alarm",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "AqaraThermostatValveAlarm",
+        "translation_key": "valve_alarm",
+        "translation_placeholders": null,
+        "device_class": "problem",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "valve_alarm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-window_open",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "AqaraThermostatWindowOpen",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "window",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "window_open"
+      }
+    ],
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-3",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "climate": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1",
+        "migrate_unique_ids": [],
+        "platform": "climate",
+        "class_name": "Thermostat",
+        "translation_key": "thermostat",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_temperature": 20.9,
+        "outdoor_temperature": null,
+        "target_temperature": 23.0,
+        "target_temperature_high": null,
+        "target_temperature_low": null,
+        "hvac_action": null,
+        "hvac_mode": "heat",
+        "preset_mode": "none",
+        "fan_mode": "auto",
+        "max_temp": 30.0,
+        "min_temp": 7.0,
+        "supported_features": 385,
+        "fan_modes": null,
+        "preset_modes": [],
+        "hvac_modes": [
+          "off",
+          "heat"
+        ],
+        "sys_mode": "[4]/heat",
+        "occupancy": null,
+        "occupied_cooling_setpoint": 2600,
+        "occupied_heating_setpoint": 2300,
+        "pi_heating_demand": null,
+        "pi_cooling_demand": null,
+        "unoccupied_cooling_setpoint": null,
+        "unoccupied_heating_setpoint": null
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-away_preset_temperature",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "AqaraThermostatAwayTemp",
+        "translation_key": "away_preset_temperature",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 15.0,
+        "mode": "slider",
+        "native_max_value": 30,
+        "native_min_value": 5,
+        "native_step": 1.0,
+        "native_unit_of_measurement": "\u00b0C"
+      }
+    ],
+    "select": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-preset",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "AqaraThermostatPreset",
+        "translation_key": "preset",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_option": "Manual",
+        "enum": "AqaraThermostatPresetMode",
+        "options": [
+          "Manual",
+          "Auto",
+          "Away"
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 140,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": -65,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-1",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Battery",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "battery",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "battery_quantity",
+          "battery_size",
+          "battery_voltage"
+        ],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 100.0,
+        "suggested_display_precision": 0,
+        "unit": "%",
+        "battery_size": "CR2032",
+        "battery_quantity": 1,
+        "battery_voltage": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-513-hvac_action",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ThermostatHVACAction",
+        "translation_key": "hvac_action",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-513-pi_heating_demand",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "PiHeatingDemand",
+        "translation_key": "pi_heating_demand",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": 0,
+        "unit": "%"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-513-setpoint_change_source_timestamp",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "SetpointChangeSourceTimestamp",
+        "translation_key": "setpoint_change_source_timestamp",
+        "translation_placeholders": null,
+        "device_class": "timestamp",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": null
+      }
+    ],
+    "switch": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-child_lock",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "AqaraThermostatChildLock",
+        "translation_key": "child_lock",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "child_lock",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-valve_detection",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "AqaraThermostatValveDetection",
+        "translation_key": "valve_detection",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "valve_detection",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-64704-window_detection",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "AqaraThermostatWindowDetection",
+        "translation_key": "window_detection",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": true,
+        "inverted": false,
+        "attribute_name": "window_detection",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:ce:61:df:4c-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:ce:61:df:4c",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x0000001e",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}
