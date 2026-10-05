@@ -4,6 +4,7 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -20,6 +21,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -374,7 +376,6 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_gubdgai2", "TS0601"),
             ("_TZE200_5sbebbzs", "TS0601"),
             ("_TZE200_hsgrhjpf", "TS0601"),
-            ("_TZE200_68nvbio9", "TS0601"),
             ("_TZE200_ergbiejo", "TS0601"),
             ("_TZE200_nhyj64w2", "TS0601"),
             ("_TZE200_cf1sl3tj", "TS0601"),
@@ -646,6 +647,13 @@ class BorderSetting(t.enum8):
     Remove_top_bottom = 0x04
 
 
+class ClickControl(t.enum8):
+    """Click control values."""
+
+    Up = 0x00
+    Down = 0x01
+
+
 (
     TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
     .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
@@ -699,6 +707,120 @@ class BorderSetting(t.enum8):
         attribute_value=BorderSetting.Remove_top_bottom,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE200_68nvbio9", "TS0601")
+    # Core cover behaviour (DP1/2/3), Tuya 0=closed / 100=open so invert=True.
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=2,
+        position_control_dp=3,
+        invert=True,
+        cover_cfg=TuyaWindowCovering,
+    )
+    # Battery (DP13, raw 0–100).
+    .tuya_battery(dp_id=13)
+    # Reverse direction (DP5).
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    # Motor fault (DP12).
+    .tuya_dp_attribute(
+        dp_id=12,
+        attribute_name="motor_fault",
+        type=bool,
+    )
+    .binary_sensor(
+        attribute_name="motor_fault",
+        cluster_id=TUYA_CLUSTER_ID,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    # Click control (DP20).
+    .tuya_dp_attribute(
+        dp_id=20,
+        attribute_name="click_control",
+        type=ClickControl,
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="click_up",
+        entity_type=EntityType.CONFIG,
+        translation_key="click_up",
+        fallback_name="Click up",
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="click_down",
+        entity_type=EntityType.CONFIG,
+        translation_key="click_down",
+        fallback_name="Click down",
+    )
+    # Border / limit calibration (DP16).
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        entity_type=EntityType.CONFIG,
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        entity_type=EntityType.CONFIG,
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        entity_type=EntityType.CONFIG,
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        entity_type=EntityType.CONFIG,
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        entity_type=EntityType.CONFIG,
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
     )
