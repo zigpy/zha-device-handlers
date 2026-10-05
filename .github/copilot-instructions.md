@@ -121,6 +121,7 @@ All entity methods require `fallback_name`. Common parameters:
 - `device_class`: HA device class for the entity
 - `reporting_config`: Configure ZCL attribute reporting
 - `unique_id_suffix`: Suffix appended to the entity's unique_id. Defaults to `attribute_name` (or `command_name` for command-based entities). Required when creating multiple entities from the same attribute/command on the same endpoint, since otherwise the default suffixes collide. See **Entity unique_id format** below before changing this on existing quirks.
+- `entity_cls`: Keyword-only. Subclass of the ZHA entity class the method creates (e.g. a `Sensor` subclass for `.sensor()`). The builder raises `TypeError` otherwise.
 
 **Parameter order convention:** `attribute_name`, `cluster_id`, `endpoint_id` first; `translation_key` and `fallback_name` always last (in that order). Use keyword arguments for clarity.
 
@@ -303,7 +304,7 @@ Note there is **no cluster_id** between the endpoint and the suffix. This differ
 
 **ZHA-native entities (not created by a v2 quirk):**
 
-Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself. These entities go through ZHA's standard discovery path in `PlatformEntity.__init__`, which uses a different format:
+Some entities are not created by a v2 quirk's entity declarations — they come from a class defined in the ZHA library itself. These entities go through ZHA's standard discovery path in `ZclPlatformEntity.__init__`, which uses a different format:
 
 ```
 {device.ieee}-{endpoint_id}-{cluster_id}-{suffix}
@@ -333,7 +334,8 @@ The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must 
 
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
-- `.device_class(custom_device_class)` - Use a custom device class (e.g., `CustomDeviceV2` subclass for special request handling)
+- `.zigpy_device_class(cls)` - Replace the zigpy device with a `BaseCustomDevice` subclass (e.g., for special request handling)
+- `.zha_device_class(cls)` - Use a `QuirkV2Device` subclass as the ZHA device
 - `.skip_configuration()` - Skip attribute reporting configuration
 - `.add_to_registry()` - **Required** - Registers the quirk
 
@@ -346,7 +348,7 @@ The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must 
 ```
 
 **Preventing Default Entity Creation:**
-Hide entities that ZHA would create by default:
+Hide entities that ZHA would create by default. Without `cluster_type`, `cluster_id` matches server and client clusters.
 ```python
 # Hide all entities from a cluster
 .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
@@ -377,7 +379,54 @@ Modify properties of entities ZHA creates by default:
     new_entity_category=EntityType.DIAGNOSTIC,
 )
 ```
-Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_fallback_name`.
+Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_translation_placeholders`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_entity_registry_enabled_default`, `new_fallback_name`. Here `cluster_type` defaults to `ClusterType.Server` when `cluster_id` is set.
+
+**Custom Entity Classes:**
+Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
+
+- New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster.
+- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`. Check the unique_id stays the same (see **ZHA-native entities**).
+- Changing a builder entity: `entity_cls=cls` on `.switch()`, `.sensor()`, etc.
+
+Example: a switch per relay bit of a mask attribute (`zhaquirks/sonoff/zbm5.py`):
+```python
+class DetachRelaySwitch(ConfigurableAttributeSwitch):
+    _attribute_name = SonoffCluster.AttributeDefs.detach_relay_mask.name
+
+    def __init__(self, *args, relay: SonoffDetachedRelayMask, **kwargs) -> None:
+        self._relay = relay
+        super().__init__(*args, **kwargs)
+
+    @property
+    def is_on(self) -> bool:
+        mask = self._cluster.get(self._attribute_name)
+        return mask is not None and self._relay in mask
+
+    async def async_turn_on_off(self, state: bool) -> None:
+        mask = self._cluster.get(self._attribute_name)
+        mask = (mask | self._relay) if state else (mask & ~self._relay)
+        await self._cluster.write_attributes({self._attribute_name: mask})
+        self.maybe_emit_state_changed_event()
+
+
+(
+    QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
+    .replaces(SonoffCluster)
+    .adds_entity(
+        DetachRelaySwitch,
+        endpoint_id=1,
+        cluster_id=SonoffCluster.cluster_id,
+        relay=SonoffDetachedRelayMask.Relay1,
+        unique_id_suffix="relay_1_detached",
+        translation_key="detach_relay_id",
+        translation_placeholders={"id": "1"},
+        fallback_name="Detach relay 1",
+    )
+    .add_to_registry()
+)
+```
+
+Removing entities: `.removes_entity(EntityFilter(...))` with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
 
 ### Tuya Devices (TuyaQuirkBuilder)
 
@@ -545,7 +594,13 @@ def test_my_device_signature(assert_signature_matches_quirk):
 )
 ```
 
-Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, or custom filter functions.
+Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, custom filter functions, or custom entity classes.
+
+**End-to-end tests:** if your quirk is complex, its high-level behavior should be tested. Use `tests/zha_helpers.py` with diagnostics for your device:
+```python
+async with zha_gateway() as gateway:
+    device = await join_device_from_diagnostics(gateway, "your_device.json", DEVICE_REGISTRY)
+```
 
 ## Code Organization
 
@@ -570,7 +625,7 @@ from zhaquirks.const import (
 
 # Quirk building
 from zhaquirks.builder import QuirkBuilder
-from zhaquirks.builder import EntityPlatform, EntityType
+from zhaquirks.builder import EntityFilter, EntityPlatform, EntityType
 from zhaquirks.builder import (  # Unit constants
     UnitOfTemperature, UnitOfTime, UnitOfEnergy, UnitOfPower,
 )
