@@ -1,6 +1,7 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -261,6 +262,15 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
+    # Some units expose an On/Off cluster on endpoint 1 for the 230V relay that
+    # switches the connected heating/cooling device. Name its switch accordingly.
+    .change_entity_metadata(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        unique_id_suffix="1-6",
+        new_translation_key="relay",
+        new_fallback_name="Relay",
+    )
     # Heating demand, either valve duty cycle or PWM output.
     .sensor(
         BoschThermostatCluster.AttributeDefs.heating_demand.name,
