@@ -105,7 +105,8 @@ class BoschHumidityAlarmLed(t.enum8):
     """Humidity alarm LED attribute values.
 
     Only these two values have been observed when toggling the humidity warning LED
-    in the Bosch app. Bit 0 is the LED toggle; the meaning of the other bits is unknown.
+    in the Bosch app. Bit 0 is the LED toggle; the meaning of the other bits is not
+    confirmed (possibly the temperature warning LEDs).
     """
 
     Off = 0x06
