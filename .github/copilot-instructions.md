@@ -398,7 +398,7 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
     @property
     def is_on(self) -> bool:
         mask = self._cluster.get(self._attribute_name)
-        return mask is not None and self._relay in mask
+        return mask is not None and bool(mask & self._relay)
 
     async def async_turn_on_off(self, state: bool) -> None:
         mask = self._cluster.get(self._attribute_name)
