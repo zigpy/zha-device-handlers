@@ -53,6 +53,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+import zhaquirks.innr.innr_sp120_plug
 import zhaquirks.konke
 import zhaquirks.legacy as zq
 from zhaquirks.legacy import CustomDevice

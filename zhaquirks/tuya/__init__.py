@@ -589,7 +589,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):
