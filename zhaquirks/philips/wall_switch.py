@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -31,6 +30,7 @@ from zhaquirks.const import (
     SHORT_RELEASE,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
     SIGNIFY,

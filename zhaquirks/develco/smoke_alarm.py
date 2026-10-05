@@ -1,17 +1,19 @@
 """Frient Smoke Alarm."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
+from zha.quirks import SIREN_BASIC
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
-from . import DevelcoIasZone, DevelcoPowerConfiguration
+from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
 
 (
     QuirkBuilder("frient A/S", "SMSZB-120")
     .applies_to("Develco Products A/S", "SMSZB-120")
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
+    # The device only has basic siren features, so hint that to ZHA
+    .exposes_feature(SIREN_BASIC)
     # Hide the default binary input sensor
     .prevent_default_entity_creation(
         endpoint_id=35,
@@ -28,7 +30,7 @@ from . import DevelcoIasZone, DevelcoPowerConfiguration
         endpoint_id=35,
         cluster_id=IasWd.cluster_id,
         new_primary=False,
-        new_entity_category=EntityType.DIAGNOSTIC,
+        new_entity_category=EntityType.CONFIG,
     )
     .add_to_registry()
 )

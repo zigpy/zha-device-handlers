@@ -1,9 +1,9 @@
 """Senoro Window Sensor (TS0601)."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 

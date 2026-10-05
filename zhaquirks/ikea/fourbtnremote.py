@@ -1,8 +1,8 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
