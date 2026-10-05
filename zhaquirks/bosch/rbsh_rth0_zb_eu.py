@@ -262,7 +262,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
-    # Some units expose an On/Off cluster on endpoint 1 for the 230V relay that
+    # Some units expose an On/Off cluster on endpoint 1 for the relay that
     # switches the connected heating/cooling device. Name its switch accordingly.
     .change_entity_metadata(
         endpoint_id=1,
