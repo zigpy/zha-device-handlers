@@ -71,7 +71,6 @@ async def test_adds_zcl_entity() -> None:
             endpoint_id=1,
             cluster_id=TemperatureMeasurement.cluster_id,
             attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
-            from_quirk=True,
             unique_id_suffix="extra_temperature",
             fallback_name="Extra temperature",
         )
@@ -100,7 +99,6 @@ async def test_adds_entity_missing_cluster_fails(caplog) -> None:
             endpoint_id=1,
             cluster_id=OnOff.cluster_id,
             attribute_name=OnOff.AttributeDefs.on_off.name,
-            from_quirk=True,
             unique_id_suffix="missing",
             fallback_name="Missing",
         )

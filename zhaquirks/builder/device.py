@@ -53,7 +53,9 @@ class QuirkV2Device(Device):
 
     def _create_added_entity(self, added: AddedEntityMetadata) -> PlatformEntity:
         if not issubclass(added.entity_cls, ZclPlatformEntity):
-            return added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
+            return added.entity_cls(
+                self, unique_id=str(self.ieee), from_quirk=True, **added.kwargs
+            )
 
         endpoint = self.endpoints[added.endpoint_id]
         clusters = (
@@ -66,6 +68,7 @@ class QuirkV2Device(Device):
             endpoint=endpoint,
             device=self,
             cluster=clusters[added.cluster_id],
+            from_quirk=True,
             **added.kwargs,
         )
 
