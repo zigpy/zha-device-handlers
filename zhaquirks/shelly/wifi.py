@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from zigpy.device import ResponseKey
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import EventableCluster
 from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.device import CustomZigpyDevice
@@ -19,6 +16,11 @@ from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
 SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
 SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
+# Firmware 2.0.0 exposes each physical input as an On/Off Switch endpoint whose
+# client On/Off cluster only sends on/off/toggle commands.  ZHA already mirrors
+# those commands into the cluster's on_off cache (OnOffClientCacheSync), so the
+# quirk only declares the entity; caching here too would apply toggles twice.
+SHELLY_INPUT_ENDPOINT_ID = 2
 
 
 class ShellyWiFiSetupCluster(CustomCluster):
@@ -119,49 +121,16 @@ class ShellyCustomProfileDevice(CustomZigpyDevice):
         return hdr, rsp_key
 
 
-class ShellyInputOnOffCluster(EventableCluster, OnOff):
-    """Expose Shelly input commands as a cached On/Off state."""
-
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list[Any],
-        *,
-        dst_addressing: t.AddrMode | None = None,
-    ) -> None:
-        """Update the input state while preserving normal ZHA events."""
-        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
-
-        if hdr.command_id == OnOff.ServerCommandDefs.on.id:
-            state = True
-        elif hdr.command_id == OnOff.ServerCommandDefs.off.id:
-            state = False
-        elif hdr.command_id == OnOff.ServerCommandDefs.toggle.id:
-            current_state = self.get(OnOff.AttributeDefs.on_off.name)
-            if current_state is None:
-                return
-            state = not bool(current_state)
-        else:
-            return
-
-        self.update_attribute(OnOff.AttributeDefs.on_off.id, state)
-
-
 (
     QuirkBuilder("Shelly", "1PM")
     .applies_to("Shelly", "Mini1PM")
     .applies_to("Shelly", "Mini1")
     .device_class(ShellyCustomProfileDevice)
     .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
-    .replaces(
-        ShellyInputOnOffCluster,
-        endpoint_id=2,
-        cluster_type=ClusterType.Client,
-    )
     .binary_sensor(
         attribute_name=OnOff.AttributeDefs.on_off.name,
         cluster_id=OnOff.cluster_id,
-        endpoint_id=2,
+        endpoint_id=SHELLY_INPUT_ENDPOINT_ID,
         cluster_type=ClusterType.Client,
         entity_type=EntityType.STANDARD,
         translation_key="input",

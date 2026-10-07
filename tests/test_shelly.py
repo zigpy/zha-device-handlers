@@ -12,11 +12,11 @@ from zigpy.zcl.foundation import ZCLAttributeAccess
 import zhaquirks
 from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 from zhaquirks.shelly.wifi import (
+    SHELLY_INPUT_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
     ShellyCustomProfileDevice,
-    ShellyInputOnOffCluster,
     ShellyWiFiSetupCluster,
 )
 
@@ -80,58 +80,33 @@ def test_shelly_wifi_setup_cluster_replaced(zigpy_device_from_v2_quirk, model) -
 
 
 @pytest.mark.parametrize("model", ["1PM", "Mini1PM", "Mini1"])
-def test_shelly_input_commands_update_binary_sensor_state(
-    zigpy_device_from_v2_quirk, model
-) -> None:
-    """Ensure firmware 2.0 input commands update the exposed input state."""
+def test_shelly_input_binary_sensor_declared(zigpy_device_from_v2_quirk, model) -> None:
+    """The input entity reads the client On/Off cache that ZHA keeps in sync."""
 
     quirked = zigpy_device_from_v2_quirk(
         "Shelly",
         model,
-        endpoint_ids=[1, 2, SHELLY_WIFI_SETUP_ENDPOINT_ID],
+        endpoint_ids=[1, SHELLY_INPUT_ENDPOINT_ID, SHELLY_WIFI_SETUP_ENDPOINT_ID],
         cluster_ids={
-            2: {OnOff.cluster_id: ClusterType.Client},
+            SHELLY_INPUT_ENDPOINT_ID: {OnOff.cluster_id: ClusterType.Client},
             SHELLY_WIFI_SETUP_ENDPOINT_ID: {
                 SHELLY_WIFI_SETUP_CLUSTER_ID: ClusterType.Server,
             },
         },
     )
 
-    cluster = quirked.endpoints[2].out_clusters[OnOff.cluster_id]
-    assert isinstance(cluster, ShellyInputOnOffCluster)
-
-    cluster.handle_cluster_request(
-        foundation.ZCLHeader.cluster(
-            tsn=1,
-            command_id=OnOff.ServerCommandDefs.toggle.id,
-        ),
-        [],
-    )
-    assert cluster.get(OnOff.AttributeDefs.on_off.name) is None
-
-    for command, expected_state in (
-        (OnOff.ServerCommandDefs.on, True),
-        (OnOff.ServerCommandDefs.off, False),
-        (OnOff.ServerCommandDefs.toggle, True),
-    ):
-        cluster.handle_cluster_request(
-            foundation.ZCLHeader.cluster(tsn=1, command_id=command.id),
-            [],
-        )
-        assert cluster.get(OnOff.AttributeDefs.on_off.name) is expected_state
-
-    cluster.handle_cluster_request(
-        foundation.ZCLHeader.cluster(tsn=1, command_id=0xFF),
-        [],
-    )
-    assert cluster.get(OnOff.AttributeDefs.on_off.name) is True
+    # Not replaced: ZHA's OnOffClientCacheSync keeps on_off current from the
+    # on/off/toggle commands the input sends, and would double-apply a toggle
+    # if the quirk cached them as well.
+    cluster = quirked.endpoints[SHELLY_INPUT_ENDPOINT_ID].out_clusters[OnOff.cluster_id]
+    assert type(cluster) is OnOff
 
     (metadata,) = (
         quirked._quirk_registry_entry.zha_device_factory.quirk_definition.entity_metadata
     )
     assert metadata.entity_platform.value == "binary_sensor"
     assert metadata.entity_type.value == "standard"
-    assert metadata.endpoint_id == 2
+    assert metadata.endpoint_id == SHELLY_INPUT_ENDPOINT_ID
     assert metadata.cluster_id == OnOff.cluster_id
     assert metadata.cluster_type is ClusterType.Client
     assert metadata.attribute_name == OnOff.AttributeDefs.on_off.name
