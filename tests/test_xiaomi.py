@@ -45,12 +45,17 @@ from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
     MANUFACTURER,
     MODEL,
     NODE_DESCRIPTOR,
@@ -59,6 +64,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     VALUE,
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
@@ -106,6 +112,7 @@ import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
+from zhaquirks.xiaomi.aqara.plug_aeu002 import AqaraPlugH2Cluster
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
@@ -2729,3 +2736,101 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+def test_aqara_h2_outlet(zigpy_device_from_v2_quirk):
+    """Test the Aqara Wall Outlet H2 UK quirk."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.plug.aeu002",
+        endpoint_ids=[1, 2, 3],
+        cluster_ids={
+            1: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                AqaraPlugH2Cluster.cluster_id: ClusterType.Server,
+            },
+            2: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                AqaraPlugH2Cluster.cluster_id: ClusterType.Server,
+            },
+            3: {AqaraPlugH2Cluster.cluster_id: ClusterType.Server},
+        },
+    )
+
+    # The manufacturer cluster is bound on every output endpoint.
+    for ep in (1, 2, 3):
+        assert isinstance(device.endpoints[ep].opple_cluster, AqaraPlugH2Cluster)
+
+    attrs = AqaraPlugH2Cluster.AttributeDefs
+    for name, attr_id in (
+        ("power_outage_memory", 0x0201),
+        ("led_indicator", 0x0203),
+        ("overload_protection", 0x020B),
+        ("child_lock", 0x0285),
+        ("multi_click", 0x0286),
+        ("flip_indicator_light", 0x00F0),
+    ):
+        assert getattr(attrs, name).id == attr_id
+
+    # Both sockets expose all four press types as device automation triggers.
+    assert device.device_automation_triggers == {
+        (SHORT_PRESS, BUTTON_1): {COMMAND: "1_single"},
+        (DOUBLE_PRESS, BUTTON_1): {COMMAND: "1_double"},
+        (LONG_PRESS, BUTTON_1): {COMMAND: "1_hold"},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: "1_release"},
+        (SHORT_PRESS, BUTTON_2): {COMMAND: "2_single"},
+        (DOUBLE_PRESS, BUTTON_2): {COMMAND: "2_double"},
+        (LONG_PRESS, BUTTON_2): {COMMAND: "2_hold"},
+        (LONG_RELEASE, BUTTON_2): {COMMAND: "2_release"},
+    }
+
+
+@pytest.mark.parametrize("button_ep", [1, 2])
+@pytest.mark.parametrize(
+    ("present_value", "press_type"),
+    [
+        (0, "hold"),
+        (1, "single"),
+        (2, "double"),
+        (3, "triple"),
+        (255, "release"),
+    ],
+)
+def test_aqara_h2_outlet_button_events(
+    zigpy_device_from_v2_quirk, button_ep, present_value, press_type
+):
+    """Each socket button press maps present_value to the right zha_send_event."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.plug.aeu002",
+        endpoint_ids=[1, 2, 3],
+        cluster_ids={
+            1: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                AqaraPlugH2Cluster.cluster_id: ClusterType.Server,
+            },
+            2: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                AqaraPlugH2Cluster.cluster_id: ClusterType.Server,
+            },
+            3: {AqaraPlugH2Cluster.cluster_id: ClusterType.Server},
+        },
+    )
+
+    mi_cluster = device.endpoints[button_ep].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+    mi_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, present_value
+    )
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            f"{button_ep}_{press_type}",
+            {
+                BUTTON: button_ep,
+                PRESS_TYPE: press_type,
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: present_value,
+            },
+        )
+    ]
