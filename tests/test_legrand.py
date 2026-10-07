@@ -10,8 +10,30 @@ from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
+from zhaquirks.legrand.garage_door import LegrandNLJWindowCoveringCluster, MovingState
 
 zhaquirks.setup()
+
+
+async def test_legrand_nlj_moving_state(zigpy_device_from_v2_quirk):
+    """Test NLJ registry matching and its non-conformant moving-state reports."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " NLJ - Garage door")
+    window_covering = device.endpoints[1].window_covering
+
+    assert isinstance(window_covering, LegrandNLJWindowCoveringCluster)
+
+    moving_state = LegrandNLJWindowCoveringCluster.AttributeDefs.moving_state
+    assert moving_state.id == 0xF007
+    assert moving_state.type is MovingState
+    assert moving_state.is_manufacturer_specific
+    assert (
+        window_covering.find_attribute(0xF007, manufacturer_code=None) is moving_state
+    )
+
+    for value in (1, 2, 0):
+        window_covering.update_attribute(moving_state.id, value)
+        assert window_covering[moving_state.name] == MovingState(value)
 
 
 @pytest.mark.parametrize(
