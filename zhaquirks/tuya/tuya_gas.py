@@ -117,6 +117,15 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
 )
 
 
+# Spacetronik ZB-DG02 - simple gas (CH4) alarm, mains-powered plug-in detector
+(
+    TuyaQuirkBuilder("_TZE204_uc0iv1hb", "TS0601")
+    .tuya_gas(dp_id=1)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 tuya_gas_alarm_base = (
     TuyaQuirkBuilder()
     .tuya_ias(
