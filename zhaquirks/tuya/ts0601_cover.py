@@ -705,3 +705,44 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class LeisguarMotorDirection(t.enum8):
+    """Motor direction values.
+
+    Confirmed against a real device: raw DP5 value 1 is the motor's normal
+    (as-installed) rotation direction, and 0 is reversed — the opposite of
+    what the DP name convention elsewhere in this codebase might suggest.
+    """
+
+    Normal = 0x01
+    Reversed = 0x00
+
+
+(
+    TuyaQuirkBuilder("_TZE200_xu4a5rhj", "TS0601")
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=3,
+        position_control_dp=2,
+        invert=False,
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=LeisguarMotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_number(
+        dp_id=105,
+        type=t.uint8_t,
+        attribute_name="motor_speed",
+        min_value=0,
+        max_value=255,
+        step=1,
+        translation_key="motor_speed",
+        fallback_name="Motor speed",
+    )
+    .add_to_registry()
+)
