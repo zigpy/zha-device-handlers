@@ -202,6 +202,59 @@ tuya_gas_alarm_base = (
     .add_to_registry()
 )
 
+(
+    tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
+    .applies_to("_TZE204_iuk8kupi", "TS0601")
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="fuel_gas",
+        type=t.int16s,
+        divisor=1000,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit="%LEL",  # Not present in zigpy
+        translation_key="fuel_gas_concentration",
+        fallback_name="Fuel gas concentration",
+    )
+    .tuya_enum(
+        dp_id=6,
+        attribute_name="alarm_ringtone",
+        enum_class=TuyaSirenRingtone,
+        translation_key="alarm_ringtone",
+        fallback_name="Alarm ringtone",
+    )
+    .tuya_number(
+        dp_id=7,
+        attribute_name="alarm_duration",
+        min_value=1,
+        type=t.uint16_t,
+        max_value=180,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="alarm_duration",
+        fallback_name="Alarm duration",
+    )
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat_active",
+        entity_type=EntityType.STANDARD,
+        translation_key="preheat_active",
+        fallback_name="Preheat active",
+    )
+    .tuya_gas(dp_id=18)
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="co",
+        type=t.int16s,
+        divisor=100,
+        device_class=SensorDeviceClass.CO,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        fallback_name="CO concentration",
+    )
+    # 13 ignored in z2m
+    .add_to_registry()
+)
+
 
 (
     tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
