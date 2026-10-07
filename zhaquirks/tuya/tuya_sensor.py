@@ -6,6 +6,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 
 from zhaquirks.builder import (
+    LIGHT_LUX,
     PERCENTAGE,
     EntityPlatform,
     EntityType,
@@ -15,7 +16,6 @@ from zhaquirks.builder import (
 )
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
-    TuyaPowerConfigurationCluster2AA,
     TuyaPowerConfigurationCluster2AAA,
     TuyaTimePayload,
 )
@@ -28,6 +28,13 @@ class TuyaTempUnitConvert(t.enum8):
 
     Celsius = 0x00
     Fahrenheit = 0x01
+
+
+class TuyaSoilWaterWarning(t.enum8):
+    """Tuya soil sensor water shortage warning enum."""
+
+    Normal = 0x00
+    Alarm = 0x01
 
 
 class TuyaSoilLightLevel(t.enum8):
@@ -291,15 +298,92 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE2841000000_0ints6wl", "TS0601")
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_soil_moisture(dp_id=3)
+    .tuya_humidity(dp_id=101)
     .tuya_illuminance(dp_id=102)
     .tuya_dp(
         dp_id=14,
-        ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
         attribute_name="battery_percentage_remaining",
         # Low/Middle/High (raw 0/1/2) -> 20/60/100%, in half-percent units.
         converter=lambda x: {0: 40, 1: 120, 2: 200}.get(x, 0),
     )
-    .adds(TuyaPowerConfigurationCluster2AA)
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enum(
+        dp_id=111,
+        attribute_name="water_warning",
+        enum_class=TuyaSoilWaterWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="water_warning",
+        fallback_name="Water warning",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="soil_sampling_interval",
+        type=t.uint32_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        translation_key="soil_sampling_interval",
+        fallback_name="Soil sampling interval",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="soil_moisture_calibration",
+        type=t.int32s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        translation_key="soil_moisture_calibration",
+        fallback_name="Soil moisture calibration",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="humidity_calibration",
+        type=t.int32s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        translation_key="humidity_calibration",
+        fallback_name="Humidity calibration",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="illuminance_calibration",
+        type=t.int32s,
+        unit=LIGHT_LUX,
+        min_value=-1000,
+        max_value=1000,
+        step=1,
+        translation_key="illuminance_calibration",
+        fallback_name="Illuminance calibration",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="temperature_calibration",
+        type=t.int32s,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-2.0,
+        max_value=2.0,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="soil_warning_threshold",
+        type=t.uint32_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="soil_warning_threshold",
+        fallback_name="Soil warning threshold",
+    )
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
