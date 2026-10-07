@@ -347,8 +347,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         min_value=-30,
         max_value=30,
         step=1,
-        translation_key="humidity_calibration",
-        fallback_name="Humidity calibration",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
     )
     .tuya_number(
         dp_id=106,
@@ -370,8 +370,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         max_value=2.0,
         step=0.1,
         multiplier=0.1,
-        translation_key="temperature_calibration",
-        fallback_name="Temperature calibration",
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
     )
     .tuya_number(
         dp_id=110,
