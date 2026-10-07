@@ -288,6 +288,18 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
+    TuyaQuirkBuilder("_TZE284_0ints6wl", "TS0601")
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_humidity(dp_id=101)
+    .tuya_illuminance(dp_id=102)
+    .tuya_battery(dp_id=14, scale=100)  # enum: 0=low, 1=medium, 2=high
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
     TuyaQuirkBuilder("_TZE284_nt4pquef", "TS0601")  # SG502Z
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_enum(
