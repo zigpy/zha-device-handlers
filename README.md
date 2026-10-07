@@ -21,6 +21,10 @@ For supporting Tuya devices, see [using the TuyaQuirkBuilder](/tuya.md).
 
 ZHA device handlers and its provided Quirks allow Zigpy, ZHA and Home Assistant to work with non-standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
 
+### AI policy
+
+This project follows the [Open Home Foundation AI Policy](AI_POLICY.md). In short: AI tools are welcome as an aid, but you must fully understand and be able to explain every change you submit. Contributions made by autonomous agents are not accepted.
+
 ## What are these specifications
 
 Reference official Zigbee specification documentation from Connectivity Standards Alliance (a.k.a. "CSA-IOT", formerly "Zigbee Alliance"):
