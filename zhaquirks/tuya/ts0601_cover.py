@@ -13,6 +13,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ED00_ID,
     TUYA_CLUSTER_ID,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
@@ -254,6 +255,49 @@ class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
                     TuyaWindowCoverControl,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        },
+    }
+
+
+class TuyaZemismartSmartCover0601_4(TuyaWindowCover):
+    """Tuya Zemismart window opener, _TZE284_* variant with 0xED00 cluster."""
+
+    signature = {
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00, 0xed00]
+        # output_clusters=[0x000a, 0x0019]
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=81
+        #   input_clusters=[0, 4, 5, 61184, 60672] output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE284_fzo2pocs", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                    TUYA_CLUSTER_ED00_ID,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerWindowCover,
+                    TuyaWindowCoverControl,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
     }
