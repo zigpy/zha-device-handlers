@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
 import zigpy.zcl.foundation as zcl_f
 
 from zhaquirks.tuya import (
@@ -15,6 +16,8 @@ from zhaquirks.tuya import (
     TuyaData,
     TuyaDatapointData,
     TuyaNewManufCluster,
+    TuyaSwitchModeSelectEntity,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -291,3 +294,46 @@ def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
 
     assert default_rsp_mock.call_count == 1
     assert default_rsp_mock.call_args[1]["status"] == zcl_f.Status.UNSUP_CLUSTER_COMMAND
+
+
+def _switch_mode_select_entity(zigpy_device_mock, cluster_cls, cluster_id):
+    """Build a TuyaSwitchModeSelectEntity backed by the given cluster class."""
+    device = zigpy_device_mock()
+    endpoint = device.add_endpoint(1)
+    cluster = endpoint.add_input_cluster(cluster_id, cluster_cls(endpoint))
+
+    fake_endpoint = mock.MagicMock()
+    fake_endpoint.id = endpoint.endpoint_id
+    fake_device = mock.MagicMock()
+    fake_device.ieee = device.ieee
+
+    return TuyaSwitchModeSelectEntity(fake_endpoint, fake_device, cluster=cluster)
+
+
+def test_tuya_switch_mode_select_entity_wrong_cluster(zigpy_device_mock):
+    """Entity is not supported when the backing cluster isn't the Tuya one."""
+    entity = _switch_mode_select_entity(zigpy_device_mock, OnOff, OnOff.cluster_id)
+    assert entity._is_supported() is False
+
+
+def test_tuya_switch_mode_select_entity_no_cached_value(zigpy_device_mock):
+    """Entity is not supported until the switch_mode attribute has a cached value."""
+    entity = _switch_mode_select_entity(
+        zigpy_device_mock,
+        TuyaZBOnOffAttributeCluster,
+        TuyaZBOnOffAttributeCluster.cluster_id,
+    )
+    assert entity._is_supported() is False
+
+
+def test_tuya_switch_mode_select_entity_supported(zigpy_device_mock):
+    """Entity is supported once the switch_mode attribute is cached."""
+    entity = _switch_mode_select_entity(
+        zigpy_device_mock,
+        TuyaZBOnOffAttributeCluster,
+        TuyaZBOnOffAttributeCluster.cluster_id,
+    )
+    entity.cluster.update_attribute(
+        TuyaZBOnOffAttributeCluster.AttributeDefs.switch_mode.name, 0
+    )
+    assert entity._is_supported() is True
