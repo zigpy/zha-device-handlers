@@ -2,15 +2,14 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.builder import QuirkBuilder, SensorDeviceClass
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.nimly import NIMLY
 
 # clears the mains powered mac capability flag

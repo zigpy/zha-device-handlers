@@ -1,10 +1,10 @@
 """Xiaomi aqara leak sensor device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,

@@ -3,13 +3,20 @@
 import asyncio
 import logging
 import math
+from typing import Any
 from unittest import mock
 
 import pytest
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    ClusterType,
+    foundation,
+)
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -23,6 +30,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
     IlluminanceMeasurement,
     OccupancySensing,
     PressureMeasurement,
@@ -31,13 +39,16 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
+    ATTR_ID,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MANUFACTURER,
@@ -46,7 +57,9 @@ from zhaquirks.const import (
     OFF,
     ON,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    VALUE,
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
 )
@@ -78,7 +91,8 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
-    OppleCluster,
+    FeedingMode,
+    FeedingSource,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -430,79 +444,468 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 
 
 @pytest.mark.parametrize(
-    "raw_report",
+    ("raw_report_hex", "attributes"),
     (
         # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
-        "02FF4C0600100121BA0B21A813240100000000215D062058",
-        "02FF4C0600100021EC0B21A8012400000000002182002063",
-        "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
-        "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
-        "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
-        "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
-        "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+        (
+            "02FF4C0600100121BA0B21A813240100000000215D062058",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3002)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1629)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(88)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100021EC0B21A8012400000000002182002063",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.false),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3052)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(130)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(99)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121110D0328130421A8430521F60006240600030000082108140A21E51F")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B03281C0421A84305212B01062403000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328190421A8430521100106240400040000082109140A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328180421A8430521100106240600050000082109140A213C50")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281D0421A84305212F01062407000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
         # https://community.hubitat.com/t/xiaomi-aqara-zigbee-device-drivers-possibly-may-no-longer-be-maintained/631/print
-        "01FF42090421A8130A212759",
         (
-            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923"
-            "000000009B210000"
+            "01FF42090421A8130A212759",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0421A8130A212759")),
+                    ),
+                ),
+            ],
         ),
-        "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
-        "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
         (
-            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000"
-            "962300000000"
+            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("6410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000")),
+                    ),
+                ),
+            ],
         ),
         (
-            "01FF42270328240521170007270000000000000000082117010921000A0A2130C064200065"
-            "20336621FA00"
+            "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C0600100121B30B21A8012400000000002195002056",
-        "02FF4C0600100121B30B21A8012400000000002195002057",
+        (
+            "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B03281C0421A81305213A0006240000000000082104020A210367641001")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42270328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002056",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(86)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002057",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(87)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
         # puddly's logs
-        "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
-        "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
-        "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
-        "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
         (
-            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F0100"
-            "0A2157DE"
+            "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B03280C0421A84305215401062401000000000A2178E0")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C06001001213C0C21A81324010000000021D1052061",
         (
-            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B032816"
-            "0421A83105214400062401000000000A217CBE6410000B210900"
+            "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03280A0421A8330521E801062401000000000A214444641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328170421A8130521500006240100000000082105140A214761")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328130421A81305214400062401000000000A217CBE6410000B210400")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C06001001213C0C21A81324010000000021D1052061",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3132)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1489)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(97)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B0328160421A83105214400062401000000000A217CBE6410000B210900",
+            [
+                Attribute(
+                    attrid=0x0005,
+                    value=TypeValue(
+                        type=DataTypeId.string,
+                        value=t.CharacterString('lumi.sensor_motion.aq2'),
+                    ),
+                ),
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328160421A83105214400062401000000000A217CBE6410000B210900")),
+                    ),
+                ),
+            ],
         ),
         # GH Issue #811
         (
-            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A"
-            "078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000"
+            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1491#issuecomment-489032272
         (
-            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A216535982128"
-            "00992125009A252900FFFFDC04"
+            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1411#issuecomment-485724957
         (
-            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20"
-            "006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000"
+            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1588
         (
-            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F3982128"
-            "00992100009A25AFFE5B016904"
+            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1069
-        "02FF4C0600100121D10B21A801240000000000216E002050",
-        "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
-        "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
-        "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
-        "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        (
+            "02FF4C0600100121D10B21A801240000000000216E002050",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3025)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(110)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(80)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328150421A8130521A200062403000000000A210000641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B0328140421A84305219A00062401000000000A21C841641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B0328150421A83305213B00062401000000000A219FF8641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328130421A81305219200062401000000000A21C96B641000")),
+                    ),
+                ),
+            ],
+        ),
+        # https://github.com/home-assistant/core/issues/163692
+        (
+            "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
+            [
+                Attribute(
+                    attrid=0x00F7,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03283B05210900092100010A219F580B20000C20010D23200E00001123010000006520416620806720236920026A21451E6B2000")),
+                    ),
+                ),
+            ],
+        ),
+        # https://github.com/home-assistant/core/issues/164251
+        (
+            "01ff42210121e50b0328180421a81305212000062401000000000a215b946410000b211c00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328180421A81305212000062401000000000A215B946410000B211C00")),
+                    ),
+                ),
+            ],
+        ),
     ),
-)
-def test_attribute_parsing(raw_report):
+)  # fmt: off
+def test_attribute_parsing(raw_report_hex, attributes):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report)
+    orig_raw_report = raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,
@@ -516,7 +919,7 @@ def test_attribute_parsing(raw_report):
     # Keep track of all the data encoded in the attribute report
     parsed_chunks = []
 
-    for report in reports[0]:
+    for report in reports.attribute_reports:
         # This shouldn't throw an error
         cluster._update_attribute(report.attrid, report.value.value)
 
@@ -529,7 +932,14 @@ def test_attribute_parsing(raw_report):
 
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
-    assert len(raw_report) == 2 * len(reports[0])
+    assert len(raw_report) == 2 * len(reports.attribute_reports)
+
+    assert reports.attribute_reports == attributes
+
+    # Ensure the reports parse uniquely
+    assert list(cluster._interpret_attr_reports(orig_raw_report)) == [
+        tuple(reports.attribute_reports)
+    ]
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
@@ -651,12 +1061,12 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
         ("child_lock", 0, b"\x00\x02\x01\x04\x16\x00U\x01\x00"),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Manual,
+            FeedingMode.Manual,
             b"\x00\x02\x01\x04\x18\x00U\x01\x00",
         ),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Schedule,
+            FeedingMode.Schedule,
             b"\x00\x02\x01\x04\x18\x00U\x01\x01",
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
@@ -670,7 +1080,11 @@ async def test_aqara_feeder_write_attrs(
 
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_cluster._write_attributes = mock.AsyncMock()
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
 
     expected_attr_def = opple_cluster.find_attribute(0xFFF1)
     expected = foundation.Attribute(0xFFF1, foundation.TypeValue())
@@ -679,12 +1093,12 @@ async def test_aqara_feeder_write_attrs(
     ).type_id
     expected.value.value = expected_attr_def.type(expected_bytes)
 
-    await opple_cluster.write_attributes({attribute: value}, manufacturer=0x115F)
+    await opple_cluster.write_attributes({attribute: value})
 
-    opple_cluster._write_attributes.assert_awaited_with(
-        [expected],
-        manufacturer=0x115F,
-    )
+    assert len(opple_cluster._write_attributes.mock_calls) == 1
+    call_args = opple_cluster._write_attributes.mock_calls[0]
+    assert call_args.args[0] == [expected]
+    assert call_args.kwargs["manufacturer"] == 0x115F
 
 
 @pytest.mark.parametrize(
@@ -703,9 +1117,7 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(
-                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
-                ),
+                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -757,9 +1169,7 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(
-                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
-                ),
+                mock.call(ZCL_FEEDING_MODE, FeedingMode.Schedule, mock.ANY),
                 mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
@@ -802,15 +1212,17 @@ async def test_aqara_feeder_write_attrs(
 async def test_aqara_feeder_attr_reports(
     zigpy_device_from_quirk, bytes_received, call_count, calls
 ):
-    """Test Aqara C1 pet feeder attr writing."""
-
-    class Listener:
-        attribute_updated = mock.MagicMock()
-
+    """Test Aqara C1 pet feeder attr reports and parsing."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    cluster_listener = Listener()
-    opple_cluster.add_listener(cluster_listener)
+
+    attribute_updates: list[tuple[int, Any]] = []
+
+    def on_attribute_event(event: AttributeReportedEvent | AttributeUpdatedEvent):
+        attribute_updates.append((event.attribute_id, event.value))
+
+    opple_cluster.on_event(AttributeReportedEvent.event_type, on_attribute_event)
+    opple_cluster.on_event(AttributeUpdatedEvent.event_type, on_attribute_event)
 
     device.packet_received(
         t.ZigbeePacket(
@@ -822,9 +1234,14 @@ async def test_aqara_feeder_attr_reports(
         )
     )
 
-    assert cluster_listener.attribute_updated.call_count == call_count
-    for call in calls:
-        assert call in cluster_listener.attribute_updated.mock_calls
+    # Check the expected attribute updates occurred
+    expected_updates = [(c.args[0], c.args[1]) for c in calls]
+    actual_updates = attribute_updates[-call_count:]
+    assert len(actual_updates) == call_count
+    for attr_id, value in expected_updates:
+        assert any(u[0] == attr_id and u[1] == value for u in actual_updates), (
+            f"Expected ({attr_id}, {value}) in {actual_updates}"
+        )
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
@@ -930,8 +1347,6 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
 
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_listener = ClusterListener(opple_cluster)
-
     thermostat_cluster = device.endpoints[1].thermostat
     thermostat_listener = ClusterListener(thermostat_cluster)
 
@@ -990,16 +1405,15 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
+        # check that attributes are correctly mapped and updated on ZCL thermostat cluster
         assert (
-            thermostat_listener.attribute_updates[0]
-            == (
-                Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.SystemMode.Heat,
-            )
-        )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.SystemMode.Heat,
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # check that other attribute reads are not redirected
         await thermostat_cluster.read_attributes([attr_no_redirect])
@@ -1009,6 +1423,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # test writes:
 
@@ -1020,12 +1435,11 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         # check that system_mode writes were directed to the Opple cluster
         assert len(thermostat_cluster._write_attributes.mock_calls) == 0
         assert len(opple_cluster._write_attributes.mock_calls) == 1
-        assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
-
-        assert thermostat_listener.attribute_updates[2] == (
+        # check ZCL attribute is updated on thermostat cluster
+        assert (
             Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
-        )  # check ZCL attribute is in correct mode
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._write_attributes.reset_mock()
         opple_cluster._write_attributes.reset_mock()
@@ -1658,7 +2072,11 @@ async def test_xiaomi_e1_roller_commands_1(
     zigpy_device_from_v2_quirk, command, value, read_current_position
 ):
     """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.curtain.acn002",
+        cluster_ids={1: {MultistateOutput.cluster_id: ClusterType.Server}},
+    )
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
@@ -1706,7 +2124,7 @@ async def test_xiaomi_e1_roller_commands_1(
     with (
         patch_window_covering_read,
         patch_analog_read,
-        patch_multistate_write,
+        patch_multistate_write as mock_writes,
     ):
         # test command
         await window_covering_cluster.command(command)
@@ -1737,6 +2155,16 @@ async def test_xiaomi_e1_roller_commands_1(
         else:
             # confirm the command did not read the current position
             assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+        assert len(mock_writes.mock_calls) == 1
+        assert mock_writes.mock_calls[0].args[0] == [
+            foundation.Attribute(
+                attrid=MultistateOutput.AttributeDefs.present_value.id,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint16, value=value
+                ),
+            )
+        ]
 
 
 @pytest.mark.parametrize(
@@ -1967,10 +2395,10 @@ async def test_xiaomi_e1_roller_window_covering_read_redirection(
     )
 
 
-async def test_xiaomi_e1_roller_write_aware_update_attribute(
+async def test_xiaomi_e1_roller_position_updates(
     zigpy_device_from_v2_quirk,
 ):
-    """Test Aqara E1 roller AnalogOutput write-aware update_attribute method."""
+    """Test Aqara E1 roller lift position updates on read/report only."""
     device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
@@ -1979,80 +2407,69 @@ async def test_xiaomi_e1_roller_write_aware_update_attribute(
     analog_cluster = device.endpoints[1].analog_output
     analog_listener = ClusterListener(analog_cluster)
     analog_attr = AnalogOutput.AttributeDefs.present_value
-    analog_attr_max = AnalogOutput.AttributeDefs.max_present_value
 
-    # patch write command for a success response
-    patch_analog_write = mock.patch.object(
+    # patch read command for a success response
+    patch_analog_read = mock.patch.object(
         analog_cluster,
-        "_write_attributes",
-        mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-            )
-        ),
-    )
-
-    # patch write command for a fail response
-    patch_analog_write_fail = mock.patch.object(
-        analog_cluster,
-        "_write_attributes",
+        "_read_attributes",
         mock.AsyncMock(
             return_value=(
                 [
-                    foundation.WriteAttributesStatusRecord(
-                        foundation.Status.INVALID_VALUE, analog_attr.id
-                    ),
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 40),
+                    )
                 ],
             )
         ),
     )
 
-    with (
-        patch_analog_write,
-    ):
-        # test writing valid and invalid values using name & id
-        await analog_cluster.write_attributes({analog_attr.id: 50})
-        await analog_cluster.write_attributes({analog_attr.name: 60})
-        assert analog_cluster._write_attributes.call_count == 2
+    with patch_analog_read:
+        analog_listener.attribute_updates.clear()
+        window_covering_listener.attribute_updates.clear()
 
-        # confirm the two successful writes updated the analog cluster
-        assert len(analog_listener.attribute_updates) == 2
-        assert analog_listener.attribute_updates[0] == (
-            analog_attr.id,
-            50,
-        )
-        assert analog_listener.attribute_updates[1] == (
-            analog_attr.id,
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        # read events should update the WindowCovering position
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id,
             60,
         )
 
-    with (
-        patch_analog_write_fail,
-    ):
-        # test writing valid and invalid values using name & id
-        await analog_cluster.write_attributes(
-            {analog_attr_max.id: 100, analog_attr.id: 150}
-        )
-        await analog_cluster.write_attributes(
-            {analog_attr_max.name: 100, analog_attr.name: 160}
-        )
-        assert analog_cluster._write_attributes.call_count == 2
+    # report events should update the WindowCovering position
+    attr = foundation.Attribute(
+        attrid=analog_attr.id,
+        value=foundation.TypeValue(0x39, t.Single(25.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
 
-        # confirm the two failed attr writes did not update the analog cluster
-        assert len(analog_listener.attribute_updates) == 4
-
-        # confirm the two successful writes updated the analog cluster
-        assert analog_listener.attribute_updates[2] == (
-            analog_attr_max.id,
-            100,
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
         )
-        assert analog_listener.attribute_updates[3] == (
-            analog_attr_max.id,
-            100,
-        )
+    )
 
-    # confirm the write invoked update_attributes did not update the covering cluster
-    assert len(window_covering_listener.attribute_updates) == 0
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+        75,
+    )
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
@@ -2062,16 +2479,31 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay)
     mi_cluster = device.endpoints[endpoint].multistate_input
     mi_listener = ClusterListener(mi_cluster)
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
 
     buttons = {1: BUTTON_1, 2: BUTTON_2}
 
+    # Button press triggers zha_send_event
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
-    assert len(mi_listener.attribute_updates) == 1
-    assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == buttons[endpoint]
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            buttons[endpoint],
+            {
+                PRESS_TYPE: buttons[endpoint],
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: 1,
+                ENDPOINT_ID: endpoint,
+            },
+        )
+    ]
 
+    # Regular attribute updates still work
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
     assert len(mi_listener.attribute_updates) == 2
+    # First update is the legacy cache update for fake attribute 0 (button state)
+    assert mi_listener.attribute_updates[0] == (0, buttons[endpoint])
+    # Second update is the state_text attribute
     assert (
         mi_listener.attribute_updates[1][0]
         == MultistateInput.AttributeDefs.state_text.id
@@ -2282,3 +2714,18 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
+    """Test Aqara air monitor CO2 and temperature attribute scaling."""
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+
+    co2 = device.endpoints[1].carbon_dioxide_concentration
+    co2._update_attribute(
+        CarbonDioxideConcentration.AttributeDefs.measured_value.id, 400_000_000
+    )
+    assert co2.get("measured_value") == 400.0
+
+    temp = device.endpoints[1].device_temperature
+    temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
+    assert temp.get("current_temperature") == 2500
