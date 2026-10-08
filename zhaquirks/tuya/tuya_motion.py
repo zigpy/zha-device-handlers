@@ -1628,8 +1628,18 @@ base_tuya_motion = (
 # Tuya PIR motion sensor, SNZB-03
 (
     TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
-    .applies_to("_TZ3040_bb6xaihh", "TS0202")
     .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR motion sensor, TS0202
+# Sends its own IAS zone clear after its hold time, so no software reset:
+# a fixed reset would clear motion while the sensor is still occupied.
+(
+    TuyaQuirkBuilder("_TZ3040_bb6xaihh", "TS0202")
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
     .skip_configuration()
