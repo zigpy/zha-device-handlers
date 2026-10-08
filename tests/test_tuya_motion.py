@@ -3,12 +3,15 @@
 import asyncio
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 import zhaquirks
+from zhaquirks import MotionWithReset
+from zhaquirks.const import OFF, ON, ZONE_STATUS_CHANGE_COMMAND
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -174,3 +177,50 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+@pytest.mark.parametrize(
+    "manufacturer,model,self_reset",
+    [
+        ("_TZ3000_bb6xaihh", "SNZB-03", True),
+        # sends its own clear after its hold time, so motion must not be reset early
+        ("_TZ3040_bb6xaihh", "TS0202", False),
+    ],
+)
+async def test_tuya_bb6xaihh_motion_reset(
+    zigpy_device_from_v2_quirk, manufacturer, model, self_reset
+):
+    """Test the software motion reset is only applied to the SNZB-03."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        manufacturer,
+        model,
+        cluster_ids={
+            1: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    ias_zone = quirked_device.endpoints[1].ias_zone
+    assert isinstance(ias_zone, MotionWithReset) is self_reset
+
+    listener = ClusterListener(ias_zone)
+
+    if self_reset:
+        ias_zone.reset_s = 0
+
+    # device reports motion
+    hdr, args = ias_zone.deserialize(ZCL_IAS_MOTION_COMMAND)
+    ias_zone.handle_message(hdr, args)
+
+    await asyncio.sleep(0.01)
+
+    commands = [(cmd[1], cmd[2][0]) for cmd in listener.cluster_commands]
+    if self_reset:
+        assert commands == [
+            (ZONE_STATUS_CHANGE_COMMAND, ON),
+            (ZONE_STATUS_CHANGE_COMMAND, OFF),
+        ]
+    else:
+        # no software reset, motion stays on until the device clears it
+        assert commands == [(ZONE_STATUS_CHANGE_COMMAND, ON)]
