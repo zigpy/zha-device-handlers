@@ -21,22 +21,10 @@ class SmokeSirenEnum(t.enum8):
     Stop = 0
     Smoke_siren = 1
     CO_siren = 2
+    GAS_siren = 3
+    Doorbell_siren = 4
+    Heat_siren = 5
 
-
-class ChamberContaminationEnum(t.enum8):
-    """Chamber contamination level."""
-
-    Normal = 0
-    Light_contamination = 1
-    Medium_contamination = 2
-    Critical_contamination = 3
-
-
-class SmokeLevelUnitEnum(t.enum8):
-    """Smoke level unit."""
-
-    dbm = 0
-    pct_ft_obs = 1
 
 
 class CustomHeimanCluster(CustomCluster):
@@ -77,21 +65,6 @@ class CustomHeimanCluster(CustomCluster):
             type=t.uint8_t,
             manufacturer_code=0x120B,
         )
-        smoke_level = ZCLAttributeDef(
-            id=0x0016,
-            type=t.uint8_t,
-            manufacturer_code=0x120B,
-        )
-        smoke_unit = ZCLAttributeDef(
-            id=0x0018,
-            type=SmokeLevelUnitEnum,
-            manufacturer_code=0x120B,
-        )
-        chamber_contamination = ZCLAttributeDef(
-            id=0x0017,
-            type=ChamberContaminationEnum,
-            manufacturer_code=0x120B,
-        )
         rebooted_count = ZCLAttributeDef(
             id=0x0019,
             type=t.uint16_t,
@@ -122,7 +95,7 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder()
     .applies_to("Heiman", "HM-5HA-E")
-    .friendly_name(manufacturer="Heiman", model="HM-5HA-E")  # Used by newer fw
+    .friendly_name(manufacturer="Heiman", model="Smart heat alarm")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
