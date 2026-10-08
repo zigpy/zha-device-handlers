@@ -86,9 +86,9 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Drop the device's own contradictory battery reports.
 
-        The FP300 pushes a stuck-at-full percentage through the standard power
-        cluster while the TLV voltage needs rescaling, so only values this
-        quirk derives from the TLV voltage may enter the attribute cache.
+        The FP300 pushes a stuck-at-full percentage, and on some firmware periodic
+        zeros, through the standard power cluster, so only values this quirk
+        derives from the TLV voltage may enter the attribute cache.
         """
         if not self._quirk_battery_update and attrid in (
             self.BATTERY_VOLTAGE_ATTR,
@@ -99,9 +99,8 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfiguration):
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Update voltage and derived battery percentage from an mV report."""
-        if voltage_mv < 1000:
-            voltage_mv *= 10
         if not 2000 <= voltage_mv <= 4000:
+            self.debug("Dropping implausible battery voltage: %s mV", voltage_mv)
             return
         self._quirk_battery_update = True
         try:
