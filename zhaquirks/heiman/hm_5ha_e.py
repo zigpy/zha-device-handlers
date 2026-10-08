@@ -25,7 +25,6 @@ class SmokeSirenEnum(t.enum8):
     Heat_siren = 5
 
 
-
 class CustomHeimanCluster(CustomCluster):
     """Heiman custom cluster."""
 
