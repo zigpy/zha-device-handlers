@@ -45,6 +45,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -63,6 +64,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -81,6 +83,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -100,6 +103,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -119,6 +123,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -138,6 +143,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         m1.assert_called_with(
             cluster=61184,
@@ -151,6 +157,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -186,6 +193,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
