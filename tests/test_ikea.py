@@ -9,9 +9,10 @@ from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
+from zhaquirks.ikea import IKEA, DoublingPowerConfigClusterIKEA, IkeaBilresaLevelControl
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
+import zhaquirks.ikea.symfonisk2
 
 zhaquirks.setup()
 
@@ -164,6 +165,7 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
 @pytest.mark.parametrize(
     "firmware, pct_device, pct_correct, expected_pct_updates, expect_log_warning",
     (
+        ("1.0.012", 50, 100, 2, False),  # old firmware, doubling
         ("1.0.024", 50, 100, 2, False),  # old firmware, doubling
         ("2.3.075", 50, 100, 2, False),  # old firmware, doubling
         ("2.4.5", 50, 50, 1, False),  # new firmware, no doubling
@@ -251,6 +253,39 @@ async def test_double_power_config_firmware(
         # check log output if we expect a warning
         if expect_log_warning:
             assert f"sw_build_id is not a number: {firmware} for device" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.ikea.symfonisk2.IkeaSymfoniskGen2v1,
+        zhaquirks.ikea.symfonisk2.IkeaSymfoniskGen2v2,
+    ),
+)
+@pytest.mark.parametrize("firmware", ("1.0.012", "1.0.32", "1.0.35", None))
+async def test_symfonisk_gen2_battery_not_doubled(
+    zigpy_device_from_quirk, quirk, firmware
+):
+    """Test SYMFONISK gen2 battery percentage is never doubled.
+
+    All SYMFONISK gen2 firmware (1.0.x) reports battery percentage in 0.5% units.
+    """
+
+    device = zigpy_device_from_quirk(quirk)
+    basic_cluster = device.endpoints[1].basic
+    power_cluster = device.endpoints[1].power
+    assert not isinstance(power_cluster, DoublingPowerConfigClusterIKEA)
+
+    if firmware is not None:
+        basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, firmware)
+
+    power_listener = ClusterListener(power_cluster)
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    # e.g. 150 is reported for 75% remaining
+    power_cluster.update_attribute(battery_pct_id, 150)
+    assert power_listener.attribute_updates == [(battery_pct_id, 150)]
+    assert power_cluster.get(battery_pct_id) == 150
 
 
 @pytest.mark.parametrize(
