@@ -12,6 +12,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
@@ -418,3 +419,43 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
             },
         }
     }
+
+
+(
+    TuyaQuirkBuilder("_TZE284_jtbgusdc", "TS0601")
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT)
+    .adds(TuyaOnOffNM, endpoint_id=1)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=1)
+    .adds(TuyaOnOffNM, endpoint_id=2)
+    .adds(TuyaInWallLevelControlNM, endpoint_id=2)
+    .tuya_dp(
+        1,
+        TuyaOnOffNM.ep_attribute,
+        "on_off",
+        endpoint_id=1,
+    )
+    .tuya_dp(
+        2,
+        TuyaInWallLevelControlNM.ep_attribute,
+        "current_level",
+        converter=lambda value: (value * 255) // 1000,
+        dp_converter=lambda value: (value * 1000) // 255,
+        endpoint_id=1,
+    )
+    .tuya_dp(
+        7,
+        TuyaOnOffNM.ep_attribute,
+        "on_off",
+        endpoint_id=2,
+    )
+    .tuya_dp(
+        8,
+        TuyaInWallLevelControlNM.ep_attribute,
+        "current_level",
+        converter=lambda value: (value * 255) // 1000,
+        dp_converter=lambda value: (value * 1000) // 255,
+        endpoint_id=2,
+    )
+    .add_to_registry()
+)
