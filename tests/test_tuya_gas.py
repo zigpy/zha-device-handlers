@@ -21,6 +21,12 @@ zhaquirks.setup()
     "model,manuf,gas_present,gas_clear",
     [
         (
+            "_TZE204_uc0iv1hb",
+            "TS0601",
+            bytes.fromhex("09 02 02 04 00 01 04 00 01 00"),
+            bytes.fromhex("09 06 02 04 02 01 04 00 01 01"),
+        ),
+        (
             "_TZE200_yojqa8xn",
             "TS0601",
             ZCL_TUYA_GAS_PRESENT_ENUM,
