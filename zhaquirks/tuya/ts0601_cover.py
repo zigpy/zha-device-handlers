@@ -1,6 +1,7 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zha
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
@@ -701,6 +702,40 @@ class BorderSetting(t.enum8):
         unique_id_suffix="border_remove_all",
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class MotorSteering(t.enum8):
+    """Motor steering / direction values."""
+
+    Forward = 0x00
+    Backward = 0x01
+
+
+(
+    # Zemismart ZN-USC1U-HT curtain wall switch
+    TuyaQuirkBuilder("_TZE204_mpg22jc1", "TS0601")
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2)
+    .tuya_enum(
+        dp_id=8,
+        attribute_name="motor_steering",
+        enum_class=MotorSteering,
+        translation_key="motor_steering",
+        fallback_name="Motor steering",
+    )
+    .tuya_number(
+        dp_id=10,
+        type=t.uint16_t,
+        attribute_name="calibration_time",
+        min_value=0,
+        max_value=500,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="calibration_time",
+        fallback_name="Calibration time",
     )
     .skip_configuration()
     .add_to_registry()
