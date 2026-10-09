@@ -2,7 +2,6 @@
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
-
 (
     TuyaQuirkBuilder("_TZE204_uc0iv1hb", "TS0601")
     .tuya_gas(dp_id=1)
