@@ -1,0 +1,479 @@
+{
+    "version": 1,
+    "ieee": "60:55:f9:ff:fe:22:31:c4",
+    "nwk": "0x4e24",
+    "manufacturer": "Shelly",
+    "model": "IR",
+    "friendly_manufacturer": "Shelly",
+    "friendly_model": "IR",
+    "name": "Shelly IR Controller Gen4 ZB",
+    "quirk_applied": true,
+    "quirk_class": "zigpy.quirks.v2.CustomDeviceV2",
+    "exposes_features": [],
+    "manufacturer_code": 5264,
+    "power_source": "Mains (single phase)",
+    "lqi": 255,
+    "rssi": -50,
+    "last_seen": "2026-10-08T12:00:00.000000+00:00",
+    "available": true,
+    "device_type": "Router",
+    "active_coordinator": false,
+    "node_descriptor": {
+        "logical_type": "Router",
+        "complex_descriptor_available": false,
+        "user_descriptor_available": false,
+        "reserved": 0,
+        "aps_flags": 0,
+        "frequency_band": 8,
+        "mac_capability_flags": 142,
+        "manufacturer_code": 5264,
+        "maximum_buffer_size": 82,
+        "maximum_incoming_transfer_size": 82,
+        "server_mask": 11264,
+        "maximum_outgoing_transfer_size": 82,
+        "descriptor_capability_field": 0
+    },
+    "endpoints": {
+        "1": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": [
+                        {
+                            "id": "0x0004",
+                            "name": "manufacturer",
+                            "zcl_type": "string",
+                            "value": "Shelly"
+                        },
+                        {
+                            "id": "0x0005",
+                            "name": "model",
+                            "zcl_type": "string",
+                            "value": "IR"
+                        }
+                    ]
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": [
+                        {
+                            "id": "0x0000",
+                            "name": "on_off",
+                            "zcl_type": "boolean",
+                            "value": false
+                        }
+                    ]
+                }
+            ],
+            "out_clusters": []
+        },
+        "2": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "3": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "4": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "5": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "6": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "7": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "8": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "9": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "10": {
+            "profile_id": 260,
+            "device_type": {
+                "name": "ON_OFF_PLUG_IN_UNIT",
+                "id": 266
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0x0000",
+                    "endpoint_attribute": "basic",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0003",
+                    "endpoint_attribute": "identify",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0004",
+                    "endpoint_attribute": "groups",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0005",
+                    "endpoint_attribute": "scenes",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0x0006",
+                    "endpoint_attribute": "on_off",
+                    "attributes": []
+                }
+            ],
+            "out_clusters": []
+        },
+        "239": {
+            "profile_id": 49153,
+            "device_type": {
+                "name": "Shelly",
+                "id": 8193
+            },
+            "in_clusters": [
+                {
+                    "cluster_id": "0xfc02",
+                    "endpoint_attribute": "shelly_wifi_setup",
+                    "attributes": []
+                },
+                {
+                    "cluster_id": "0xfc05",
+                    "endpoint_attribute": "shelly_ir_storage",
+                    "attributes": [
+                        {
+                            "id": "0x0000",
+                            "name": "last_emitted_id",
+                            "zcl_type": "uint16",
+                            "value": 65535
+                        },
+                        {
+                            "id": "0x0001",
+                            "name": "learning_status",
+                            "zcl_type": "uint8",
+                            "value": 0
+                        },
+                        {
+                            "id": "0x0002",
+                            "name": "enable_notifications",
+                            "zcl_type": "boolean",
+                            "value": false
+                        },
+                        {
+                            "id": "0xfffd",
+                            "name": "cluster_revision",
+                            "zcl_type": "uint16",
+                            "value": 1
+                        },
+                        {
+                            "id": "0x0010",
+                            "name": "ep1_off_code",
+                            "zcl_type": "uint16",
+                            "value": 65535
+                        },
+                        {
+                            "id": "0x0011",
+                            "name": "ep1_on_code",
+                            "zcl_type": "uint16",
+                            "value": 65535
+                        },
+                        {
+                            "id": "0x0012",
+                            "name": "ep2_off_code",
+                            "zcl_type": "uint16",
+                            "value": 65535
+                        },
+                        {
+                            "id": "0x0013",
+                            "name": "ep2_on_code",
+                            "zcl_type": "uint16",
+                            "value": 65535
+                        }
+                    ]
+                }
+            ],
+            "out_clusters": []
+        }
+    },
+    "neighbors": [],
+    "routes": []
+}
