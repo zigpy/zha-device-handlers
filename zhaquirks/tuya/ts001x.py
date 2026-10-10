@@ -8,6 +8,7 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
@@ -17,7 +18,24 @@ from zhaquirks.tuya import (
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
+    TuyaZBOnOffAttributeClusterNoAwait,
 )
+
+
+def _replace_onoff_with_no_await(endpoints_dict):
+    """Swap TuyaZBOnOffAttributeCluster for the No-Await variant in a replacement dict."""
+    return {
+        ep_id: {
+            **ep_def,
+            INPUT_CLUSTERS: [
+                TuyaZBOnOffAttributeClusterNoAwait
+                if c is TuyaZBOnOffAttributeCluster
+                else c
+                for c in ep_def[INPUT_CLUSTERS]
+            ],
+        }
+        for ep_id, ep_def in endpoints_dict.items()
+    }
 
 
 # NoNeutralSwitch family = without tuya cluster and Identify.
@@ -444,6 +462,41 @@ class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
                 OUTPUT_CLUSTERS: [],
             },
         },
+    }
+
+
+# Some _TZ3000_* firmwares intermittently fail to send the ZCL DefaultResponse
+# after an on/off command, which makes zigpy wait ~28 s on the per-device
+# concurrency lock; see TuyaZBOnOffAttributeClusterNoAwait for details.
+class TuyaSingleNoNeutralSwitch_TZ3000_hhiodade(TuyaSingleNoNeutralSwitch_2):
+    """_TZ3000_hhiodade TS0011 — skip OnOff ZCL DefaultResponse wait."""
+
+    signature = {
+        **TuyaSingleNoNeutralSwitch_2.signature,
+        MODELS_INFO: [("_TZ3000_hhiodade", "TS0011")],
+    }
+
+    replacement = {
+        **TuyaSingleNoNeutralSwitch_2.replacement,
+        ENDPOINTS: _replace_onoff_with_no_await(
+            TuyaSingleNoNeutralSwitch_2.replacement[ENDPOINTS]
+        ),
+    }
+
+
+class TuyaDoubleNoNeutralSwitch_TZ3000_18ejxno0(TuyaDoubleNoNeutralSwitch_2):
+    """_TZ3000_18ejxno0 TS0012 — skip OnOff ZCL DefaultResponse wait."""
+
+    signature = {
+        **TuyaDoubleNoNeutralSwitch_2.signature,
+        MODELS_INFO: [("_TZ3000_18ejxno0", "TS0012")],
+    }
+
+    replacement = {
+        **TuyaDoubleNoNeutralSwitch_2.replacement,
+        ENDPOINTS: _replace_onoff_with_no_await(
+            TuyaDoubleNoNeutralSwitch_2.replacement[ENDPOINTS]
+        ),
     }
 
 

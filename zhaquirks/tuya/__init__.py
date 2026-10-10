@@ -1047,6 +1047,44 @@ class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
 
+class TuyaZBOnOffAttributeClusterNoAwait(TuyaZBOnOffAttributeCluster):
+    """Tuya OnOff cluster that does not await the ZCL Default Response.
+
+    Some _TZ3000_* TS001x firmwares intermittently fail to emit a ZCL
+    DefaultResponse after an on/off cluster command. The relay still actuates
+    and an attribute report is still sent; only the DefaultResponse is dropped.
+    zigpy's default ``expect_reply=True`` then awaits the missing response for
+    ~28 s while holding the per-device concurrency lock, blocking every queued
+    request behind it (in Home Assistant the symptom is that the entity stops
+    responding to service calls until the timeout fires).
+
+    This subclass forwards on/off cluster commands with ``expect_reply=False``
+    and synthesizes the ``[command_id, Status.SUCCESS]`` return value the ZHA
+    light handler reads. Delivery is still confirmed at the APS layer (the
+    coordinator's ``DataConfirm`` ack) before this returns, and state is still
+    sync'd via the device's unsolicited attribute report.
+    """
+
+    async def command(
+        self,
+        command_id,
+        *args,
+        manufacturer=None,
+        expect_reply=True,
+        **kwargs,
+    ):
+        """Send a cluster command without awaiting a ZCL DefaultResponse."""
+        await super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=False,
+            **kwargs,
+        )
+        cmd = self.server_commands[command_id]
+        return [cmd.id, foundation.Status.SUCCESS]
+
+
 class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
 
