@@ -1,4 +1,4 @@
-"""Sonoff SNZB-02D、SNZB02DR2 - Zigbee LCD smart temperature humidity sensor."""
+"""Sonoff SNZB-02D - Zigbee LCD smart temperature humidity sensor."""
 
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -73,7 +73,6 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-02D")
-    .applies_to("SONOFF", "SNZB-02DR2")
     .replaces(CustomSonoffCluster)
     .number(
         CustomSonoffCluster.AttributeDefs.comfort_temperature_min.name,
