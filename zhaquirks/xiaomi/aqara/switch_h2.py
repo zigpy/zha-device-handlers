@@ -285,7 +285,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         on_value=2,
         endpoint_id=4,
         translation_key="multi_click",
-        fallback_name="Multi click",
+        fallback_name="Multi click (wireless)",
     )
     .device_automation_triggers(
         {
