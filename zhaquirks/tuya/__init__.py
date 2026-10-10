@@ -527,6 +527,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
