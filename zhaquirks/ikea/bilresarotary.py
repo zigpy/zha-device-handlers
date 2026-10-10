@@ -1,4 +1,4 @@
-"""IKEA Bilresa 2 button remote control."""
+"""IKEA Bilresa rotary (scroll wheel) remote control."""
 
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import LevelControl, OnOff, Scenes
@@ -25,14 +25,22 @@ from zhaquirks.const import (
 from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
 
 (
-    QuirkBuilder(IKEA, "09B9")
+    QuirkBuilder(IKEA, "09BA")
     .subscribes_to_multicast_group(0x549A)
+    .subscribes_to_multicast_group(0x549B)
+    .subscribes_to_multicast_group(0x549C)
+    .subscribes_to_multicast_group(0xFF09)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
     .replace_cluster_occurrences(IkeaBilresaLevelControl)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
                 COMMAND: COMMAND_ON,
+                CLUSTER_ID: OnOff.cluster_id,
+                ENDPOINT_ID: 1,
+            },
+            (SHORT_PRESS, TURN_OFF): {
+                COMMAND: COMMAND_OFF,
                 CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 1,
             },
@@ -45,11 +53,6 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
             (LONG_RELEASE, DIM_UP): {
                 COMMAND: "move_up_release",
                 CLUSTER_ID: LevelControl.cluster_id,
-                ENDPOINT_ID: 1,
-            },
-            (SHORT_PRESS, TURN_OFF): {
-                COMMAND: COMMAND_OFF,
-                CLUSTER_ID: OnOff.cluster_id,
                 ENDPOINT_ID: 1,
             },
             (LONG_PRESS, DIM_DOWN): {
