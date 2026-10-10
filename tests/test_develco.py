@@ -2,14 +2,19 @@
 
 from unittest import mock
 
+from zha.application import Platform
+from zha.application.platforms import EntityCategory
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.develco.humidity import HumidityPowerConfiguration
+from zhaquirks.develco.power_plug import WholeDegreeDeviceTemperature
 
 zhaquirks.setup()
 
@@ -204,3 +209,18 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
         power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
         == 143
     )
+
+
+async def test_frient_smart_plug_device_temperature():
+    """Test that the device temperature is not divided by 100."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "frient-a-s-splzb-141-0x00020009.json", DEVICE_REGISTRY
+        )
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id="00:15:bc:00:2f:02:19:79-2-2"
+        )
+
+        assert type(entity) is WholeDegreeDeviceTemperature
+        assert entity.native_value == 32
+        assert entity.entity_category == EntityCategory.DIAGNOSTIC
