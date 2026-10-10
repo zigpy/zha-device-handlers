@@ -62,6 +62,30 @@ async def test_yoolax_new_window_covering_commands(zigpy_device_from_v2_quirk):
         assert listener_event.call_args.args[1].attr_value == TuyaCoverControl.Close
 
 
+async def test_yoolax_new_window_covering_default_command(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the default pass-through path for other WindowCovering commands."""
+
+    device = zigpy_device_from_v2_quirk("_TZE210_yqwse3h5", "TS0301")
+    cover_cluster = device.endpoints[1].window_covering
+
+    assert isinstance(cover_cluster, YoolaxNewWindowCovering)
+
+    with mock.patch.object(device.command_bus, "listener_event") as listener_event:
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            42,
+        )
+
+        listener_event.assert_called_once()
+        assert listener_event.call_args.args[0] == TUYA_MCU_COMMAND
+        assert listener_event.call_args.args[1].cluster_attr == (
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        assert listener_event.call_args.args[1].attr_value == 42
+
+
 async def test_yoolax_legacy_window_covering_inversion(zigpy_device_from_v2_quirk):
     """Test conversion logic for older Yoolax shades."""
 
