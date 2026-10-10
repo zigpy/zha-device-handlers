@@ -11,7 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
@@ -171,6 +171,66 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaLevelControlManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster,
+                    TuyaOnOffNM,
+                    TuyaInWallLevelControlNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaSingleSwitchDimmerGPWithED00(TuyaDimmerSwitch):
+    """Tuya touch switch device with ED00 cluster."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE284_m1cvyneb", "TS0601"),  # BSEED
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
+            # device_version=1
+            # input_clusters=[0, 4, 5, 61184, 60672]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
+                    TUYA_CLUSTER_ED00_ID,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
