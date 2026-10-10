@@ -5,6 +5,7 @@ from typing import Final
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdenti
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder, ReportingConfig
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,7 +28,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.legacy import CustomDevice, signature_matches
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 from zhaquirks.tuya import TuyaManufCluster
 
@@ -304,11 +306,52 @@ class ZLinkyTICFWV14(ZLinkyTICFWV12):
     replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
 
 
-class ZLinkyTICFWV15(ZLinkyTICFWV14):
-    """ZLinky_TIC from LiXee with firmware v15.0+."""
+class ZLinkyTICTariffCluster(ZLinkyTICManufacturerCluster):
+    """ZLinky tariff attribute uses ZCL frames without a manufacturer code."""
 
-    signature = deepcopy(ZLinkyTICFWV14.signature)
-    replacement = deepcopy(ZLinkyTICFWV14.replacement)
+    class AttributeDefs(ZLinkyTICManufacturerCluster.AttributeDefs):
+        """Tariff attribute definition for firmware v15 and later."""
 
-    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
-    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+        linky_tariff_period: Final = ZCLAttributeDef(
+            id=0x0010,
+            type=t.LimitedCharString(16),
+            access="rp",
+            manufacturer_code=None,
+        )
+
+
+def tariff_period(value: str | bytes | None) -> str | None:
+    """Remove TIC padding while preserving supplier labels and Tempo codes."""
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    return " ".join(value.replace("\x00", "").split()) or None
+
+
+# Preserve the exact v15+ signature; older firmware retains its legacy quirk.
+ZLINKY_FW_V15_SIGNATURE = deepcopy(ZLinkyTICFWV14.signature)
+ZLINKY_FW_V15_SIGNATURE[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+
+(
+    QuirkBuilder(LIXEE, "ZLinky_TIC")
+    .filter(signature_matches(ZLINKY_FW_V15_SIGNATURE))
+    .replaces(ZLinkyTICMetering)
+    .replaces(ZLinkyTICTariffCluster)
+    .removes(TuyaManufCluster.cluster_id)
+    .removes(TuyaManufCluster.cluster_id, cluster_type=ClusterType.Client)
+    .sensor(
+        attribute_name=ZLinkyTICTariffCluster.AttributeDefs.linky_tariff_period.name,
+        cluster_id=ZLinkyTICTariffCluster.cluster_id,
+        attribute_converter=tariff_period,
+        reporting_config=ReportingConfig(
+            min_interval=0,
+            max_interval=3600,
+            reportable_change=0,
+        ),
+        unique_id_suffix="tariff_period",
+        translation_key="tariff_period",
+        fallback_name="Tariff period",
+    )
+    .add_to_registry()
+)
