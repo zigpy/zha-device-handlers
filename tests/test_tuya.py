@@ -14,6 +14,7 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -39,6 +40,7 @@ import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
+import zhaquirks.tuya.ts0601_haozee
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
@@ -90,6 +92,8 @@ ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = (
 ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL = b"\t2\x01\x03\x04\x02\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE = b"\t2\x01\x03\x04\x02\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
+
+ZCL_TUYA_VALVE_HAOZEE_TEMPERATURE = b"\tp\x02\x00\x02\x7f\x02\x00\x04\x00\x00\x00\xd2"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
@@ -452,6 +456,24 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[9][1] == 0
     assert thermostat_listener.attribute_updates[10][0] == 0x001C  # HEAT ON
     assert thermostat_listener.attribute_updates[10][1] == 4
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
+async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
+    """Test Haozee thermostat reports the current room temperature."""
+
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = thermostat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_HAOZEE_TEMPERATURE)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert thermostat_listener.attribute_updates == [
+        (Thermostat.AttributeDefs.local_temperature.id, 2100)
+    ]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
