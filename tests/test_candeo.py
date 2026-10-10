@@ -3,8 +3,11 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -745,3 +748,236 @@ def test_candeo_scene_switch_remote_ring_stopped_rotating(
     assert ring_event[1][ROTATED] == previous_rotation_direction
 
     assert listener.zha_send_event.call_count == 1
+
+
+# candeo switched fused spur tests
+
+
+@pytest.fixture
+def candeo_switched_fused_spur(zigpy_device_from_v2_quirk):
+    """Create a Candeo switched fused spur with its physical clusters."""
+    return zigpy_device_from_v2_quirk(
+        manufacturer=CANDEO,
+        model="C-ZB-SSFS",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_apply_custom_configuration(
+    candeo_switched_fused_spur,
+):
+    """Test custom attributes are read during configuration."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster.read_attributes = mock.AsyncMock()
+
+    await cluster.apply_custom_configuration()
+
+    cluster.read_attributes.assert_awaited_once_with(
+        [
+            cluster.AttributeDefs.child_lock.id,
+            cluster.AttributeDefs.power_on_behaviour.id,
+        ]
+    )
+
+
+def test_candeo_switched_fused_spur_preferences_defaults(
+    candeo_switched_fused_spur,
+):
+    """Test local switched fused spur preference defaults."""
+    device = candeo_switched_fused_spur
+    preferences = device.endpoints[1].in_clusters[0xFBFE]
+
+    assert preferences.get(preferences.AttributeDefs.automatic_off_delay.id) == 0
+    assert preferences.get(preferences.AttributeDefs.enforce_child_lock.id) == 0
+
+
+def test_candeo_switched_fused_spur_custom_attributes(
+    candeo_switched_fused_spur,
+):
+    """Test custom OnOff attribute definitions."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    assert cluster.AttributeDefs.child_lock.id == 0x8000
+    assert cluster.AttributeDefs.child_lock.manufacturer_code == 0x1141
+
+    assert cluster.AttributeDefs.power_on_behaviour.id == 0x8002
+    assert cluster.AttributeDefs.power_on_behaviour.manufacturer_code == 0x1141
+
+
+def test_candeo_switched_fused_spur_missing_preferences_cluster(
+    candeo_switched_fused_spur,
+):
+    """Test missing preferences cluster resets preferences to defaults."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster._automatic_off_delay = 10
+    cluster._enforce_child_lock = True
+
+    device.endpoints[1].in_clusters.pop(0xFBFE)
+
+    cluster._update_preferences()
+
+    assert cluster._automatic_off_delay == 0
+    assert cluster._enforce_child_lock is False
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on(
+    candeo_switched_fused_spur,
+):
+    """Test standard On command with default preferences."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster.command = mock.AsyncMock(return_value=mock.sentinel.on_result)
+    cluster.write_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock()
+
+    result = await cluster.on()
+
+    cluster.command.assert_awaited_once_with(cluster.commands_by_name["on"].id)
+    cluster.write_attributes.assert_not_awaited()
+    cluster.read_attributes.assert_awaited_once_with(
+        [cluster.AttributeDefs.child_lock.id]
+    )
+
+    assert result is mock.sentinel.on_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_automatic_off_delay(
+    candeo_switched_fused_spur,
+):
+    """Test automatic-off command sequence."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+    preferences = device.endpoints[1].in_clusters[0xFBFE]
+
+    preferences.update_attribute(
+        preferences.AttributeDefs.automatic_off_delay.id,
+        10,
+    )
+
+    cluster.command = mock.AsyncMock(
+        side_effect=[
+            mock.sentinel.on_result,
+            mock.sentinel.timed_off_result,
+        ]
+    )
+    cluster.write_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock()
+
+    result = await cluster.on()
+
+    assert cluster.command.await_args_list == [
+        mock.call(cluster.commands_by_name["on"].id),
+        mock.call(
+            cluster.commands_by_name["on_with_timed_off"].id,
+            0x00,
+            10,
+            0x00,
+        ),
+    ]
+
+    cluster.write_attributes.assert_not_awaited()
+    cluster.read_attributes.assert_awaited_once_with(
+        [cluster.AttributeDefs.child_lock.id]
+    )
+
+    assert result is mock.sentinel.on_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_enforce_child_lock(
+    candeo_switched_fused_spur,
+):
+    """Test child lock is restored after an On command when enforced."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+    preferences = device.endpoints[1].in_clusters[0xFBFE]
+
+    preferences.update_attribute(
+        preferences.AttributeDefs.enforce_child_lock.id,
+        True,
+    )
+
+    cluster.command = mock.AsyncMock(return_value=mock.sentinel.on_result)
+    cluster.write_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock()
+
+    result = await cluster.on()
+
+    cluster.command.assert_awaited_once_with(cluster.commands_by_name["on"].id)
+    cluster.write_attributes.assert_awaited_once_with(
+        {cluster.AttributeDefs.child_lock.id: True}
+    )
+    cluster.read_attributes.assert_awaited_once_with(
+        [cluster.AttributeDefs.child_lock.id]
+    )
+
+    assert result is mock.sentinel.on_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_off(
+    candeo_switched_fused_spur,
+):
+    """Test standard Off command with default preferences."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster.command = mock.AsyncMock(return_value=mock.sentinel.off_result)
+    cluster.write_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock()
+
+    result = await cluster.off()
+
+    cluster.command.assert_awaited_once_with(cluster.commands_by_name["off"].id)
+    cluster.write_attributes.assert_not_awaited()
+    cluster.read_attributes.assert_awaited_once_with(
+        [cluster.AttributeDefs.child_lock.id]
+    )
+
+    assert result is mock.sentinel.off_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_off_with_enforce_child_lock(
+    candeo_switched_fused_spur,
+):
+    """Test child lock is restored after an Off command when enforced."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+    preferences = device.endpoints[1].in_clusters[0xFBFE]
+
+    preferences.update_attribute(
+        preferences.AttributeDefs.enforce_child_lock.id,
+        True,
+    )
+
+    cluster.command = mock.AsyncMock(return_value=mock.sentinel.off_result)
+    cluster.write_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock()
+
+    result = await cluster.off()
+
+    cluster.command.assert_awaited_once_with(cluster.commands_by_name["off"].id)
+    cluster.write_attributes.assert_awaited_once_with(
+        {cluster.AttributeDefs.child_lock.id: True}
+    )
+    cluster.read_attributes.assert_awaited_once_with(
+        [cluster.AttributeDefs.child_lock.id]
+    )
+
+    assert result is mock.sentinel.off_result
