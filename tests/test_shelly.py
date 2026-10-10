@@ -6,12 +6,14 @@ import pytest
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, OnOff
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 import zhaquirks
 from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 from zhaquirks.shelly.wifi import (
+    SHELLY_INPUT_ENDPOINT_ID,
+    SHELLY_INPUTS_FIRMWARE_VERSION,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
@@ -76,6 +78,62 @@ def test_shelly_wifi_setup_cluster_replaced(zigpy_device_from_v2_quirk, model) -
     )
     assert cluster.AttributeDefs.action.access == ZCLAttributeAccess.Write
     assert cluster.AttributeDefs.action.type is t.uint8_t
+
+
+@pytest.mark.parametrize("model", ["1PM", "Mini1PM", "Mini1"])
+@pytest.mark.parametrize(
+    ("firmware_version", "input_exposed"),
+    [
+        (None, True),  # version not reported yet: assume current firmware
+        (0x010700FF, False),  # 1.7.x has no input endpoint
+        (SHELLY_INPUTS_FIRMWARE_VERSION, True),
+        (0x020000FF, True),  # 2.0.0 as reported by the device
+    ],
+)
+def test_shelly_input_binary_sensor_by_firmware(
+    zigpy_device_from_v2_quirk, model, firmware_version, input_exposed
+) -> None:
+    """The input entity is declared for firmware 2.0.0 and newer only."""
+
+    quirked = zigpy_device_from_v2_quirk(
+        "Shelly",
+        model,
+        endpoint_ids=[1, SHELLY_INPUT_ENDPOINT_ID, SHELLY_WIFI_SETUP_ENDPOINT_ID],
+        cluster_ids={
+            SHELLY_INPUT_ENDPOINT_ID: {OnOff.cluster_id: ClusterType.Client},
+            SHELLY_WIFI_SETUP_ENDPOINT_ID: {
+                SHELLY_WIFI_SETUP_CLUSTER_ID: ClusterType.Server,
+            },
+        },
+        firmware_version=firmware_version,
+    )
+
+    # The WiFi setup cluster is handled on every firmware
+    wifi_cluster = quirked.endpoints[SHELLY_WIFI_SETUP_ENDPOINT_ID].in_clusters[
+        SHELLY_WIFI_SETUP_CLUSTER_ID
+    ]
+    assert isinstance(wifi_cluster, ShellyWiFiSetupCluster)
+
+    # The input cluster is never replaced: ZHA's OnOffClientCacheSync keeps
+    # on_off current from the on/off/toggle commands the input sends, and would
+    # double-apply a toggle if the quirk cached them as well.
+    input_cluster = quirked.endpoints[SHELLY_INPUT_ENDPOINT_ID].out_clusters[
+        OnOff.cluster_id
+    ]
+    assert type(input_cluster) is OnOff
+
+    entity_metadata = quirked._quirk_registry_entry.zha_device_factory.quirk_definition.entity_metadata
+    if not input_exposed:
+        assert not entity_metadata
+        return
+
+    (metadata,) = entity_metadata
+    assert metadata.entity_platform.value == "binary_sensor"
+    assert metadata.entity_type.value == "standard"
+    assert metadata.endpoint_id == SHELLY_INPUT_ENDPOINT_ID
+    assert metadata.cluster_id == OnOff.cluster_id
+    assert metadata.cluster_type is ClusterType.Client
+    assert metadata.attribute_name == OnOff.AttributeDefs.on_off.name
 
 
 @pytest.mark.parametrize("model", ["1PM", "2PM"])
