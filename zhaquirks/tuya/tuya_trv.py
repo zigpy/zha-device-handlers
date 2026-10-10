@@ -10,6 +10,9 @@ from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 from zhaquirks.builder import (
     PERCENTAGE,
     BinarySensorDeviceClass,
+    EntityType,
+    NumberDeviceClass,
+    SensorDeviceClass,
     SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
@@ -947,6 +950,204 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         fallback_name="Scale protection",
     )
     .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class MoesZtrvBy100PresetMode(t.enum8):
+    """Moes ZTRV-BY-100 operating mode, cycled by the mode button on the TRV."""
+
+    Programming = 0x00
+    Manual = 0x01
+    Temporary_manual = 0x02
+    Holiday = 0x03
+
+
+class MoesZtrvBy100ValveState(t.enum8):
+    """Moes ZTRV-BY-100 valve state."""
+
+    Open = 0x00
+    Closed = 0x01
+
+
+# Moes ZTRV-BY-100 (Zigbee2MQTT: BRT-100-TRV)
+#
+# Datapoints verified on the device; they match the Zigbee2MQTT BRT-100-TRV
+# definition. The setpoint (DP 2) and the temperature settings are whole
+# degrees: the TRV's buttons allow 0.5 C setpoints, but it reports them
+# truncated (18.5 C as 18). The weekly schedule (DP 101) is not exposed.
+#
+# The TRV only reports a setting when it changes, or in a full status report
+# sent in reply to the data query just after it joins. The query is ignored
+# at other times (including a ZHA "Reconfigure"), so settings may show as
+# unknown until they change; re-pairing the TRV makes it report all of them.
+#
+# Menu settings A3 (window temperature drop), A4 (window valve close time),
+# A9 (dead zone), AC (low-temperature protection) and AD (screen brightness)
+# are local to the TRV and not reported over Zigbee.
+(
+    TuyaQuirkBuilder("_TZE200_b6wax7g0", "TS0601")
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 100,
+        # Whole degrees only; round half-degree setpoints down, as the TRV does.
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=7,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        converter=lambda x: (
+            RunningState.Idle
+            if x == MoesZtrvBy100ValveState.Closed
+            else RunningState.Heat_State_On
+        ),
+    )
+    # The TRV always heats, so system_mode is held constant (see .adds below)
+    # and the operating mode is exposed as a separate select.
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="preset_mode",
+        enum_class=MoesZtrvBy100PresetMode,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_switch(
+        dp_id=4,
+        attribute_name="boost_heating",
+        translation_key="boost_heating",
+        fallback_name="Boost heating",
+    )
+    .tuya_sensor(
+        dp_id=5,
+        attribute_name="boost_heating_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        translation_key="boost_heating_countdown",
+        fallback_name="Boost heating countdown",
+    )
+    .tuya_switch(
+        dp_id=8,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    # The TRV reports 1 when the window is closed.
+    .tuya_dp_attribute(
+        dp_id=9,
+        attribute_name="window_open",
+        type=t.Bool,
+        converter=lambda x: not x,
+    )
+    .binary_sensor(
+        attribute_name="window_open",
+        cluster_id=TUYA_CLUSTER_ID,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.WINDOW,
+        fallback_name="Window open",
+    )
+    .tuya_switch(
+        dp_id=13,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_battery(dp_id=14)
+    .tuya_number(
+        dp_id=103,
+        attribute_name="boost_time",
+        type=t.uint16_t,
+        min_value=100,
+        max_value=900,
+        step=10,
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="boost_time",
+        fallback_name="Boost time",
+    )
+    .tuya_sensor(
+        dp_id=104,
+        attribute_name="valve_position",
+        type=t.uint8_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        translation_key="valve_position",
+        fallback_name="Valve position",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_switch(
+        dp_id=106,
+        attribute_name="eco_mode",
+        translation_key="eco_mode",
+        fallback_name="Eco mode",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="eco_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=35,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="max_temperature",
+        type=t.uint16_t,
+        min_value=15,
+        max_value=35,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="max_temperature",
+        fallback_name="Max temperature",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="min_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=15,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="min_temperature",
+        fallback_name="Min temperature",
+    )
+    # constant_attributes replaces TuyaThermostatV2's _CONSTANT_ATTRIBUTES, so
+    # its constants are repeated here, with the maximum setpoint raised to the
+    # TRV's 35 C.
+    .adds(
+        TuyaThermostatV2,
+        constant_attributes={
+            Thermostat.AttributeDefs.abs_min_heat_setpoint_limit: 500,
+            Thermostat.AttributeDefs.abs_max_heat_setpoint_limit: 3500,
+            Thermostat.AttributeDefs.ctrl_sequence_of_oper: Thermostat.ControlSequenceOfOperation.Heating_Only,
+            Thermostat.AttributeDefs.system_mode: Thermostat.SystemMode.Heat,
+        },
+    )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
