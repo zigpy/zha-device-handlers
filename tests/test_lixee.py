@@ -130,6 +130,7 @@ async def test_zlinky_tariff_entity_updates_from_reports(zlinky_v17):
     zha_device = Mock(
         spec=ZHADevice,
         ieee=device.ieee,
+        unique_id=str(device.ieee),
         name="ZLinky_TIC",
         quirk_metadata=entry.zha_device_factory.quirk_definition,
     )
