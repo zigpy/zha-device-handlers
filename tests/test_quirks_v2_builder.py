@@ -702,3 +702,26 @@ def test_quirk_v2_loading_failure(
 
     assert quirked is device_mock
     assert "Failed to load quirk for" in caplog.text
+
+
+def test_quirks_v2_quirk_builder_clone_shares_registry() -> None:
+    """Test that cloning shares the registry instead of deep-copying it."""
+
+    class NonCopyableRegistry(DeviceRegistry):
+        """Registry that fails loudly if anything tries to deep-copy it."""
+
+        def __deepcopy__(self, memo):
+            raise AssertionError("QuirkBuilder.clone() must not deep-copy the registry")
+
+    registry = NonCopyableRegistry()
+
+    base = QuirkBuilder("foo", "bar", registry=registry).adds(OnOff.cluster_id)
+    cloned = base.clone()
+
+    assert cloned.registry is base.registry
+    assert cloned.manufacturer_model_metadata == []
+
+    # The rest of the builder state is still a deep copy
+    cloned.adds(PowerConfiguration.cluster_id)
+    assert len(base.adds_ops) == 1
+    assert len(cloned.adds_ops) == 2
