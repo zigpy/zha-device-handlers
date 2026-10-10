@@ -2,19 +2,15 @@
 
 from typing import Any
 
-from zhaquirks.builder import QuirkBuilder
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-import zigpy.types as t
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.tuya import TUYA_MCU_COMMAND
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import (
-    TuyaClusterData,
-    TuyaCoverControl,
-    TuyaWindowCovering,
-)
+from zhaquirks.tuya.mcu import TuyaClusterData, TuyaCoverControl, TuyaWindowCovering
 
 
 class YoolaxNewWindowCovering(TuyaWindowCovering):
