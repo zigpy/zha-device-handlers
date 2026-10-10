@@ -59,6 +59,7 @@ class AqaraPowerOnMode(types.enum8):
     Off = 0x02
     Inverted = 0x03
 
+
 class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
     """Manufacturer-specific cluster for Lumi features."""
 
@@ -112,6 +113,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
             access="rw",
             is_manufacturer_specific=True,
         )
+
 
 # 4 button, 2 channel EU variant
 (
