@@ -27,6 +27,9 @@ HEATING_DEMAND_ATTR_ID = 0x4020
 # Valve state (relay on/off).
 VALVE_STATE_ATTR_ID = 0x4022
 
+# Humidity alarm LED (LED warning when humidity is outside 30% - 70%).
+HUMIDITY_ALARM_LED_ATTR_ID = 0x4023
+
 # Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
 
@@ -54,7 +57,6 @@ ERROR_CODE_ATTR_ID = 0x5000
 """
 There are some more undocumented attributes that have not been figured out what they do.
 
-0x4023: R/W. Valid range 0-7.
 0x4024: R/W. Valid range 0-23.
 0x4025: R/W. Valid range 0-100. Changes depending on heater type (0x00: 0x03, 0x01: 0x01, 0x02: 0x02)
 0x4050: R/W. Valid range 5-10.
@@ -97,6 +99,18 @@ class State(t.enum8):
 
     Off = 0x00
     On = 0x01
+
+
+class BoschHumidityAlarmLed(t.enum8):
+    """Humidity alarm LED attribute values.
+
+    Only these two values have been observed when toggling the humidity warning LED
+    in the Bosch app. Bit 0 is the LED toggle; the meaning of the other bits is not
+    confirmed (possibly the temperature warning LEDs).
+    """
+
+    Off = 0x06
+    On = 0x07
 
 
 class BoschActuatorType(t.enum8):
@@ -159,6 +173,13 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         valve_state = ZCLAttributeDef(
             id=VALVE_STATE_ATTR_ID,
             type=State,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        humidity_alarm_led = ZCLAttributeDef(
+            id=HUMIDITY_ALARM_LED_ATTR_ID,
+            type=BoschHumidityAlarmLed,
             is_manufacturer_specific=True,
             access="rwp",
         )
@@ -397,6 +418,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         translation_key="window_open",
         fallback_name="Window open",
+    )
+    # Humidity alarm LED: LED warning when humidity is outside 30% - 70%.
+    # Only the two observed values are written (see BoschHumidityAlarmLed).
+    .switch(
+        BoschThermostatCluster.AttributeDefs.humidity_alarm_led.name,
+        BoschThermostatCluster.cluster_id,
+        on_value=BoschHumidityAlarmLed.On,
+        off_value=BoschHumidityAlarmLed.Off,
+        translation_key="humidity_alarm_led",
+        fallback_name="Humidity alarm LED",
     )
     # Display time-out.
     .number(
