@@ -416,6 +416,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE204_ogx8u5z6", "TS0601")
     .applies_to("_TZE284_ogx8u5z6", "TS0601")
     .applies_to("_TZE200_4utwozi2", "TS0601")
+    .applies_to("_TZE200_ow09xlxm", "TS0601")
     .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,
