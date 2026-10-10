@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ast
 import collections
 import importlib
 import json
 from pathlib import Path
+import re
 from unittest import mock
 
 import pytest
@@ -75,6 +77,139 @@ del quirk, model_quirk_list, manufacturer
 
 
 ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
+
+LEGACY_BUS_IDENTIFIERS = frozenset(
+    {
+        "Bus",
+        "COVER_EVENT",
+        "LEVEL_EVENT",
+        "SWITCH_EVENT",
+        "TUYA_MCU_COMMAND",
+        "battery_bus",
+        "boost_bus",
+        "change_fan_mode_bus",
+        "change_fan_mode_ha_bus",
+        "child_lock_bus",
+        "command_bus",
+        "consumption_bus",
+        "cover_bus",
+        "dimmer_bus",
+        "ias_bus",
+        "level_control_bus",
+        "motion_bus",
+        "motion_left_bus",
+        "motion_right_bus",
+        "occupancy_bus",
+        "on_off_bus",
+        "online_mode_bus",
+        "pm25_bus",
+        "power_bus",
+        "scene_bus",
+        "scenes_bus",
+        "switch_bus",
+        "temperature_calibration_bus",
+        "thermostat_bus",
+        "tracking_bus",
+        "ui_bus",
+        "voltage_bus",
+        "window_detection_bus",
+        "window_temperature_bus",
+    }
+)
+LEGACY_BUS_PATTERN = re.compile(
+    r"\b(?:"
+    + "|".join(re.escape(name) for name in sorted(LEGACY_BUS_IDENTIFIERS))
+    + r")\b"
+)
+
+
+def _legacy_bus_identifiers(tree: ast.AST) -> set[tuple[int, str]]:
+    """Return exact legacy Bus-routing identifiers used by an AST."""
+    violations: set[tuple[int, str]] = set()
+
+    for node in ast.walk(tree):
+        names: list[str | None] = []
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.append(node.name)
+        elif isinstance(node, ast.Name):
+            names.append(node.id)
+        elif isinstance(node, ast.Attribute):
+            names.append(node.attr)
+        elif isinstance(node, (ast.arg, ast.keyword)):
+            names.append(node.arg)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                names.extend((alias.name.rsplit(".", 1)[-1], alias.asname))
+
+        for name in names:
+            if name in LEGACY_BUS_IDENTIFIERS:
+                violations.add((node.lineno, name))
+
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in {"getattr", "setattr", "hasattr"}
+            and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Constant)
+            and isinstance(node.args[1].value, str)
+            and node.args[1].value in LEGACY_BUS_IDENTIFIERS
+        ):
+            violations.add((node.lineno, node.args[1].value))
+
+    return violations
+
+
+def test_legacy_bus_guard_uses_exact_identifiers():
+    """The guard must reject legacy routing without banning unrelated buses."""
+    unrelated = ast.parse(
+        "def route(can_bus, dali_bus=None):\n"
+        "    return getattr(can_bus, 'transport_bus', dali_bus)\n"
+    )
+    legacy = ast.parse(
+        "device.command_bus\n"
+        "getattr(device, 'switch_bus')\n"
+        "def send(TUYA_MCU_COMMAND=None):\n"
+        "    pass\n"
+    )
+
+    assert _legacy_bus_identifiers(unrelated) == set()
+    assert {name for _, name in _legacy_bus_identifiers(legacy)} == {
+        "TUYA_MCU_COMMAND",
+        "command_bus",
+        "switch_bus",
+    }
+
+
+def test_no_legacy_bus_usage():
+    """Prevent reintroduction of the removed cluster-routing mechanism."""
+    source_root = Path(zhaquirks.__file__).parent
+    violations: list[str] = []
+
+    for path in source_root.rglob("*.py"):
+        tree = ast.parse(path.read_text(), filename=str(path))
+        for lineno, name in sorted(_legacy_bus_identifiers(tree)):
+            violations.append(
+                f"{path.relative_to(source_root.parent)}:{lineno}: {name}"
+            )
+
+    readme = source_root.parent / "README.md"
+    readme_text = readme.read_text()
+    for block in re.finditer(
+        r"```(?:python)?\n(?P<code>.*?)```",
+        readme_text,
+        flags=re.DOTALL,
+    ):
+        code = block.group("code")
+        first_line = readme_text.count("\n", 0, block.start("code")) + 1
+        for match in LEGACY_BUS_PATTERN.finditer(code):
+            lineno = first_line + code.count("\n", 0, match.start())
+            violations.append(f"README.md:{lineno}: {match.group()}")
+
+    assert not violations, (
+        "Legacy Bus routing is prohibited; route directly through endpoint input "
+        "clusters, endpoint.out_clusters, or device.endpoints instead:\n"
+        + "\n".join(violations)
+    )
 
 
 SIGNATURE_ALLOWED = {

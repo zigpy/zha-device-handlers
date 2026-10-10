@@ -10,7 +10,7 @@ from zigpy.profiles import zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -97,7 +97,6 @@ class LumiMotionAC02(CustomDevice):
         """Init."""
         self.battery_size = BatterySize.CR1632
         self.battery_quantity = 2
-        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

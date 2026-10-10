@@ -27,7 +27,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
+from zhaquirks.tuya import AttributeWithMask, PowerOnState, get_tuya_mcu_cluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
@@ -183,10 +183,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
@@ -314,10 +311,7 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
+            get_tuya_mcu_cluster(self.endpoint).tuya_mcu_command(cluster_data)
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=foundation.Status.SUCCESS)

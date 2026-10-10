@@ -20,7 +20,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import BaseCommandDefs
 
-from zhaquirks import Bus, EventableCluster
+from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ARGS,
     BUTTON_1,
@@ -88,8 +88,8 @@ class AdeoManufacturerCluster(EventableCluster):
     ):
         """Handle the cluster command."""
         if hdr.command_id == 0x0000:
-            self.endpoint.device.scenes_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "view", [SCENE_NO_GROUP, args[0]]
+            self.endpoint.out_clusters[Scenes.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "view", [SCENE_NO_GROUP, args[0]]
             )
         else:
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
@@ -98,19 +98,9 @@ class AdeoManufacturerCluster(EventableCluster):
 class AdeoScenesCluster(Scenes, EventableCluster):
     """Scenes cluster to map preset buttons to the "view" command."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.scenes_bus.add_listener(self)
-
 
 class AdeoColorController(CustomDevice):
     """Custom device representing ADEO color controller."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.scenes_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2048
