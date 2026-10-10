@@ -1,11 +1,13 @@
 """Tests for Tuya gas quirks."""
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
+from tests.conftest import DEVICE_REGISTRY
 import zhaquirks
+from zhaquirks.builder import BinarySensorDeviceClass
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -20,6 +22,12 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     "model,manuf,gas_present,gas_clear",
     [
+        (
+            "_TZE204_uc0iv1hb",
+            "TS0601",
+            bytes.fromhex("09 02 02 04 00 01 04 00 01 00"),
+            bytes.fromhex("09 06 02 04 02 01 04 00 01 01"),
+        ),
         (
             "_TZE200_yojqa8xn",
             "TS0601",
@@ -107,3 +115,18 @@ async def test_tuya_gas_quirk(
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zcl_ias_id
     assert ias_listener.attribute_updates[1][1] == 0
+
+
+def test_spacetronik_zb_dg02_gas_metadata(device_mock):
+    """Test the Spacetronik gas detector device class override."""
+    device_mock.manufacturer = "_TZE204_uc0iv1hb"
+    device_mock.model = "TS0601"
+    entry = DEVICE_REGISTRY.match_entry(device_mock)
+    assert entry is not None
+    changes = entry.zha_device_factory.quirk_definition.changed_entity_metadata
+    assert len(changes) == 1
+    change = changes[0]
+    assert change.endpoint_id == 1
+    assert change.cluster_id == IasZone.cluster_id
+    assert change.cluster_type == ClusterType.Server
+    assert change.new_device_class == BinarySensorDeviceClass.GAS
