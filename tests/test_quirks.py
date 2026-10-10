@@ -1024,8 +1024,13 @@ async def test_local_data_cluster(device_mock) -> None:
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 
-    # reading constant attribute works
+    events = []
+    cluster.on_event(zcl.AttributeReadEvent.event_type, events.append)
+
+    # reading constant attribute works, without caching or emitting it
     assert await cluster.read_attributes([1]) == ({1: 10}, {})
+    assert 1 not in cluster._attr_cache
+    assert events == []
 
     # reading valid attribute returns None with success status
     assert await cluster.read_attributes([2]) == ({2: None}, {})
@@ -1072,4 +1077,282 @@ async def test_local_data_cluster(device_mock) -> None:
     )
     assert (
         configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
+    )
+
+
+@pytest.mark.parametrize("use_builder_constants", [False, True])
+async def test_custom_cluster_constant_attributes_not_cached(
+    device_mock, use_builder_constants: bool
+) -> None:
+    """Ensure constant attributes are served on read without being cached."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    if use_builder_constants:
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(
+                TestCluster,
+                constant_attributes={TestCluster.AttributeDefs.constant_attr: 10},
+            )
+            .add_to_registry(registry)
+        )
+    else:
+        TestCluster._CONSTANT_ATTRIBUTES = {
+            TestCluster.AttributeDefs.constant_attr.id: 10
+        }
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(TestCluster)
+            .add_to_registry(registry)
+        )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    constant_attr = TestCluster.AttributeDefs.constant_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    events = []
+    for event_type in (
+        zcl.AttributeReadEvent.event_type,
+        zcl.AttributeUpdatedEvent.event_type,
+    ):
+        cluster.on_event(event_type, events.append)
+
+    rsp = [
+        [
+            foundation.ReadAttributeRecord(
+                attrid=device_attr.id,
+                status=foundation.Status.SUCCESS,
+                value=foundation.TypeValue(type=None, value=t.uint8_t(5)),
+            )
+        ]
+    ]
+
+    with mock.patch.object(
+        cluster, "_read_attributes", mock.AsyncMock(return_value=rsp)
+    ) as read_mock:
+        success, failure = await cluster.read_attributes(
+            [constant_attr.name, device_attr.name]
+        )
+
+    # only the non-constant attribute is read from the device
+    assert read_mock.call_count == 1
+    assert read_mock.mock_calls[0].args[0] == [device_attr.id]
+
+    assert success == {constant_attr.name: 10, device_attr.name: 5}
+    assert failure == {}
+
+    # the constant is neither cached nor emitted, so it is not persisted
+    assert constant_attr.id not in cluster._attr_cache
+    assert device_attr.id in cluster._attr_cache
+    assert [event.attribute_id for event in events] == [device_attr.id]
+
+    # it is still served by `get()` and cache-only reads
+    assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr.id], only_cache=True) == (
+        {constant_attr.id: 10},
+        {},
+    )
+
+    # reading only constant attributes does not send a request at all
+    with mock.patch.object(cluster, "_read_attributes", mock.AsyncMock()) as read_mock:
+        assert await cluster.read_attributes([constant_attr]) == (
+            {constant_attr: 10},
+            {},
+        )
+
+    assert read_mock.call_count == 0
+    assert constant_attr.id not in cluster._attr_cache
+
+    # a stale unsupported mark from before the quirk applied does not hide the constant
+    cluster._attr_cache.mark_unsupported(constant_attr)
+    assert not cluster.is_attribute_unsupported(constant_attr.name)
+    assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )
+
+    # a stale cached value, e.g. persisted under an older quirk, is ignored too
+    cluster._attr_cache.set_value(constant_attr, 99)
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )
+
+    # reading the same constant attribute twice is rejected, like any other attribute
+    with pytest.raises(ValueError, match="Cannot read the same attribute twice"):
+        await cluster.read_attributes([constant_attr.id, constant_attr.name])
+
+    # unknown attributes are rejected before any request, like in zigpy
+    for unknown_attr in (0xFFFF, "unknown_attr"):
+        with (
+            mock.patch.object(
+                cluster, "_read_attributes", mock.AsyncMock()
+            ) as read_mock,
+            pytest.raises(KeyError),
+        ):
+            await cluster.read_attributes([constant_attr, unknown_attr])
+
+        assert read_mock.call_count == 0
+
+
+async def test_local_data_cluster_reads_not_recached(device_mock) -> None:
+    """Ensure reads from a LocalDataCluster do not feed values back into the cache."""
+    registry = DeviceRegistry()
+
+    class TestLocalCluster(zhaquirks.LocalDataCluster):
+        """Test cluster converting values in `_update_attribute`."""
+
+        cluster_id = 0x1234
+        _DEFAULT_VALUES = {3: 42}
+        _VALID_ATTRIBUTES = {2}
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            converted_attr = foundation.ZCLAttributeDef(id=1, type=t.uint16_t)
+            valid_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+            default_attr = foundation.ZCLAttributeDef(id=3, type=t.uint8_t)
+            empty_attr = foundation.ZCLAttributeDef(id=4, type=t.uint8_t)
+
+        def _update_attribute(self, attrid, value):
+            if attrid == self.AttributeDefs.converted_attr.id:
+                value = value * 2
+            super()._update_attribute(attrid, value)
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(TestLocalCluster)
+        .add_to_registry(registry)
+    )
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestLocalCluster.cluster_id]
+    assert isinstance(cluster, TestLocalCluster)
+
+    attrs = TestLocalCluster.AttributeDefs
+    events = []
+    for event_type in (
+        zcl.AttributeReadEvent.event_type,
+        zcl.AttributeUpdatedEvent.event_type,
+        zcl.AttributeUnsupportedEvent.event_type,
+    ):
+        cluster.on_event(event_type, events.append)
+
+    # a converted value is stored once, and repeated reads do not convert it again
+    cluster._update_attribute(attrs.converted_attr.id, 50)
+    assert cluster.get(attrs.converted_attr.id) == 100
+    events.clear()
+
+    for _ in range(3):
+        assert await cluster.read_attributes([attrs.converted_attr]) == (
+            {attrs.converted_attr: 100},
+            {},
+        )
+
+    assert cluster.get(attrs.converted_attr.id) == 100
+
+    # the default value is served, but not cached, so it is not persisted
+    assert await cluster.read_attributes([attrs.default_attr.name]) == (
+        {attrs.default_attr.name: 42},
+        {},
+    )
+    assert attrs.default_attr.id not in cluster._attr_cache
+    assert cluster.get(attrs.default_attr.id) == 42
+
+    # a valid attribute without a value is a successful read of `None`
+    assert await cluster.read_attributes([attrs.valid_attr.id]) == (
+        {attrs.valid_attr.id: None},
+        {},
+    )
+    assert events == []
+
+    # an attribute without a value is still marked unsupported
+    assert await cluster.read_attributes([attrs.empty_attr.id]) == (
+        {},
+        {attrs.empty_attr.id: foundation.Status.UNSUPPORTED_ATTRIBUTE},
+    )
+    assert cluster.is_attribute_unsupported(attrs.empty_attr)
+    assert [event.attribute_id for event in events] == [attrs.empty_attr.id]
+
+    # cached values and unsupported marks are served without a local read
+    with mock.patch.object(cluster, "read_attributes_raw") as read_mock:
+        assert await cluster.read_attributes(
+            [attrs.converted_attr, attrs.empty_attr], allow_cache=True
+        ) == (
+            {attrs.converted_attr: 100},
+            {attrs.empty_attr: foundation.Status.UNSUPPORTED_ATTRIBUTE},
+        )
+
+    assert read_mock.call_count == 0
+
+    # a stale unsupported mark is dropped once the attribute can be read again
+    cleared = []
+    cluster.on_event(zcl.AttributeClearedEvent.event_type, cleared.append)
+    cluster._attr_cache.mark_unsupported(attrs.valid_attr)
+    cluster._attr_cache.mark_unsupported(attrs.default_attr)
+    assert await cluster.read_attributes([attrs.valid_attr, attrs.default_attr]) == (
+        {attrs.valid_attr: None, attrs.default_attr: 42},
+        {},
+    )
+    assert not cluster.is_attribute_unsupported(attrs.valid_attr)
+    assert not cluster.is_attribute_unsupported(attrs.default_attr)
+    assert attrs.default_attr.id not in cluster._attr_cache
+    assert [event.attribute_id for event in cleared] == [
+        attrs.valid_attr.id,
+        attrs.default_attr.id,
+    ]
+
+    # zigpy's request splitting does not reach local reads
+    with mock.patch.object(
+        cluster, "read_attributes_raw", wraps=cluster.read_attributes_raw
+    ) as read_mock:
+        assert await cluster.read_attributes(
+            [attrs.default_attr], split_requests=False
+        ) == ({attrs.default_attr: 42}, {})
+
+    assert "split_requests" not in read_mock.mock_calls[0].kwargs
+
+    # an attribute omitted from a (subclassed) local read response is a failure
+    with mock.patch.object(
+        cluster, "read_attributes_raw", mock.AsyncMock(return_value=([],))
+    ):
+        assert await cluster.read_attributes([attrs.default_attr]) == (
+            {},
+            {attrs.default_attr: foundation.Status.INSUFFICIENT_SPACE},
+        )
+
+    # a (subclassed) local read failing as a whole fails every attribute
+    with mock.patch.object(
+        cluster,
+        "read_attributes_raw",
+        mock.AsyncMock(return_value=(foundation.Status.FAILURE,)),
+    ):
+        assert await cluster.read_attributes(
+            [attrs.default_attr, attrs.valid_attr]
+        ) == (
+            {},
+            {
+                attrs.default_attr: foundation.Status.FAILURE,
+                attrs.valid_attr: foundation.Status.FAILURE,
+            },
+        )
+
+    # a cache-only read does not serve uncached default values, like before
+    assert await cluster.read_attributes([attrs.default_attr], only_cache=True) == (
+        {},
+        {},
     )
