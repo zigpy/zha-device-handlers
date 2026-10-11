@@ -79,7 +79,7 @@ class NikoOutletConfigCluster(CustomCluster):
     QuirkBuilder(NIKO, "Connected socket outlet")
     .friendly_name(
         manufacturer="Niko",
-        model="Connected socket outlet (170-33505/170-34605)",
+        model="Connected socket outlet",
     )
     .replaces(NikoOutletConfigCluster)
     .switch(

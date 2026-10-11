@@ -31,7 +31,7 @@ def test_outlet_friendly_name(zigpy_device_from_v2_quirk):
     friendly_name = quirk_definition(zigpy_device_from_v2_quirk(*OUTLET)).friendly_name
 
     assert friendly_name.manufacturer == "Niko"
-    assert friendly_name.model == "Connected socket outlet (170-33505/170-34605)"
+    assert friendly_name.model == "Connected socket outlet"
 
 
 @pytest.mark.parametrize(
@@ -40,17 +40,17 @@ def test_outlet_friendly_name(zigpy_device_from_v2_quirk):
         (
             "Niko NV",
             "Smart plug Zigbee SE",
-            "Smart plug with side earthing pin (552-80698)",
+            "Smart plug with side earthing pin",
         ),
         (
             "Niko NV",
             "Smart plug Zigbee PE",
-            "Smart plug with earthing pin (552-80699)",
+            "Smart plug with earthing pin",
         ),
         (
             "NIKO NV",
             "Smart plug Zigbee PE",
-            "Smart plug with earthing pin (552-80699)",
+            "Smart plug with earthing pin",
         ),
     ],
 )

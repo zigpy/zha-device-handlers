@@ -14,7 +14,7 @@ NIKO_PLUG_MANUFACTURER = "Niko NV"
     QuirkBuilder(NIKO_PLUG_MANUFACTURER, "Smart plug Zigbee SE")
     .friendly_name(
         manufacturer="Niko",
-        model="Smart plug with side earthing pin (552-80698)",
+        model="Smart plug with side earthing pin",
     )
     .add_to_registry()
 )
@@ -24,7 +24,7 @@ NIKO_PLUG_MANUFACTURER = "Niko NV"
     .applies_to(NIKO, "Smart plug Zigbee PE")
     .friendly_name(
         manufacturer="Niko",
-        model="Smart plug with earthing pin (552-80699)",
+        model="Smart plug with earthing pin",
     )
     .add_to_registry()
 )
