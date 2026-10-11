@@ -1,18 +1,22 @@
-"""Tests for LiXee ZLinky tariff reporting."""
+"""Tests for LiXee ZLinky tariff and three-phase reporting."""
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from zha.application.platforms.sensor import Sensor
+from zha.application import Platform
+from zha.application.platforms.sensor import BaseElectricalMeasurement, Sensor
 from zha.quirks import DEVICE_REGISTRY
 from zha.zigbee.device import Device as ZHADevice
 from zha.zigbee.endpoint import Endpoint as ZHAEndpoint
+from zigpy.exceptions import DeliveryError
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import GreenPowerProxy, Ota, Time
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
-from zhaquirks.builder.device import QuirkV2Factory
+from zhaquirks.builder import SensorDeviceClass, SensorStateClass
+from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.discovery import discover_quirks_v2_entities
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.lixee.zlinky import (
@@ -136,8 +140,7 @@ async def test_zlinky_tariff_entity_updates_from_reports(zlinky_v17):
     )
     zha_device.endpoints = {1: ZHAEndpoint(device.endpoints[1], zha_device)}
     entities = list(discover_quirks_v2_entities(zha_device))
-    assert len(entities) == 1
-    entity = entities[0]
+    entity = next(e for e in entities if e.unique_id.endswith("-tariff_period"))
     assert isinstance(entity, Sensor)
     assert entity.unique_id == f"{device.ieee}-1-tariff_period"
     assert entity.native_value is None
@@ -165,3 +168,253 @@ async def test_zlinky_tariff_entity_updates_from_reports(zlinky_v17):
         assert entity.native_value == expected
 
     cluster.read_attributes.assert_not_called()
+
+
+@pytest.fixture
+def zha_zlinky(zlinky_v17):
+    """Construct the actual ZHA device used by the v2 factory."""
+    entry = DEVICE_REGISTRY.match_entry(zlinky_v17)
+    device = DEVICE_REGISTRY.resolve(zlinky_v17)
+    gateway = Mock()
+    gateway.config.config.device_options.consider_unavailable_mains = 7200
+    gateway.config.config.device_options.consider_unavailable_battery = 7200
+    return entry.zha_device_factory(device, gateway)
+
+
+@pytest.mark.parametrize(
+    ("attribute", "attribute_id", "suffix", "unit", "device_class", "value"),
+    [
+        ("rms_current", 0x0508, "2820-rms_current", "A", SensorDeviceClass.CURRENT, 9),
+        (
+            "rms_current_ph_b",
+            0x0908,
+            "2820-rms_current_ph_b",
+            "A",
+            SensorDeviceClass.CURRENT,
+            2,
+        ),
+        (
+            "rms_current_ph_c",
+            0x0A08,
+            "2820-rms_current_ph_c",
+            "A",
+            SensorDeviceClass.CURRENT,
+            3,
+        ),
+        (
+            "rms_voltage",
+            0x0505,
+            "2820-rms_voltage",
+            "V",
+            SensorDeviceClass.VOLTAGE,
+            230,
+        ),
+        (
+            "rms_voltage_ph_b",
+            0x0905,
+            "2820-rms_voltage_ph_b",
+            "V",
+            SensorDeviceClass.VOLTAGE,
+            224,
+        ),
+        (
+            "rms_voltage_ph_c",
+            0x0A05,
+            "2820-rms_voltage_ph_c",
+            "V",
+            SensorDeviceClass.VOLTAGE,
+            231,
+        ),
+        (
+            "apparent_power",
+            0x050F,
+            "2820-apparent_power",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            69,
+        ),
+        (
+            "apparent_power_ph_b",
+            0x090F,
+            "2820-apparent_power_ph_b",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            1148,
+        ),
+        (
+            "apparent_power_ph_c",
+            0x0A0F,
+            "2820-apparent_power_ph_c",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            1964,
+        ),
+        (
+            "total_apparent_power",
+            0x0306,
+            "2820-total_apparent_power",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            3181,
+        ),
+        ("active_power", 0x050B, "2820", "W", SensorDeviceClass.POWER, 2360),
+        (
+            "active_power_ph_b",
+            0x090B,
+            "2820-active_power_ph_b",
+            "W",
+            SensorDeviceClass.POWER,
+            2296,
+        ),
+        (
+            "active_power_max",
+            0x050D,
+            "2820-apparent_power_max_phase_1",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            1482,
+        ),
+        (
+            "active_power_max_ph_b",
+            0x090D,
+            "2820-apparent_power_max_phase_2",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            2098,
+        ),
+        (
+            "active_power_max_ph_c",
+            0x0A0D,
+            "2820-apparent_power_max_phase_3",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            2357,
+        ),
+        (
+            "total_active_power",
+            0x0304,
+            "2820-apparent_power_max_total",
+            "VA",
+            SensorDeviceClass.APPARENT_POWER,
+            5302,
+        ),
+    ],
+)
+async def test_zlinky_electrical_reports(
+    zha_zlinky, attribute, attribute_id, suffix, unit, device_class, value
+):
+    """Decode raw TIC reports with correct units, preserved IDs and no reads/scaling."""
+    private_cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+    private_cluster.update_attribute("linky_mode", 3)
+    entities = list(zha_zlinky.discover_entities())
+    electrical = [
+        e
+        for e in entities
+        if isinstance(e, Sensor)
+        and not isinstance(e, BaseElectricalMeasurement)
+        and e.targets_cluster(ElectricalMeasurement.cluster_id)
+    ]
+    assert len(electrical) == 16
+    assert len({e.unique_id for e in electrical}) == 16
+    entity = next(
+        e for e in electrical if e.unique_id == f"{zha_zlinky.ieee}-1-{suffix}"
+    )
+    assert not zha_zlinky._is_entity_removed_by_quirk(entity)
+    assert entity.native_unit_of_measurement == unit
+    assert entity.device_class == device_class
+    assert entity.state_class == SensorStateClass.MEASUREMENT
+    assert entity.native_value is None
+    cluster = zha_zlinky.endpoints[1].zigpy_endpoint.electrical_measurement
+    cluster.read_attributes = AsyncMock()
+    attr = cluster.find_attribute(attribute)
+    assert attr.id == attribute_id
+    config = entity._server_cluster_config[cluster.cluster_id]
+    assert config.bind is True
+    report = config.attributes[attribute].reporting
+    assert (report.min_interval, report.max_interval, report.reportable_change) == (
+        60,
+        900,
+        1,
+    )
+    # Standard ZCL Report Attributes. TIC current/voltage/apparent values are
+    # uint16; curve points and per-phase maxima int16; the total maximum int32.
+    data_type = 0x21
+    if attribute in (
+        "active_power",
+        "active_power_ph_b",
+        "active_power_max",
+        "active_power_max_ph_b",
+        "active_power_max_ph_c",
+    ):
+        data_type = 0x29
+    elif attribute == "total_active_power":
+        data_type = 0x2B
+    frame = (
+        b"\x18\x01\x0a"
+        + attribute_id.to_bytes(2, "little")
+        + bytes([data_type])
+        + attr.type(value).serialize()
+    )
+    header, args = cluster.deserialize(frame)
+    cluster.handle_message(header, args)
+    assert entity.native_value == value
+    cluster.read_attributes.assert_not_called()
+    assert not any(
+        e.unique_id == f"{zha_zlinky.ieee}-1-2820-total_active_power" for e in electrical
+    )
+
+
+@pytest.mark.parametrize("mode", [None, 0, 1, 2, 3, 5, 7])
+def test_zlinky_electrical_mode_scope(zha_zlinky, mode):
+    """Replace native sensors only in standard three-phase, including producer mode."""
+    cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+    if mode is not None:
+        cluster.update_attribute("linky_mode", mode)
+    native = Mock(spec=BaseElectricalMeasurement)
+    native.PLATFORM = Platform.SENSOR
+    native.endpoint = zha_zlinky.endpoints[1]
+    native.device = zha_zlinky
+    native.targets_cluster.return_value = True
+    with patch.object(ZHADevice, "discover_entities", return_value=iter([native])):
+        entities = list(zha_zlinky.discover_entities())
+    standard_three_phase = mode in (3, 7)
+    assert zha_zlinky.standard_three_phase is standard_three_phase
+    assert zha_zlinky._is_entity_removed_by_quirk(native) is standard_three_phase
+    # The native entity remains a discovery candidate for cluster configuration,
+    # but is filtered before addition. The tariff sensor remains in every mode.
+    assert len(entities) == (18 if standard_three_phase else 2)
+    for entity in entities[1:]:
+        assert not zha_zlinky._is_entity_removed_by_quirk(entity)
+    assert any(e.unique_id.endswith("-tariff_period") for e in entities[1:])
+
+
+@pytest.mark.parametrize("operation", ["async_configure", "async_initialize"])
+async def test_zlinky_reads_mode_before_discovery(zha_zlinky, operation):
+    """Identify the mode before discovery and reuse its cached value thereafter."""
+    cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+    assert (
+        cluster._get_effective_manufacturer_code(cluster.AttributeDefs.linky_mode) is None
+    )
+
+    async def read_mode(*args, **kwargs):
+        cluster.update_attribute("linky_mode", 3)
+        return {"linky_mode": 3}, {}
+
+    cluster.read_attributes = AsyncMock(side_effect=read_mode)
+
+    async def initialize(*args, **kwargs):
+        assert zha_zlinky.standard_three_phase
+
+    with patch.object(QuirkV2Device, operation, new=AsyncMock(side_effect=initialize)):
+        await getattr(zha_zlinky, operation)()
+        await getattr(zha_zlinky, operation)()
+    cluster.read_attributes.assert_awaited_once_with(["linky_mode"], allow_cache=True)
+
+
+@pytest.mark.parametrize("error", [TimeoutError(), DeliveryError()])
+async def test_zlinky_mode_read_failure(zha_zlinky, error):
+    """Leave native discovery available if mode identification fails."""
+    cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+    cluster.read_attributes = AsyncMock(side_effect=error)
+    await zha_zlinky.read_linky_mode()
+    assert not zha_zlinky.standard_three_phase
