@@ -88,7 +88,9 @@ class NamronPrivateRemoteCluster(CustomCluster):
         dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Translate the raw button/action payload into a named zha_event."""
-        if hdr.command_id != self.ClientCommandDefs.button_action.id:
+        if hdr.command_id != self.ClientCommandDefs.button_action.id or isinstance(
+            args, bytes
+        ):
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
             return
 
