@@ -110,6 +110,8 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_aeu003
+from zhaquirks.xiaomi.aqara.switch_aeu003 import InvertedWindowCoveringCluster
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -2729,3 +2731,179 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.mark.parametrize(
+    "device_reports, expected_in_ha",
+    [
+        # Fully closed: device reports 0 (its own "open" convention), HA sees 100
+        (0, 100),
+        # Fully open: device reports 100 (its own "closed" convention), HA sees 0
+        (100, 0),
+        # 20 % open from device perspective → 80 % open in HA
+        (20, 80),
+        # 80 % open from device perspective → 20 % open in HA
+        (80, 20),
+        # Midpoint is symmetric
+        (50, 50),
+    ],
+)
+async def test_lumi_switch_aeu003_position_inversion(
+    zigpy_device_from_v2_quirk, device_reports, expected_in_ha
+):
+    """Test that the InvertedWindowCoveringCluster corrects the position convention.
+
+    The Aqara H2 shutter switch (lumi.switch.aeu003) firmware reports
+    current_position_lift_percentage in HA convention (0 = closed,
+    100 = open), while ZHA expects Zigbee-spec convention (0 = open,
+    100 = closed) and inverts the value itself. Without the quirk this
+    produces a double inversion. The InvertedWindowCoveringCluster
+    pre-inverts the value so the two inversions cancel out.
+    """
+    LIFT_PERCENTAGE_ATTR = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    assert isinstance(window_covering_cluster, InvertedWindowCoveringCluster)
+
+    listener = ClusterListener(window_covering_cluster)
+
+    # Simulate a Zigbee attribute report arriving from the physical device.
+    window_covering_cluster._update_attribute(LIFT_PERCENTAGE_ATTR, device_reports)
+
+    assert len(listener.attribute_updates) == 1
+    attr_id, attr_value = listener.attribute_updates[0]
+    assert attr_id == LIFT_PERCENTAGE_ATTR
+    assert attr_value == expected_in_ha
+
+
+async def test_lumi_switch_aeu003_non_position_attributes_pass_through(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that attributes other than lift percentage are not affected.
+
+    Only current_position_lift_percentage (0x0008) should be inverted;
+    all other WindowCovering attributes must pass through unchanged.
+    """
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+    window_covering_cluster = device.endpoints[1].window_covering
+    listener = ClusterListener(window_covering_cluster)
+
+    # Use the mode attribute (0x0017) as a representative non-position attribute.
+    mode_attr_id = WindowCovering.AttributeDefs.window_covering_mode.id
+    window_covering_cluster._update_attribute(mode_attr_id, 4)
+
+    assert len(listener.attribute_updates) == 1
+    attr_id, attr_value = listener.attribute_updates[0]
+    assert attr_id == mode_attr_id
+    # Value must be unchanged — no inversion applied.
+    assert attr_value == 4
+
+
+async def test_lumi_switch_aeu003_quirk_applied(zigpy_device_from_v2_quirk):
+    """Test that the quirk is applied and the device has the expected endpoints."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+
+    # Endpoints 1–4 are ON_OFF_SWITCH channels; endpoint 21 is the power meter.
+    assert 1 in device.endpoints
+    assert 2 in device.endpoints
+    assert 3 in device.endpoints
+    assert 4 in device.endpoints
+    assert 21 in device.endpoints
+
+    # Endpoint 1 must carry the inverted WindowCovering cluster.
+    assert isinstance(
+        device.endpoints[1].window_covering, InvertedWindowCoveringCluster
+    )
+
+
+@pytest.mark.parametrize(
+    "zha_sends, device_should_receive",
+    [
+        # Fully closed: device reports 0 (its own "open" convention), HA sees 100
+        (0, 100),
+        # Fully open: device reports 100 (its own "closed" convention), HA sees 0
+        (100, 0),
+        # 20 % open from device perspective → 80 % open in HA
+        (20, 80),
+        # 80 % open from device perspective → 20 % open in HA
+        (80, 20),
+        # Midpoint is symmetric
+        (50, 50),
+    ],
+)
+async def test_go_to_lift_percentage_command_inverted(
+    zigpy_device_from_v2_quirk, zha_sends, device_should_receive
+):
+    """Outgoing go_to_lift_percentage commands must be pre-inverted.
+
+    ZHA converts the HA position (0=closed, 100=open) to Zigbee convention
+    (0=open, 100=closed) with 100-x before calling the cluster command.
+    The cluster must invert again so the device receives the original HA
+    value and moves to the correct physical position.
+
+    Flow for "set to 80 %":
+        HA 80 → ZHA inverts → cluster receives 20
+        cluster inverts → device receives 80 → moves to 80 % open  ✓
+    """
+    GO_TO_LIFT_PCT_CMD = WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+    cluster = device.endpoints[1].window_covering
+    assert isinstance(cluster, InvertedWindowCoveringCluster)
+
+    # Patch WindowCovering.request (the grandparent implementation our override
+    # calls via super()).  AsyncMock is not a descriptor so super().request
+    # resolves to the mock object itself; it is called without 'self', giving
+    # call_args.args == (general, command_id, schema, percentage, ...).
+    with mock.patch.object(
+        WindowCovering, "request", new_callable=mock.AsyncMock
+    ) as base_request:
+        base_request.return_value = foundation.Status.SUCCESS, "done"
+
+        await cluster.request(False, GO_TO_LIFT_PCT_CMD, {}, zha_sends)
+
+        base_request.assert_called_once()
+        # positional args seen by the base class: (general, cmd_id, schema, pct)
+        assert base_request.call_args.args[3] == device_should_receive
+
+
+async def test_non_position_commands_unchanged(zigpy_device_from_v2_quirk):
+    """Commands other than go_to_lift_percentage must pass through unmodified."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+    cluster = device.endpoints[1].window_covering
+
+    stop_cmd = WindowCovering.ServerCommandDefs.stop.id
+
+    with mock.patch.object(
+        WindowCovering, "request", new_callable=mock.AsyncMock
+    ) as base_request:
+        base_request.return_value = foundation.Status.SUCCESS, "done"
+
+        await cluster.request(False, stop_cmd, {})
+
+        base_request.assert_called_once()
+        # stop carries no percentage argument; command_id must be unchanged
+        assert base_request.call_args.args[1] == stop_cmd
+
+
+@pytest.mark.parametrize(
+    "button, expected_command",
+    [
+        ("button_3", "3_single"),
+        ("button_4", "4_single"),
+    ],
+)
+async def test_lumi_switch_aeu003_automation_triggers(
+    zigpy_device_from_v2_quirk, button, expected_command
+):
+    """Test that device automation triggers are registered for both rocker buttons."""
+
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.aeu003")
+
+    # Verify the trigger map contains entries for both physical rocker buttons.
+    triggers = device.device_automation_triggers
+    assert any(
+        expected_command in str(trigger_value) for trigger_value in triggers.values()
+    ), f"Expected command '{expected_command}' not found in device automation triggers"
