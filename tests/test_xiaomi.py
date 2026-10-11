@@ -47,12 +47,15 @@ from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
     BUTTON_2,
+    CLUSTER_ID,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MANUFACTURER,
     MODEL,
+    MOTION_EVENT,
     NODE_DESCRIPTOR,
     OFF,
     ON,
@@ -70,6 +73,7 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiQuickInitDevice,
     handle_quick_init,
@@ -112,6 +116,14 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+from zhaquirks.xiaomi.aqara.vibration_agl01 import (
+    DEFAULT_VIBRATION_RESET_TIMEOUT,
+    XIAOMI_VIBRATION_ATTR,
+    AqaraVibrationSensitivity,
+    VibrationAGL01,
+    VibrationMotionCluster,
+    XiaomiVibrationConfigurationCluster,
+)
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
@@ -2729,3 +2741,303 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+# ---------------------------------------------------------------------------
+# Tests for zhaquirks.xiaomi.aqara.vibration_agl01 (DJT12LM)
+# ---------------------------------------------------------------------------
+
+
+def _vibration_agl01_device(zigpy_device_from_v2_quirk):
+    """Create the Aqara Vibration Sensor T1 from its reported clusters."""
+    return zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.vibration.agl01",
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            1: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            },
+            2: {
+                MultistateInput.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            },
+        },
+    )
+
+
+async def test_vibration_agl01_device_creation(zigpy_device_from_v2_quirk):
+    """Test that VibrationAGL01 is migrated using the v2 quirk registry."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    assert isinstance(device, VibrationAGL01)
+    assert (
+        device.endpoints[1].power.get(PowerConfiguration.AttributeDefs.battery_size.id)
+        == BatterySize.CR2032
+    )
+    # EP1: VibrationMotionCluster exposes the binary_sensor entity
+    assert device.endpoints[1].ias_zone is not None
+    assert (
+        device.endpoints[1].ias_zone.get("vibration_reset_timeout")
+        == DEFAULT_VIBRATION_RESET_TIMEOUT
+    )
+    # EP2: vibration event clusters
+    assert device.endpoints[2].multistate_input is not None
+    assert device.endpoints[2].opple_cluster is not None
+    configuration_cluster = device.endpoints[1].opple_cluster
+    assert isinstance(configuration_cluster, XiaomiVibrationConfigurationCluster)
+    sensitivity = configuration_cluster.AttributeDefs.sensitivity_adjustment
+    assert sensitivity.id == 0x010E
+    assert sensitivity.type is AqaraVibrationSensitivity
+    assert sensitivity.zcl_type is DataTypeId.uint8
+    assert sensitivity.manufacturer_code == 0x115F
+    assert device.device_automation_triggers == {
+        ("vibration", "vibration"): {
+            COMMAND: "vibration",
+            CLUSTER_ID: XiaomiAqaraE1Cluster.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        ("triple_tap", "triple_tap"): {
+            COMMAND: "triple_tap",
+            CLUSTER_ID: MultistateInput.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+    }
+
+
+async def test_vibration_reset_timeout_configuration(zigpy_device_from_v2_quirk):
+    """Test that the local reset timeout can be configured through its attribute."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    motion_cluster = device.endpoints[1].ias_zone
+
+    result = await motion_cluster.write_attributes({"vibration_reset_timeout": 15})
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert motion_cluster.get("vibration_reset_timeout") == 15
+    assert motion_cluster.reset_s == 15
+    assert (
+        VibrationMotionCluster.AttributeDefs.vibration_reset_timeout.id
+        in motion_cluster._attr_cache
+    )
+
+
+@pytest.mark.parametrize("restored_timeout", [None, 15])
+async def test_vibration_reset_timeout_restoration(
+    zigpy_device_from_v2_quirk, restored_timeout
+):
+    """Schedule resets from the attribute cache restored by zigpy after quirk creation."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    motion_cluster = device.endpoints[1].ias_zone
+    motion_cluster._attr_cache.clear()
+    if restored_timeout is not None:
+        motion_cluster._attr_cache.set_value(
+            motion_cluster.AttributeDefs.vibration_reset_timeout, restored_timeout
+        )
+
+    expected_timeout = restored_timeout or DEFAULT_VIBRATION_RESET_TIMEOUT
+    assert motion_cluster.get("vibration_reset_timeout") == expected_timeout
+    with mock.patch.object(motion_cluster._loop, "call_later") as call_later:
+        device.motion_bus.listener_event(MOTION_EVENT)
+    call_later.assert_called_once_with(expected_timeout, motion_cluster._turn_off)
+
+
+@pytest.mark.filterwarnings("error::DeprecationWarning")
+async def test_xiaomi_vibration_manufacturer_report(zigpy_device_from_v2_quirk):
+    """Handle a manufacturer-tagged vibration report without deprecated lookup."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[2].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+    header = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        manufacturer=0x115F,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    report = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema(
+        [
+            foundation.Attribute(
+                attrid=XIAOMI_VIBRATION_ATTR,
+                value=foundation.TypeValue(DataTypeId.uint8, t.uint8_t(1)),
+            )
+        ]
+    )
+    hdr, args = cluster.deserialize(header.serialize() + report.serialize())
+    cluster.handle_message(hdr, args)
+
+    assert cluster.get("vibration_detected") == 1
+    listener.zha_send_event.assert_called_once_with("vibration", {"value": 1})
+
+
+async def test_xiaomi_vibration_cluster_vibration(zigpy_device_from_v2_quirk):
+    """Test XiaomiVibrationCluster fires vibration event on attr 0x0118 value=1."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[2].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    motion_listener = mock.MagicMock()
+    device.motion_bus.add_listener(motion_listener)
+
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 1)
+
+    motion_listener.motion_event.assert_called_once()
+    listener.zha_send_event.assert_called_once_with("vibration", {"value": 1})
+
+
+async def test_xiaomi_vibration_cluster_no_event_for_other_values(
+    zigpy_device_from_v2_quirk,
+):
+    """Test XiaomiVibrationCluster does not fire for attr 0x0118 with value != 1."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[2].opple_cluster
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    motion_listener = mock.MagicMock()
+    device.motion_bus.add_listener(motion_listener)
+
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 0)
+    cluster._update_attribute(XIAOMI_VIBRATION_ATTR, 2)
+
+    motion_listener.motion_event.assert_not_called()
+    listener.zha_send_event.assert_not_called()
+
+
+async def test_vibration_multistate_input_triple_tap(zigpy_device_from_v2_quirk):
+    """Test VibrationMultistateInput fires triple_tap on present_value=1."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[2].multistate_input
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    motion_listener = mock.MagicMock()
+    device.motion_bus.add_listener(motion_listener)
+
+    cluster._update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
+
+    motion_listener.motion_event.assert_called_once()
+    # EventableCluster also emits 'attribute_updated' via zha_send_event; check
+    # that the triple_tap event was fired among the calls.
+    listener.zha_send_event.assert_any_call("triple_tap", {"value": 1})
+
+
+async def test_vibration_multistate_input_no_event_for_other_values(
+    zigpy_device_from_v2_quirk,
+):
+    """Test VibrationMultistateInput does not fire events for present_value != 1."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    cluster = device.endpoints[2].multistate_input
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    motion_listener = mock.MagicMock()
+    device.motion_bus.add_listener(motion_listener)
+
+    cluster._update_attribute(MultistateInput.AttributeDefs.present_value.id, 0)
+    cluster._update_attribute(MultistateInput.AttributeDefs.present_value.id, 2)
+
+    motion_listener.motion_event.assert_not_called()
+    # EventableCluster emits 'attribute_updated' for every attr write — verify
+    # no 'triple_tap' event was fired.
+    for call_args in listener.zha_send_event.call_args_list:
+        assert call_args[0][0] != "triple_tap"
+
+
+@pytest.mark.parametrize(
+    "trigger",
+    [
+        # vibration via XiaomiVibrationCluster vibration attribute
+        lambda device: device.endpoints[2].opple_cluster._update_attribute(
+            XIAOMI_VIBRATION_ATTR, 1
+        ),
+        # triple_tap via VibrationMultistateInput (present_value=1)
+        lambda device: device.endpoints[2].multistate_input._update_attribute(
+            MultistateInput.AttributeDefs.present_value.id, 1
+        ),
+    ],
+    ids=["xiaomi_vibration_attr", "multistate_triple_tap"],
+)
+async def test_vibration_triggers_binary_sensor(zigpy_device_from_v2_quirk, trigger):
+    """Test that both event paths activate the EP1 vibration binary sensor."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    motion_listener = ClusterListener(motion_cluster)
+
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
+        trigger(device)
+
+    assert len(motion_listener.cluster_commands) >= 1
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
+    assert motion_listener.cluster_commands[0][2][0] == ON
+
+    await asyncio.sleep(0.1)
+
+    assert motion_listener.cluster_commands[-1][2][0] == OFF
+
+
+async def test_vibration_motion_cluster_on_and_reset(zigpy_device_from_v2_quirk):
+    """Test VibrationMotionCluster fires ON on motion_event and resets after reset_s."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    motion_listener = ClusterListener(motion_cluster)
+
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
+        device.motion_bus.listener_event(MOTION_EVENT)
+
+    assert len(motion_listener.cluster_commands) == 1
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
+    assert motion_listener.cluster_commands[0][2][0] == ON
+
+    await asyncio.sleep(0.1)
+
+    assert len(motion_listener.cluster_commands) == 2
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
+    assert motion_listener.cluster_commands[1][2][0] == OFF
+
+
+async def test_vibration_motion_cluster_repeated_events_reset_timer(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a second motion event cancels the pending reset timer."""
+    device = _vibration_agl01_device(zigpy_device_from_v2_quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    motion_listener = ClusterListener(motion_cluster)
+
+    with mock.patch.object(
+        VibrationMotionCluster,
+        "reset_s",
+        new_callable=mock.PropertyMock,
+        return_value=0,
+    ):
+        device.motion_bus.listener_event(MOTION_EVENT)
+        device.motion_bus.listener_event(MOTION_EVENT)
+
+    assert len(motion_listener.cluster_commands) == 2
+    assert motion_listener.cluster_commands[0][2][0] == ON
+    assert motion_listener.cluster_commands[1][2][0] == ON
+
+    await asyncio.sleep(0.1)
+
+    # Only one reset fires (the last timer wins).
+    assert len(motion_listener.cluster_commands) == 3
+    assert motion_listener.cluster_commands[2][2][0] == OFF
