@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 
@@ -17,6 +18,46 @@ from zhaquirks.sonoff.zbm5 import (
 )
 
 zhaquirks.setup()
+
+
+@pytest.mark.parametrize("tamper_state", (0, 1))
+async def test_snzb04pr2_tamper_report_updates_attribute_cache(
+    zigpy_device_from_v2_quirk, tamper_state
+):
+    """Standard ZCL tamper reports update the PR2 tamper attribute."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="SNZB-04PR2",
+        cluster_ids={1: {0xFC11: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].sonoff_contact_cluster
+    listener = ClusterListener(cluster)
+
+    attribute = foundation.Attribute(
+        attrid=cluster.AttributeDefs.tamper.id,
+        value=foundation.TypeValue(type=t.uint8_t(0x20), value=t.uint8_t(tamper_state)),
+    )
+    header = foundation.ZCLHeader.general(
+        tsn=1,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+    )
+    report = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema([attribute])
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x0104,
+            cluster_id=cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(header.serialize() + report.serialize()),
+        )
+    )
+
+    assert listener.attribute_updates == [
+        (cluster.AttributeDefs.tamper.id, tamper_state)
+    ]
 
 
 @pytest.mark.parametrize(
