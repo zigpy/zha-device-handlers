@@ -178,3 +178,34 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("NTCHT01", "Excellux"),
+        ("NTCHT02", "Excellux"),
+        ("NTCHT03", "Excellux"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_zg105nth_probe_temperature(zigpy_device_from_v2_quirk, model, manuf):
+    """Test that the ZG-105NTH probe temperature is decoded as a signed value."""
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    # DP 1, type value, -31 raw -> -3.1 degC. The negative value proves that the
+    # probe datapoint is decoded as a signed integer (t.int32s); an unsigned
+    # interpretation would report ~4.29e8 degC instead.
+    message = b"\tH\x01\x00\xd8\x01\x02\x00\x04\xff\xff\xff\xe1"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert data.data.datapoints[0].data.payload == -31
+    assert ep.tuya_manufacturer.get("probe_temperature") == -3.1

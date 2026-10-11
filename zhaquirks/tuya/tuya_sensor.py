@@ -10,6 +10,7 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -43,6 +44,14 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class TuyaTempHumiWarning(t.enum8):
+    """Tuya temperature / humidity warning enum."""
+
+    NoWarning = 0x00
+    Low = 0x01
+    High = 0x02
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -380,6 +389,84 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# ZG-105NTH - temperature and humidity sensor with external probe
+(
+    TuyaQuirkBuilder("NTCHT01", "Excellux")
+    .applies_to("NTCHT02", "Excellux")
+    .applies_to("NTCHT03", "Excellux")
+    # DP 1: external NTC probe temperature, signed, divide by 10 for °C.
+    # t.int32s is mandatory: the probe reaches -40 °C and an unsigned
+    # interpretation would report negatives as ~4.29e9 °C.
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="probe_temperature",
+        type=t.int32s,
+        converter=lambda x: x / 10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature",
+        fallback_name="Probe temperature",
+    )
+    # DP 5: device body (ambient) temperature. Kept as a separate attribute: the
+    # device already mirrors the *probe* on the native 0x0402 cluster, so mapping
+    # this DP onto that cluster would let two sources fight over one attribute.
+    .tuya_sensor(
+        dp_id=5,
+        attribute_name="temperature_outside",
+        type=t.int32s,
+        converter=lambda x: x / 100,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_outside",
+        fallback_name="Outside temperature",
+    )
+    .tuya_enum(
+        dp_id=112,
+        attribute_name="probe_temperature_warning",
+        enum_class=TuyaTempHumiWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="probe_temperature_warning",
+        fallback_name="Probe temperature warning",
+    )
+    .tuya_enum(
+        dp_id=117,
+        attribute_name="temperature_warning",
+        enum_class=TuyaTempHumiWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_warning",
+        fallback_name="Temperature warning",
+    )
+    .tuya_enum(
+        dp_id=122,
+        attribute_name="humidity_warning",
+        enum_class=TuyaTempHumiWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="humidity_warning",
+        fallback_name="Humidity warning",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="sampling_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1200,
+        step=5,
+        entity_type=EntityType.CONFIG,
+        translation_key="sampling_interval",
+        fallback_name="Sampling interval",
+    )
     .skip_configuration()
     .add_to_registry()
 )
