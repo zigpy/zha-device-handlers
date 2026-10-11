@@ -356,3 +356,64 @@ def test_calculated_values_come_back_after_a_restart(station):
     assert {name: calc(station, name) for name in names} == expected
     assert calc(station, "rain_rate") == 0
     assert calc(station, "pressure_trend") == 0
+
+
+def test_illuminance_below_the_measurable_range_is_zero_lux():
+    """The ZCL value 0 (and anything lower) stands for no light at all."""
+    assert ws90.illuminance_lux(0) == 0
+    assert ws90.illuminance_lux(-1) == 0
+    assert ws90.illuminance_lux(10001) == 10
+
+
+def test_missing_inputs_give_no_value(station):
+    """A sibling cluster that is not there, or a value not worked out yet, reads as None."""
+    cluster = station.shelly_ws90_calculated
+    assert cluster._input("no_such_cluster", "measured_value") is None
+    assert cluster._calculated("dew_point") is None
+
+    cluster._set("dew_point", None)
+    assert cluster._attr_cache.get(cluster.find_attribute("dew_point").id) is None
+
+
+def test_unknown_attribute_of_the_calculated_cluster_gives_the_default(station):
+    """Only the attributes of the cluster are worked out, anything else is a plain lookup."""
+    assert station.shelly_ws90_calculated.get(0xFFEE, "fallback") == "fallback"
+
+
+def test_unknown_attribute_of_an_input_cluster_is_passed_on(station):
+    """Attributes the quirk does not know about are cached like on any other cluster."""
+    station.temperature.update_attribute(0xFFEE, 5)
+    assert station.temperature._attr_cache[0xFFEE] == 5
+
+
+def test_default_hooks_keep_every_reading():
+    """Without an override a reading is neither a glitch nor noise."""
+    mixin = ws90.WS90InputMixin()
+    assert mixin._is_glitch("measured_value", 0) is False
+    assert mixin._is_noise("measured_value", 0) is False
+    assert mixin._on_reading("measured_value", 0) is None
+
+
+@pytest.mark.parametrize(
+    ("cluster_name", "measured", "other"),
+    [
+        ("temperature", 1770, 0),
+        ("humidity", 8900, 0),
+        ("illuminance", 42739, 0),
+        ("pressure", 1017, 1018),
+    ],
+)
+def test_only_the_measured_value_is_filtered(station, cluster_name, measured, other):
+    """The other attributes of the measurement clusters are stored as they come."""
+    cluster = getattr(station, cluster_name)
+    cluster.update_attribute(0x0000, measured)
+    cluster.update_attribute(0x0001, other)  # min_measured_value
+    assert cluster.get(0x0001) == other
+
+
+def test_other_pressure_attributes_do_not_feed_the_trend(station, clock):
+    """Only readings of the measured value count as samples for the trend."""
+    station.pressure.update_attribute(0x0000, 1017)
+    samples = len(station.shelly_ws90_calculated._pressure_samples)
+    station.pressure.update_attribute(0x0001, 900)
+    assert len(station.shelly_ws90_calculated._pressure_samples) == samples

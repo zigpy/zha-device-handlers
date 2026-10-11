@@ -336,8 +336,6 @@ class ShellyWS90CalculatedCluster(LocalDataCluster):
         mean_time = sum(moment for moment, _ in samples) / count
         mean_pressure = sum(pressure for _, pressure in samples) / count
         spread = sum((moment - mean_time) ** 2 for moment, _ in samples)
-        if spread == 0:
-            return
         slope = (
             sum(
                 (moment - mean_time) * (pressure - mean_pressure)
