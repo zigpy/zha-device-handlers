@@ -304,7 +304,9 @@ async def test_zlinky_electrical_reports(
     zha_zlinky, attribute, attribute_id, suffix, unit, device_class, value
 ):
     """Decode raw TIC reports with correct units, preserved IDs and no reads/scaling."""
-    private_cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
+    private_cluster = zha_zlinky.endpoints[
+        1
+    ].zigpy_endpoint.zlinky_manufacturer_specific
     private_cluster.update_attribute("linky_mode", 3)
     entities = list(zha_zlinky.discover_entities())
     electrical = [
@@ -360,7 +362,8 @@ async def test_zlinky_electrical_reports(
     assert entity.native_value == value
     cluster.read_attributes.assert_not_called()
     assert not any(
-        e.unique_id == f"{zha_zlinky.ieee}-1-2820-total_active_power" for e in electrical
+        e.unique_id == f"{zha_zlinky.ieee}-1-2820-total_active_power"
+        for e in electrical
     )
 
 
@@ -393,7 +396,8 @@ async def test_zlinky_reads_mode_before_discovery(zha_zlinky, operation):
     """Identify the mode before discovery and reuse its cached value thereafter."""
     cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
     assert (
-        cluster._get_effective_manufacturer_code(cluster.AttributeDefs.linky_mode) is None
+        cluster._get_effective_manufacturer_code(cluster.AttributeDefs.linky_mode)
+        is None
     )
 
     async def read_mode(*args, **kwargs):

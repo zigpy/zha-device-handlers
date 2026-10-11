@@ -421,8 +421,10 @@ builder = (
 builder.prevent_default_entity_creation(
     endpoint_id=1,
     cluster_id=ElectricalMeasurement.cluster_id,
-    function=lambda entity: isinstance(entity, BaseElectricalMeasurement)
-    and entity.device.standard_three_phase,
+    function=lambda entity: (
+        isinstance(entity, BaseElectricalMeasurement)
+        and entity.device.standard_three_phase
+    ),
 )
 
 # Preserve native IDs where the measurement and unit are unchanged. The old
@@ -557,6 +559,6 @@ for attribute, suffix, name, device_class, unit in ZLINKY_THREE_PHASE_MEASUREMEN
         unique_id_suffix=suffix,
         translation_key=f"zlinky_{attribute}",
         fallback_name=name,
-   )
+    )
 
 builder.add_to_registry()
