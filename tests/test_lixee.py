@@ -415,7 +415,7 @@ async def test_zlinky_reads_mode_before_discovery(zha_zlinky, operation):
     cluster.read_attributes.assert_awaited_once_with(["linky_mode"], allow_cache=True)
 
 
-@pytest.mark.parametrize("error", [TimeoutError(), DeliveryError()])
+@pytest.mark.parametrize("error", [TimeoutError(), DeliveryError("Mode read failed")])
 async def test_zlinky_mode_read_failure(zha_zlinky, error):
     """Leave native discovery available if mode identification fails."""
     cluster = zha_zlinky.endpoints[1].zigpy_endpoint.zlinky_manufacturer_specific
