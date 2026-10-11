@@ -34,12 +34,13 @@ Notes:
   (firmware behaviour reported in issue #3666).
 - Sensor mode "Floor": one user reported that the relay did not react in this
   mode and the display showed a wrong temperature.
+
 """
 
 from typing import Any
 
-import zigpy.types as t
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
@@ -52,8 +53,8 @@ from zhaquirks.tuya import (
     TuyaDatapointData,
     TuyaDPType,
 )
-from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
 
 
@@ -168,7 +169,9 @@ class SensorMode(t.enum8):
     """DP 32 - which sensor is used."""
 
     Internal = 0x00  # IN - internal sensor, no floor protection
-    Internal_with_floor_protection = 0x01  # AL - internal sensor + external as protection
+    Internal_with_floor_protection = (
+        0x01  # AL - internal sensor + external as protection
+    )
     External = 0x02  # OU - external (floor) sensor
 
 
@@ -268,9 +271,7 @@ builder = (
         dp_id=47,
         ep_attribute=MoesThermostat.ep_attribute,
         attribute_name=MoesThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: (
-            RunningState.Heat_State_On if x == 0 else RunningState.Idle
-        ),
+        converter=lambda x: RunningState.Heat_State_On if x == 0 else RunningState.Idle,
     )
     # ---- DP 48 (backlight) ----
     .tuya_number(
@@ -416,8 +417,7 @@ for _day in range(7):
     )
 
 (
-    builder
-    .adds(MoesThermostat)
+    builder.adds(MoesThermostat)
     .tuya_enchantment(read_attr_spell=True, data_query_spell=True)
     .skip_configuration()
     .add_to_registry(replacement_cluster=MoesTuyaMCUCluster)
