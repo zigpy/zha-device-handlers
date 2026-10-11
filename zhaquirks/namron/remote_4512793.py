@@ -108,6 +108,7 @@ class NamronPrivateRemoteCluster(CustomCluster):
     # normal (hub-connected) operation; they only apply when binding the
     # remote directly to a light via Namron's own app.
     QuirkBuilder("Namron AS", "4512793")
+    .applies_to("Namron AS", "4512794")
     .replaces(NamronPrivateRemoteCluster, endpoint_id=1)
     .device_automation_triggers(
         {
