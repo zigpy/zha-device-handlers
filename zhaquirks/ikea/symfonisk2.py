@@ -50,7 +50,6 @@ from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
-    DoublingPowerConfig2AAACluster,
     PowerConfig2AAACluster,
     ShortcutV1Cluster,
     ShortcutV2Cluster,
@@ -147,7 +146,9 @@ class IkeaSymfoniskGen2v1(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfig2AAACluster,
+                    # SYMFONISK gen2 firmware (1.0.x) already reports battery
+                    # percentage in 0.5% units as per ZCL spec, so don't double it
+                    PowerConfig2AAACluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
