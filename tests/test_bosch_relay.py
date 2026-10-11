@@ -207,6 +207,25 @@ async def test_other_writes_are_untouched(relay):
     assert await _write(relay, {ATTRS.child_lock.name: True}) == ["08001001"]
 
 
+def _receive_command(relay, command, *payload, disable_default_response=True):
+    """Receive a manufacturer specific command that the relay sends."""
+    # Frame: cluster specific, manufacturer specific, server-to-client (0x0D),
+    #        plus disable-default-rsp (0x10), manufacturer code 0x1209, TSN=7
+    frame_control = 0x1D if disable_default_response else 0x0D
+
+    relay.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=CLUSTER_ID,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                bytes([frame_control, 0x09, 0x12, 0x07, command, *payload])
+            ),
+        )
+    )
+
+
 @pytest.mark.parametrize("command", [0x03, 0x04])
 @pytest.mark.parametrize(
     ("status", "duration", "event", "seconds"),
@@ -223,22 +242,50 @@ async def test_switch_events(relay, command, status, duration, event, seconds):
     listener = mock.MagicMock()
     _cluster(relay).add_listener(listener)
 
-    # Frame: 0x1D (cluster specific, manufacturer specific, server-to-client,
-    #        disable-default-rsp), manufacturer code 0x1209, TSN=7, command,
-    #        status, duration
-    relay.packet_received(
-        t.ZigbeePacket(
-            profile_id=260,
-            cluster_id=CLUSTER_ID,
-            src_ep=1,
-            dst_ep=1,
-            data=t.SerializableBytes(
-                bytes([0x1D, 0x09, 0x12, 0x07, command, status, duration])
-            ),
-        )
-    )
+    _receive_command(relay, command, status, duration)
 
     listener.zha_send_event.assert_called_once_with(event, {"duration": seconds})
+
+
+async def test_unknown_switch_status_is_passed_on(relay):
+    """Test that a switch status that is not known is left to the base handler."""
+    cluster = _cluster(relay)
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    with mock.patch.object(cluster, "send_default_rsp") as default_rsp:
+        _receive_command(relay, 0x03, 9, 0, disable_default_response=False)
+
+    listener.zha_send_event.assert_not_called()
+    default_rsp.assert_called_once()
+
+
+async def test_other_commands_are_passed_on(relay):
+    """Test that commands other than the switch commands are left to the base handler."""
+    cluster = _cluster(relay)
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    with mock.patch.object(cluster, "send_default_rsp") as default_rsp:
+        _receive_command(relay, 0x05, disable_default_response=False)
+
+    listener.zha_send_event.assert_not_called()
+    default_rsp.assert_called_once()
+
+
+async def test_write_of_unknown_attribute_is_passed_on(relay):
+    """Test that an attribute the cluster does not know is left to zigpy."""
+    cluster = _cluster(relay)
+
+    with (
+        mock.patch.object(cluster, "request", mock.AsyncMock()) as request,
+        pytest.raises(KeyError),
+    ):
+        await cluster.write_attributes(
+            {ATTRS.device_mode.name: BoschDeviceMode.Pulsed, "not_an_attribute": 1}
+        )
+
+    request.assert_not_called()
 
 
 def test_device_automation_triggers(relay):
