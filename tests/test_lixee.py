@@ -338,7 +338,7 @@ async def test_zlinky_electrical_reports(
     config = entity._server_cluster_config[cluster.cluster_id]
     assert config.bind is True
     aggregated = aggregate_cluster_configs(entities)
-    report = aggregated[(1, cluster.cluster_id)].attributes[attribute].reporting
+    report = aggregated[(1, cluster.cluster_id, True)].attributes[attribute].reporting
     assert (report.min_interval, report.max_interval, report.reportable_change) == (
         60,
         900,
