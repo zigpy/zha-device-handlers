@@ -1,16 +1,25 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zha.quirks import DEVICE_REGISTRY
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.builder.metadata import ZCLEnumMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_motion import (
+    HobeianZG204ZIasZone,
+    HobeianZG204ZKeepTime,
+    HobeianZG204ZSensitivity,
+)
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
@@ -174,3 +183,68 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+def test_hobeian_zg204z_quirk(zigpy_device_from_v2_quirk):
+    """Test HOBEIAN ZG-204Z exposes its IAS zone settings and hides occupancy."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        "HOBEIAN",
+        "ZG-204Z",
+        cluster_ids={
+            1: {
+                IasZone.cluster_id: ClusterType.Server,
+                OccupancySensing.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    assert isinstance(quirked_device.endpoints[1].ias_zone, HobeianZG204ZIasZone)
+
+    definition = DEVICE_REGISTRY.match_entry(
+        quirked_device
+    ).zha_device_factory.quirk_definition
+
+    enums = {
+        metadata.attribute_name: metadata
+        for metadata in definition.entity_metadata
+        if isinstance(metadata, ZCLEnumMetadata)
+    }
+    assert enums["current_zone_sensitivity_level"].enum is HobeianZG204ZSensitivity
+    assert enums["keep_time"].enum is HobeianZG204ZKeepTime
+    assert {m.cluster_id for m in enums.values()} == {IasZone.cluster_id}
+
+    assert [
+        (m.endpoint_id, m.cluster_id) for m in definition.disabled_default_entities
+    ] == [(1, OccupancySensing.cluster_id)]
+
+
+@pytest.mark.parametrize(
+    "attribute,value",
+    [
+        ("current_zone_sensitivity_level", HobeianZG204ZSensitivity.Low),
+        ("keep_time", HobeianZG204ZKeepTime.For_120_seconds),
+    ],
+)
+async def test_hobeian_zg204z_writes(zigpy_device_from_v2_quirk, attribute, value):
+    """Test HOBEIAN ZG-204Z settings are written as uint8, without a manufacturer code."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        "HOBEIAN",
+        "ZG-204Z",
+        cluster_ids={1: {IasZone.cluster_id: ClusterType.Server}},
+    )
+    ias_zone = quirked_device.endpoints[1].ias_zone
+
+    assert ias_zone.find_attribute(attribute).type is t.uint8_t
+
+    with mock.patch.object(
+        ias_zone,
+        "request",
+        new=mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        ),
+    ) as request:
+        await ias_zone.write_attributes({attribute: value})
+
+    assert request.call_args.kwargs["manufacturer"] is None
