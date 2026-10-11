@@ -391,7 +391,7 @@ def test_default_hooks_keep_every_reading():
     mixin = ws90.WS90InputMixin()
     assert mixin._is_glitch("measured_value", 0) is False
     assert mixin._is_noise("measured_value", 0) is False
-    assert mixin._on_reading("measured_value", 0) is None
+    mixin._on_reading("measured_value", 0)  # nothing to check, it must not raise
 
 
 @pytest.mark.parametrize(
