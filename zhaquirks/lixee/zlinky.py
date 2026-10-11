@@ -5,7 +5,10 @@ from copy import deepcopy
 from typing import Final
 
 from zha.application.platforms import BaseEntity
-from zha.application.platforms.sensor import BaseElectricalMeasurement
+from zha.application.platforms.sensor import (
+    BaseElectricalMeasurement,
+    ElectricalMeasurementPoller,
+)
 from zha.zigbee.device import Device as ZHADevice
 from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zgp, zha
@@ -381,7 +384,12 @@ class ZLinkyTICV15Device(QuirkV2Device):
         """Keep native sensors outside the validated standard three-phase modes."""
         # Calling the ZHA base directly avoids creating the electrical quirk
         # entities outside these modes, hence avoids configuring their reports.
-        yield from ZHADevice.discover_entities(self)
+        for entity in ZHADevice.discover_entities(self):
+            if self.standard_three_phase and isinstance(
+                entity, (BaseElectricalMeasurement, ElectricalMeasurementPoller)
+            ):
+                continue
+            yield entity
         for entity in discover_quirks_v2_entities(self):
             if self.standard_three_phase or not entity.targets_cluster(
                 ElectricalMeasurement.cluster_id
@@ -414,17 +422,6 @@ builder = (
         translation_key="tariff_period",
         fallback_name="Tariff period",
     )
-)
-
-# ZHA applies this filter to native and quirk sensors alike. Retain our generic
-# sensors, whose raw values already use the firmware's A/V/W/VA units.
-builder.prevent_default_entity_creation(
-    endpoint_id=1,
-    cluster_id=ElectricalMeasurement.cluster_id,
-    function=lambda entity: (
-        isinstance(entity, BaseElectricalMeasurement)
-        and entity.device.standard_three_phase
-    ),
 )
 
 # Preserve native IDs where the measurement and unit are unchanged. The old

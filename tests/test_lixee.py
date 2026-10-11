@@ -4,8 +4,13 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from zha.application import Platform
-from zha.application.platforms.sensor import BaseElectricalMeasurement, Sensor
+from zha.application.platforms.sensor import (
+    BaseElectricalMeasurement,
+    ElectricalMeasurementPoller,
+    Sensor,
+)
 from zha.quirks import DEVICE_REGISTRY
+from zha.zigbee.cluster_config import aggregate_cluster_configs
 from zha.zigbee.device import Device as ZHADevice
 from zha.zigbee.endpoint import Endpoint as ZHAEndpoint
 from zigpy.exceptions import DeliveryError
@@ -332,7 +337,8 @@ async def test_zlinky_electrical_reports(
     assert attr.id == attribute_id
     config = entity._server_cluster_config[cluster.cluster_id]
     assert config.bind is True
-    report = config.attributes[attribute].reporting
+    aggregated = aggregate_cluster_configs(entities)
+    report = aggregated[(1, cluster.cluster_id)].attributes[attribute].reporting
     assert (report.min_interval, report.max_interval, report.reportable_change) == (
         60,
         900,
@@ -380,17 +386,19 @@ def test_zlinky_electrical_mode_scope(zha_zlinky, mode):
     native.endpoint = zha_zlinky.endpoints[1]
     native.device = zha_zlinky
     native.targets_cluster.return_value = True
-    with patch.object(ZHADevice, "discover_entities", return_value=iter([native])):
+    poller = Mock(spec=ElectricalMeasurementPoller)
+    with patch.object(
+        ZHADevice, "discover_entities", return_value=iter([native, poller])
+    ):
         entities = list(zha_zlinky.discover_entities())
     standard_three_phase = mode in (3, 7)
     assert zha_zlinky.standard_three_phase is standard_three_phase
-    assert zha_zlinky._is_entity_removed_by_quirk(native) is standard_three_phase
-    # The native entity remains a discovery candidate for cluster configuration,
-    # but is filtered before addition. The tariff sensor remains in every mode.
-    assert len(entities) == (18 if standard_three_phase else 2)
-    for entity in entities[1:]:
-        assert not zha_zlinky._is_entity_removed_by_quirk(entity)
-    assert any(e.unique_id.endswith("-tariff_period") for e in entities[1:])
+    # Skip native sensors and their poller before config aggregation. This also
+    # prevents old reporting intervals from overriding the TIC configuration.
+    assert (native in entities) is not standard_three_phase
+    assert (poller in entities) is not standard_three_phase
+    assert len(entities) == (17 if standard_three_phase else 3)
+    assert any(e.unique_id.endswith("-tariff_period") for e in entities)
 
 
 @pytest.mark.parametrize("operation", ["async_configure", "async_initialize"])
