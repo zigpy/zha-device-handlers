@@ -339,7 +339,7 @@ async def test_zlinky_electrical_reports(
         1,
     )
     # Standard ZCL Report Attributes. TIC current/voltage/apparent values are
-    # uint16; curve points and per-phase maxima int16; the total maximum int32.
+    # uint16; curve points and per-phase maxima int16; total power uses 32 bits.
     data_type = 0x21
     if attribute in (
         "active_power",
@@ -351,6 +351,8 @@ async def test_zlinky_electrical_reports(
         data_type = 0x29
     elif attribute == "total_active_power":
         data_type = 0x2B
+    elif attribute == "total_apparent_power":
+        data_type = 0x23
     frame = (
         b"\x18\x01\x0a"
         + attribute_id.to_bytes(2, "little")
