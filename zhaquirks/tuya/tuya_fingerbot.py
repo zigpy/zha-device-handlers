@@ -1,12 +1,16 @@
 """Tuya fingerbot."""
 
+import asyncio
+
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks.builder import PERCENTAGE, UnitOfTime
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaOnOffNM
 
 
 class FingerBotMode(t.enum8):
@@ -95,6 +99,49 @@ class FingerBotModeCZF02(t.enum8):
     SWITCH = 0x01
 
 
+class FingerBotCZF02OnOff(TuyaOnOffNM):
+    """OnOff cluster that turns off again after a press in button mode.
+
+    In button mode the device presses and releases, but keeps reporting on.
+    """
+
+    reset_margin_s: float = 1.0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._timer_handle: asyncio.TimerHandle | None = None
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+        try:
+            attr_def = self.find_attribute(attrid)
+        except KeyError:
+            return
+        if attr_def.name != OnOff.AttributeDefs.on_off.name:
+            return
+
+        if self._timer_handle:
+            self._timer_handle.cancel()
+            self._timer_handle = None
+
+        tuya_cluster = self.endpoint.in_clusters.get(TUYA_CLUSTER_ID)
+        if (
+            value
+            and tuya_cluster is not None
+            and tuya_cluster.get("mode") == FingerBotModeCZF02.BUTTON
+        ):
+            sustain_time_ms = tuya_cluster.get("sustain_time") or 0
+            self._timer_handle = asyncio.get_running_loop().call_later(
+                sustain_time_ms / 1000 + self.reset_margin_s, self._turn_off
+            )
+
+    def _turn_off(self):
+        self._timer_handle = None
+        self._update_attribute(OnOff.AttributeDefs.on_off.name, False)
+
+
 (
     TuyaQuirkBuilder("_TZE284_chcnj5st", "TS0601")
     .applies_to("_TZE2841000000_chcnj5st", "TS0601")
@@ -102,7 +149,7 @@ class FingerBotModeCZF02(t.enum8):
     .applies_to("_TZE2841000000_gw05grph", "TS0601")
     .applies_to("_TZE284_pislt0wa", "TS0601")
     .applies_to("_TZE2841000000_pislt0wa", "TS0601")
-    .tuya_onoff(dp_id=1)
+    .tuya_onoff(dp_id=1, onoff_cfg=FingerBotCZF02OnOff)
     .tuya_enum(
         dp_id=2,
         attribute_name="mode",

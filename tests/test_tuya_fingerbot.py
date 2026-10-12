@@ -1,5 +1,6 @@
 """Tests for Tuya fingerbot quirks."""
 
+import asyncio
 from unittest import mock
 
 import pytest
@@ -11,7 +12,7 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TUYA_SET_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zhaquirks.tuya.tuya_fingerbot import FingerBotModeCZF02
+from zhaquirks.tuya.tuya_fingerbot import FingerBotCZF02OnOff, FingerBotModeCZF02
 
 zhaquirks.setup()
 
@@ -160,3 +161,78 @@ async def test_czf02_write_attributes(
     m1.assert_called_once()
     assert m1.call_args.kwargs["command_id"] == TUYA_SET_DATA
     assert m1.call_args.kwargs["data"].endswith(expected_dp_data)
+
+
+ON_REPORT = b"\x09\xde\x02\x00\x0d\x01\x01\x00\x01\x01"
+
+
+@pytest.mark.parametrize(
+    "mode,expected_on_off",
+    [
+        (FingerBotModeCZF02.BUTTON, False),
+        (FingerBotModeCZF02.SWITCH, True),
+        (None, True),
+    ],
+)
+async def test_czf02_button_mode_resets_on_off(
+    zigpy_device_from_v2_quirk, mode, expected_on_off
+):
+    """Test the switch turns off again after a press in button mode only."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    assert isinstance(ep.on_off, FingerBotCZF02OnOff)
+
+    if mode is not None:
+        tuya_cluster.update_attribute("mode", mode)
+
+    with mock.patch.object(FingerBotCZF02OnOff, "reset_margin_s", 0.01):
+        hdr, data = tuya_cluster.deserialize(ON_REPORT)
+        tuya_cluster.handle_get_data(data.data)
+        assert ep.on_off.get("on_off") == 1
+
+        await asyncio.sleep(0.05)
+
+    assert ep.on_off.get("on_off") == expected_on_off
+
+
+async def test_czf02_button_mode_reset_waits_for_sustain_time(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the reset in button mode waits for the press to finish."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_cluster.update_attribute("mode", FingerBotModeCZF02.BUTTON)
+    tuya_cluster.update_attribute("sustain_time", 300)
+
+    with mock.patch.object(FingerBotCZF02OnOff, "reset_margin_s", 0):
+        ep.on_off.update_attribute(OnOff.AttributeDefs.on_off.name, True)
+
+        await asyncio.sleep(0.1)
+        assert ep.on_off.get("on_off") == 1
+
+        await asyncio.sleep(0.3)
+        assert ep.on_off.get("on_off") == 0
+
+
+async def test_czf02_button_mode_resets_after_on_command(zigpy_device_from_v2_quirk):
+    """Test turning on from HA in button mode turns the switch off again."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_cluster.update_attribute("mode", FingerBotModeCZF02.BUTTON)
+
+    with (
+        mock.patch.object(FingerBotCZF02OnOff, "reset_margin_s", 0.01),
+        mock.patch.object(
+            tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ),
+    ):
+        await ep.on_off.command(OnOff.ServerCommandDefs.on.id)
+        await wait_for_zigpy_tasks()
+        assert ep.on_off.get("on_off") == 1
+
+        await asyncio.sleep(0.05)
+
+    assert ep.on_off.get("on_off") == 0
