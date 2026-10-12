@@ -65,36 +65,28 @@ class MoesBHTManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == MOESBHT_TARGET_TEMP_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 "occupied_heating_setpoint",
                 value * 100,  # degree to centidegree
             )
         elif attrid == MOESBHT_TEMPERATURE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 "local_temperature",
                 value * 10,  # decidegree to centidegree
             )
         elif attrid == MOESBHT_SCHEDULE_MODE_ATTR:
             if value == 0:  # value is inverted
-                self.endpoint.device.thermostat_bus.listener_event(
-                    "program_change", "scheduled"
-                )
+                self.endpoint.thermostat.program_change("scheduled")
         elif attrid == MOESBHT_MANUAL_MODE_ATTR:
             if value == 0:  # value is inverted
-                self.endpoint.device.thermostat_bus.listener_event(
-                    "program_change", "manual"
-                )
+                self.endpoint.thermostat.program_change("manual")
         elif attrid == MOESBHT_ENABLED_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("enabled_change", value)
+            self.endpoint.thermostat.enabled_change(value)
         elif attrid == MOESBHT_RUNNING_MODE_ATTR:
             # value is inverted
-            self.endpoint.device.thermostat_bus.listener_event(
-                "state_change", 1 - value
-            )
+            self.endpoint.thermostat.state_change(1 - value)
         elif attrid == MOESBHT_CHILD_LOCK_ATTR:
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+            self.endpoint.thermostat_ui.child_lock_change(value)
 
 
 class MoesBHTThermostat(TuyaThermostatCluster):

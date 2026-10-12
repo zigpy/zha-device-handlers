@@ -21,7 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -104,23 +104,20 @@ class SiterwellManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid in self.TEMPERATURE_ATTRS:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 self.TEMPERATURE_ATTRS[attrid],
                 value * 10,  # decidegree to centidegree
             )
         elif attrid == SITERWELL_MODE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
-            self.endpoint.device.thermostat_bus.listener_event(
-                "state_change", value > 0
-            )
+            self.endpoint.thermostat.mode_change(value)
+            self.endpoint.thermostat.state_change(value > 0)
         elif attrid == SITERWELL_VALVE_STATE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("state_change", value)
+            self.endpoint.thermostat.state_change(value)
         elif attrid == SITERWELL_CHILD_LOCK_ATTR:
             mode = 1 if value else 0
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
+            self.endpoint.thermostat_ui.child_lock_change(mode)
         elif attrid == SITERWELL_BATTERY_ATTR:
-            self.endpoint.device.battery_bus.listener_event("battery_change", value)
+            self.endpoint.power.battery_change(value)
 
 
 class SiterwellThermostat(TuyaThermostatCluster):
@@ -317,8 +314,7 @@ class MoesManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid in self.DIRECT_MAPPED_ATTRS:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 self.DIRECT_MAPPED_ATTRS[attrid][0],
                 value
                 if self.DIRECT_MAPPED_ATTRS[attrid][1] is None
@@ -327,28 +323,22 @@ class MoesManufCluster(TuyaManufClusterAttributes):
                 ),  # decidegree to centidegree
             )
         elif attrid in (MOES_SCHEDULE_WORKDAY_ATTR, MOES_SCHEDULE_WEEKEND_ATTR):
-            self.endpoint.device.thermostat_bus.listener_event(
-                "schedule_change", attrid, value
-            )
+            self.endpoint.thermostat.schedule_change(attrid, value)
 
         if attrid == MOES_WINDOW_DETECT_ATTR:
-            self.endpoint.device.window_detection_bus.listener_event(
-                "window_detect_change", value
-            )
+            self.endpoint.on_off.window_detect_change(value)
         elif attrid == MOES_MODE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
+            self.endpoint.thermostat.mode_change(value)
         elif attrid == MOES_VALVE_STATE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("state_change", value)
+            self.endpoint.thermostat.state_change(value)
         elif attrid == MOES_CHILD_LOCK_ATTR:
             mode = 1 if value else 0
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
+            self.endpoint.thermostat_ui.child_lock_change(mode)
         elif attrid == MOES_AUTO_LOCK_ATTR:
             mode = 1 if value else 0
-            self.endpoint.device.ui_bus.listener_event("autolock_change", mode)
+            self.endpoint.thermostat_ui.autolock_change(mode)
         elif attrid == MOES_BATTERY_LOW_ATTR:
-            self.endpoint.device.battery_bus.listener_event(
-                "battery_change", 5 if value else 100
-            )
+            self.endpoint.power.battery_change(5 if value else 100)
 
 
 class MoesManufClusterNew(MoesManufCluster):
@@ -932,11 +922,6 @@ class MoesUserInterface(TuyaUserInterfaceCluster):
 class MoesWindowDetection(LocalDataCluster, OnOff):
     """On/Off cluster for the window detection function of the electric heating thermostats."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.window_detection_bus.add_listener(self)
-
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
 
@@ -1092,17 +1077,10 @@ ZONNSMART_ONLINE_MODE_BOOL_ATTR = 0x0173  # but expects to receive bool datatype
 
 ZONNSMART_MAX_TEMPERATURE_VAL = 3000
 ZONNSMART_MIN_TEMPERATURE_VAL = 500
-ZonnsmartManuClusterSelf = None
 
 
 class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        global ZonnsmartManuClusterSelf  # noqa: PLW0603
-        ZonnsmartManuClusterSelf = self
 
     class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
         """Attribute definitions."""
@@ -1214,47 +1192,34 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid in self.DIRECT_MAPPED_ATTRS:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 self.DIRECT_MAPPED_ATTRS[attrid][0],
                 value
                 if self.DIRECT_MAPPED_ATTRS[attrid][1] is None
                 else self.DIRECT_MAPPED_ATTRS[attrid][1](value),
             )
         elif attrid == ZONNSMART_WINDOW_DETECT_ATTR:
-            self.endpoint.device.window_detection_bus.listener_event("set_value", value)
+            self.endpoint.binary_input.set_value(value)
         elif attrid == ZONNSMART_OPENED_WINDOW_TEMP:
-            self.endpoint.device.window_temperature_bus.listener_event(
-                "set_value", value
-            )
+            self.endpoint.device.endpoints[2].analog_output.set_value(value)
         elif attrid in (ZONNSMART_MODE_ATTR, ZONNSMART_FROST_PROTECT_ATTR):
-            self.endpoint.device.thermostat_bus.listener_event(
-                "mode_change", attrid, value
-            )
+            self.endpoint.thermostat.mode_change(attrid, value)
         elif attrid == ZONNSMART_HEATING_STOPPING_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "system_mode_change", value == 0
-            )
+            self.endpoint.thermostat.system_mode_change(value == 0)
         elif attrid == ZONNSMART_CHILD_LOCK_ATTR:
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
-            self.endpoint.device.child_lock_bus.listener_event("set_change", value)
+            self.endpoint.thermostat_ui.child_lock_change(value)
+            self.endpoint.device.endpoints[2].on_off.set_change(value)
         elif attrid == ZONNSMART_BATTERY_ATTR:
-            self.endpoint.device.battery_bus.listener_event("battery_change", value)
+            self.endpoint.power.battery_change(value)
         elif attrid == ZONNSMART_ONLINE_MODE_ENUM_ATTR:
-            self.endpoint.device.online_mode_bus.listener_event("set_change", value)
+            self.endpoint.device.endpoints[3].on_off.set_change(value)
         elif attrid == ZONNSMART_BOOST_TIME_ATTR:
-            self.endpoint.device.boost_bus.listener_event(
-                "set_change", 1 if value > 0 else 0
-            )
+            self.endpoint.on_off.set_change(1 if value > 0 else 0)
 
         if attrid == ZONNSMART_TEMPERATURE_CALIBRATION_ATTR:
-            self.endpoint.device.temperature_calibration_bus.listener_event(
-                "set_value", value / 10
-            )
+            self.endpoint.analog_output.set_value(value / 10)
         elif attrid in (ZONNSMART_TEMPERATURE_ATTR, ZONNSMART_TARGET_TEMP_ATTR):
-            self.endpoint.device.thermostat_bus.listener_event(
-                "state_temp_change", attrid, value
-            )
+            self.endpoint.thermostat.state_temp_change(attrid, value)
 
 
 class ZONNSMARTThermostat(TuyaThermostatCluster):
@@ -1286,13 +1251,11 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.listener_event(
-            "temperature_change",
+        self.temperature_change(
             "min_heat_setpoint_limit",
             ZONNSMART_MIN_TEMPERATURE_VAL,
         )
-        self.endpoint.device.thermostat_bus.listener_event(
-            "temperature_change",
+        self.temperature_change(
             "max_heat_setpoint_limit",
             ZONNSMART_MAX_TEMPERATURE_VAL,
         )
@@ -1395,8 +1358,11 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
         else:
             return
 
+        if temp_current is None or temp_set is None:
+            return
+
         state = 0 if (int(temp_current) >= int(temp_set)) else 1
-        self.endpoint.device.thermostat_bus.listener_event("state_change", state)
+        self.state_change(state)
 
 
 class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
@@ -1411,11 +1377,6 @@ class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
     _CONSTANT_ATTRIBUTES = {
         BinaryInput.AttributeDefs.description.id: "Open Window Detected",
     }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.window_detection_bus.add_listener(self)
 
     def set_value(self, value):
         """Set opened window value."""
@@ -1453,10 +1414,9 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         if has_change:
             attr_val = self.get_attr_val_to_write(value)
             if attr_val is not None:
-                # global self in case when different endpoint has to exist
-                return await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                    attr_val, **kwargs
-                )
+                return await self.endpoint.device.endpoints[
+                    1
+                ].tuya_manufacturer.write_attributes(attr_val, **kwargs)
 
         return [
             [
@@ -1511,11 +1471,6 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
 class ZONNSMARTBoost(ZONNSMARTHelperOnOff):
     """On/Off cluster for the boost function of the heating thermostats."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.boost_bus.add_listener(self)
-
     def get_attr_val_to_write(self, value):
         """Return dict with attribute and value for boot mode."""
         return {ZONNSMART_BOOST_TIME_ATTR: 299 if value else 0}
@@ -1524,11 +1479,6 @@ class ZONNSMARTBoost(ZONNSMARTHelperOnOff):
 class ZONNSMARTChildLock(ZONNSMARTHelperOnOff):
     """On/Off cluster for the child lock of the heating thermostats."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.child_lock_bus.add_listener(self)
-
     def get_attr_val_to_write(self, value):
         """Return dict with attribute and value for child lock."""
         return {ZONNSMART_CHILD_LOCK_ATTR: value}
@@ -1536,11 +1486,6 @@ class ZONNSMARTChildLock(ZONNSMARTHelperOnOff):
 
 class ZONNSMARTOnlineMode(ZONNSMARTHelperOnOff):
     """On/Off cluster for the online mode of the heating thermostats."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.online_mode_bus.add_listener(self)
 
     def get_attr_val_to_write(self, value):
         """Return dict with attribute and value for online mode."""
@@ -1558,11 +1503,6 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
         AnalogOutput.AttributeDefs.application_type.id: 0x0009,
         AnalogOutput.AttributeDefs.engineering_units.id: 62,
     }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.temperature_calibration_bus.add_listener(self)
 
     def set_value(self, value):
         """Set new temperature offset value."""
@@ -1606,11 +1546,6 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
         AnalogOutput.AttributeDefs.engineering_units.id: 62,
     }
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.window_temperature_bus.add_listener(self)
-
     def set_value(self, value):
         """Set temperature value when opened window detected."""
         self._update_attribute(self.attributes_by_name["present_value"].id, value / 10)
@@ -1633,8 +1568,7 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
                 continue
             self._update_attribute(attrid, value)
 
-            # different Endpoint for compatibility issue
-            await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
+            await self.endpoint.device.endpoints[1].tuya_manufacturer.write_attributes(
                 {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
             )
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
@@ -1742,11 +1676,6 @@ class SiterwellGS361_Type2(TuyaThermostat):
 class MoesHY368_Type1(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.window_detection_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
@@ -1804,11 +1733,6 @@ class MoesHY368_Type1(TuyaThermostat):
 class MoesHY368_Type1new(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.window_detection_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
@@ -1854,11 +1778,6 @@ class MoesHY368_Type1new(TuyaThermostat):
 class MoesHY368_Type2(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.window_detection_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
@@ -1900,16 +1819,6 @@ class MoesHY368_Type2(TuyaThermostat):
 
 class ZonnsmartTV01_ZG(TuyaThermostat):
     """ZONNSMART TV01-ZG Thermostatic radiator valve."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.boost_bus = Bus()
-        self.child_lock_bus = Bus()
-        self.online_mode_bus = Bus()
-        self.temperature_calibration_bus = Bus()
-        self.window_detection_bus = Bus()
-        self.window_temperature_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]

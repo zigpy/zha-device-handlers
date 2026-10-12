@@ -156,6 +156,7 @@ def test_basic_cluster_deserialize_wrong_len_2():
 @pytest.mark.parametrize(
     "quirk",
     (
+        zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04,
         zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2,
         zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2,
         zhaquirks.xiaomi.mija.motion.Motion,

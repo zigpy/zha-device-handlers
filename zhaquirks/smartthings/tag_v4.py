@@ -3,7 +3,7 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
 
-from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -40,20 +40,13 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
         return result
 
     def _update_attribute(self, attrid, value):
-        self.endpoint.device.tracking_bus.listener_event(
-            "update_tracking", attrid, value
-        )
+        self.endpoint.binary_input.update_tracking(attrid, value)
         super()._update_attribute(attrid, value)
 
 
 # stealing this for tracking alerts
 class TrackingCluster(LocalDataCluster, BinaryInput):
     """Tracking cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.tracking_bus.add_listener(self)
 
     def update_tracking(self, attrid, value):
         """Update tracking info."""
@@ -63,11 +56,6 @@ class TrackingCluster(LocalDataCluster, BinaryInput):
 
 class SmartThingsTagV4(CustomDevice):
     """Custom device representing smartthings tagV4 sensors."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.tracking_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=12

@@ -144,7 +144,10 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
         fault: Final = ZCLAttributeDef(id=HAOZEE_FAULT_ATTR, type=t.uint8_t)
 
     DIRECT_MAPPED_ATTRS = {
-        HAOZEE_CURRENT_ROOM_TEMP_ATTR: ("local_temp", lambda value: value * 10),
+        HAOZEE_CURRENT_ROOM_TEMP_ATTR: (
+            "local_temperature",
+            lambda value: value * 10,
+        ),
         HAOZEE_TARGET_TEMP_ATTR: (
             "occupied_heating_setpoint",
             lambda value: value * 10,
@@ -171,8 +174,7 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid in self.DIRECT_MAPPED_ATTRS:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "temperature_change",
+            self.endpoint.thermostat.temperature_change(
                 self.DIRECT_MAPPED_ATTRS[attrid][0],
                 value
                 if self.DIRECT_MAPPED_ATTRS[attrid][1] is None
@@ -181,17 +183,24 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
                 ),  # decidegree to centidegree
             )
         elif attrid == HAOZEE_ENABLED_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("enabled_change", value)
+            self.endpoint.thermostat.enabled_change(value)
         elif attrid == HAOZEE_HEATING_ENABLED_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("state_change", value)
+            self.endpoint.thermostat.state_change(value)
         elif attrid == HAOZEE_CURRENT_MODE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
+            self.endpoint.thermostat.mode_change(value)
         elif attrid == HAOZEE_CHILD_LOCK_ATTR:
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+            self.endpoint.thermostat_ui.child_lock_change(value)
 
 
 class HY08WEThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
+
+    class AttributeDefs(TuyaThermostatCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        unoccupied_duration_days: Final = ZCLAttributeDef(
+            id=0x4007, type=t.uint32_t, manufacturer_code=None
+        )
 
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (

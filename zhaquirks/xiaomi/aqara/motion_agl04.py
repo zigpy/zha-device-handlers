@@ -10,7 +10,6 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -70,7 +69,6 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
         """Init."""
         self.battery_size = BatterySize.CR1632
         self.battery_quantity = 2
-        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
