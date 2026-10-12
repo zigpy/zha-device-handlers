@@ -76,6 +76,7 @@ from zhaquirks.xiaomi import (
 )
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
+import zhaquirks.xiaomi.aqara.curtain_aq2
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -2470,6 +2471,505 @@ async def test_xiaomi_e1_roller_position_updates(
         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
         75,
     )
+
+
+@pytest.mark.parametrize(
+    "command, command_args, analog_value",
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, (), 100.0),
+        (WindowCovering.ServerCommandDefs.down_close.id, (), 0.0),
+        # go_to_lift_percentage(60) → writes 40.0 (100 - 60)
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, (60,), 40.0),
+    ],
+)
+async def test_aqara_aq2_roller_commands(
+    zigpy_device_from_v2_quirk, command, command_args, analog_value
+):
+    """Test Aqara aq2 roller commands that write to AnalogOutput."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_analog_write,
+    ):
+        await window_covering_cluster.command(command, *command_args)
+
+        # confirm write to AnalogOutput with correct value
+        assert analog_cluster._write_attributes.call_count == 1
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].attrid == analog_attr_id
+        )
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].value.value
+            == analog_value
+        )
+
+        # confirm _is_moving is set so ZHA's post-command poll is suppressed
+        assert window_covering_cluster._is_moving is True
+
+        # confirm no immediate position read after movement commands
+        assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+        assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+        # confirm no position update occurred (device reports will update it later)
+        assert len(window_covering_listener.attribute_updates) == 0
+
+    # confirm non-mapped commands return status UNSUP_CLUSTER_COMMAND
+    _, status = await window_covering_cluster.go_to_tilt_percentage(0)
+    assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+async def test_aqara_aq2_roller_command_stop(zigpy_device_from_v2_quirk):
+    """Test Aqara aq2 roller stop command uses standard ZCL stop.
+
+    No explicit position read is issued after stop: feeding a position update
+    to ZHA at this point would cap its transition timer at 5 s.  The natural
+    position report ~1 s after stopping drives the WindowCovering update
+    instead.
+    """
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+
+    patch_window_covering_request = mock.patch.object(
+        window_covering_cluster,
+        "request",
+        mock.AsyncMock(
+            return_value=foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(
+                command_id=WindowCovering.ServerCommandDefs.stop.id,
+                status=foundation.Status.SUCCESS,
+            )
+        ),
+    )
+
+    with patch_window_covering_request:
+        # simulate a curtain that is currently moving
+        window_covering_cluster._is_moving = True
+
+        await window_covering_cluster.stop()
+
+        # confirm _is_moving is cleared so position reads are no longer suppressed
+        assert window_covering_cluster._is_moving is False
+
+        # confirm the standard ZCL stop command was sent
+        assert window_covering_cluster.request.call_count == 1
+        assert (
+            window_covering_cluster.request.call_args[0][1]
+            == WindowCovering.ServerCommandDefs.stop.id
+        )
+
+
+async def test_aqara_aq2_roller_failed_command_leaves_flag_clear(
+    zigpy_device_from_v2_quirk,
+):
+    """A failed movement-command write must not leave _is_moving set."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.FAILURE,
+                        attrid=AnalogOutput.AttributeDefs.present_value.id,
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_write:
+        await window_covering_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 50
+        )
+        assert window_covering_cluster._is_moving is False
+
+
+async def test_aqara_aq2_roller_failed_stop_keeps_flag_set(zigpy_device_from_v2_quirk):
+    """A NACK'd stop must leave _is_moving set so reads remain suppressed."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+    window_covering_cluster = device.endpoints[1].window_covering
+
+    patch_request = mock.patch.object(
+        window_covering_cluster,
+        "request",
+        mock.AsyncMock(
+            return_value=foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(
+                command_id=WindowCovering.ServerCommandDefs.stop.id,
+                status=foundation.Status.FAILURE,
+            )
+        ),
+    )
+
+    with patch_request:
+        # simulate a curtain that is currently moving
+        window_covering_cluster._is_moving = True
+
+        await window_covering_cluster.stop()
+
+        # stop NACK'd → curtain is still moving, flag must stay set
+        assert window_covering_cluster._is_moving is True
+
+
+@pytest.mark.parametrize(
+    "read_status, expected_updates",
+    [
+        (
+            foundation.Status.SUCCESS,
+            [
+                (
+                    WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                    99,
+                ),
+                (
+                    WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                    99,
+                ),
+            ],
+        ),
+        (foundation.Status.FAILURE, []),
+    ],
+)
+async def test_aqara_aq2_roller_window_covering_read_redirection(
+    zigpy_device_from_v2_quirk,
+    read_status: foundation.Status,
+    expected_updates: list[tuple[int, int]],
+):
+    """Test Aqara aq2 roller current_position_lift_percentage reads redirect to AnalogOutput."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    attr = WindowCovering.AttributeDefs.current_position_lift_percentage
+    target_attr = AnalogOutput.AttributeDefs.present_value
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    analog_cluster = device.endpoints[1].analog_output
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                a, read_status, foundation.TypeValue(None, 1)
+            )
+            for a in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+
+    with patch_window_covering_read, patch_analog_read:
+        await window_covering_cluster.read_attributes([attr.id])
+        await window_covering_cluster.read_attributes([attr.name])
+
+        assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+        assert len(analog_cluster._read_attributes.mock_calls) == 2
+        assert analog_cluster._read_attributes.mock_calls[0][1][0] == [target_attr.id]
+        assert analog_cluster._read_attributes.mock_calls[1][1][0] == [target_attr.id]
+
+    assert window_covering_listener.attribute_updates == expected_updates
+
+
+@pytest.mark.parametrize(
+    "read_status, expected_updates",
+    [
+        (
+            foundation.Status.SUCCESS,
+            [
+                (WindowCovering.AttributeDefs.config_status.id, 1),
+                (WindowCovering.AttributeDefs.config_status.id, 1),
+            ],
+        ),
+        (foundation.Status.FAILURE, []),
+    ],
+)
+async def test_aqara_aq2_roller_window_covering_read_passthrough(
+    zigpy_device_from_v2_quirk,
+    read_status: foundation.Status,
+    expected_updates: list[tuple[int, int]],
+):
+    """Test Aqara aq2 roller non-position WindowCovering attribute reads pass through."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    attr = WindowCovering.AttributeDefs.config_status
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                a, read_status, foundation.TypeValue(None, 1)
+            )
+            for a in attributes
+        ]
+        return (records,)
+
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+
+    with patch_window_covering_read:
+        await window_covering_cluster.read_attributes([attr.id])
+        await window_covering_cluster.read_attributes([attr.name])
+
+        assert len(window_covering_cluster._read_attributes.mock_calls) == 2
+        assert window_covering_cluster._read_attributes.mock_calls[0][1][0] == [attr.id]
+        assert window_covering_cluster._read_attributes.mock_calls[1][1][0] == [attr.id]
+
+    assert window_covering_listener.attribute_updates == expected_updates
+
+
+async def test_aqara_aq2_roller_position_updates(zigpy_device_from_v2_quirk):
+    """Test Aqara aq2 roller lift position updates on read/report only."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr = AnalogOutput.AttributeDefs.present_value
+
+    patch_analog_read = mock.patch.object(
+        analog_cluster,
+        "_read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 40),
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_read:
+        analog_listener.attribute_updates.clear()
+        window_covering_listener.attribute_updates.clear()
+
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        # read events should update the WindowCovering position
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+            60,
+        )
+
+    # Echo reports (was_moving=True) clear _is_moving and return without
+    # updating WindowCovering — see the quirk's _handle_attribute_reported
+    # for why.  The final-position path is covered by
+    # test_aqara_aq2_roller_final_position_report.
+    window_covering_cluster._is_moving = True
+
+    aq2_attr = foundation.Attribute(
+        attrid=analog_attr.id,
+        value=foundation.TypeValue(0x39, t.Single(25.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([aq2_attr])
+        .serialize()
+    )
+
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    # No position update — echo discarded
+    assert len(window_covering_listener.attribute_updates) == 0
+    # confirm the report cleared the moving flag
+    assert window_covering_cluster._is_moving is False
+
+
+async def test_aqara_aq2_roller_final_position_report(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a final/post-stop position report drives two identical WC updates.
+
+    With _is_moving=False the quirk emits two update_attribute calls at the same
+    value so ZHA's _lift_position_history ends at [v, v].  This skips the
+    "infer target from direction" branch in _determine_state, which would
+    otherwise mark the cover as CLOSING/OPENING after a post-stop report.
+    """
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    analog_cluster = device.endpoints[1].analog_output
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    # _is_moving is False: this is the final-position report (curtain arrived)
+    window_covering_cluster._is_moving = False
+
+    # Simulate the device's final-position report: present_value=60 (40% open)
+    report_attr = foundation.Attribute(
+        attrid=AnalogOutput.AttributeDefs.present_value.id,
+        value=foundation.TypeValue(0x39, t.Single(60.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([report_attr])
+        .serialize()
+    )
+
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    expected = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+        40,  # 100 - 60
+    )
+    assert window_covering_cluster._is_moving is False
+    assert window_covering_listener.attribute_updates == [expected, expected]
+
+
+async def test_aqara_aq2_roller_read_suppressed_during_movement(
+    zigpy_device_from_v2_quirk,
+):
+    """Test position reads via WindowCovering are suppressed while moving.
+
+    The redirect to AnalogOutput is suppressed because feeding a position
+    update to ZHA mid-movement would cap its transition timer at 5 s.  Callers
+    still receive a defined response: the cached position when available,
+    otherwise FAILURE — never a silently dropped attribute.
+    """
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.aq2")
+
+    pos_attr = WindowCovering.AttributeDefs.current_position_lift_percentage
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    analog_cluster = device.endpoints[1].analog_output
+
+    def mock_read(attributes, manufacturer=None):
+        return (
+            [
+                foundation.ReadAttributeRecord(
+                    a, foundation.Status.SUCCESS, foundation.TypeValue(None, 50)
+                )
+                for a in attributes
+            ],
+        )
+
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    with patch_analog_read:
+        # simulate curtain in motion with no cached position yet
+        window_covering_cluster._is_moving = True
+
+        success, failure = await window_covering_cluster.read_attributes([pos_attr.id])
+
+        # redirect suppressed — device was not read and no listener update fired
+        assert len(analog_cluster._read_attributes.mock_calls) == 0
+        assert len(window_covering_listener.attribute_updates) == 0
+        # no cache → defined FAILURE response, not a silent drop
+        assert pos_attr.id in failure
+        assert pos_attr.id not in success
+
+        # populate the cache with a known position (e.g. from an earlier report)
+        window_covering_cluster._attr_cache[pos_attr.id] = 42
+
+        success, failure = await window_covering_cluster.read_attributes([pos_attr.id])
+
+        # still no device read; the cached value is returned via success
+        assert len(analog_cluster._read_attributes.mock_calls) == 0
+        assert success == {pos_attr.id: 42}
+        assert pos_attr.id not in failure
+
+        # once movement stops, the redirect works normally again
+        window_covering_cluster._is_moving = False
+
+        await window_covering_cluster.read_attributes([pos_attr.id])
+
+        assert len(analog_cluster._read_attributes.mock_calls) == 1
+        assert window_covering_listener.attribute_updates[-1] == (
+            pos_attr.id,
+            50,  # 100 - 50
+        )
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
