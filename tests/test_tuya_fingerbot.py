@@ -288,3 +288,14 @@ async def test_czf02_button_mode_every_command_presses(
     # The device was on, so the presses alternate off, on, off
     assert sent == [0, 1, 0]
     assert tuya_cluster.get("device_state") == 0
+
+
+def test_czf02_other_attributes_do_not_reset(zigpy_device_from_v2_quirk):
+    """Test only the on_off attribute starts the button mode reset."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    ep.tuya_manufacturer.update_attribute("mode", FingerBotModeCZF02.BUTTON)
+
+    ep.on_off.update_attribute(OnOff.AttributeDefs.start_up_on_off.name, 1)
+
+    assert ep.on_off._timer_handle is None

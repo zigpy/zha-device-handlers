@@ -150,11 +150,7 @@ class FingerBotCZF02OnOff(TuyaOnOffNM):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
 
-        try:
-            attr_def = self.find_attribute(attrid)
-        except KeyError:
-            return
-        if attr_def.name != OnOff.AttributeDefs.on_off.name:
+        if self.find_attribute(attrid).name != OnOff.AttributeDefs.on_off.name:
             return
 
         if self._timer_handle:
