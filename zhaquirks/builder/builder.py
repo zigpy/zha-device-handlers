@@ -719,6 +719,7 @@ class QuirkBuilder:
         invert_attribute_name: str | None = None,
         off_value: int = 0,
         on_value: int = 1,
+        mask: int | None = None,
         entity_platform: EntityPlatform = EntityPlatform.SWITCH,
         entity_type: EntityType = EntityType.CONFIG,
         initially_disabled: bool = False,
@@ -734,6 +735,15 @@ class QuirkBuilder:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
         This method allows exposing a switch entity in Home Assistant.
+
+        When ``mask`` is set, the switch toggles only those bit(s) of a bitmap
+        ``attribute_name``: turning it on sets the masked bit(s), turning it off
+        clears them, and the remaining bits are preserved via a read-modify-write
+        of the cluster cache. This exposes individual bits of a real ZCL bitmap
+        attribute without synthesizing per-bit shadow attributes. ``off_value``
+        and ``on_value`` are ignored when ``mask`` is set. Multiple masked
+        switches on the same attribute need distinct ``unique_id_suffix`` values
+        since the default suffix (``attribute_name``) would otherwise collide.
         """
         self._add_entity_metadata(
             SwitchMetadata(
@@ -754,6 +764,7 @@ class QuirkBuilder:
                 invert_attribute_name=invert_attribute_name,
                 off_value=off_value,
                 on_value=on_value,
+                mask=mask,
                 primary=primary,
             )
         )

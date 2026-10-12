@@ -112,6 +112,7 @@ class SwitchMetadata(EntityMetadata):
     invert_attribute_name: str | None = attrs.field(default=None)
     off_value: int = attrs.field(default=0)
     on_value: int = attrs.field(default=1)
+    mask: int | None = attrs.field(default=None)
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
