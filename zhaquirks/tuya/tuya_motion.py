@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
@@ -18,6 +19,7 @@ from zhaquirks.builder import (
     UnitOfLength,
     UnitOfTime,
 )
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -1526,6 +1528,87 @@ base_tuya_motion = (
         step=1,
         translation_key="motion_detection_sensitivity",
         fallback_name="Motion detection sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya 24Ghz human presence sensor, ZG-204ZK
+(
+    TuyaQuirkBuilder("_TZE200_ka8l86iu", "TS0601")
+    .applies_to("_TZE200_zbfmvj13", "TS0601")
+    .applies_to("HOBEIAN", "ZG-204ZK")
+    .removes(IasZone.cluster_id)
+    .removes(PowerConfiguration.cluster_id)
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=10,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=5,
+        step=0.01,
+        multiplier=0.01,
+        translation_key="detection_distance",
+        fallback_name="Detection distance",
+    )
+    .tuya_number(
+        dp_id=2,
+        attribute_name="static_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="static_detection_sensitivity",
+        fallback_name="Static detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=123,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .tuya_switch(
+        dp_id=107,
+        attribute_name="indicator",
+        translation_key="indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_switch(
+        dp_id=122,
+        attribute_name="anti_interference",
+        translation_key="anti_interference",
+        fallback_name="Anti interference",
+    )
+    .tuya_battery(
+        dp_id=121,
+        battery_type=BatterySize.CR2450,
+        battery_qty=1,
     )
     .skip_configuration()
     .add_to_registry()
