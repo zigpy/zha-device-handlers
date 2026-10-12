@@ -1,5 +1,6 @@
 """Tuya switch device."""
 
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -48,5 +49,19 @@ class CustomMetering(Metering, CustomCluster):
     .replaces(CustomElectricalMeasurement)
     .replaces(TuyaZBOnOffAttributeCluster)
     .replaces(TuyaZBExternalSwitchTypeCluster)
+    .add_to_registry()
+)
+
+# _TZ3000_ysiog9xi is a plain on/off smart plug. Its firmware misreports itself in
+# two ways: endpoint 1 declares device type 0x0100 (On/Off Light), so ZHA creates a
+# light entity for a plug, and it advertises the Metering and ElectricalMeasurement
+# clusters without implementing them, so ZHA creates voltage/current/power/energy
+# sensors that are permanently 0. Zigbee2MQTT lists this manufacturer as a "Smart
+# plug (without power monitoring)".
+(
+    QuirkBuilder("_TZ3000_ysiog9xi", "TS0001")
+    .removes(Metering.cluster_id)
+    .removes(ElectricalMeasurement.cluster_id)
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_PLUG_IN_UNIT)
     .add_to_registry()
 )
