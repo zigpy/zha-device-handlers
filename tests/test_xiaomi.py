@@ -1327,6 +1327,64 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
 
 
+async def test_aqara_smoke_sensor_ias_zone_cluster(zigpy_device_from_quirk):
+    """Test that the Aqara smoke sensor keeps the device's real IAS Zone cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+
+    ias_cluster = device.endpoints[1].ias_zone
+
+    # the cluster must not be local, or ZHA can't write the CIE address, bind and enroll
+    assert not isinstance(ias_cluster, zhaquirks.LocalDataCluster)
+
+    # zone_type is still provided by the quirk, so the device class never depends on a read
+    assert (
+        ias_cluster.get(IasZone.AttributeDefs.zone_type.name)
+        == IasZone.ZoneType.Fire_Sensor
+    )
+
+
+async def test_aqara_smoke_sensor_battery(zigpy_device_from_quirk):
+    """Test both battery paths of the Aqara smoke sensor."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # the cluster must not be local, or ZHA can't bind it and configure reporting
+    assert not isinstance(power_cluster, zhaquirks.LocalDataCluster)
+
+    # standard battery voltage report (firmware 0x13): 2.9V within 2.475V-3.0V
+    power_cluster.update_attribute(zcl_power_voltage_id, 29)
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0] == (zcl_power_voltage_id, 29)
+    assert power_listener.attribute_updates[1] == (zcl_power_percent_id, 162)
+
+    # Xiaomi attribute report blob path (firmware 0x11) still works
+    power_cluster.battery_reported(2900)
+    assert len(power_listener.attribute_updates) == 4
+    assert power_listener.attribute_updates[2] == (zcl_power_voltage_id, 29.0)
+    assert power_listener.attribute_updates[3] == (zcl_power_percent_id, 162)
+
+    # ... as does a Xiaomi battery percentage report
+    power_cluster.battery_percent_reported(50)
+    assert len(power_listener.attribute_updates) == 5
+    assert power_listener.attribute_updates[4] == (zcl_power_percent_id, 100)
+
+    # battery size and quantity are still provided by the quirk
+    assert (
+        power_cluster.get(PowerConfiguration.AttributeDefs.battery_quantity.name) == 1
+    )
+    assert (
+        power_cluster.get(PowerConfiguration.AttributeDefs.battery_size.name)
+        == BatterySize.Unknown
+    )
+
+
 @pytest.mark.parametrize(
     "attr_redirect, attr_no_redirect",
     [
