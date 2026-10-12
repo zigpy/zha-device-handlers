@@ -10,6 +10,7 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     SensorDeviceClass,
+    UnitOfConductivity,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -43,6 +44,21 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class TuyaExcelluxWarning(t.enum8):
+    """Tuya Temperature warning enum."""
+
+    Normal = 0x00
+    Low = 0x01
+    High = 0x02
+
+
+class TuyaTDSMode(t.enum8):
+    """Freshwater or Seawater enum."""
+
+    Freshwater = 0x00
+    Seawater = 0x01
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -379,6 +395,289 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         fallback_name="Display unit",
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+(
+    TuyaQuirkBuilder("DTS1XM9", "Excellux")
+    .tuya_temperature(dp_id=5, scale=1)
+    .tuya_battery(dp_id=4)
+    .tuya_humidity(dp_id=118, scale=1)
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="probe_temperature",
+        type=t.int32s,
+        multiplier=0.1,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature",
+        fallback_name="probe temperature",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="sampling_cycle",
+        type=t.uint32_t,
+        min_value=5,
+        max_value=1200,
+        step=5,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="sampling_cycle",
+        fallback_name="sampling cycle",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="probe_temperature_calibration",
+        type=t.int32s,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature_calibration",
+        fallback_name="probe temperature calibration",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="probe_temperature_v0_set",
+        type=t.int32s,
+        min_value=-40,
+        max_value=125,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature_v0_set",
+        fallback_name="probe temperature v0 set",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="probe_temperature_v1_set",
+        type=t.int32s,
+        min_value=-40,
+        max_value=125,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature_v1_set",
+        fallback_name="probe temperature v1 set",
+    )
+    .tuya_enum(
+        dp_id=112,
+        attribute_name="probe_temperature_warning",
+        enum_class=TuyaExcelluxWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="probe_temperature_warning",
+        fallback_name="probe temperature warning",
+    )
+    .tuya_number(
+        dp_id=114,
+        attribute_name="temperature_calibration",
+        type=t.int32s,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_calibration",
+        fallback_name="temperature calibration",
+    )
+    .tuya_number(
+        dp_id=115,
+        attribute_name="temperature_v0_set",
+        type=t.int32s,
+        min_value=-40,
+        max_value=85,
+        step=1,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_v0_set",
+        fallback_name="temperature v0 set",
+    )
+    .tuya_number(
+        dp_id=116,
+        attribute_name="temperature_v1_set",
+        type=t.int32s,
+        min_value=-40,
+        max_value=85,
+        step=1,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_v1_set",
+        fallback_name="temperature v1 set",
+    )
+    .tuya_enum(
+        dp_id=117,
+        attribute_name="temperature_warning",
+        enum_class=TuyaExcelluxWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_warning",
+        fallback_name="temperature warning",
+    )
+    # 湿度校准
+    .tuya_number(
+        dp_id=119,
+        attribute_name="humidity_calibration",
+        type=t.int32s,
+        min_value=-10,
+        max_value=10,
+        step=1,
+        multiplier=1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        translation_key="humidity_calibration",
+        fallback_name="humidity calibration",
+    )
+    .tuya_number(
+        dp_id=120,
+        attribute_name="humidity_v0_set",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        translation_key="humidity_v0_set",
+        fallback_name="humidity v0 set",
+    )
+    .tuya_number(
+        dp_id=121,
+        attribute_name="humidity_v1_set",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=SensorDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        translation_key="humidity_v1_set",
+        fallback_name="humidity v1 set",
+    )
+    .tuya_enum(
+        dp_id=122,
+        attribute_name="humidity_warning",
+        enum_class=TuyaExcelluxWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="humidity_warning",
+        fallback_name="humidity warning",
+    )
+    .tuya_sensor(
+        dp_id=124,
+        attribute_name="tds",
+        type=t.int32s,
+        unit="ppm",
+        translation_key="tds",
+        fallback_name="TDS",
+    )
+    .tuya_number(
+        dp_id=125,
+        attribute_name="tds_warning_set",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=20000,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        unit="ppm",
+        translation_key="tds_warning_set",
+        fallback_name="tds warning set",
+    )
+    .tuya_enum(
+        dp_id=126,
+        attribute_name="tds_warning",
+        enum_class=TuyaExcelluxWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="tds_warning",
+        fallback_name="tds warning",
+    )
+    .tuya_sensor(
+        dp_id=127,
+        attribute_name="ec",
+        type=t.int32s,
+        device_class=SensorDeviceClass.CONDUCTIVITY,
+        unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
+        translation_key="ec",
+        fallback_name="ec",
+    )
+    .tuya_number(
+        dp_id=128,
+        attribute_name="ec_v0_set",
+        type=t.uint32_t,
+        min_value=1,
+        max_value=20000,
+        step=1,
+        multiplier=1,
+        entity_type=EntityType.CONFIG,
+        unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
+        translation_key="ec_v0_set",
+        fallback_name="set ec v0",
+    )
+    .tuya_number(
+        dp_id=129,
+        attribute_name="ec_v1_set",
+        type=t.uint32_t,
+        min_value=1,
+        max_value=20000,
+        step=1,
+        multiplier=1,
+        entity_type=EntityType.CONFIG,
+        unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
+        translation_key="ec_v1_set",
+        fallback_name="set ec v1",
+    )
+    .tuya_enum(
+        dp_id=130,
+        attribute_name="ec_warning",
+        enum_class=TuyaExcelluxWarning,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="ec_warning",
+        fallback_name="ec warning",
+    )
+    .tuya_sensor(
+        dp_id=131,
+        attribute_name="salinity",
+        type=t.int32s,
+        multiplier=0.1,
+        unit="‰",
+        translation_key="salinity",
+        fallback_name="salinity",
+    )
+    .tuya_sensor(
+        dp_id=132,
+        attribute_name="sg",
+        type=t.int32s,
+        multiplier=0.001,
+        translation_key="sg",
+        fallback_name="sg",
+    )
+    .tuya_enum(
+        dp_id=133,
+        attribute_name="mode",
+        enum_class=TuyaTDSMode,
+        entity_platform=EntityPlatform.SELECT,
+        entity_type=EntityType.CONFIG,
+        translation_key="mode",
+        fallback_name="Mode",
+    )
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
