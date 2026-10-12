@@ -1595,6 +1595,32 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     assert str(s) == expected_string
 
 
+async def test_xiaomi_local_illuminance_survives_repeated_reads(
+    zigpy_device_from_quirk,
+):
+    """Reading the local illuminance cluster must not re-apply the lux conversion.
+
+    The cluster converts lux to the ZCL representation in `_update_attribute`, and
+    zigpy echoes read results back through it. Without a guard each read converts
+    the previous result again, walking the value towards the conversion's fixed
+    point: 100 lx would read back as 20001, 43011, 46336, 46660.
+    """
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02)
+    illuminance_cluster = device.endpoints[1].illuminance
+    measured_value = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    # 100 lx from the device converts once
+    illuminance_cluster.update_attribute(measured_value, 100)
+    converted = int(10000 * math.log10(100) + 1)
+    assert illuminance_cluster.get(measured_value) == converted
+
+    for _ in range(4):
+        success, failure = await illuminance_cluster.read_attributes([measured_value])
+        assert not failure
+        assert success[measured_value] == converted
+        assert illuminance_cluster.get(measured_value) == converted
+
+
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
     (
