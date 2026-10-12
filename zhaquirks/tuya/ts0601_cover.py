@@ -2,7 +2,18 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -14,12 +25,16 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_MCU_COMMAND,
+    NoManufacturerCluster,
+    TuyaLocalCluster,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaClusterData, TuyaMCUCluster
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -705,3 +720,160 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+# Maps ZCL WindowCovering server commands (up_open/down_close/stop) to this
+# device's "curtain_switch" Tuya datapoint values (standard TuyaCoverControl
+# order, confirmed against zigbee-herdsman-converters' moes.ts).
+TUYA2ZB_COMMANDS_MOES_0601 = {
+    WindowCovering.ServerCommandDefs.up_open.id: 0x00,
+    WindowCovering.ServerCommandDefs.down_close.id: 0x02,
+    WindowCovering.ServerCommandDefs.stop.id: 0x01,
+}
+
+
+class TuyaMoesWindowCovering0601MCU(
+    NoManufacturerCluster, WindowCovering, TuyaLocalCluster
+):
+    """Tuya MCU WindowCovering cluster for the Moes GM25TEQ-TYZ-2/25 roller motor."""
+
+    attributes = WindowCovering.attributes.copy()
+    attributes.update(
+        {
+            0xF000: ("curtain_switch", t.enum8, True),  # 0: open, 1: stop, 2: close
+        }
+    )
+
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tsn: int | t.uint8_t | None = None,
+    ):
+        """Override the default Cluster command."""
+
+        self.debug(
+            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s",
+            command_id,
+            args,
+        )
+
+        if command_id in TUYA2ZB_COMMANDS_MOES_0601:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr="curtain_switch",
+                attr_value=t.enum8(TUYA2ZB_COMMANDS_MOES_0601[command_id]),
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
+            lift_value = args[0]
+
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr="current_position_lift_percentage",
+                attr_value=lift_value,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        self.warning("Unsupported command_id: %s", command_id)
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
+
+
+class TuyaMoesCoverManufCluster0601MCU(TuyaMCUCluster):
+    """Tuya MCU cluster with the Moes GM25TEQ-TYZ-2/25 roller motor's datapoints."""
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaMoesWindowCovering0601MCU.ep_attribute,
+            "curtain_switch",
+        ),
+        # DP9: set target position (outbound)
+        9: DPToAttributeMapping(
+            TuyaMoesWindowCovering0601MCU.ep_attribute,
+            "current_position_lift_percentage",
+        ),
+        # DP8: current position report (inbound)
+        8: DPToAttributeMapping(
+            TuyaMoesWindowCovering0601MCU.ep_attribute,
+            "current_position_lift_percentage",
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        8: "_dp_2_attr_update",
+        9: "_dp_2_attr_update",
+    }
+
+
+class TuyaMoesCover0601MCU(TuyaWindowCover):
+    """Tuya Moes GM25TEQ-TYZ-2/25 roller shade blinds motor for 38mm tube."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_xtrnjaoz", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaMoesCoverManufCluster0601MCU.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaMoesCoverManufCluster0601MCU,
+                    TuyaMoesWindowCovering0601MCU,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
