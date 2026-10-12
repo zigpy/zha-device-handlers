@@ -223,3 +223,11 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+async def test_zemismart_zm25r3_quirk(zigpy_device_from_v2_quirk):
+    """Test _TZE200_sq6affpe matches V2 quirk via applies_to."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_sq6affpe", "TS0601")
+    assert isinstance(quirked, CustomDeviceV2)
+    assert isinstance(quirked.endpoints[1].window_covering, TuyaWindowCovering)
