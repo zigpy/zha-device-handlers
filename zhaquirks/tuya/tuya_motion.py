@@ -1635,3 +1635,87 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
+# Tuya mmWave human presence sensor
+(
+    TuyaQuirkBuilder("_TZE204_mhxn2jso", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=12,
+        attribute_name="detection_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=3600,
+        step=1,
+        translation_key="detection_time",
+        fallback_name="Detection time",
+    )
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="target_distance",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        entity_type=EntityType.STANDARD,
+        translation_key="target_distance",
+        fallback_name="Target distance",
+    )
+    .tuya_illuminance(dp_id=20)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="presence_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=1000,
+        step=50,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=50,
+        max_value=1000,
+        step=50,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
