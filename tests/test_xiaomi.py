@@ -47,6 +47,10 @@ from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
     BUTTON_2,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_RELEASE,
+    COMMAND_SINGLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -2729,3 +2733,65 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.mark.parametrize(
+    "press_value, command",
+    [
+        (0, COMMAND_HOLD),
+        (1, COMMAND_SINGLE),
+        (2, COMMAND_DOUBLE),
+        (255, COMMAND_RELEASE),
+    ],
+)
+def test_aqara_h2_dimmer_press_events(zigpy_device_from_v2_quirk, press_value, command):
+    """Test Aqara Dimmer Switch H2 EU (lumi.switch.agl011) press events."""
+    device = zigpy_device_from_v2_quirk("Aqara", "lumi.switch.agl011")
+
+    mi_cluster = device.endpoints[1].multistate_input
+    mi_listener = ClusterListener(mi_cluster)
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    # button press report triggers the corresponding ZHA event
+    mi_cluster.update_attribute(
+        MultistateInput.AttributeDefs.present_value.id, press_value
+    )
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            command,
+            {
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: press_value,
+            },
+        )
+    ]
+
+    # the attribute update itself is still processed normally
+    assert mi_listener.attribute_updates == [
+        (MultistateInput.AttributeDefs.present_value.id, press_value)
+    ]
+
+
+def test_aqara_h2_dimmer_no_event_for_unknown_press_value(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that unknown present_value reports do not emit press events."""
+    device = zigpy_device_from_v2_quirk("Aqara", "lumi.switch.agl011")
+
+    mi_cluster = device.endpoints[1].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 5)
+    mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+def test_aqara_h2_dimmer_multi_click_attribute(zigpy_device_from_v2_quirk):
+    """Test that the multi_click attribute is defined on the Lumi cluster."""
+    device = zigpy_device_from_v2_quirk("Aqara", "lumi.switch.agl011")
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    attr = opple_cluster.find_attribute("multi_click")
+    assert attr.id == 0x0286
