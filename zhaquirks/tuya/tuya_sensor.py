@@ -4,15 +4,20 @@ import datetime
 
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks.builder import (
     PERCENTAGE,
+    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -43,6 +48,25 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class AY303ZRelativeHumidity(CustomCluster, RelativeHumidity):
+    """Humidity cluster which ignores the device's invalid native reports."""
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Ignore native humidity reports, which contain soil moisture."""
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, foundation.Status.SUCCESS)
+            return
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
@@ -282,6 +306,127 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# AOYAN AY-303Z soil moisture sensor
+(
+    TuyaQuirkBuilder("AOYAN  ", "AY-303Z")
+    .replaces(AY303ZRelativeHumidity)
+    .tuya_dp(
+        dp_id=5,
+        ep_attribute=TemperatureMeasurement.ep_attribute,
+        attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
+        converter=lambda value: value * 10,
+    )
+    .tuya_dp(
+        dp_id=109,
+        ep_attribute=RelativeHumidity.ep_attribute,
+        attribute_name=RelativeHumidity.AttributeDefs.measured_value.name,
+        converter=lambda value: value * 100,
+    )
+    .tuya_dp(
+        dp_id=15,
+        ep_attribute=PowerConfiguration.ep_attribute,
+        attribute_name=(
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
+        ),
+        converter=lambda value: value * 2,
+    )
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_binary_sensor(
+        dp_id=106,
+        attribute_name="dry",
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="dry",
+        fallback_name="Dry",
+    )
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="temperature_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_unit",
+        fallback_name="Temperature unit",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="temperature_calibration",
+        type=t.int32s,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="humidity_calibration",
+        type=t.int32s,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="humidity_calibration",
+        fallback_name="Humidity calibration",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="soil_calibration",
+        type=t.int32s,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="soil_calibration",
+        fallback_name="Soil calibration",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="temperature_sampling",
+        type=t.uint32_t,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_sampling",
+        fallback_name="Temperature and humidity sampling interval",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="soil_sampling",
+        type=t.uint32_t,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
+        entity_type=EntityType.CONFIG,
+        translation_key="soil_sampling",
+        fallback_name="Soil sampling interval",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="soil_warning",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        entity_type=EntityType.CONFIG,
+        translation_key="soil_warning",
+        fallback_name="Dry-soil warning threshold",
+    )
     .skip_configuration()
     .add_to_registry()
 )
