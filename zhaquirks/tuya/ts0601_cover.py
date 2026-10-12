@@ -2,8 +2,18 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
 
+from zhaquirks.builder import BinarySensorDeviceClass
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -11,11 +21,13 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    BatterySize,
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
+    TuyaPowerConfigurationCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
@@ -549,7 +561,6 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
             ("_TZE200_3i3exuay", "TS0601"),
             ("_TZE200_nogaemzt", "TS0601"),
             ("_TZE200_dng9fn0k", "TS0601"),
-            ("_TZE200_9p5xmj5r", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -701,6 +712,128 @@ class BorderSetting(t.enum8):
         unique_id_suffix="border_remove_all",
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class ClickControl(t.enum8):
+    """Single-step control values."""
+
+    Up = 0x00
+    Down = 0x01
+
+
+class HiladuoPowerConfiguration(TuyaPowerConfigurationCluster):
+    """PowerConfiguration that discards the firmware's pinned battery=100.
+
+    The motor sends a genuine measured battery level in the DP 13 report
+    it emits ~1 s after finishing a movement, but every full datapoint
+    dump (sent on rejoin and periodically after commands) carries a
+    hardcoded 100 that would overwrite it. Ignore 100% whenever a lower
+    level has already been seen; the cached level persists via zigbee.db.
+    """
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.Built_in,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 37,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
+    }
+
+    def update_attribute(self, attr_name: str, value) -> None:
+        """Drop pinned battery=100 reports when a lower level is cached."""
+        defs = PowerConfiguration.AttributeDefs
+        if attr_name == defs.battery_percentage_remaining.name and value >= 200:
+            cached = self.get(defs.battery_percentage_remaining.id)
+            if cached is not None and cached < 200:
+                return
+        super().update_attribute(attr_name, value)
+
+
+(
+    TuyaQuirkBuilder("_TZE200_9p5xmj5r", "TS0601")  # Hiladuo B09M3R35GC
+    .tuya_cover(control_dp=1, position_state_dp=3, position_control_dp=2, invert=False)
+    .tuya_battery(dp_id=13, power_cfg=HiladuoPowerConfiguration)
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="motor_fault",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="motor_fault",
+        fallback_name="Motor fault",
+    )
+    .tuya_dp_attribute(
+        dp_id=16,
+        attribute_name="border",
+        type=BorderSetting,
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up",
+        translation_key="set_upper_limit",
+        fallback_name="Set upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down",
+        translation_key="set_lower_limit",
+        fallback_name="Set lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Up_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_up_delete",
+        translation_key="delete_upper_limit",
+        fallback_name="Delete upper limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Down_delete,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_down_delete",
+        translation_key="delete_lower_limit",
+        fallback_name="Delete lower limit",
+    )
+    .write_attr_button(
+        attribute_name="border",
+        attribute_value=BorderSetting.Remove_top_bottom,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="border_remove_all",
+        translation_key="delete_all_limits",
+        fallback_name="Delete all limits",
+    )
+    .tuya_dp_attribute(
+        dp_id=20,
+        attribute_name="click_control",
+        type=ClickControl,
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="step_up",
+        translation_key="step_up",
+        fallback_name="Step up",
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="step_down",
+        translation_key="step_down",
+        fallback_name="Step down",
     )
     .skip_configuration()
     .add_to_registry()
