@@ -769,3 +769,79 @@ class GiexIrrigationStatus(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+# Tuya 213E Ultrasonic water meter
+# while strictly speaking not a valve, the ultrasonic flow meter is similar to other
+# devices defined here.
+# Setting the reporting period should also be applicable to other devices (e.g. 214C)
+
+
+class TuyaReportingPeriod(t.enum8):
+    """Tuya Reporting period enum."""
+
+    reporting_1h = 0x00
+    reporting_2h = 0x01
+    reporting_3h = 0x02
+    reporting_4h = 0x03
+    reporting_6h = 0x04
+    reporting_8h = 0x05
+    reporting_12h = 0x06
+    reporting_24h = 0x07
+
+
+(
+    TuyaQuirkBuilder("_TZE200_ajlu4cud", "TS0601")
+    .applies_to("_TZE284_ajlu4cud", "TS0601")
+    # Total consumption in liters
+    .tuya_metering(dp_id=1, metering_cfg=TuyaValveWaterConsumed)
+    # Month consumption
+    # .tuya_metering(
+    #    dp_id=2, scale=0.0001, type=TuyaValveWaterConsumed
+    # )  # per z2m reports in fl oz, convert to liters
+    # Daily consumption
+    # .tuya_metering(
+    #    dp_id=3, scale=0.0001, type=TuyaValveWaterConsumed
+    # )
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="reporting_interval",
+        enum_class=TuyaReportingPeriod,
+        entity_type=EntityType.CONFIG,
+        translation_key="reporting_interval",
+        fallback_name="Reporting interval",
+    )
+    # Warning - type is bitmap16, TBD.
+    # .tuya_dp(
+    #  dp_id=5
+    # )
+    # DP=16, Meter ID, type string?
+    # .tuya_dp(
+    #  dp_id=18
+    # )
+    # Reverse Water Consumption, Type raw?
+    # .tuya_metering(
+    #    dp_id=18, scale=0.0001, type=TuyaValveWaterConsumed
+    # )
+    # Flow rate
+    .tuya_dp(
+        dp_id=21,
+        ep_attribute=TuyaValveWaterConsumed.ep_attribute,
+        attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
+    )
+    # Working temperature
+    .tuya_temperature(dp_id=22, scale=1.0)
+    # Power supply voltage
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="voltage",
+        type=t.uint16_t,
+        converter=lambda x: x / 100,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Voltage",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
