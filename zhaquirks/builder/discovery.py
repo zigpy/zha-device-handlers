@@ -40,6 +40,7 @@ from zhaquirks.builder.metadata import (
 
 if TYPE_CHECKING:
     from zha.zigbee.device import Device
+    from zha.zigbee.endpoint import Endpoint
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,10 +58,14 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
 }
 
 
+def quirk_unique_id_base(device: Device, endpoint: Endpoint) -> str:
+    """Return the unique ID base of quirk entities, which omits the cluster ID."""
+    return f"{device.ieee}-{endpoint.id}"
+
+
 def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     """Return the keyword arguments common to every quirk entity."""
     return {
-        "from_quirk": True,
         "fallback_name": entity_metadata.fallback_name,
         "translation_key": entity_metadata.translation_key,
         "translation_placeholders": entity_metadata.translation_placeholders or None,
@@ -191,6 +196,7 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
             endpoint=endpoint,
             device=device,
             cluster=cluster,
+            unique_id=quirk_unique_id_base(device, endpoint),
             **_generic_kwargs(entity_metadata),
             **_platform_kwargs(entity_metadata),
         )
