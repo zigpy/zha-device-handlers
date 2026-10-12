@@ -2,6 +2,7 @@
 
 from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -29,6 +31,8 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import (
     EnchantedDevice,
+    PowerOnState,
+    SwitchBackLight,
     TuyaNewManufCluster,
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
@@ -1047,109 +1051,42 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
     }
 
 
-class Plug_v2(EnchantedDevice):
-    """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs."""
-
-    quirk_id = TUYA_PLUG_ONOFF
-
-    signature = {
-        MODEL: "TS011F",
-        ENDPOINTS: {
-            # "profile_id": 260,
-            # "device_type": "0x0051",
-            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001"],
-            # "out_clusters": []
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
-                    TuyaZBMeteringClusterWithUnit,
-                    TuyaZBElectricalMeasurement,
-                    TuyaZBExternalSwitchTypeCluster,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-
-
-class Plug_v2_var_fc11(EnchantedDevice):
-    """Another TS011F Tuya plug, Plug_v2 variant with additional 0xfc11 input-cluster.
-
-    First ones using this definition are _TZ3000_okaz9tjs and _TZ3000_5f43h46b.
-    """
-
-    quirk_id = TUYA_PLUG_ONOFF
-
-    signature = {
-        MODEL: "TS011F",
-        ENDPOINTS: {
-            # "profile_id": 260,
-            # "device_type": "0x0051",
-            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001", "0xfc11"],
-            # "out_clusters": []
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id,
-                    0xFC11,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
-                    TuyaZBMeteringClusterWithUnit,
-                    TuyaZBElectricalMeasurement,
-                    TuyaZBExternalSwitchTypeCluster,
-                    0xFC11,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
+(
+    QuirkBuilder("_TZ3000_5f43h46b", "TS011F")
+    .applies_to("_TZ3000_okaz9tjs", "TS011F")
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBMeteringClusterWithUnit)
+    .replaces(TuyaZBElectricalMeasurement)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .switch(
+        attribute_name="child_lock",
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Server,
+        entity_type=EntityType.CONFIG,
+        unique_id_suffix="6-child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .enum(
+        attribute_name="power_on_state",
+        enum_class=PowerOnState,
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Server,
+        entity_type=EntityType.CONFIG,
+        translation_key="power_on_state",
+        fallback_name="Power on state",
+    )
+    .enum(
+        attribute_name="backlight_mode",
+        enum_class=SwitchBackLight,
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Server,
+        entity_type=EntityType.CONFIG,
+        translation_key="backlight_mode",
+        fallback_name="Backlight mode",
+    )
+    .add_to_registry()
+)
 
 
 class Plug_v3(EnchantedDevice):
