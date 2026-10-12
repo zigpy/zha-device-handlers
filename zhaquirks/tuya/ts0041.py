@@ -22,6 +22,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
@@ -192,6 +193,19 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
         (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+    }
+
+
+class TuyaSmartRemote0041TOPlusB(TuyaSmartRemote0041TOPlusA):
+    """Tuya 1-button remote incorrectly advertising six endpoints."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3000_fa9mlvja", "TS0041")],
+        ENDPOINTS: {
+            **TuyaSmartRemote0041TOPlusA.signature[ENDPOINTS],
+            5: TuyaSmartRemote0041TOPlusA.signature[ENDPOINTS][2],
+            6: TuyaSmartRemote0041TOPlusA.signature[ENDPOINTS][2],
+        },
     }
 
 
