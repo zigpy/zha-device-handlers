@@ -236,3 +236,55 @@ async def test_czf02_button_mode_resets_after_on_command(zigpy_device_from_v2_qu
         await asyncio.sleep(0.05)
 
     assert ep.on_off.get("on_off") == 0
+
+
+def test_czf02_report_updates_device_state(zigpy_device_from_v2_quirk):
+    """Test DP 1 reports update the switch and the tracked device state."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+
+    hdr, data = tuya_cluster.deserialize(ON_REPORT)
+    tuya_cluster.handle_get_data(data.data)
+
+    assert ep.on_off.get("on_off") == 1
+    assert tuya_cluster.get("device_state") == 1
+
+
+@pytest.mark.parametrize(
+    "command_id",
+    [
+        OnOff.ServerCommandDefs.on.id,
+        OnOff.ServerCommandDefs.off.id,
+        OnOff.ServerCommandDefs.toggle.id,
+    ],
+)
+async def test_czf02_button_mode_every_command_presses(
+    zigpy_device_from_v2_quirk, command_id
+):
+    """Test each command in button mode changes DP 1, so the arm presses."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_chcnj5st", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_cluster.update_attribute("mode", FingerBotModeCZF02.BUTTON)
+    tuya_cluster.update_attribute("device_state", True)
+
+    sent = []
+    with (
+        mock.patch.object(FingerBotCZF02OnOff, "reset_margin_s", 0.01),
+        mock.patch.object(
+            tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ) as m1,
+    ):
+        for _ in range(3):
+            await ep.on_off.command(command_id)
+            await wait_for_zigpy_tasks()
+            sent.append(m1.call_args.kwargs["data"][-1])
+            assert ep.on_off.get("on_off") == 1
+
+            await asyncio.sleep(0.05)
+            assert ep.on_off.get("on_off") == 0
+
+    # The device was on, so the presses alternate off, on, off
+    assert sent == [0, 1, 0]
+    assert tuya_cluster.get("device_state") == 0
