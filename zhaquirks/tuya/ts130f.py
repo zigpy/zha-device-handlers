@@ -27,7 +27,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya import IndicatorMode, TuyaZBExternalSwitchTypeCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
@@ -39,7 +39,7 @@ class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
 
-        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=IndicatorMode)
 
 
 class MotorMode(t.enum8):
