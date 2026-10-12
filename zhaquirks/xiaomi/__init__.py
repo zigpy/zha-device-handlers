@@ -275,7 +275,7 @@ class XiaomiCluster(CustomCluster):
             if hasattr(self.endpoint, "device_temperature"):
                 self.endpoint.device_temperature.update_attribute(
                     DeviceTemperature.AttributeDefs.current_temperature.id,
-                    attributes[TEMPERATURE] * 100,
+                    attributes[TEMPERATURE],
                 )
 
         if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
