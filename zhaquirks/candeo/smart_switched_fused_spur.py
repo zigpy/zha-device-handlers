@@ -182,8 +182,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
 
         return bool(
             preferences.get(
-                CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs
-                .enforce_child_lock.id,
+                CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.enforce_child_lock.id,
                 False,
             )
         )
@@ -194,9 +193,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
             # The device clears child_lock when its output is operated. Restore
             # it when the ZHA-side enforce-child-lock preference is enabled.
             try:
-                await self.write_attributes(
-                    {self.AttributeDefs.child_lock.id: True}
-                )
+                await self.write_attributes({self.AttributeDefs.child_lock.id: True})
             except Exception as exc:
                 self.warning("Failed to restore child lock: %s", exc)
 
@@ -225,8 +222,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
     )
     .enum(
         attribute_name=(
-            CandeoSwitchedFusedSpurOnOffCluster.AttributeDefs
-            .power_on_behaviour.name
+            CandeoSwitchedFusedSpurOnOffCluster.AttributeDefs.power_on_behaviour.name
         ),
         cluster_id=CandeoSwitchedFusedSpurOnOffCluster.cluster_id,
         endpoint_id=1,
@@ -236,8 +232,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
     )
     .switch(
         attribute_name=(
-            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs
-            .enforce_child_lock.name
+            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.enforce_child_lock.name
         ),
         cluster_id=CandeoSwitchedFusedSpurPreferencesCluster.cluster_id,
         endpoint_id=1,

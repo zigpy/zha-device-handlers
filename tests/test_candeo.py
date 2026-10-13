@@ -904,18 +904,20 @@ async def test_candeo_switched_fused_spur_on_with_timed_off_on_failure(
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
 
-    with mock.patch(
-        "zigpy.zcl.Cluster.command",
-        new_callable=mock.AsyncMock,
-        side_effect=RuntimeError("On command failed"),
-    ) as command:
-        with pytest.raises(RuntimeError, match="On command failed"):
-            await cluster.command(
-                OnOff.ServerCommandDefs.on_with_timed_off.id,
-                0x00,
-                100,
-                0x00,
-            )
+    with (
+        mock.patch(
+            "zigpy.zcl.Cluster.command",
+            new_callable=mock.AsyncMock,
+            side_effect=RuntimeError("On command failed"),
+        ) as command,
+        pytest.raises(RuntimeError, match="On command failed"),
+    ):
+        await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            100,
+            0x00,
+        )
 
     command.assert_awaited_once_with(
         OnOff.ServerCommandDefs.on.id,
@@ -1008,9 +1010,7 @@ async def test_candeo_switched_fused_spur_child_lock_write_failure(
         True,
     )
 
-    cluster.write_attributes = mock.AsyncMock(
-        side_effect=RuntimeError("Write failed")
-    )
+    cluster.write_attributes = mock.AsyncMock(side_effect=RuntimeError("Write failed"))
     cluster.read_attributes = mock.AsyncMock()
 
     await _run_on_off_report_handler(cluster, True)
@@ -1032,9 +1032,7 @@ async def test_candeo_switched_fused_spur_child_lock_read_failure(
     cluster = device.endpoints[1].on_off
 
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock(
-        side_effect=RuntimeError("Read failed")
-    )
+    cluster.read_attributes = mock.AsyncMock(side_effect=RuntimeError("Read failed"))
 
     await _run_on_off_report_handler(cluster, True)
 
