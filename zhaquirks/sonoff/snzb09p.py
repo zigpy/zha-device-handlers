@@ -323,14 +323,14 @@ SONOFF_SNZB09P = (
         cluster_id=SonoffSNZB09PFC11Cluster.cluster_id,
         entity_type=EntityType.CONFIG,
         translation_key="alarm_sound_enable",
-        fallback_name="Alarm Sound Enable",
+        fallback_name="Alarm sound enable",
     )
     .switch(
         attribute_name="alarm_light_enable",
         cluster_id=SonoffSNZB09PFC11Cluster.cluster_id,
         entity_type=EntityType.CONFIG,
         translation_key="alarm_light_enable",
-        fallback_name="Alarm Light Enable",
+        fallback_name="Alarm light enable",
     )
     .enum(
         attribute_name="alarm_sound_type",
@@ -339,7 +339,7 @@ SONOFF_SNZB09P = (
         entity_type=EntityType.CONFIG,
         entity_platform=EntityPlatform.SELECT,
         translation_key="alarm_sound_type",
-        fallback_name="Alarm Sound Type",
+        fallback_name="Alarm sound type",
     )
     .enum(
         attribute_name="alarm_volume_level",
@@ -348,7 +348,7 @@ SONOFF_SNZB09P = (
         entity_type=EntityType.CONFIG,
         entity_platform=EntityPlatform.SELECT,
         translation_key="alarm_volume_level",
-        fallback_name="Alarm Volume Level",
+        fallback_name="Alarm volume level",
     )
     .number(
         attribute_name="alarm_duration",
@@ -359,7 +359,7 @@ SONOFF_SNZB09P = (
         unit=UnitOfTime.SECONDS,
         mode="box",
         translation_key="alarm_duration",
-        fallback_name="Alarm Duration",
+        fallback_name="Alarm duration",
     )
     .switch(
         attribute_name="alarm_active",
@@ -376,7 +376,7 @@ SONOFF_SNZB09P = (
         entity_type=EntityType.DIAGNOSTIC,
         device_class=BinarySensorDeviceClass.POWER,
         translation_key="external_power",
-        fallback_name="External Power",
+        fallback_name="External power",
     )
     .binary_sensor(
         attribute_name="tamper_state",
