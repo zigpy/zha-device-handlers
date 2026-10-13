@@ -1085,3 +1085,77 @@ def test_candeo_switched_fused_spur_ignores_other_attribute_events(
     )
 
     cluster.create_catching_task.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_timed_off_kwargs(
+    candeo_switched_fused_spur,
+):
+    """Test On With Timed Off with keyword arguments."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+        side_effect=[
+            mock.sentinel.on_result,
+            mock.sentinel.timed_off_result,
+        ],
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            on_off_control=0x00,
+            on_time=100,
+            off_wait_time=0x00,
+        )
+
+    assert command.await_args_list == [
+        mock.call(
+            OnOff.ServerCommandDefs.on.id,
+            manufacturer=None,
+            expect_reply=True,
+        ),
+        mock.call(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            10,
+            0x00,
+            manufacturer=None,
+            expect_reply=True,
+            tsn=None,
+        ),
+    ]
+
+    assert result is mock.sentinel.timed_off_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_timed_off_on_unsuccessful(
+    candeo_switched_fused_spur,
+):
+    """Test timed-off command is not sent if the initial On is unsuccessful."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    on_result = mock.Mock(status=foundation.Status.FAILURE)
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+        return_value=on_result,
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            100,
+            0x00,
+        )
+
+    command.assert_awaited_once_with(
+        OnOff.ServerCommandDefs.on.id,
+        manufacturer=None,
+        expect_reply=True,
+    )
+
+    assert result is on_result
