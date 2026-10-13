@@ -3,13 +3,14 @@
 from typing import Final
 
 import zigpy.types as t
+from zigpy.zcl import AttributeReportedEvent
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import CANDEO
 from zhaquirks.clusters import CustomCluster
 
@@ -41,9 +42,9 @@ class CandeoSwitchedFusedSpurMeteringCluster(CustomCluster, Metering):
 class CandeoPowerOnBehaviour(t.enum8):
     """Candeo power-on behaviour."""
 
-    off = 0
-    on = 1
-    previous = 2
+    Off = 0
+    On = 1
+    Previous = 2
 
 
 class CandeoSwitchedFusedSpurPreferencesCluster(LocalDataCluster):
@@ -56,26 +57,19 @@ class CandeoSwitchedFusedSpurPreferencesCluster(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        automatic_off_delay: Final = ZCLAttributeDef(
-            id=0x0000,
-            type=t.uint16_t,
-            access="rw",
-        )
-
         enforce_child_lock: Final = ZCLAttributeDef(
-            id=0x0001,
+            id=0x0000,
             type=t.Bool,
             access="rw",
         )
 
     _DEFAULT_VALUES = {
-        AttributeDefs.automatic_off_delay.id: 0,
         AttributeDefs.enforce_child_lock.id: t.Bool.false,
     }
 
 
-class CandeoSwitchedFusedSpurTimedOnOffCluster(CustomCluster, OnOff):
-    """Candeo timed OnOff cluster."""
+class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
+    """Candeo OnOff cluster."""
 
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
@@ -96,132 +90,154 @@ class CandeoSwitchedFusedSpurTimedOnOffCluster(CustomCluster, OnOff):
 
     def __init__(self, *args, **kwargs):
         """Initialize."""
-        self._automatic_off_delay = 0
-        self._enforce_child_lock = False
         super().__init__(*args, **kwargs)
-
-    async def apply_custom_configuration(self, *args, **kwargs):
-        """Read custom attributes during pairing to populate their entities."""
-        # These manufacturer-specific attributes are not part of the standard
-        # OnOff cluster initialization reads, so explicitly read them during
-        # configuration to populate their ZHA entities.
-        await self.read_attributes(
-            [
-                self.AttributeDefs.child_lock.id,
-                self.AttributeDefs.power_on_behaviour.id,
-            ]
+        self.on_event(
+            AttributeReportedEvent.event_type,
+            self._handle_attribute_report,
         )
 
-    def _update_preferences(self):
-        """Update preferences from the local ZHA preferences cluster."""
-        cluster = self.endpoint.in_clusters.get(
+    def _handle_attribute_report(self, event: AttributeReportedEvent) -> None:
+        """Handle attribute reports from the device."""
+        if event.attribute_id == OnOff.AttributeDefs.on_off.id:
+            self.create_catching_task(self._handle_output_state_update())
+
+    async def command(
+        self,
+        command_id,
+        *args,
+        manufacturer=None,
+        expect_reply=True,
+        tsn=None,
+        **kwargs,
+    ):
+        """Override On With Timed Off for the device's non-standard behaviour."""
+        if command_id != OnOff.ServerCommandDefs.on_with_timed_off.id:
+            return await super().command(
+                command_id,
+                *args,
+                manufacturer=manufacturer,
+                expect_reply=expect_reply,
+                tsn=tsn,
+                **kwargs,
+            )
+
+        # on_time may be supplied positionally or by keyword.
+        if len(args) >= 2:
+            on_time = args[1]
+        else:
+            on_time = kwargs["on_time"]
+
+        # Remove command parameters because the translated command below supplies
+        # its own values. Preserve any request-level keyword arguments.
+        request_kwargs = kwargs.copy()
+        request_kwargs.pop("on_off_control", None)
+        request_kwargs.pop("on_time", None)
+        request_kwargs.pop("off_wait_time", None)
+
+        # This device does not implement On With Timed Off according to the ZCL
+        # specification. Instead, it toggles the output after the requested
+        # delay and interprets the raw on_time value as seconds rather than
+        # tenths of a second.
+        #
+        # Send On first so the output is in a known ON state. The delayed
+        # toggle will then always result in the output switching OFF.
+        on_result = await super().command(
+            OnOff.ServerCommandDefs.on.id,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            **request_kwargs,
+        )
+
+        # Do not send the timed command if the prerequisite On command failed.
+        if getattr(on_result, "status", Status.SUCCESS) != Status.SUCCESS:
+            return on_result
+
+        # This workaround implements the automatic-off behaviour exposed by
+        # the product. Use the default values for on_off_control and
+        # off_wait_time, and translate on_time for this device's firmware.
+        #
+        # Standard ZCL on_time is expressed in tenths of a second. This device
+        # incorrectly interprets the raw value as whole seconds.
+        device_on_time = int(on_time) // 10
+
+        return await super().command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            device_on_time,
+            0x00,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn,
+            **request_kwargs,
+        )
+
+    def _enforce_child_lock_enabled(self) -> bool:
+        """Return whether persistent child-lock enforcement is enabled."""
+        preferences = self.endpoint.in_clusters.get(
             CandeoSwitchedFusedSpurPreferencesCluster.cluster_id
         )
 
-        if cluster is None:
-            self._automatic_off_delay = 0
-            self._enforce_child_lock = False
-            return
+        if preferences is None:
+            return False
 
-        self._automatic_off_delay = cluster.get(
-            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.automatic_off_delay.id,
-            0,
-        )
-        self._enforce_child_lock = cluster.get(
-            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.enforce_child_lock.id,
-            False,
-        )
-
-    async def on(self):
-        """Turn the output on and apply automatic-off and lock preferences."""
-        self._update_preferences()
-
-        result = await self.command(self.commands_by_name["on"].id)
-
-        if self._automatic_off_delay:
-            # This device does not implement On With Timed Off according to
-            # the ZCL specification. Instead, it toggles the output after the
-            # requested delay and interprets the delay value as seconds.
-            #
-            # Send On first so the output is in a known ON state. The delayed
-            # toggle will then always result in the output switching OFF.
-            await self.command(
-                self.commands_by_name["on_with_timed_off"].id,
-                0x00,
-                self._automatic_off_delay,
-                0x00,
+        return bool(
+            preferences.get(
+                CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs
+                .enforce_child_lock.id,
+                False,
             )
+        )
 
-        if self._enforce_child_lock:
-            # The device clears child_lock after an On command. Restore it
-            # when the ZHA-side enforce-child-lock preference is enabled.
-            await self.write_attributes({self.AttributeDefs.child_lock.id: True})
-
-        # child_lock does not support attribute reporting. Explicitly refresh
-        # it after commands so the ZHA entity reflects the device's real state.
-        await self.read_attributes([self.AttributeDefs.child_lock.id])
-
-        # Follow-up operations are supplementary; return the primary command result.
-        return result
-
-    async def off(self):
-        """Turn the output off and apply the child-lock preference."""
-        self._update_preferences()
-
-        result = await self.command(self.commands_by_name["off"].id)
-
-        if self._enforce_child_lock:
-            await self.write_attributes({self.AttributeDefs.child_lock.id: True})
+    async def _handle_output_state_update(self):
+        """Refresh or restore child lock after an output state update."""
+        if self._enforce_child_lock_enabled():
+            # The device clears child_lock when its output is operated. Restore
+            # it when the ZHA-side enforce-child-lock preference is enabled.
+            try:
+                await self.write_attributes(
+                    {self.AttributeDefs.child_lock.id: True}
+                )
+            except Exception as exc:
+                self.warning("Failed to restore child lock: %s", exc)
 
         # child_lock does not support attribute reporting. Explicitly refresh
-        # it after commands so the ZHA entity reflects the device's real state.
-        await self.read_attributes([self.AttributeDefs.child_lock.id])
-
-        return result
+        # it after output updates so the ZHA entity reflects the real state.
+        try:
+            await self.read_attributes([self.AttributeDefs.child_lock.id])
+        except Exception as exc:
+            self.warning("Failed to refresh child lock state: %s", exc)
 
 
 (
     QuirkBuilder(CANDEO, "C-ZB-SSFS")
     .adds(CandeoSwitchedFusedSpurPreferencesCluster)
-    .replace_cluster_occurrences(CandeoSwitchedFusedSpurTimedOnOffCluster)
+    .replace_cluster_occurrences(CandeoSwitchedFusedSpurOnOffCluster)
     .replace_cluster_occurrences(CandeoSwitchedFusedSpurElectricalMeasurement)
     .replace_cluster_occurrences(CandeoSwitchedFusedSpurMeteringCluster)
-    .number(
-        attribute_name=(
-            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.automatic_off_delay.name
-        ),
-        cluster_id=CandeoSwitchedFusedSpurPreferencesCluster.cluster_id,
-        endpoint_id=1,
-        min_value=0,
-        max_value=43200,
-        step=1,
-        unit=UnitOfTime.SECONDS,
-        device_class=NumberDeviceClass.DURATION,
-        translation_key="automatic_off_delay",
-        fallback_name="Automatic off delay",
-    )
     .switch(
         attribute_name=(
-            CandeoSwitchedFusedSpurTimedOnOffCluster.AttributeDefs.child_lock.name
+            CandeoSwitchedFusedSpurOnOffCluster.AttributeDefs.child_lock.name
         ),
-        cluster_id=CandeoSwitchedFusedSpurTimedOnOffCluster.cluster_id,
+        cluster_id=CandeoSwitchedFusedSpurOnOffCluster.cluster_id,
         endpoint_id=1,
         translation_key="child_lock",
         fallback_name="Child lock",
     )
     .enum(
         attribute_name=(
-            CandeoSwitchedFusedSpurTimedOnOffCluster.AttributeDefs.power_on_behaviour.name
+            CandeoSwitchedFusedSpurOnOffCluster.AttributeDefs
+            .power_on_behaviour.name
         ),
-        cluster_id=CandeoSwitchedFusedSpurTimedOnOffCluster.cluster_id,
+        cluster_id=CandeoSwitchedFusedSpurOnOffCluster.cluster_id,
         endpoint_id=1,
         enum_class=CandeoPowerOnBehaviour,
-        translation_key="power_on_behaviour",
-        fallback_name="Power on behaviour",
+        translation_key="power_on_state",
+        fallback_name="Power on state",
     )
     .switch(
         attribute_name=(
-            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs.enforce_child_lock.name
+            CandeoSwitchedFusedSpurPreferencesCluster.AttributeDefs
+            .enforce_child_lock.name
         ),
         cluster_id=CandeoSwitchedFusedSpurPreferencesCluster.cluster_id,
         endpoint_id=1,
