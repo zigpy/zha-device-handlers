@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 
@@ -15,9 +16,11 @@ from zhaquirks.sonoff.snzb09p import (
     SONOFF_CLUSTER_FC11_ID,
     SONOFF_MANUFACTURER_CODE,
     SONOFF_SNZB09P,
+    SONOFF_SNZB09P_CHIME,
     SUBCMD_START_MANUAL_ALARM,
     SUBCMD_STOP_ALARM,
     AlarmSoundType,
+    BaseAlarmSoundType,
     SonoffSNZB09PFC11Cluster,
 )
 
@@ -43,19 +46,13 @@ def test_alarm_sound_type_values() -> None:
     }
     assert {int(member) for member in AlarmSoundType} == set(range(0x0F))
 
-    sound_type_metadata = next(
-        metadata
-        for metadata in SONOFF_SNZB09P.zha_device_factory.quirk_definition.entity_metadata
-        if metadata.attribute_name == "alarm_sound_type"
-    )
-    assert sound_type_metadata.enum is AlarmSoundType
 
-
-def _create_device(zigpy_device_from_v2_quirk):
+def _create_device(zigpy_device_from_v2_quirk, firmware_version=None):
     """Create an SNZB-09P with the clusters replaced by this quirk."""
     return zigpy_device_from_v2_quirk(
         manufacturer="SONOFF",
         model="SNZB-09P",
+        firmware_version=firmware_version,
         cluster_ids={
             1: {
                 PowerConfiguration.cluster_id: ClusterType.Server,
@@ -66,6 +63,61 @@ def _create_device(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
+    ("firmware_version", "expected_enum", "expected_count"),
+    (
+        (None, BaseAlarmSoundType, 10),
+        (0x00001104, BaseAlarmSoundType, 10),
+        (0x00001105, BaseAlarmSoundType, 10),
+        (0x00001106, BaseAlarmSoundType, 10),
+        (0x00001107, BaseAlarmSoundType, 10),
+        (0x00001108, BaseAlarmSoundType, 10),
+        (0x00001109, AlarmSoundType, 15),
+        (0x00001200, AlarmSoundType, 15),
+    ),
+)
+def test_firmware_sound_options(
+    zigpy_device_from_v2_quirk, firmware_version, expected_enum, expected_count
+) -> None:
+    """Select exactly one quirk and expose only the supported sound options."""
+    device = _create_device(zigpy_device_from_v2_quirk, firmware_version)
+    matches = [
+        entry
+        for entry in (SONOFF_SNZB09P, SONOFF_SNZB09P_CHIME)
+        if entry.device_match.matches(device)
+    ]
+    assert len(matches) == 1
+    assert getattr(device, QUIRK_REGISTRY_ENTRY_ATTR) is matches[0]
+    metadata = matches[0].zha_device_factory.quirk_definition.entity_metadata
+    sound_entities = [m for m in metadata if m.attribute_name == "alarm_sound_type"]
+    assert len(sound_entities) == 1
+    assert sound_entities[0].enum is expected_enum
+    assert {int(member) for member in sound_entities[0].enum} == set(
+        range(expected_count)
+    )
+    assert {member.name: int(member) for member in BaseAlarmSoundType} == {
+        member.name: int(member) for member in AlarmSoundType if int(member) < 0x0A
+    }
+
+
+def test_firmware_variants_preserve_entity_metadata() -> None:
+    """Keep entity identities and other controls unchanged across firmware variants."""
+    old = SONOFF_SNZB09P.zha_device_factory.quirk_definition
+    new = SONOFF_SNZB09P_CHIME.zha_device_factory.quirk_definition
+    assert old.entity_metadata[:-1] == new.entity_metadata[:-1]
+    old_sound, new_sound = old.entity_metadata[-1], new.entity_metadata[-1]
+    for field in (
+        "attribute_name",
+        "endpoint_id",
+        "cluster_id",
+        "unique_id_suffix",
+        "translation_key",
+        "fallback_name",
+    ):
+        assert getattr(old_sound, field) == getattr(new_sound, field)
+
+
+@pytest.mark.parametrize("firmware_version", (None, 0x00001104, 0x00001109))
+@pytest.mark.parametrize(
     ("enabled", "expected_subcommand"),
     (
         (True, SUBCMD_START_MANUAL_ALARM),
@@ -73,10 +125,10 @@ def _create_device(zigpy_device_from_v2_quirk):
     ),
 )
 async def test_alarm_active_write(
-    zigpy_device_from_v2_quirk, enabled, expected_subcommand
+    zigpy_device_from_v2_quirk, firmware_version, enabled, expected_subcommand
 ) -> None:
     """Test mapping the virtual alarm switch to the firmware command."""
-    device = _create_device(zigpy_device_from_v2_quirk)
+    device = _create_device(zigpy_device_from_v2_quirk, firmware_version)
     cluster = device.endpoints[1].sonoff_manufacturer
     assert isinstance(cluster, SonoffSNZB09PFC11Cluster)
     cluster.command = AsyncMock()
@@ -92,6 +144,7 @@ async def test_alarm_active_write(
     assert bool(cluster.get(ATTR_SONOFF_ALARM_ACTIVE)) is enabled
 
 
+@pytest.mark.parametrize("firmware_version", (None, 0x00001104, 0x00001109))
 @pytest.mark.parametrize(
     ("alarm_state", "expected_active"),
     (
@@ -101,10 +154,10 @@ async def test_alarm_active_write(
     ),
 )
 def test_alarm_state_report(
-    zigpy_device_from_v2_quirk, alarm_state, expected_active
+    zigpy_device_from_v2_quirk, firmware_version, alarm_state, expected_active
 ) -> None:
     """Test syncing the virtual switch from the firmware state report."""
-    device = _create_device(zigpy_device_from_v2_quirk)
+    device = _create_device(zigpy_device_from_v2_quirk, firmware_version)
     cluster = device.endpoints[1].sonoff_manufacturer
 
     cluster.deserialize(

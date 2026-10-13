@@ -19,6 +19,9 @@ from zhaquirks.clusters import CustomCluster
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 SONOFF_MANUFACTURER_CODE = 0x1286
 
+# Supported public release boundary; transitional firmware is not targeted.
+CHIME_MIN_FIRMWARE_VERSION = 0x00001109
+
 ATTR_SONOFF_POWER_SUPPLY_MODE = 0x0024
 ATTR_BATTERY_PERCENTAGE_REMAINING = 0x0021
 ATTR_SONOFF_SPLIT = 0x2000
@@ -74,6 +77,21 @@ class AlarmSoundType(t.enum8):
     Chime_Electronic_Clock = 0x0C
     Chime_Bright = 0x0D
     Chime_Soft = 0x0E
+
+
+class BaseAlarmSoundType(t.enum8):
+    """Sound presets exposed before the supported Chime release."""
+
+    Classic_Siren = AlarmSoundType.Classic_Siren
+    Steady_Siren = AlarmSoundType.Steady_Siren
+    Rising_Siren = AlarmSoundType.Rising_Siren
+    Warning_Siren = AlarmSoundType.Warning_Siren
+    Rapid_Siren = AlarmSoundType.Rapid_Siren
+    Emergency_Siren = AlarmSoundType.Emergency_Siren
+    Chirp_Tone = AlarmSoundType.Chirp_Tone
+    Hi_Lo_Tone = AlarmSoundType.Hi_Lo_Tone
+    Intermittent_Tone = AlarmSoundType.Intermittent_Tone
+    Pulse_Tone = AlarmSoundType.Pulse_Tone
 
 
 class AlarmVolumeLevel(t.enum8):
@@ -304,7 +322,7 @@ class SonoffSNZB09PFC11Cluster(CustomCluster):
         )
 
 
-SONOFF_SNZB09P = (
+snzb09p_base_quirk = (
     QuirkBuilder("SONOFF", "SNZB-09P")
     .replaces(SonoffSNZB09PPowerConfigurationCluster)
     .replaces(SonoffSNZB09PFC11Cluster)
@@ -331,15 +349,6 @@ SONOFF_SNZB09P = (
         entity_type=EntityType.CONFIG,
         translation_key="alarm_light_enable",
         fallback_name="Alarm light enable",
-    )
-    .enum(
-        attribute_name="alarm_sound_type",
-        enum_class=AlarmSoundType,
-        cluster_id=SonoffSNZB09PFC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
-        entity_platform=EntityPlatform.SELECT,
-        translation_key="alarm_sound_type",
-        fallback_name="Alarm sound type",
     )
     .enum(
         attribute_name="alarm_volume_level",
@@ -387,6 +396,37 @@ SONOFF_SNZB09P = (
         device_class=BinarySensorDeviceClass.TAMPER,
         translation_key="tamper",
         fallback_name="Tamper",
+    )
+)
+
+SONOFF_SNZB09P = (
+    snzb09p_base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(max_version=CHIME_MIN_FIRMWARE_VERSION, allow_missing=True)
+    .enum(
+        attribute_name="alarm_sound_type",
+        enum_class=BaseAlarmSoundType,
+        cluster_id=SonoffSNZB09PFC11Cluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        entity_platform=EntityPlatform.SELECT,
+        translation_key="alarm_sound_type",
+        fallback_name="Alarm sound type",
+    )
+    .add_to_registry()
+)
+
+SONOFF_SNZB09P_CHIME = (
+    snzb09p_base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(
+        min_version=CHIME_MIN_FIRMWARE_VERSION, allow_missing=False
+    )
+    .enum(
+        attribute_name="alarm_sound_type",
+        enum_class=AlarmSoundType,
+        cluster_id=SonoffSNZB09PFC11Cluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        entity_platform=EntityPlatform.SELECT,
+        translation_key="alarm_sound_type",
+        fallback_name="Alarm sound type",
     )
     .add_to_registry()
 )
