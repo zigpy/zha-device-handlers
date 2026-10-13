@@ -28,6 +28,7 @@ from zigpy.zdo.types import LogicalType, NodeDescriptor
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.builder.metadata import recursive_freeze
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import COMMAND, COMMAND_ON, SHORT_PRESS, TURN_ON
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import signature_matches
 
@@ -394,6 +395,40 @@ async def test_quirks_v2_skip_configuration(device_mock):
     assert entry.zha_device_factory.quirk_definition.skip_configuration is True
 
 
+async def test_quirks_v2_device_automation_triggers_on_zigpy_device(device_mock):
+    """Test quirk-defined triggers are stamped onto the resolved zigpy device."""
+    registry = DeviceRegistry()
+
+    triggers = {(SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON}}
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .device_automation_triggers(triggers)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    # Consumers reading only the zigpy device (e.g. HA's early device trigger
+    # cache) see the same triggers a v1 quirk exposes as a class attribute.
+    assert quirked.device_automation_triggers == triggers
+
+
+async def test_quirks_v2_no_device_automation_triggers(device_mock):
+    """Test no trigger attribute is stamped when a quirk defines none."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(OnOff.cluster_id)
+        .add_to_registry(registry)
+    )
+
+    quirked = registry.resolve(device_mock)
+    assert not hasattr(quirked, "device_automation_triggers")
+
+
 async def test_quirks_v2_removes(device_mock):
     """Test adding a quirk that removes a cluster to the registry."""
     registry = DeviceRegistry()
@@ -667,3 +702,26 @@ def test_quirk_v2_loading_failure(
 
     assert quirked is device_mock
     assert "Failed to load quirk for" in caplog.text
+
+
+def test_quirks_v2_quirk_builder_clone_shares_registry() -> None:
+    """Test that cloning shares the registry instead of deep-copying it."""
+
+    class NonCopyableRegistry(DeviceRegistry):
+        """Registry that fails loudly if anything tries to deep-copy it."""
+
+        def __deepcopy__(self, memo):
+            raise AssertionError("QuirkBuilder.clone() must not deep-copy the registry")
+
+    registry = NonCopyableRegistry()
+
+    base = QuirkBuilder("foo", "bar", registry=registry).adds(OnOff.cluster_id)
+    cloned = base.clone()
+
+    assert cloned.registry is base.registry
+    assert cloned.manufacturer_model_metadata == []
+
+    # The rest of the builder state is still a deep copy
+    cloned.adds(PowerConfiguration.cluster_id)
+    assert len(base.adds_ops) == 1
+    assert len(cloned.adds_ops) == 2
