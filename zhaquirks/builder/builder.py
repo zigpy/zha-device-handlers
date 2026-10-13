@@ -184,6 +184,11 @@ class ReplaceCluster:
         old_cluster = clusters.pop(removed_cluster_id, None)
 
         new_cluster = self.cluster(endpoint, is_server=is_server)
+        if old_cluster is not None:
+            # A replacement whose id is already used on the endpoint overwrites
+            # that cluster: drop it so the replacement takes the replaced slot
+            clusters.pop(new_cluster.cluster_id, None)
+
         if is_server:
             endpoint.add_input_cluster(new_cluster.cluster_id, new_cluster)
         else:
