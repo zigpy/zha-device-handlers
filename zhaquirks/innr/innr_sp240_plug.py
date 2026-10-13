@@ -50,7 +50,11 @@ class ElectricalMeasurementClusterSP240(CustomCluster, ElectricalMeasurement):
             else {}
         )
         return {
-            attr_def: results.get(attr_def, Status.UNREPORTABLE_ATTRIBUTE)
+            attr_def: (
+                results[attr_def]
+                if attr_def in to_configure
+                else Status.UNREPORTABLE_ATTRIBUTE
+            )
             for attr_def in config
         }
 
