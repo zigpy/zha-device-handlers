@@ -1,14 +1,18 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import EntityPlatform, UnitOfTime
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -174,3 +178,126 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+@pytest.mark.parametrize(
+    "datapoint,cluster_name,attribute_name,expected_value",
+    [
+        (b"\x01\x04\x00\x01\x00", "occupancy", "occupancy", 1),
+        (b"\x01\x04\x00\x01\x01", "occupancy", "occupancy", 0),
+        (
+            b"\x04\x02\x00\x04\x00\x00\x00\x00",
+            "power",
+            "battery_percentage_remaining",
+            0,
+        ),
+        (
+            b"\x04\x02\x00\x04\x00\x00\x00\x32",
+            "power",
+            "battery_percentage_remaining",
+            100,
+        ),
+        (
+            b"\x04\x02\x00\x04\x00\x00\x00\x64",
+            "power",
+            "battery_percentage_remaining",
+            200,
+        ),
+        (b"\x09\x04\x00\x01\x00", "tuya_manufacturer", "motion_sensitivity", 0),
+        (b"\x09\x04\x00\x01\x01", "tuya_manufacturer", "motion_sensitivity", 1),
+        (b"\x65\x02\x00\x04\x00\x00\x00\x01", "tuya_manufacturer", "alarm_duration", 1),
+        (
+            b"\x65\x02\x00\x04\x00\x00\x00\xb4",
+            "tuya_manufacturer",
+            "alarm_duration",
+            180,
+        ),
+        (b"\x66\x04\x00\x01\x00", "tuya_manufacturer", "alarm_mode", 0),
+        (b"\x66\x04\x00\x01\x01", "tuya_manufacturer", "alarm_mode", 1),
+        (b"\x66\x04\x00\x01\x02", "tuya_manufacturer", "alarm_mode", 2),
+    ],
+)
+async def test_tuya_solar_pir_reports(
+    zigpy_device_from_v2_quirk, datapoint, cluster_name, attribute_name, expected_value
+):
+    """Decode solar PIR reports, including inverted occupancy and battery scaling."""
+    device = zigpy_device_from_v2_quirk("_TZE284_tre6haif", "TS0601")
+    ep = device.endpoints[1]
+    cluster = getattr(ep, cluster_name)
+    listener = ClusterListener(cluster)
+
+    _, command = ep.tuya_manufacturer.deserialize(b"\x09\x01\x02\x00\x01" + datapoint)
+    assert (
+        ep.tuya_manufacturer.handle_get_data(command.data) == foundation.Status.SUCCESS
+    )
+    assert listener.attribute_updates == [
+        (cluster.attributes_by_name[attribute_name].id, expected_value)
+    ]
+
+
+@pytest.mark.parametrize(
+    "attribute_name,value,datapoint",
+    [
+        ("motion_sensitivity", 0, b"\x09\x04\x00\x01\x00"),
+        ("motion_sensitivity", 1, b"\x09\x04\x00\x01\x01"),
+        ("alarm_duration", 1, b"\x65\x02\x00\x04\x00\x00\x00\x01"),
+        ("alarm_duration", 180, b"\x65\x02\x00\x04\x00\x00\x00\xb4"),
+        ("alarm_mode", 0, b"\x66\x04\x00\x01\x00"),
+        ("alarm_mode", 1, b"\x66\x04\x00\x01\x01"),
+        ("alarm_mode", 2, b"\x66\x04\x00\x01\x02"),
+    ],
+)
+async def test_tuya_solar_pir_settings(
+    zigpy_device_from_v2_quirk, attribute_name, value, datapoint
+):
+    """Encode settings with the correct Tuya datapoint IDs and wire types."""
+    device = zigpy_device_from_v2_quirk("_TZE284_tre6haif", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        (status,) = await cluster.write_attributes({attribute_name: value})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    request.assert_called_once()
+    assert request.call_args.kwargs["cluster"] == TuyaMCUCluster.cluster_id
+    assert request.call_args.kwargs["data"] == b"\x01\x01\x00\x00\x01" + datapoint
+
+
+async def test_tuya_solar_pir_entities(zigpy_device_from_v2_quirk):
+    """Expose occupancy, battery, and the three solar PIR configuration entities."""
+    device = zigpy_device_from_v2_quirk("_TZE284_tre6haif", "TS0601")
+    ep = device.endpoints[1]
+    assert isinstance(ep.occupancy, OccupancySensing)
+    assert isinstance(ep.power, PowerConfiguration)
+
+    entry = DEVICE_REGISTRY.match_entry(device)
+    metadata = {
+        entity.resolved_unique_id_suffix: entity
+        for entity in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    assert {name: entity.entity_platform for name, entity in metadata.items()} == {
+        "motion_sensitivity": EntityPlatform.SELECT,
+        "alarm_duration": EntityPlatform.NUMBER,
+        "alarm_mode": EntityPlatform.SELECT,
+    }
+    assert {
+        value.name: value.value for value in metadata["motion_sensitivity"].enum
+    } == {
+        "High": 0,
+        "Low": 1,
+    }
+    assert {value.name: value.value for value in metadata["alarm_mode"].enum} == {
+        "Arm": 0,
+        "Silent": 1,
+        "Disarm": 2,
+    }
+    duration = metadata["alarm_duration"]
+    assert (duration.min, duration.max, duration.step, duration.unit) == (
+        1,
+        180,
+        1,
+        UnitOfTime.SECONDS,
+    )
