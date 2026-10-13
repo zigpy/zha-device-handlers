@@ -291,6 +291,8 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
 
 (
     TuyaQuirkBuilder("_TZE204_rtrmfadk", "TS0601")
+    .applies_to("_TZE200_9mjy74mp", "TS0601")
+    .applies_to("_TZE204_9mjy74mp", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostatV2.ep_attribute,
