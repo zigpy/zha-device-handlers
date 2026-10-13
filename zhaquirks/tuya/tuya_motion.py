@@ -1248,6 +1248,7 @@ base_tuya_motion = (
         translation_key="alarm_mode",
         fallback_name="Alarm mode",
     )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
