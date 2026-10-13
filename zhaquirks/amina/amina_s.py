@@ -532,7 +532,7 @@ class AminaLevelControl(CustomCluster, LevelControl):
         cluster_id=AminaControlCluster.cluster_id,
         endpoint_id=AMINA_ENDPOINT_ID,
         min_value=0,
-        max_value=3600,
+        max_value=60,
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
