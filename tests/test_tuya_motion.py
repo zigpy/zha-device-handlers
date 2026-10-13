@@ -174,3 +174,73 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+# HOBEIAN ZG-204ZX 24GHz mmWave presence + T/H/lux sensor.
+# Frames captured from a live device; DP payloads are Tuya type 0x02 (4-byte value)
+# unless noted.
+ZCL_ZG204ZX_STATIC_SENS = b"\tL\x01\x00\x05\x02\x02\x00\x04\x00\x00\x00\x08"  # DP 2 = 8
+ZCL_ZG204ZX_DISTANCE = b"\tL\x01\x00\x05\x04\x02\x00\x04\x00\x00\x01\xf4"  # DP 4 = 500
+ZCL_ZG204ZX_FADING_TIME = (
+    b"\tL\x01\x00\x05\x66\x02\x00\x04\x00\x00\x00\x3c"  # DP 102 = 60
+)
+ZCL_ZG204ZX_ANTI_INTERF = b"\tL\x01\x00\x05\x67\x01\x00\x01\x01"  # DP 103 = True, bool
+ZCL_ZG204ZX_LUX_INTERVAL = (
+    b"\tL\x01\x00\x05\x6b\x02\x00\x04\x00\x00\x00\x0f"  # DP 107 = 15
+)
+ZCL_ZG204ZX_INDICATOR = b"\tL\x01\x00\x05\x6c\x01\x00\x01\x00"  # DP 108 = False, bool
+ZCL_ZG204ZX_MOTION_SENS = (
+    b"\tL\x01\x00\x05\x7b\x02\x00\x04\x00\x00\x00\x05"  # DP 123 = 5
+)
+
+
+@pytest.mark.parametrize(
+    "frame,attr_name,expected",
+    [
+        (ZCL_ZG204ZX_STATIC_SENS, "static_detection_sensitivity", 8),
+        (ZCL_ZG204ZX_DISTANCE, "static_detection_distance", 500),
+        (ZCL_ZG204ZX_FADING_TIME, "presence_timeout", 60),
+        (ZCL_ZG204ZX_ANTI_INTERF, "anti_interference", 1),
+        (ZCL_ZG204ZX_LUX_INTERVAL, "illuminance_interval", 15),
+        (ZCL_ZG204ZX_INDICATOR, "indicator", 0),
+        (ZCL_ZG204ZX_MOTION_SENS, "motion_detection_sensitivity", 5),
+    ],
+)
+async def test_zg204zx_config_datapoints(
+    zigpy_device_from_v2_quirk, frame, attr_name, expected
+):
+    """Test that ZG-204ZX radar tuning datapoints decode to the right attributes."""
+    quirked_device = zigpy_device_from_v2_quirk("_TZE200_w0ap83qu", "ZG-204ZX")
+    ep = quirked_device.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    listener = ClusterListener(ep.tuya_manufacturer)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(frame)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    attr_id = getattr(ep.tuya_manufacturer.AttributeDefs, attr_name).id
+    updates = [u for u in listener.attribute_updates if u[0] == attr_id]
+    assert len(updates) == 1
+    assert updates[0][1] == expected
+
+
+async def test_zg204zx_does_not_shadow_standard_clusters(zigpy_device_from_v2_quirk):
+    """ZG-204ZX exposes real ZCL clusters, so the quirk must not re-map their DPs.
+
+    Unlike the ZG-204ZM, this device reports presence, temperature, humidity,
+    illuminance and battery over standard clusters. DPs 1, 101, 106, 110 and 111 are
+    therefore deliberately unmapped, and the ZG-204ZM's human_motion_state datapoint
+    does not exist on this model at all.
+    """
+    quirked_device = zigpy_device_from_v2_quirk("_TZE200_w0ap83qu", "ZG-204ZX")
+    ep = quirked_device.endpoints[1]
+
+    assert "human_motion_state" not in ep.tuya_manufacturer.AttributeDefs
+
+    # The quirk adds no local shadow of the device's real measurement clusters.
+    for ep_attribute in ("occupancy", "temperature", "humidity", "illuminance"):
+        assert not hasattr(ep, ep_attribute)
