@@ -342,3 +342,8 @@ def test_child_device_id_type() -> None:
     """Test child device ids must be strings."""
     with pytest.raises(TypeError):
         _switch(QuirkBuilder("manufacturer", "model"), 1, child_device_id=1)
+
+    with pytest.raises(TypeError):
+        QuirkBuilder("manufacturer", "model").child_device(
+            b"left", endpoint_id=1, fallback_name="Left"
+        )

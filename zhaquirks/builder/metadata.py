@@ -240,7 +240,9 @@ class ChangedEntityMetadata:
 class ChildDeviceMetadata:
     """Metadata for a child device: a logical part of the device, e.g. a gang."""
 
-    id: str = attrs.field(validator=attrs.validators.min_len(1))
+    id: str = attrs.field(
+        validator=[attrs.validators.instance_of(str), attrs.validators.min_len(1)]
+    )
     endpoint_ids: frozenset[int] = attrs.field(factory=frozenset, converter=frozenset)
     translation_key: str | None = attrs.field(default=None)
     translation_placeholders: frozendict[str, str] = attrs.field(
