@@ -37,6 +37,7 @@ from zha.quirks import (
     QuirkSource,
     ReplaceZigpyDevice,
 )
+from zha.zigbee.child_device import DEVICE_LEVEL_CLUSTERS
 from zha.zigbee.device import Device
 import zigpy.device
 import zigpy.profiles.zha
@@ -398,6 +399,10 @@ class QuirkBuilder:
         """Return the id of the child device an exposed entity will belong to."""
         if entity_metadata.child_device_id is not UNDEFINED:
             return entity_metadata.child_device_id
+
+        # ZHA keeps entities of device-level clusters on the main device
+        if entity_metadata.cluster_id in DEVICE_LEVEL_CLUSTERS:
+            return None
 
         for child_device in self.child_devices or ():
             if entity_metadata.endpoint_id in child_device.endpoint_ids:
@@ -1052,6 +1057,8 @@ class QuirkBuilder:
 
         if self.child_devices is None:
             self.child_devices = []
+        elif not self.child_devices:
+            raise ValueError("Child devices are disabled for this quirk")
 
         self.child_devices.append(
             ChildDeviceMetadata(

@@ -9,7 +9,7 @@ from zha.quirks import DeviceRegistry
 from zha.zigbee.child_device import ChildDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.builder.device import QuirkV2Device
@@ -117,6 +117,11 @@ def test_disable_child_devices() -> None:
         QuirkBuilder("manufacturer", "model").child_device(
             "a", endpoint_id=1, fallback_name="A"
         ).disable_child_devices()
+
+    with pytest.raises(ValueError, match="Child devices are disabled"):
+        QuirkBuilder("manufacturer", "model").disable_child_devices().child_device(
+            "a", endpoint_id=1, fallback_name="A"
+        )
 
 
 def test_child_device_duplicate_id() -> None:
@@ -300,3 +305,40 @@ def test_tuya_entity_child_device() -> None:
         entity.child_device_id
         for entity in entry.zha_device_factory.quirk_definition.entity_metadata
     ] == ["l2", "l2"]
+
+
+def test_child_device_primary_device_level_entities() -> None:
+    """Test primary entities of device-level clusters count for the main device."""
+    builder = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_id=1, fallback_name="A")
+        .child_device("b", endpoint_id=2, fallback_name="B")
+    )
+
+    for endpoint_id in (1, 2):
+        builder.sensor(
+            PowerConfiguration.AttributeDefs.battery_voltage.name,
+            PowerConfiguration.cluster_id,
+            endpoint_id=endpoint_id,
+            translation_key="battery_voltage",
+            fallback_name="Battery voltage",
+            unique_id_suffix=f"battery_voltage_{endpoint_id}",
+            primary=endpoint_id == 1 or None,
+        )
+
+    # Both stay on the main device in ZHA, so a second primary one is rejected
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.sensor(
+            PowerConfiguration.AttributeDefs.battery_voltage.name,
+            PowerConfiguration.cluster_id,
+            endpoint_id=2,
+            translation_key="battery_voltage",
+            fallback_name="Battery voltage",
+            primary=True,
+        )
+
+
+def test_child_device_id_type() -> None:
+    """Test child device ids must be strings."""
+    with pytest.raises(TypeError):
+        _switch(QuirkBuilder("manufacturer", "model"), 1, child_device_id=1)

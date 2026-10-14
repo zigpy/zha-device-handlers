@@ -57,7 +57,10 @@ class EntityMetadata:
     primary: bool | None = attrs.field(default=None)
     # The child device the entity belongs to, `None` for the main device. By default
     # it belongs to the child device defined for its endpoint, if any.
-    child_device_id: str | None | UndefinedType = attrs.field(default=UNDEFINED)
+    child_device_id: str | None | UndefinedType = attrs.field(
+        default=UNDEFINED,
+        validator=attrs.validators.instance_of((str, type(None), UndefinedType)),
+    )
 
     def __attrs_post_init__(self) -> None:
         """Validate the entity metadata."""
@@ -227,7 +230,10 @@ class ChangedEntityMetadata:
     new_entity_registry_enabled_default: bool | None = attrs.field(default=None)
     new_fallback_name: str | None = attrs.field(default=None)
     # `None` moves the entity to the main device, so `UNDEFINED` means no change
-    new_child_device_id: str | None | UndefinedType = attrs.field(default=UNDEFINED)
+    new_child_device_id: str | None | UndefinedType = attrs.field(
+        default=UNDEFINED,
+        validator=attrs.validators.instance_of((str, type(None), UndefinedType)),
+    )
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
