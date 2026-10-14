@@ -407,21 +407,23 @@ def test_quirks_v2_primary_entity():
         )
     )
 
-    with pytest.raises(ValueError):
-        # Having a second primary entity is not allowed
-        builder.sensor(
-            OnOff.AttributeDefs.on_time.name,
-            OnOff.cluster_id,
-            translation_key="on_time",
-            fallback_name="On time",
-            primary=True,
-        )
-
     entry = builder.add_to_registry(registry)
 
     entity_metadata = entry.zha_device_factory.quirk_definition.entity_metadata
     assert len(entity_metadata) == 1
     assert entity_metadata[0].primary is True
+
+    # Having a second primary entity is not allowed
+    builder.sensor(
+        OnOff.AttributeDefs.on_time.name,
+        OnOff.cluster_id,
+        translation_key="on_time",
+        fallback_name="On time",
+        primary=True,
+    )
+
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(registry)
 
 
 def test_quirks_v2_change_entity_metadata():
