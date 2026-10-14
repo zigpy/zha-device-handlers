@@ -49,6 +49,7 @@ from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     ChangedEntityMetadata,
+    ChildDeviceMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
     EntityMetadata,
@@ -362,6 +363,7 @@ class QuirkBuilder:
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
+        self.child_devices: list[ChildDeviceMetadata] | None = None
 
         current_frame: FrameType = inspect.currentframe()
         caller: FrameType = current_frame.f_back
@@ -377,13 +379,73 @@ class QuirkBuilder:
 
     def _add_entity_metadata(self, entity_metadata: EntityMetadata) -> Self:
         """Register new entity metadata and validate config."""
-        if entity_metadata.primary and any(
-            entity.primary for entity in self.entity_metadata
-        ):
-            raise ValueError("Only one primary entity can be defined per device")
+        if entity_metadata.primary:
+            child_device_id = self._resolve_child_device_id(entity_metadata)
+
+            if any(
+                entity.primary
+                and self._resolve_child_device_id(entity) == child_device_id
+                for entity in self.entity_metadata
+            ):
+                raise ValueError(
+                    "Only one primary entity can be defined per device or child device"
+                )
 
         self.entity_metadata.append(entity_metadata)
         return self
+
+    def _resolve_child_device_id(self, entity_metadata: EntityMetadata) -> str | None:
+        """Return the id of the child device an exposed entity will belong to."""
+        if entity_metadata.child_device_id is not UNDEFINED:
+            return entity_metadata.child_device_id
+
+        for child_device in self.child_devices or ():
+            if entity_metadata.endpoint_id in child_device.endpoint_ids:
+                return child_device.id
+
+        return None
+
+    def _validate(self) -> None:
+        """Validate the quirk as a whole."""
+        child_device_ids = [
+            child_device.id for child_device in self.child_devices or ()
+        ]
+        if len(child_device_ids) != len(set(child_device_ids)):
+            raise ValueError(f"Duplicate child device ids: {child_device_ids}")
+
+        endpoint_child_devices: dict[int, str] = {}
+        for child_device in self.child_devices or ():
+            for endpoint_id in child_device.endpoint_ids:
+                if endpoint_id in endpoint_child_devices:
+                    raise ValueError(
+                        f"Endpoint {endpoint_id} is assigned to both child device"
+                        f" {endpoint_child_devices[endpoint_id]!r} and"
+                        f" {child_device.id!r}"
+                    )
+                endpoint_child_devices[endpoint_id] = child_device.id
+
+        referenced_child_device_ids = {
+            entity.child_device_id
+            for entity in self.entity_metadata
+            if isinstance(entity.child_device_id, str)
+        } | {
+            change.new_child_device_id
+            for change in self.changed_entity_metadata
+            if isinstance(change.new_child_device_id, str)
+        }
+        if unknown := referenced_child_device_ids - set(child_device_ids):
+            raise ValueError(f"Entities refer to undefined child devices: {unknown}")
+
+        # The main device and each child device can have a single primary entity
+        primary_devices = [
+            self._resolve_child_device_id(entity)
+            for entity in self.entity_metadata
+            if entity.primary
+        ]
+        if len(primary_devices) != len(set(primary_devices)):
+            raise ValueError(
+                "Only one primary entity can be defined per device or child device"
+            )
 
     @overload
     def applies_to(self, manufacturer: str, model: str) -> Self: ...
@@ -628,6 +690,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
@@ -646,6 +709,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 enum=enum_class,
                 attribute_name=attribute_name,
@@ -677,6 +741,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
@@ -695,6 +760,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 attribute_converter=attribute_converter,
@@ -730,6 +796,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
@@ -748,6 +815,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 force_inverted=force_inverted,
@@ -782,6 +850,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
@@ -800,6 +869,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 min=min_value,
@@ -832,6 +902,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
@@ -850,6 +921,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 attribute_converter=attribute_converter,
@@ -875,6 +947,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing WriteAttributeButtonMetadata and return self.
 
@@ -893,6 +966,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 attribute_value=attribute_value,
@@ -917,6 +991,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLCommandButtonMetadata and return self.
 
@@ -934,6 +1009,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 command_name=command_name,
                 args=command_args if command_args is not None else (),
@@ -948,6 +1024,55 @@ class QuirkBuilder:
     ) -> Self:
         """Add device automation triggers and returns self."""
         self.device_automation_triggers_metadata.update(device_automation_triggers)
+        return self
+
+    def child_device(
+        self,
+        child_device_id: str,
+        *,
+        endpoint_id: int | None = None,
+        endpoint_ids: list[int] | None = None,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+    ) -> Self:
+        """Expose a logical part of the device, e.g. a gang, as a child device.
+
+        Entities on the given endpoints belong to the child device, except entities of
+        device-level clusters (e.g. battery, firmware). Single entities can be assigned
+        with the `child_device_id` argument of the entity methods and of
+        `change_entity_metadata` instead. Defining a child device replaces the
+        automatic split of an allowlisted device in ZHA.
+        """
+        if endpoint_id is not None and endpoint_ids is not None:
+            raise ValueError("Use either endpoint_id or endpoint_ids, not both")
+
+        if endpoint_id is not None:
+            endpoint_ids = [endpoint_id]
+
+        if self.child_devices is None:
+            self.child_devices = []
+
+        self.child_devices.append(
+            ChildDeviceMetadata(
+                id=child_device_id,
+                endpoint_ids=endpoint_ids or [],
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders or {},
+                fallback_name=fallback_name,
+            )
+        )
+        return self
+
+    def disable_child_devices(self) -> Self:
+        """Do not split the device into child devices.
+
+        This turns off the automatic split ZHA applies to allowlisted devices.
+        """
+        if self.child_devices:
+            raise ValueError("The quirk already defines child devices")
+
+        self.child_devices = []
         return self
 
     def friendly_name(self, *, model: str, manufacturer: str) -> Self:
@@ -1014,6 +1139,7 @@ class QuirkBuilder:
         new_entity_category: EntityType | None = None,
         new_entity_registry_enabled_default: bool | None = None,
         new_fallback_name: str | None = None,
+        new_child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Change entity metadata for matching entities."""
         if cluster_id is not None and cluster_type is None:
@@ -1035,6 +1161,7 @@ class QuirkBuilder:
                 new_entity_category=new_entity_category,
                 new_entity_registry_enabled_default=new_entity_registry_enabled_default,
                 new_fallback_name=new_fallback_name,
+                new_child_device_id=new_child_device_id,
             ),
         )
         return self
@@ -1066,6 +1193,8 @@ class QuirkBuilder:
                 "At least one manufacturer and model must be specified for a v2 quirk."
             )
 
+        self._validate()
+
         device_match = DeviceMatch(
             applies_to=tuple(self.manufacturer_model_metadata),
             filters=tuple(self.filters),
@@ -1088,6 +1217,9 @@ class QuirkBuilder:
             entity_metadata=tuple(self.entity_metadata),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
+            child_devices=(
+                tuple(self.child_devices) if self.child_devices is not None else None
+            ),
         )
 
         # Shared QuirkV2Device (or custom subclass) bound to this definition; no subclass minted.

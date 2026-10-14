@@ -10,6 +10,7 @@ from typing import Any, Self
 from zha.quirks import QuirkRegistryEntry
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.measurement import (
@@ -696,6 +697,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
@@ -722,6 +724,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
+            child_device_id=child_device_id,
             fallback_name=fallback_name,
         )
         return self
@@ -742,6 +745,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
@@ -764,6 +768,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
+            child_device_id=child_device_id,
             fallback_name=fallback_name,
         )
 
@@ -791,6 +796,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
@@ -818,6 +824,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
+            child_device_id=child_device_id,
             fallback_name=fallback_name,
         )
 
@@ -836,6 +843,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
@@ -858,6 +866,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
+            child_device_id=child_device_id,
             fallback_name=fallback_name,
         )
 
@@ -883,6 +892,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
@@ -912,6 +922,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
             translation_placeholders=translation_placeholders,
+            child_device_id=child_device_id,
             fallback_name=fallback_name,
         )
 
