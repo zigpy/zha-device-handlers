@@ -379,19 +379,11 @@ class QuirkBuilder:
             )
 
     def _add_entity_metadata(self, entity_metadata: EntityMetadata) -> Self:
-        """Register new entity metadata and validate config."""
-        if entity_metadata.primary:
-            child_device_id = self._resolve_child_device_id(entity_metadata)
+        """Register new entity metadata.
 
-            if any(
-                entity.primary
-                and self._resolve_child_device_id(entity) == child_device_id
-                for entity in self.entity_metadata
-            ):
-                raise ValueError(
-                    "Only one primary entity can be defined per device or child device"
-                )
-
+        Primary entities are validated in `add_to_registry`, once the child devices,
+        which each can have a primary entity, are known.
+        """
         self.entity_metadata.append(entity_metadata)
         return self
 

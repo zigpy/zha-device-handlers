@@ -166,25 +166,33 @@ def test_child_device_unknown_reference() -> None:
 
 def test_child_device_primary_entities() -> None:
     """Test each child device and the main device can have a primary entity."""
-    builder = (
-        QuirkBuilder("manufacturer", "model")
-        .child_device("a", endpoint_id=1, fallback_name="A")
-        .child_device("b", endpoint_id=2, fallback_name="B")
-    )
+    builder = QuirkBuilder("manufacturer", "model")
     _switch(builder, 1, primary=True)
     _switch(builder, 2, primary=True)
     _switch(builder, 3, primary=True)
 
-    # A second primary entity on the same child device is not allowed
-    with pytest.raises(ValueError, match="Only one primary entity"):
-        _switch(builder, 2, primary=True, unique_id_suffix="other")
-
-    # Nor is one assigned to it explicitly
-    with pytest.raises(ValueError, match="Only one primary entity"):
-        _switch(builder, 3, primary=True, child_device_id="a")
-
+    # Child devices defined after the entities still count
+    builder.child_device("a", endpoint_id=1, fallback_name="A")
+    builder.child_device("b", endpoint_id=2, fallback_name="B")
     entry = builder.add_to_registry(DeviceRegistry())
     assert len(entry.zha_device_factory.quirk_definition.entity_metadata) == 3
+
+    # A second primary entity on the same child device is not allowed
+    _switch(builder, 2, primary=True, unique_id_suffix="other")
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_explicit_assignment() -> None:
+    """Test explicitly assigned primary entities count for their child device."""
+    builder = QuirkBuilder("manufacturer", "model").child_device(
+        "a", endpoint_id=1, fallback_name="A"
+    )
+    _switch(builder, 1, primary=True)
+    _switch(builder, 3, primary=True, child_device_id="a")
+
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
 
 
 def test_child_device_primary_entities_defined_later() -> None:
@@ -326,16 +334,19 @@ def test_child_device_primary_device_level_entities() -> None:
             primary=endpoint_id == 1 or None,
         )
 
+    builder.add_to_registry(DeviceRegistry())
+
     # Both stay on the main device in ZHA, so a second primary one is rejected
+    builder.sensor(
+        PowerConfiguration.AttributeDefs.battery_voltage.name,
+        PowerConfiguration.cluster_id,
+        endpoint_id=2,
+        translation_key="battery_voltage",
+        fallback_name="Battery voltage",
+        primary=True,
+    )
     with pytest.raises(ValueError, match="Only one primary entity"):
-        builder.sensor(
-            PowerConfiguration.AttributeDefs.battery_voltage.name,
-            PowerConfiguration.cluster_id,
-            endpoint_id=2,
-            translation_key="battery_voltage",
-            fallback_name="Battery voltage",
-            primary=True,
-        )
+        builder.add_to_registry(DeviceRegistry())
 
 
 def test_child_device_id_type() -> None:
