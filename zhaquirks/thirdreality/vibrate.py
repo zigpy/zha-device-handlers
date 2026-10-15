@@ -1,16 +1,15 @@
 """Third Reality vibration sensor devices."""
 
 from typing import Final
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.builder import (
-    QuirkBuilder,
-    ReportingConfig,
-)
-from zha.units import UnitOfTime
+
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import SensorStateClass
+from zha.units import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityVibrationSensorCluster(CustomCluster):
