@@ -1,82 +1,87 @@
-"""Third Reality vibrate devices."""
+"""Third Reality vibration sensor devices."""
 
 from typing import Final
 
-from zigpy.profiles import zha
+from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.sensor.device_class import SensorStateClass
+from zha.units import UnitOfTime
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legacy import CustomDevice
-from zhaquirks.thirdreality import THIRD_REALITY
-
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
-class ThirdRealityAccelCluster(CustomCluster):
-    """ThirdReality Acceleration Cluster."""
+class ThirdRealityVibrationSensorCluster(CustomCluster):
+    """Third Reality's vibration private cluster."""
 
-    cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
+    cluster_id = 0xFFF1
 
     class AttributeDefs(BaseAttributeDefs):
-        """Attribute definitions."""
+        """Define the attributes of a private cluster."""
 
-        x_axis: Final = ZCLAttributeDef(
-            id=0x0001, type=t.int16s, is_manufacturer_specific=True
+        x_acceleration: Final = ZCLAttributeDef(
+            id=0x0001,
+            type=t.int16s,
+            access="rp",
+            manufacturer_code=None,
         )
-        y_axis: Final = ZCLAttributeDef(
-            id=0x0002, type=t.int16s, is_manufacturer_specific=True
+        y_acceleration: Final = ZCLAttributeDef(
+            id=0x0002,
+            type=t.int16s,
+            access="rp",
+            manufacturer_code=None,
         )
-        z_axis: Final = ZCLAttributeDef(
-            id=0x0003, type=t.int16s, is_manufacturer_specific=True
+        z_acceleration: Final = ZCLAttributeDef(
+            id=0x0003,
+            type=t.int16s,
+            access="rp",
+            manufacturer_code=None,
+        )
+        cool_down_time: Final = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint16_t,
+            access="rwp",
+            manufacturer_code=None,
         )
 
 
-class Vibrate(CustomDevice):
-    """ThirdReality vibrate device."""
-
-    signature = {
-        MODELS_INFO: [(THIRD_REALITY, "3RVS01031Z")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IasZone.cluster_id,
-                    ThirdRealityAccelCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IasZone.cluster_id,
-                    ThirdRealityAccelCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
+(
+    QuirkBuilder("Third Reality, Inc", "3RVS01031Z")
+    .replaces(ThirdRealityVibrationSensorCluster)
+    .number(
+        attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.cool_down_time.name,
+        cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
+        min_value=0,
+        max_value=7200,
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="cool_down_time",
+        fallback_name="Cool down time",
+    )
+    .sensor(
+        attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.x_acceleration.name,
+        cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
+        translation_key="x_acceleration",
+        fallback_name="X acceleration",
+    )
+    .sensor(
+        attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.y_acceleration.name,
+        cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
+        translation_key="y_acceleration",
+        fallback_name="Y acceleration",
+    )
+    .sensor(
+        attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.z_acceleration.name,
+        cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
+        translation_key="z_acceleration",
+        fallback_name="Z acceleration",
+    )
+    .add_to_registry()
+)
