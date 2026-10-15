@@ -1,25 +1,22 @@
 """Third Reality vibration sensor devices."""
-
 from typing import Final
-
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.builder import (
+    QuirkBuilder,
+    ReportingConfig,
+)
+from zha.units import UnitOfTime
+from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.sensor.device_class import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ThirdRealityVibrationSensorCluster(CustomCluster):
     """Third Reality's vibration private cluster."""
-
     cluster_id = 0xFFF1
 
     class AttributeDefs(BaseAttributeDefs):
-        """Define the attributes of a private cluster."""
-
-        # Raw acceleration values (reported on movement events).
         x_acceleration: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.int16s,
@@ -38,7 +35,6 @@ class ThirdRealityVibrationSensorCluster(CustomCluster):
             access="rp",
             manufacturer_code=None,
         )
-        # Cool-down / debounce time for the motion detection (writable).
         cool_down_time: Final = ZCLAttributeDef(
             id=0x0004,
             type=t.uint16_t,
@@ -64,6 +60,7 @@ class ThirdRealityVibrationSensorCluster(CustomCluster):
         attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.x_acceleration.name,
         cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
         translation_key="x_acceleration",
         fallback_name="X acceleration",
     )
@@ -71,6 +68,7 @@ class ThirdRealityVibrationSensorCluster(CustomCluster):
         attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.y_acceleration.name,
         cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
         translation_key="y_acceleration",
         fallback_name="Y acceleration",
     )
@@ -78,6 +76,7 @@ class ThirdRealityVibrationSensorCluster(CustomCluster):
         attribute_name=ThirdRealityVibrationSensorCluster.AttributeDefs.z_acceleration.name,
         cluster_id=ThirdRealityVibrationSensorCluster.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
+        unit="mg",
         translation_key="z_acceleration",
         fallback_name="Z acceleration",
     )
