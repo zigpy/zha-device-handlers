@@ -245,7 +245,7 @@ wheels = [
 
 [[package]]
 name = "bellows"
-version = "1.0.1"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -253,9 +253,9 @@ dependencies = [
     { name = "voluptuous" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/86/bca8fe5ba0575c0e473416f201b2df0d65f76b4dac4890805fef412c56ee/bellows-1.0.1.tar.gz", hash = "sha256:587d0c4fa2493d674e7c80a72c5383482e06a5e8df8858431f08b1987a6d4298", size = 188758, upload-time = "2026-08-25T22:28:31.551Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/cf/90aa6f6a67033adcde4e84e888be6013745abe61d532b33811b2b43784f3/bellows-1.1.0.tar.gz", hash = "sha256:1104d2cdeb2ed269cb279c4eb0f90e2fb7f0a6e1b8f9804c4a1798f79a2ae995", size = 196193, upload-time = "2026-09-29T17:17:18.279Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/9a/91aa2051190a383bd978b8d7ee9643390113c1dc7da6caea709fc27f4c1c/bellows-1.0.1-py3-none-any.whl", hash = "sha256:453e2391c5211230344af42b427c1d137d9f130019355cdb2f0964aaed39347b", size = 161149, upload-time = "2026-08-25T22:28:30.334Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/8a/ed13a6652c5ce29312463c2f0e2f296ab40ac9a9eac28cc0be50e2987725/bellows-1.1.0-py3-none-any.whl", hash = "sha256:77a077ea50f1f9b0bf9a75bbf06be978f4bd49272da1264f9c2a2ae5363a2e00", size = 163671, upload-time = "2026-09-29T17:17:17.134Z" },
 ]
 
 [[package]]
@@ -2122,7 +2122,7 @@ wheels = [
 
 [[package]]
 name = "zha"
-version = "2.2.2"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -2135,9 +2135,9 @@ dependencies = [
     { name = "zigpy-ziggurat" },
     { name = "zigpy-znp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/c2/fd51cafcfd6d268a2c72c8885002148ec8bf6563bc191064d22835d67c02/zha-2.2.2.tar.gz", hash = "sha256:6027cf6f78dd784d94d627cfabbc646081b714a83ce71ee4a7d89dd9cc48883d", size = 273619, upload-time = "2026-09-07T20:12:07.513Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/b0/6f2ae49ce08fa1970b4d26bd45858a1bab10240756d359a43ef8c5ca8618/zha-2.3.0.tar.gz", hash = "sha256:b42fdb05dfda54c936a2d6f28f9585dbcb495d333f7cf6580d9b98b0973ef371", size = 278290, upload-time = "2026-09-29T23:43:46.154Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/89/a8332f9ace60b85bc534cbb89dd3d0f5a5b37fbc44435b19fb5a3a19a0d6/zha-2.2.2-py3-none-any.whl", hash = "sha256:8f9171630bf66dd8f05d8b6cd90bcb59b4a5850c3ba3c2bec771ad0a2f4393e0", size = 204128, upload-time = "2026-09-07T20:12:06.291Z" },
+    { url = "https://files.pythonhosted.org/packages/70/ee/92ada97baeffa30279228878cb9ca3df7b14ab98c9b017e4bc928f7a6df9/zha-2.3.0-py3-none-any.whl", hash = "sha256:1f6d79da682cf80beb81a854b86b15c1bff31158a837ff3bd0650c438932964c", size = 207009, upload-time = "2026-09-29T23:43:45.02Z" },
 ]
 
 [[package]]
@@ -2172,8 +2172,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "zha", specifier = ">=2.0.0" },
-    { name = "zigpy", specifier = ">=2.2.0" },
+    { name = "zha", specifier = ">=2.3.0" },
+    { name = "zigpy", specifier = ">=2.3.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -2200,7 +2200,7 @@ dev = [
 
 [[package]]
 name = "zigpy"
-version = "2.2.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2214,9 +2214,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "voluptuous" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/bb/d26ed58d6cae5c21832451ba251d4ff4ad7b352427617d64c9ad440074b4/zigpy-2.2.0.tar.gz", hash = "sha256:821ea716ac2664af9b5ef09b1b83b04af9f87edefb5a71191c15a9bc69ad46ef", size = 338280, upload-time = "2026-09-07T19:52:25.821Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/f5/662817fe897f2ed2dee98091605dd37d7dc89ef204760213cec061d840e7/zigpy-2.3.0.tar.gz", hash = "sha256:228b42e78e834260118f090b60cd2c359cc8c9391e62cbf443251926b6013912", size = 347238, upload-time = "2026-09-29T22:56:25.381Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/40/2ddc72f0d56d51f04fb41713c669fc3e18271e7ac01f5790f0a2f66e9cdc/zigpy-2.2.0-py3-none-any.whl", hash = "sha256:e941a350bc8b1a4a9c14436d022fe31acfd78b09f15be32a425090fd1d24a231", size = 255186, upload-time = "2026-09-07T19:52:24.468Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/81/622b7c1ab74d2265d251bb65972ca31db10ce48a55c64054da8cbe4f80b7/zigpy-2.3.0-py3-none-any.whl", hash = "sha256:d45d8e006b65511d9764a7b0f5cca0615ecdd18a02346898577b6057b79d8fbb", size = 263154, upload-time = "2026-09-29T22:56:23.632Z" },
 ]
 
 [[package]]
@@ -2276,7 +2276,7 @@ wheels = [
 
 [[package]]
 name = "zigpy-znp"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "coloredlogs" },
@@ -2284,7 +2284,7 @@ dependencies = [
     { name = "voluptuous" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/53/d1/0f9dcdfcf151f16a50dc9632bccd46b4e5475ce50d8f6fdd93e8bf52cf3c/zigpy_znp-1.1.0.tar.gz", hash = "sha256:9aed95e992ba3db527e72db0796dcf1b62e42356e865ac5d7c738929b01e15fb", size = 116193, upload-time = "2026-05-31T00:35:37.318Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/5a/ed90178a3c25f8731c9e4249785514a38860d7677255038bb8860b8e9b31/zigpy_znp-1.1.1.tar.gz", hash = "sha256:95edd2eed8432f27d59177d292f8ef56d897c722885b757510ca2cdc1eca9250", size = 116279, upload-time = "2026-09-08T17:46:06.853Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/b2/b332cfa8b3d12caec01a3c489ddd9e8efe51af56708cf1f0e32433f6f1c7/zigpy_znp-1.1.0-py3-none-any.whl", hash = "sha256:422d5c3d14c929536a96a66dfda521f3740f820c29f8dd6c7d36ef6a44aaa65d", size = 119255, upload-time = "2026-05-31T00:35:35.968Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/09/eac8fad0e3adf53703f87a754f3432140d8e6177f08c905ec26d043a86da/zigpy_znp-1.1.1-py3-none-any.whl", hash = "sha256:8860dc834048d321a94ce06fde648274f27797b9474d1c980a77aee25b8ef97c", size = 119295, upload-time = "2026-09-08T17:46:05.688Z" },
 ]
