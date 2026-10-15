@@ -1,4 +1,4 @@
-"""Heiman S1-M smoke sensor, he S1-M is designed to meet UL standards, while the S1-TL is designed to meet EN standards."""
+"""Heiman S1-M smoke sensor, the S1-M is designed to meet UL standards, while the S1-TL is designed to meet EN standards."""
 
 from zha.quirks import SIREN_BASIC
 import zigpy.types as t
@@ -122,6 +122,8 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder()
     .applies_to("Heiman", "S1-M")
+    .applies_to("0x120B", "S1-M")
+    .friendly_name(manufacturer="Heiman", model="S1-M")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
