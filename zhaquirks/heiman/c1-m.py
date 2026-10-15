@@ -1,4 +1,4 @@
-"""Heiman S1-M smoke sensor, he S1-M is designed to meet UL standards, while the S1-TL is designed to meet EN standards."""
+"""Heiman C1-M CO sensor, the C1-M is designed to meet UL standards, while the HS1CA-E PLus is designed to meet EN standards."""
 
 from zha.quirks import SIREN_BASIC
 import zigpy.types as t
@@ -7,7 +7,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
-    EntityPlatform,
     EntityType,
     QuirkBuilder,
     ReportingConfig,
@@ -15,28 +14,12 @@ from zhaquirks.builder import (
 from zhaquirks.clusters import CustomCluster
 
 
-class SmokeSirenEnum(t.enum8):
+class SmokeCoSirenEnum(t.enum8):
     """Smoke siren type."""
 
     Stop = 0
     Smoke_siren = 1
     CO_siren = 2
-
-
-class ChamberContaminationEnum(t.enum8):
-    """Chamber contamination level."""
-
-    Normal = 0
-    Light_contamination = 1
-    Medium_contamination = 2
-    Critical_contamination = 3
-
-
-class SmokeLevelUnitEnum(t.enum8):
-    """Smoke level unit."""
-
-    dbm = 0
-    pct_ft_obs = 1
 
 
 class CustomHeimanCluster(CustomCluster):
@@ -62,34 +45,14 @@ class CustomHeimanCluster(CustomCluster):
             type=t.uint8_t,
             manufacturer_code=0x120B,
         )
-        heartbeat_indicator = ZCLAttributeDef(
-            id=0x1004,
-            type=t.uint8_t,
-            manufacturer_code=0x120B,
-        )
         siren_for_automation = ZCLAttributeDef(
             id=0x0012,
-            type=SmokeSirenEnum,
+            type=SmokeCoSirenEnum,
             manufacturer_code=0x120B,
         )
         interconnectable = ZCLAttributeDef(
             id=0x1007,
             type=t.uint8_t,
-            manufacturer_code=0x120B,
-        )
-        smoke_level = ZCLAttributeDef(
-            id=0x0016,
-            type=t.uint8_t,
-            manufacturer_code=0x120B,
-        )
-        smoke_unit = ZCLAttributeDef(
-            id=0x0018,
-            type=SmokeLevelUnitEnum,
-            manufacturer_code=0x120B,
-        )
-        chamber_contamination = ZCLAttributeDef(
-            id=0x0017,
-            type=ChamberContaminationEnum,
             manufacturer_code=0x120B,
         )
         rebooted_count = ZCLAttributeDef(
@@ -121,7 +84,9 @@ class CustomHeimanCluster(CustomCluster):
 
 (
     QuirkBuilder()
-    .applies_to("Heiman", "S1-M")
+    .applies_to("Heiman", "C1-M")
+    .applies_to("0x120B", "C1-M")
+    .friendly_name(manufacturer="Heiman", model="C1-M")
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
@@ -130,22 +95,7 @@ class CustomHeimanCluster(CustomCluster):
         new_primary=False,
         new_entity_category=EntityType.CONFIG,
     )
-    .switch(
-        CustomHeimanCluster.AttributeDefs.heartbeat_indicator.name,
-        CustomHeimanCluster.cluster_id,
-        translation_key="heartbeat_indicator",
-        fallback_name="Heartbeat indicator",
-    )
     # XXX: siren_for_automation should be added as a siren entity, needs zigpy API
-    .enum(
-        CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
-        ChamberContaminationEnum,
-        CustomHeimanCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="chamber_contamination",
-        fallback_name="Chamber contamination",
-    )
     .binary_sensor(
         CustomHeimanCluster.AttributeDefs.sensor_self_check_state.name,
         CustomHeimanCluster.cluster_id,
@@ -185,14 +135,6 @@ class CustomHeimanCluster(CustomCluster):
         command_kwargs={"test_mode_duration": 5, "current_zone_sensitivity_level": 0},
         translation_key="remote_test",
         fallback_name="Remote test",
-    )
-    # XXX: The unit depends on the smoke_unit attribute, so we can't use one at all
-    .sensor(
-        CustomHeimanCluster.AttributeDefs.smoke_level.name,
-        CustomHeimanCluster.cluster_id,
-        divisor=100,
-        translation_key="smoke_level",
-        fallback_name="Smoke level",
     )
     # Zigbee debug sensors:
     .sensor(
