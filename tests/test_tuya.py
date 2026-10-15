@@ -9,16 +9,29 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import (
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder.metadata import PreventDefaultEntityCreationMetadata
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,7 +43,16 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice, get_device
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+    TuyaZBE000Cluster,
+    TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
+    TuyaZBMeteringCluster,
+    TuyaZBOnOffAttributeCluster,
+)
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
@@ -2224,3 +2246,53 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+def test_ts011f_qeuvnohg_acknowledges_temperature_reports(zigpy_device_from_v2_quirk):
+    """Test the Tongou breaker keeps TemperatureMeasurement to acknowledge reports."""
+    server = ClusterType.Server
+    device = zigpy_device_from_v2_quirk(
+        "_TZ3000_qeuvnohg",
+        "TS011F",
+        cluster_ids={
+            1: {
+                Identify.cluster_id: server,
+                Groups.cluster_id: server,
+                Scenes.cluster_id: server,
+                OnOff.cluster_id: server,
+                TemperatureMeasurement.cluster_id: server,
+                Metering.cluster_id: server,
+                ElectricalMeasurement.cluster_id: server,
+                TuyaZBE000Cluster.cluster_id: server,
+                TuyaZBExternalSwitchTypeCluster.cluster_id: server,
+                Time.cluster_id: ClusterType.Client,
+                Ota.cluster_id: ClusterType.Client,
+            }
+        },
+    )
+
+    ep = device.endpoints[1]
+    assert isinstance(ep.on_off, TuyaZBOnOffAttributeCluster)
+    assert isinstance(ep.smartenergy_metering, TuyaZBMeteringCluster)
+    assert isinstance(ep.electrical_measurement, TuyaZBElectricalMeasurement)
+
+    # The cluster stays, but ZHA must not create an entity for it
+    entry = DEVICE_REGISTRY.match_entry(device)
+    assert (
+        PreventDefaultEntityCreationMetadata(
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix=None,
+            function=None,
+        )
+        in entry.zha_device_factory.quirk_definition.disabled_default_entities
+    )
+
+    # A report sent with the default response bit set must be acknowledged,
+    # otherwise the device retransmits it around ten times
+    temperature = ep.in_clusters[TemperatureMeasurement.cluster_id]
+    hdr, args = temperature.deserialize(b"\x08\x3b\x0a\x00\x00\x29\x85\x14")
+    with mock.patch.object(temperature, "send_default_rsp") as send_default_rsp:
+        temperature.handle_message(hdr, args)
+    send_default_rsp.assert_called_once_with(hdr, foundation.Status.SUCCESS)

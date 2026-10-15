@@ -38,6 +38,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class Plug(EnchantedDevice):
@@ -1893,3 +1894,24 @@ class Plug_v7(EnchantedDevice):
             },
         },
     }
+
+
+# Tongou TO-Q-SY1-JZT. The firmware sends TemperatureMeasurement reports with the
+# default response bit set, but the value is not a usable temperature. The
+# Plug_CB_Metering replacement drops the cluster, so the reports are never
+# acknowledged and the device retransmits each one around ten times, flooding the
+# network. Keep the cluster so zigpy acknowledges the reports, without an entity.
+(
+    TuyaQuirkBuilder("_TZ3000_qeuvnohg", "TS011F")
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBMeteringCluster)
+    .replaces(TuyaZBElectricalMeasurement)
+    .replaces(TuyaZBE000Cluster)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=TemperatureMeasurement.cluster_id
+    )
+    .exposes_feature(TUYA_PLUG_ONOFF)
+    .tuya_enchantment()
+    .add_to_registry()
+)
