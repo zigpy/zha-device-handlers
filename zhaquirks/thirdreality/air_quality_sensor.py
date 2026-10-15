@@ -1,18 +1,26 @@
 """Third Reality air quality sensor devices."""
+
 from typing import Final
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.builder import QuirkBuilder
-from zha.application.platforms.sensor.device_class import SensorDeviceClass, SensorStateClass
+
+from zha.application.platforms.sensor.device_class import (
+    SensorDeviceClass,
+    SensorStateClass,
+)
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityAirQualityCluster(CustomCluster):
     """Third Reality's air quality sensor private cluster."""
+
     cluster_id = 0x042E
 
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
+
         voc_index: Final = ZCLAttributeDef(
             id=0x0100,
             type=t.Single,
