@@ -1896,8 +1896,8 @@ class Plug_v7(EnchantedDevice):
     }
 
 
-# Tongou TO-Q-SY1-JZT. The firmware sends TemperatureMeasurement reports with the
-# default response bit set, but the value is not a usable temperature. The
+# Tongou TO-Q-SY1-JZT. The firmware sends TemperatureMeasurement reports that
+# expect a Default Response, but the value is not a usable temperature. The
 # Plug_CB_Metering replacement drops the cluster, so the reports are never
 # acknowledged and the device retransmits each one around ten times, flooding the
 # network. Keep the cluster so zigpy acknowledges the reports, without an entity.
