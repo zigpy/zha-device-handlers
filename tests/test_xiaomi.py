@@ -1,6 +1,7 @@
 """Tests for xiaomi."""
 
 import asyncio
+import itertools
 import logging
 import math
 from typing import Any
@@ -2470,6 +2471,69 @@ async def test_xiaomi_e1_roller_position_updates(
         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
         75,
     )
+
+
+async def test_xiaomi_e1_roller_device_lift_position_reports_ignored(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller ignores lift position reports sent by the device itself."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    analog_cluster = device.endpoints[1].analog_output
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    lift_attr = WindowCovering.AttributeDefs.current_position_lift_percentage
+
+    tsn = itertools.count(1)
+
+    def report(cluster, attr_id: int, data_type: DataTypeId, value) -> None:
+        """Send an attribute report from the device to the given cluster."""
+        hdr = foundation.ZCLHeader.general(
+            next(tsn),
+            foundation.GeneralCommand.Report_Attributes,
+            direction=foundation.Direction.Server_to_Client,
+        ).serialize()
+        cmd = (
+            foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+            .schema([Attribute(attrid=attr_id, value=TypeValue(data_type, value))])
+            .serialize()
+        )
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr + cmd),
+            )
+        )
+
+    # the position is derived from the AnalogOutput `present_value`: 40% open
+    report(
+        analog_cluster,
+        AnalogOutput.AttributeDefs.present_value.id,
+        DataTypeId.single,
+        t.Single(40.0),
+    )
+    assert window_covering_cluster.get(lift_attr.name) == 60
+    assert window_covering_listener.attribute_updates == [(lift_attr.id, 60)]
+
+    # the device also reports the lift percentage itself, with a value that does not
+    # track the actual position: it must not overwrite the AnalogOutput based position,
+    # and it must not reach the cover entity as an attribute update either
+    report(window_covering_cluster, lift_attr.id, DataTypeId.uint8, t.uint8_t(0))
+    assert window_covering_cluster.get(lift_attr.name) == 60
+    assert window_covering_listener.attribute_updates == [(lift_attr.id, 60)]
+
+    # other attributes reported by the device are still handled normally
+    config_status_attr = WindowCovering.AttributeDefs.config_status
+    report(
+        window_covering_cluster,
+        config_status_attr.id,
+        DataTypeId.map8,
+        t.bitmap8(0b0000_1011),
+    )
+    assert window_covering_cluster.get(config_status_attr.name) == 0b0000_1011
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])

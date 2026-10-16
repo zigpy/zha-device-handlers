@@ -147,6 +147,32 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         ),
     }
 
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Filter out 'current_position_lift_percentage' reports sent by the device.
+
+        The device reports this attribute itself, but its value does not track the actual
+        position, so it would overwrite the position derived from the AnalogOutput
+        'present_value'. Reads are already redirected to the AnalogOutput cluster, so the
+        device's own value is never used.
+        """
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            args = args.replace(
+                attribute_reports=[
+                    attr
+                    for attr in args.attribute_reports
+                    if attr.attrid
+                    != self.AttributeDefs.current_position_lift_percentage.id
+                ]
+            )
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
     async def command(
         self,
         command_id: foundation.GeneralCommand | int | t.uint8_t,
