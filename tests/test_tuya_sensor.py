@@ -5,6 +5,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
@@ -178,3 +179,44 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+async def test_temp_humidity_probe_sensor(zigpy_device_from_v2_quirk):
+    """Test _TZE284_8se38w3c temperature, humidity and probe sensor."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE284_8se38w3c", "TS0601")
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    temp_listener = ClusterListener(ep.temperature)
+    humid_listener = ClusterListener(ep.humidity)
+    power_listener = ClusterListener(ep.power)
+    tuya_listener = ClusterListener(ep.tuya_manufacturer)
+
+    # DP 1 temperature 26.3 C, DP 2 humidity 51 %, DP 3 battery medium,
+    # DP 38 probe temperature -18.5 C
+    message = (
+        b"\x09\x20\x02\x00\x10"
+        b"\x01\x02\x00\x04\x00\x00\x01\x07"
+        b"\x02\x02\x00\x04\x00\x00\x00\x33"
+        b"\x03\x04\x00\x01\x01"
+        b"\x26\x02\x00\x04\xff\xff\xff\x47"
+    )
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert len(temp_listener.attribute_updates) == 1
+    assert temp_listener.attribute_updates[0][1] == 2630
+
+    assert len(humid_listener.attribute_updates) == 1
+    assert humid_listener.attribute_updates[0][1] == 5100
+
+    assert len(power_listener.attribute_updates) == 1
+    assert power_listener.attribute_updates[0][1] == 100
+
+    assert len(tuya_listener.attribute_updates) == 1
+    assert tuya_listener.attribute_updates[0][1] == -185

@@ -10,6 +10,7 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -380,6 +381,36 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_8se38w3c", "TS0601")
+    .applies_to(
+        "_TZE2841000000_8se38w3c", "TS0601"
+    )  # Corrupted manufacturer ID variant
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="probe_temperature",
+        type=t.int16s,
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="probe_temperature",
+        fallback_name="Probe temperature",
+    )
     .skip_configuration()
     .add_to_registry()
 )
