@@ -1,11 +1,18 @@
-"""Device handler for RAMSES ESP32-C6 Zigbee."""
+"""RAMSES bridge commands, with APS delivery and identified native chunks.
+
+Commands 0/1 retain compatibility with firmware using ASCII chunk ACKs.
+Native command 2 carries message ID, sequence, total, and text. Command 3
+selects native reception on the bridge. APS acknowledgements are requested
+by the sender; the quirk itself does not generate application ACK traffic.
+"""
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify
+from zigpy.zcl.clusters.general import Basic, Identify, Ota
 
+from zhaquirks import CustomDevice
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -17,6 +24,8 @@ from zhaquirks.const import (
 
 RAMSES_RX_CLUSTER = 0xFC00
 RAMSES_TX_CLUSTER = 0xFC01
+RAMSES_NATIVE_CHUNK_COMMAND = 0x02
+RAMSES_NATIVE_MODE_COMMAND = 0x03
 
 
 class RamsesRXCluster(CustomCluster):
@@ -32,8 +41,27 @@ class RamsesRXCluster(CustomCluster):
             schema={"text": types.CharacterString},
         )
 
+        receive_chunk: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
+            id=RAMSES_NATIVE_CHUNK_COMMAND,
+            is_manufacturer_specific=False,
+            schema={
+                "message_id": types.uint32_t,
+                "sequence": types.uint8_t,
+                "total": types.uint8_t,
+                "text": types.CharacterString,
+            },
+        )
+
     class ServerCommandDefs(foundation.BaseCommandDefs):
-        """Server commands (ACKs) sent in response to `send_text` messages."""
+        """Legacy commands; native delivery does not use ASCII ACKs."""
+
+        # Existing firmware sent command 0 with client-to-server direction.
+        # Decode that wire format as well as the ClientCommandDefs mapping.
+        legacy_send_text: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
+            id=0x00,
+            is_manufacturer_specific=False,
+            schema={"text": types.CharacterString},
+        )
 
         ack_chunk: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
             id=0x01,
@@ -54,8 +82,25 @@ class RamsesTXCluster(CustomCluster):
             schema={"text": types.CharacterString},
         )
 
+        send_chunk: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
+            id=RAMSES_NATIVE_CHUNK_COMMAND,
+            is_manufacturer_specific=False,
+            schema={
+                "message_id": types.uint32_t,
+                "sequence": types.uint8_t,
+                "total": types.uint8_t,
+                "text": types.CharacterString,
+            },
+        )
+
+        native_mode: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
+            id=RAMSES_NATIVE_MODE_COMMAND,
+            is_manufacturer_specific=False,
+            schema={"enabled": types.Bool},
+        )
+
     class ServerCommandDefs(foundation.BaseCommandDefs):
-        """Server commands (ACKs) sent by the ESP32 in response to `set_text`."""
+        """Legacy ACK commands, retained for older firmware."""
 
         ack_chunk: foundation.ZCLCommandDef = foundation.ZCLCommandDef(
             id=0x01,
@@ -99,6 +144,52 @@ class RamsesESP(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     RamsesRXCluster,
                 ],
+            }
+        },
+    }
+
+
+class RamsesESPSensor(RamsesESP):
+    """Match the simple-sensor descriptor used by the current ESP firmware."""
+
+    signature = {
+        **RamsesESP.signature,
+        ENDPOINTS: {
+            10: {
+                **RamsesESP.signature[ENDPOINTS][10],
+                DEVICE_TYPE: zha.DeviceType.SIMPLE_SENSOR,
+            }
+        },
+    }
+    replacement = {
+        **RamsesESP.replacement,
+        ENDPOINTS: {
+            10: {
+                **RamsesESP.replacement[ENDPOINTS][10],
+                DEVICE_TYPE: zha.DeviceType.SIMPLE_SENSOR,
+            }
+        },
+    }
+
+
+class RamsesESPOTA(RamsesESPSensor):
+    """Preserve the standard OTA client advertised by OTA-capable firmware."""
+
+    signature = {
+        **RamsesESPSensor.signature,
+        ENDPOINTS: {
+            10: {
+                **RamsesESPSensor.signature[ENDPOINTS][10],
+                OUTPUT_CLUSTERS: [RAMSES_RX_CLUSTER, Ota.cluster_id],
+            }
+        },
+    }
+    replacement = {
+        **RamsesESPSensor.replacement,
+        ENDPOINTS: {
+            10: {
+                **RamsesESPSensor.replacement[ENDPOINTS][10],
+                OUTPUT_CLUSTERS: [RamsesRXCluster, Ota.cluster_id],
             }
         },
     }
