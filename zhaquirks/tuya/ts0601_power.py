@@ -518,3 +518,73 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+(
+    TuyaQuirkBuilder("_TZE284_d2zfgtij", "TS0601") # Sold as Zemismart SPM01
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="energy_consumed",
+        fallback_name="Energy",
+        type=t.uint32_t,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+        translation_key="energy_consumed",
+    )
+    .tuya_dp_multi(
+        dp_id=6,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="active_power",
+                converter=multi_dp_to_power,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_voltage",
+                converter=multi_dp_to_voltage,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                attribute_name="rms_current",
+                converter=multi_dp_to_current,
+            ),
+        ],
+    )
+#  Unknown value, seems to always read zero; in some devices it's a "countdown counter" (?)
+#    .tuya_dp(
+#        dp_id=9,
+#    )
+    .tuya_sensor(
+        dp_id=23,
+        attribute_name="energy_produced",
+        fallback_name="Energy produced",
+        type=t.uint32_t,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+        translation_key="energy_produced",
+    )
+#  In a single phase meter total power equals the single phase power provided by dp_id=6
+#    .tuya_dp(
+#        dp_id=29,
+#        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+#        attribute_name="total_active_power",
+#    )
+    .tuya_dp(
+        dp_id=32,
+        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+        attribute_name="ac_frequency",
+        converter=lambda x: x / 100,
+    )
+    .tuya_dp(
+        dp_id=50,
+        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+        attribute_name="power_factor",
+    )
+    .adds(Tuya3PhaseElectricalMeasurement)
+    .skip_configuration()
+    .add_to_registry()
+)
