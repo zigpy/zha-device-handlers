@@ -520,7 +520,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
 )
 
 (
-    TuyaQuirkBuilder("_TZE284_d2zfgtij", "TS0601") # Sold as Zemismart SPM01
+    TuyaQuirkBuilder("_TZE284_d2zfgtij", "TS0601")  # Sold as Zemismart SPM01
     .tuya_sensor(
         dp_id=1,
         attribute_name="energy_consumed",
@@ -552,10 +552,10 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             ),
         ],
     )
-#  Unknown value, seems to always read zero; in some devices it's a "countdown counter" (?)
-#    .tuya_dp(
-#        dp_id=9,
-#    )
+    #  Unknown value, seems to always read zero; in some devices it's a "countdown counter" (?)
+    #    .tuya_dp(
+    #        dp_id=9,
+    #    )
     .tuya_sensor(
         dp_id=23,
         attribute_name="energy_produced",
@@ -567,12 +567,12 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         divisor=100,
         translation_key="energy_produced",
     )
-#  In a single phase meter total power equals the single phase power provided by dp_id=6
-#    .tuya_dp(
-#        dp_id=29,
-#        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
-#        attribute_name="total_active_power",
-#    )
+    #  In a single phase meter total power equals the single phase power provided by dp_id=6
+    #    .tuya_dp(
+    #        dp_id=29,
+    #        ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+    #        attribute_name="total_active_power",
+    #    )
     .tuya_dp(
         dp_id=32,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
