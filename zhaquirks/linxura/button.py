@@ -1,11 +1,11 @@
 """Linxura button device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -26,6 +26,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.linxura import LINXURA
 
 PRESS_TYPES = {

@@ -2,15 +2,19 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig, SensorStateClass
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorStateClass,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone
 
 
