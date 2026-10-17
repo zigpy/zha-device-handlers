@@ -363,3 +363,128 @@ async def test_configure_reporting_tolerates_initial_read_timeout(monkeypatch):
 
     cluster = object.__new__(w600.AqaraW600FCC0)
     await w600.AqaraW600FCC0.configure_reporting(cluster)
+
+
+@pytest.mark.asyncio
+async def test_native_paths_handle_missing_fcc0():
+    """Handle an endpoint without the W600 manufacturer cluster safely."""
+    thermostat = object.__new__(w600.AqaraW600Thermostat)
+    thermostat._endpoint = SimpleNamespace()
+
+    assert thermostat._fcc0() is None
+
+    with pytest.raises(RuntimeError, match="0xFCC0 is unavailable"):
+        await thermostat._write_fcc0({w600.ATTR_THERMOSTAT_ENABLED: 1})
+
+    thermostat._sync_system_mode_from_w600()
+    assert not await thermostat._prepare_setpoint_write()
+    await thermostat.refresh_w600_mode_state()
+
+
+def test_update_attribute_forces_heating_only_presentation(monkeypatch):
+    """Map W600 standard state reports to ZHA's heating-only representation."""
+    updates = []
+
+    def fake_base_update(_self, attrid, value):
+        updates.append((attrid, value))
+
+    monkeypatch.setattr(CustomCluster, "_update_attribute", fake_base_update)
+    thermostat = object.__new__(w600.AqaraW600Thermostat)
+
+    thermostat._update_attribute(w600.ATTR_CTRL_SEQUENCE_OF_OPER, 0)
+    thermostat._update_attribute(w600.ATTR_SYSTEM_MODE, w600.SYS_AUTO)
+
+    assert updates == [
+        (w600.ATTR_CTRL_SEQUENCE_OF_OPER, w600.CTRL_SEQ_HEATING_ONLY),
+        (w600.ATTR_SYSTEM_MODE, w600.SYS_HEAT),
+    ]
+
+
+def test_key_matching_rejects_non_numeric_unknown_objects():
+    """Reject keys that Zigpy cannot interpret as an attribute identifier."""
+    assert not w600._key_matches_attrid(object(), w600.ATTR_SYSTEM_MODE, "system_mode")
+
+
+@pytest.mark.asyncio
+async def test_set_w600_mode_off_and_hold_failure(monkeypatch):
+    """Set idle after off and retain cache when clearing hold fails."""
+
+    async def successful_base_write(_self, attributes, *args, **kwargs):
+        return [[SimpleNamespace(status=foundation.Status.SUCCESS)]]
+
+    monkeypatch.setattr(CustomCluster, "write_attributes", successful_base_write)
+
+    thermostat = FakeThermostat()
+    assert await thermostat._set_w600_mode(w600.SYS_OFF)
+    assert (w600.ATTR_RUNNING_STATE, w600.RUNSTATE_IDLE) in thermostat.updates
+
+    async def failed_base_write(_self, attributes, *args, **kwargs):
+        return [[SimpleNamespace(status=foundation.Status.FAILURE)]]
+
+    monkeypatch.setattr(CustomCluster, "write_attributes", failed_base_write)
+
+    failed = FakeThermostat()
+    assert not await failed._set_w600_mode(w600.SYS_HEAT)
+    assert failed.fcc0._attr_cache[w600.ATTR_THERMOSTAT_ENABLED] == 1
+
+
+@pytest.mark.asyncio
+async def test_write_attributes_covers_invalid_mode_failure_and_hold_failure(
+    monkeypatch,
+):
+    """Return correct statuses when mode conversion, mode write, or hold fails."""
+    calls = []
+
+    async def mixed_base_write(_self, attributes, *args, **kwargs):
+        calls.append(attributes)
+        status = (
+            foundation.Status.SUCCESS if len(calls) == 1 else foundation.Status.FAILURE
+        )
+        return [[SimpleNamespace(status=status)]]
+
+    monkeypatch.setattr(CustomCluster, "write_attributes", mixed_base_write)
+
+    invalid = FakeThermostat()
+    invalid_result = await invalid.write_attributes({w600.ATTR_SYSTEM_MODE: object()})
+    assert invalid_result[0][0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+    mode_failure = FakeThermostat(
+        vendor_response=[[SimpleNamespace(status=foundation.Status.FAILURE)]]
+    )
+    failed_result = await mode_failure.write_attributes(
+        {w600.ATTR_SYSTEM_MODE: w600.SYS_HEAT}
+    )
+    assert failed_result[0][0].status == foundation.Status.FAILURE
+
+    scheduled = FakeThermostat(enabled=1, schedule=1)
+    await scheduled.write_attributes({"occupied_heating_setpoint": 2050})
+    assert calls == [
+        {"occupied_heating_setpoint": 2050},
+        {w600.ATTR_TEMP_SETPOINT_HOLD: 1},
+    ]
+    assert scheduled.updates == []
+
+
+def test_fcc0_update_ignores_non_w600_thermostat(monkeypatch):
+    """Ignore vendor reports when endpoint one has no W600 thermostat."""
+    monkeypatch.setattr(CustomCluster, "_update_attribute", lambda *args: None)
+
+    cluster = object.__new__(w600.AqaraW600FCC0)
+    cluster._endpoint = SimpleNamespace(thermostat=object())
+
+    w600.AqaraW600FCC0._update_attribute(cluster, w600.ATTR_THERMOSTAT_ENABLED, 1)
+
+
+@pytest.mark.asyncio
+async def test_write_attributes_returns_success_for_supported_mode(monkeypatch):
+    """Return success after a supported W600 mode was applied."""
+
+    async def successful_base_write(_self, attributes, *args, **kwargs):
+        return [[SimpleNamespace(status=foundation.Status.SUCCESS)]]
+
+    monkeypatch.setattr(CustomCluster, "write_attributes", successful_base_write)
+
+    thermostat = FakeThermostat()
+    result = await thermostat.write_attributes({w600.ATTR_SYSTEM_MODE: w600.SYS_HEAT})
+
+    assert result[0][0].status == foundation.Status.SUCCESS
