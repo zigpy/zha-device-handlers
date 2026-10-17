@@ -1532,6 +1532,59 @@ base_tuya_motion = (
 )
 
 
+# Tuya 10Ghz mmWave presence sensor, HOBEIAN ZG-204ZE
+(
+    TuyaQuirkBuilder("_TZE200_y8jijhba", "TS0601")
+    .applies_to("_TZE200_cq8lu23i", "TS0601")
+    .applies_to("_TZE200_4pm4pekt", "TS0601")
+    .applies_to("ZG-204ZE", "CK-BL702-MWS-01(7016)")
+    .applies_to("HOBEIAN", "ZG-204ZE")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=19,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 # Tuya mmWave radar 5.8GHz, ZY_HPS01
 (
     TuyaQuirkBuilder("_TZE204_ex3rcdha", "TS0601")
