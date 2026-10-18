@@ -84,6 +84,5 @@ for axis in ("x_axis", "y_axis", "z_axis"):
         unit="mg",
         translation_key="motion_threshold",
         fallback_name="Motion threshold",
-    )
-    .add_to_registry()
+    ).add_to_registry()
 )
