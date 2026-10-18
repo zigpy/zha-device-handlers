@@ -1,8 +1,8 @@
 """Samjin Multi 2019 Refresh Quirk."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+from zhaquirks.builder import QuirkBuilder
+from zha.application import EntityType
+from zha.application.platforms.sensor.device_class import SensorStateClass
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
