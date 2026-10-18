@@ -184,7 +184,10 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE200_h4cgnbzg", "TS0601")
     .applies_to("_TZE200_exfrnlow", "TS0601")
     .applies_to("_TZE200_9m4kmbfu", "TS0601")
+    .applies_to("_TZE284_9m4kmbfu", "TS0601")
     .applies_to("_TZE200_3yp57tby", "TS0601")
+    .applies_to("_TZE284_3yp57tby", "TS0601")
+    .applies_to("_TZE284_0dvm9mva", "TS0601")
     # default device type is `SMART_PLUG` for this,
     # so change it back to keep UID/entity the same
     .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
