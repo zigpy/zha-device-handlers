@@ -36,6 +36,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.inovelli.types import MMWaveArea, MMWaveTarget
 
 _LOGGER = logging.getLogger(__name__)
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
@@ -1302,6 +1303,8 @@ class MMWaveControlId(t.enum8):
     Auto_generate_interference_area = 0x01
     Obtain_areas = 0x02
     Clear_interference_area = 0x03
+    Reset_detection_area = 0x04
+    Clear_stay_areas = 0x05
 
 
 class InovelliVZM32SNMMWaveCluster(CustomCluster):
@@ -1375,12 +1378,146 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
         )
 
     class ServerCommandDefs(BaseCommandDefs):
-        """Server command definitions."""
+        """Server command definitions.
+
+        Commands 0x01-0x03 (set_{interference,detection,stay}_area) match
+        Z2M's zigbee-herdsman-converters inovelli.ts definitions for the
+        same cluster (setInterferenceArea / setDetectionArea / setStayArea).
+        Each command defines one of the device's four configurable areas.
+        The wire-level area_id is 0-indexed (0..3) per inovelli.ts, while the
+        corresponding report payloads (report_interference_area /
+        report_detection_area / report_stay_area in ClientCommandDefs) expose
+        the same areas as fields named area_1..area_4 to match Inovelli's
+        user-facing 1-indexed labeling. Mapping: area_id=0 -> area_1, ...,
+        area_id=3 -> area_4. Bounds are in millimeters on the x (width),
+        y (depth), and z (height) axes.
+
+        Note: firmware v1.00 has a reported bug on set_stay_area where the
+        x_min and x_max parameters are swapped and sign-inverted on write
+        (community report:
+        https://community.inovelli.com/t/zigbee-motion-switch-project-linus-bug-enhancement-thread/20438/251).
+        Callers who need asymmetric x-axis stay zones on v1.00 can
+        pre-compensate by sending x_min=-b, x_max=-a to end up with a
+        stored range of (a, b). Symmetric zones (x range [-n, +n]) are
+        self-correcting and need no compensation. Status of the bug in
+        v1.01/v1.02 beta firmware is undocumented.
+        """
 
         mmwave_control_command = ZCLCommandDef(
             id=0x00,
             schema={
                 "control_id": MMWaveControlId,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_interference_area = ZCLCommandDef(
+            id=0x01,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_detection_area = ZCLCommandDef(
+            id=0x02,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_stay_area = ZCLCommandDef(
+            id=0x03,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions.
+
+        These are reports sent from the device to the coordinator. The three
+        area reports (report_interference_area / report_detection_area /
+        report_stay_area) are emitted in response to a server command_id=0x00
+        with control_id=Obtain_areas; each returns all four configured areas
+        for that category plus a `count` of how many slots are populated.
+
+        report_target_info streams live target positions when the
+        mmwave_target_info_report attribute (0x006B) is enabled; each target
+        in the `targets` list is an int16 (x, y, z, dop, target_id) tuple.
+
+        anyone_in_reporting_area is emitted asynchronously on stay-area
+        occupancy transitions, giving per-area occupancy state.
+
+        Names and payload layouts match zigbee-herdsman-converters'
+        `inovelli.ts` for the same cluster.
+        """
+
+        anyone_in_reporting_area = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "area_1": t.uint8_t,
+                "area_2": t.uint8_t,
+                "area_3": t.uint8_t,
+                "area_4": t.uint8_t,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_target_info = ZCLCommandDef(
+            id=0x01,
+            schema={
+                "target_num": t.uint8_t,
+                "targets": t.List[MMWaveTarget],
+            },
+            is_manufacturer_specific=True,
+        )
+        report_interference_area = ZCLCommandDef(
+            id=0x02,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_detection_area = ZCLCommandDef(
+            id=0x03,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_stay_area = ZCLCommandDef(
+            id=0x04,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
             },
             is_manufacturer_specific=True,
         )

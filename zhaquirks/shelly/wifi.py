@@ -10,8 +10,8 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.device import CustomZigpyDevice
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 
-SHELLY_MANUFACTURER_CODE = 0x1490
 SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
 SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
 SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
