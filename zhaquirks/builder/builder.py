@@ -1131,8 +1131,9 @@ class QuirkBuilder:
 
     def clone(self, omit_man_model_data: bool = True) -> Self:
         """Clone this QuirkBuilder potentially omitting manufacturer and model data."""
-        new_builder = deepcopy(self)
-        new_builder.registry = self.registry
+
+        # Share the registry instead of deep-copying every registered quirk
+        new_builder = deepcopy(self, memo={id(self.registry): self.registry})
         if omit_man_model_data:
             new_builder.manufacturer_model_metadata = []
         return new_builder
