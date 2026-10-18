@@ -1,6 +1,5 @@
 """Samjin Multi 2019 Refresh Quirk."""
 
-from zhaquirks.builder import QuirkBuilder
 from zha.application import EntityType
 from zha.application.platforms.sensor.device_class import SensorStateClass
 from zigpy.zcl.clusters.general import (
@@ -14,6 +13,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
