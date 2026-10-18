@@ -26,7 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.legacy import CustomDevice, signature_matches
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNewManufCluster,
@@ -1901,8 +1901,10 @@ class Plug_v7(EnchantedDevice):
 # Plug_CB_Metering replacement drops the cluster, so the reports are never
 # acknowledged and the device retransmits each one around ten times, flooding the
 # network. Keep the cluster so zigpy acknowledges the reports, without an entity.
+# Only applies to devices matching the Plug_CB_Metering signature, like before.
 (
     TuyaQuirkBuilder("_TZ3000_qeuvnohg", "TS011F")
+    .filter(signature_matches(Plug_CB_Metering.signature))
     .replaces(TuyaZBOnOffAttributeCluster)
     .replaces(TuyaZBMeteringCluster)
     .replaces(TuyaZBElectricalMeasurement)

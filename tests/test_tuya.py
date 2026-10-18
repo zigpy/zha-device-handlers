@@ -2293,6 +2293,16 @@ def test_ts011f_qeuvnohg_quirk_selection(zigpy_device_from_quirk):
     )
     assert isinstance(other, zhaquirks.tuya.ts011f_plug.Plug_CB_Metering)
 
+    # Same manufacturer with another endpoint layout: neither quirk applies
+    raw = _tongou_device(
+        zigpy_device_from_quirk,
+        "_TZ3000_qeuvnohg",
+        ieee=t.EUI64.convert("01:02:03:04:05:06:07:0a"),
+    )
+    del raw.endpoints[242]
+    unmatched = DEVICE_REGISTRY.resolve(raw)
+    assert not isinstance(unmatched.endpoints[1].on_off, TuyaZBOnOffAttributeCluster)
+
 
 @pytest.mark.parametrize(
     ("manufacturer", "report", "expected_response"),
