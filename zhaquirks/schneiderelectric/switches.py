@@ -1,9 +1,6 @@
 """Schneider Electric switches quirks."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-
+from zhaquirks.builder import NumberDeviceClass, QuirkBuilder, UnitOfTime
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBasic,

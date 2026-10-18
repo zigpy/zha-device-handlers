@@ -1,9 +1,12 @@
 """Schneider Electric dimmers and switches quirks."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-
+from zhaquirks.builder import (
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfTime,
+)
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBallast,
