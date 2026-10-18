@@ -82,7 +82,7 @@ for axis in ("x_axis", "y_axis", "z_axis"):
         max_value=255,
         step=1,
         unit="mg",
-        translation_key="motion_threshold",
-        fallback_name="Motion threshold",
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
     ).add_to_registry()
 )
