@@ -1,8 +1,8 @@
 """IKEA TRADFRI plugs quirk."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import LevelControl
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.ikea import IKEA
 
 # remove LevelControl for plug to not show config options in ZHA

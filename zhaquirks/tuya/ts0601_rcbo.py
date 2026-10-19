@@ -3,7 +3,6 @@
 from typing import Any, Final, Union
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,6 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,

@@ -1,7 +1,6 @@
 """Osram RGBW Gardenpoles."""
 
 from zigpy.profiles import zll
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -22,6 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.osram import OSRAM, OsramLightCluster
 
 

@@ -2,17 +2,20 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import (
+import zigpy.types as t
+from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.builder import (
     PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
     UnitOfElectricPotential,
     UnitOfTime,
     UnitOfVolume,
 )
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-import zigpy.types as t
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
@@ -637,7 +640,6 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="single_watering_amount",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLUME,
         unit=UnitOfVolume.LITERS,
         translation_key="single_watering_amount",
         fallback_name="Single watering amount",

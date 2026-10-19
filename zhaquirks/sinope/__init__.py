@@ -1,9 +1,9 @@
 """Module for Sinope quirks implementations."""
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,

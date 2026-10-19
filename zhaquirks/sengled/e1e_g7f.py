@@ -3,7 +3,6 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     COMMAND,
     COMMAND_OFF,
@@ -39,6 +39,7 @@ from zhaquirks.const import (
     TURN_ON,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class SengledE1EG7FOnOffCluster(CustomCluster, OnOff):
