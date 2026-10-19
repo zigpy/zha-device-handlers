@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -1024,9 +1024,9 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -1471,9 +1471,9 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 

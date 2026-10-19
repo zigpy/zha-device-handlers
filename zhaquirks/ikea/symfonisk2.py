@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden SYMFONISK sound remote gen2."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -56,6 +55,7 @@ from zhaquirks.ikea import (
     ShortcutV1Cluster,
     ShortcutV2Cluster,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class Symfonisk2CommonTriggers:

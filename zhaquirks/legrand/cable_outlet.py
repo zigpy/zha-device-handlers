@@ -2,8 +2,6 @@
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -15,6 +13,8 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
+from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 
