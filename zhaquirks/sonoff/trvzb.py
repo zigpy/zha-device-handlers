@@ -114,6 +114,7 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "TRVZB")
+    .applies_to("SONOFF", "TRV-ZBT")
     .replaces(CustomSonoffCluster)
     .switch(
         CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
