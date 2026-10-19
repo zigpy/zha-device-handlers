@@ -179,7 +179,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
 # Supports most features, except the schedule function and temperature calibration.
 (
     TuyaQuirkBuilder("_TZE204_tagezcph", "TS0601")
-    .applies_to("_TZE204_tagezcph", "TS0601")
     # System mode (on/off) - DP 1
     .tuya_dp(
         dp_id=1,
@@ -238,7 +237,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         step=1.0,
         multiplier=0.1,
         translation_key="min_temperature",
-        fallback_name="Minimum temperature",
+        fallback_name="Min temperature",
     )
     .tuya_number(
         dp_id=19,
@@ -251,7 +250,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         step=1.0,
         multiplier=0.1,
         translation_key="max_temperature",
-        fallback_name="Maximum temperature",
+        fallback_name="Max temperature",
     )
     .tuya_number(
         dp_id=111,
