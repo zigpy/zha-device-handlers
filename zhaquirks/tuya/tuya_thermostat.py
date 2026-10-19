@@ -18,7 +18,6 @@ from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
-
 class RunningMode(t.enum8):
     """Tuya running mode enum."""
 
