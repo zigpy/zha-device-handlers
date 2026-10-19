@@ -205,6 +205,7 @@ async def test_handle_get_data(
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -232,6 +233,7 @@ async def test_handle_get_data(
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         if set_schedule_off:
             # Ensure schedule_enable set to off
@@ -247,6 +249,7 @@ async def test_handle_get_data(
                 priority=None,
                 retries=None,
                 retry_delay=None,
+                aps_encryption=False,
             )
 
         assert status == [
@@ -273,6 +276,7 @@ async def test_handle_get_data(
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         if set_schedule_off:
             # Ensure schedule_enable set to off
@@ -288,6 +292,7 @@ async def test_handle_get_data(
                 priority=None,
                 retries=None,
                 retry_delay=None,
+                aps_encryption=False,
             )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
