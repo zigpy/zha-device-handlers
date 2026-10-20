@@ -168,9 +168,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
         )
 
     # Test TUYA_SET_DATA_RESPONSE and other DP
-    hdr_resp = foundation.ZCLHeader.cluster(
-        tsn=2, command_id=TUYA_SET_DATA_RESPONSE
-    )
+    hdr_resp = foundation.ZCLHeader.cluster(tsn=2, command_id=TUYA_SET_DATA_RESPONSE)
     other_payload = TuyaManufCluster.Command()
     other_payload.command_id = (4 << 8) + 1  # DP 1
     other_payload.data = [1, 0]
@@ -185,9 +183,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
         tuya_cluster.handle_cluster_request(hdr, [bad_payload])
 
     # Test handle_cluster_request with disable_default_response=True (no ACK sent)
-    hdr_no_ack = foundation.ZCLHeader.cluster(
-        tsn=3, command_id=TUYA_GET_DATA
-    )
+    hdr_no_ack = foundation.ZCLHeader.cluster(tsn=3, command_id=TUYA_GET_DATA)
     hdr_no_ack.frame_control.disable_default_response = True
     with mock.patch.object(tuya_cluster, "send_default_rsp") as ack_mock:
         tuya_cluster.handle_cluster_request(hdr_no_ack, [payload])
