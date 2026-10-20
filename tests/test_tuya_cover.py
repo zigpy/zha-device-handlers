@@ -152,7 +152,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # 6. Test InvertedTuyaManufacturerWindowCover.handle_cluster_request
     # DP 21 incoming tilt angle report: angle = 90 -> 50%
-    hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=TUYA_GET_DATA, is_reply=False)
+    hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=TUYA_GET_DATA)
     payload = TuyaManufCluster.Command()
     payload.command_id = (2 << 8) + 21
     payload.data = [4, 0, 0, 0, 90]
@@ -169,7 +169,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # Test TUYA_SET_DATA_RESPONSE and other DP
     hdr_resp = foundation.ZCLHeader.cluster(
-        tsn=2, command_id=TUYA_SET_DATA_RESPONSE, is_reply=False
+        tsn=2, command_id=TUYA_SET_DATA_RESPONSE
     )
     other_payload = TuyaManufCluster.Command()
     other_payload.command_id = (4 << 8) + 1  # DP 1
@@ -186,7 +186,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # Test handle_cluster_request with disable_default_response=True (no ACK sent)
     hdr_no_ack = foundation.ZCLHeader.cluster(
-        tsn=3, command_id=TUYA_GET_DATA, is_reply=False
+        tsn=3, command_id=TUYA_GET_DATA
     )
     hdr_no_ack.frame_control.disable_default_response = True
     with mock.patch.object(tuya_cluster, "send_default_rsp") as ack_mock:
