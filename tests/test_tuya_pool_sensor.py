@@ -5,17 +5,28 @@ from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
 from zha.application.platforms.button import Button
+from zha.application.platforms.number import NumberConfigurationEntity
+from zha.application.platforms.select import ZCLEnumSelectEntity
 from zigpy.zcl import ClusterType
 
+from tests.common import wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.builder.metadata import ZCLCommandButtonMetadata, ZCLEnumMetadata
-from zhaquirks.tuya import TUYA_QUERY_DATA, TUYA_SET_DATA, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
+    TUYA_SET_DATA,
+    TuyaCommand,
+    TuyaDatapointData,
+    TuyaDPType,
+    TuyaNewManufCluster,
+)
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zhaquirks.tuya.ts0601_pool_sensor import (
     DP_CALIBRATION_KEEP_AWAKE,
     DP_EC_CALIBRATION,
     DP_ORP_CALIBRATION,
     DP_PH_CALIBRATION,
+    PHCalibrationStandard,
     TuyaPoolManufCluster,
 )
 
@@ -58,6 +69,101 @@ def test_pool_sensor_entities(device_mock):
 
     assert commands == {"query_data", "calibrate_ph", "calibrate_ec", "calibrate_orp"}
     assert enums == {"ph_calibration_standard"}
+    ph_sensor = next(
+        metadata
+        for metadata in entity_metadata
+        if getattr(metadata, "attribute_name", None) == "ph_measured_value"
+    )
+    assert ph_sensor.divisor == 10
+
+
+@pytest.mark.parametrize("divisor", [10, 100])
+async def test_ph_limit_formats(pool_sensor, divisor):
+    """Both wire formats display and write the same pH limit values."""
+    pool_sensor.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[
+                TuyaDatapointData(106, 14 * divisor),
+                TuyaDatapointData(107, 7 * divisor),
+            ],
+        )
+    )
+    number = Mock(
+        _cluster=pool_sensor,
+        _attribute_name="ph_min_value",
+        _multiplier=0.1,
+    )
+    assert pool_sensor.get("ph_max_value") == 140
+    assert NumberConfigurationEntity.native_value.fget(number) == 7
+    assert pool_sensor.get_cached_value("ph_max_value") == 14 * divisor
+
+    pool_sensor.command = AsyncMock()
+    await NumberConfigurationEntity.async_set_native_value(number, 7.5)
+    await wait_for_zigpy_tasks()
+
+    command_id, command_data = pool_sensor.command.await_args.args
+    assert command_id == TUYA_SET_DATA
+    assert command_data.datapoints[0].dp == 107
+    assert command_data.datapoints[0].data.payload == 7.5 * divisor
+    assert NumberConfigurationEntity.native_value.fget(number) == 7.5
+
+
+async def test_ph_limit_format_remembered(pool_sensor):
+    """Hundredths remain selected after both raw limits fall below 140."""
+    pool_sensor.update_attribute("ph_max_value", 1400)
+    assert pool_sensor.get("ph_max_value") == 140
+    pool_sensor.update_attribute("ph_max_value", 100)
+    pool_sensor.update_attribute("ph_min_value", 50)
+
+    # Restore only persisted attributes into a fresh cluster, like appdb does.
+    restored = type(pool_sensor)(pool_sensor.endpoint)
+    try:
+        for name in (*pool_sensor.PH_LIMIT_ATTRIBUTES, "ph_limit_divisor"):
+            attr = restored.attributes_by_name[name]
+            restored._attr_cache.set_value(attr, pool_sensor.get_cached_value(name))
+        assert restored.get("ph_max_value") == 10
+        assert restored.get("ph_min_value") == 5
+        restored.command = AsyncMock()
+        await restored.write_attributes(
+            {restored.attributes_by_name["ph_max_value"].id: 12}
+        )
+        await wait_for_zigpy_tasks()
+        assert restored.command.await_args.args[1].datapoints[0].data.payload == 120
+    finally:
+        restored.handle_auto_update_timers_cancel()
+
+
+@pytest.mark.parametrize("raw", [None, -1, 0xFFFFFFFF])
+async def test_ph_limit_unset(pool_sensor, raw):
+    """Unset limits do not select a format or expose invalid pH values."""
+    pool_sensor.update_attribute("ph_max_value", raw)
+    assert pool_sensor.get("ph_max_value") is None
+    assert pool_sensor._get_ph_limit_divisor() == 10
+    assert pool_sensor.get("unknown_attribute", 123) == 123
+
+
+@pytest.mark.parametrize(
+    ("option", "value"),
+    [("Asia (4.00, 6.86, 9.18)", 0), ("Europe (4.00, 7.00, 10.00)", 1)],
+)
+async def test_ph_buffer_options(pool_sensor, option, value):
+    """Buffer labels round-trip through the ZHA selector as Tuya enums."""
+    pool_sensor.command = AsyncMock()
+    selector = Mock(
+        _cluster=pool_sensor,
+        _attribute_name="ph_calibration_standard",
+        _enum=PHCalibrationStandard,
+    )
+    await ZCLEnumSelectEntity.async_select_option(selector, option)
+    await wait_for_zigpy_tasks()
+
+    datapoint = pool_sensor.command.await_args.args[1].datapoints[0]
+    assert datapoint.dp == 103
+    assert datapoint.data.dp_type == TuyaDPType.ENUM
+    assert datapoint.data.raw == bytes([value])
+    assert ZCLEnumSelectEntity.current_option.fget(selector) == option
 
 
 async def test_calibration_payload(pool_sensor):

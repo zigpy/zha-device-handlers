@@ -1,6 +1,7 @@
 """Tuya pool sensor."""
 
 import asyncio
+from enum import Enum
 from typing import Final
 
 import zigpy.types as t
@@ -33,11 +34,14 @@ DP_EC_CALIBRATION: Final = 115
 DP_ORP_CALIBRATION: Final = 116
 
 
-class PHCalibrationStandard(t.enum8):
-    """Supported pH buffer sets."""
-
-    ASIA = 0
-    EUROPE = 1
+PHCalibrationStandard = Enum(
+    "PHCalibrationStandard",
+    {
+        "Asia_(4.00,_6.86,_9.18)": 0,
+        "Europe_(4.00,_7.00,_10.00)": 1,
+    },
+    type=t.uint8_t,
+)
 
 
 class TuyaPoolManufCluster(TuyaMCUCluster):
@@ -45,6 +49,42 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
 
     CALIBRATION_MEASUREMENT_DELAY: Final = 6
     CALIBRATION_SETTLE_DELAY: Final = 3
+
+    PH_LIMIT_ATTRIBUTES: Final = ("ph_max_value", "ph_min_value")
+
+    def _get_ph_limit_divisor(self) -> int:
+        """Detect and cache the device's pH limit format using raw limits."""
+        if super().get("ph_limit_divisor") == 100:
+            return 100
+        # Both formats use the same Zigbee firmware. Only hundredths can
+        # exceed 140; retain that format even after writing lower limits.
+        for name in self.PH_LIMIT_ATTRIBUTES:
+            value = super().get(name)
+            if value is not None and 140 < value <= 1400:
+                self.update_attribute("ph_limit_divisor", 100)
+                return 100
+        return 10
+
+    def get(self, key, default=None):
+        """Expose pH limits in tenths while preserving raw values in the cache."""
+        try:
+            attribute = self.find_attribute(key)
+        except KeyError:
+            return default
+        value = super().get(key, default)
+        if attribute.name in self.PH_LIMIT_ATTRIBUTES:
+            if value is None or value < 0 or value == 0xFFFFFFFF:
+                return None
+            return value * 10 / self._get_ph_limit_divisor()
+        return value
+
+    async def write_attributes(self, attributes, **kwargs):
+        """Convert pH limits from tenths to the detected device format."""
+        attributes = dict(attributes)
+        for key, value in attributes.items():
+            if self.find_attribute(key).name in self.PH_LIMIT_ATTRIBUTES:
+                attributes[key] = round(value * self._get_ph_limit_divisor() / 10)
+        return await super().write_attributes(attributes, **kwargs)
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -184,7 +224,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
     .tuya_sensor(
         dp_id=10,
         attribute_name="ph_measured_value",
-        divisor=100,
+        divisor=10,
         type=t.uint16_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.PH,
@@ -243,6 +283,11 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         enum_class=PHCalibrationStandard,
         translation_key="ph_calibration_standard",
         fallback_name="pH calibration standard",
+    )
+    .tuya_attribute(
+        dp_id=0xF0,
+        attribute_name="ph_limit_divisor",
+        type=t.uint8_t,
     )
     .tuya_number(
         dp_id=106,
