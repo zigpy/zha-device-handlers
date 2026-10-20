@@ -1,26 +1,21 @@
 """Ikea module."""
 
 import logging
-from typing import Any
 
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
+from zhaquirks.const import BatterySize
 
 _LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
-
-# Events synthesized by IkeaLevelControl for remotes whose dim buttons share one stop
-COMMAND_MOVE_UP_RELEASE = "move_up_release"
-COMMAND_MOVE_DOWN_RELEASE = "move_down_release"
 
 IKEA_SHORTCUT_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
 IKEA_MATTER_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
@@ -55,57 +50,6 @@ class ScenesCluster(CustomCluster, Scenes):
             schema={"param1": t.int16s},
             is_manufacturer_specific=True,
         )
-
-
-class IkeaLevelControl(CustomCluster, LevelControl):
-    """LevelControl cluster that tells the release of a dim button hold apart.
-
-    IKEA remotes send the same stop command for both dim buttons on most firmware, so
-    the stop alone does not say which button was released. This tracks the direction of
-    the move that started the hold and emits a `move_up_release` or `move_down_release`
-    event for the stop, which the quirks' long release triggers use.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize instance."""
-        super().__init__(*args, **kwargs)
-        self._last_move_direction: int | None = None
-
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list[Any],
-        *,
-        # This parameter is unused and kept only for backwards compatibility
-        dst_addressing: t.AddrMode | None = None,
-    ):
-        """Handle cluster specific commands.
-
-        Track move commands to remember direction for stop commands.
-        """
-        if hdr.command_id in (
-            LevelControl.ServerCommandDefs.move.id,
-            LevelControl.ServerCommandDefs.move_with_on_off.id,
-        ):
-            move_mode = args[0]
-            self._last_move_direction = move_mode
-        elif (
-            hdr.command_id
-            in (
-                LevelControl.ServerCommandDefs.stop.id,
-                LevelControl.ServerCommandDefs.stop_with_on_off.id,
-            )
-            and self._last_move_direction is not None
-        ):
-            event = (
-                COMMAND_MOVE_UP_RELEASE
-                if self._last_move_direction == LevelControl.MoveMode.Up
-                else COMMAND_MOVE_DOWN_RELEASE
-            )
-            self.listener_event(ZHA_SEND_EVENT, event, [])
-            self._last_move_direction = None
-
-        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class ShortcutV1Cluster(EventableCluster):

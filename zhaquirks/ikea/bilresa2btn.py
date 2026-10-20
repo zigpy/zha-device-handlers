@@ -3,11 +3,14 @@
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import LevelControl, OnOff, Scenes
 
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
@@ -22,18 +25,12 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import (
-    COMMAND_MOVE_DOWN_RELEASE,
-    COMMAND_MOVE_UP_RELEASE,
-    IKEA,
-    IkeaLevelControl,
-    ScenesCluster,
-)
+from zhaquirks.ikea import IKEA, ScenesCluster
 
 (
     QuirkBuilder(IKEA, "09B9")
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
-    .replace_cluster_occurrences(IkeaLevelControl)
+    .replace_cluster_occurrences(LevelControlWithMoveDirection)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
