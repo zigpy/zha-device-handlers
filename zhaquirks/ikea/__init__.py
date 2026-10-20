@@ -18,6 +18,10 @@ IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
+# Events synthesized by IkeaLevelControl for remotes whose dim buttons share one stop
+COMMAND_MOVE_UP_RELEASE = "move_up_release"
+COMMAND_MOVE_DOWN_RELEASE = "move_down_release"
+
 IKEA_SHORTCUT_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
 IKEA_MATTER_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
 
@@ -53,8 +57,14 @@ class ScenesCluster(CustomCluster, Scenes):
         )
 
 
-class IkeaBilresaLevelControl(CustomCluster, LevelControl):
-    """Custom LevelControl cluster for IKEA remotes to track direction."""
+class IkeaLevelControl(CustomCluster, LevelControl):
+    """LevelControl cluster that tells the release of a dim button hold apart.
+
+    IKEA remotes send the same stop command for both dim buttons on most firmware, so
+    the stop alone does not say which button was released. This tracks the direction of
+    the move that started the hold and emits a `move_up_release` or `move_down_release`
+    event for the stop, which the quirks' long release triggers use.
+    """
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
@@ -88,9 +98,9 @@ class IkeaBilresaLevelControl(CustomCluster, LevelControl):
             and self._last_move_direction is not None
         ):
             event = (
-                "move_up_release"
-                if self._last_move_direction == 0
-                else "move_down_release"
+                COMMAND_MOVE_UP_RELEASE
+                if self._last_move_direction == LevelControl.MoveMode.Up
+                else COMMAND_MOVE_DOWN_RELEASE
             )
             self.listener_event(ZHA_SEND_EVENT, event, [])
             self._last_move_direction = None
