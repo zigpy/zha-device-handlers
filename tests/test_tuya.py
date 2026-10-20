@@ -13,21 +13,26 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
 )
 from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
@@ -1566,6 +1571,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "_TZ3000_qzjcsmar"),
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "_TYZB02_key8kk7r"),
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC, "_TZ3000_famkxci2"),
+        (
+            zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC,
+            "another random manufacturer",
+        ),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_TZ3000_hjgcnkgs"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_TZ3000_ojgcnkkl"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_some_random_manuf"),
@@ -1582,6 +1592,68 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
 
     quirked_dev = get_device(zigpy_dev)
     assert isinstance(quirked_dev, quirk)
+
+
+def test_ts0043_six_endpoint_signature(assert_signature_matches_quirk):
+    """Test the six endpoint TS0043 firmware matches its quirk."""
+
+    signature = {
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0000",
+                "in_clusters": ["0x0000", "0x0001", "0x0006", "0xe000"],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            **{
+                str(endpoint_id): {
+                    "profile_id": 260,
+                    "device_type": "0x0000",
+                    "in_clusters": ["0x0001", "0x0006"],
+                    "out_clusters": [],
+                }
+                for endpoint_id in range(2, 7)
+            },
+        },
+        "manufacturer": "_TZ3000_famkxci2",
+        "model": "TS0043",
+    }
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC, signature
+    )
+
+
+async def test_ts0043_six_endpoint_button_events(zigpy_device_from_quirk):
+    """Test button presses on the six endpoint TS0043 match its automation triggers."""
+
+    quirk = zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC
+    device = zigpy_device_from_quirk(quirk)
+
+    # only the three endpoints used by the buttons remain, and none of them has an
+    # OnOff server cluster that ZHA would expose as a switch
+    assert sorted(ep_id for ep_id in device.endpoints if ep_id != 0) == [1, 2, 3]
+    for ep_id in (1, 2, 3):
+        assert OnOff.cluster_id not in device.endpoints[ep_id].in_clusters
+
+    # each frame gets its own sequence number, as the cluster drops repeated ones
+    for tsn, ((press, _button), trigger) in enumerate(
+        quirk.device_automation_triggers.items(), start=1
+    ):
+        on_off_cluster = device.endpoints[trigger[ENDPOINT_ID]].out_clusters[
+            OnOff.cluster_id
+        ]
+        zha_listener = mock.MagicMock()
+        on_off_cluster.add_listener(zha_listener)
+
+        press_type = {SHORT_PRESS: 0x00, DOUBLE_PRESS: 0x01, LONG_PRESS: 0x02}[press]
+        hdr, args = on_off_cluster.deserialize(
+            # cluster specific, client to server, default response disabled
+            bytes([0x11, tsn, 0xFD, press_type])
+        )
+        on_off_cluster.handle_message(hdr, args)
+
+        zha_listener.zha_send_event.assert_called_once_with(trigger[COMMAND], [])
+        on_off_cluster.remove_listener(zha_listener)
 
 
 def test_multiple_attributes_report():
