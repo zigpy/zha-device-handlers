@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -20,6 +21,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTR_ID,
@@ -244,3 +246,23 @@ class AqaraT2Relay(XiaomiCustomDevice):
             COMMAND: PRESS_TYPES[2],
         },
     }
+
+    # The S1 and S2 inputs report one event per actuation of the wired switch
+    button_event_entities = tuple(
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, PRESS_TYPES[endpoint_id]),
+                ),
+            ],
+            cluster_id=MultistateInput.cluster_id,
+            cluster_type=ClusterType.Server,
+            endpoint_id=endpoint_id,
+            unique_id_suffix=f"button_{endpoint_id}",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id}",
+        )
+        for endpoint_id in (1, 2)
+    )

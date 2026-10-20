@@ -3,6 +3,7 @@
 import asyncio
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -14,6 +15,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     BUTTON,
@@ -55,6 +57,9 @@ from zhaquirks.xiaomi import (
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
+# Sent for every release the device reports, unlike the derived single click and
+# hold release
+COMMAND_BUTTON_UP = "button_up"
 
 CLICK_TYPE_MAP = {
     2: COMMAND_DOUBLE,
@@ -90,6 +95,9 @@ class MijaButton(XiaomiQuickInitDevice):
             # Handle Mija OnOff
             if attrid == 0:
                 value = not value
+
+                if not value:
+                    self.listener_event(ZHA_SEND_EVENT, COMMAND_BUTTON_UP, [])
 
                 if value:
                     if self._timer_handle:
@@ -208,3 +216,23 @@ class MijaButton(XiaomiQuickInitDevice):
             ARGS: {CLICK_TYPE: COMMAND_FURIOUS},
         },
     }
+
+    # The device reports when the button goes down and up, and counts multiple
+    # presses, but it does not tell a single press or a hold apart: the click and
+    # hold events above are derived with a timer, so only the release is mapped.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: COMMAND_BUTTON_UP},
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=1,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
