@@ -17,11 +17,7 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import (
-    TuyaDreamBlindsControl,
-    TuyaDreamBlindsCover0601,
-    TuyaMoesCover0601,
-)
+from zhaquirks.tuya.ts0601_cover import TuyaDreamBlindsCover0601, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -102,13 +98,15 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
         )
 
     # 3. Test non-tilt command falls through to super().command
-    with mock.patch.object(
-        ep.endpoint, "request", return_value=foundation.Status.SUCCESS
-    ):
-        with mock.patch.object(
+    with (
+        mock.patch.object(
+            ep.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ),
+        mock.patch.object(
             tuya_cluster, "command", return_value=foundation.Status.SUCCESS
-        ):
-            await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
+        ),
+    ):
+        await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
 
     # 4. Test cover_event for tilt and non-tilt
     cover_cluster.cover_event(
@@ -145,9 +143,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # 6. Test InvertedTuyaManufacturerWindowCover.handle_cluster_request
     # DP 21 incoming tilt angle report: angle = 90 -> 50%
-    hdr = foundation.ZCLHeader.cluster(
-        tsn=1, command_id=TUYA_GET_DATA, is_reply=False
-    )
+    hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=TUYA_GET_DATA, is_reply=False)
     payload = TuyaManufCluster.Command()
     payload.command_id = (2 << 8) + 21
     payload.data = [4, 0, 0, 0, 90]
