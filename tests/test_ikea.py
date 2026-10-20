@@ -3,11 +3,18 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    Basic,
+    LevelControl,
+    OnOff,
+    PowerConfiguration,
+    Scenes,
+)
 from zigpy.zcl.clusters.measurement import PM25
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
 import zhaquirks.ikea.starkvind
@@ -324,3 +331,110 @@ async def test_bilresa_direction_tracking(
             if c == mock.call(expected_event, [])
         ]
         assert len(release_calls) == 1
+
+
+REMOTE_CLUSTERS = {
+    1: {
+        OnOff.cluster_id: ClusterType.Client,
+        LevelControl.cluster_id: ClusterType.Client,
+        Scenes.cluster_id: ClusterType.Client,
+    }
+}
+
+
+def remote(zigpy_device_from_v2_quirk, model):
+    """Return an IKEA remote with a ZHA profile, which ZHA's discovery needs."""
+    device = zigpy_device_from_v2_quirk(IKEA, model, cluster_ids=REMOTE_CLUSTERS)
+    device.endpoints[1].profile_id = zha.PROFILE_ID
+    device.endpoints[1].device_type = zha.DeviceType.NON_COLOR_CONTROLLER
+    return device
+
+
+async def test_styrbar_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the STYRBAR remote."""
+    device = remote(zigpy_device_from_v2_quirk, "Remote Control N2")
+    recorder = await ButtonEventRecorder.create(device)
+
+    hold = ["press_end", "long_press_start", "long_press_end"]
+    assert recorder.event_types() == {
+        "button_on": hold,
+        "button_off": hold,
+        "button_left": hold,
+        "button_right": hold,
+    }
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    send(OnOff.cluster_id, "on")
+    send(LevelControl.cluster_id, "move_with_on_off", LevelControl.MoveMode.Up, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(OnOff.cluster_id, "off")
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
+    send(LevelControl.cluster_id, "stop")
+    # Either stop ends the hold of the button held, and a stop without one nothing
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(LevelControl.cluster_id, "stop")
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    assert recorder.pop() == [
+        ("button_on", "press_end"),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+        ("button_off", "press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]
+
+    # The arrows send the same release, which ends the hold of the arrow held
+    send(Scenes.cluster_id, "press", 257, 13, 0)
+    send(Scenes.cluster_id, "hold", 3329, 0)
+    send(Scenes.cluster_id, "release", 1234)
+    send(Scenes.cluster_id, "release", 1234)
+    send(Scenes.cluster_id, "press", 256, 13, 0)
+    send(Scenes.cluster_id, "hold", 3328, 0)
+    send(Scenes.cluster_id, "release", 1234)
+    # Not an arrow press: other IKEA remotes send this on a hold of their toggle
+    send(Scenes.cluster_id, "press", 2, 0, 0)
+    assert recorder.pop() == [
+        ("button_left", "press_end"),
+        ("button_left", "long_press_start"),
+        ("button_left", "long_press_end"),
+        ("button_right", "press_end"),
+        ("button_right", "long_press_start"),
+        ("button_right", "long_press_end"),
+    ]
+
+
+async def test_bilresa_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the BILRESA remote."""
+    device = remote(zigpy_device_from_v2_quirk, "09B9")
+    recorder = await ButtonEventRecorder.create(device)
+
+    gestures = ["single_press", "multi_press", "long_press_start", "long_press_end"]
+    assert recorder.event_types() == {"button_on": gestures, "button_off": gestures}
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    send(OnOff.cluster_id, "on")
+    send(Scenes.cluster_id, "press", 256, 13, 0)
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Up, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(OnOff.cluster_id, "off")
+    send(Scenes.cluster_id, "press", 257, 13, 0)
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+
+    assert recorder.pop() == [
+        ("button_on", "single_press"),
+        ("button_on", "multi_press", {"press_count": 2}),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+        ("button_off", "single_press"),
+        ("button_off", "multi_press", {"press_count": 2}),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]

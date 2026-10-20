@@ -3,7 +3,7 @@
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import LevelControl, OnOff, Scenes
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -83,6 +83,58 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
                 },
             },
         }
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, TURN_ON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, DIM_UP),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, TURN_OFF),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, DIM_DOWN),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_DOWN),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
     )
     .add_to_registry()
 )
