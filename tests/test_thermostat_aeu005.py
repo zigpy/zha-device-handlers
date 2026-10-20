@@ -1390,3 +1390,204 @@ def test_cached_status_restore_does_not_rearm_external_source(status_clusters):
     assert status.get("external_temperature_input") is None
     assert fcc0._external_sample is None
     assert not fcc0._external_active
+
+
+@pytest.mark.parametrize("payload", [None, "invalid", b"", b"\x00" * 20, b"\x00" * 22])
+async def test_external_request_rejects_invalid_type_and_length(
+    external_writer, payload
+):
+    """Ignore malformed requests without sending or recording a response."""
+    fcc0, _, write = external_writer
+    fcc0.update_attribute(w600.ATTR_TEMPERATURE_SOURCE, 1)
+    fcc0._external_sample = (2150, w600.time.monotonic())
+    await fcc0._respond_external_request(1, payload, fcc0._external_generation)
+    write.assert_not_awaited()
+    assert not fcc0._external_requests
+
+
+def test_status_restore_blocks_recursive_cache_access(status_clusters):
+    """Allow status reads during restoration without recursively replaying caches."""
+    fcc0, status = status_clusters
+    CustomCluster._update_attribute(fcc0, w600.ATTR_HEARTBEAT, bytes.fromhex("182064"))
+    original = fcc0._sync_status_attribute
+
+    def restore_with_nested_read(attrid, value):
+        assert status.get("battery_percentage") is None
+        original(attrid, value)
+
+    with patch.object(
+        fcc0, "_sync_status_attribute", side_effect=restore_with_nested_read
+    ) as sync:
+        assert status.get("battery_percentage") == 100
+    sync.assert_called_once_with(w600.ATTR_HEARTBEAT, bytes.fromhex("182064"))
+    assert status._restoring_status is False
+
+
+def test_status_without_vendor_cluster_preserves_unknown(status_clusters):
+    """Keep derived telemetry unknown when its vendor cluster is unavailable."""
+    fcc0, status = status_clusters
+    with patch.object(fcc0.endpoint, "aqara_w600_fcc0", None):
+        assert status.get("battery_percentage") is None
+        assert status.get("window_open") == 255
+    assert not getattr(status, "_restoring_status", False)
+
+
+async def test_schedule_read_fetches_missing_vendor_state(status_clusters):
+    """Read the real vendor attribute before exposing an uncached schedule flag."""
+    fcc0, status = status_clusters
+
+    async def report_schedule(*args, **kwargs):
+        fcc0.update_attribute(w600.ATTR_SCHEDULE_ENABLED, 1)
+        return {w600.ATTR_SCHEDULE_ENABLED: 1}, {}
+
+    with patch.object(fcc0, "read_attributes", side_effect=report_schedule) as read:
+        result, failures = await status.read_attributes(["schedule_control"])
+    read.assert_awaited_once_with(
+        [w600.ATTR_SCHEDULE_ENABLED],
+        manufacturer=AQARA_MANUFACTURER_CODE,
+        allow_cache=False,
+    )
+    assert result == {"schedule_control": 1}
+    assert not failures
+
+
+@pytest.mark.parametrize("error", [TimeoutError, zigpy.exceptions.DeliveryError])
+async def test_profile_read_failure_preserves_cached_manual_state(
+    status_clusters, error
+):
+    """Retain the last profile when a forced refresh cannot reach the device."""
+    fcc0, status = status_clusters
+    fcc0.update_attribute(w600.ATTR_DEVICE_STATE, 255)
+    with patch.object(fcc0, "read_attributes", side_effect=error("read failed")):
+        result, failures = await status.read_attributes(["device_state_raw"])
+    assert result == {"device_state_raw": 255}
+    assert not failures
+    assert fcc0.get(w600.ATTR_DEVICE_STATE) == 255
+
+
+async def test_profile_temperature_read_populates_all_profile_values(status_clusters):
+    """Decode a successfully fetched table into all five local temperature fields."""
+    fcc0, status = status_clusters
+    with patch.object(
+        fcc0,
+        "read_attributes",
+        new_callable=AsyncMock,
+        return_value=({w600.ATTR_PRESET_TEMPERATURE_TABLE: PRESET_TABLE}, {}),
+    ) as read:
+        result, failures = await status.read_attributes(["preset_home_temperature"])
+    read.assert_awaited_once_with(
+        [w600.ATTR_PRESET_TEMPERATURE_TABLE],
+        manufacturer=AQARA_MANUFACTURER_CODE,
+        allow_cache=False,
+    )
+    assert result == {"preset_home_temperature": 2600}
+    assert not failures
+    assert fcc0.get(w600.ATTR_PRESET_TEMPERATURE_TABLE) == PRESET_TABLE
+    assert [status.get(0x0010 + i) for i in range(5)] == [2600, 1800, 2000, 1000, 2400]
+
+
+async def test_device_removal_cancels_pending_external_task(external_writer):
+    """Cancel owned tasks and discard external state when removing the device."""
+    fcc0, status, write = external_writer
+    fcc0.update_attribute(w600.ATTR_TEMPERATURE_SOURCE, 1)
+    fcc0._external_sample = (2150, w600.time.monotonic())
+    status.update_attribute(0x0007, 2150)
+    task = asyncio.create_task(asyncio.Event().wait())
+    fcc0._tasks.add(task)
+    await asyncio.sleep(0)
+    fcc0.endpoint.device.on_remove()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert task.cancelled()
+    assert fcc0._external_sample is None
+    assert status.get("external_temperature_input") is None
+    write.assert_not_awaited()
+
+
+async def test_stale_external_write_never_reaches_transport(external_writer):
+    """Reject an obsolete transaction before issuing any radio write."""
+    fcc0, _, write = external_writer
+    generation = fcc0._external_generation
+    fcc0._reset_external()
+    with pytest.raises(w600._ExternalTransactionFailed):
+        await fcc0._external_write(w600.ATTR_TEMPERATURE_SOURCE, 1, generation)
+    write.assert_not_awaited()
+
+
+@pytest.mark.parametrize("kwargs", [{"source": 2}, {}])
+async def test_invalid_external_operation_has_no_side_effects(external_writer, kwargs):
+    """Reject unsupported sources and empty operations with an identified error."""
+    fcc0, _, write = external_writer
+    generation = fcc0._external_generation
+    result = await fcc0.set_external_temperature(**kwargs)
+    assert result[0][0].status == foundation.Status.INVALID_VALUE
+    assert result[0][0].attrid is not None
+    assert fcc0._external_generation == generation
+    assert fcc0._external_sample is None
+    write.assert_not_awaited()
+
+
+async def test_external_request_history_evicts_oldest_entry(external_writer):
+    """Bound deduplication storage while responding to a distinct fresh request."""
+    fcc0, _, write = external_writer
+    old_payload = _external_request(counter=7)
+    new_payload = _external_request(counter=8)
+    with patch.object(w600.time, "monotonic", return_value=100):
+        await fcc0.set_external_temperature(source=1, centidegrees=2150)
+        write.reset_mock()
+        fcc0._external_requests = {(tsn, old_payload): 100 for tsn in range(256)}
+        await fcc0._respond_external_request(0, new_payload, fcc0._external_generation)
+        await fcc0._respond_external_request(0, new_payload, fcc0._external_generation)
+    assert len(fcc0._external_requests) == 256
+    assert (0, old_payload) not in fcc0._external_requests
+    assert (1, old_payload) in fcc0._external_requests
+    assert (0, new_payload) in fcc0._external_requests
+    write.assert_awaited_once()
+
+
+async def test_invalid_schedule_flag_never_writes(external_writer):
+    """Reject an invalid schedule value without clearing hold or writing FCC0."""
+    fcc0, _, write = external_writer
+    with patch.object(
+        fcc0.endpoint.thermostat, "write_attributes", new_callable=AsyncMock
+    ) as thermostat_write:
+        result = await fcc0.set_schedule_enabled(2)
+    assert result[0][0].status == foundation.Status.INVALID_VALUE
+    assert result[0][0].attrid == w600.ATTR_SCHEDULE_ENABLED
+    thermostat_write.assert_not_awaited()
+    write.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "attributes, attrid",
+    [
+        ({"temperature_source": 1, "child_lock": 1}, w600.ATTR_TEMPERATURE_SOURCE),
+        ({"device_state": 1, "child_lock": 1}, w600.ATTR_DEVICE_STATE),
+        ({"device_state": 4}, w600.ATTR_DEVICE_STATE),
+    ],
+)
+async def test_invalid_composite_writes_are_atomic(external_writer, attributes, attrid):
+    """Reject invalid profiles and mixed control writes without partial changes."""
+    fcc0, _, write = external_writer
+    with patch.object(
+        fcc0.endpoint.thermostat, "write_attributes", new_callable=AsyncMock
+    ) as thermostat_write:
+        result = await fcc0.write_attributes(attributes)
+    assert result[0][0].status == foundation.Status.INVALID_VALUE
+    assert result[0][0].attrid == attrid
+    thermostat_write.assert_not_awaited()
+    write.assert_not_awaited()
+
+
+async def test_manual_selection_without_target_fails_without_writes(external_writer):
+    """Avoid writing Manual or inventing a target when no setpoint is known."""
+    fcc0, _, write = external_writer
+    assert fcc0.endpoint.thermostat.get(w600.ATTR_OCCUPIED_HEATING_SETPOINT) is None
+    with patch.object(
+        fcc0.endpoint.thermostat, "write_attributes", new_callable=AsyncMock
+    ) as thermostat_write:
+        result = await fcc0.write_attributes({"device_state": 255})
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert result[0][0].attrid == w600.ATTR_DEVICE_STATE
+    thermostat_write.assert_not_awaited()
+    write.assert_not_awaited()
