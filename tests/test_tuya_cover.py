@@ -141,14 +141,14 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
     # 5. Test InvertedTuyaManufacturerWindowCover._update_attribute:
     # 0x0008 (position) inverts 100 - val
     tuya_cluster._update_attribute(0x0008, 30)
-    assert tuya_cluster.get(0x0008) == 70
+    assert tuya_cluster._attr_cache.get(0x0008) == 70
 
     # Test error handling on bad position value
     tuya_cluster._update_attribute(0x0008, "not_an_int")
 
     # Non-0x0008 attribute passes through directly
     tuya_cluster._update_attribute(0x0001, 42)
-    assert tuya_cluster.get(0x0001) == 42
+    assert tuya_cluster._attr_cache.get(0x0001) == 42
 
     # 6. Test InvertedTuyaManufacturerWindowCover.handle_cluster_request
     # DP 21 incoming tilt angle report: angle = 90 -> 50%
