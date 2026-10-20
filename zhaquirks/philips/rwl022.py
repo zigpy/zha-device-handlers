@@ -1,5 +1,7 @@
 """Philips RWL022 device."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -22,9 +24,31 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.philips import SIGNIFY, PhilipsBasicCluster, PhilipsRwlRemoteCluster
+from zhaquirks.philips import (
+    RWL_BUTTON_NAMES,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRwlRemoteCluster,
+)
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
+
+# The second generation dimmer has a power button (on/off toggle) and a Hue button in
+# place of the first generation's on and off buttons. Its triggers keep the first
+# generation's names.
+RWL022_BUTTON_NAMES: dict[int, dict[str, Any]] = {
+    **RWL_BUTTON_NAMES,
+    1: {
+        "unique_id_suffix": "button_toggle",
+        "translation_key": "toggle_button",
+        "fallback_name": "Toggle button",
+    },
+    4: {
+        "unique_id_suffix": "button_hue",
+        "translation_key": "hue_button",
+        "fallback_name": "Hue button",
+    },
+}
 
 
 class PhilipsRWL022(CustomDevice):
@@ -89,4 +113,8 @@ class PhilipsRWL022(CustomDevice):
 
     device_automation_triggers = (
         PhilipsRwlRemoteCluster.generate_device_automation_triggers()
+    )
+
+    button_event_entities = PhilipsRwlRemoteCluster.generate_button_event_entities(
+        endpoint_id=1, names=RWL022_BUTTON_NAMES
     )

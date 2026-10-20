@@ -7,11 +7,12 @@ import time
 from typing import Any, Final
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
@@ -19,6 +20,7 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_HOLD,
     COMMAND_ID,
+    COMMAND_M_INITIAL_PRESS,
     COMMAND_M_LONG_RELEASE,
     COMMAND_M_SHORT_RELEASE,
     COMMAND_PRESS,
@@ -41,6 +43,9 @@ from zhaquirks.const import (
 PHILIPS = "Philips"
 SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
+
+# The release of a short press, as the device reports it
+COMMAND_PRESS_RELEASE = "press_release"
 
 
 class PhilipsOccupancySensing(CustomCluster, OccupancySensing):
@@ -169,6 +174,15 @@ class PhilipsRemoteCluster(CustomCluster):
         3: PressType(LONG_RELEASE, COMMAND_M_LONG_RELEASE),
     }
 
+    # The press types the device reports when the button goes down (0) and when it
+    # is released after a short press (2). They are sent as they arrive, under their
+    # own names, as the press and short release events are only sent once the
+    # multi-press window has passed. Press types in `PRESS_TYPES` are sent already.
+    NATIVE_PRESS_TYPES: dict[int, str] = {
+        0: COMMAND_M_INITIAL_PRESS,
+        2: COMMAND_PRESS_RELEASE,
+    }
+
     MULTI_PRESS_EVENTS: dict[int, PressType] = {
         2: PressType(DOUBLE_PRESS, "double_press"),
         3: PressType(TRIPLE_PRESS, "triple_press"),
@@ -216,6 +230,20 @@ class PhilipsRemoteCluster(CustomCluster):
             args[0],
             button,
         )
+
+        native_press_type = self.NATIVE_PRESS_TYPES.get(args[2])
+        if native_press_type is not None and args[2] not in self.PRESS_TYPES:
+            self.listener_event(
+                ZHA_SEND_EVENT,
+                f"{button.action}_{native_press_type}",
+                {
+                    BUTTON: button.id,
+                    PRESS_TYPE: native_press_type,
+                    COMMAND_ID: hdr.command_id,
+                    "duration": args[4],
+                    ARGS: args,
+                },
+            )
 
         press_type = self.PRESS_TYPES.get(args[2])
         if (
@@ -329,6 +357,66 @@ class PhilipsRemoteCluster(CustomCluster):
 
         return triggers
 
+    @classmethod
+    def generate_button_event_entities(
+        cls, endpoint_id: int, names: dict[int, dict[str, Any]]
+    ) -> tuple[ButtonEventMetadata, ...]:
+        """Generate a button event entity for each button of the device.
+
+        The device reports when a button goes down, when it is released after a
+        short press, while it is held (repeatedly) and when it is released after
+        being held. The press and multi-press events derived with the press queue
+        are not used, as they are only sent after a delay.
+
+        `names` holds the entity naming (`unique_id_suffix`, `translation_key`,
+        `fallback_name` and `translation_placeholders`) of each button.
+        """
+        long_press = cls.PRESS_TYPES[1]
+        long_release = cls.PRESS_TYPES[3]
+
+        # The native events are not sent for press types the subclass maps itself
+        native_events = [
+            (event_type, press_type)
+            for event_type, press_type in (
+                (ButtonEventType.PRESS_START, 0),
+                (ButtonEventType.PRESS_END, 2),
+            )
+            if press_type not in cls.PRESS_TYPES
+        ]
+
+        return tuple(
+            ButtonEventMetadata(
+                events=[
+                    *(
+                        ButtonEvent(
+                            event_type=event_type,
+                            event_data={
+                                COMMAND: (
+                                    f"{button.action}"
+                                    f"_{cls.NATIVE_PRESS_TYPES[press_type]}"
+                                )
+                            },
+                        )
+                        for event_type, press_type in native_events
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_START,
+                        trigger=(long_press.trigger, button.trigger),
+                        repeats=True,
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_END,
+                        trigger=(long_release.trigger, button.trigger),
+                    ),
+                ],
+                cluster_id=cls.cluster_id,
+                cluster_type=ClusterType.Server,
+                endpoint_id=endpoint_id,
+                **names[button_id],
+            )
+            for button_id, button in cls.BUTTONS.items()
+        )
+
 
 class PhilipsRwlRemoteCluster(PhilipsRemoteCluster):
     """Philips remote cluster for RWL devices."""
@@ -339,6 +427,31 @@ class PhilipsRwlRemoteCluster(PhilipsRemoteCluster):
         3: Button("down", DIM_DOWN),
         4: Button("off", TURN_OFF),
     }
+
+
+# Button event entity naming of the RWL dimmer switch buttons
+RWL_BUTTON_NAMES: dict[int, dict[str, Any]] = {
+    1: {
+        "unique_id_suffix": "button_on",
+        "translation_key": "on_button",
+        "fallback_name": "On button",
+    },
+    2: {
+        "unique_id_suffix": "button_dim_up",
+        "translation_key": "dim_up_button",
+        "fallback_name": "Dim up button",
+    },
+    3: {
+        "unique_id_suffix": "button_dim_down",
+        "translation_key": "dim_down_button",
+        "fallback_name": "Dim down button",
+    },
+    4: {
+        "unique_id_suffix": "button_off",
+        "translation_key": "off_button",
+        "fallback_name": "Off button",
+    },
+}
 
 
 class PhilipsHueLightCluster(CustomCluster):
