@@ -30,8 +30,13 @@ class ZemismartTS0301WindowCoveringCluster(CustomCluster, WindowCovering):
         self, command_id, *args, manufacturer=None, expect_reply=True, **kwargs
     ):
         """Translate ZCL lift targets to the device's percentage convention."""
-        if command_id == GO_TO_LIFT_PERCENTAGE and args:
-            args = (_invert_lift_percentage(args[0]), *args[1:])
+        if command_id == GO_TO_LIFT_PERCENTAGE:
+            if args:
+                args = (_invert_lift_percentage(args[0]), *args[1:])
+            elif "percentage_lift_value" in kwargs:
+                kwargs["percentage_lift_value"] = _invert_lift_percentage(
+                    kwargs["percentage_lift_value"]
+                )
         return await super().command(
             command_id,
             *args,
