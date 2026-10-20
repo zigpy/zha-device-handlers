@@ -80,7 +80,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # 2. Test command(): go_to_tilt_percentage (0x0008)
     with mock.patch.object(
-        tuya_cluster, "command", return_value=foundation.Status.SUCCESS
+        tuya_cluster, "command", new_callable=mock.AsyncMock, return_value=foundation.Status.SUCCESS
     ) as cmd_mock:
         await cover_cluster.command(
             WindowCovering.ServerCommandDefs.go_to_tilt_percentage.id, 50
@@ -100,10 +100,10 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
     # 3. Test non-tilt command falls through to super().command
     with (
         mock.patch.object(
-            ep.endpoint, "request", return_value=foundation.Status.SUCCESS
+            ep.endpoint, "request", new_callable=mock.AsyncMock, return_value=foundation.Status.SUCCESS
         ),
         mock.patch.object(
-            tuya_cluster, "command", return_value=foundation.Status.SUCCESS
+            tuya_cluster, "command", new_callable=mock.AsyncMock, return_value=foundation.Status.SUCCESS
         ),
     ):
         await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
