@@ -103,7 +103,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
     # 3. Test non-tilt command falls through to super().command
     with (
         mock.patch.object(
-            ep.endpoint,
+            ep,
             "request",
             new_callable=mock.AsyncMock,
             return_value=foundation.Status.SUCCESS,
