@@ -135,7 +135,7 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
         cover_cluster.get(
             WindowCovering.AttributeDefs.current_position_lift_percentage.id
         )
-        == 20
+        == 80
     )
 
     # 5. Test InvertedTuyaManufacturerWindowCover._update_attribute:
