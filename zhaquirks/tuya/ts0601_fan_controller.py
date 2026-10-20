@@ -1,13 +1,13 @@
 """Tuya Light and Fan Speed switches."""
 
 import zigpy.types as t
+
 from zhaquirks.builder import (
     EntityType,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
-    UnitOfFrequency,
     UnitOfPower,
     UnitOfTime,
 )
