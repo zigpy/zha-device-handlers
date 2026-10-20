@@ -1,8 +1,9 @@
 """Modules for Yokis remote."""
 
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -34,10 +35,25 @@ from zhaquirks.const import (
             },
         }
     )
+    # The button reports a press as a toggle command. When in the press it is sent
+    # is not known, so it is mapped as a single press.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, BUTTON_1),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    )
     .add_to_registry()
 )
 
-(
+two_button_quirk = (
     QuirkBuilder("YOKIS", "TLC2-UP")
     .applies_to("YOKIS", "TLM2-UP")
     .applies_to("YOKIS", "TLM2T503-UP")
@@ -60,10 +76,9 @@ from zhaquirks.const import (
             },
         }
     )
-    .add_to_registry()
 )
 
-(
+four_button_quirk = (
     QuirkBuilder("YOKIS", "TLC4-UP")
     .applies_to("YOKIS", "TLM4-UP")
     .applies_to("YOKIS", "TLM4T503-UP")
@@ -96,10 +111,9 @@ from zhaquirks.const import (
             },
         }
     )
-    .add_to_registry()
 )
 
-(
+eight_button_quirk = (
     QuirkBuilder("YOKIS", "TLC8-UP")
     .applies_to("YOKIS", "MONITOR-UP")
     .device_automation_triggers(
@@ -146,5 +160,30 @@ from zhaquirks.const import (
             },
         }
     )
-    .add_to_registry()
 )
+
+# Each button reports a press as a toggle command of its endpoint. When in the press
+# it is sent is not known, so it is mapped as a single press.
+for quirk, buttons in (
+    (two_button_quirk, 2),
+    (four_button_quirk, 4),
+    (eight_button_quirk, 8),
+):
+    for number in range(1, buttons + 1):
+        quirk.button_event(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, f"button_{number}"),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=number,
+            unique_id_suffix=f"button_{number}",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": str(number)},
+            fallback_name=f"Button {number}",
+        )
+
+    quirk.add_to_registry()
