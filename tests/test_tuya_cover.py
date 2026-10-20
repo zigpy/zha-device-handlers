@@ -8,9 +8,20 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
+from zhaquirks.tuya import (
+    TUYA_GET_DATA,
+    TUYA_SET_DATA_RESPONSE,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
+    TuyaManufCluster,
+)
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaDreamBlindsCover0601, TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import (
+    TuyaDreamBlindsControl,
+    TuyaDreamBlindsCover0601,
+    TuyaMoesCover0601,
+)
 
 zhaquirks.setup()
 
@@ -38,6 +49,144 @@ def test_ts0601_dreamblinds_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(TuyaDreamBlindsCover0601, signature)
+
+
+async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
+    """Test Tuya Dream Blinds tilt commands, get overrides, and position inversion."""
+    device = zigpy_device_from_quirk(TuyaDreamBlindsCover0601)
+    ep = device.endpoints[1]
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    # 1. Test get() overrides
+    assert (
+        cover_cluster.get(WindowCovering.AttributeDefs.window_covering_type.id)
+        == WindowCovering.WindowCoveringType.Tilt_blind_tilt_and_lift
+    )
+    assert (
+        cover_cluster.get(WindowCovering.AttributeDefs.window_covering_type.name)
+        == WindowCovering.WindowCoveringType.Tilt_blind_tilt_and_lift
+    )
+    # Default tilt percentage is 50 when None
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        )
+        == 50
+    )
+    # Non-tilt attribute falls through to standard get
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id
+        )
+        is None
+    )
+
+    # 2. Test command(): go_to_tilt_percentage (0x0008)
+    with mock.patch.object(
+        tuya_cluster, "command", return_value=foundation.Status.SUCCESS
+    ) as cmd_mock:
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_tilt_percentage.id, 50
+        )
+        cmd_mock.assert_called_once()
+        args, _ = cmd_mock.call_args
+        payload = args[1]
+        assert payload.command_id == (2 << 8) + 21
+        assert payload.data == [4, 0, 0, 0, 90]
+        assert (
+            cover_cluster.get(
+                WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+            )
+            == 50
+        )
+
+    # 3. Test non-tilt command falls through to super().command
+    with mock.patch.object(
+        ep.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ):
+        with mock.patch.object(
+            tuya_cluster, "command", return_value=foundation.Status.SUCCESS
+        ):
+            await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
+
+    # 4. Test cover_event for tilt and non-tilt
+    cover_cluster.cover_event(
+        WindowCovering.AttributeDefs.current_position_tilt_percentage.id, 75
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        )
+        == 75
+    )
+
+    cover_cluster.cover_event(
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id, 20
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id
+        )
+        == 20
+    )
+
+    # 5. Test InvertedTuyaManufacturerWindowCover._update_attribute:
+    # 0x0008 (position) inverts 100 - val
+    tuya_cluster._update_attribute(0x0008, 30)
+    assert tuya_cluster.get(0x0008) == 70
+
+    # Test error handling on bad position value
+    tuya_cluster._update_attribute(0x0008, "not_an_int")
+
+    # Non-0x0008 attribute passes through directly
+    tuya_cluster._update_attribute(0x0001, 42)
+    assert tuya_cluster.get(0x0001) == 42
+
+    # 6. Test InvertedTuyaManufacturerWindowCover.handle_cluster_request
+    # DP 21 incoming tilt angle report: angle = 90 -> 50%
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=1, command_id=TUYA_GET_DATA, is_reply=False
+    )
+    payload = TuyaManufCluster.Command()
+    payload.command_id = (2 << 8) + 21
+    payload.data = [4, 0, 0, 0, 90]
+
+    with mock.patch.object(tuya_cluster, "send_default_rsp") as ack_mock:
+        tuya_cluster.handle_cluster_request(hdr, [payload])
+        ack_mock.assert_called_once_with(hdr, foundation.Status.SUCCESS)
+        assert (
+            cover_cluster.get(
+                WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+            )
+            == 50
+        )
+
+    # Test TUYA_SET_DATA_RESPONSE and other DP
+    hdr_resp = foundation.ZCLHeader.cluster(
+        tsn=2, command_id=TUYA_SET_DATA_RESPONSE, is_reply=False
+    )
+    other_payload = TuyaManufCluster.Command()
+    other_payload.command_id = (4 << 8) + 1  # DP 1
+    other_payload.data = [1, 0]
+    with mock.patch.object(tuya_cluster, "send_default_rsp"):
+        tuya_cluster.handle_cluster_request(hdr_resp, [other_payload])
+
+    # Test error handling on malformed DP 21 payload
+    bad_payload = TuyaManufCluster.Command()
+    bad_payload.command_id = (2 << 8) + 21
+    bad_payload.data = []  # Index error
+    with mock.patch.object(tuya_cluster, "send_default_rsp"):
+        tuya_cluster.handle_cluster_request(hdr, [bad_payload])
+
+    # Test handle_cluster_request with disable_default_response=True (no ACK sent)
+    hdr_no_ack = foundation.ZCLHeader.cluster(
+        tsn=3, command_id=TUYA_GET_DATA, is_reply=False
+    )
+    hdr_no_ack.frame_control.disable_default_response = True
+    with mock.patch.object(tuya_cluster, "send_default_rsp") as ack_mock:
+        tuya_cluster.handle_cluster_request(hdr_no_ack, [payload])
+        ack_mock.assert_not_called()
 
 
 def test_ts601_moes_signature(assert_signature_matches_quirk):
