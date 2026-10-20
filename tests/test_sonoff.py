@@ -1,12 +1,15 @@
 """Tests for Sonoff ZBM5 quirks."""
 
+import itertools
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
@@ -272,3 +275,155 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
 
     cluster.update_attribute(0x0001, 1)
     assert listener.zha_send_event.call_count == 0
+
+
+_TSNS = itertools.cycle(range(256))
+
+
+def report_attribute(device, endpoint_id, cluster_id, attribute, value) -> None:
+    """Receive an attribute report frame from one of the device's server clusters."""
+    header = foundation.ZCLHeader.general(
+        tsn=next(_TSNS),
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    report = foundation.Attribute(
+        attrid=attribute.id,
+        value=foundation.TypeValue(
+            type=attribute.zcl_type, value=attribute.type(value)
+        ),
+    )
+    schema = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema
+    device.packet_received(
+        t.ZigbeePacket(
+            src_ep=endpoint_id,
+            dst_ep=1,
+            tsn=header.tsn,
+            profile_id=zha.PROFILE_ID,
+            cluster_id=cluster_id,
+            data=t.SerializableBytes(header.serialize() + schema([report]).serialize()),
+        )
+    )
+
+
+def with_profile(device, device_type=zha.DeviceType.REMOTE_CONTROL):
+    """Give the device's endpoints the ZHA profile, which ZHA's discovery needs."""
+    for endpoint_id, endpoint in device.endpoints.items():
+        if endpoint_id:
+            endpoint.profile_id = zha.PROFILE_ID
+            endpoint.device_type = device_type
+    return device
+
+
+ZBM5_CLUSTERS = {
+    1: {
+        SonoffCluster.cluster_id: ClusterType.Server,
+        OnOff.cluster_id: ClusterType.Server,
+    },
+    2: {OnOff.cluster_id: ClusterType.Server},
+    3: {OnOff.cluster_id: ClusterType.Server},
+}
+
+
+@pytest.mark.parametrize(
+    ("model", "buttons"),
+    [
+        ("ZBM5-1C-80/86", {"button": 1}),
+        ("ZBM5-1C-120", {"button": 1}),
+        ("ZBM5-2C-80/86", {"button_1": 1, "button_2": 2}),
+        ("ZBM5-2C-120", {"button_1": 1, "button_2": 2}),
+        ("ZBM5-3C-80/86", {"button_1": 1, "button_2": 2, "button_3": 3}),
+        ("ZBM5-3C-120", {"button_1": 1, "button_2": 2, "button_3": 3}),
+    ],
+)
+async def test_zbm5_button_events(zigpy_device_from_v2_quirk, model, buttons):
+    """Test the button event entities of the ZBM5 wall switches."""
+    gangs = len(buttons)
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        model,
+        cluster_ids={ep: ZBM5_CLUSTERS[ep] for ep in range(1, gangs + 1)},
+    )
+    with_profile(device, zha.DeviceType.ON_OFF_LIGHT_SWITCH)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == dict.fromkeys(buttons, ["single_press"])
+
+    for endpoint_id in buttons.values():
+        send_command(device, endpoint_id, OnOff.cluster_id, "toggle")
+        # Not a button press
+        send_command(device, endpoint_id, OnOff.cluster_id, "on")
+
+    assert recorder.pop() == [(button, "single_press") for button in buttons]
+
+
+@pytest.mark.parametrize("model", ["WB01", "SNZB-01P", "CK-TLSR8656-SS5-01(7000)"])
+async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
+    """Test the button event entity of the eWeLink/SONOFF wireless buttons."""
+    device = zigpy_device_from_v2_quirk(
+        "eWeLink", model, cluster_ids={1: {OnOff.cluster_id: ClusterType.Client}}
+    )
+    with_profile(device)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_end"]
+    }
+
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    send_command(device, 1, OnOff.cluster_id, "on")
+    send_command(device, 1, OnOff.cluster_id, "off")
+    # Not a button press
+    send_command(device, 1, OnOff.cluster_id, "on_with_recall_global_scene")
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_end"),
+    ]
+
+
+async def test_snzb01m_button_event_entities(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the SNZB-01M remote."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-01M",
+        cluster_ids={
+            ep: {SonoffButtonCluster.cluster_id: ClusterType.Server}
+            for ep in (1, 2, 3, 4)
+        },
+    )
+    with_profile(device)
+    recorder = await ButtonEventRecorder.create(device)
+
+    gestures = ["single_press", "multi_press", "long_press_end"]
+    assert recorder.event_types() == {
+        "button_1": gestures,
+        "button_2": gestures,
+        "button_3": gestures,
+        "button_4": gestures,
+    }
+
+    key_action_event = SonoffButtonCluster.AttributeDefs.key_action_event
+    for endpoint_id in (1, 2, 3, 4):
+        for value in (1, 2, 4, 3, 99):
+            report_attribute(
+                device,
+                endpoint_id,
+                SonoffButtonCluster.cluster_id,
+                key_action_event,
+                value,
+            )
+
+    assert recorder.pop() == [
+        event
+        for button in ("button_1", "button_2", "button_3", "button_4")
+        for event in (
+            (button, "single_press"),
+            (button, "multi_press", {"press_count": 2}),
+            (button, "multi_press", {"press_count": 3}),
+            (button, "long_press_end"),
+        )
+    ]
