@@ -193,7 +193,9 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # Test handle_cluster_request with disable_default_response=True (no ACK sent)
     hdr_no_ack = foundation.ZCLHeader.cluster(tsn=3, command_id=TUYA_GET_DATA)
-    hdr_no_ack.frame_control = hdr_no_ack.frame_control.replace(disable_default_response=True)
+    hdr_no_ack.frame_control = hdr_no_ack.frame_control.replace(
+        disable_default_response=True
+    )
     with mock.patch.object(tuya_cluster, "send_default_rsp") as ack_mock:
         tuya_cluster.handle_cluster_request(hdr_no_ack, [payload])
         ack_mock.assert_not_called()
