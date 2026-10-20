@@ -1,6 +1,7 @@
 """Samjin button device."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -12,6 +13,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     BUTTON,
     COMMAND,
@@ -82,6 +84,32 @@ class SamjinButton(CustomDevice):
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_BUTTON_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_BUTTON_HOLD},
     }
+
+    # The button tells single from double presses, and reports a hold once
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, SHORT_PRESS),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, DOUBLE_PRESS),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, LONG_PRESS),
+                ),
+            ],
+            cluster_id=IasZone.cluster_id,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
 
 
 class SamjinButton2(SamjinButton):

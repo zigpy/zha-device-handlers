@@ -50,6 +50,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
+    LIGHT_BUTTON_EVENT_ENTITIES,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
     SINOPE_MANUFACTURER_CLUSTER_ID,
@@ -299,6 +300,7 @@ class SinopeTechnologieslight(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES
 
 
 class SinopeDM2500ZB(CustomDevice):
@@ -364,6 +366,7 @@ class SinopeDM2500ZB(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES
 
 
 class SinopeDM2550ZB(CustomDevice):
@@ -433,3 +436,4 @@ class SinopeDM2550ZB(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES
