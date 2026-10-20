@@ -37,6 +37,12 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
+from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
+from zhaquirks.builder.metadata import (
+    QuirkDefinition,
+    validate_button_event_entities,
+    validate_button_event_triggers,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.legacy import (
     DEVICE_REGISTRY,
@@ -548,16 +554,39 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
             filters=(signature_matches(signature),),
         ),
         zigpy_transforms=(ReplaceZigpyDevice(cls),),
-        zha_device_factory=None,
+        zha_device_factory=_legacy_zha_device_factory(cls),
         source=QuirkSource.from_class(cls),
     )
+
+
+def _legacy_zha_device_factory(cls: type[CustomDevice]) -> QuirkV2Factory | None:
+    """Return the ZHA device factory exposing a v1 quirk's button event entities.
+
+    v1 quirks have no ZHA-level metadata otherwise, so a quirk without button event
+    entities keeps the plain ZHA device.
+    """
+    entities = tuple(cls.button_event_entities)
+    if not entities:
+        return None
+
+    validate_button_event_entities(entities)
+    for entity_metadata in entities:
+        validate_button_event_triggers(
+            entity_metadata, getattr(cls, "device_automation_triggers", {})
+        )
+
+    return QuirkV2Factory(QuirkV2Device, QuirkDefinition(entity_metadata=entities))
 
 
 def _register_pending_quirks() -> None:
     """Drain legacy v1 quirks queued by imports into ZHA's unified registry."""
 
     for cls in PENDING_LEGACY_QUIRKS:
-        ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+        # An invalid quirk, such as a custom one, must not keep ZHA from starting
+        try:
+            ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+        except Exception:
+            _LOGGER.exception("Failed to register quirk %r", cls)
 
     PENDING_LEGACY_QUIRKS.clear()
 
