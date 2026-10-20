@@ -27,7 +27,7 @@ def test_ts0601_dreamblinds_signature(assert_signature_matches_quirk):
                 "out_clusters": ["0x000a", "0x0019"],
             },
             "242": {
-                "profile_id": 0xa1e0,
+                "profile_id": 0xA1E0,
                 "device_type": 0x0061,
                 "in_clusters": [],
                 "out_clusters": ["0x0021"],

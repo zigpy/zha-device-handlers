@@ -1,7 +1,11 @@
 """Tuya based cover and blinds."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -12,11 +16,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from typing import Any
-
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.closures import WindowCovering
-
 from zhaquirks.tuya import (
     COVER_EVENT,
     TUYA_CLUSTER_ID,
@@ -695,15 +694,25 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
 
     def get(self, key: int | str, default: Any | None = None) -> Any:
         attr_def = self.find_attribute(key)
-        if attr_def and attr_def.id == WindowCovering.AttributeDefs.window_covering_type.id:
+        if (
+            attr_def
+            and attr_def.id == WindowCovering.AttributeDefs.window_covering_type.id
+        ):
             return WindowCovering.WindowCoveringType.Tilt_blind_tilt_and_lift
-        if attr_def and attr_def.id == WindowCovering.AttributeDefs.current_position_tilt_percentage.id:
+        if (
+            attr_def
+            and attr_def.id
+            == WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        ):
             val = super().get(key, default)
             return 50 if val is None else val
         return super().get(key, default)
 
     def cover_event(self, attribute, value):
-        if attribute == WindowCovering.AttributeDefs.current_position_tilt_percentage.id:
+        if (
+            attribute
+            == WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        ):
             self._update_attribute(attribute, value)
         else:
             super().cover_event(attribute, value)
@@ -771,7 +780,7 @@ class TuyaDreamBlindsCover0601(TuyaWindowCover):
                 ],
             },
             242: {
-                PROFILE_ID: 0xa1e0,
+                PROFILE_ID: 0xA1E0,
                 DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [0x0021],
@@ -797,7 +806,7 @@ class TuyaDreamBlindsCover0601(TuyaWindowCover):
                 ],
             },
             242: {
-                PROFILE_ID: 0xa1e0,
+                PROFILE_ID: 0xA1E0,
                 DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [0x0021],
