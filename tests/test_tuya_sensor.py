@@ -1,12 +1,15 @@
 """Tests for Tuya Sensor quirks."""
 
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
+from tests.common import wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
@@ -178,3 +181,75 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+@pytest.mark.parametrize(
+    "manuf,model",
+    [
+        ("HOBEIAN", "ZG-303Z"),
+        ("_TZE200_npj9bug3", "TS0601"),  # COOLO CS-201Z
+    ],
+)
+async def test_hobeian_zg303z_soil_sensor(zigpy_device_from_v2_quirk, manuf, model):
+    """Test HOBEIAN ZG-303Z soil moisture, temperature and humidity sensor."""
+
+    quirked = zigpy_device_from_v2_quirk(manuf, model)
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+    # standard humidity cluster is replaced by the DP 109 sensor
+    assert not hasattr(ep, "humidity")
+
+    report = TuyaCommand(
+        status=0,
+        tsn=2,
+        datapoints=[
+            TuyaDatapointData(3, TuyaData(45)),  # soil moisture 45 %
+            TuyaDatapointData(5, TuyaData(215)),  # temperature 21.5 °C
+            TuyaDatapointData(15, TuyaData(80)),  # battery 80 %
+            TuyaDatapointData(106, TuyaData(0)),  # moisture: 0 = wet
+            TuyaDatapointData(109, TuyaData(57)),  # air humidity 57 %
+        ],
+    )
+    assert tuya_cluster.handle_get_data(report) == foundation.Status.SUCCESS
+
+    assert ep.soil_moisture.get("measured_value") == 4500
+    assert ep.temperature.get("measured_value") == 2150
+    assert ep.power.get("battery_percentage_remaining") == 160
+    assert tuya_cluster.get("moisture") is True
+    assert tuya_cluster.get("humidity") == 57
+
+    report = TuyaCommand(
+        status=0,
+        tsn=3,
+        datapoints=[TuyaDatapointData(106, TuyaData(1))],  # 1 = dry
+    )
+    assert tuya_cluster.handle_get_data(report) == foundation.Status.SUCCESS
+    assert tuya_cluster.get("moisture") is False
+
+
+@pytest.mark.parametrize(
+    "offset,raw",
+    [
+        (15, b"\x00\x00\x00\x0f"),  # +1.5 K, entity multiplier 0.1
+        (-15, b"\xff\xff\xff\xf1"),  # -1.5 K
+    ],
+)
+async def test_hobeian_zg303z_temperature_offset(
+    zigpy_device_from_v2_quirk, offset, raw
+):
+    """Test that the temperature offset is written to DP 104 in 0.1 K steps."""
+
+    quirked = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-303Z")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"temperature_offset": offset})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    # DP 104 (0x68), type VALUE (0x02), length 4
+    assert m1.call_args.kwargs["data"].endswith(b"\x68\x02\x00\x04" + raw)
