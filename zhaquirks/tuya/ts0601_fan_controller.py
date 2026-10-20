@@ -103,22 +103,10 @@ class TuyaSpeedFan(t.enum8):
         entity_type=EntityType.CONFIG,
     )
     .tuya_sensor(
-        dp_id=101,
-        attribute_name="frequency",
-        type=t.uint32_t,
-        divisor=1,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.FREQUENCY,
-        unit=UnitOfFrequency.HERTZ,
-        translation_key="frequency",
-        fallback_name="Frequency",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .tuya_sensor(
         dp_id=102,
         attribute_name="current",
         type=t.uint32_t,
-        divisor=100,
+        divisor=1000,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
         unit=UnitOfElectricCurrent.AMPERE,
