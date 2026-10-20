@@ -54,6 +54,9 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         translation_key="duration",
         fallback_name="Duration",
     )
-    .skip_configuration()
+    # No skip_configuration(): the device only accepts the arming datapoint
+    # (DP 101) after the Tuya "spell" has been cast, which happens during the
+    # normal configuration. Without it the device answers the write with its
+    # current state and never arms.
     .add_to_registry()
 )

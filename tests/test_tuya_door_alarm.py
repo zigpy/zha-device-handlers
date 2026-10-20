@@ -81,3 +81,14 @@ async def test_tuya_door_alarm_quirk(zigpy_device_from_v2_quirk):
         is foundation.Status.SUCCESS
     )
     assert ep.tuya_manufacturer.get("duration") == 10
+
+
+def test_tuya_door_alarm_does_not_skip_configuration(zigpy_device_from_v2_quirk):
+    """The quirk must not skip the configuration.
+
+    The device only accepts the arming datapoint (DP 101) after the Tuya
+    "spell" has been cast, which happens during the normal configuration.
+    Skipping it makes the device refuse every arming attempt.
+    """
+    raw = zigpy_device_from_v2_quirk("_TZE284_u8ouaqsz", "TS0601")
+    assert not raw.skip_configuration
