@@ -165,6 +165,45 @@ async def test_tp_wgzba_reads_real_system_mode_from_device(
     assert mode == TPWGZBASystemMode.Manual
 
 
+async def test_tp_wgzba_system_mode_read_preserves_schedule_mode(
+    zigpy_device_from_v2_quirk,
+):
+    """Test reading system_mode does not mirror HA Heat as device Manual."""
+    device = zigpy_device_from_v2_quirk(
+        manufacturer="SONOFF",
+        model="TP-WGZBA",
+        cluster_ids={
+            1: {
+                Thermostat.cluster_id: ClusterType.Server,
+                SONOFF_PRIVATE_CLUSTER_ID: ClusterType.Server,
+            }
+        },
+    )
+    thermostat_cluster = device.endpoints[1].thermostat
+    private_cluster = device.endpoints[1].sonoff_private
+    mode_attribute = Thermostat.AttributeDefs.system_mode
+    record = foundation.ReadAttributeRecord(
+        attrid=mode_attribute.id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(
+            type=mode_attribute.zcl_type,
+            value=TPWGZBASystemMode.Schedule,
+        ),
+    )
+
+    with mock.patch.object(
+        thermostat_cluster,
+        "_read_attributes",
+        mock.AsyncMock(return_value=([record],)),
+    ):
+        await thermostat_cluster.read_attributes([mode_attribute.id])
+
+    assert (
+        private_cluster.get(private_cluster.AttributeDefs.device_work_mode.name)
+        == tp_wgzba.TPWGZBADeviceWorkMode.Schedule
+    )
+
+
 def test_tp_wgzba_schedule_response_updates_ui_values(zigpy_device_from_v2_quirk):
     """Test standard weekly schedule responses populate the UI cache."""
     device = zigpy_device_from_v2_quirk(

@@ -438,23 +438,6 @@ class SonoffTPWGZBAThermostatCluster(CustomCluster, Thermostat):
             value = self._system_mode_to_ha(value)
         super()._update_attribute(attrid, value)
 
-    async def read_attributes_raw(
-        self, attributes: list[int], manufacturer: int | None = None, **kwargs
-    ) -> tuple[list[foundation.ReadAttributeRecord], ...]:
-        """Normalize system_mode reads to the standard thermostat enum."""
-
-        result = await super().read_attributes_raw(
-            attributes, manufacturer=manufacturer, **kwargs
-        )
-        for records in result:
-            for record in records:
-                if (
-                    record.status == foundation.Status.SUCCESS
-                    and record.attrid == Thermostat.AttributeDefs.system_mode.id
-                ):
-                    record.value.value = self._system_mode_to_ha(record.value.value)
-        return result
-
     async def write_attributes(
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
