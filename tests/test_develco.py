@@ -2,12 +2,13 @@
 
 from unittest import mock
 
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.develco.humidity import HumidityPowerConfiguration
 
@@ -204,3 +205,27 @@ async def test_hmszb_120_power_config_battery_percent_from_voltage(
         power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
         == 143
     )
+
+
+async def test_frient_smart_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entity of the frient Smart Button."""
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SBTZB-110",
+        cluster_ids={
+            32: {
+                Basic.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Client,
+            }
+        },
+    )
+    device.endpoints[32].profile_id = zha.PROFILE_ID
+    device.endpoints[32].device_type = zha.DeviceType.COMBINED_INTERFACE
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {"button": ["single_press"]}
+    assert recorder.entities["button"].endpoint.id == 32
+
+    send_command(device, 32, OnOff.cluster_id, "toggle")
+    send_command(device, 32, OnOff.cluster_id, "on")
+    assert recorder.pop() == [("button", "single_press")]
