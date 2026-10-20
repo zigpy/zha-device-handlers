@@ -50,11 +50,12 @@ async def test_tuya_door_alarm_quirk(zigpy_device_from_v2_quirk):
     )
     assert ep.ias_zone.get("zone_status") == 0
 
-    # DP 2: battery percentage
+    # DP 2: battery percentage. The datapoint holds percent, the ZCL attribute
+    # is scaled by two (ZHA divides it by two again when formatting).
     assert (
         await _report(quirked, ZCL_TUYA_DOOR_ALARM_BATTERY) is foundation.Status.SUCCESS
     )
-    assert ep.power.get("battery_percentage_remaining") == 90
+    assert ep.power.get("battery_percentage_remaining") == 180
 
     # DP 101: siren
     assert (

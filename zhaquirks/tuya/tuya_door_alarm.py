@@ -10,8 +10,10 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
     TuyaQuirkBuilder("_TZE284_u8ouaqsz", "TS0601")
     # DP 1: magnetic contact of the door/window
     .tuya_contact(dp_id=1)
-    # DP 2: battery level in percent (two AAA cells)
-    .tuya_battery(dp_id=2, power_cfg=TuyaPowerConfigurationCluster2AAA, scale=1)
+    # DP 2: battery level in percent (two AAA cells).
+    # scale=2 is the Tuya convention: ZHA divides the battery attribute by two
+    # again ("per zcl specs battery percent is reported at 200%").
+    .tuya_battery(dp_id=2, power_cfg=TuyaPowerConfigurationCluster2AAA)
     # DP 101: siren
     .tuya_switch(
         dp_id=101,
