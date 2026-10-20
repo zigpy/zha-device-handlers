@@ -647,6 +647,7 @@ class InvertedTuyaManufacturerWindowCover(TuyaManufacturerWindowCover):
         *,
         dst_addressing: Any = None,
     ) -> None:
+        """Handle incoming Tuya cluster requests and ACK reports."""
         if hdr.command_id in (TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE):
             tuya_payload = args[0]
             dp_id = tuya_payload.command_id & 0xFF
@@ -686,6 +687,7 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
     """Window covering control cluster with 0-180 degree tilt/dimming support."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize the cluster and override window covering type."""
         super().__init__(*args, **kwargs)
         self._update_attribute(
             WindowCovering.AttributeDefs.window_covering_type.id,
@@ -693,6 +695,7 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
         )
 
     def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Get attribute value with tilt capabilities override."""
         attr_def = self.find_attribute(key)
         if (
             attr_def
@@ -709,6 +712,7 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
         return super().get(key, default)
 
     def cover_event(self, attribute, value):
+        """Handle internal cover bus event."""
         if (
             attribute
             == WindowCovering.AttributeDefs.current_position_tilt_percentage.id
@@ -726,6 +730,7 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
         tsn: int | Any = None,
         **kwargs: Any,
     ):
+        """Intercept go_to_tilt_percentage and send Tuya DP 21 angle command."""
         # 0x0008 = go_to_tilt_percentage
         if command_id == 8:
             target_pct = args[0]
