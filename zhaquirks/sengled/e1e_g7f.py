@@ -4,7 +4,7 @@ from typing import Any
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -17,8 +17,10 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
+    ARGS,
     COMMAND,
     COMMAND_OFF,
     COMMAND_ON,
@@ -214,3 +216,89 @@ class SengledE1EG7F(CustomDevice):
         (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},
         (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double"},
     }
+
+    # The on and off buttons report a resolved single or double press, and the long
+    # press once it was released. The dim buttons report the press as it starts
+    # and then repeat the hold while held, without a release.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, TURN_ON),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_PRESS, TURN_ON),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_on",
+            translation_key="on_button",
+            fallback_name="On button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START,
+                    event_data={COMMAND: COMMAND_STEP, ARGS: [0, 1, 0]},
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    event_data={COMMAND: COMMAND_STEP, ARGS: [0, 2, 0]},
+                    repeats=True,
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_dim_up",
+            translation_key="dim_up_button",
+            fallback_name="Dim up button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START,
+                    event_data={COMMAND: COMMAND_STEP, ARGS: [1, 1, 0]},
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    event_data={COMMAND: COMMAND_STEP, ARGS: [1, 2, 0]},
+                    repeats=True,
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_dim_down",
+            translation_key="dim_down_button",
+            fallback_name="Dim down button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_OFF),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, TURN_OFF),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_PRESS, TURN_OFF),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_off",
+            translation_key="off_button",
+            fallback_name="Off button",
+        ),
+    )

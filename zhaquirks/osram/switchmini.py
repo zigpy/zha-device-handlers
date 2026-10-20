@@ -1,6 +1,7 @@
 """Osram Smart+ Switch Mini device."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -15,10 +16,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
+    CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
     COMMAND_MOVE_ON_OFF,
@@ -131,3 +134,87 @@ class OsramSwitchMini(CustomDevice):
         (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 2},
         (LONG_RELEASE, BUTTON_3): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 2},
     }
+
+    # Each button sends its commands from its own endpoint: up (button 1) on
+    # endpoint 1, the circle (button 2) on endpoint 3 and down (button 3) on
+    # endpoint 2. A short press is sent on release, as the buttons can be held.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, BUTTON_1),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, BUTTON_1),
+                ),
+                # The device stops with `stop`, the trigger expects `stop_with_on_off`
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    event_data={
+                        COMMAND: COMMAND_STOP,
+                        CLUSTER_ID: LevelControl.cluster_id,
+                        ENDPOINT_ID: 1,
+                    },
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, BUTTON_1),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=1,
+            unique_id_suffix="button_1",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": "1"},
+            fallback_name="Button 1",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, BUTTON_2),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, BUTTON_2),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, BUTTON_2),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=3,
+            unique_id_suffix="button_2",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": "2"},
+            fallback_name="Button 2",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, BUTTON_3),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, BUTTON_3),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, BUTTON_3),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=2,
+            unique_id_suffix="button_3",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": "3"},
+            fallback_name="Button 3",
+        ),
+    )
