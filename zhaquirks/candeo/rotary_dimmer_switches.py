@@ -7,7 +7,7 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, LevelControl, OnOff, Ota
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.candeo import CANDEO
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
@@ -157,6 +157,29 @@ dimmer_v2_quirk = (
             },
         }
     )
+    # Pressing the knob switches the load, the dimmer only reports the extra button
+    # commands. Its double press stays a device trigger, as it reports no single
+    # press. The release is classified by the hold, as it is not known whether the
+    # dimmer also sends it after a short press.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, ROTARY_KNOB),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, ROTARY_KNOB),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    )
 )
 
 remote_quirk = (
@@ -219,6 +242,37 @@ remote_quirk = (
                 ENDPOINT_ID: 2,
             },
         }
+    )
+    # Pressing the knob: the knob resolves double presses, so its single press is a
+    # resolved one. The release is classified by the hold, as it is not known whether
+    # the knob also sends it after a short press. The rotation stays device triggers.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, ROTARY_KNOB),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, ROTARY_KNOB),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, ROTARY_KNOB),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, ROTARY_KNOB),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
     )
 )
 
