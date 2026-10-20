@@ -5,7 +5,6 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
-
 CURRENT_POSITION_LIFT_PERCENTAGE = (
     WindowCovering.AttributeDefs.current_position_lift_percentage.id
 )

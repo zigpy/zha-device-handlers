@@ -98,9 +98,7 @@ async def test_ts0301_go_to_lift_percentage(
         WindowCovering.ServerCommandDefs.stop.id,
     ],
 )
-async def test_ts0301_open_close_stop_unchanged(
-    zigpy_device_from_v2_quirk, command_id
-):
+async def test_ts0301_open_close_stop_unchanged(zigpy_device_from_v2_quirk, command_id):
     """Open, close, and stop commands retain their standard ZCL IDs."""
     device = zigpy_device_from_v2_quirk(
         "_TZE200_cirjrpxe",
