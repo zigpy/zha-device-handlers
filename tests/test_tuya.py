@@ -13,16 +13,23 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.const import (
+    COMMAND,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_RELEASE,
     MODELS_INFO,
     OFF,
     ON,
@@ -33,6 +40,7 @@ from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
+import zhaquirks.tuya.ts004f
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
@@ -2224,3 +2232,72 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        zhaquirks.tuya.ts004f.TuyaSmartRemote004FDMS,
+        zhaquirks.tuya.ts004f.TuyaSmartRemote004F,
+    ],
+)
+@pytest.mark.parametrize(
+    "move_mode,expected_event",
+    [
+        (LevelControl.MoveMode.Up, COMMAND_MOVE_UP_RELEASE),
+        (LevelControl.MoveMode.Down, COMMAND_MOVE_DOWN_RELEASE),
+    ],
+)
+async def test_ts004f_dim_release_direction(
+    zigpy_device_from_quirk, quirk, move_mode, expected_event
+):
+    """Test that the TS004F dimmer switches report which dim button ended the hold.
+
+    Both dim buttons send the same bare stop when released (the logs in #969), so the
+    direction of the move that started the hold is what tells them apart.
+    """
+    device = zigpy_device_from_quirk(quirk)
+    level_cluster = device.endpoints[1].out_clusters[LevelControl.cluster_id]
+    assert isinstance(level_cluster, LevelControlWithMoveDirection)
+
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
+
+    hdr_move = foundation.ZCLHeader.cluster(
+        tsn=1, command_id=LevelControl.ServerCommandDefs.move.id
+    )
+    level_cluster.handle_cluster_request(hdr_move, [move_mode, 51])
+    hdr_stop = foundation.ZCLHeader.cluster(
+        tsn=2, command_id=LevelControl.ServerCommandDefs.stop.id
+    )
+    level_cluster.handle_cluster_request(hdr_stop, [])
+
+    other_event = (
+        COMMAND_MOVE_DOWN_RELEASE
+        if expected_event == COMMAND_MOVE_UP_RELEASE
+        else COMMAND_MOVE_UP_RELEASE
+    )
+    events = listener.zha_send_event.call_args_list
+    assert events.count(mock.call(expected_event, [])) == 1
+    assert mock.call(other_event, []) not in events
+
+    # both dim buttons now have a long release trigger, matching their own event
+    triggers = quirk.device_automation_triggers
+    assert triggers[(LONG_RELEASE, DIM_UP)][COMMAND] == COMMAND_MOVE_UP_RELEASE
+    assert triggers[(LONG_RELEASE, DIM_DOWN)][COMMAND] == COMMAND_MOVE_DOWN_RELEASE
+
+
+async def test_ts004f_stop_without_move(zigpy_device_from_quirk):
+    """Test that a stop with no hold in progress synthesizes no release event."""
+    device = zigpy_device_from_quirk(zhaquirks.tuya.ts004f.TuyaSmartRemote004FDMS)
+    level_cluster = device.endpoints[1].out_clusters[LevelControl.cluster_id]
+
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
+
+    hdr_stop = foundation.ZCLHeader.cluster(
+        tsn=1, command_id=LevelControl.ServerCommandDefs.stop.id
+    )
+    level_cluster.handle_cluster_request(hdr_stop, [])
+
+    assert listener.zha_send_event.call_args_list == []
