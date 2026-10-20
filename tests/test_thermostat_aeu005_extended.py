@@ -1,6 +1,7 @@
 """Additional coverage tests for the Aqara W600 thermostat quirk."""
 
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 from zigpy.zcl import foundation
@@ -105,12 +106,12 @@ def test_sync_system_mode_ignores_unknown_enable_state():
     assert thermostat.updates == []
 
 
-def test_sync_running_state_without_fcc0_is_idle():
-    """Treat missing vendor-cluster state conservatively as idle."""
+def test_sync_running_state_without_enable_state_uses_valve():
+    """A positive valve sample remains evidence when mode is unknown."""
     thermostat = FakeThermostat()
     thermostat.fcc0 = None
     thermostat._sync_running_state_from_valve(25)
-    assert thermostat.updates == [(w600.ATTR_RUNNING_STATE, w600.RUNSTATE_IDLE)]
+    assert thermostat.updates == [(w600.ATTR_RUNNING_STATE, w600.RUNSTATE_HEAT_ON)]
 
 
 @pytest.mark.asyncio
@@ -252,7 +253,12 @@ async def test_refresh_w600_mode_state_reads_required_attributes(monkeypatch):
         w600.ATTR_SCHEDULE_ENABLED,
         w600.ATTR_DEVICE_STATE,
     ]
-    assert base_reads == [[w600.ATTR_TEMP_SETPOINT_HOLD]]
+    assert base_reads == [
+        [
+            w600.ATTR_TEMP_SETPOINT_HOLD,
+            w600.ATTR_TEMP_SETPOINT_HOLD_DURATION,
+        ]
+    ]
 
 
 @pytest.mark.asyncio
@@ -260,8 +266,12 @@ async def test_fcc0_update_routes_vendor_state_to_thermostat(monkeypatch):
     """Route vendor enable and valve reports to the correct standard state."""
     monkeypatch.setattr(CustomCluster, "_update_attribute", lambda *args: None)
     thermostat = FakeThermostat(enabled=1)
-    cluster = object.__new__(w600.AqaraW600FCC0)
-    cluster._endpoint = SimpleNamespace(thermostat=thermostat)
+    cluster = w600.AqaraW600FCC0(
+        SimpleNamespace(
+            thermostat=thermostat,
+            device=SimpleNamespace(zdo=MagicMock(), _on_remove_callbacks=[]),
+        )
+    )
 
     w600.AqaraW600FCC0._update_attribute(cluster, w600.ATTR_THERMOSTAT_ENABLED, 1)
     w600.AqaraW600FCC0._update_attribute(cluster, w600.ATTR_VALVE_POSITION_RAW, 20)
