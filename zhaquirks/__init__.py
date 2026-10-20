@@ -32,7 +32,7 @@ from zigpy.zcl import (
     AttributeUpdatedEvent,
     foundation,
 )
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
@@ -50,6 +50,8 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -217,6 +219,58 @@ class EventableCluster(CustomCluster):
                 VALUE: event.value,
             },
         )
+
+
+class LevelControlWithMoveDirection(CustomCluster, LevelControl):
+    """LevelControl cluster that tells the release of a dim button hold apart.
+
+    Several remotes send the same stop command for both dim buttons, so the stop alone
+    does not say which button was released. This tracks the direction of the move that
+    started the hold and emits a `move_up_release` or `move_down_release` event for the
+    stop, which a quirk's long release triggers can match. No event is emitted for a
+    stop that follows no move, for instance after a restart in the middle of a hold.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction: int | None = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands.
+        """
+        if hdr.command_id in (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+        ):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif (
+            hdr.command_id
+            in (
+                LevelControl.ServerCommandDefs.stop.id,
+                LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            )
+            and self._last_move_direction is not None
+        ):
+            event = (
+                COMMAND_MOVE_UP_RELEASE
+                if self._last_move_direction == LevelControl.MoveMode.Up
+                else COMMAND_MOVE_DOWN_RELEASE
+            )
+            self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class GroupBoundCluster(CustomCluster):

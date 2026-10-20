@@ -9,13 +9,16 @@ from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.const import COMMAND, DIM_DOWN, DIM_UP, LONG_RELEASE
-from zhaquirks.ikea import (
+from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.const import (
+    COMMAND,
     COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_UP_RELEASE,
-    IKEA,
-    IkeaLevelControl,
+    DIM_DOWN,
+    DIM_UP,
+    LONG_RELEASE,
 )
+from zhaquirks.ikea import IKEA
 from zhaquirks.ikea.fivebtnremote import (
     IkeaTradfriRemote1,
     IkeaTradfriRemote2,
@@ -318,7 +321,7 @@ async def test_ikea_level_control_direction_tracking(
     )
 
     level_cluster = device.endpoints[1].in_clusters[LevelControl.cluster_id]
-    assert isinstance(level_cluster, IkeaLevelControl)
+    assert isinstance(level_cluster, LevelControlWithMoveDirection)
 
     listener = mock.MagicMock()
     level_cluster.add_listener(listener)
@@ -409,7 +412,7 @@ async def test_ikea_dim_release_direction(
         )
         level_cluster = device.endpoints[1].out_clusters[LevelControl.cluster_id]
 
-    assert isinstance(level_cluster, IkeaLevelControl)
+    assert isinstance(level_cluster, LevelControlWithMoveDirection)
 
     listener = mock.MagicMock()
     level_cluster.add_listener(listener)
