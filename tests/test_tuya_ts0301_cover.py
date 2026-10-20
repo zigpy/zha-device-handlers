@@ -91,6 +91,33 @@ async def test_ts0301_go_to_lift_percentage(
 
 
 @pytest.mark.parametrize(
+    ("zcl_position", "device_position"),
+    [(0, 100), (25, 75), (50, 50), (75, 25), (100, 0)],
+)
+async def test_ts0301_keyword_go_to_lift_percentage(
+    zigpy_device_from_v2_quirk, zcl_position, device_position
+):
+    """Keyword lift position targets are inverted before sending."""
+    device = zigpy_device_from_v2_quirk(
+        "_TZE200_cirjrpxe",
+        "TS0301",
+        cluster_ids={1: {WindowCovering.cluster_id: ClusterType.Server}},
+    )
+    cover = device.endpoints[1].window_covering
+
+    with mock.patch.object(
+        cover.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        await cover.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            percentage_lift_value=zcl_position,
+        )
+
+    request_mock.assert_called_once()
+    assert request_mock.call_args.kwargs["data"][-1] == device_position
+
+
+@pytest.mark.parametrize(
     "command_id",
     [
         WindowCovering.ServerCommandDefs.up_open.id,
