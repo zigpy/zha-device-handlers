@@ -1,10 +1,12 @@
 """Device handler for the TS0021."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -137,3 +139,33 @@ class TS0021(CustomDevice):
             ARGS: {ATTRIBUTE_ID: ATTR_BTN_2_PRESSED, VALUE: 2},
         },
     }
+
+    # The remote resolves single and double presses. That it reports a hold once,
+    # after the release, is assumed from the Tuya scene remotes (observed on
+    # TS0041-TS0044), not observed on this device.
+    button_event_entities = tuple(
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, button),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, button),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_PRESS, button),
+                ),
+            ],
+            cluster_id=TUYA_CLUSTER_ID,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix=f"button_{number}",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": str(number)},
+            fallback_name=f"Button {number}",
+        )
+        for number, button in ((1, BTN_1), (2, BTN_2))
+    )

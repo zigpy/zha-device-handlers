@@ -11,7 +11,7 @@ from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
-from zigpy.zcl import BaseAttributeDefs, foundation
+from zigpy.zcl import BaseAttributeDefs, ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -20,11 +20,15 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
+    BUTTON,
     DOUBLE_PRESS,
+    ENDPOINTS,
     LEFT,
     LONG_PRESS,
+    OUTPUT_CLUSTERS,
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
@@ -1120,6 +1124,69 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             self.listener_event(
                 ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
             )
+
+
+def smart_remote_button_events(
+    replacement: dict[str, Any], buttons: int
+) -> tuple[ButtonEventMetadata, ...]:
+    """Return the button event entities of a Tuya scene remote.
+
+    Button N reports its presses from endpoint N with the `press_type` command of
+    `TuyaSmartRemoteOnOffCluster`, which fires the `SHORT_PRESS`, `DOUBLE_PRESS` and
+    `LONG_PRESS` triggers of subtype `button_N`. The remote resolves single and double
+    presses itself, and reports a hold once, after the button is released (observed on
+    TS0041-TS0044, assumed for the other remotes sending the same command).
+    """
+    entities = []
+
+    for button in range(1, buttons + 1):
+        subtype = f"{BUTTON}_{button}"
+        endpoint = replacement[ENDPOINTS][button]
+        cluster_type = (
+            ClusterType.Client
+            if TuyaSmartRemoteOnOffCluster in endpoint.get(OUTPUT_CLUSTERS, [])
+            else ClusterType.Server
+        )
+
+        if buttons == 1:
+            names: dict[str, Any] = {
+                "unique_id_suffix": BUTTON,
+                "translation_key": BUTTON,
+                "fallback_name": "Button",
+            }
+        else:
+            names = {
+                "unique_id_suffix": subtype,
+                "translation_key": "numbered_button",
+                "translation_placeholders": {"button_number": str(button)},
+                "fallback_name": f"Button {button}",
+            }
+
+        entities.append(
+            ButtonEventMetadata(
+                events=[
+                    ButtonEvent(
+                        event_type=ButtonEventType.SINGLE_PRESS,
+                        trigger=(SHORT_PRESS, subtype),
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.MULTI_PRESS,
+                        trigger=(DOUBLE_PRESS, subtype),
+                        press_count=2,
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_END,
+                        trigger=(LONG_PRESS, subtype),
+                    ),
+                ],
+                cluster_id=TuyaSmartRemoteOnOffCluster.cluster_id,
+                cluster_type=cluster_type,
+                endpoint_id=button,
+                **names,
+            )
+        )
+
+    return tuple(entities)
 
 
 MULTIPLIER = 0x0301
