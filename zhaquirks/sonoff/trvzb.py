@@ -110,21 +110,17 @@ class CustomSonoffCluster(CustomCluster):
             type=t.bitmap8,
             manufacturer_code=None,
         )
+        # TRV-ZBT only: adaptive control lives here instead of 0x6017
+        temperature_control_mode = ZCLAttributeDef(
+            id=0x6013,
+            type=t.enum8,
+            manufacturer_code=None,
+        )
 
 
-(
-    QuirkBuilder("SONOFF", "TRVZB")
-    .applies_to("SONOFF", "TRV-ZBT")
+BASE_TRVZB_QUIRK = (
+    QuirkBuilder()
     .replaces(CustomSonoffCluster)
-    .switch(
-        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
-        # ControlModeType,
-        CustomSonoffCluster.cluster_id,
-        on_value=2,
-        off_value=0,
-        translation_key="adaptive_mode",
-        fallback_name="Adaptive mode",
-    )
     .switch(
         CustomSonoffCluster.AttributeDefs.child_lock.name,
         CustomSonoffCluster.cluster_id,
@@ -238,6 +234,37 @@ class CustomSonoffCluster(CustomCluster):
         multiplier=0.01,
         translation_key="external_temperature_sensor_value",
         fallback_name="External temperature sensor value",
+    )
+)
+
+(
+    BASE_TRVZB_QUIRK.clone()
+    .applies_to("SONOFF", "TRVZB")
+    .switch(
+        CustomSonoffCluster.AttributeDefs.smart_temperature_control.name,
+        # ControlModeType,
+        CustomSonoffCluster.cluster_id,
+        on_value=2,
+        off_value=0,
+        translation_key="adaptive_mode",
+        fallback_name="Adaptive mode",
+    )
+    .add_to_registry()
+)
+
+(
+    # The TRV-ZBT has the same 0xFC11 attribute set, except that adaptive
+    # control is `temperature_control_mode` (0x6013, enum8, 1 = manual,
+    # 2 = adaptive); 0x6017 is unsupported on this model.
+    BASE_TRVZB_QUIRK.clone()
+    .applies_to("SONOFF", "TRV-ZBT")
+    .switch(
+        CustomSonoffCluster.AttributeDefs.temperature_control_mode.name,
+        CustomSonoffCluster.cluster_id,
+        on_value=2,
+        off_value=1,
+        translation_key="adaptive_mode",
+        fallback_name="Adaptive mode",
     )
     .add_to_registry()
 )
