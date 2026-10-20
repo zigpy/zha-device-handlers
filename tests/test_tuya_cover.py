@@ -154,6 +154,9 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
     # DP 21 incoming tilt angle report: angle = 90 -> 50%
     hdr = foundation.ZCLHeader.cluster(tsn=1, command_id=TUYA_GET_DATA)
     payload = TuyaManufCluster.Command()
+    payload.status = 0
+    payload.tsn = 1
+    payload.function = 0
     payload.command_id = (2 << 8) + 21
     payload.data = [4, 0, 0, 0, 90]
 
@@ -170,6 +173,9 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
     # Test TUYA_SET_DATA_RESPONSE and other DP
     hdr_resp = foundation.ZCLHeader.cluster(tsn=2, command_id=TUYA_SET_DATA_RESPONSE)
     other_payload = TuyaManufCluster.Command()
+    other_payload.status = 0
+    other_payload.tsn = 2
+    other_payload.function = 0
     other_payload.command_id = (4 << 8) + 1  # DP 1
     other_payload.data = [1, 0]
     with mock.patch.object(tuya_cluster, "send_default_rsp"):
@@ -177,6 +183,9 @@ async def test_tuya_dreamblinds_tilt_and_position(zigpy_device_from_quirk):
 
     # Test error handling on malformed DP 21 payload
     bad_payload = TuyaManufCluster.Command()
+    bad_payload.status = 0
+    bad_payload.tsn = 3
+    bad_payload.function = 0
     bad_payload.command_id = (2 << 8) + 21
     bad_payload.data = []  # Index error
     with mock.patch.object(tuya_cluster, "send_default_rsp"):
