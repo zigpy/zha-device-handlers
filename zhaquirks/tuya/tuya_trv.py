@@ -293,6 +293,9 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     TuyaQuirkBuilder("_TZE204_rtrmfadk", "TS0601")
     .applies_to("_TZE200_9mjy74mp", "TS0601")
     .applies_to("_TZE204_9mjy74mp", "TS0601")
+    # From the Zigbee2MQTT TRV601/TRV602 definitions, not tested on hardware
+    .applies_to("_TZE200_rtrmfadk", "TS0601")
+    .applies_to("_TZE204_cvcu2p6e", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostatV2.ep_attribute,

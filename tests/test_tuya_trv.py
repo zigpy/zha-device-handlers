@@ -301,6 +301,33 @@ async def test_handle_get_data(
 
 
 @pytest.mark.parametrize(
+    "manuf",
+    [
+        "_TZE204_rtrmfadk",
+        "_TZE200_9mjy74mp",
+        "_TZE204_9mjy74mp",
+        "_TZE200_rtrmfadk",
+        "_TZE204_cvcu2p6e",
+    ],
+)
+def test_local_temperature_calibration_scale(zigpy_device_from_v2_quirk, manuf):
+    """Test the dp 101 calibration entity is scaled to tenths of a degree."""
+
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
+    entry = DEVICE_REGISTRY.match_entry(quirked)
+    (number_metadata,) = (
+        metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if metadata.resolved_unique_id_suffix == "local_temperature_calibration"
+    )
+
+    assert number_metadata.min == -6
+    assert number_metadata.max == 6
+    assert number_metadata.step == 0.1
+    assert number_metadata.multiplier == 0.1
+
+
+@pytest.mark.parametrize(
     "manuf,msg,dp_id,value",
     [
         (
@@ -347,24 +374,3 @@ async def test_handle_get_data_tmcu(
     assert tmcu_listener.attribute_updates[0][1] == value
 
     assert ep.tuya_manufacturer.get(attr_id) == value
-
-
-@pytest.mark.parametrize(
-    "manuf",
-    ["_TZE204_rtrmfadk", "_TZE200_9mjy74mp", "_TZE204_9mjy74mp"],
-)
-def test_local_temperature_calibration_scale(zigpy_device_from_v2_quirk, manuf):
-    """Test the dp 101 calibration entity is scaled to tenths of a degree."""
-
-    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
-    entry = DEVICE_REGISTRY.match_entry(quirked)
-    (number_metadata,) = (
-        metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
-        if metadata.resolved_unique_id_suffix == "local_temperature_calibration"
-    )
-
-    assert number_metadata.min == -6
-    assert number_metadata.max == 6
-    assert number_metadata.step == 0.1
-    assert number_metadata.multiplier == 0.1
