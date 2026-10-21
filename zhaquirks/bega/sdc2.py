@@ -24,7 +24,7 @@ from typing import Final
 
 from zha.application import Platform
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.foundation import (
@@ -142,6 +142,7 @@ class BegaDaliBus(CustomCluster):
         self._boost_until = 0.0
         self._follow_up_scan = False  # expand-system scan due after the running scan
         self._scan_seen = False  # bus mode "Scan" observed since the last scan command
+        self._scan_generation = 0  # counts accepted scan commands
         self._start_status_polling()
 
     async def command(
@@ -162,9 +163,19 @@ class BegaDaliBus(CustomCluster):
             expect_reply=expect_reply,
             **kwargs,
         )
-        if is_scan:
+        if is_scan and self._accepted(result):
             self._scan_started(follow_up=new_installation)
         return result
+
+    @staticmethod
+    def _accepted(response) -> bool:
+        """Return whether the device accepted a command.
+
+        A rejected command does not raise; the device answers with a default
+        response carrying a non-success status.
+        """
+        status = getattr(response, "status", foundation.Status.SUCCESS)
+        return status == foundation.Status.SUCCESS
 
     async def _switch_all_gears_off(self) -> None:
         """Switch every gear off with a single command and mirror it into the cached state.
@@ -175,9 +186,12 @@ class BegaDaliBus(CustomCluster):
         updated locally to keep Home Assistant in sync without extra traffic.
         """
         try:
-            await self.endpoint.on_off.off()
+            response = await self.endpoint.on_off.off()
         except Exception as exc:  # noqa: BLE001  the scan is still worth running
             self.debug("Switching gears off before the scan failed: %r", exc)
+            return
+        if not self._accepted(response):
+            self.debug("Switching gears off before the scan was rejected: %r", response)
             return
         for endpoint in self.endpoint.device.non_zdo_endpoints:
             on_off = endpoint.in_clusters.get(OnOff.cluster_id)
@@ -187,6 +201,7 @@ class BegaDaliBus(CustomCluster):
     def _scan_started(self, *, follow_up: bool) -> None:
         self._follow_up_scan = follow_up
         self._scan_seen = False
+        self._scan_generation += 1
         self._boost_until = time.monotonic() + self.POLL_BOOST_S
         self._start_status_polling()
         self._poll_wake.set()
@@ -194,15 +209,19 @@ class BegaDaliBus(CustomCluster):
     async def _send_follow_up_scan(self) -> None:
         """Add the gears the new-installation scan missed."""
         self._follow_up_scan = False
+        generation = self._scan_generation
         await asyncio.sleep(self.FOLLOW_UP_SCAN_DELAY_S)
+        if generation != self._scan_generation:
+            return  # a newer scan command took over, it brings its own follow-up
         try:
-            await super().command(
+            response = await super().command(
                 self.ServerCommandDefs.bus_scan.id, scan_mode=DaliScanMode.Expand_system
             )
         except Exception as exc:  # noqa: BLE001
             self.debug("Follow-up scan failed: %r", exc)
             return
-        self._scan_started(follow_up=False)
+        if self._accepted(response):
+            self._scan_started(follow_up=False)
 
     def _start_status_polling(self) -> None:
         if self._poll_task is not None and not self._poll_task.done():
@@ -400,6 +419,7 @@ sdc2 = (
     .prevent_default_entity_creation(
         endpoint_id=DALI_BUS_ENDPOINT,
         cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
         function=lambda entity: entity.device_class == "opening",
     )
     # The endpoint 1 light reaches every gear as a DALI broadcast; name it so.

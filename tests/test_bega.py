@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import time
 from unittest import mock
 
 import pytest
@@ -15,7 +16,7 @@ import zigpy.exceptions
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
 import zigpy.zcl
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -75,12 +76,19 @@ NEUTRAL_CT = 250
 
 SUCCESS = foundation.Status.SUCCESS
 FAILURE = foundation.Status.FAILURE
-DEFAULT_RESPONSE = foundation.GENERAL_COMMANDS[
-    foundation.GeneralCommand.Default_Response
-].schema(
-    command_id=foundation.GeneralCommand.Read_Attributes,
-    status=foundation.Status.UNSUP_CLUSTER_COMMAND,
-)
+
+
+def default_response(
+    status: foundation.Status = SUCCESS,
+    command_id: int = foundation.GeneralCommand.Read_Attributes,
+) -> foundation.CommandSchema:
+    """Return the ZCL default response a device answers a command with."""
+    return foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Default_Response
+    ].schema(command_id=command_id, status=status)
+
+
+DEFAULT_RESPONSE = default_response(foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 # unique ids are "{ieee}-1-{suffix}" and must never change
 EXPECTED_ENTITIES = {
@@ -267,9 +275,10 @@ def test_light_entity_names(sdc2_device):
         }
 
     (prevented,) = definition.disabled_default_entities
-    assert (prevented.endpoint_id, prevented.cluster_id) == (
+    assert (prevented.endpoint_id, prevented.cluster_id, prevented.cluster_type) == (
         BUS_ENDPOINT,
         OnOff.cluster_id,
+        ClusterType.Client,
     )
     assert prevented.function(mock.Mock(device_class="opening"))
     assert not prevented.function(mock.Mock(device_class=None))
@@ -313,7 +322,9 @@ async def test_new_installation_scan_switches_gears_off_first(sdc2_device):
     for on_off in on_off_clusters:
         on_off.update_attribute(ON_OFF.id, t.Bool.true)
 
-    with mock.patch.object(zigpy.zcl.Cluster, "request", autospec=True) as request:
+    with mock.patch.object(
+        zigpy.zcl.Cluster, "request", autospec=True, return_value=default_response()
+    ) as request:
         await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
 
     assert sent_commands(request) == [
@@ -322,6 +333,7 @@ async def test_new_installation_scan_switches_gears_off_first(sdc2_device):
     ]
     assert request.call_args.kwargs["manufacturer"] == BEGA_MANUFACTURER_CODE
     assert all(on_off.get(ON_OFF.id) == t.Bool.false for on_off in on_off_clusters)
+    assert bus._follow_up_scan is True
 
 
 async def test_expand_system_scan_keeps_gears_on(sdc2_device):
@@ -331,25 +343,35 @@ async def test_expand_system_scan_keeps_gears_on(sdc2_device):
     on_off = device.endpoints[GEAR_ENDPOINTS[0]].on_off
     on_off.update_attribute(ON_OFF.id, t.Bool.true)
 
-    with mock.patch.object(zigpy.zcl.Cluster, "request", autospec=True) as request:
+    with mock.patch.object(
+        zigpy.zcl.Cluster, "request", autospec=True, return_value=default_response()
+    ) as request:
         # positional argument, as ZHA may pass it
         await bus.command(BUS_SCAN.id, DaliScanMode.Expand_system)
 
     assert sent_commands(request) == [(bus, BUS_SCAN.id, DaliScanMode.Expand_system)]
     assert on_off.get(ON_OFF.id) == t.Bool.true
+    assert bus._follow_up_scan is False
 
 
-async def test_scan_is_sent_when_switching_off_fails(sdc2_device):
-    """The scan is still worth running when the Off broadcast fails."""
+@pytest.mark.parametrize(
+    "rejection",
+    [zigpy.exceptions.DeliveryError("no route"), default_response(FAILURE)],
+    ids=["delivery error", "rejected"],
+)
+async def test_scan_is_sent_when_switching_off_fails(sdc2_device, rejection):
+    """The scan is still worth running when the Off broadcast fails or is rejected."""
     device = sdc2_device()
     bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
     on_off = device.endpoints[BUS_ENDPOINT].on_off
     on_off.update_attribute(ON_OFF.id, t.Bool.true)
 
     async def fail_off(cluster, *args, **kwargs):
-        if cluster is not bus:
-            raise zigpy.exceptions.DeliveryError("no route")
-        return SUCCESS
+        if cluster is bus:
+            return default_response()
+        if isinstance(rejection, Exception):
+            raise rejection
+        return rejection
 
     with mock.patch.object(
         zigpy.zcl.Cluster, "request", autospec=True, side_effect=fail_off
@@ -370,48 +392,94 @@ def test_no_polling_without_event_loop(MockAppController, ieee_mock):
     assert device.endpoints[BUS_ENDPOINT].bega_dali_bus._poll_task is None
 
 
-async def test_status_polling_and_follow_up_scan(sdc2_device, monkeypatch):
-    """After a new-installation scan an expand-system scan follows once the bus runs again."""
+@pytest.fixture
+def fast_polling(monkeypatch):
+    """Shrink the polling intervals so the polling tests run in well under a second."""
     for name in ("POLL_FAST_S", "POLL_SLOW_S", "POLL_BOOST_S"):
         monkeypatch.setattr(BegaDaliBus, name, 0.01)
     monkeypatch.setattr(BegaDaliBus, "FOLLOW_UP_SCAN_DELAY_S", 0)
 
-    device = sdc2_device()
-    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
-    assert bus._poll_task is not None and not bus._poll_task.done()
 
-    # the simulated device: a scan command puts the bus into scan mode for one poll
-    device_mode = DaliBusMode.Run
+class SimulatedController:
+    """The controller behind patched `Cluster.request` and `read_attributes`.
 
-    async def fake_request(cluster, _general, command_id, *args, **kwargs):
-        nonlocal device_mode
-        if cluster is bus and command_id == BUS_SCAN.id:
-            device_mode = DaliBusMode.Scan
-        return SUCCESS
+    An accepted scan command puts the bus into scan mode for exactly one status
+    read, then it is back in run mode.
+    """
 
-    async def fake_read(attributes, **kwargs):
-        nonlocal device_mode
+    def __init__(
+        self,
+        bus: BegaDaliBus,
+        *,
+        scan_status: foundation.Status = SUCCESS,
+        expand_error: Exception | None = None,
+        read_errors: int = 0,
+    ) -> None:
+        """Initialize the simulation with the bus cluster the quirk talks to."""
+        self.bus = bus
+        self.mode = DaliBusMode.Run
+        self.scan_status = scan_status
+        self.expand_error = expand_error
+        self.read_errors = read_errors
+
+    async def request(self, cluster, _general, command_id, *args, **kwargs):
+        """Answer a command like the device would."""
+        if cluster is self.bus and command_id == BUS_SCAN.id:
+            scan_mode = kwargs.get("scan_mode", args[0] if args else None)
+            if scan_mode == DaliScanMode.Expand_system and self.expand_error:
+                raise self.expand_error
+            if self.scan_status != SUCCESS:
+                return default_response(self.scan_status, BUS_SCAN.id)
+            self.mode = DaliBusMode.Scan
+        return default_response()
+
+    async def read(self, attributes, **kwargs):
+        """Answer the status poll of the bus cluster."""
         assert attributes == list(BegaDaliBus.STATUS_ATTRIBUTES)
-        mode, device_mode = device_mode, DaliBusMode.Run
+        if self.read_errors:
+            self.read_errors -= 1
+            raise zigpy.exceptions.DeliveryError("no route")
+        mode, self.mode = self.mode, DaliBusMode.Run
         return {
             "bus_mode": mode,
             "bus_status": DaliBusStatus(0),
             "virtual_gears": t.uint64_t(0),
         }, {}
 
+
+@contextlib.contextmanager
+def simulated(bus: BegaDaliBus, **knobs):
+    """Patch the radio with a `SimulatedController`; yields the request mock."""
+    controller = SimulatedController(bus, **knobs)
     with (
         mock.patch.object(
-            zigpy.zcl.Cluster, "request", autospec=True, side_effect=fake_request
+            zigpy.zcl.Cluster, "request", autospec=True, side_effect=controller.request
         ) as request,
         mock.patch.object(
-            bus, "read_attributes", mock.AsyncMock(side_effect=fake_read)
+            bus, "read_attributes", mock.AsyncMock(side_effect=controller.read)
         ),
     ):
+        yield request
+
+
+async def wait_until(condition, timeout: float = 2.0) -> None:
+    """Wait for `condition()` to become true, polling in small steps."""
+    deadline = time.monotonic() + timeout
+    while not condition():
+        assert time.monotonic() < deadline, "condition not met in time"
+        await asyncio.sleep(0.01)
+
+
+async def test_status_polling_and_follow_up_scan(sdc2_device, fast_polling):
+    """After a new-installation scan an expand-system scan follows once the bus runs again."""
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+    assert bus._poll_task is not None and not bus._poll_task.done()
+
+    # the first poll fails: the loop keeps going
+    with simulated(bus, read_errors=1) as request:
         await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
-        for _ in range(100):
-            await asyncio.sleep(0.01)
-            if request.call_count >= 3:
-                break
+        await wait_until(lambda: request.call_count >= 3)
         # a few more polls: the follow-up scan is sent exactly once
         await asyncio.sleep(0.1)
 
@@ -420,7 +488,76 @@ async def test_status_polling_and_follow_up_scan(sdc2_device, monkeypatch):
         (bus, BUS_SCAN.id, DaliScanMode.New_installation),
         (bus, BUS_SCAN.id, DaliScanMode.Expand_system),
     ]
+    assert bus._follow_up_scan is False
     assert not bus._poll_task.done()
+
+
+async def test_rejected_configure_scan_has_no_follow_up(sdc2_device, fast_polling):
+    """A rejected new-installation scan arms nothing, even after the boost expires."""
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+
+    with simulated(bus, scan_status=FAILURE) as request:
+        response = await bus.command(
+            BUS_SCAN.id, scan_mode=DaliScanMode.New_installation
+        )
+        await asyncio.sleep(0.15)  # several polls, well past POLL_BOOST_S
+
+    assert response.status == FAILURE
+    assert sent_commands(request) == [
+        (device.endpoints[BUS_ENDPOINT].on_off, OFF.id, None),
+        (bus, BUS_SCAN.id, DaliScanMode.New_installation),
+    ]
+    assert bus._follow_up_scan is False
+
+
+async def test_failed_follow_up_scan_is_not_retried(sdc2_device, fast_polling):
+    """A follow-up scan that cannot be delivered is logged and dropped."""
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+
+    with simulated(
+        bus, expand_error=zigpy.exceptions.DeliveryError("no route")
+    ) as request:
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        await wait_until(lambda: request.call_count >= 3)
+        await asyncio.sleep(0.1)
+
+    assert [scan_mode for _, _, scan_mode in sent_commands(request)] == [
+        None,
+        DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
+    ]
+    assert bus._follow_up_scan is False
+    assert not bus._poll_task.done()
+
+
+async def test_newer_scan_supersedes_pending_follow_up(
+    sdc2_device, fast_polling, monkeypatch
+):
+    """A configure scan during the follow-up delay cancels the older follow-up."""
+    monkeypatch.setattr(BegaDaliBus, "FOLLOW_UP_SCAN_DELAY_S", 0.1)
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+    on_off = device.endpoints[BUS_ENDPOINT].on_off
+
+    with simulated(bus) as request:
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        # the first scan is over and its follow-up is waiting out the delay
+        await wait_until(lambda: not bus._follow_up_scan)
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        await wait_until(lambda: request.call_count >= 5)
+        await asyncio.sleep(0.15)
+
+    # only the second scan gets a follow-up, after it has finished
+    assert sent_commands(request) == [
+        (on_off, OFF.id, None),
+        (bus, BUS_SCAN.id, DaliScanMode.New_installation),
+        (on_off, OFF.id, None),
+        (bus, BUS_SCAN.id, DaliScanMode.New_installation),
+        (bus, BUS_SCAN.id, DaliScanMode.Expand_system),
+    ]
+    assert bus._follow_up_scan is False
 
 
 def gear_read_result(options: int | None) -> object:
@@ -552,6 +689,19 @@ async def test_colour_cleanup(sdc2_device, gear_options, answer, status, expecte
     device = sdc2_device()
     result = await read_colour(device, GEAR_ENDPOINTS[1], gear_options, answer, status)
     assert result == expected
+
+
+async def test_colour_read_default_response_is_passed_through(sdc2_device):
+    """A default response to the colour read is left to zigpy: all attributes fail."""
+    device = sdc2_device()
+    color = device.endpoints[GEAR_ENDPOINTS[1]].light_color
+    attributes = [COLOR_MODE, CURRENT_X, CURRENT_Y, COLOR_TEMPERATURE]
+    with mock.patch.object(
+        color, "_read_attributes", mock.AsyncMock(return_value=DEFAULT_RESPONSE)
+    ):
+        success, failure = await color.read_attributes(attributes, allow_cache=False)
+    assert success == {}
+    assert set(failure) == set(attributes)
 
 
 async def test_colour_cleanup_on_bus_endpoint(sdc2_device):
