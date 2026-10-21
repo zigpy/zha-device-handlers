@@ -413,6 +413,7 @@ class SimulatedController:
         *,
         scan_status: foundation.Status = SUCCESS,
         expand_error: Exception | None = None,
+        expand_reply: asyncio.Event | None = None,
         read_errors: int = 0,
     ) -> None:
         """Initialize the simulation with the bus cluster the quirk talks to."""
@@ -420,14 +421,18 @@ class SimulatedController:
         self.mode = DaliBusMode.Run
         self.scan_status = scan_status
         self.expand_error = expand_error
+        self.expand_reply = expand_reply  # holds back the reply to an expand scan
         self.read_errors = read_errors
 
     async def request(self, cluster, _general, command_id, *args, **kwargs):
         """Answer a command like the device would."""
         if cluster is self.bus and command_id == BUS_SCAN.id:
             scan_mode = kwargs.get("scan_mode", args[0] if args else None)
-            if scan_mode == DaliScanMode.Expand_system and self.expand_error:
-                raise self.expand_error
+            if scan_mode == DaliScanMode.Expand_system:
+                if self.expand_reply is not None:
+                    await self.expand_reply.wait()
+                if self.expand_error:
+                    raise self.expand_error
             if self.scan_status != SUCCESS:
                 return default_response(self.scan_status, BUS_SCAN.id)
             self.mode = DaliBusMode.Scan
@@ -556,6 +561,33 @@ async def test_newer_scan_supersedes_pending_follow_up(
         (on_off, OFF.id, None),
         (bus, BUS_SCAN.id, DaliScanMode.New_installation),
         (bus, BUS_SCAN.id, DaliScanMode.Expand_system),
+    ]
+    assert bus._follow_up_scan is False
+
+
+async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_polling):
+    """A reply to an older follow-up must not touch the state of a newer scan."""
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+    expand_reply = asyncio.Event()
+
+    with simulated(bus, expand_reply=expand_reply) as request:
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        # the follow-up has been sent and is waiting for the device's reply
+        await wait_until(lambda: request.call_count == 3)
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        expand_reply.set()
+        await wait_until(lambda: request.call_count >= 5)
+        await asyncio.sleep(0.15)
+
+    # the second scan keeps its follow-up
+    assert [scan_mode for _, _, scan_mode in sent_commands(request)] == [
+        None,
+        DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
+        None,
+        DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
     ]
     assert bus._follow_up_scan is False
 

@@ -220,7 +220,8 @@ class BegaDaliBus(CustomCluster):
         except Exception as exc:  # noqa: BLE001
             self.debug("Follow-up scan failed: %r", exc)
             return
-        if self._accepted(response):
+        # a newer scan may have been accepted while waiting for the reply
+        if self._accepted(response) and generation == self._scan_generation:
             self._scan_started(follow_up=False)
 
     def _start_status_polling(self) -> None:
