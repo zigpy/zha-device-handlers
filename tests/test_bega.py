@@ -100,7 +100,7 @@ def build_device(
     ieee: t.EUI64,
     model: str = MODELS[0],
 ) -> zigpy.device.Device:
-    """Build the controller as its firmware configuration describes it and apply the quirk."""
+    """Build the controller as its device diagnostics describe it and apply the quirk."""
     device = zigpy.device.Device(app, ieee, t.NWK(0x1234))
     device.manufacturer = MANUFACTURER
     device.model = model
@@ -117,8 +117,9 @@ def build_device(
         endpoint.add_output_cluster(DALI_BUS_CLUSTER_ID)
 
     bus_endpoint = device.endpoints[BUS_ENDPOINT]
+    # the device lists an input cluster 0xFFFF where the OTA server would be
     for cluster_id in (
-        Ota.cluster_id,
+        0xFFFF,
         BEGA_LIGHT_CONTROLLER_CLUSTER_ID,
         BEGA_SYNC_SYSTEM_CLUSTER_ID,
     ):
