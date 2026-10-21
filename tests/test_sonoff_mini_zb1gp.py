@@ -29,6 +29,7 @@ from zhaquirks.sonoff.mini_zb1gp import (
     SonoffMiniZb1gpCluster,
     SonoffProtectionConfigCluster,
     SonoffProtectionState,
+    _write_succeeded,
     centi_to_value,
     decode_protection_state,
     encode_protection_modify_array,
@@ -695,6 +696,22 @@ async def test_mini_zb1gp_rejects_out_of_range_protection_values(
     read.assert_not_awaited()
 
 
+async def test_mini_zb1gp_rejects_empty_and_invalid_boolean_writes(
+    zigpy_device_from_v2_quirk,
+):
+    """Test empty writes and non-Boolean switch values are rejected locally."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    with mock.patch.object(cluster, "read_attributes", mock.AsyncMock()) as read:
+        assert await local_cluster.write_attributes({}) == [[]]
+        result = await local_cluster.write_attributes(
+            {local_cluster.AttributeDefs.protection_over_voltage_enabled.id: 2}
+        )
+
+    assert result[0][0].status == foundation.Status.INVALID_VALUE
+    read.assert_not_awaited()
+
+
 async def test_mini_zb1gp_rejects_relay_specific_and_notification_writes(
     zigpy_device_from_v2_quirk,
 ):
@@ -746,6 +763,29 @@ async def test_mini_zb1gp_requires_a_valid_fresh_protection_read(
     write.assert_not_awaited()
 
 
+async def test_mini_zb1gp_handles_failed_fresh_protection_reads(
+    zigpy_device_from_v2_quirk,
+):
+    """Test exceptions and missing values in fresh reads fail closed."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    read = mock.AsyncMock(side_effect=(RuntimeError("read failed"), ({}, {})))
+    write = mock.AsyncMock()
+
+    with (
+        mock.patch.object(cluster, "read_attributes", read),
+        mock.patch.object(cluster, "write_attributes", write),
+    ):
+        for _ in range(2):
+            result = await local_cluster.write_attributes(
+                {local_cluster.AttributeDefs.protection_over_current.id: 15000}
+            )
+            assert result[0][0].status == foundation.Status.FAILURE
+
+    assert read.await_count == 2
+    write.assert_not_awaited()
+
+
 @pytest.mark.parametrize("write_raises", (False, True))
 async def test_mini_zb1gp_write_failure_does_not_update_local_state(
     zigpy_device_from_v2_quirk,
@@ -759,10 +799,13 @@ async def test_mini_zb1gp_write_failure_does_not_update_local_state(
     failure = [
         [foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]
     ]
-    write = mock.AsyncMock(
-        side_effect=RuntimeError if write_raises else None,
-        return_value=None if write_raises else failure,
-    )
+
+    async def failed_write(*args, **kwargs):
+        if write_raises:
+            raise RuntimeError("write failed")
+        return failure
+
+    write = mock.AsyncMock(side_effect=failed_write)
 
     with (
         mock.patch.object(
@@ -787,6 +830,13 @@ async def test_mini_zb1gp_write_failure_does_not_update_local_state(
         local_cluster.get(local_cluster.AttributeDefs.protection_over_current.id)
         == 16000
     )
+
+
+@pytest.mark.parametrize("result", (None, []))
+def test_mini_zb1gp_rejects_malformed_write_results(result):
+    """Test malformed Zigpy write responses are not treated as successful."""
+
+    assert _write_succeeded(result) is False
 
 
 async def test_mini_zb1gp_serializes_concurrent_protection_writes(
