@@ -121,6 +121,10 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage.id == 0x7005
     assert SonoffMiniZb1gpCluster.AttributeDefs.power.id == 0x7006
     assert SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.id == 0x0019
+    assert (
+        SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_mode.zcl_type
+        == foundation.DataTypeId.uint8
+    )
     assert SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_event.id == 0x0028
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_today.id == 0x7009
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_month.id == 0x700A

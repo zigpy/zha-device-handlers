@@ -107,6 +107,7 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=SonoffExternalSwitchTriggerType,
+            zcl_type=foundation.DataTypeId.uint8,
             manufacturer_code=None,
         )
         detach_relay = ZCLAttributeDef(
