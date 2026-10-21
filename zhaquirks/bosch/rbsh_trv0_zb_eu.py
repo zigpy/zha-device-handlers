@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.hvac import (
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import (
+    PERCENTAGE,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
@@ -481,6 +482,17 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="valve_adapt_status",
         fallback_name="Valve adaptation status",
+    )
+    # Valve position: 0% - 100%, readable and writable.
+    .number(
+        BoschThermostatCluster.AttributeDefs.pi_heating_demand.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=0,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        translation_key="valve_position",
+        fallback_name="Valve position",
     )
     # Fast heating/boost.
     .switch(
