@@ -14,6 +14,7 @@ import zigpy.types as t
 from zigpy.zcl import ReportingConfig, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -60,6 +61,11 @@ TEMPORARY_MODE_TIMER = 0x02
 ZCL_STRUCT_ITEM_COUNT = b"\x02\x00"
 ZCL_DATA_TYPE_INT16 = 0x29
 ZCL_DATA_TYPE_UINT16 = 0x21
+
+REMOTE_TEMPERATURE_SOURCE_ATTR_IDS = (0xFF11, 0xFF12, 0xFF13)
+REMOTE_TEMPERATURE_SOURCE_IDS = (0x01, 0x02, 0x03)
+REMOTE_TEMPERATURE_UNBIND_VALUE = -32768
+REMOTE_TEMPERATURE_MULTI_MIN_VERSION = (1, 0, 6)
 
 TEMPERATURE_CONTROL_THRESHOLD_LOW_DEFAULT = -200
 TEMPERATURE_CONTROL_THRESHOLD_HIGH_DEFAULT = 200
@@ -771,6 +777,15 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         external_temperature_sensor: Final = ZCLAttributeDef(
             id=EXTERNAL_TEMPERATURE_SENSOR_ATTR_ID, type=t.Bool, access="rw"
         )
+        remote_temperature_source1: Final = ZCLAttributeDef(
+            id=REMOTE_TEMPERATURE_SOURCE_ATTR_IDS[0], type=t.int16s, access="rw"
+        )
+        remote_temperature_source2: Final = ZCLAttributeDef(
+            id=REMOTE_TEMPERATURE_SOURCE_ATTR_IDS[1], type=t.int16s, access="rw"
+        )
+        remote_temperature_source3: Final = ZCLAttributeDef(
+            id=REMOTE_TEMPERATURE_SOURCE_ATTR_IDS[2], type=t.int16s, access="rw"
+        )
         hvac_message_open_window_state: Final = ZCLAttributeDef(
             id=HVAC_MESSAGE_OPEN_WINDOW_STATE_ATTR_ID,
             type=HvacMessageOpenWindowState,
@@ -1002,6 +1017,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             self.AttributeDefs.external_temperature_sensor.id,
             False,
         )
+        for attr_id in REMOTE_TEMPERATURE_SOURCE_ATTR_IDS:
+            self._update_attribute(attr_id, REMOTE_TEMPERATURE_UNBIND_VALUE)
         self._update_attribute(
             self.AttributeDefs.temporary_mode_ui_action.id,
             TemporaryModeUiAction.Boost,
@@ -1629,6 +1646,99 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
         return sensor_select, external_temperature
 
+    @staticmethod
+    def _parse_remote_temperature_firmware(value: Any) -> tuple[int, int, int] | None:
+        """Parse a three-part Basic sw_build_id for protocol selection."""
+
+        if isinstance(value, bytes):
+            value = value.rstrip(b"\x00").decode("ascii", errors="ignore")
+        if not isinstance(value, str):
+            return None
+        parts = value.strip().split(".")
+        if len(parts) != 3 or any(not part.isdigit() for part in parts):
+            return None
+        return tuple(int(part) for part in parts)
+
+    async def _supports_multi_remote_temperature(self) -> bool:
+        """Read and evaluate Basic sw_build_id, conservatively defaulting to T01."""
+
+        basic_cluster = getattr(self.endpoint, "basic", None)
+        if basic_cluster is None:
+            return False
+        version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
+        if version_value is None:
+            try:
+                await basic_cluster.read_attributes(
+                    [Basic.AttributeDefs.sw_build_id.id]
+                )
+            except Exception:
+                return False
+            version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
+        version = self._parse_remote_temperature_firmware(version_value)
+        return version is not None and version >= REMOTE_TEMPERATURE_MULTI_MIN_VERSION
+
+    @classmethod
+    def _encode_multi_remote_temperature(cls, sensor_id: int, value: int) -> bytes:
+        """Encode one incremental T03 temperature item or a state-only unbind."""
+
+        if sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS:
+            raise ValueError("sensor_id must be 1, 2, or 3")
+        if value == REMOTE_TEMPERATURE_UNBIND_VALUE:
+            return bytes(
+                (0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, sensor_id, 0x00, 0x00)
+            )
+        if value < NTC_CURRENT_TEMPERATURE_MIN_VALID or value > 32767:
+            raise ValueError("remote temperature must be -273.15..327.67 Celsius")
+        return bytes(
+            (0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, sensor_id, 0x01, 0x02)
+        ) + int(value).to_bytes(2, "little", signed=True)
+
+    @classmethod
+    def _decode_multi_remote_temperature(cls, value: Any) -> tuple[int, int, int]:
+        """Decode T03 source values for the three virtual slot attributes."""
+
+        slots = [REMOTE_TEMPERATURE_UNBIND_VALUE] * len(REMOTE_TEMPERATURE_SOURCE_IDS)
+        raw = cls._as_bytes(value)
+        if raw is None or len(raw) < 3:
+            return tuple(slots)
+        offset = 3
+        for _ in range(raw[0]):
+            if offset + 2 > len(raw):
+                break
+            tlv_type = raw[offset]
+            tlv_length = raw[offset + 1]
+            offset += 2
+            data = raw[offset : offset + tlv_length]
+            offset += tlv_length
+            if tlv_type == 0x01 and tlv_length == 0x03 and len(data) == 3:
+                slots[0] = int.from_bytes(data[1:3], "little", signed=True)
+                continue
+            if tlv_type != 0x03 or not data:
+                continue
+            item_offset = 1
+            for _ in range(data[0]):
+                if item_offset + 4 > len(data):
+                    break
+                sensor_type, sensor_id, sensor_state, value_length = data[
+                    item_offset : item_offset + 4
+                ]
+                item_offset += 4
+                item_value = data[item_offset : item_offset + value_length]
+                item_offset += value_length
+                if (
+                    sensor_type != 0x00
+                    or sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS
+                ):
+                    continue
+                slot_index = sensor_id - 1
+                if sensor_state == 0x00 or value_length == 0:
+                    slots[slot_index] = REMOTE_TEMPERATURE_UNBIND_VALUE
+                elif value_length == 2:
+                    slots[slot_index] = int.from_bytes(
+                        item_value, "little", signed=True
+                    )
+        return tuple(slots)
+
     @classmethod
     def _encode_remote_attribute_linkage(
         cls,
@@ -1804,6 +1914,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 self.AttributeDefs.external_temperature_sensor.id,
                 sensor_select != TemperatureSensorSelect.internal,
             )
+            for source_attr_id, source_value in zip(
+                REMOTE_TEMPERATURE_SOURCE_ATTR_IDS,
+                self._decode_multi_remote_temperature(value),
+                strict=True,
+            ):
+                super()._update_attribute(source_attr_id, source_value)
         elif attrid == self.AttributeDefs.hvac_message_notification.id:
             super()._update_attribute(
                 self.AttributeDefs.hvac_message_open_window_state.id,
@@ -2089,6 +2205,17 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 },
             ),
             (
+                set(REMOTE_TEMPERATURE_SOURCE_ATTR_IDS),
+                self.AttributeDefs.remote_attribute_linkage.id,
+                lambda raw: dict(
+                    zip(
+                        REMOTE_TEMPERATURE_SOURCE_ATTR_IDS,
+                        self._decode_multi_remote_temperature(raw),
+                        strict=True,
+                    )
+                ),
+            ),
+            (
                 {
                     self.AttributeDefs.temperature_sensor_select.id,
                     self.AttributeDefs.external_temperature_input.id,
@@ -2225,6 +2352,61 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Pack virtual remote-temperature fields and write their vendor payload."""
 
+        source_writes: list[tuple[int, int, Any]] = []
+        source_attr_defs = (
+            self.AttributeDefs.remote_temperature_source1,
+            self.AttributeDefs.remote_temperature_source2,
+            self.AttributeDefs.remote_temperature_source3,
+        )
+        for attr_def, sensor_id in zip(
+            source_attr_defs, REMOTE_TEMPERATURE_SOURCE_IDS, strict=True
+        ):
+            for key in list(attributes):
+                if key in (attr_def, attr_def.id, attr_def.name):
+                    source_writes.append((attr_def.id, sensor_id, attributes.pop(key)))
+                    break
+
+        source_results: list[list[foundation.WriteAttributesStatusRecord]] = []
+        if source_writes:
+            supports_multi = await self._supports_multi_remote_temperature()
+            if not supports_multi and any(
+                sensor_id != 0x01 for _, sensor_id, _ in source_writes
+            ):
+                return [
+                    [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.UNSUPPORTED_ATTRIBUTE, source_attr_id
+                        )
+                    ]
+                    for source_attr_id, sensor_id, _ in source_writes
+                    if sensor_id != 0x01
+                ]
+            for source_attr_id, sensor_id, source_value in source_writes:
+                value = self._coerce_int(source_value)
+                if supports_multi:
+                    raw_value = self._encode_multi_remote_temperature(sensor_id, value)
+                elif value == REMOTE_TEMPERATURE_UNBIND_VALUE:
+                    raw_value = REMOTE_TEMPERATURE_UNBIND_PAYLOAD
+                else:
+                    raw_value = self._encode_remote_attribute_linkage(
+                        TemperatureSensorSelect.external,
+                        self._clamp(
+                            value,
+                            EXTERNAL_TEMPERATURE_INPUT_MIN_X100,
+                            EXTERNAL_TEMPERATURE_INPUT_MAX_X100,
+                        ),
+                    )
+                write_result = await super().write_attributes(
+                    {self.AttributeDefs.remote_attribute_linkage.id: raw_value},
+                    **kwargs,
+                )
+                source_results.extend(write_result)
+                if _write_succeeded(write_result):
+                    self._update_attribute(
+                        self.AttributeDefs.remote_attribute_linkage.id, raw_value
+                    )
+                    self._update_attribute(source_attr_id, value)
+
         # Remove virtual fields before forwarding the remaining attributes.
         has_external_temperature_sensor, external_temperature_sensor_value = (
             self._pop_attribute_value(
@@ -2244,7 +2426,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             or has_sensor_select
             or has_external_temperature
         ):
-            return []
+            return source_results
 
         if (
             has_external_temperature_sensor
@@ -2308,7 +2490,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             self._update_attribute(
                 self.AttributeDefs.remote_attribute_linkage.id, raw_value
             )
-        return write_result
+        return source_results + write_result
 
     async def write_attributes(
         self,
@@ -2986,6 +3168,18 @@ _BUILDER = (
         device_class=NumberDeviceClass.TEMPERATURE,
         translation_key="ntc_overheat_protection_temperature",
         fallback_name="NTC overheat protection temperature",
+    )
+    .number(
+        OccupancySensing.AttributeDefs.ultrasonic_o_to_u_delay.name,
+        OccupancySensing.cluster_id,
+        min_value=10,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        mode=NumberMode.BOX,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="radar_occupancy_timeout",
+        fallback_name="Radar occupancy timeout",
     )
 )
 

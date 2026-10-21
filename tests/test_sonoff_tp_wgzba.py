@@ -9,6 +9,7 @@ import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import DataTypeId
 
 import zhaquirks
@@ -33,6 +34,7 @@ def tp_wgzba_device(zigpy_device_from_v2_quirk):
             1: {
                 Basic.cluster_id: ClusterType.Server,
                 Thermostat.cluster_id: ClusterType.Server,
+                OccupancySensing.cluster_id: ClusterType.Server,
                 SONOFF_PRIVATE_CLUSTER_ID: ClusterType.Server,
             }
         },
@@ -47,6 +49,7 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
         cluster_ids={
             1: {
                 Thermostat.cluster_id: ClusterType.Server,
+                OccupancySensing.cluster_id: ClusterType.Server,
                 SONOFF_PRIVATE_CLUSTER_ID: ClusterType.Server,
             }
         },
@@ -68,6 +71,12 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
         "weekly_schedule_ui_apply",
         "temporary_mode_ui_apply",
     } <= metadata_suffixes
+    assert any(
+        metadata.cluster_id == OccupancySensing.cluster_id
+        and metadata.attribute_name
+        == OccupancySensing.AttributeDefs.ultrasonic_o_to_u_delay.name
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    )
 
 
 def test_tp_wgzba_system_mode_mapping():
@@ -403,6 +412,18 @@ def test_tp_wgzba_private_payload_codecs(tp_wgzba_device):
         tp_wgzba.TemperatureSensorSelect.internal,
         0,
     )
+    assert private_cluster._encode_multi_remote_temperature(1, 2523) == bytes(
+        (0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, 0x01, 0x01, 0x02, 0xDB, 0x09)
+    )
+    assert private_cluster._encode_multi_remote_temperature(3, -32768) == bytes(
+        (0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, 0x03, 0x00, 0x00)
+    )
+    assert private_cluster._decode_multi_remote_temperature(
+        bytes((0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, 0x02, 0x01, 0x02, 0x18, 0x09))
+    ) == (-32768, 2328, -32768)
+    assert private_cluster._parse_remote_temperature_firmware("1.0.5") == (1, 0, 5)
+    assert private_cluster._parse_remote_temperature_firmware("1.0.6") == (1, 0, 6)
+    assert private_cluster._parse_remote_temperature_firmware("unknown") is None
 
 
 @pytest.mark.parametrize(
