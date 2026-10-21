@@ -7,6 +7,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -115,6 +116,7 @@ import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
+from zhaquirks.xiaomi.aqara.sensor_ht_agl001 import DisplaySensor
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
@@ -2956,3 +2958,153 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+W100_IEEE = t.EUI64.convert("54:ef:44:10:00:00:00:01")
+W100_TIMESTAMP = 0x67000000
+
+# Frames as zigbee2mqtt's lumiExternalSensor builds them for the IEEE and timestamp above
+W100_LINK_FRAMES = [
+    "aa713244125d02412f670000001554ef44100000000100158d00019d1b98"
+    "00020055150a0100000106e6b9bfe5baa6000000000001020865",
+    "aa713244135c02412f670000001454ef44100000000100158d00019d1b98"
+    "00010055150a0100000106e6b8a9e5baa6000000000001020763",
+]
+W100_UNLINK_FRAMES = [
+    "aa711c441273044119670000001554ef441000000001000000000000000000000000",
+    "aa711c441372044119670000001454ef441000000001000000000000000000000000",
+]
+W100_TEMPERATURE_21_5_FRAME = "aa711344127c05411000158d00019d1b980001005545066000"
+W100_HUMIDITY_45_FRAME = "aa711344127c05411000158d00019d1b9800020055458ca000"
+
+
+@pytest.fixture
+def w100_opple_cluster(zigpy_device_from_v2_quirk):
+    """W100 Aqara cluster with device writes and reads mocked."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3], ieee=W100_IEEE
+    )
+    cluster = device.endpoints[1].opple_cluster
+    cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+    cluster._read_attributes = mock.AsyncMock(return_value=[[]])
+    with mock.patch(
+        "zhaquirks.xiaomi.aqara.sensor_ht_agl001.time.time",
+        return_value=W100_TIMESTAMP,
+    ):
+        yield cluster
+
+
+def w100_written_frames(cluster) -> list[str]:
+    """Return the sensor_link frames written to the device, as hex."""
+    frames = []
+    for call in cluster._write_attributes.mock_calls:
+        assert call.kwargs["manufacturer"] == 0x115F
+        for record in call.args[0]:
+            assert record.attrid == 0xFFF2
+            frames.append(bytes(record.value.value).hex())
+    return frames
+
+
+async def test_w100_display_sensor_external(w100_opple_cluster):
+    """Selecting external links the display and pushes cached values."""
+    cluster = w100_opple_cluster
+    await cluster.write_attributes({"external_temperature": 215})  # 0.1 °C
+    assert w100_written_frames(cluster) == []  # display still internal
+
+    await cluster.write_attributes({"display_sensor": DisplaySensor.External})
+
+    assert w100_written_frames(cluster) == [
+        *W100_LINK_FRAMES,
+        W100_TEMPERATURE_21_5_FRAME,
+    ]
+    assert cluster.get("display_sensor") == DisplaySensor.External
+
+    cluster._write_attributes.reset_mock()
+    await cluster.write_attributes({"external_humidity": 45})
+    assert w100_written_frames(cluster) == [W100_HUMIDITY_45_FRAME]
+    assert cluster.get("external_humidity") == 45
+
+
+async def test_w100_display_sensor_internal(w100_opple_cluster):
+    """Selecting internal unlinks the display."""
+    cluster = w100_opple_cluster
+    await cluster.write_attributes({"display_sensor": DisplaySensor.Internal})
+
+    assert w100_written_frames(cluster) == W100_UNLINK_FRAMES
+    assert cluster.get("display_sensor") == DisplaySensor.Internal
+
+
+@pytest.mark.parametrize(
+    "sensor_mode, expected",
+    [
+        (0, DisplaySensor.Internal),
+        (1, DisplaySensor.Internal),
+        (2, DisplaySensor.External),
+        (3, DisplaySensor.External),
+    ],
+)
+async def test_w100_display_sensor_read(w100_opple_cluster, sensor_mode, expected):
+    """Reading display_sensor refreshes it from the device's sensor_mode."""
+    cluster = w100_opple_cluster
+
+    async def mock_read(attributes, manufacturer=None, **kwargs):
+        assert attributes == [0x0172]
+        assert manufacturer == 0x115F
+        cluster._update_attribute(0x0172, sensor_mode)
+        return [[]]
+
+    cluster._read_attributes = mock.AsyncMock(side_effect=mock_read)
+
+    success, failure = await cluster.read_attributes(["display_sensor"])
+
+    assert success == {"display_sensor": expected}
+    assert failure == {}
+
+
+async def test_w100_local_attributes_read_from_cache(w100_opple_cluster):
+    """External values are answered locally, never read from the device."""
+    cluster = w100_opple_cluster
+
+    success, failure = await cluster.read_attributes(["external_temperature"])
+    assert success == {}
+    assert failure == {"external_temperature": foundation.Status.UNSUPPORTED_ATTRIBUTE}
+
+    await cluster.write_attributes({"external_temperature": 195})
+    success, failure = await cluster.read_attributes(["external_temperature"])
+    assert success == {"external_temperature": 195}
+    assert failure == {}
+    cluster._read_attributes.assert_not_called()
+
+
+def test_w100_external_temperature_scaling():
+    """Fractional temperatures survive ZHA's integer write (0.1 °C attribute)."""
+    entry = next(
+        entry
+        for entry in DEVICE_REGISTRY
+        if entry.source.module == "zhaquirks.xiaomi.aqara.sensor_ht_agl001"
+    )
+    number = next(
+        em
+        for em in entry.zha_device_factory.quirk_definition.entity_metadata
+        if getattr(em, "attribute_name", None) == "external_temperature"
+    )
+    assert number.multiplier == 0.1
+    assert number.step == 0.1
+    # ZHA writes int(ha_value / multiplier): 12.78 °C -> 127 (12.7 °C)
+    assert int(12.78 / number.multiplier) == 127
+
+
+async def test_w100_device_attributes_pass_through(w100_opple_cluster):
+    """Writes and reads of device attributes still go to the device."""
+    cluster = w100_opple_cluster
+
+    await cluster.write_attributes({"sensor_link": b"\x01\x02"})
+    assert w100_written_frames(cluster) == ["0102"]
+
+    await cluster.read_attributes(["sensor_mode", "external_temperature"])
+    assert len(cluster._read_attributes.mock_calls) == 1
+    assert cluster._read_attributes.mock_calls[0].args[0] == [0x0172]
