@@ -11,7 +11,11 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.sonoff.mini_zb1gp import (
+    EXTERNAL_SWITCH,
+    EXTERNAL_TRIGGER_AUTOMATION_MAP,
+    EXTERNAL_TRIGGER_EVENT_MAP,
     SonoffExternalSwitchTriggerType,
+    SonoffExternalTriggerEvent,
     SonoffMiniZb1gpCluster,
     centi_to_value,
     metering_communication_error,
@@ -117,6 +121,7 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage.id == 0x7005
     assert SonoffMiniZb1gpCluster.AttributeDefs.power.id == 0x7006
     assert SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.id == 0x0019
+    assert SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_event.id == 0x0028
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_today.id == 0x7009
     assert SonoffMiniZb1gpCluster.AttributeDefs.energy_month.id == 0x700A
     assert SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration.id == 0x7016
@@ -212,6 +217,66 @@ def test_mini_zb1gp_accepts_valid_zero_energy_reports(zigpy_device_from_v2_quirk
     _report_attributes(fresh_cluster, dict.fromkeys(cluster.energy_attribute_ids, 0))
     for attribute_id in fresh_cluster.energy_attribute_ids:
         assert fresh_cluster.get(attribute_id) == 0
+
+
+def test_mini_zb1gsp_external_switch_events(zigpy_device_from_v2_quirk):
+    """Test MINI-ZB1GSP external switch reports emit automation events."""
+
+    devices = {
+        model: zigpy_device_from_v2_quirk(
+            "SONOFF",
+            model,
+            cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+        )
+        for model in ("MINI-ZB1GP", "MINI-ZB1GSP")
+    }
+    expected_triggers = {
+        (trigger, EXTERNAL_SWITCH): {
+            "command": command,
+            "endpoint_id": 1,
+            "cluster_id": SonoffMiniZb1gpCluster.cluster_id,
+        }
+        for command, trigger in EXTERNAL_TRIGGER_AUTOMATION_MAP.items()
+    }
+
+    for trigger, metadata in expected_triggers.items():
+        assert devices["MINI-ZB1GSP"].device_automation_triggers[trigger] == metadata
+    assert (
+        not expected_triggers.keys()
+        & getattr(devices["MINI-ZB1GP"], "device_automation_triggers", {}).keys()
+    )
+
+    cluster = (
+        devices["MINI-ZB1GSP"]
+        .endpoints[1]
+        .in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    )
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    for value, command in EXTERNAL_TRIGGER_EVENT_MAP.items():
+        _report_attributes(
+            cluster,
+            {cluster.AttributeDefs.external_trigger_event.id: value},
+        )
+        listener.zha_send_event.assert_called_once_with(command, {"value": int(value)})
+        listener.reset_mock()
+
+    _report_attributes(
+        cluster,
+        {
+            cluster.AttributeDefs.external_trigger_event.id: SonoffExternalTriggerEvent(
+                0xFF
+            )
+        },
+    )
+    listener.zha_send_event.assert_not_called()
+
+    cluster.update_attribute(
+        cluster.AttributeDefs.external_trigger_event.id,
+        SonoffExternalTriggerEvent.Single_click,
+    )
+    listener.zha_send_event.assert_not_called()
 
 
 def test_mini_zb1gp_milli_value_converters():

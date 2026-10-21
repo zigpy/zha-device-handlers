@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import AttributeReadEvent, foundation
+from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -25,6 +25,22 @@ from zhaquirks.builder import (
     UnitOfTime,
 )
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_SINGLE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    LONG_PRESS,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
+    ZHA_SEND_EVENT,
+)
 
 
 class SonoffExternalSwitchTriggerType(t.enum8):
@@ -34,6 +50,35 @@ class SonoffExternalSwitchTriggerType(t.enum8):
     Pulse_trigger = 0x01
     Normally_off_follow_trigger = 0x02
     Normally_on_follow_trigger = 0x82
+
+
+class SonoffExternalTriggerEvent(t.enum8):
+    """External switch action reported by the MINI-ZB1GSP."""
+
+    Single_click = 0x01
+    Double_click = 0x02
+    Long_press = 0x03
+    Switch_on = 0x04
+    Switch_off = 0x05
+
+
+EXTERNAL_SWITCH = "external_switch"
+
+EXTERNAL_TRIGGER_EVENT_MAP = {
+    SonoffExternalTriggerEvent.Single_click: COMMAND_SINGLE,
+    SonoffExternalTriggerEvent.Double_click: COMMAND_DOUBLE,
+    SonoffExternalTriggerEvent.Long_press: COMMAND_HOLD,
+    SonoffExternalTriggerEvent.Switch_on: COMMAND_ON,
+    SonoffExternalTriggerEvent.Switch_off: COMMAND_OFF,
+}
+
+EXTERNAL_TRIGGER_AUTOMATION_MAP = {
+    COMMAND_SINGLE: SHORT_PRESS,
+    COMMAND_DOUBLE: DOUBLE_PRESS,
+    COMMAND_HOLD: LONG_PRESS,
+    COMMAND_ON: TURN_ON,
+    COMMAND_OFF: TURN_OFF,
+}
 
 
 class SonoffMiniZb1gpCluster(CustomCluster):
@@ -67,6 +112,11 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         detach_relay = ZCLAttributeDef(
             id=0x0019,
             type=t.bitmap8,
+            manufacturer_code=None,
+        )
+        external_trigger_event = ZCLAttributeDef(
+            id=0x0028,
+            type=SonoffExternalTriggerEvent,
             manufacturer_code=None,
         )
         current = ZCLAttributeDef(
@@ -152,10 +202,13 @@ class SonoffMiniZb1gpCluster(CustomCluster):
     )
 
     def __init__(self, *args, **kwargs):
-        """Listen for raw protection configuration read results."""
+        """Listen for protection reads and external switch reports."""
 
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReadEvent.event_type, self._handle_attribute_read)
+        self.on_event(
+            AttributeReportedEvent.event_type, self._handle_external_trigger_event
+        )
 
     def handle_cluster_general_request(
         self,
@@ -210,6 +263,16 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         if _protection_data(payload) is not None:
             # Zigpy's app database cannot persist Array or LVList values.
             self._update_attribute(event.attribute_id, payload)
+
+    def _handle_external_trigger_event(self, event: AttributeReportedEvent) -> None:
+        """Emit a ZHA event for an external switch action report."""
+
+        if event.attribute_id != self.AttributeDefs.external_trigger_event.id:
+            return
+
+        action = EXTERNAL_TRIGGER_EVENT_MAP.get(event.value)
+        if action is not None:
+            self.listener_event(ZHA_SEND_EVENT, action, {"value": int(event.value)})
 
     async def apply_custom_configuration(self, *args, **kwargs) -> None:
         """Read the composite protection configuration during setup."""
@@ -763,6 +826,16 @@ common_quirk = (
         entity_type=EntityType.CONFIG,
         translation_key="detach_relay",
         fallback_name="Detach relay",
+    )
+    .device_automation_triggers(
+        {
+            (trigger, EXTERNAL_SWITCH): {
+                COMMAND: command,
+                ENDPOINT_ID: 1,
+                CLUSTER_ID: SonoffMiniZb1gpCluster.cluster_id,
+            }
+            for command, trigger in EXTERNAL_TRIGGER_AUTOMATION_MAP.items()
+        }
     )
     .add_to_registry()
 )
