@@ -1289,7 +1289,9 @@ class AqaraW600FCC0(CustomCluster):
                 updates[0x0002] = 255 if window is None else int(window)
                 updates[0x0003] = 255 if alarm is None else int(alarm)
         for local_id, local_value in updates.items():
-            if status._attr_cache.get(local_id) != local_value:
+            # Legacy cache entries are not visible to entity reads. Check the
+            # typed cache without triggering recursive status restoration.
+            if CustomCluster.get(status, local_id) != local_value:
                 status.update_attribute(local_id, local_value)
 
     async def configure_reporting(self) -> None:

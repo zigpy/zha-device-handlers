@@ -1378,6 +1378,49 @@ def test_lazy_status_get_restores_late_vendor_cache_once(status_clusters):
         assert update.call_count == count
 
 
+async def test_legacy_local_status_restores_typed_cache_without_radio(status_clusters):
+    """Persisted local values must not hide missing typed cache entries."""
+    fcc0, status = status_clusters
+    payload = bytes.fromhex("1721ea0b1820649c41080000000000000000")
+    CustomCluster._update_attribute(fcc0, 0x00F7, payload)
+    CustomCluster._update_attribute(fcc0, 0x027E, 0)
+    expected = {
+        "battery_percentage": 100,
+        "battery_millivolts": 3050,
+        "window_open": 0,
+        "valve_alarm": 0,
+        "external_temperature_problem": 0,
+    }
+    for name, value in expected.items():
+        attr = status.find_attribute(name)
+        status._attr_cache.set_legacy_value(attr.id, value)
+        assert status._attr_cache.get(attr.id) == value
+        assert CustomCluster.get(status, name) is None
+
+    with (
+        patch.object(fcc0.endpoint, "request", new_callable=AsyncMock) as request,
+        patch.object(
+            status, "update_attribute", wraps=status.update_attribute
+        ) as update,
+    ):
+        assert status.get("battery_percentage") == 100
+        for name, value in expected.items():
+            assert status.get_cached_value(name) == value
+        count = update.call_count
+        # An explicit external-status read intentionally queries FCC0; test
+        # the heartbeat-derived reads here, which must remain local.
+        heartbeat_values = {
+            name: value
+            for name, value in expected.items()
+            if name != "external_temperature_problem"
+        }
+        result, _ = await status.read_attributes(list(heartbeat_values))
+        assert result == heartbeat_values
+        assert status.get("battery_percentage") == 100
+        assert update.call_count == count
+    request.assert_not_awaited()
+
+
 def test_cached_status_restore_does_not_rearm_external_source(status_clusters):
     """Verify cached status restore does not rearm external source."""
 
