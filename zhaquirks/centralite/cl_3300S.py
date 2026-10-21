@@ -92,3 +92,24 @@ class CentraLite3300S(CustomDevice):
             },
         }
     }
+
+
+class CentraLite3300SNoEP2(CustomDevice):
+    """Custom device representing centralite 3300 revisions without endpoint 2."""
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
+        #  output_clusters=[25]>
+        MODELS_INFO: CentraLite3300S.signature[MODELS_INFO],
+        ENDPOINTS: {
+            1: CentraLite3300S.signature[ENDPOINTS][1],
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: CentraLite3300S.replacement[ENDPOINTS][1],
+        }
+    }
