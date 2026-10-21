@@ -1,10 +1,20 @@
 """Tests for the SONOFF MINI-ZB1GP device."""
 
+import asyncio
+from dataclasses import replace
 from unittest import mock
 
+import pytest
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    ClusterType,
+    foundation,
+)
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -17,24 +27,43 @@ from zhaquirks.sonoff.mini_zb1gp import (
     SonoffExternalSwitchTriggerType,
     SonoffExternalTriggerEvent,
     SonoffMiniZb1gpCluster,
+    SonoffProtectionConfigCluster,
+    SonoffProtectionState,
     centi_to_value,
+    decode_protection_state,
+    encode_protection_modify_array,
+    fast_scene_payload,
     metering_communication_error,
     milli_to_value,
     overheat_protection,
     overload_protection,
-    protection_auto_recover,
-    protection_external_switch_restore,
-    protection_notification,
-    protection_over_current,
-    protection_over_voltage,
-    protection_over_voltage_enabled,
-    protection_overload,
-    protection_under_voltage,
-    protection_under_voltage_enabled,
     signed_int32_milli_to_value,
 )
 
 zhaquirks.setup()
+
+
+REAL_FAST_SCENE_PAYLOAD = bytes.fromhex(
+    "01 01 01 "
+    "01 05 01 00 00 03 28 "
+    "02 14 01 80 3e 00 00 00 98 3a 00 00 08 3a 04 80 88 84 02 80 00 00 "
+    "03 12 01 00 14 00 00 00 40 7e 05 00 00 00 00 00 40 7e 05 00 "
+    "04 06 01 00 80 51 01 00 "
+    "00 00 00"
+)
+
+REAL_PROTECTION_STATE = SonoffProtectionState(
+    scene_switch=1,
+    over_current_ma=16000,
+    overload_mw=3840000,
+    external_switch_only_recovery=False,
+    over_voltage_mv=277000,
+    over_voltage_enabled=True,
+    under_voltage_mv=165000,
+    under_voltage_enabled=True,
+    auto_recovery=False,
+    notification=False,
+)
 
 
 def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
@@ -315,41 +344,73 @@ def _fast_scene_array(payload: list[int]) -> foundation.Array:
     )
 
 
-def test_mini_zb1gp_protection_converters():
-    """Test decoding the protection TLV from the composite attribute."""
+def _read_event(
+    cluster: SonoffMiniZb1gpCluster,
+    attribute_id: int,
+    *,
+    value,
+    raw_value,
+) -> AttributeReadEvent:
+    """Build an attribute-read event for direct event-handler tests."""
 
-    over_voltage = 250000 | 0x80000000
-    under_voltage = 190000
-    protection_data = bytes(
-        [1]
-        + list((16000).to_bytes(4, "little"))
-        + list((3680000).to_bytes(4, "little"))
-        + [1]
-        + list(over_voltage.to_bytes(4, "little"))
-        + list(under_voltage.to_bytes(4, "little"))
-        + [1, 0]
-    )
-    value = _fast_scene_array(
-        [1, 1, 1, 0x01, 2, 0xAA, 0xBB, 0x02, 20, *protection_data]
+    return AttributeReadEvent(
+        device_ieee=str(cluster.endpoint.device.ieee),
+        endpoint_id=cluster.endpoint.endpoint_id,
+        cluster_type=ClusterType.Server,
+        cluster_id=cluster.cluster_id,
+        attribute_name=cluster.find_attribute(attribute_id).name,
+        attribute_id=attribute_id,
+        manufacturer_code=None,
+        raw_value=raw_value,
+        value=value,
     )
 
-    assert protection_over_current(value) == 16.0
-    assert protection_overload(value) == 3680.0
-    assert protection_external_switch_restore(value) is True
-    assert protection_over_voltage(value) == 250.0
-    assert protection_over_voltage_enabled(value) is True
-    assert protection_under_voltage(value) == 190.0
-    assert protection_under_voltage_enabled(value) is False
-    assert protection_auto_recover(value) is True
-    assert protection_notification(value) is False
+
+def _protection_clusters(zigpy_device_from_v2_quirk, model="MINI-ZB1GP"):
+    """Create a device and return its real and local protection clusters."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        model,
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    return (
+        device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
+        device.endpoints[1].in_clusters[SonoffProtectionConfigCluster.cluster_id],
+    )
+
+
+def _success_write_result():
+    """Return a successful Zigpy write response."""
+
+    return [[foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]]
+
+
+def test_mini_zb1gp_decodes_captured_protection_payload():
+    """Test decoding the protection TLV from a captured composite value."""
+
+    value = _fast_scene_array(list(REAL_FAST_SCENE_PAYLOAD))
+
+    assert decode_protection_state(value) == REAL_PROTECTION_STATE
 
     serialized = bytes(
         [foundation.DataTypeId.uint8, len(value.value), 0, *bytes(value.value)]
     )
-    assert protection_over_current(serialized) == 16.0
+    assert decode_protection_state(serialized) == REAL_PROTECTION_STATE
 
 
-def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
+def test_mini_zb1gp_encodes_exact_protection_modify_packet():
+    """Test encoding emits only the type-2 TLV with voltage enable bits."""
+
+    encoded = encode_protection_modify_array(REAL_PROTECTION_STATE)
+
+    assert fast_scene_payload(encoded) == bytes.fromhex(
+        "00 01 01 02 14 01 80 3e 00 00 00 98 3a 00 00 08 3a 04 80 88 84 02 80 00 00"
+    )
+    assert decode_protection_state(encoded) == REAL_PROTECTION_STATE
+
+
+def test_mini_zb1gp_protection_decoder_rejects_invalid_payloads():
     """Test malformed or incomplete protection payloads remain unavailable."""
 
     invalid_values = (
@@ -362,8 +423,7 @@ def test_mini_zb1gp_protection_converters_reject_invalid_payloads():
     )
 
     for value in invalid_values:
-        assert protection_over_current(value) is None
-        assert protection_auto_recover(value) is None
+        assert decode_protection_state(value) is None
 
 
 async def test_mini_zb1gp_reads_and_caches_raw_protection_configuration(
@@ -382,28 +442,404 @@ async def test_mini_zb1gp_reads_and_caches_raw_protection_configuration(
 
     with mock.patch.object(cluster, "read_attributes", mock.AsyncMock()) as read:
         await cluster.apply_custom_configuration()
-    read.assert_awaited_once_with([attribute.id])
+    read.assert_awaited_once_with([attribute.id], allow_cache=False)
 
     raw_value = _fast_scene_array(list(payload))
-    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=raw_value)
+    event = _read_event(cluster, attribute.id, value=None, raw_value=raw_value)
     with mock.patch.object(cluster, "_update_attribute") as update:
-        cluster._handle_attribute_read(event)
+        cluster._handle_protection_change(event)
     update.assert_called_once_with(attribute.id, payload)
 
-    event = mock.Mock(attribute_id=0x0001, value=None, raw_value=payload)
+    event = _read_event(cluster, 0x0001, value=None, raw_value=payload)
     with mock.patch.object(cluster, "_update_attribute") as update:
-        cluster._handle_attribute_read(event)
+        cluster._handle_protection_change(event)
     update.assert_not_called()
 
-    event = mock.Mock(attribute_id=attribute.id, value=payload, raw_value=None)
+    event = _read_event(cluster, attribute.id, value=payload, raw_value=None)
     with mock.patch.object(cluster, "_update_attribute") as update:
-        cluster._handle_attribute_read(event)
+        cluster._handle_protection_change(event)
     update.assert_not_called()
 
-    event = mock.Mock(attribute_id=attribute.id, value=None, raw_value=None)
+    event = _read_event(cluster, attribute.id, value=None, raw_value=None)
     with mock.patch.object(cluster, "_update_attribute") as update:
-        cluster._handle_attribute_read(event)
+        cluster._handle_protection_change(event)
     update.assert_not_called()
+
+
+async def test_mini_zb1gp_setup_falls_back_to_valid_cached_protection_state(
+    zigpy_device_from_v2_quirk,
+):
+    """Test setup initializes controls from cache when the device read fails."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    cluster._attr_cache[attribute.id] = REAL_FAST_SCENE_PAYLOAD
+
+    with mock.patch.object(
+        cluster,
+        "read_attributes",
+        mock.AsyncMock(side_effect=RuntimeError),
+    ) as read:
+        await cluster.apply_custom_configuration()
+
+    read.assert_awaited_once_with([attribute.id], allow_cache=False)
+    assert cluster._protection_state == REAL_PROTECTION_STATE
+    assert local_cluster._protection_state == REAL_PROTECTION_STATE
+    assert (
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_current.id)
+        == 16000
+    )
+
+
+def test_mini_zb1gp_local_values_lazily_initialize_from_parent_cache(
+    zigpy_device_from_v2_quirk,
+):
+    """Test entity reads recover state restored after custom configuration."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    cluster._attr_cache[attribute.id] = REAL_FAST_SCENE_PAYLOAD
+
+    assert (
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_current.id)
+        == 16000
+    )
+    assert cluster._protection_state == REAL_PROTECTION_STATE
+    assert local_cluster._protection_state == REAL_PROTECTION_STATE
+    assert (
+        local_cluster.get(
+            local_cluster.AttributeDefs.protection_over_voltage_enabled.id
+        )
+        is True
+    )
+
+
+def test_mini_zb1gp_synchronizes_protection_attribute_events(
+    zigpy_device_from_v2_quirk,
+):
+    """Test protection read, report, update, and successful write events sync locally."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    common = {
+        "device_ieee": str(cluster.endpoint.device.ieee),
+        "endpoint_id": cluster.endpoint.endpoint_id,
+        "cluster_type": ClusterType.Server,
+        "cluster_id": cluster.cluster_id,
+        "attribute_name": attribute.name,
+        "attribute_id": attribute.id,
+        "manufacturer_code": None,
+    }
+
+    states_and_events = (
+        (
+            replace(REAL_PROTECTION_STATE, over_current_ma=15000),
+            lambda value: _read_event(
+                cluster, attribute.id, value=value, raw_value=value
+            ),
+        ),
+        (
+            replace(REAL_PROTECTION_STATE, over_current_ma=14000),
+            lambda value: AttributeReportedEvent(
+                **common, raw_value=value, value=value
+            ),
+        ),
+        (
+            replace(REAL_PROTECTION_STATE, over_current_ma=13000),
+            lambda value: AttributeUpdatedEvent(**common, value=value),
+        ),
+        (
+            replace(REAL_PROTECTION_STATE, over_current_ma=12000),
+            lambda value: AttributeWrittenEvent(
+                **common, value=value, status=foundation.Status.SUCCESS
+            ),
+        ),
+    )
+
+    for state, event_factory in states_and_events:
+        value = encode_protection_modify_array(state)
+        cluster._handle_protection_change(event_factory(value))
+        assert cluster._protection_state == state
+        assert local_cluster._protection_state == state
+        assert (
+            local_cluster.get(local_cluster.AttributeDefs.protection_over_current.id)
+            == state.over_current_ma
+        )
+
+    failed_state = replace(REAL_PROTECTION_STATE, over_current_ma=11000)
+    cluster._handle_protection_change(
+        AttributeWrittenEvent(
+            **common,
+            value=encode_protection_modify_array(failed_state),
+            status=foundation.Status.FAILURE,
+        )
+    )
+    assert cluster._protection_state.over_current_ma == 12000
+
+
+async def test_mini_zb1gp_writes_fresh_merged_protection_state(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a multi-attribute write preserves fresh unmodified type-2 fields."""
+
+    cluster, local_cluster = _protection_clusters(
+        zigpy_device_from_v2_quirk, "MINI-ZB1GSP"
+    )
+    attribute = cluster.AttributeDefs.protection_configuration
+    fresh_value = _fast_scene_array(list(REAL_FAST_SCENE_PAYLOAD))
+    success = _success_write_result()
+
+    with (
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            mock.AsyncMock(return_value=({attribute.id: fresh_value}, {})),
+        ) as read,
+        mock.patch.object(
+            cluster, "write_attributes", mock.AsyncMock(return_value=success)
+        ) as write,
+    ):
+        result = await local_cluster.write_attributes(
+            {
+                local_cluster.AttributeDefs.protection_over_current.id: 15000,
+                local_cluster.AttributeDefs.protection_under_voltage.id: 166000,
+                local_cluster.AttributeDefs.protection_over_voltage_enabled.id: False,
+                local_cluster.AttributeDefs.protection_external_switch_restore.id: True,
+                local_cluster.AttributeDefs.protection_auto_recover.id: True,
+            }
+        )
+
+    assert result is success
+    assert read.await_count == 2
+    assert all(
+        call.args == ([attribute.id],) and call.kwargs == {"allow_cache": False}
+        for call in read.await_args_list
+    )
+    write.assert_awaited_once()
+    written = write.await_args.args[0][attribute.id]
+    assert fast_scene_payload(written)[:5] == bytes([0, 1, 1, 2, 20])
+    assert decode_protection_state(written) == replace(
+        REAL_PROTECTION_STATE,
+        over_current_ma=15000,
+        under_voltage_mv=166000,
+        over_voltage_enabled=False,
+        external_switch_only_recovery=True,
+        auto_recovery=True,
+    )
+    assert local_cluster._protection_state.scene_switch == 1
+    assert local_cluster._protection_state.notification is False
+
+
+async def test_mini_zb1gp_write_uses_raw_state_from_same_fresh_read(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a malformed decoded array can use its valid raw read event."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    decoded_value = foundation.Array(type=None, value=None)
+
+    async def read_attributes(*args, **kwargs):
+        cluster._handle_protection_change(
+            _read_event(
+                cluster,
+                attribute.id,
+                value=decoded_value,
+                raw_value=_fast_scene_array(list(REAL_FAST_SCENE_PAYLOAD)),
+            )
+        )
+        return {attribute.id: decoded_value}, {}
+
+    with (
+        mock.patch.object(cluster, "read_attributes", side_effect=read_attributes),
+        mock.patch.object(
+            cluster,
+            "write_attributes",
+            mock.AsyncMock(return_value=_success_write_result()),
+        ) as write,
+    ):
+        result = await local_cluster.write_attributes(
+            {local_cluster.AttributeDefs.protection_over_current.id: 15000}
+        )
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    written = write.await_args.args[0][attribute.id]
+    assert decode_protection_state(written) == replace(
+        REAL_PROTECTION_STATE, over_current_ma=15000
+    )
+
+
+@pytest.mark.parametrize(
+    ("attribute_name", "value"),
+    (
+        ("protection_over_current", 99),
+        ("protection_over_current", 16001),
+        ("protection_overload", 1999),
+        ("protection_overload", 3840001),
+        ("protection_over_voltage", 84999),
+        ("protection_under_voltage", 277001),
+    ),
+)
+async def test_mini_zb1gp_rejects_out_of_range_protection_values(
+    zigpy_device_from_v2_quirk,
+    attribute_name,
+    value,
+):
+    """Test raw milli-unit protection values are validated before device reads."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    with mock.patch.object(cluster, "read_attributes", mock.AsyncMock()) as read:
+        result = await local_cluster.write_attributes({attribute_name: value})
+
+    assert result[0][0].status == foundation.Status.INVALID_VALUE
+    read.assert_not_awaited()
+
+
+async def test_mini_zb1gp_rejects_relay_specific_and_notification_writes(
+    zigpy_device_from_v2_quirk,
+):
+    """Test unsupported protection fields remain read-only on each model."""
+
+    _, gp_local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    _, gsp_local_cluster = _protection_clusters(
+        zigpy_device_from_v2_quirk, "MINI-ZB1GSP"
+    )
+
+    for local_cluster, attribute in (
+        (
+            gp_local_cluster,
+            gp_local_cluster.AttributeDefs.protection_external_switch_restore,
+        ),
+        (gp_local_cluster, gp_local_cluster.AttributeDefs.protection_auto_recover),
+        (gsp_local_cluster, gsp_local_cluster.AttributeDefs.protection_notification),
+    ):
+        result = await local_cluster.write_attributes({attribute.id: True})
+        assert result[0][0].status == foundation.Status.READ_ONLY
+
+
+async def test_mini_zb1gp_requires_a_valid_fresh_protection_read(
+    zigpy_device_from_v2_quirk,
+):
+    """Test an invalid fresh read cannot fall back to a valid cached payload."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    cluster.update_attribute(
+        attribute.id, _fast_scene_array(list(REAL_FAST_SCENE_PAYLOAD))
+    )
+    invalid = _fast_scene_array([1, 1, 1, 2, 19, *bytes(19)])
+
+    with (
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            mock.AsyncMock(return_value=({attribute.id: invalid}, {})),
+        ) as read,
+        mock.patch.object(cluster, "write_attributes", mock.AsyncMock()) as write,
+    ):
+        result = await local_cluster.write_attributes(
+            {local_cluster.AttributeDefs.protection_over_current.id: 15000}
+        )
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    read.assert_awaited_once_with([attribute.id], allow_cache=False)
+    write.assert_not_awaited()
+
+
+@pytest.mark.parametrize("write_raises", (False, True))
+async def test_mini_zb1gp_write_failure_does_not_update_local_state(
+    zigpy_device_from_v2_quirk,
+    write_raises,
+):
+    """Test failed protection writes do not publish the requested local value."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    local_cluster.update_protection_state(REAL_PROTECTION_STATE)
+    failure = [
+        [foundation.WriteAttributesStatusRecord(status=foundation.Status.FAILURE)]
+    ]
+    write = mock.AsyncMock(
+        side_effect=RuntimeError if write_raises else None,
+        return_value=None if write_raises else failure,
+    )
+
+    with (
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            mock.AsyncMock(
+                return_value=(
+                    {attribute.id: _fast_scene_array(list(REAL_FAST_SCENE_PAYLOAD))},
+                    {},
+                )
+            ),
+        ),
+        mock.patch.object(cluster, "write_attributes", write),
+    ):
+        result = await local_cluster.write_attributes(
+            {local_cluster.AttributeDefs.protection_over_current.id: 15000}
+        )
+
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert local_cluster._protection_state == REAL_PROTECTION_STATE
+    assert (
+        local_cluster.get(local_cluster.AttributeDefs.protection_over_current.id)
+        == 16000
+    )
+
+
+async def test_mini_zb1gp_serializes_concurrent_protection_writes(
+    zigpy_device_from_v2_quirk,
+):
+    """Test concurrent writes each merge into the latest device state."""
+
+    cluster, local_cluster = _protection_clusters(zigpy_device_from_v2_quirk)
+    attribute = cluster.AttributeDefs.protection_configuration
+    device_state = REAL_PROTECTION_STATE
+    first_read_started = asyncio.Event()
+    release_first_read = asyncio.Event()
+    read_calls = 0
+
+    async def read_attributes(*args, **kwargs):
+        nonlocal read_calls
+        read_calls += 1
+        if read_calls == 1:
+            first_read_started.set()
+            await release_first_read.wait()
+        return {attribute.id: encode_protection_modify_array(device_state)}, {}
+
+    async def write_attributes(attributes, **kwargs):
+        nonlocal device_state
+        device_state = decode_protection_state(attributes[attribute.id])
+        return _success_write_result()
+
+    with (
+        mock.patch.object(cluster, "read_attributes", side_effect=read_attributes),
+        mock.patch.object(cluster, "write_attributes", side_effect=write_attributes),
+    ):
+        first_write = asyncio.create_task(
+            local_cluster.write_attributes(
+                {local_cluster.AttributeDefs.protection_over_current.id: 15000}
+            )
+        )
+        await first_read_started.wait()
+        second_write = asyncio.create_task(
+            local_cluster.write_attributes(
+                {local_cluster.AttributeDefs.protection_under_voltage.id: 166000}
+            )
+        )
+        await asyncio.sleep(0)
+        assert read_calls == 1
+        release_first_read.set()
+        await asyncio.gather(first_write, second_write)
+
+    assert read_calls == 4
+    assert device_state == replace(
+        REAL_PROTECTION_STATE,
+        over_current_ma=15000,
+        under_voltage_mv=166000,
+    )
 
 
 def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_quirk):
@@ -444,73 +880,106 @@ def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_q
 def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
     """Test optional measurement, protection, and fault entities."""
 
-    device = zigpy_device_from_v2_quirk(
-        "SONOFF",
-        "MINI-ZB1GP",
-        cluster_ids={
-            1: {
-                OnOff.cluster_id: ClusterType.Server,
-                Metering.cluster_id: ClusterType.Server,
-                ElectricalMeasurement.cluster_id: ClusterType.Server,
-                SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server,
-            }
-        },
-    )
+    metadata_by_model = {}
+    for model in ("MINI-ZB1GP", "MINI-ZB1GSP"):
+        device = zigpy_device_from_v2_quirk(
+            "SONOFF",
+            model,
+            cluster_ids={
+                1: {
+                    OnOff.cluster_id: ClusterType.Server,
+                    Metering.cluster_id: ClusterType.Server,
+                    ElectricalMeasurement.cluster_id: ClusterType.Server,
+                    SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server,
+                }
+            },
+        )
+        entry = DEVICE_REGISTRY.match_entry(device)
+        metadata_by_model[model] = {
+            metadata.fallback_name: metadata
+            for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        }
+        assert isinstance(
+            device.endpoints[1].in_clusters[SonoffProtectionConfigCluster.cluster_id],
+            SonoffProtectionConfigCluster,
+        )
 
-    entry = DEVICE_REGISTRY.match_entry(device)
-    metadata_by_name = {
-        metadata.fallback_name: metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
-    }
+    gp_metadata = metadata_by_model["MINI-ZB1GP"]
+    gsp_metadata = metadata_by_model["MINI-ZB1GSP"]
 
-    assert all(
-        metadata.translation_key is not None and metadata.fallback_name is not None
-        for metadata in metadata_by_name.values()
-    )
+    for metadata_by_name in metadata_by_model.values():
+        assert all(
+            metadata.translation_key is not None and metadata.fallback_name is not None
+            for metadata in metadata_by_name.values()
+        )
+        for name in (
+            "Export energy today",
+            "Export energy this month",
+            "Total export energy",
+            "Daily run time",
+            "Total run time",
+            "Voltage frequency",
+        ):
+            assert metadata_by_name[name].initially_disabled is True
 
-    assert metadata_by_name["Export energy today"].initially_disabled is True
-    assert metadata_by_name["Export energy this month"].initially_disabled is True
-    assert metadata_by_name["Total export energy"].initially_disabled is True
-    assert metadata_by_name["Daily run time"].initially_disabled is True
-    assert metadata_by_name["Total run time"].initially_disabled is True
-    assert metadata_by_name["Voltage frequency"].initially_disabled is True
+        expected_numbers = {
+            "Protection over-current threshold": ("A", 0.1, 16.0),
+            "Protection overload threshold": ("W", 2.0, 3840.0),
+            "Protection over-voltage threshold": ("V", 85.0, 277.0),
+            "Protection under-voltage threshold": ("V", 85.0, 277.0),
+        }
+        for name, (unit, minimum, maximum) in expected_numbers.items():
+            metadata = metadata_by_name[name]
+            assert metadata.entity_platform.value == "number"
+            assert metadata.entity_type.value == "config"
+            assert metadata.cluster_id == SonoffProtectionConfigCluster.cluster_id
+            assert metadata.unit == unit
+            assert metadata.min == minimum
+            assert metadata.max == maximum
+            assert metadata.step == 0.001
+            assert metadata.multiplier == 0.001
+            assert metadata.initially_disabled is not True
+
+        for name in (
+            "Over-voltage protection enabled",
+            "Under-voltage protection enabled",
+        ):
+            metadata = metadata_by_name[name]
+            assert metadata.entity_platform.value == "switch"
+            assert metadata.entity_type.value == "config"
+            assert metadata.initially_disabled is not True
+
+        notification = metadata_by_name["Protection notification"]
+        assert notification.entity_platform.value == "binary_sensor"
+        assert notification.entity_type.value == "diagnostic"
+        assert notification.initially_disabled is True
+
+        assert all(
+            metadata.attribute_name != "protection_configuration"
+            for metadata in metadata_by_name.values()
+        )
+
+    for name in (
+        "Protection external switch restore",
+        "Protection auto recover",
+    ):
+        assert gp_metadata[name].entity_platform.value == "binary_sensor"
+        assert gp_metadata[name].entity_type.value == "diagnostic"
+        assert gp_metadata[name].initially_disabled is True
+        assert gsp_metadata[name].entity_platform.value == "switch"
+        assert gsp_metadata[name].entity_type.value == "config"
+        assert gsp_metadata[name].initially_disabled is not True
+
     assert (
-        metadata_by_name["Protection over-current threshold"].initially_disabled is True
-    )
-    assert (
-        metadata_by_name["Protection over-current threshold"].entity_type.value
-        == "diagnostic"
-    )
-    assert metadata_by_name["Protection over-current threshold"].unit == "A"
-    assert metadata_by_name["Protection overload threshold"].unit == "W"
-    assert metadata_by_name["Protection over-voltage threshold"].unit == "V"
-    assert metadata_by_name["Protection under-voltage threshold"].unit == "V"
-    protection_metadata = [
-        metadata
-        for metadata in metadata_by_name.values()
-        if metadata.attribute_name == "protection_configuration"
-    ]
-    assert len(protection_metadata) == 9
-    assert all(
-        metadata.attribute_initialized_from_cache is False
-        for metadata in protection_metadata
-    )
-    assert all(
-        metadata.entity_type.value == "diagnostic" for metadata in protection_metadata
-    )
-    assert "Protection scene enabled" not in metadata_by_name
-    assert (
-        metadata_by_name["Metering communication error"].resolved_unique_id_suffix
+        gp_metadata["Metering communication error"].resolved_unique_id_suffix
         == "metering_communication_error"
     )
     assert (
-        metadata_by_name["Overload protection error"].resolved_unique_id_suffix
+        gp_metadata["Overload protection error"].resolved_unique_id_suffix
         == "overload_protection"
     )
     assert (
-        metadata_by_name["Overheat protection error"].resolved_unique_id_suffix
+        gp_metadata["Overheat protection error"].resolved_unique_id_suffix
         == "overheat_protection"
     )
-    assert (
-        metadata_by_name["Overheat protection error"].entity_type.value == "diagnostic"
-    )
+    assert gp_metadata["Overheat protection error"].entity_type.value == "diagnostic"
