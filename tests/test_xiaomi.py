@@ -2859,3 +2859,26 @@ async def test_vibration_aq1_events(vibration_aq1_device):
     multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 2)
     multistate.update_attribute(vibration_aq1.ROTATION_DEGREES_ATTR, 42)
     assert zha_events[-1] == ("Tilt", {"degrees": 42})
+
+
+async def test_vibration_aq1_orientation_and_strength_events(vibration_aq1_device):
+    """Test orientation and vibration strength reports become ZHA events."""
+    device = vibration_aq1_device()
+    ep1 = device.endpoints[1]
+    multistate = ep1.in_clusters[DoorLock.cluster_id]
+    zha_events = []
+    ep1.ias_zone.add_listener(
+        mock.Mock(zha_send_event=lambda *args: zha_events.append(args))
+    )
+
+    multistate.update_attribute(
+        vibration_aq1.ORIENTATION_ATTR, 1 | (1 << 16) | (1 << 32)
+    )
+    assert zha_events[-1] == (
+        "current_orientation",
+        {"rawValueX": 1, "rawValueY": 1, "rawValueZ": 1, "X": 35, "Y": 35, "Z": 35},
+    )
+
+    # The strength arrives byte swapped in bits 8 to 23.
+    multistate.update_attribute(vibration_aq1.RECENT_ACTIVITY_LEVEL_ATTR, 0x1234 << 8)
+    assert zha_events[-1] == ("vibration_strength", {"strength": 0x3412})
