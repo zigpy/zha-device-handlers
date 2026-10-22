@@ -42,6 +42,7 @@ DEFAULT_IR_FREQUENCY: Final = 38000
 # Like Zigbee2MQTT, refuse carriers at or below 30 kHz: most likely kHz given as Hz.
 MIN_IR_FREQUENCY: Final = 30000
 IR_MSG_PART_MAX_LENGTH: Final = 0x38
+IR_MSG_PART_MAX_RETRIES: Final = 3
 # Seconds to wait for the device to confirm it has the whole IR message to send.
 IR_SEND_TIMEOUT: Final = 10
 # A sleepy blaster (the battery TS1201) only gets each frame we send when it next
@@ -277,8 +278,8 @@ class ZosungIRTransmit(CustomCluster):
     def __init__(self, *args, **kwargs):
         """Init cluster and its per-instance learn and send state."""
         super().__init__(*args, **kwargs)
-        self.current_position = 0
         self.msg_length = 0
+        self.msg_part_retries = 0
         self.ir_msg: list[int] = []
         self.seq = 0
         # The ZS06 handles one transfer at a time, so each send waits its turn.
@@ -374,6 +375,34 @@ class ZosungIRTransmit(CustomCluster):
             if pending is not None and not pending.closed.done():
                 pending.closed.set_result(None)
 
+    def request_ir_msg_part(self, seq: int, position: int) -> None:
+        """Ask the device for the part of a learned IR code starting at position."""
+        cmd_02_args = {
+            "seq": seq,
+            "position": position,
+            "maxlen": IR_MSG_PART_MAX_LENGTH,
+        }
+        self.create_catching_task(
+            super().command(
+                self.ServerCommandDefs.receive_ir_frame_02.id,
+                **cmd_02_args,
+                expect_reply=False,
+            )
+        )
+
+    def stop_learning(self) -> None:
+        """Drop any partly learned code and take the device out of learning mode."""
+        self.ir_msg.clear()
+        self.msg_length = 0
+        _LOGGER.debug("Stopping learning mode on device %s", self.endpoint.device.ieee)
+        self.create_catching_task(
+            self.endpoint.zosung_ircontrol.command(
+                ZosungIRControl.ServerCommandDefs.IRLearn.id,
+                on_off=False,
+                expect_reply=False,
+            )
+        )
+
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -391,9 +420,9 @@ class ZosungIRTransmit(CustomCluster):
         if hdr.command_id == self.ServerCommandDefs.receive_ir_frame_00.id:
             _LOGGER.debug("Received IR frame 0x00 from %s", self.endpoint.device.ieee)
 
-            self.current_position = 0
             self.ir_msg.clear()
             self.msg_length = args.length
+            self.msg_part_retries = 0
 
             cmd_01_args = {
                 "zero": 0,
@@ -473,30 +502,49 @@ class ZosungIRTransmit(CustomCluster):
                 )
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_03.id:
-            msg_part_crc = args.msgpartcrc
+            position = len(self.ir_msg)
             calculated_crc = ir_msg_part_crc(args.msgpart)
             _LOGGER.debug(
                 "Received IR frame 0x03 from %s, msgcrc: %s, "
-                "calculated_crc: %s, position: %s",
+                "calculated_crc: %s, position: %s, expected position: %s",
                 self.endpoint.device.ieee,
-                msg_part_crc,
+                args.msgpartcrc,
                 calculated_crc,
                 args.position,
+                position,
             )
-            self.ir_msg[args.position :] = args.msgpart
-            if args.position + len(args.msgpart) < self.msg_length:
-                cmd_02_args = {
-                    "seq": args.seq,
-                    "position": args.position + len(args.msgpart),
-                    "maxlen": IR_MSG_PART_MAX_LENGTH,
-                }
-                self.create_catching_task(
-                    super().command(
-                        self.ServerCommandDefs.receive_ir_frame_02.id,
-                        **cmd_02_args,
-                        expect_reply=False,
-                    )
+            if not self.msg_length:
+                _LOGGER.debug(
+                    "Ignoring IR frame 0x03 from %s, no IR code is being received",
+                    self.endpoint.device.ieee,
                 )
+                return
+            if (
+                args.position != position
+                or args.msgpartcrc != calculated_crc
+                or position + len(args.msgpart) > self.msg_length
+            ):
+                self.msg_part_retries += 1
+                if self.msg_part_retries > IR_MSG_PART_MAX_RETRIES:
+                    _LOGGER.warning(
+                        "Discarding IR code learned by %s after %s bad message parts",
+                        self.endpoint.device.ieee,
+                        self.msg_part_retries,
+                    )
+                    self.stop_learning()
+                    return
+                # Ask again for the part we still need instead of corrupting the code.
+                _LOGGER.debug(
+                    "Bad IR message part from %s, requesting position %s again",
+                    self.endpoint.device.ieee,
+                    position,
+                )
+                self.request_ir_msg_part(args.seq, position)
+                return
+            self.msg_part_retries = 0
+            self.ir_msg += args.msgpart
+            if len(self.ir_msg) < self.msg_length:
+                self.request_ir_msg_part(args.seq, len(self.ir_msg))
             else:
                 _LOGGER.debug(
                     "IR message completely received from %s", self.endpoint.device.ieee
@@ -531,24 +579,23 @@ class ZosungIRTransmit(CustomCluster):
             # confirmation was lost.
             self.create_catching_task(self.acknowledge_sent(seq, pending))
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_05.id:
-            self.endpoint.device.last_learned_ir_code = base64.b64encode(
-                bytes(self.ir_msg)
-            ).decode()
-            _LOGGER.info(
-                "IR message really totally received: %s, from %s",
-                self.endpoint.device.last_learned_ir_code,
-                self.endpoint.device.ieee,
-            )
-            _LOGGER.debug(
-                "Stopping learning mode on device %s", self.endpoint.device.ieee
-            )
-            self.create_catching_task(
-                self.endpoint.zosung_ircontrol.command(
-                    ZosungIRControl.ServerCommandDefs.IRLearn.id,
-                    on_off=False,
-                    expect_reply=False,
+            if self.msg_length and len(self.ir_msg) == self.msg_length:
+                self.endpoint.device.last_learned_ir_code = base64.b64encode(
+                    bytes(self.ir_msg)
+                ).decode()
+                _LOGGER.info(
+                    "IR message really totally received: %s, from %s",
+                    self.endpoint.device.last_learned_ir_code,
+                    self.endpoint.device.ieee,
                 )
-            )
+            else:
+                _LOGGER.warning(
+                    "Discarding incomplete IR code from %s: %s of %s bytes received",
+                    self.endpoint.device.ieee,
+                    len(self.ir_msg),
+                    self.msg_length,
+                )
+            self.stop_learning()
         else:
             _LOGGER.debug(
                 "Unhandled command: %s, from %s",
