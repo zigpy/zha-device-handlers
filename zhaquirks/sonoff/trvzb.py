@@ -134,18 +134,6 @@ BASE_TRVZB_QUIRK = (
         fallback_name="Open window",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
-        CustomSonoffCluster.cluster_id,
-        min_value=4.0,
-        max_value=35.0,
-        step=0.5,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.CELSIUS,
-        multiplier=0.01,
-        translation_key="timer_mode_target_temperature",
-        fallback_name="Timer mode target temperature",
-    )
-    .number(
         CustomSonoffCluster.AttributeDefs.temporary_mode_duration.name,
         CustomSonoffCluster.cluster_id,
         min_value=0,
@@ -229,6 +217,18 @@ BASE_TRVZB_QUIRK = (
     BASE_TRVZB_QUIRK.clone()
     .applies_to("SONOFF", "TRVZB")
     .number(
+        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=4.0,
+        max_value=35.0,
+        step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="timer_mode_target_temperature",
+        fallback_name="Timer mode target temperature",
+    )
+    .number(
         CustomSonoffCluster.AttributeDefs.frost_protection_temperature.name,
         CustomSonoffCluster.cluster_id,
         min_value=4.0,
@@ -256,10 +256,22 @@ BASE_TRVZB_QUIRK = (
     # The TRV-ZBT has the same 0xFC11 attribute set, except that adaptive
     # control is `temperature_control_mode` (0x6013, enum8, 1 = manual,
     # 2 = adaptive); 0x6017 is unsupported on this model. It also only
-    # accepts frost protection from 5 to 15 °C and rejects other values with
-    # INVALID_VALUE.
+    # accepts frost protection from 5 to 15 °C and a timer mode target
+    # temperature from 5 to 30 °C; other values are rejected.
     BASE_TRVZB_QUIRK.clone()
     .applies_to("SONOFF", "TRV-ZBT")
+    .number(
+        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=5.0,
+        max_value=30.0,
+        step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="timer_mode_target_temperature",
+        fallback_name="Timer mode target temperature",
+    )
     .number(
         CustomSonoffCluster.AttributeDefs.frost_protection_temperature.name,
         CustomSonoffCluster.cluster_id,

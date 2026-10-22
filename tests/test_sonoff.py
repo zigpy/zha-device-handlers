@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 
@@ -272,3 +273,27 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
 
     cluster.update_attribute(0x0001, 1)
     assert listener.zha_send_event.call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("model", "timer_range", "frost_range"),
+    [
+        ("TRVZB", (4.0, 35.0), (4.0, 35.0)),
+        ("TRV-ZBT", (5.0, 30.0), (5.0, 15.0)),
+    ],
+)
+def test_trvzb_temperature_ranges(
+    zigpy_device_from_v2_quirk, model, timer_range, frost_range
+):
+    """Test that each TRVZB model gets its own temperature number ranges."""
+    device = zigpy_device_from_v2_quirk("SONOFF", model)
+    entry = DEVICE_REGISTRY.match_entry(device)
+    numbers = {
+        metadata.resolved_unique_id_suffix: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+
+    timer = numbers["timer_mode_target_temperature"]
+    frost = numbers["frost_protection_temperature"]
+    assert (timer.min, timer.max) == timer_range
+    assert (frost.min, frost.max) == frost_range
