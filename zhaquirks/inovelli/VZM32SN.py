@@ -16,9 +16,6 @@ from zhaquirks.inovelli.builder import InovelliQuirkBuilder
     .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
     .replace_cluster_occurrences(InovelliVZM32SNMMWaveCluster)
     .replace_cluster_occurrences(InovelliVZM32SNCluster)
-    # The device reads the coordinator's KeepAlive server but does not advertise the
-    # client side of the cluster. Unanswered reads make the device attempt a Trust
-    # Center rejoin and eventually leave the network.
     .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
     # number entities
     .inovelli_remote_dimming_up_speed()
