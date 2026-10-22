@@ -1,5 +1,6 @@
 """Tests for the Tuya TS1201 / Zosung IR blaster."""
 
+import asyncio
 import base64
 import struct
 from unittest import mock
@@ -13,6 +14,146 @@ import zhaquirks
 import zhaquirks.tuya.ts1201
 
 zhaquirks.setup()
+
+# Learned by a physical ZS06 from a washlet remote ("wash and dry"). At 251 bytes it
+# spans five message parts, and its base64 form is longer than 255 characters.
+REAL_LEARNED_IR_CODE = "DVQNzQaCAb4BggHyAYIBwAdAC0ADByMFvgG+AYIBQAtABwC+YAFAB+ALAwG+AcAvBSMFggG+AcADQAHAC4AHwB9ABwUjBb4BvgFAB4AD4AULQAFAEwe+ASMFvgG+AUALCIIBIwWCAYIBviABQAWAA0ATAL4gAUAHQAMAvmABgAcBhdDgAecAvuAAAUALgAPgBy8DvgGCAYADQAFAC4ABgAkBggHAL0AHwRvABwG+AeABA0AfQA9AB0AD4AULA74BIwWAAwG+AYAbAL4gAUATAb4BQAsBggHgAQtAAQGCAUADBCMFggG+IAEBIwWAAwu+AYIBvgGCAb4BvgE="  # codespell:ignore
+# The device sends at most one byte less than the part length it is asked for.
+DEVICE_PART_LENGTH = zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_LENGTH - 1
+
+
+def device_frame(cluster, command_name, **kwargs):
+    """Build a frame as the blaster sends it on the given cluster."""
+    command = getattr(cluster.ServerCommandDefs, command_name)
+    data = bytes([0x11, 0x42, command.id]) + command.schema(**kwargs).serialize()
+    return cluster.deserialize(data)
+
+
+def sent_commands(request_mock, cluster):
+    """Decode the commands sent on the given cluster, in order."""
+    commands = []
+    for call in request_mock.mock_calls:
+        if call.kwargs["cluster"] != cluster.cluster_id:
+            continue
+        command = cluster.server_commands[call.kwargs["command_id"]]
+        args, _ = command.schema.deserialize(call.kwargs["data"][3:])
+        commands.append((command.id, args))
+    return commands
+
+
+def announce_learned_code(transmit, length, seq=1):
+    """Frame 0x00: the blaster announces a learned code of the given length."""
+    transmit.handle_message(
+        *device_frame(
+            transmit,
+            "receive_ir_frame_00",
+            seq=seq,
+            length=length,
+            unk1=0,
+            clusterid=zhaquirks.tuya.ts1201.ZosungIRControl.cluster_id,
+            unk2=1,
+            cmd=4,
+            unk3=0,
+        )
+    )
+
+
+def learned_code_part(transmit, position, msg_part, seq=1, crc=None):
+    """Frame 0x03: the blaster hands over one part of a learned code."""
+    transmit.handle_message(
+        *device_frame(
+            transmit,
+            "receive_ir_frame_03",
+            zero=0,
+            seq=seq,
+            position=position,
+            msgpart=msg_part,
+            msgpartcrc=(
+                zhaquirks.tuya.ts1201.ir_msg_part_crc(msg_part) if crc is None else crc
+            ),
+        )
+    )
+
+
+def learned_code_done(transmit, seq=1):
+    """Frame 0x05: the blaster confirms the learned code was handed over."""
+    transmit.handle_message(
+        *device_frame(transmit, "receive_ir_frame_05", seq=seq, zero=0)
+    )
+
+
+def request_msg_part(transmit, seq, position):
+    """Frame 0x02: the blaster asks for a part of the IR message being sent."""
+    transmit.handle_message(
+        *device_frame(
+            transmit,
+            "receive_ir_frame_02",
+            seq=seq,
+            position=position,
+            maxlen=zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_LENGTH,
+        )
+    )
+
+
+def confirm_sent(transmit, seq):
+    """Frame 0x04: the blaster confirms it received the whole IR message."""
+    transmit.handle_message(
+        *device_frame(transmit, "receive_ir_frame_04", zero0=0, seq=seq, zero1=0)
+    )
+
+
+async def pull_ir_msg(transmit, seq, length):
+    """Request every part of an IR message being sent and return what was sent."""
+    received = b""
+    for position in range(0, length, zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_LENGTH):
+        request_msg_part(transmit, seq, position)
+        await wait_for_zigpy_tasks()
+        command_id, args = sent_commands(transmit.endpoint.request, transmit)[-1]
+        assert command_id == 0x03
+        assert args.seq == seq
+        assert args.position == position
+        assert args.msgpartcrc == zhaquirks.tuya.ts1201.ir_msg_part_crc(args.msgpart)
+        received += args.msgpart
+    return received
+
+
+async def start_ir_send(control, **kwargs):
+    """Start an IRSend and return its task once it waits for the blaster."""
+    requests = control.endpoint.request.await_count
+    task = asyncio.create_task(
+        control.command(control.ServerCommandDefs.IRSend.id, **kwargs)
+    )
+    # A send queued behind another one never gets as far as a request.
+    for _ in range(10):
+        await asyncio.sleep(0)
+        if control.endpoint.request.await_count > requests:
+            break
+    return task
+
+
+def last_announced_seq(transmit):
+    """Return the seq of the last IR message announced to the blaster."""
+    command_id, args = sent_commands(transmit.endpoint.request, transmit)[-1]
+    assert command_id == 0x00
+    return args.seq
+
+
+def ir_msg(code, freq=38000, num=1):
+    """Return the message the blaster expects for an IR code."""
+    return (
+        f'{{"key_num":1,"delay":300,"key1":'
+        f'{{"num":{num},"freq":{freq},"type":1,"key_code":"{code}"}}}}'
+    ).encode()
+
+
+@pytest.fixture
+def zs06(zigpy_device_from_quirk):
+    """Return a ZS06 blaster whose endpoint requests always succeed."""
+    dev = zigpy_device_from_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster_ZS06)
+    with mock.patch.object(
+        dev.endpoints[1], "request", return_value=foundation.Status.SUCCESS
+    ):
+        yield dev
 
 
 @pytest.mark.parametrize(
@@ -45,14 +186,6 @@ def test_ts1201_signature(assert_signature_matches_quirk, manufacturer):
         "class": "zhaquirks.tuya.ts1201.ZosungIRBlaster",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster, signature)
-
-
-@pytest.mark.parametrize("test_bytes", (b"\x00\x01\x02\x03\x04",))
-def test_ts1201_ir_blaster_bytes(test_bytes):
-    """Test quirk Byte helper class."""
-    a, b = zhaquirks.tuya.ts1201.Bytes.deserialize(data=test_bytes)
-    assert a == test_bytes
-    assert b == b""
 
 
 async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
@@ -254,11 +387,10 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         succ, fail = await ts1201_control_cluster.read_attributes(
             ("another_attribute",)
         )
-        assert fail[0] == foundation.Status.UNSUPPORTED_ATTRIBUTE
+        assert fail["another_attribute"] == foundation.Status.UNSUPPORTED_ATTRIBUTE
 
         # IR send tests
-        await ts1201_control_cluster.command(0x0002, code=ir_code_to_send)
-        await wait_for_zigpy_tasks()
+        send_task = await start_ir_send(ts1201_control_cluster, code=ir_code_to_send)
         # IR send must call ir transmit command id 0x00
         m1.assert_called_with(
             cluster=transmit_cluster_id,
@@ -367,10 +499,13 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             ts1201_transmit_listener.cluster_commands[7][2].command.name
             == "receive_ir_frame_04"
         )
+        # IRSend returns once the device has confirmed the message.
+        rsp = await send_task
+        assert rsp.status == foundation.Status.SUCCESS
 
         # test raw data command
         rsp = await ts1201_control_cluster.command(
-            0x0000, zhaquirks.tuya.ts1201.Bytes(b"\x00\x01\x02\x03\x04")
+            0x0000, t.Bytes(b"\x00\x01\x02\x03\x04")
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
@@ -400,44 +535,6 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         )
 
 
-async def test_ts1201_ir_send_bounded_and_guarded(zigpy_device_from_quirk):
-    """Test TS1201 bounds the pending IR-message dict and guards unknown seqs.
-
-    Regression test for https://github.com/zigpy/zha-device-handlers/issues/4641.
-    """
-    quirk = zhaquirks.tuya.ts1201.ZosungIRBlaster
-    ir_code_to_send = "B3wPfA/5AcoH4AUDAeUDgAPAC+AHB+AHA+ADN+ALBw=="  # codespell:ignore
-
-    dev = zigpy_device_from_quirk(quirk)
-    control_cluster = dev.endpoints[1].zosung_ircontrol
-    transmit_cluster = dev.endpoints[1].zosung_irtransmit
-
-    # ir_msg_to_send is initialised per instance, not shared at class level.
-    assert dev.ir_msg_to_send == {}
-
-    with mock.patch.object(
-        control_cluster.endpoint,
-        "request",
-        return_value=foundation.Status.SUCCESS,
-    ):
-        # Many consecutive sends must not grow the pending dict without bound.
-        for _ in range(12):
-            await control_cluster.command(
-                zhaquirks.tuya.ts1201.ZosungIRControl.ServerCommandDefs.IRSend.id,
-                code=ir_code_to_send,
-            )
-        await wait_for_zigpy_tasks()
-        assert len(dev.ir_msg_to_send) <= 8
-
-        # An ACK frame for a sequence with no pending message must be ignored,
-        # not raise KeyError (previously crashed on sleepy devices).
-        dev.ir_msg_to_send.clear()
-        # receive_ir_frame_02 frame for seq 1 (b"g" + position + maxlen).
-        hdr, args = transmit_cluster.deserialize(bytes.fromhex("11670201000000000040"))
-        transmit_cluster.handle_message(hdr, args)
-        await wait_for_zigpy_tasks()
-
-
 async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     """Test TS1201 learn state is per cluster instance, not shared class state."""
     dev1 = zigpy_device_from_quirk(
@@ -452,7 +549,7 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     transmit2 = dev2.endpoints[1].zosung_irtransmit
 
     assert transmit1.ir_msg is not transmit2.ir_msg
-    assert dev1.ir_msg_to_send is not dev2.ir_msg_to_send
+    assert transmit1.send_lock is not transmit2.send_lock
 
     # A learn on the first device must not leak into the second one.
     with mock.patch.object(
@@ -477,3 +574,147 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+async def test_ts1201_send_real_capture(zs06):
+    """Test a full send of a code captured from a physical ZS06."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    expected = ir_msg(REAL_LEARNED_IR_CODE)
+
+    task = await start_ir_send(control, code=REAL_LEARNED_IR_CODE)
+
+    command_id, args = sent_commands(zs06.endpoints[1].request, transmit)[-1]
+    assert command_id == 0x00
+    assert args.length == len(expected)
+    assert args.clusterid == control.cluster_id
+    assert args.cmd == control.ServerCommandDefs.IRSend.id
+    seq = args.seq
+
+    assert await pull_ir_msg(transmit, seq, len(expected)) == expected
+    assert not task.done()
+
+    confirm_sent(transmit, seq)
+    await wait_for_zigpy_tasks()
+
+    rsp = await task
+    assert rsp.command_id == control.ServerCommandDefs.IRSend.id
+    assert rsp.status == foundation.Status.SUCCESS
+    assert transmit.pending_send is None
+    command_id, args = sent_commands(zs06.endpoints[1].request, transmit)[-1]
+    assert command_id == 0x05
+    assert args.seq == seq
+
+
+async def test_ts1201_sends_one_at_a_time(zs06):
+    """Test a send is not announced until the previous one is confirmed."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    first = await start_ir_send(control, code="AAAA")
+    second = await start_ir_send(control, code="BBBB")
+    announced = [
+        args.seq
+        for command_id, args in sent_commands(zs06.endpoints[1].request, transmit)
+        if command_id == 0x00
+    ]
+    assert len(announced) == 1
+    assert not second.done()
+
+    assert await pull_ir_msg(transmit, announced[0], len(ir_msg("AAAA"))) == ir_msg(
+        "AAAA"
+    )
+    confirm_sent(transmit, announced[0])
+    await first
+    await asyncio.sleep(0)
+
+    seq = last_announced_seq(transmit)
+    assert seq == announced[0] + 1
+    assert not second.done()
+    assert await pull_ir_msg(transmit, seq, len(ir_msg("BBBB"))) == ir_msg("BBBB")
+    confirm_sent(transmit, seq)
+    assert (await second).status == foundation.Status.SUCCESS
+
+
+async def test_ts1201_send_times_out_without_confirmation(zs06, caplog):
+    """Test a send the blaster never confirms fails and frees the next one."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    with (
+        mock.patch.object(zhaquirks.tuya.ts1201, "IR_SEND_TIMEOUT", 0.01),
+        pytest.raises(TimeoutError),
+    ):
+        await control.command(control.ServerCommandDefs.IRSend.id, code="AAAA")
+    stale_seq = last_announced_seq(transmit)
+    assert transmit.pending_send is None
+    assert f"was not confirmed by {zs06.ieee} (seq: {stale_seq})" in caplog.text
+
+    # A late request for the abandoned message is not answered.
+    request_msg_part(transmit, stale_seq, 0)
+    await wait_for_zigpy_tasks()
+    assert sent_commands(zs06.endpoints[1].request, transmit)[-1][0] == 0x00
+
+    task = await start_ir_send(control, code="BBBB")
+    seq = last_announced_seq(transmit)
+    assert await pull_ir_msg(transmit, seq, len(ir_msg("BBBB"))) == ir_msg("BBBB")
+    confirm_sent(transmit, seq)
+    assert (await task).status == foundation.Status.SUCCESS
+
+
+async def test_ts1201_send_fails_when_announcement_fails(zs06):
+    """Test a send that cannot be announced fails and frees the next one."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    zs06.endpoints[1].request.side_effect = RuntimeError("delivery failed")
+    with pytest.raises(RuntimeError):
+        await control.command(control.ServerCommandDefs.IRSend.id, code="AAAA")
+    assert transmit.pending_send is None
+    assert not transmit.send_lock.locked()
+
+
+async def test_ts1201_send_warns_about_lost_message(zs06, caplog):
+    """Test a request for a message that is no longer pending is logged as a loss."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    request_msg_part(transmit, 7, 0)
+    await wait_for_zigpy_tasks()
+
+    assert any(
+        record.levelname == "WARNING"
+        and "no pending message for seq 7" in record.getMessage()
+        for record in caplog.records
+    )
+    assert sent_commands(zs06.endpoints[1].request, transmit) == []
+
+
+async def test_ts1201_confirms_unknown_sent_seq(zs06):
+    """Test a repeated frame 0x04 is confirmed again."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    confirm_sent(transmit, 7)
+    await wait_for_zigpy_tasks()
+
+    command_id, args = sent_commands(zs06.endpoints[1].request, transmit)[-1]
+    assert command_id == 0x05
+    assert args.seq == 7
+
+
+async def test_ts1201_read_last_learned_ir_code(zs06):
+    """Test the learned code is served however it is asked for."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    learned_ir_code = control.AttributeDefs.last_learned_ir_code
+    zs06.last_learned_ir_code = REAL_LEARNED_IR_CODE
+
+    for attribute in (learned_ir_code.id, learned_ir_code.name, learned_ir_code):
+        assert await control.read_attributes([attribute]) == (
+            {learned_ir_code.id: REAL_LEARNED_IR_CODE},
+            {},
+        )
+
+    assert await control.read_attributes([learned_ir_code.id, 0x1234]) == (
+        {learned_ir_code.id: REAL_LEARNED_IR_CODE},
+        {0x1234: foundation.Status.UNSUPPORTED_ATTRIBUTE},
+    )
+    assert zs06.endpoints[1].request.await_count == 0

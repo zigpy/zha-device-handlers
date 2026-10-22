@@ -4,9 +4,11 @@ Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
 """
 
+import asyncio
 import base64
+import json
 import logging
-from typing import Any, Final, Union
+from typing import Any, Final, NamedTuple, Union
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
@@ -36,18 +38,34 @@ from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
+IR_MSG_PART_MAX_LENGTH: Final = 0x38
+# Seconds to wait for the device to confirm it has the whole IR message to send.
+IR_SEND_TIMEOUT: Final = 10
 
-class Bytes(bytes):
-    """Bytes serializable class."""
 
-    def serialize(self):
-        """Serialize Bytes."""
-        return self
+def ir_msg_part_crc(msg_part: bytes) -> int:
+    """Return the checksum the device uses for an IR message part."""
+    return sum(msg_part) % 0x100
 
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize Bytes."""
-        return cls(data), b""
+
+def ir_msg_for_code(code: str) -> bytes:
+    """Return the message the device expects for sending an IR code."""
+    return json.dumps(
+        {
+            "key_num": 1,
+            "delay": 300,
+            "key1": {"num": 1, "freq": 38000, "type": 1, "key_code": code},
+        },
+        separators=(",", ":"),
+    ).encode()
+
+
+class PendingIRSend(NamedTuple):
+    """An IR message the device is fetching from us."""
+
+    seq: int
+    msg: bytes
+    sent: asyncio.Future[None]
 
 
 class ZosungIRControl(CustomCluster):
@@ -69,7 +87,7 @@ class ZosungIRControl(CustomCluster):
 
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
-            schema={"data": Bytes},
+            schema={"data": t.Bytes},
             manufacturer_code=None,
         )
         IRLearn: Final = foundation.ZCLCommandDef(
@@ -88,14 +106,16 @@ class ZosungIRControl(CustomCluster):
         attributes: list[int | str | foundation.ZCLAttributeDef],
         **kwargs,
     ) -> Any:
-        """Read attributes ZCL foundation command."""
-        if (
-            self.AttributeDefs.last_learned_ir_code.id in attributes
-            or "last_learned_ir_code" in attributes
-        ):
-            return {0: self.endpoint.device.last_learned_ir_code}, {}
-        else:
-            return {}, {0: foundation.Status.UNSUPPORTED_ATTRIBUTE}
+        """Serve the last learned IR code, which only exists on our side."""
+        learned_ir_code = self.AttributeDefs.last_learned_ir_code
+        success: dict[Any, Any] = {}
+        failure: dict[Any, foundation.Status] = {}
+        for attribute in attributes:
+            if attribute in (learned_ir_code.id, learned_ir_code.name, learned_ir_code):
+                success[learned_ir_code.id] = self.endpoint.device.last_learned_ir_code
+            else:
+                failure[attribute] = foundation.Status.UNSUPPORTED_ATTRIBUTE
+        return success, failure
 
     async def command(
         self,
@@ -108,47 +128,24 @@ class ZosungIRControl(CustomCluster):
     ):
         """Override the default cluster command."""
         if command_id == self.ServerCommandDefs.IRLearn.id:
-            if kwargs["on_off"]:
-                cmd_args = {Bytes(b'{"study":0}')}
-            else:
-                cmd_args = {Bytes(b'{"study":1}')}
+            # The device reads "study" backwards: 0 starts learning, 1 stops it.
+            study = b'{"study":0}' if kwargs["on_off"] else b'{"study":1}'
             return await super().command(
-                0x00,
-                *cmd_args,
+                self.ServerCommandDefs.data.id,
+                t.Bytes(study),
                 manufacturer=manufacturer,
                 expect_reply=True,
                 tsn=tsn,
             )
         elif command_id == self.ServerCommandDefs.IRSend.id:
-            ir_msg = (
-                f'{{"key_num":1,"delay":300,"key1":'
-                f'{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}'
-            )
+            ir_msg = ir_msg_for_code(kwargs["code"])
             _LOGGER.debug(
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
-            seq = self.endpoint.device.next_seq()
-            self.endpoint.device.ir_msg_to_send[seq] = ir_msg
-            # Keep only the most recent pending messages so the dict cannot grow
-            # unbounded, while still surviving the async ACK from sleepy devices
-            # (the previous code replaced the whole dict, dropping in-flight sends).
-            pending = self.endpoint.device.ir_msg_to_send
-            for old_seq in list(pending)[:-8]:
-                del pending[old_seq]
-            self.create_catching_task(
-                self.endpoint.zosung_irtransmit.command(
-                    0x00,
-                    seq=seq,
-                    length=len(ir_msg),
-                    unk1=0x00000000,
-                    clusterid=0xE004,
-                    unk2=0x01,
-                    cmd=0x02,
-                    unk3=0x0000,
-                    expect_reply=False,
-                    tsn=tsn,
-                )
-            )
+            await self.endpoint.zosung_irtransmit.send_ir_msg(ir_msg, tsn=tsn)
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
         else:
             return await super().command(
                 command_id,
@@ -256,11 +253,48 @@ class ZosungIRTransmit(CustomCluster):
         )
 
     def __init__(self, *args, **kwargs):
-        """Init cluster and its per-instance learn state."""
+        """Init cluster and its per-instance learn and send state."""
         super().__init__(*args, **kwargs)
         self.current_position = 0
         self.msg_length = 0
         self.ir_msg: list[int] = []
+        self.seq = 0
+        # The ZS06 handles one transfer at a time, so each send waits its turn.
+        self.send_lock = asyncio.Lock()
+        self.pending_send: PendingIRSend | None = None
+
+    async def send_ir_msg(
+        self, ir_msg: bytes, *, tsn: int | t.uint8_t | None = None
+    ) -> None:
+        """Send an IR message and wait until the device confirms it has all of it."""
+        async with self.send_lock:
+            self.seq = (self.seq + 1) % 0x10000
+            sent = asyncio.get_running_loop().create_future()
+            self.pending_send = PendingIRSend(self.seq, ir_msg, sent)
+            try:
+                await super().command(
+                    self.ServerCommandDefs.receive_ir_frame_00.id,
+                    seq=self.seq,
+                    length=len(ir_msg),
+                    unk1=0x00000000,
+                    clusterid=ZosungIRControl.cluster_id,
+                    unk2=0x01,
+                    cmd=ZosungIRControl.ServerCommandDefs.IRSend.id,
+                    unk3=0x0000,
+                    expect_reply=False,
+                    tsn=tsn,
+                )
+                async with asyncio.timeout(IR_SEND_TIMEOUT):
+                    await sent
+            except TimeoutError:
+                _LOGGER.warning(
+                    "IR code was not confirmed by %s (seq: %s)",
+                    self.endpoint.device.ieee,
+                    self.seq,
+                )
+                raise
+            finally:
+                self.pending_send = None
 
     def handle_cluster_request(
         self,
@@ -294,11 +328,23 @@ class ZosungIRTransmit(CustomCluster):
                 "unk3": args.unk3,
             }
             self.create_catching_task(
-                super().command(0x01, **cmd_01_args, expect_reply=True)
+                super().command(
+                    self.ServerCommandDefs.receive_ir_frame_01.id,
+                    **cmd_01_args,
+                    expect_reply=True,
+                )
             )
-            cmd_02_args = {"seq": args.seq, "position": 0, "maxlen": 0x38}
+            cmd_02_args = {
+                "seq": args.seq,
+                "position": 0,
+                "maxlen": IR_MSG_PART_MAX_LENGTH,
+            }
             self.create_catching_task(
-                super().command(0x02, **cmd_02_args, expect_reply=True)
+                super().command(
+                    self.ServerCommandDefs.receive_ir_frame_02.id,
+                    **cmd_02_args,
+                    expect_reply=True,
+                )
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_01.id:
             _LOGGER.debug(
@@ -308,25 +354,25 @@ class ZosungIRTransmit(CustomCluster):
             )
             _LOGGER.debug(
                 "Message to send: %s, to %s",
-                self.endpoint.device.ir_msg_to_send.get(args.seq),
+                self.pending_send,
                 self.endpoint.device.ieee,
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
             maxlen = args.maxlen
-            irmsg = self.endpoint.device.ir_msg_to_send.get(seq)
-            if irmsg is None:
-                _LOGGER.debug(
-                    "Ignoring IR frame 0x02 for unknown seq %s from %s",
-                    seq,
+            pending = self.pending_send
+            if pending is None or pending.seq != seq:
+                # The device is asking for a message we no longer have, so the IR code
+                # it belongs to will never be transmitted.
+                _LOGGER.warning(
+                    "Cannot send IR code to %s: no pending message for seq %s",
                     self.endpoint.device.ieee,
+                    seq,
                 )
                 return
-            msgpart = irmsg[position : position + maxlen]
-            calculated_crc = 0
-            for x in msgpart:
-                calculated_crc = (calculated_crc + ord(x)) % 0x100
+            msgpart = pending.msg[position : position + maxlen]
+            calculated_crc = ir_msg_part_crc(msgpart)
             _LOGGER.debug(
                 "Received IR frame 0x02 from %s, msgsrc: %s, position: %s, msgpart: %s",
                 self.endpoint.device.ieee,
@@ -338,17 +384,19 @@ class ZosungIRTransmit(CustomCluster):
                 "zero": 0,
                 "seq": seq,
                 "position": position,
-                "msgpart": msgpart.encode("utf-8"),
+                "msgpart": msgpart,
                 "msgpartcrc": calculated_crc,
             }
             self.create_catching_task(
-                super().command(0x03, **cmd_03_args, expect_reply=True)
+                super().command(
+                    self.ServerCommandDefs.receive_ir_frame_03.id,
+                    **cmd_03_args,
+                    expect_reply=True,
+                )
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_03.id:
             msg_part_crc = args.msgpartcrc
-            calculated_crc = 0
-            for x in args.msgpart:
-                calculated_crc = (calculated_crc + x) % 0x100
+            calculated_crc = ir_msg_part_crc(args.msgpart)
             _LOGGER.debug(
                 "Received IR frame 0x03 from %s, msgcrc: %s, "
                 "calculated_crc: %s, position: %s",
@@ -362,10 +410,14 @@ class ZosungIRTransmit(CustomCluster):
                 cmd_02_args = {
                     "seq": args.seq,
                     "position": args.position + len(args.msgpart),
-                    "maxlen": 0x38,
+                    "maxlen": IR_MSG_PART_MAX_LENGTH,
                 }
                 self.create_catching_task(
-                    super().command(0x02, **cmd_02_args, expect_reply=False)
+                    super().command(
+                        self.ServerCommandDefs.receive_ir_frame_02.id,
+                        **cmd_02_args,
+                        expect_reply=False,
+                    )
                 )
             else:
                 _LOGGER.debug(
@@ -373,16 +425,38 @@ class ZosungIRTransmit(CustomCluster):
                 )
                 cmd_04_args = {"zero0": 0, "seq": args.seq, "zero1": 0}
                 self.create_catching_task(
-                    super().command(0x04, **cmd_04_args, expect_reply=False)
+                    super().command(
+                        self.ServerCommandDefs.receive_ir_frame_04.id,
+                        **cmd_04_args,
+                        expect_reply=False,
+                    )
                 )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_04.id:
             seq = args.seq
-            _LOGGER.debug(
-                "IR code has been sent to %s (seq:%s)", self.endpoint.device.ieee, seq
-            )
+            pending = self.pending_send
+            if pending is None or pending.seq != seq:
+                _LOGGER.debug(
+                    "IR frame 0x04 from %s for unknown seq %s",
+                    self.endpoint.device.ieee,
+                    seq,
+                )
+            else:
+                _LOGGER.debug(
+                    "IR code has been sent to %s (seq:%s)",
+                    self.endpoint.device.ieee,
+                    seq,
+                )
+                if not pending.sent.done():
+                    pending.sent.set_result(None)
+            # Confirm an unknown seq too: it may be a repeat of a frame 0x04 whose
+            # confirmation was lost.
             cmd_05_args = {"seq": seq, "zero": 0}
             self.create_catching_task(
-                super().command(0x05, **cmd_05_args, expect_reply=False)
+                super().command(
+                    self.ServerCommandDefs.receive_ir_frame_05.id,
+                    **cmd_05_args,
+                    expect_reply=False,
+                )
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_05.id:
             self.endpoint.device.last_learned_ir_code = base64.b64encode(
@@ -398,7 +472,9 @@ class ZosungIRTransmit(CustomCluster):
             )
             self.create_catching_task(
                 self.endpoint.zosung_ircontrol.command(
-                    0x01, on_off=False, expect_reply=False
+                    ZosungIRControl.ServerCommandDefs.IRLearn.id,
+                    on_off=False,
+                    expect_reply=False,
                 )
             )
         else:
@@ -413,18 +489,6 @@ class ZosungIRBlaster(CustomDevice):
     """Zosung IR Blaster."""
 
     last_learned_ir_code = t.CharacterString("")
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.seq = 0
-        # Mutated in place, so it must be per instance, not class level.
-        self.ir_msg_to_send: dict[int, str] = {}
-        super().__init__(*args, **kwargs)
-
-    def next_seq(self):
-        """Next local sequence."""
-        self.seq = (self.seq + 1) % 0x10000
-        return self.seq
 
     signature = {
         # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>,
