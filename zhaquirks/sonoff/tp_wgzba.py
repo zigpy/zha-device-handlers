@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import IntEnum
 from typing import Any, Final
+
+from homeassistant.util import dt as dt_util
 
 try:
     from zha.application.platforms.number import NumberMode
@@ -59,8 +62,19 @@ TEMPORARY_MODE_BOOST = 0x01
 TEMPORARY_MODE_TIMER = 0x02
 
 ZCL_STRUCT_ITEM_COUNT = b"\x02\x00"
+ZCL_STRUCT_THREE_ITEM_COUNT = b"\x03\x00"
+ZCL_STRUCT_FOUR_ITEM_COUNT = b"\x04\x00"
+ZCL_DATA_TYPE_UINT8 = 0x20
 ZCL_DATA_TYPE_INT16 = 0x29
 ZCL_DATA_TYPE_UINT16 = 0x21
+ZCL_DATA_TYPE_UINT32 = 0x23
+
+HOLIDAY_DURATION_DAYS_MIN = 1
+HOLIDAY_DURATION_DAYS_MAX = 365
+HOLIDAY_SECONDS_PER_DAY = 24 * 60 * 60
+HOLIDAY_ZIGBEE_EPOCH = datetime(2000, 1, 1)
+ANTISTUCK_DURATION_MINUTES_MIN = 1
+ANTISTUCK_DURATION_MINUTES_MAX = 30
 
 REMOTE_TEMPERATURE_SOURCE_ATTR_IDS = (0xFF11, 0xFF12, 0xFF13)
 REMOTE_TEMPERATURE_SOURCE_IDS = (0x01, 0x02, 0x03)
@@ -108,6 +122,13 @@ WEEKLY_SCHEDULE_UI_DAY_ATTR_ID = 0x7200
 WEEKLY_SCHEDULE_UI_TEMP_ATTR_IDS = tuple(0x7200 + index for index in range(1, 13))
 WEEKLY_SCHEDULE_UI_TIME_ATTR_IDS = tuple(0x720C + index for index in range(1, 13))
 WEEKLY_SCHEDULE_UI_TRANSITION_COUNT_ATTR_ID = 0x7219
+
+HOLIDAY_OPERATION_ATTR_ID = 0x7300
+HOLIDAY_DURATION_DAYS_ATTR_ID = 0x7301
+HOLIDAY_TARGET_TEMPERATURE_ATTR_ID = 0x7302
+ANTISTUCK_DAY_ATTR_ID = 0x7400
+ANTISTUCK_START_MINUTE_ATTR_ID = 0x7401
+ANTISTUCK_DURATION_MINUTES_ATTR_ID = 0x7402
 
 TEMPORARY_MODE_UI_DURATION_MINUTES_DEFAULT = 30
 TEMPORARY_MODE_UI_DURATION_MINUTES_MAX = 1439
@@ -338,9 +359,25 @@ class TPWGZBADeviceWorkMode(t.enum8):
     """Device work mode exposed as a read-only display value."""
 
     Off = 0x00
-    Schedule = 0x01
-    Manual = 0x04
+    Frost_Protection = 0x02
+    Manual = 0x03
+    Schedule = 0x04
     Temporary_Manual = 0x05
+    Holiday = 0x06
+
+
+class HolidayOperation(t.enum8):
+    """Holiday temperature-control operation supported by the product UI."""
+
+    Target_Temperature = 0x00
+    Off = 0x01
+
+
+class DefaultDisplayPage(t.enum8):
+    """TP-WGZBA default display page."""
+
+    Ambient_Temperature = 0x00
+    Setpoint_Temperature = 0x01
 
 
 class TemporaryTemperatureModeSettings(t.enum8):
@@ -659,6 +696,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         bt_pairing_broadcast_req: Final = ZCLAttributeDef(
             id=0x0029, type=t.uint8_t, access="rw", manufacturer_code=None
         )
+        default_display_page: Final = ZCLAttributeDef(
+            id=0x002A,
+            type=t.uint8_t,
+            access="rw",
+            manufacturer_code=None,
+        )
         window_opening_detection: Final = ZCLAttributeDef(
             id=0x6000, type=t.Bool, access="rw", manufacturer_code=None
         )
@@ -725,6 +768,26 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         )
         relay_output_type_bitmap: Final = ZCLAttributeDef(
             id=0x6028, type=t.bitmap8, access="rw", manufacturer_code=None
+        )
+        holiday_enabled: Final = ZCLAttributeDef(
+            id=0x602B, type=t.Bool, access="rw", manufacturer_code=None
+        )
+        holiday_schedule: Final = ZCLAttributeDef(
+            id=0x602C,
+            type=RawBytes,
+            zcl_type=DataTypeId.struct,
+            access="rw",
+            manufacturer_code=None,
+        )
+        valve_anti_stuck_enable: Final = ZCLAttributeDef(
+            id=0x602D, type=t.Bool, access="rw", manufacturer_code=None
+        )
+        valve_anti_stuck_schedule: Final = ZCLAttributeDef(
+            id=0x602E,
+            type=RawBytes,
+            zcl_type=DataTypeId.struct,
+            access="rw",
+            manufacturer_code=None,
         )
         hvac_message_notification: Final = ZCLAttributeDef(
             id=0x6030, type=RawBytes, access="rp", manufacturer_code=None
@@ -832,6 +895,24 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         )
         weekly_schedule_ui_transition_count: Final = ZCLAttributeDef(
             id=WEEKLY_SCHEDULE_UI_TRANSITION_COUNT_ATTR_ID, type=t.uint8_t, access="rw"
+        )
+        holiday_operation: Final = ZCLAttributeDef(
+            id=HOLIDAY_OPERATION_ATTR_ID, type=HolidayOperation, access="rw"
+        )
+        holiday_duration_days: Final = ZCLAttributeDef(
+            id=HOLIDAY_DURATION_DAYS_ATTR_ID, type=t.uint16_t, access="rw"
+        )
+        holiday_target_temperature: Final = ZCLAttributeDef(
+            id=HOLIDAY_TARGET_TEMPERATURE_ATTR_ID, type=t.int16s, access="rw"
+        )
+        valve_anti_stuck_day: Final = ZCLAttributeDef(
+            id=ANTISTUCK_DAY_ATTR_ID, type=WeeklyScheduleUiDay, access="rw"
+        )
+        valve_anti_stuck_start_minute: Final = ZCLAttributeDef(
+            id=ANTISTUCK_START_MINUTE_ATTR_ID, type=t.uint16_t, access="rw"
+        )
+        valve_anti_stuck_duration_minutes: Final = ZCLAttributeDef(
+            id=ANTISTUCK_DURATION_MINUTES_ATTR_ID, type=t.uint8_t, access="rw"
         )
         weekly_schedule_ui_time1: Final = ZCLAttributeDef(
             id=WEEKLY_SCHEDULE_UI_TIME_ATTR_IDS[0], type=t.uint16_t, access="rw"
@@ -1030,6 +1111,30 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         self._update_attribute(
             self.AttributeDefs.temporary_mode_ui_target_temperature.id,
             TEMPORARY_MODE_BOOST_TARGET_TEMP_X100,
+        )
+        self._update_attribute(
+            self.AttributeDefs.holiday_operation.id,
+            HolidayOperation.Off,
+        )
+        self._update_attribute(
+            self.AttributeDefs.holiday_duration_days.id,
+            HOLIDAY_DURATION_DAYS_MIN,
+        )
+        self._update_attribute(
+            self.AttributeDefs.holiday_target_temperature.id,
+            WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+        )
+        self._update_attribute(
+            self.AttributeDefs.valve_anti_stuck_day.id,
+            WeeklyScheduleUiDay.Monday,
+        )
+        self._update_attribute(
+            self.AttributeDefs.valve_anti_stuck_start_minute.id,
+            720,
+        )
+        self._update_attribute(
+            self.AttributeDefs.valve_anti_stuck_duration_minutes.id,
+            5,
         )
         self._update_attribute(
             self.AttributeDefs.weekly_schedule_ui_day.id,
@@ -1467,6 +1572,125 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         except TypeError:
             return None
 
+    @classmethod
+    def _decode_holiday_schedule(cls, value: Any) -> tuple[HolidayOperation, int, int]:
+        """Decode the holiday schedule struct into the three editable UI values."""
+
+        raw = cls._as_bytes(value)
+        if (
+            raw is None
+            or len(raw) != 17
+            or raw[:3] != ZCL_STRUCT_FOUR_ITEM_COUNT + bytes([ZCL_DATA_TYPE_UINT32])
+            or raw[7] != ZCL_DATA_TYPE_UINT32
+            or raw[12] != ZCL_DATA_TYPE_UINT8
+            or raw[14] != ZCL_DATA_TYPE_UINT16
+        ):
+            return (
+                HolidayOperation.Off,
+                HOLIDAY_DURATION_DAYS_MIN,
+                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+            )
+
+        start_time = int.from_bytes(raw[3:7], "little", signed=False)
+        end_time = int.from_bytes(raw[8:12], "little", signed=False)
+        operation_value = raw[13]
+        target_temperature = int.from_bytes(raw[15:17], "little", signed=False)
+        # The product UI intentionally does not expose the legacy force-open mode.
+        operation = (
+            HolidayOperation(operation_value)
+            if operation_value in HolidayOperation._value2member_map_
+            else HolidayOperation.Off
+        )
+        duration_days = cls._clamp(
+            (end_time - start_time) // HOLIDAY_SECONDS_PER_DAY,
+            HOLIDAY_DURATION_DAYS_MIN,
+            HOLIDAY_DURATION_DAYS_MAX,
+        )
+        return (
+            operation,
+            duration_days,
+            cls._clamp(
+                target_temperature,
+                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+                WEEKLY_SCHEDULE_UI_TEMP_MAX_X100,
+            ),
+        )
+
+    @classmethod
+    def _encode_holiday_schedule(
+        cls,
+        operation: HolidayOperation,
+        duration_days: int,
+        target_temperature: int,
+        start_time: int | None = None,
+    ) -> bytes:
+        """Encode a holiday schedule starting today or at a supplied epoch time."""
+
+        if start_time is None:
+            # Firmware stores local Zigbee-epoch seconds; start new schedules at
+            # local midnight.
+            local_now = dt_util.now()
+            local_midnight = local_now.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            holiday_epoch = HOLIDAY_ZIGBEE_EPOCH.replace(tzinfo=local_midnight.tzinfo)
+            start_time = int((local_midnight - holiday_epoch).total_seconds())
+        end_time = start_time + duration_days * HOLIDAY_SECONDS_PER_DAY
+        return (
+            ZCL_STRUCT_FOUR_ITEM_COUNT
+            + bytes([ZCL_DATA_TYPE_UINT32])
+            + start_time.to_bytes(4, "little", signed=False)
+            + bytes([ZCL_DATA_TYPE_UINT32])
+            + end_time.to_bytes(4, "little", signed=False)
+            + bytes([ZCL_DATA_TYPE_UINT8, int(operation)])
+            + bytes([ZCL_DATA_TYPE_UINT16])
+            + target_temperature.to_bytes(2, "little", signed=False)
+        )
+
+    @classmethod
+    def _decode_valve_anti_stuck_schedule(
+        cls, value: Any
+    ) -> tuple[WeeklyScheduleUiDay, int, int]:
+        """Decode the valve anti-stuck struct into editable schedule fields."""
+
+        raw = cls._as_bytes(value)
+        if (
+            raw is None
+            or len(raw) != 9
+            or raw[:3] != ZCL_STRUCT_THREE_ITEM_COUNT + bytes([ZCL_DATA_TYPE_UINT8])
+            or raw[4] != ZCL_DATA_TYPE_UINT16
+            or raw[7] != ZCL_DATA_TYPE_UINT8
+        ):
+            return WeeklyScheduleUiDay.Monday, 720, 5
+
+        return (
+            WeeklyScheduleUiDay(cls._clamp(raw[3], 0, 6)),
+            cls._clamp(
+                int.from_bytes(raw[5:7], "little", signed=False),
+                0,
+                WEEKLY_SCHEDULE_TIME_MAX,
+            ),
+            cls._clamp(
+                raw[8],
+                ANTISTUCK_DURATION_MINUTES_MIN,
+                ANTISTUCK_DURATION_MINUTES_MAX,
+            ),
+        )
+
+    @staticmethod
+    def _encode_valve_anti_stuck_schedule(
+        day: WeeklyScheduleUiDay, start_minute: int, duration_minutes: int
+    ) -> bytes:
+        """Encode the valve anti-stuck weekly schedule struct."""
+
+        # Struct members are weekday, start minute and movement duration in that order.
+        return (
+            ZCL_STRUCT_THREE_ITEM_COUNT
+            + bytes([ZCL_DATA_TYPE_UINT8, int(day), ZCL_DATA_TYPE_UINT16])
+            + start_minute.to_bytes(2, "little", signed=False)
+            + bytes([ZCL_DATA_TYPE_UINT8, duration_minutes])
+        )
+
     @staticmethod
     def _read_record(
         attr_id: int,
@@ -1657,7 +1881,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         parts = value.strip().split(".")
         if len(parts) != 3 or any(not part.isdigit() for part in parts):
             return None
-        return tuple(int(part) for part in parts)
+        return tuple(int(part) for part in parts)  # type: ignore[return-value]
 
     async def _supports_multi_remote_temperature(self) -> bool:
         """Read and evaluate Basic sw_build_id, conservatively defaulting to T01."""
@@ -1668,9 +1892,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
         if version_value is None:
             try:
-                await basic_cluster.read_attributes(
-                    [Basic.AttributeDefs.sw_build_id.id]
-                )
+                await basic_cluster.read_attributes([Basic.AttributeDefs.sw_build_id.id])
             except Exception:
                 return False
             version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
@@ -1684,14 +1906,13 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         if sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS:
             raise ValueError("sensor_id must be 1, 2, or 3")
         if value == REMOTE_TEMPERATURE_UNBIND_VALUE:
-            return bytes(
-                (0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, sensor_id, 0x00, 0x00)
-            )
+            return bytes((0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, sensor_id, 0x00, 0x00))
         if value < NTC_CURRENT_TEMPERATURE_MIN_VALID or value > 32767:
             raise ValueError("remote temperature must be -273.15..327.67 Celsius")
-        return bytes(
-            (0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, sensor_id, 0x01, 0x02)
-        ) + int(value).to_bytes(2, "little", signed=True)
+        return (
+            bytes((0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, sensor_id, 0x01, 0x02))
+            + int(value).to_bytes(2, "little", signed=True)
+        )
 
     @classmethod
     def _decode_multi_remote_temperature(cls, value: Any) -> tuple[int, int, int]:
@@ -1700,7 +1921,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         slots = [REMOTE_TEMPERATURE_UNBIND_VALUE] * len(REMOTE_TEMPERATURE_SOURCE_IDS)
         raw = cls._as_bytes(value)
         if raw is None or len(raw) < 3:
-            return tuple(slots)
+            return tuple(slots)  # type: ignore[return-value]
         offset = 3
         for _ in range(raw[0]):
             if offset + 2 > len(raw):
@@ -1725,19 +1946,14 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 item_offset += 4
                 item_value = data[item_offset : item_offset + value_length]
                 item_offset += value_length
-                if (
-                    sensor_type != 0x00
-                    or sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS
-                ):
+                if sensor_type != 0x00 or sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS:
                     continue
                 slot_index = sensor_id - 1
                 if sensor_state == 0x00 or value_length == 0:
                     slots[slot_index] = REMOTE_TEMPERATURE_UNBIND_VALUE
                 elif value_length == 2:
-                    slots[slot_index] = int.from_bytes(
-                        item_value, "little", signed=True
-                    )
-        return tuple(slots)
+                    slots[slot_index] = int.from_bytes(item_value, "little", signed=True)
+        return tuple(slots)  # type: ignore[return-value]
 
     @classmethod
     def _encode_remote_attribute_linkage(
@@ -1820,7 +2036,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         """Map the raw thermostat system mode to the display work mode."""
 
         mode = TPWGZBASystemMode(int(system_mode))
-        return TPWGZBADeviceWorkMode(int(mode))
+        if mode == TPWGZBASystemMode.Off:
+            return TPWGZBADeviceWorkMode.Frost_Protection
+        if mode == TPWGZBASystemMode.Schedule:
+            return TPWGZBADeviceWorkMode.Schedule
+        return TPWGZBADeviceWorkMode.Manual
 
     def _refresh_device_work_mode(self) -> None:
         """Refresh the display work mode from the cached standard system mode."""
@@ -1900,6 +2120,29 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             super()._update_attribute(
                 self.AttributeDefs.relay_output_type_relay2.id, relay2
             )
+        elif attrid == self.AttributeDefs.holiday_schedule.id:
+            operation, duration_days, target_temperature = self._decode_holiday_schedule(
+                value
+            )
+            super()._update_attribute(self.AttributeDefs.holiday_operation.id, operation)
+            super()._update_attribute(
+                self.AttributeDefs.holiday_duration_days.id, duration_days
+            )
+            super()._update_attribute(
+                self.AttributeDefs.holiday_target_temperature.id, target_temperature
+            )
+        elif attrid == self.AttributeDefs.valve_anti_stuck_schedule.id:
+            day, start_minute, duration_minutes = self._decode_valve_anti_stuck_schedule(
+                value
+            )
+            super()._update_attribute(self.AttributeDefs.valve_anti_stuck_day.id, day)
+            super()._update_attribute(
+                self.AttributeDefs.valve_anti_stuck_start_minute.id, start_minute
+            )
+            super()._update_attribute(
+                self.AttributeDefs.valve_anti_stuck_duration_minutes.id,
+                duration_minutes,
+            )
         elif attrid == self.AttributeDefs.remote_attribute_linkage.id:
             sensor_select, external_temperature = self._decode_remote_attribute_linkage(
                 value
@@ -1945,13 +2188,18 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 self._decode_temporary_temperature_mode_state(value),
             )
         elif attrid == self.AttributeDefs.device_work_mode_source.id:
-            if int(value) == DEVICE_WORK_MODE_TEMPORARY_MANUAL:
-                super()._update_attribute(
-                    self.AttributeDefs.device_work_mode.id,
-                    TPWGZBADeviceWorkMode.Temporary_Manual,
+            # 0x0018 is the firmware's actual DeviceWorkMode report, including Holiday.
+            try:
+                display_mode = TPWGZBADeviceWorkMode(int(value))
+            except ValueError:
+                display_mode = self._device_work_mode_from_system(
+                    self.get(self.AttributeDefs.tp_wgzba_ui_system_mode.name)
+                    or TPWGZBASystemMode.Schedule
                 )
-            else:
-                self._refresh_device_work_mode()
+            super()._update_attribute(
+                self.AttributeDefs.device_work_mode.id,
+                display_mode,
+            )
 
     async def _read_real_system_mode(
         self, manufacturer: int | None = None
@@ -2009,11 +2257,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
 
         display_mode = self._device_work_mode_from_system(mode)
-        if (
-            mode_source is not None
-            and int(mode_source) == DEVICE_WORK_MODE_TEMPORARY_MANUAL
-        ):
-            display_mode = TPWGZBADeviceWorkMode.Temporary_Manual
+        if mode_source is not None:
+            try:
+                display_mode = TPWGZBADeviceWorkMode(int(mode_source))
+            except ValueError:
+                pass
         super()._update_attribute(self.AttributeDefs.device_work_mode.id, display_mode)
         return display_mode
 
@@ -2205,6 +2453,44 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 },
             ),
             (
+                {
+                    self.AttributeDefs.holiday_operation.id,
+                    self.AttributeDefs.holiday_duration_days.id,
+                    self.AttributeDefs.holiday_target_temperature.id,
+                },
+                self.AttributeDefs.holiday_schedule.id,
+                lambda raw: {
+                    self.AttributeDefs.holiday_operation.id: self._decode_holiday_schedule(
+                        raw
+                    )[0],
+                    self.AttributeDefs.holiday_duration_days.id: self._decode_holiday_schedule(
+                        raw
+                    )[1],
+                    self.AttributeDefs.holiday_target_temperature.id: self._decode_holiday_schedule(
+                        raw
+                    )[2],
+                },
+            ),
+            (
+                {
+                    self.AttributeDefs.valve_anti_stuck_day.id,
+                    self.AttributeDefs.valve_anti_stuck_start_minute.id,
+                    self.AttributeDefs.valve_anti_stuck_duration_minutes.id,
+                },
+                self.AttributeDefs.valve_anti_stuck_schedule.id,
+                lambda raw: {
+                    self.AttributeDefs.valve_anti_stuck_day.id: self._decode_valve_anti_stuck_schedule(
+                        raw
+                    )[0],
+                    self.AttributeDefs.valve_anti_stuck_start_minute.id: self._decode_valve_anti_stuck_schedule(
+                        raw
+                    )[1],
+                    self.AttributeDefs.valve_anti_stuck_duration_minutes.id: self._decode_valve_anti_stuck_schedule(
+                        raw
+                    )[2],
+                },
+            ),
+            (
                 set(REMOTE_TEMPERATURE_SOURCE_ATTR_IDS),
                 self.AttributeDefs.remote_attribute_linkage.id,
                 lambda raw: dict(
@@ -2369,9 +2655,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         source_results: list[list[foundation.WriteAttributesStatusRecord]] = []
         if source_writes:
             supports_multi = await self._supports_multi_remote_temperature()
-            if not supports_multi and any(
-                sensor_id != 0x01 for _, sensor_id, _ in source_writes
-            ):
+            if not supports_multi and any(sensor_id != 0x01 for _, sensor_id, _ in source_writes):
                 return [
                     [
                         foundation.WriteAttributesStatusRecord(
@@ -2620,6 +2904,228 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             result.append(
                 [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
             )
+
+        holiday_ui_updates: dict[int, Any] = {}
+        has_holiday_operation, holiday_operation_value = self._pop_attribute_value(
+            remaining_attributes, self.AttributeDefs.holiday_operation
+        )
+        if has_holiday_operation:
+            holiday_ui_updates[self.AttributeDefs.holiday_operation.id] = HolidayOperation(
+                self._clamp(self._coerce_int(holiday_operation_value), 0, 1)
+            )
+        has_holiday_duration, holiday_duration_value = self._pop_attribute_value(
+            remaining_attributes, self.AttributeDefs.holiday_duration_days
+        )
+        if has_holiday_duration:
+            holiday_ui_updates[self.AttributeDefs.holiday_duration_days.id] = self._clamp(
+                self._coerce_int(holiday_duration_value),
+                HOLIDAY_DURATION_DAYS_MIN,
+                HOLIDAY_DURATION_DAYS_MAX,
+            )
+        has_holiday_target, holiday_target_value = self._pop_attribute_value(
+            remaining_attributes, self.AttributeDefs.holiday_target_temperature
+        )
+        if has_holiday_target:
+            holiday_ui_updates[
+                self.AttributeDefs.holiday_target_temperature.id
+            ] = self._clamp(
+                self._coerce_int(holiday_target_value),
+                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+                WEEKLY_SCHEDULE_UI_TEMP_MAX_X100,
+            )
+
+        holiday_enabled_attr = self.AttributeDefs.holiday_enabled
+        has_holiday_enabled, holiday_enabled_value = self._pop_attribute_value(
+            remaining_attributes, holiday_enabled_attr
+        )
+        holiday_enabled_before = bool(self.get(holiday_enabled_attr.name))
+        holiday_enabled_requested = (
+            bool(holiday_enabled_value) if has_holiday_enabled else None
+        )
+        holiday_update_while_enabled = (
+            holiday_enabled_before
+            and holiday_enabled_requested is not False
+            and bool(holiday_ui_updates)
+        )
+        holiday_enable_transition = (
+            holiday_enabled_requested is True and not holiday_enabled_before
+        )
+        holiday_schedule_write_failed = False
+
+        if holiday_update_while_enabled or holiday_enable_transition:
+            operation_value = holiday_ui_updates.get(
+                self.AttributeDefs.holiday_operation.id,
+                self.get(self.AttributeDefs.holiday_operation.name),
+            )
+            duration_value = holiday_ui_updates.get(
+                self.AttributeDefs.holiday_duration_days.id,
+                self.get(self.AttributeDefs.holiday_duration_days.name),
+            )
+            target_value = holiday_ui_updates.get(
+                self.AttributeDefs.holiday_target_temperature.id,
+                self.get(self.AttributeDefs.holiday_target_temperature.name),
+            )
+            operation = HolidayOperation(
+                self._clamp(
+                    self._coerce_int(
+                        int(HolidayOperation.Off)
+                        if operation_value is None
+                        else operation_value
+                    ),
+                    0,
+                    1,
+                )
+            )
+            duration_days = self._clamp(
+                self._coerce_int(
+                    HOLIDAY_DURATION_DAYS_MIN
+                    if duration_value is None
+                    else duration_value
+                ),
+                HOLIDAY_DURATION_DAYS_MIN,
+                HOLIDAY_DURATION_DAYS_MAX,
+            )
+            target_temperature = self._clamp(
+                self._coerce_int(
+                    WEEKLY_SCHEDULE_UI_TEMP_MIN_X100
+                    if target_value is None
+                    else target_value
+                ),
+                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+                WEEKLY_SCHEDULE_UI_TEMP_MAX_X100,
+            )
+
+            start_time = None
+            if holiday_update_while_enabled:
+                current_schedule = self._as_bytes(
+                    self.get(self.AttributeDefs.holiday_schedule.name)
+                )
+                valid_schedule = (
+                    current_schedule is not None
+                    and len(current_schedule) == 17
+                    and current_schedule[:3]
+                    == ZCL_STRUCT_FOUR_ITEM_COUNT + bytes([ZCL_DATA_TYPE_UINT32])
+                    and current_schedule[7] == ZCL_DATA_TYPE_UINT32
+                    and current_schedule[12] == ZCL_DATA_TYPE_UINT8
+                    and current_schedule[14] == ZCL_DATA_TYPE_UINT16
+                )
+                if valid_schedule:
+                    start_time = int.from_bytes(
+                        current_schedule[3:7], "little", signed=False
+                    )
+                    current_end_time = int.from_bytes(
+                        current_schedule[8:12], "little", signed=False
+                    )
+                    valid_schedule = current_end_time > start_time
+                if not valid_schedule:
+                    failed_attr_id = next(iter(holiday_ui_updates))
+                    result.append(
+                        [
+                            foundation.WriteAttributesStatusRecord(
+                                foundation.Status.FAILURE, failed_attr_id
+                            )
+                        ]
+                    )
+                    holiday_schedule_write_failed = True
+
+            if not holiday_schedule_write_failed:
+                holiday_schedule = self._encode_holiday_schedule(
+                    operation,
+                    duration_days,
+                    target_temperature,
+                    start_time=start_time,
+                )
+                schedule_result = await super().write_attributes(
+                    {self.AttributeDefs.holiday_schedule.id: holiday_schedule},
+                    **kwargs,
+                )
+                result.extend(schedule_result)
+                if _write_succeeded(schedule_result):
+                    self._update_attribute(
+                        self.AttributeDefs.holiday_schedule.id, holiday_schedule
+                    )
+                    for attr_id, value in holiday_ui_updates.items():
+                        self._update_attribute(attr_id, value)
+                else:
+                    holiday_schedule_write_failed = True
+                    if holiday_enable_transition:
+                        for attr_id, value in holiday_ui_updates.items():
+                            self._update_attribute(attr_id, value)
+        elif holiday_ui_updates:
+            for attr_id, value in holiday_ui_updates.items():
+                self._update_attribute(attr_id, value)
+            result.append(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            )
+
+        if has_holiday_enabled and not (
+            holiday_enabled_requested is True and holiday_schedule_write_failed
+        ):
+            enabled_result = await super().write_attributes(
+                {holiday_enabled_attr.id: holiday_enabled_value}, **kwargs
+            )
+            result.extend(enabled_result)
+            if _write_succeeded(enabled_result):
+                self._update_attribute(
+                    holiday_enabled_attr.id, holiday_enabled_requested
+                )
+
+        anti_stuck_updates: dict[int, Any] = {}
+        for attr_def in (
+            self.AttributeDefs.valve_anti_stuck_day,
+            self.AttributeDefs.valve_anti_stuck_start_minute,
+            self.AttributeDefs.valve_anti_stuck_duration_minutes,
+        ):
+            has_value, attr_value = self._pop_attribute_value(
+                remaining_attributes, attr_def
+            )
+            if has_value:
+                anti_stuck_updates[attr_def.id] = attr_value
+        if anti_stuck_updates:
+            day, start_minute, duration_minutes = self._decode_valve_anti_stuck_schedule(
+                self.get(self.AttributeDefs.valve_anti_stuck_schedule.name)
+            )
+            day = WeeklyScheduleUiDay(
+                self._clamp(
+                    self._coerce_int(
+                        anti_stuck_updates.get(
+                            self.AttributeDefs.valve_anti_stuck_day.id, day
+                        )
+                    ),
+                    0,
+                    6,
+                )
+            )
+            start_minute = self._normalize_weekly_schedule_ui_minute(
+                anti_stuck_updates.get(
+                    self.AttributeDefs.valve_anti_stuck_start_minute.id, start_minute
+                )
+            )
+            duration_minutes = self._clamp(
+                self._coerce_int(
+                    anti_stuck_updates.get(
+                        self.AttributeDefs.valve_anti_stuck_duration_minutes.id,
+                        duration_minutes,
+                    )
+                ),
+                ANTISTUCK_DURATION_MINUTES_MIN,
+                ANTISTUCK_DURATION_MINUTES_MAX,
+            )
+            anti_stuck_schedule = self._encode_valve_anti_stuck_schedule(
+                day, start_minute, duration_minutes
+            )
+            anti_stuck_write_result = await super().write_attributes(
+                {
+                    self.AttributeDefs.valve_anti_stuck_schedule.id: anti_stuck_schedule
+                },
+                **kwargs,
+            )
+            result += anti_stuck_write_result
+            if _write_succeeded(anti_stuck_write_result):
+                self._update_attribute(
+                    self.AttributeDefs.valve_anti_stuck_schedule.id,
+                    anti_stuck_schedule,
+                )
 
         result += await self._write_remote_temperature_attributes(
             remaining_attributes, **kwargs
@@ -3000,6 +3506,85 @@ for attr_name, translation_key, fallback_name in (
         translation_key=translation_key,
         fallback_name=fallback_name,
     )
+
+_BUILDER = (
+    _BUILDER.switch(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_enabled.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="holiday_mode",
+        fallback_name="Holiday mode",
+    )
+    .enum(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_operation.name,
+        HolidayOperation,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="holiday_operation",
+        fallback_name="Holiday operation",
+    )
+    .number(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_duration_days.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        min_value=HOLIDAY_DURATION_DAYS_MIN,
+        max_value=HOLIDAY_DURATION_DAYS_MAX,
+        step=1,
+        unit=UnitOfTime.DAYS,
+        mode=NumberMode.BOX,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="holiday_duration",
+        fallback_name="Holiday planned duration",
+    )
+    .number(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_target_temperature.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        min_value=5.0,
+        max_value=30.0,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="holiday_target_temperature",
+        fallback_name="Holiday target temperature",
+    )
+    .switch(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.valve_anti_stuck_enable.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="valve_anti_stuck",
+        fallback_name="Valve anti-stuck",
+    )
+    .enum(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.valve_anti_stuck_day.name,
+        WeeklyScheduleUiDay,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="valve_anti_stuck_day",
+        fallback_name="Valve anti-stuck day",
+    )
+    .enum(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.valve_anti_stuck_start_minute.name,
+        TimeOfDay30Min,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="valve_anti_stuck_start_time",
+        fallback_name="Valve anti-stuck start time",
+    )
+    .number(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.valve_anti_stuck_duration_minutes.name,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        min_value=ANTISTUCK_DURATION_MINUTES_MIN,
+        max_value=ANTISTUCK_DURATION_MINUTES_MAX,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        mode=NumberMode.BOX,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="valve_anti_stuck_duration",
+        fallback_name="Valve anti-stuck working duration",
+    )
+    .enum(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.default_display_page.name,
+        DefaultDisplayPage,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        translation_key="display_default_page",
+        fallback_name="Display default page",
+    )
+)
 
 for attr_name, enum_type, translation_key, fallback_name in (
     (

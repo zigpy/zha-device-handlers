@@ -70,6 +70,11 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
         "reset_fact_default",
         "weekly_schedule_ui_apply",
         "temporary_mode_ui_apply",
+        "holiday_enabled",
+        "holiday_operation",
+        "holiday_duration_days",
+        "valve_anti_stuck_enable",
+        "default_display_page",
     } <= metadata_suffixes
     assert any(
         metadata.cluster_id == OccupancySensing.cluster_id
@@ -998,6 +1003,135 @@ def test_tp_wgzba_schedule_validation_and_response_fallback(tp_wgzba_device):
     assert private_cluster.get("weekly_schedule_ui_time2") == 120
     private_cluster._update_weekly_schedule_ui_from_rsp(SimpleNamespace())
     private_cluster._update_weekly_schedule_ui_from_rsp(None)
+
+
+def test_tp_wgzba_holiday_and_anti_stuck_schedule_codecs(tp_wgzba_device):
+    """Test packed schedule decoding, defaults, and boundary clamping."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+
+    holiday_payload = private_cluster._encode_holiday_schedule(
+        tp_wgzba.HolidayOperation.Target_Temperature, 7, 2150
+    )
+    assert private_cluster._decode_holiday_schedule(holiday_payload) == (
+        tp_wgzba.HolidayOperation.Target_Temperature,
+        7,
+        2150,
+    )
+    assert private_cluster._decode_holiday_schedule(b"invalid") == (
+        tp_wgzba.HolidayOperation.Off,
+        tp_wgzba.HOLIDAY_DURATION_DAYS_MIN,
+        tp_wgzba.WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+    )
+
+    anti_stuck_payload = private_cluster._encode_valve_anti_stuck_schedule(
+        tp_wgzba.WeeklyScheduleUiDay.Friday, 1380, 12
+    )
+    assert private_cluster._decode_valve_anti_stuck_schedule(anti_stuck_payload) == (
+        tp_wgzba.WeeklyScheduleUiDay.Friday,
+        1380,
+        12,
+    )
+    assert private_cluster._decode_valve_anti_stuck_schedule(b"invalid") == (
+        tp_wgzba.WeeklyScheduleUiDay.Monday,
+        720,
+        5,
+    )
+
+
+def test_tp_wgzba_schedule_attribute_updates_mirror_ui_values(tp_wgzba_device):
+    """Test raw schedule updates populate the editable UI attributes."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    holiday_payload = private_cluster._encode_holiday_schedule(
+        tp_wgzba.HolidayOperation.Off, 14, 1800
+    )
+    anti_stuck_payload = private_cluster._encode_valve_anti_stuck_schedule(
+        tp_wgzba.WeeklyScheduleUiDay.Wednesday, 450, 8
+    )
+
+    private_cluster._update_attribute(defs.holiday_schedule.id, holiday_payload)
+    private_cluster._update_attribute(
+        defs.valve_anti_stuck_schedule.id, anti_stuck_payload
+    )
+
+    assert private_cluster.get(defs.holiday_operation.name) == (
+        tp_wgzba.HolidayOperation.Off
+    )
+    assert private_cluster.get(defs.holiday_duration_days.name) == 14
+    assert private_cluster.get(defs.holiday_target_temperature.name) == 1800
+    assert private_cluster.get(defs.valve_anti_stuck_day.name) == (
+        tp_wgzba.WeeklyScheduleUiDay.Wednesday
+    )
+    assert private_cluster.get(defs.valve_anti_stuck_start_minute.name) == 450
+    assert private_cluster.get(defs.valve_anti_stuck_duration_minutes.name) == 8
+
+
+async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device):
+    """Test enabling holiday writes its packed schedule before the enable flag."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    private_cluster._update_attribute(
+        defs.holiday_operation.id, tp_wgzba.HolidayOperation.Target_Temperature
+    )
+    private_cluster._update_attribute(defs.holiday_duration_days.id, 5)
+    private_cluster._update_attribute(defs.holiday_target_temperature.id, 2200)
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        private_cluster, "write_attributes_raw", mock.AsyncMock(return_value=success)
+    ) as write_raw:
+        result = await private_cluster.write_attributes(
+            {
+                defs.holiday_operation.name: tp_wgzba.HolidayOperation.Target_Temperature,
+                defs.holiday_duration_days.name: 5,
+                defs.holiday_target_temperature.name: 2200,
+                defs.holiday_enabled.name: True,
+            },
+            manufacturer=0x1234,
+        )
+
+    assert len(result) == 2
+    assert write_raw.await_count == 2
+    written = write_raw.await_args_list[0].args[0]
+    assert written == {
+        defs.holiday_schedule.id: private_cluster._encode_holiday_schedule(
+            tp_wgzba.HolidayOperation.Target_Temperature, 5, 2200
+        )
+    }
+    assert write_raw.await_args_list[0].kwargs["manufacturer"] == 0x1234
+    assert write_raw.await_args_list[1].args[0] == {defs.holiday_enabled.id: True}
+
+
+async def test_tp_wgzba_anti_stuck_ui_writes_packed_schedule(tp_wgzba_device):
+    """Test anti-stuck UI writes update the packed schedule attribute."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        private_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=success),
+    ) as write_raw:
+        result = await private_cluster.write_attributes(
+            {
+                defs.valve_anti_stuck_day.name: tp_wgzba.WeeklyScheduleUiDay.Saturday,
+                defs.valve_anti_stuck_start_minute.name: 900,
+                defs.valve_anti_stuck_duration_minutes.name: 10,
+            }
+        )
+
+    assert result == success
+    written = next(
+        call.args[0]
+        for call in write_raw.await_args_list
+        if defs.valve_anti_stuck_schedule.id in call.args[0]
+    )
+    expected = private_cluster._encode_valve_anti_stuck_schedule(
+        tp_wgzba.WeeklyScheduleUiDay.Saturday, 900, 10
+    )
+    assert written[defs.valve_anti_stuck_schedule.id] == expected
+    assert private_cluster.get(defs.valve_anti_stuck_schedule.name) == expected
 
 
 def test_tp_wgzba_remote_linkage_and_mode_edge_cases(tp_wgzba_device):
