@@ -701,6 +701,40 @@ async def test_ts1201_confirms_unknown_sent_seq(zs06):
     assert args.seq == 7
 
 
+@pytest.mark.parametrize(
+    ("params", "freq", "num"),
+    [
+        ({}, 38000, 1),
+        ({"freq": 37000}, 37000, 1),
+        ({"repeats": 2}, 38000, 3),
+        ({"freq": 40000, "repeats": 1}, 40000, 2),
+    ],
+)
+async def test_ts1201_send_freq_and_repeats(zs06, params, freq, num):
+    """Test the optional carrier frequency and repeat count reach the message."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    expected = ir_msg("AAAA", freq=freq, num=num)
+
+    task = await start_ir_send(control, code="AAAA", **params)
+
+    seq = last_announced_seq(transmit)
+    assert await pull_ir_msg(transmit, seq, len(expected)) == expected
+    confirm_sent(transmit, seq)
+    await task
+
+
+def test_ts1201_send_freq_and_repeats_are_optional():
+    """Test ZHA can issue IRSend with only a code."""
+    schema = zhaquirks.tuya.ts1201.ZosungIRControl.ServerCommandDefs.IRSend.schema
+    assert [(field.name, field.optional) for field in schema.fields] == [
+        ("code", False),
+        ("freq", True),
+        ("repeats", True),
+    ]
+    assert schema(code="AAAA").serialize() == schema(code="AAAA").code.serialize()
+
+
 async def test_ts1201_read_last_learned_ir_code(zs06):
     """Test the learned code is served however it is asked for."""
     control = zs06.endpoints[1].zosung_ircontrol

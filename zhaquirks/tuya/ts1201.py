@@ -38,6 +38,7 @@ from zhaquirks.legacy import CustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_IR_FREQUENCY: Final = 38000
 IR_MSG_PART_MAX_LENGTH: Final = 0x38
 # Seconds to wait for the device to confirm it has the whole IR message to send.
 IR_SEND_TIMEOUT: Final = 10
@@ -48,13 +49,16 @@ def ir_msg_part_crc(msg_part: bytes) -> int:
     return sum(msg_part) % 0x100
 
 
-def ir_msg_for_code(code: str) -> bytes:
+def ir_msg_for_code(
+    code: str, freq: int = DEFAULT_IR_FREQUENCY, repeats: int = 0
+) -> bytes:
     """Return the message the device expects for sending an IR code."""
     return json.dumps(
         {
             "key_num": 1,
             "delay": 300,
-            "key1": {"num": 1, "freq": 38000, "type": 1, "key_code": code},
+            # The device counts transmissions in total, not repeats.
+            "key1": {"num": 1 + repeats, "freq": freq, "type": 1, "key_code": code},
         },
         separators=(",", ":"),
     ).encode()
@@ -97,7 +101,11 @@ class ZosungIRControl(CustomCluster):
         )
         IRSend: Final = foundation.ZCLCommandDef(
             id=0x02,
-            schema={"code": t.CharacterString},
+            schema={
+                "code": t.CharacterString,
+                "freq?": t.uint32_t,
+                "repeats?": t.uint8_t,
+            },
             manufacturer_code=None,
         )
 
@@ -138,7 +146,11 @@ class ZosungIRControl(CustomCluster):
                 tsn=tsn,
             )
         elif command_id == self.ServerCommandDefs.IRSend.id:
-            ir_msg = ir_msg_for_code(kwargs["code"])
+            ir_msg = ir_msg_for_code(
+                kwargs["code"],
+                freq=kwargs.get("freq") or DEFAULT_IR_FREQUENCY,
+                repeats=kwargs.get("repeats") or 0,
+            )
             _LOGGER.debug(
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
