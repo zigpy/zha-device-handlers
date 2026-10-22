@@ -1237,9 +1237,7 @@ async def test_candeo_switched_fused_spur_child_lock_write_failure(
     cluster.read_attributes = mock.AsyncMock(
         return_value=({child_lock_attr: t.Bool.false}, {})
     )
-    cluster.write_attributes = mock.AsyncMock(
-        side_effect=RuntimeError("Write failed")
-    )
+    cluster.write_attributes = mock.AsyncMock(side_effect=RuntimeError("Write failed"))
 
     await _run_on_off_report_handler(cluster, True)
 
@@ -1257,9 +1255,7 @@ async def test_candeo_switched_fused_spur_child_lock_read_failure(
     child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock(
-        side_effect=RuntimeError("Read failed")
-    )
+    cluster.read_attributes = mock.AsyncMock(side_effect=RuntimeError("Read failed"))
 
     await _run_on_off_report_handler(cluster, True)
 

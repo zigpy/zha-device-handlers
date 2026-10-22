@@ -132,9 +132,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
             # If the current output state is not cached, read it from the
             # device before deciding whether to discard the command.
             if on_off is None:
-                success, _ = await self.read_attributes(
-                    [OnOff.AttributeDefs.on_off.id]
-                )
+                success, _ = await self.read_attributes([OnOff.AttributeDefs.on_off.id])
                 on_off = success.get(OnOff.AttributeDefs.on_off.id)
 
             if not on_off:
@@ -223,9 +221,7 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
         # it only when enforcement is enabled and it actually reads back off.
         if self._enforce_child_lock_enabled() and child_lock == t.Bool.false:
             try:
-                await self.write_attributes(
-                    {self.AttributeDefs.child_lock.id: True}
-                )
+                await self.write_attributes({self.AttributeDefs.child_lock.id: True})
             except Exception as exc:
                 self.warning("Failed to restore child lock: %s", exc)
 
