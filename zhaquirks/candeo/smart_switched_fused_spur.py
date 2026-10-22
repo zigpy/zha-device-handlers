@@ -4,7 +4,7 @@ from typing import Final
 
 import zigpy.types as t
 from zigpy.zcl import AttributeReportedEvent
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import OnOff, OnOffControl
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
@@ -121,6 +121,25 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
                 **kwargs,
             )
 
+        # Honour the standard Accept Only When On control bit. The workaround
+        # below sends On before On With Timed Off, so an Accept Only When On
+        # request must be discarded here if the device is currently off.
+        on_off_control = args[0] if args else kwargs.get("on_off_control", 0)
+
+        if OnOffControl(on_off_control) & OnOffControl.Accept_Only_When_On:
+            on_off = self.get(OnOff.AttributeDefs.on_off.id)
+
+            # If the current output state is not cached, read it from the
+            # device before deciding whether to discard the command.
+            if on_off is None:
+                success, _ = await self.read_attributes(
+                    [OnOff.AttributeDefs.on_off.id]
+                )
+                on_off = success.get(OnOff.AttributeDefs.on_off.id)
+
+            if not on_off:
+                return None
+
         # on_time may be supplied positionally or by keyword.
         if len(args) >= 2:
             on_time = args[1]
@@ -153,12 +172,13 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
             return on_result
 
         # This workaround implements the automatic-off behaviour exposed by
-        # the product. Use the default values for on_off_control and
-        # off_wait_time, and translate on_time for this device's firmware.
+        # the product. Force on_off_control and off_wait_time to zero and
+        # translate on_time for this device's firmware.
         #
         # Standard ZCL on_time is expressed in tenths of a second. This device
-        # incorrectly interprets the raw value as whole seconds.
-        device_on_time = int(on_time) // 10
+        # incorrectly interprets the raw value as whole seconds. Preserve zero
+        # and round positive durations up to the nearest whole second.
+        device_on_time = 0 if int(on_time) == 0 else (int(on_time) + 9) // 10
 
         return await super().command(
             OnOff.ServerCommandDefs.on_with_timed_off.id,
@@ -189,20 +209,25 @@ class CandeoSwitchedFusedSpurOnOffCluster(CustomCluster, OnOff):
 
     async def _handle_output_state_update(self):
         """Refresh or restore child lock after an output state update."""
-        if self._enforce_child_lock_enabled():
-            # The device clears child_lock when its output is operated. Restore
-            # it when the ZHA-side enforce-child-lock preference is enabled.
-            try:
-                await self.write_attributes({self.AttributeDefs.child_lock.id: True})
-            except Exception as exc:
-                self.warning("Failed to restore child lock: %s", exc)
-
         # child_lock does not support attribute reporting. Explicitly refresh
         # it after output updates so the ZHA entity reflects the real state.
         try:
-            await self.read_attributes([self.AttributeDefs.child_lock.id])
+            success, _ = await self.read_attributes([self.AttributeDefs.child_lock.id])
         except Exception as exc:
             self.warning("Failed to refresh child lock state: %s", exc)
+            return
+
+        child_lock = success.get(self.AttributeDefs.child_lock.id)
+
+        # The device can clear child_lock when its output is operated. Restore
+        # it only when enforcement is enabled and it actually reads back off.
+        if self._enforce_child_lock_enabled() and child_lock == t.Bool.false:
+            try:
+                await self.write_attributes(
+                    {self.AttributeDefs.child_lock.id: True}
+                )
+            except Exception as exc:
+                self.warning("Failed to restore child lock: %s", exc)
 
 
 (

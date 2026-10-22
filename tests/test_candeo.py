@@ -3,13 +3,14 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import (
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     ClusterType,
     foundation,
 )
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import OnOff, OnOffControl
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -853,9 +854,21 @@ async def test_candeo_switched_fused_spur_standard_command(
     assert result is mock.sentinel.off_result
 
 
+@pytest.mark.parametrize(
+    ("on_time", "device_on_time"),
+    [
+        (0, 0),
+        (9, 1),
+        (10, 1),
+        (19, 2),
+        (100, 10),
+    ],
+)
 @pytest.mark.asyncio
 async def test_candeo_switched_fused_spur_on_with_timed_off(
     candeo_switched_fused_spur,
+    on_time,
+    device_on_time,
 ):
     """Test the device-specific On With Timed Off command translation."""
     device = candeo_switched_fused_spur
@@ -872,8 +885,51 @@ async def test_candeo_switched_fused_spur_on_with_timed_off(
         result = await cluster.command(
             OnOff.ServerCommandDefs.on_with_timed_off.id,
             0x00,
-            100,
+            on_time,
             0x00,
+        )
+
+    assert command.await_args_list == [
+        mock.call(
+            OnOff.ServerCommandDefs.on.id,
+            manufacturer=None,
+            expect_reply=True,
+        ),
+        mock.call(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            device_on_time,
+            0x00,
+            manufacturer=None,
+            expect_reply=True,
+            tsn=None,
+        ),
+    ]
+
+    assert result is mock.sentinel.timed_off_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_timed_off_kwargs(
+    candeo_switched_fused_spur,
+):
+    """Test On With Timed Off with keyword arguments."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+        side_effect=[
+            mock.sentinel.on_result,
+            mock.sentinel.timed_off_result,
+        ],
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            on_off_control=0x00,
+            on_time=100,
+            off_wait_time=0x00,
         )
 
     assert command.await_args_list == [
@@ -927,32 +983,170 @@ async def test_candeo_switched_fused_spur_on_with_timed_off_on_failure(
 
 
 @pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_on_with_timed_off_on_unsuccessful(
+    candeo_switched_fused_spur,
+):
+    """Test timed-off command is not sent if the initial On is unsuccessful."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    on_result = mock.Mock(status=foundation.Status.FAILURE)
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+        return_value=on_result,
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            100,
+            0x00,
+        )
+
+    command.assert_awaited_once_with(
+        OnOff.ServerCommandDefs.on.id,
+        manufacturer=None,
+        expect_reply=True,
+    )
+
+    assert result is on_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_accept_only_when_on_off(
+    candeo_switched_fused_spur,
+):
+    """Test Accept Only When On discards the command when the output is off."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster.get = mock.MagicMock(return_value=t.Bool.false)
+    cluster.read_attributes = mock.AsyncMock()
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            OnOffControl.Accept_Only_When_On,
+            100,
+            0x00,
+        )
+
+    assert result is None
+    cluster.read_attributes.assert_not_awaited()
+    command.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_accept_only_when_on_on(
+    candeo_switched_fused_spur,
+):
+    """Test Accept Only When On proceeds when the output is on."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+
+    cluster.get = mock.MagicMock(return_value=t.Bool.true)
+    cluster.read_attributes = mock.AsyncMock()
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+        side_effect=[
+            mock.sentinel.on_result,
+            mock.sentinel.timed_off_result,
+        ],
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            OnOffControl.Accept_Only_When_On,
+            100,
+            0x00,
+        )
+
+    cluster.read_attributes.assert_not_awaited()
+
+    assert command.await_args_list == [
+        mock.call(
+            OnOff.ServerCommandDefs.on.id,
+            manufacturer=None,
+            expect_reply=True,
+        ),
+        mock.call(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            0x00,
+            10,
+            0x00,
+            manufacturer=None,
+            expect_reply=True,
+            tsn=None,
+        ),
+    ]
+
+    assert result is mock.sentinel.timed_off_result
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_accept_only_when_on_uncached(
+    candeo_switched_fused_spur,
+):
+    """Test Accept Only When On reads uncached output state before deciding."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+    on_off_attr = OnOff.AttributeDefs.on_off.id
+
+    cluster.get = mock.MagicMock(return_value=None)
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({on_off_attr: t.Bool.false}, {})
+    )
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.command",
+        new_callable=mock.AsyncMock,
+    ) as command:
+        result = await cluster.command(
+            OnOff.ServerCommandDefs.on_with_timed_off.id,
+            OnOffControl.Accept_Only_When_On,
+            100,
+            0x00,
+        )
+
+    cluster.read_attributes.assert_awaited_once_with([on_off_attr])
+    command.assert_not_awaited()
+    assert result is None
+
+
+@pytest.mark.asyncio
 async def test_candeo_switched_fused_spur_child_lock_refresh(
     candeo_switched_fused_spur,
 ):
     """Test child lock is refreshed after an OnOff attribute report."""
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({child_lock_attr: t.Bool.false}, {})
+    )
 
     await _run_on_off_report_handler(cluster, True)
 
+    cluster.read_attributes.assert_awaited_once_with([child_lock_attr])
     cluster.write_attributes.assert_not_awaited()
-    cluster.read_attributes.assert_awaited_once_with(
-        [cluster.AttributeDefs.child_lock.id]
-    )
 
 
 @pytest.mark.asyncio
 async def test_candeo_switched_fused_spur_enforce_child_lock(
     candeo_switched_fused_spur,
 ):
-    """Test child lock is restored after an OnOff report when enforced."""
+    """Test child lock is restored when enforcement is enabled and it is off."""
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
     preferences = device.endpoints[1].in_clusters[0xFBFE]
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     preferences.update_attribute(
         preferences.AttributeDefs.enforce_child_lock.id,
@@ -961,18 +1155,46 @@ async def test_candeo_switched_fused_spur_enforce_child_lock(
 
     operations = mock.Mock()
 
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({child_lock_attr: t.Bool.false}, {})
+    )
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock()
 
-    operations.attach_mock(cluster.write_attributes, "write")
     operations.attach_mock(cluster.read_attributes, "read")
+    operations.attach_mock(cluster.write_attributes, "write")
 
     await _run_on_off_report_handler(cluster, False)
 
     assert operations.mock_calls == [
-        mock.call.write({cluster.AttributeDefs.child_lock.id: True}),
-        mock.call.read([cluster.AttributeDefs.child_lock.id]),
+        mock.call.read([child_lock_attr]),
+        mock.call.write({child_lock_attr: True}),
     ]
+
+
+@pytest.mark.asyncio
+async def test_candeo_switched_fused_spur_enforce_child_lock_already_locked(
+    candeo_switched_fused_spur,
+):
+    """Test enforcement does not rewrite child lock when it is already on."""
+    device = candeo_switched_fused_spur
+    cluster = device.endpoints[1].on_off
+    preferences = device.endpoints[1].in_clusters[0xFBFE]
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
+
+    preferences.update_attribute(
+        preferences.AttributeDefs.enforce_child_lock.id,
+        True,
+    )
+
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({child_lock_attr: t.Bool.true}, {})
+    )
+    cluster.write_attributes = mock.AsyncMock()
+
+    await _run_on_off_report_handler(cluster, True)
+
+    cluster.read_attributes.assert_awaited_once_with([child_lock_attr])
+    cluster.write_attributes.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -982,45 +1204,47 @@ async def test_candeo_switched_fused_spur_missing_preferences_cluster(
     """Test missing preferences cluster disables child-lock enforcement."""
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     device.endpoints[1].in_clusters.pop(0xFBFE)
 
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({child_lock_attr: t.Bool.false}, {})
+    )
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock()
 
     await _run_on_off_report_handler(cluster, True)
 
+    cluster.read_attributes.assert_awaited_once_with([child_lock_attr])
     cluster.write_attributes.assert_not_awaited()
-    cluster.read_attributes.assert_awaited_once_with(
-        [cluster.AttributeDefs.child_lock.id]
-    )
 
 
 @pytest.mark.asyncio
 async def test_candeo_switched_fused_spur_child_lock_write_failure(
     candeo_switched_fused_spur,
 ):
-    """Test a child-lock write failure does not prevent the refresh read."""
+    """Test a child-lock restore failure is handled."""
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
     preferences = device.endpoints[1].in_clusters[0xFBFE]
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     preferences.update_attribute(
         preferences.AttributeDefs.enforce_child_lock.id,
         True,
     )
 
-    cluster.write_attributes = mock.AsyncMock(side_effect=RuntimeError("Write failed"))
-    cluster.read_attributes = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock(
+        return_value=({child_lock_attr: t.Bool.false}, {})
+    )
+    cluster.write_attributes = mock.AsyncMock(
+        side_effect=RuntimeError("Write failed")
+    )
 
     await _run_on_off_report_handler(cluster, True)
 
-    cluster.write_attributes.assert_awaited_once_with(
-        {cluster.AttributeDefs.child_lock.id: True}
-    )
-    cluster.read_attributes.assert_awaited_once_with(
-        [cluster.AttributeDefs.child_lock.id]
-    )
+    cluster.read_attributes.assert_awaited_once_with([child_lock_attr])
+    cluster.write_attributes.assert_awaited_once_with({child_lock_attr: True})
 
 
 @pytest.mark.asyncio
@@ -1030,16 +1254,17 @@ async def test_candeo_switched_fused_spur_child_lock_read_failure(
     """Test a child-lock refresh failure is handled."""
     device = candeo_switched_fused_spur
     cluster = device.endpoints[1].on_off
+    child_lock_attr = cluster.AttributeDefs.child_lock.id
 
     cluster.write_attributes = mock.AsyncMock()
-    cluster.read_attributes = mock.AsyncMock(side_effect=RuntimeError("Read failed"))
+    cluster.read_attributes = mock.AsyncMock(
+        side_effect=RuntimeError("Read failed")
+    )
 
     await _run_on_off_report_handler(cluster, True)
 
+    cluster.read_attributes.assert_awaited_once_with([child_lock_attr])
     cluster.write_attributes.assert_not_awaited()
-    cluster.read_attributes.assert_awaited_once_with(
-        [cluster.AttributeDefs.child_lock.id]
-    )
 
 
 def test_candeo_switched_fused_spur_ignores_other_attribute_events(
@@ -1085,77 +1310,3 @@ def test_candeo_switched_fused_spur_ignores_other_attribute_events(
     )
 
     cluster.create_catching_task.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_candeo_switched_fused_spur_on_with_timed_off_kwargs(
-    candeo_switched_fused_spur,
-):
-    """Test On With Timed Off with keyword arguments."""
-    device = candeo_switched_fused_spur
-    cluster = device.endpoints[1].on_off
-
-    with mock.patch(
-        "zigpy.zcl.Cluster.command",
-        new_callable=mock.AsyncMock,
-        side_effect=[
-            mock.sentinel.on_result,
-            mock.sentinel.timed_off_result,
-        ],
-    ) as command:
-        result = await cluster.command(
-            OnOff.ServerCommandDefs.on_with_timed_off.id,
-            on_off_control=0x00,
-            on_time=100,
-            off_wait_time=0x00,
-        )
-
-    assert command.await_args_list == [
-        mock.call(
-            OnOff.ServerCommandDefs.on.id,
-            manufacturer=None,
-            expect_reply=True,
-        ),
-        mock.call(
-            OnOff.ServerCommandDefs.on_with_timed_off.id,
-            0x00,
-            10,
-            0x00,
-            manufacturer=None,
-            expect_reply=True,
-            tsn=None,
-        ),
-    ]
-
-    assert result is mock.sentinel.timed_off_result
-
-
-@pytest.mark.asyncio
-async def test_candeo_switched_fused_spur_on_with_timed_off_on_unsuccessful(
-    candeo_switched_fused_spur,
-):
-    """Test timed-off command is not sent if the initial On is unsuccessful."""
-    device = candeo_switched_fused_spur
-    cluster = device.endpoints[1].on_off
-
-    on_result = mock.Mock(status=foundation.Status.FAILURE)
-
-    with mock.patch(
-        "zigpy.zcl.Cluster.command",
-        new_callable=mock.AsyncMock,
-        return_value=on_result,
-    ) as command:
-        result = await cluster.command(
-            OnOff.ServerCommandDefs.on_with_timed_off.id,
-            0x00,
-            100,
-            0x00,
-        )
-
-    command.assert_awaited_once_with(
-        OnOff.ServerCommandDefs.on.id,
-        manufacturer=None,
-        expect_reply=True,
-    )
-
-    assert result is on_result
