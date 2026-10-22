@@ -7,12 +7,18 @@ import struct
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms.infrared import InfraredSignal
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import GreenPowerProxy, PowerConfiguration
 import zigpy.zdo.types as zdo_t
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
+from zhaquirks.tuya.ir_codec import decode_key_code, encode_timings
 import zhaquirks.tuya.ts1201
 
 zhaquirks.setup()
@@ -161,10 +167,55 @@ def ir_msg(code, freq=38000, num=1):
     ).encode()
 
 
+POWER_CONFIG_MODELS = [
+    "_TZ3290_ot6ewjvmejq5ekhl",
+    "_TZ3290_j37rooaxrcdcqo5n",
+    "_TZ3290_u9xac5rv",
+    "_TZ3290_qazgdsae",
+    "_TZ3290_yyax9ajf",
+]
+ZS06_MODELS = [
+    "_TZ3290_7v1k4vufotpowp9z",
+    "_TZ3290_acv1iuslxi3shaaj",
+    "_TZ3290_gnl5a6a5xvql7c2a",
+    "_TZ3290_rlkmy85q4pzoxobl",
+    "_TZ3290_nba3knpsarkawgnt",
+]
+# What each model reports besides the two IR clusters on endpoint 1.
+MODEL_CLUSTERS = {
+    **dict.fromkeys(
+        POWER_CONFIG_MODELS, {1: {PowerConfiguration.cluster_id: ClusterType.Server}}
+    ),
+    **dict.fromkeys(
+        ZS06_MODELS, {242: {GreenPowerProxy.cluster_id: ClusterType.Client}}
+    ),
+}
+
+
 @pytest.fixture
-def zs06(zigpy_device_from_quirk):
+def ts1201_device(zigpy_device_from_v2_quirk):
+    """Return a factory for TS1201 devices with the clusters they report."""
+
+    def _dev(manufacturer, ieee=None):
+        cluster_ids = {
+            1: {
+                zhaquirks.tuya.ts1201.ZosungIRControl.cluster_id: ClusterType.Server,
+                zhaquirks.tuya.ts1201.ZosungIRTransmit.cluster_id: ClusterType.Server,
+            }
+        }
+        for endpoint_id, clusters in MODEL_CLUSTERS[manufacturer].items():
+            cluster_ids.setdefault(endpoint_id, {}).update(clusters)
+        return zigpy_device_from_v2_quirk(
+            manufacturer, "TS1201", cluster_ids=cluster_ids, ieee=ieee
+        )
+
+    return _dev
+
+
+@pytest.fixture
+def zs06(ts1201_device):
     """Return a ZS06 blaster whose endpoint requests always succeed."""
-    dev = zigpy_device_from_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster_ZS06)
+    dev = ts1201_device(ZS06_MODELS[0])
     # The ZS06 is a mains-powered router, as its diagnostics report.
     dev.node_desc = zdo_t.NodeDescriptor(
         logical_type=zdo_t.LogicalType.Router,
@@ -176,41 +227,65 @@ def zs06(zigpy_device_from_quirk):
         yield dev
 
 
+@pytest.mark.parametrize("manufacturer", POWER_CONFIG_MODELS + ZS06_MODELS)
+def test_ts1201_quirk_applies(ts1201_device, manufacturer):
+    """Test every TS1201 model gets the IR clusters and an infrared emitter."""
+    dev = ts1201_device(manufacturer)
+
+    endpoint = dev.endpoints[1]
+    assert isinstance(endpoint.zosung_ircontrol, zhaquirks.tuya.ts1201.ZosungIRControl)
+    assert isinstance(
+        endpoint.zosung_irtransmit, zhaquirks.tuya.ts1201.ZosungIRTransmit
+    )
+
+    entry = DEVICE_REGISTRY.match_entry(dev)
+    (emitter,) = entry.zha_device_factory.quirk_definition.added_entities
+    assert emitter.entity_cls is zhaquirks.tuya.ts1201.ZosungIREmitter
+    assert emitter.cluster_id == zhaquirks.tuya.ts1201.ZosungIRTransmit.cluster_id
+    assert emitter.endpoint_id == 1
+
+
+@pytest.mark.parametrize("manufacturer", POWER_CONFIG_MODELS)
+def test_ts1201_keeps_power_configuration(ts1201_device, manufacturer):
+    """Test the battery models keep their PowerConfiguration cluster."""
+    dev = ts1201_device(manufacturer)
+    assert PowerConfiguration.cluster_id in dev.endpoints[1].in_clusters
+
+
+@pytest.mark.parametrize("manufacturer", ZS06_MODELS)
+def test_ts1201_zs06_keeps_green_power_endpoint(ts1201_device, manufacturer):
+    """Test the ZS06's Green Power proxy endpoint is left as the device reports it."""
+    dev = ts1201_device(manufacturer)
+    assert GreenPowerProxy.cluster_id in dev.endpoints[242].out_clusters
+
+
 @pytest.mark.parametrize(
-    "manufacturer",
-    ("_TZ3290_ot6ewjvmejq5ekhl", "_TZ3290_yyax9ajf"),
+    "diagnostics",
+    [
+        "tz3290-ot6ewjvmejq5ekhl-ts1201-0x00000043.json",
+        "tz3290-7v1k4vufotpowp9z-ts1201-0x00000043.json",
+    ],
 )
-def test_ts1201_signature(assert_signature_matches_quirk, manufacturer):
-    """Test TS1201 remote signature is matched to its quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0xf000",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0001",
-                    "0x0003",
-                    "0x0004",
-                    "0x0005",
-                    "0x0006",
-                    "0xe004",
-                    "0xed00",
-                ],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": manufacturer,
-        "model": "TS1201",
-        "class": "zhaquirks.tuya.ts1201.ZosungIRBlaster",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster, signature)
+async def test_ts1201_infrared_emitter_entity(diagnostics):
+    """Test ZHA creates one infrared emitter, and no receiver, for the blaster."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, diagnostics, DEVICE_REGISTRY
+        )
+        infrared = [
+            entity
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM == Platform.INFRARED
+        ]
+
+        assert [type(entity) for entity in infrared] == [
+            zhaquirks.tuya.ts1201.ZosungIREmitter
+        ]
+        assert infrared[0].unique_id == f"{device.ieee}-1-infrared_emitter"
 
 
-async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
+async def test_ts1201_ir_blaster(ts1201_device):
     """Test Tuya TS1201 IR blaster."""
-    quirk = zhaquirks.tuya.ts1201.ZosungIRBlaster
 
     part_max_length = 0x38
 
@@ -236,7 +311,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
     control_cluster_id = 57348
     transmit_cluster_id = 60672
 
-    ts1201_dev = zigpy_device_from_quirk(quirk)
+    ts1201_dev = ts1201_device(POWER_CONFIG_MODELS[0])
     ts1201_control_cluster = ts1201_dev.endpoints[1].zosung_ircontrol
     ts1201_transmit_cluster = ts1201_dev.endpoints[1].zosung_irtransmit
     ts1201_transmit_listener = ClusterListener(ts1201_transmit_cluster)
@@ -555,15 +630,13 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         )
 
 
-async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
+async def test_ts1201_learn_state_is_per_instance(ts1201_device):
     """Test TS1201 learn state is per cluster instance, not shared class state."""
-    dev1 = zigpy_device_from_quirk(
-        zhaquirks.tuya.ts1201.ZosungIRBlaster,
-        ieee=t.EUI64.convert("11:11:11:11:11:11:11:11"),
+    dev1 = ts1201_device(
+        POWER_CONFIG_MODELS[0], ieee=t.EUI64.convert("11:11:11:11:11:11:11:11")
     )
-    dev2 = zigpy_device_from_quirk(
-        zhaquirks.tuya.ts1201.ZosungIRBlaster_ZS06,
-        ieee=t.EUI64.convert("22:22:22:22:22:22:22:22"),
+    dev2 = ts1201_device(
+        ZS06_MODELS[0], ieee=t.EUI64.convert("22:22:22:22:22:22:22:22")
     )
     transmit1 = dev1.endpoints[1].zosung_irtransmit
     transmit2 = dev2.endpoints[1].zosung_irtransmit
@@ -618,7 +691,9 @@ async def test_ts1201_learn_real_capture(zs06):
     learned_code_done(transmit)
     await wait_for_zigpy_tasks()
 
-    assert zs06.last_learned_ir_code == REAL_LEARNED_IR_CODE
+    assert (
+        zs06.endpoints[1].zosung_ircontrol.last_learned_ir_code == REAL_LEARNED_IR_CODE
+    )
     succ, _ = await control.read_attributes(("last_learned_ir_code",))
     assert succ[0] == REAL_LEARNED_IR_CODE
     # Learning mode is left once the code is in.
@@ -699,7 +774,7 @@ async def test_ts1201_learn_gives_up_after_bad_parts(zs06, caplog):
     # Nothing is learned from the abandoned transfer.
     learned_code_done(transmit)
     await wait_for_zigpy_tasks()
-    assert zs06.last_learned_ir_code == ""
+    assert zs06.endpoints[1].zosung_ircontrol.last_learned_ir_code == ""
 
 
 async def test_ts1201_learn_discards_incomplete_code(zs06, caplog):
@@ -713,7 +788,7 @@ async def test_ts1201_learn_discards_incomplete_code(zs06, caplog):
     learned_code_done(transmit)
     await wait_for_zigpy_tasks()
 
-    assert zs06.last_learned_ir_code == ""
+    assert zs06.endpoints[1].zosung_ircontrol.last_learned_ir_code == ""
     assert "55 of 251 bytes received" in caplog.text
     assert transmit.ir_msg == []
     # Learning mode is still left.
@@ -769,7 +844,9 @@ async def test_ts1201_learn_reacknowledges_resent_final_part(zs06):
 
     learned_code_done(transmit)
     await wait_for_zigpy_tasks()
-    assert zs06.last_learned_ir_code == REAL_LEARNED_IR_CODE
+    assert (
+        zs06.endpoints[1].zosung_ircontrol.last_learned_ir_code == REAL_LEARNED_IR_CODE
+    )
 
 
 async def test_ts1201_learn_ignores_repeated_part(zs06):
@@ -1156,7 +1233,7 @@ async def test_ts1201_read_last_learned_ir_code(zs06):
     """Test the learned code is served however it is asked for."""
     control = zs06.endpoints[1].zosung_ircontrol
     learned_ir_code = control.AttributeDefs.last_learned_ir_code
-    zs06.last_learned_ir_code = REAL_LEARNED_IR_CODE
+    control.last_learned_ir_code = REAL_LEARNED_IR_CODE
 
     for attribute in (learned_ir_code.id, learned_ir_code.name, learned_ir_code):
         assert await control.read_attributes([attribute]) == (
@@ -1169,3 +1246,36 @@ async def test_ts1201_read_last_learned_ir_code(zs06):
         {0x1234: foundation.Status.UNSUPPORTED_ATTRIBUTE},
     )
     assert zs06.endpoints[1].request.await_count == 0
+
+
+@pytest.mark.parametrize(("modulation", "freq"), [(None, 38000), (36000, 36000)])
+async def test_ts1201_infrared_send(modulation, freq):
+    """Test a signal is sent as its encoded key code, once, at its modulation."""
+    timings = decode_key_code(REAL_LEARNED_IR_CODE)
+    expected = ir_msg(encode_timings(timings), freq=freq, num=1)
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tz3290-7v1k4vufotpowp9z-ts1201-0x00000043.json", DEVICE_REGISTRY
+        )
+        emitter = device.get_platform_entity(
+            Platform.INFRARED, unique_id=f"{device.ieee}-1-infrared_emitter"
+        )
+        transmit = device.device.endpoints[1].zosung_irtransmit
+
+        task = asyncio.create_task(
+            emitter.async_send_command(
+                InfraredSignal(timings=timings, modulation=modulation)
+            )
+        )
+        while not any(
+            command_id == 0x00
+            for command_id, _ in sent_commands(transmit.endpoint.request, transmit)
+        ):
+            await asyncio.sleep(0)
+
+        seq = last_announced_seq(transmit)
+        assert await pull_ir_msg(transmit, seq, len(expected)) == expected
+        assert not task.done()
+        confirm_sent(transmit, seq)
+        await task
