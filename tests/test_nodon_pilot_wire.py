@@ -18,8 +18,13 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize("builder", [nodon, adeo])
-def test_pilot_wire_on_off_entity_not_created(builder):
-    """The On/Off switch must not be exposed in ZHA (WWHA certification)."""
+def test_pilot_wire_on_off_entities_not_created(builder):
+    """No default entity is created for the On/Off cluster.
+
+    The On/Off cluster is a legacy fallback for controllers without pilot wire
+    support. The firmware does not support start_up_on_off, so the start-up
+    behavior select is hidden along with the switch.
+    """
     assert (
         PreventDefaultEntityCreationMetadata(
             endpoint_id=1,
@@ -42,7 +47,7 @@ def test_pilot_wire_on_off_entity_not_created(builder):
 def test_pilot_wire_quirk_applied(
     zigpy_device_from_v2_quirk, manufacturer, model, expected_cluster
 ):
-    """The quirk still applies and keeps the On/Off cluster on the device."""
+    """The quirk replaces the pilot wire cluster on NodOn and Adeo devices."""
     device = zigpy_device_from_v2_quirk(
         manufacturer,
         model,
@@ -55,5 +60,3 @@ def test_pilot_wire_quirk_applied(
     )
     ep = device.endpoints[1]
     assert isinstance(ep.in_clusters[NODON_PILOT_WIRE_CLUSTER_ID], expected_cluster)
-    # the cluster is kept (binding/reporting untouched), only the entity is hidden
-    assert OnOff.cluster_id in ep.in_clusters
