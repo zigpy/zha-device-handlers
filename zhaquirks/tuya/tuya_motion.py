@@ -1616,12 +1616,11 @@ base_tuya_motion = (
 #
 # Unlike the ZG-204ZM above, this device exposes working standard ZCL clusters
 # alongside the Tuya manufacturer cluster: 0x0400 illuminance, 0x0402 temperature,
-# 0x0405 humidity, 0x0500 IAS zone and 0x0001 power. The _TZE200_w0ap83qu variant
-# also exposes 0x0406 occupancy; the HOBEIAN one does not and reports presence
-# only through the IAS zone. Those DPs (1 presence, 101 humidity,
-# 106 illuminance, 110 battery, 111 temperature) are therefore deliberately NOT
-# mapped here - ZHA already creates those entities from the real clusters, and
-# mapping them again would duplicate them.
+# 0x0405 humidity, 0x0500 IAS zone and 0x0001 power. Some units also expose
+# 0x0406 occupancy, others report presence only through the IAS zone. Those DPs
+# (1 presence, 101 humidity, 106 illuminance, 110 battery, 111 temperature) are
+# therefore deliberately NOT mapped here - ZHA already creates those entities
+# from the real clusters, and mapping them again would duplicate them.
 #
 # This quirk only adds the radar tuning datapoints, which are otherwise
 # unreachable because nothing decodes 0xEF00 without a quirk. Configuration is
@@ -1635,6 +1634,18 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TZE200_w0ap83qu", "ZG-204ZX")
     .applies_to("HOBEIAN", "ZG-204ZX")
+    # On units with 0x0406, ZHA adds the ZCL PIR delays. The device accepts them but
+    # ignores them. The hold time is the fading time (DP 102).
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OccupancySensing.cluster_id,
+        unique_id_suffix="pir_o_to_u_delay",
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OccupancySensing.cluster_id,
+        unique_id_suffix="pir_u_to_o_delay",
+    )
     .tuya_number(
         dp_id=2,
         attribute_name="static_detection_sensitivity",
