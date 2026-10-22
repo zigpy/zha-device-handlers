@@ -1,15 +1,32 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from types import SimpleNamespace
+from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement,
+    OccupancySensing,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import (
+    PERCENTAGE,
+    NumberDeviceClass,
+    UnitOfLength,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 import zhaquirks.tuya
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
@@ -174,3 +191,162 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+@pytest.mark.parametrize(
+    "msg,attr_name,exp_value",
+    [
+        # frames captured from a HOBEIAN ZG-204ZX
+        (
+            b"\x19\x4b\x02\x00\x4b\x04\x02\x00\x04\x00\x00\x01\xb5",
+            "detection_distance",
+            437,
+        ),
+        (
+            b"\x19\x61\x02\x00\x61\x69\x02\x00\x04\xff\xff\xff\xec",
+            "temperature_offset",
+            -20,
+        ),
+    ],
+)
+async def test_hobeian_zg204zx_settings(
+    zigpy_device_from_v2_quirk, msg, attr_name, exp_value
+):
+    """Test the ZG-204ZX maps its setting datapoints."""
+    quirked_device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-204ZX")
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    hdr, data = tuya_cluster.deserialize(msg)
+    status = tuya_cluster.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+    assert tuya_listener.attribute_updates == [
+        (tuya_cluster.attributes_by_name[attr_name].id, exp_value)
+    ]
+
+
+async def test_hobeian_zg204zx_zcl_measurements(zigpy_device_from_v2_quirk):
+    """Test the ZG-204ZX keeps its ZCL measurement clusters."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        "HOBEIAN",
+        "ZG-204ZX",
+        cluster_ids={
+            1: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                IlluminanceMeasurement.cluster_id: ClusterType.Server,
+                TemperatureMeasurement.cluster_id: ClusterType.Server,
+                RelativeHumidity.cluster_id: ClusterType.Server,
+                OccupancySensing.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    ep = quirked_device.endpoints[1]
+
+    for cluster in (
+        ep.power,
+        ep.illuminance,
+        ep.temperature,
+        ep.humidity,
+        ep.occupancy,
+    ):
+        assert not isinstance(cluster, TuyaLocalCluster)
+
+    # the datapoint copy of the temperature follows the unit setting: 70.5 °F
+    temperature_listener = ClusterListener(ep.temperature)
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\x19\x07\x02\x00\x07\x6f\x02\x00\x04\x00\x00\x02\xc1"
+    )
+    ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert temperature_listener.attribute_updates == []
+
+
+def test_hobeian_zg204zx_entities(zigpy_device_from_v2_quirk):
+    """Test the ZG-204ZX setting entities and the hidden default entities."""
+    quirked_device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-204ZX")
+    quirk = DEVICE_REGISTRY.match_entry(quirked_device).zha_device_factory
+    definition = quirk.quirk_definition
+
+    numbers = {
+        metadata.resolved_unique_id_suffix: (
+            metadata.device_class,
+            metadata.unit,
+            metadata.min,
+            metadata.max,
+            metadata.step,
+            metadata.multiplier,
+        )
+        for metadata in definition.entity_metadata
+        if hasattr(metadata, "multiplier")
+    }
+    assert numbers == {
+        "static_detection_sensitivity": (None, None, 0, 10, 1, None),
+        "detection_distance": (
+            NumberDeviceClass.DISTANCE,
+            UnitOfLength.CENTIMETERS,
+            0,
+            500,
+            1,
+            None,
+        ),
+        "presence_timeout": (
+            NumberDeviceClass.DURATION,
+            UnitOfTime.SECONDS,
+            0,
+            28800,
+            1,
+            None,
+        ),
+        "humidity_offset": (NumberDeviceClass.HUMIDITY, PERCENTAGE, -30, 30, 1, None),
+        "temperature_offset": (
+            NumberDeviceClass.TEMPERATURE_DELTA,
+            UnitOfTemperature.CELSIUS,
+            -2,
+            2,
+            0.1,
+            0.1,
+        ),
+        "illuminance_interval": (
+            NumberDeviceClass.DURATION,
+            UnitOfTime.MINUTES,
+            1,
+            720,
+            1,
+            None,
+        ),
+        "motion_detection_sensitivity": (None, None, 0, 10, 1, None),
+    }
+
+    ias_rule, pir_rule = definition.disabled_default_entities
+    assert ias_rule.cluster_id == IasZone.cluster_id
+    assert ias_rule.function(type("IASZone", (), {})())
+    assert pir_rule.cluster_id == OccupancySensing.cluster_id
+    assert pir_rule.function(SimpleNamespace(translation_key="pir_o_to_u_delay"))
+    assert pir_rule.function(SimpleNamespace(translation_key="pir_u_to_o_delay"))
+    assert not pir_rule.function(SimpleNamespace(translation_key=None))
+
+
+@pytest.mark.parametrize(
+    "attr_name,value,dp_data",
+    [
+        ("temperature_offset", -15, b"\x69\x02\x00\x04\xff\xff\xff\xf1"),
+        ("detection_distance", 437, b"\x04\x02\x00\x04\x00\x00\x01\xb5"),
+        ("led_indicator", True, b"\x6c\x01\x00\x01\x01"),
+    ],
+)
+async def test_hobeian_zg204zx_write(
+    zigpy_device_from_v2_quirk, attr_name, value, dp_data
+):
+    """Test the ZG-204ZX writes its settings as datapoints."""
+    quirked_device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-204ZX")
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        (status,) = await tuya_cluster.write_attributes({attr_name: value})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    assert request_mock.call_args.kwargs["data"].endswith(dp_data)

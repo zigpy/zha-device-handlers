@@ -10,12 +10,15 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks import MotionWithReset
 from zhaquirks.builder import (
     LIGHT_LUX,
+    PERCENTAGE,
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
+    UnitOfTemperature,
     UnitOfTime,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
@@ -1528,6 +1531,125 @@ base_tuya_motion = (
         fallback_name="Motion detection sensitivity",
     )
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+# HOBEIAN 24GHz human presence sensor with temperature, humidity and light, ZG-204ZX
+# Presence, temperature, humidity, illuminance and battery come as standard ZCL
+# reports, so only the settings are mapped from datapoints. The datapoint copy of
+# the temperature follows the unit setting (°F) and is not used.
+(
+    TuyaQuirkBuilder("HOBEIAN", "ZG-204ZX")
+    # The IAS zone mirrors the occupancy cluster.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=IasZone.cluster_id,
+        function=lambda entity: entity.__class__.__name__ == "IASZone",
+    )
+    # The device accepts the PIR delays but ignores them. The hold time is DP 102.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OccupancySensing.cluster_id,
+        function=lambda entity: (
+            entity.translation_key in ("pir_o_to_u_delay", "pir_u_to_o_delay")
+        ),
+    )
+    .tuya_number(
+        dp_id=2,
+        attribute_name="static_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="static_detection_sensitivity",
+        fallback_name="Static detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="detection_distance",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=500,
+        step=1,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="anti_interference",
+        translation_key="anti_interference",
+        fallback_name="Anti-interference",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="humidity_offset",
+        type=t.int16s,
+        device_class=NumberDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="temperature_offset",
+        type=t.int16s,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .tuya_switch(
+        dp_id=108,
+        attribute_name="led_indicator",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_number(
+        dp_id=123,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    # the settings are only sent after a data query
+    .tuya_enchantment(read_attr_spell=False, data_query_spell=True)
     .add_to_registry()
 )
 
