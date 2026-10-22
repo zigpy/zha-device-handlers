@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
@@ -18,7 +19,11 @@ from zhaquirks.builder import (
     UnitOfLength,
     UnitOfTime,
 )
-from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -151,6 +156,15 @@ class TuyaMotionWorkMode(t.enum8):
 
     Manual = 0x00
     Auto = 0x01
+
+
+class TuyaMotionIlluminanceThreshold(t.enum8):
+    """Tuya motion illuminance threshold enum, Always is the 24h setting."""
+
+    Lux_10 = 0x00
+    Lux_20 = 0x01
+    Lux_50 = 0x02
+    Always = 0x03
 
 
 class TuyaMotionPresenceSensitivity(t.enum8):
@@ -1033,9 +1047,11 @@ base_tuya_motion = (
 )
 
 
-# NEO NAS-PS10B2
+# NEO NAS-PS10B2, RTX ZPS4
 (
     TuyaQuirkBuilder("_TZE204_1youk3hj", "TS0601")
+    .applies_to("_TZE284_1youk3hj", "TS0601")
+    .applies_to("_TZE28C1000000_1youk3hj", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -1052,10 +1068,17 @@ base_tuya_motion = (
         translation_key="human_motion_state",
         fallback_name="Human motion state",
     )
-    .tuya_number(
+    # Unconfigured devices report 0xFFFFFF08, the value stays unknown then
+    .tuya_dp_attribute(
         dp_id=12,
         attribute_name="fading_time",
         type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+        converter=lambda x: x if 3 <= x <= 600 else None,
+    )
+    .number(
+        attribute_name="fading_time",
+        cluster_id=TUYA_CLUSTER_ID,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=3,
@@ -1115,9 +1138,12 @@ base_tuya_motion = (
         translation_key="work_mode",
         fallback_name="Work mode",
     )
-    .tuya_illuminance(
+    .tuya_enum(
         dp_id=102,
-        converter=lambda x: {0: 10, 1: 20, 2: 50, 3: 100}[x],
+        attribute_name="illuminance_threshold",
+        enum_class=TuyaMotionIlluminanceThreshold,
+        translation_key="illuminance_threshold",
+        fallback_name="Illuminance threshold",
     )
     .tuya_number(
         dp_id=103,
