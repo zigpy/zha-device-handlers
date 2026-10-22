@@ -7,6 +7,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.application import EntityPlatform
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
@@ -53,6 +54,8 @@ from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
     BUTTON_2,
+    CLUSTER_ID,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -2859,3 +2862,39 @@ async def test_vibration_aq1_events(vibration_aq1_device):
     multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 2)
     multistate.update_attribute(vibration_aq1.ROTATION_DEGREES_ATTR, 42)
     assert zha_events[-1] == ("Tilt", {"degrees": 42})
+
+
+async def test_vibration_aq1_tilt_and_strength_sensors(vibration_aq1_device):
+    """Test tilt angle and vibration strength are exposed as sensors."""
+    device = vibration_aq1_device()
+    definition = DEVICE_REGISTRY.match_entry(device).zha_device_factory.quirk_definition
+    sensors = {
+        em.translation_key: em
+        for em in definition.entity_metadata
+        if em.entity_platform == EntityPlatform.SENSOR
+    }
+    assert set(sensors) == {"tilt_angle", "vibration_strength"}
+    assert sensors["tilt_angle"].attribute_name == "tilt_angle"
+    assert sensors["tilt_angle"].cluster_id == DoorLock.cluster_id
+    assert sensors["vibration_strength"].unique_id_suffix == "vibration_strength"
+
+    # the converter matches the strength sent in the zha_event
+    converter = sensors["vibration_strength"].attribute_converter
+    assert converter(0x00123400) == 0x3412
+
+    multistate = device.endpoints[1].in_clusters[DoorLock.cluster_id]
+    multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 2)
+    multistate.update_attribute(vibration_aq1.ROTATION_DEGREES_ATTR, 42)
+    assert multistate.get("tilt_angle") == 42
+
+    multistate.update_attribute(vibration_aq1.RECENT_ACTIVITY_LEVEL_ATTR, 0x00123400)
+    assert converter(multistate.get("recent_activity_level")) == 0x3412
+
+
+async def test_vibration_aq1_drop_trigger(vibration_aq1_device):
+    """Test the drop zha_event has a matching device trigger."""
+    device = vibration_aq1_device()
+    definition = DEVICE_REGISTRY.match_entry(device).zha_device_factory.quirk_definition
+    assert definition.device_automation_triggers[
+        ("device_dropped", "device_dropped")
+    ] == {COMMAND: "Drop", CLUSTER_ID: 1280, ENDPOINT_ID: 1}

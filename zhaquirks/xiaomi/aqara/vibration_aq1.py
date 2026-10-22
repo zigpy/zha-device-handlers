@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import DEGREE, QuirkBuilder, SensorStateClass
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -40,6 +40,7 @@ SEND_EVENT = "send_event"
 STATIONARY_VALUE = 0
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 TILT_VALUE = 2
+DROPPED = "device_dropped"
 TILTED = "device_tilted"
 VIBE_VALUE = 1
 
@@ -57,6 +58,12 @@ class VibrationSensitivity(types.enum8):
     Low = 0x15
     Medium = 0x0B
     High = 0x01
+
+
+def vibration_strength(value: int) -> int:
+    """Extract the vibration strength from the recent activity level report."""
+    strength = value >> 8
+    return ((strength & 0xFF) << 8) | ((strength >> 8) & 0xFF)
 
 
 class VibrationAQ1(CustomZigpyDevice):
@@ -90,6 +97,22 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster, the device reports it with the DoorLock id."""
 
     cluster_id = DoorLock.cluster_id
+
+    class AttributeDefs(MultistateInput.AttributeDefs):
+        """Attribute definitions."""
+
+        tilt_angle: Final = ZCLAttributeDef(
+            id=ROTATION_DEGREES_ATTR,
+            type=types.uint16_t,
+            access="rp",
+            manufacturer_code=None,
+        )
+        recent_activity_level: Final = ZCLAttributeDef(
+            id=RECENT_ACTIVITY_LEVEL_ATTR,
+            type=types.uint32_t,
+            access="rp",
+            manufacturer_code=None,
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -137,12 +160,10 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             )
         elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
             # these seem to be sent every minute when vibration is active
-            strength = value >> 8
-            strength = ((strength & 0xFF) << 8) | ((strength >> 8) & 0xFF)
             self.endpoint.device.motion_bus.listener_event(
                 SEND_EVENT,
                 "vibration_strength",
-                {"strength": strength},
+                {"strength": vibration_strength(value)},
             )
 
 
@@ -177,8 +198,34 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
         translation_key="sensitivity",
         fallback_name="Sensitivity",
     )
+    .sensor(
+        MultistateInputCluster.AttributeDefs.tilt_angle.name,
+        MultistateInputCluster.cluster_id,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=DEGREE,
+        translation_key="tilt_angle",
+        fallback_name="Tilt angle",
+    )
+    .sensor(
+        MultistateInputCluster.AttributeDefs.recent_activity_level.name,
+        MultistateInputCluster.cluster_id,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+        attribute_converter=vibration_strength,
+        unique_id_suffix="vibration_strength",
+        translation_key="vibration_strength",
+        fallback_name="Vibration strength",
+    )
     .device_automation_triggers(
-        {(TILTED, TILTED): {COMMAND: COMMAND_TILT, CLUSTER_ID: 1280, ENDPOINT_ID: 1}}
+        {
+            (TILTED, TILTED): {COMMAND: COMMAND_TILT, CLUSTER_ID: 1280, ENDPOINT_ID: 1},
+            (DROPPED, DROPPED): {
+                COMMAND: MEASUREMENT_TYPE[DROP_VALUE],
+                CLUSTER_ID: 1280,
+                ENDPOINT_ID: 1,
+            },
+        }
     )
     .add_to_registry()
 )
