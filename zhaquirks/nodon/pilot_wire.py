@@ -1,6 +1,7 @@
 """NodOn pilot wire heating module."""
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
@@ -57,6 +58,9 @@ class AdeoPilotWireCluster(NodOnPilotWireCluster):
 nodon = (
     QuirkBuilder(NODON, "SIN-4-FP-21")
     .replaces(NodOnPilotWireCluster)
+    # The On/Off cluster must not be exposed in ZHA: the heater is only
+    # controlled through the pilot wire mode (WWHA certification requirement).
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .enum(
         attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
         enum_class=NodOnPilotWireMode,
