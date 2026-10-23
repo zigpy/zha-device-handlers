@@ -27,7 +27,6 @@ from zhaquirks.ikea import IKEA, ScenesCluster
     .subscribes_to_multicast_group(0x549A)
     .subscribes_to_multicast_group(0x549B)
     .subscribes_to_multicast_group(0x549C)
-    .subscribes_to_multicast_group(0xFF09)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
     .device_automation_triggers(
         {

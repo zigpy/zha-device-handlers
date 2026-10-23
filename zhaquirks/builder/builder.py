@@ -953,7 +953,9 @@ class QuirkBuilder:
 
     def subscribes_to_multicast_group(self, group_id: int) -> Self:
         """Register a group ID the coordinator must subscribe to."""
-        self.multicast_groups.append(group_id)
+        if group_id not in self.multicast_groups:
+            self.multicast_groups.append(group_id)
+
         return self
 
     def friendly_name(self, *, model: str, manufacturer: str) -> Self:

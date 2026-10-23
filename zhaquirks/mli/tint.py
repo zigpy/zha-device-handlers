@@ -52,7 +52,7 @@ class TintRemote(CustomZigpyDevice):
 
 (
     QuirkBuilder("MLI", "ZBT-Remote-ALL-RGBW")
-    .device_class(TintRemote)
+    .zigpy_device_class(TintRemote)
     .subscribes_to_multicast_group(0x4004)
     .replaces(TintRemoteBasicCluster, endpoint_id=1)
     .adds(TintRemoteScenesCluster, cluster_type=ClusterType.Client, endpoint_id=1)
