@@ -58,9 +58,15 @@ class AdeoPilotWireCluster(NodOnPilotWireCluster):
 nodon = (
     QuirkBuilder(NODON, "SIN-4-FP-21")
     .replaces(NodOnPilotWireCluster)
-    # The On/Off cluster must not be exposed in ZHA: the heater is only
-    # controlled through the pilot wire mode (WWHA certification requirement).
-    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
+    # Hide the On/Off switch: the heater is controlled through the pilot wire
+    # mode. The "start-up behavior" select (start_up_on_off) on the same cluster
+    # is kept: recent firmware uses it to set the pilot wire mode after a power
+    # loss (Off: frost protection, On: comfort, Toggle, Previous: last mode).
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.__class__.__name__ == "Switch",
+    )
     .enum(
         attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
         enum_class=NodOnPilotWireMode,
