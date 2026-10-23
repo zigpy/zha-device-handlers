@@ -267,12 +267,14 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         return await sonoff.write_attributes({mask_attr.id: mask}, **kwargs)
 
     def learning_requested(self) -> None:
-        """Show that spatial learning was requested."""
+        """Show that spatial learning was requested, until the device answers."""
+        self._cancel_tasks()
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
             SpatialLearningUiState.START,
         )
         self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
+        self._timeout_task = asyncio.create_task(self._timeout())
 
     def learning_started(self, duration: int) -> None:
         """Count down while the device learns, give up after a minute."""
