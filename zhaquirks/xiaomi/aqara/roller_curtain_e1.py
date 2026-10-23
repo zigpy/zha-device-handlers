@@ -1,4 +1,10 @@
-"""Aqara Roller Shade Driver E1 device."""
+"""Aqara roller curtain devices using AnalogOutput/MultistateOutput.
+
+Supported models:
+
+- ``lumi.curtain.acn002``: Roller Shade Driver E1
+- ``lumi.curtain.hagl04``: B1 Curtain Motor (no Xiaomi manufacturer cluster)
+"""
 
 from __future__ import annotations
 
@@ -300,5 +306,18 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         translation_key="calibrated",
         fallback_name="Calibrated",
     )
+    .add_to_registry()
+)
+
+# This model uses the same control protocol but has no Xiaomi manufacturer
+# cluster (0xFCC0), so only the AnalogOutput and WindowCovering replacements apply.
+(
+    QuirkBuilder(LUMI, "lumi.curtain.hagl04")
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=AnalogOutput.cluster_id)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=MultistateOutput.cluster_id
+    )
+    .replaces(AnalogOutputRollerE1, endpoint_id=1)
+    .replaces(WindowCoveringRollerE1, endpoint_id=1)
     .add_to_registry()
 )
