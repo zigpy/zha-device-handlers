@@ -1892,7 +1892,9 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
         if version_value is None:
             try:
-                await basic_cluster.read_attributes([Basic.AttributeDefs.sw_build_id.id])
+                await basic_cluster.read_attributes(
+                    [Basic.AttributeDefs.sw_build_id.id]
+                )
             except Exception:
                 return False
             version_value = basic_cluster.get(Basic.AttributeDefs.sw_build_id.id)
@@ -1906,13 +1908,14 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         if sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS:
             raise ValueError("sensor_id must be 1, 2, or 3")
         if value == REMOTE_TEMPERATURE_UNBIND_VALUE:
-            return bytes((0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, sensor_id, 0x00, 0x00))
+            return bytes(
+                (0x01, 0x01, 0x00, 0x03, 0x05, 0x01, 0x00, sensor_id, 0x00, 0x00)
+            )
         if value < NTC_CURRENT_TEMPERATURE_MIN_VALID or value > 32767:
             raise ValueError("remote temperature must be -273.15..327.67 Celsius")
-        return (
-            bytes((0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, sensor_id, 0x01, 0x02))
-            + int(value).to_bytes(2, "little", signed=True)
-        )
+        return bytes(
+            (0x01, 0x01, 0x00, 0x03, 0x07, 0x01, 0x00, sensor_id, 0x01, 0x02)
+        ) + int(value).to_bytes(2, "little", signed=True)
 
     @classmethod
     def _decode_multi_remote_temperature(cls, value: Any) -> tuple[int, int, int]:
@@ -1946,13 +1949,18 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 item_offset += 4
                 item_value = data[item_offset : item_offset + value_length]
                 item_offset += value_length
-                if sensor_type != 0x00 or sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS:
+                if (
+                    sensor_type != 0x00
+                    or sensor_id not in REMOTE_TEMPERATURE_SOURCE_IDS
+                ):
                     continue
                 slot_index = sensor_id - 1
                 if sensor_state == 0x00 or value_length == 0:
                     slots[slot_index] = REMOTE_TEMPERATURE_UNBIND_VALUE
                 elif value_length == 2:
-                    slots[slot_index] = int.from_bytes(item_value, "little", signed=True)
+                    slots[slot_index] = int.from_bytes(
+                        item_value, "little", signed=True
+                    )
         return tuple(slots)  # type: ignore[return-value]
 
     @classmethod
@@ -2121,10 +2129,12 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 self.AttributeDefs.relay_output_type_relay2.id, relay2
             )
         elif attrid == self.AttributeDefs.holiday_schedule.id:
-            operation, duration_days, target_temperature = self._decode_holiday_schedule(
-                value
+            operation, duration_days, target_temperature = (
+                self._decode_holiday_schedule(value)
             )
-            super()._update_attribute(self.AttributeDefs.holiday_operation.id, operation)
+            super()._update_attribute(
+                self.AttributeDefs.holiday_operation.id, operation
+            )
             super()._update_attribute(
                 self.AttributeDefs.holiday_duration_days.id, duration_days
             )
@@ -2132,8 +2142,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 self.AttributeDefs.holiday_target_temperature.id, target_temperature
             )
         elif attrid == self.AttributeDefs.valve_anti_stuck_schedule.id:
-            day, start_minute, duration_minutes = self._decode_valve_anti_stuck_schedule(
-                value
+            day, start_minute, duration_minutes = (
+                self._decode_valve_anti_stuck_schedule(value)
             )
             super()._update_attribute(self.AttributeDefs.valve_anti_stuck_day.id, day)
             super()._update_attribute(
@@ -2655,7 +2665,9 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         source_results: list[list[foundation.WriteAttributesStatusRecord]] = []
         if source_writes:
             supports_multi = await self._supports_multi_remote_temperature()
-            if not supports_multi and any(sensor_id != 0x01 for _, sensor_id, _ in source_writes):
+            if not supports_multi and any(
+                sensor_id != 0x01 for _, sensor_id, _ in source_writes
+            ):
                 return [
                     [
                         foundation.WriteAttributesStatusRecord(
@@ -2910,28 +2922,32 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             remaining_attributes, self.AttributeDefs.holiday_operation
         )
         if has_holiday_operation:
-            holiday_ui_updates[self.AttributeDefs.holiday_operation.id] = HolidayOperation(
-                self._clamp(self._coerce_int(holiday_operation_value), 0, 1)
+            holiday_ui_updates[self.AttributeDefs.holiday_operation.id] = (
+                HolidayOperation(
+                    self._clamp(self._coerce_int(holiday_operation_value), 0, 1)
+                )
             )
         has_holiday_duration, holiday_duration_value = self._pop_attribute_value(
             remaining_attributes, self.AttributeDefs.holiday_duration_days
         )
         if has_holiday_duration:
-            holiday_ui_updates[self.AttributeDefs.holiday_duration_days.id] = self._clamp(
-                self._coerce_int(holiday_duration_value),
-                HOLIDAY_DURATION_DAYS_MIN,
-                HOLIDAY_DURATION_DAYS_MAX,
+            holiday_ui_updates[self.AttributeDefs.holiday_duration_days.id] = (
+                self._clamp(
+                    self._coerce_int(holiday_duration_value),
+                    HOLIDAY_DURATION_DAYS_MIN,
+                    HOLIDAY_DURATION_DAYS_MAX,
+                )
             )
         has_holiday_target, holiday_target_value = self._pop_attribute_value(
             remaining_attributes, self.AttributeDefs.holiday_target_temperature
         )
         if has_holiday_target:
-            holiday_ui_updates[
-                self.AttributeDefs.holiday_target_temperature.id
-            ] = self._clamp(
-                self._coerce_int(holiday_target_value),
-                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
-                WEEKLY_SCHEDULE_UI_TEMP_MAX_X100,
+            holiday_ui_updates[self.AttributeDefs.holiday_target_temperature.id] = (
+                self._clamp(
+                    self._coerce_int(holiday_target_value),
+                    WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
+                    WEEKLY_SCHEDULE_UI_TEMP_MAX_X100,
+                )
             )
 
         holiday_enabled_attr = self.AttributeDefs.holiday_enabled
@@ -3082,8 +3098,10 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             if has_value:
                 anti_stuck_updates[attr_def.id] = attr_value
         if anti_stuck_updates:
-            day, start_minute, duration_minutes = self._decode_valve_anti_stuck_schedule(
-                self.get(self.AttributeDefs.valve_anti_stuck_schedule.name)
+            day, start_minute, duration_minutes = (
+                self._decode_valve_anti_stuck_schedule(
+                    self.get(self.AttributeDefs.valve_anti_stuck_schedule.name)
+                )
             )
             day = WeeklyScheduleUiDay(
                 self._clamp(
@@ -3115,9 +3133,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 day, start_minute, duration_minutes
             )
             anti_stuck_write_result = await super().write_attributes(
-                {
-                    self.AttributeDefs.valve_anti_stuck_schedule.id: anti_stuck_schedule
-                },
+                {self.AttributeDefs.valve_anti_stuck_schedule.id: anti_stuck_schedule},
                 **kwargs,
             )
             result += anti_stuck_write_result
