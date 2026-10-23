@@ -3,13 +3,17 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
@@ -412,6 +416,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE204_ogx8u5z6", "TS0601")
     .applies_to("_TZE284_ogx8u5z6", "TS0601")
     .applies_to("_TZE200_4utwozi2", "TS0601")
+    .applies_to("_TZE200_ow09xlxm", "TS0601")
     .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,

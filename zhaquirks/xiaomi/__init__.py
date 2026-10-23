@@ -10,7 +10,6 @@ from typing import Any, Final
 from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
 from zigpy.zcl.clusters.general import (
@@ -41,6 +40,7 @@ from zhaquirks import (
     OccupancyWithReset,
     QuickInitDevice,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -50,6 +50,11 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
     BatterySize,
+)
+from zhaquirks.legacy import (
+    CustomDevice,
+    get_quirk_list,
+    register_uninitialized_device_message_handler,
 )
 
 AQARA = "Aqara"
@@ -830,7 +835,7 @@ def handle_quick_init(
     if not model:
         return
 
-    for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
+    for quirk in get_quirk_list(LUMI, model):
         if not issubclass(quirk, XiaomiQuickInitDevice):
             continue
 
@@ -853,4 +858,4 @@ def handle_quick_init(
     return True
 
 
-zigpy.quirks.register_uninitialized_device_message_handler(handle_quick_init)
+register_uninitialized_device_message_handler(handle_quick_init)
