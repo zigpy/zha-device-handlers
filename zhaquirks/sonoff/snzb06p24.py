@@ -4,11 +4,12 @@ import asyncio
 import time
 from typing import Any, Final, Union
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import BaseCommandDefs, foundation
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 
@@ -47,20 +48,58 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
     cluster_id = SONOFF_CLUSTER_FC11_ID
     ep_attribute = "sonoff_manufacturer"
 
-    attributes = {
-        ATTR_SONOFF_ZONE_ENABLE: ("zone_enable", t.bitmap16),
-        ATTR_SONOFF_LEARNING_STATE: ("learning_state", SpatialLearningState),
-        ATTR_SONOFF_ILLUM_OFFSET: ("illumination_offset", t.int16s),
-        ATTR_SONOFF_FINE_TUNE_SENSITIVITY: ("fine_tune_sensitivity", t.int8s),
-        ATTR_SONOFF_SPATIAL_UI_STATE: (
-            "spatial_learning_ui_state",
-            SpatialLearningUiState,
-        ),
-        ATTR_SONOFF_SPATIAL_COUNTDOWN: (
-            "spatial_learning_countdown",
-            t.uint16_t,
-        ),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        zone_enable: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_ZONE_ENABLE, type=t.bitmap16, manufacturer_code=None
+        )
+        learning_state: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_LEARNING_STATE,
+            type=SpatialLearningState,
+            manufacturer_code=None,
+        )
+        illumination_offset: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_ILLUM_OFFSET, type=t.int16s, manufacturer_code=None
+        )
+        fine_tune_sensitivity: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_FINE_TUNE_SENSITIVITY, type=t.int8s, manufacturer_code=None
+        )
+        spatial_learning_ui_state: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_SPATIAL_UI_STATE,
+            type=SpatialLearningUiState,
+            manufacturer_code=None,
+        )
+        spatial_learning_countdown: Final = ZCLAttributeDef(
+            id=ATTR_SONOFF_SPATIAL_COUNTDOWN, type=t.uint16_t, manufacturer_code=None
+        )
+
+        # Virtual attributes for zone enabling (0x1000 - 0x1007)
+        # These effectively map to bits 0-7 of ATTR_SONOFF_ZONE_ENABLE (0x2016)
+        zone_0_enable: Final = ZCLAttributeDef(
+            id=0x1000, type=t.Bool, manufacturer_code=None
+        )
+        zone_1_enable: Final = ZCLAttributeDef(
+            id=0x1001, type=t.Bool, manufacturer_code=None
+        )
+        zone_2_enable: Final = ZCLAttributeDef(
+            id=0x1002, type=t.Bool, manufacturer_code=None
+        )
+        zone_3_enable: Final = ZCLAttributeDef(
+            id=0x1003, type=t.Bool, manufacturer_code=None
+        )
+        zone_4_enable: Final = ZCLAttributeDef(
+            id=0x1004, type=t.Bool, manufacturer_code=None
+        )
+        zone_5_enable: Final = ZCLAttributeDef(
+            id=0x1005, type=t.Bool, manufacturer_code=None
+        )
+        zone_6_enable: Final = ZCLAttributeDef(
+            id=0x1006, type=t.Bool, manufacturer_code=None
+        )
+        zone_7_enable: Final = ZCLAttributeDef(
+            id=0x1007, type=t.Bool, manufacturer_code=None
+        )
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
@@ -81,10 +120,6 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
             id=CMD_SPATIAL_LEARNING,
             schema={"param1": t.uint8_t, "param2": t.uint64_t},
         )
-
-    # Virtual attributes for zone enabling (0x1000 - 0x1007)
-    # These effectively map to bits 0-7 of ATTR_SONOFF_ZONE_ENABLE (0x2016)
-    attributes.update({0x1000 + i: (f"zone_{i}_enable", t.Bool) for i in range(8)})
 
     def __init__(self, *args, **kwargs):
         """Init."""
