@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from typing import Any, Final, Union
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import (
@@ -37,6 +37,14 @@ class SpatialLearningState(t.enum8):
     Learning = 0x01
     Success = 0x02
     Failure = 0x03
+
+
+class SpatialLearningSubCommand(t.enum8):
+    """Spatial learning sub commands."""
+
+    Start = 0x00
+    Started = 0x01
+    Result = 0x02
 
 
 class SpatialLearningUiState(t.enum8):
@@ -77,8 +85,9 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
 
         spatial_learning: Final = foundation.ZCLCommandDef(
             id=CMD_SPATIAL_LEARNING,
-            schema={"param1": t.uint8_t, "param2": t.uint64_t},
+            schema={"sub_command": SpatialLearningSubCommand, "sequence": t.uint64_t},
         )
+        # Not sent as is, see command()
         start_learning_now: Final = foundation.ZCLCommandDef(
             id=CMD_START_LEARNING_NOW,
             schema={},
@@ -117,43 +126,19 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
         """Read the zone mask during pairing to populate the zone switches."""
         await self.read_attributes([self.AttributeDefs.zone_enable.id])
 
-    def request(
-        self,
-        general_command: bool,
-        command_id: Union[int, t.uint8_t],
-        schema: Any,
-        *args,
-        manufacturer: int | None = None,
-        expect_reply: bool = True,
-        tsn: int | None = None,
-        **kwargs,
-    ):
-        """Override request to handle virtual start_learning_now."""
-        if not general_command and (
-            command_id == CMD_START_LEARNING_NOW or command_id == "start_learning_now"
-        ):
-            # 0, timestamp_ms (little endian handled by uint64 type)
-            timestamp_ms = int(time.time() * 1000)
-            args = (0, timestamp_ms)
-            command_id = CMD_SPATIAL_LEARNING
-            manufacturer = 0x1286
-            self.endpoint.sonoff_presence_local.learning_requested()
-            # Retrieve schema for 0x04
-            cmd_def = self.server_commands.get(CMD_SPATIAL_LEARNING)
-            if cmd_def is not None:
-                if hasattr(cmd_def, "schema"):
-                    schema = cmd_def.schema
-                elif isinstance(cmd_def, (tuple, list)) and len(cmd_def) > 1:
-                    schema = cmd_def[1]
+    def command(self, command_id, *args, **kwargs):
+        """Send start_learning_now as a spatial learning start request."""
+        if command_id != self.ServerCommandDefs.start_learning_now.id:
+            return super().command(command_id, *args, **kwargs)
 
-        return super().request(
-            general_command,
-            command_id,
-            schema,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn,
+        self.endpoint.sonoff_presence_local.learning_requested()
+
+        # The reply echoes the sequence next to the expected end time of the
+        # learning, both in ms, so the sequence has to be the current time
+        return super().command(
+            self.ServerCommandDefs.spatial_learning.id,
+            SpatialLearningSubCommand.Start,
+            int(time.time() * 1000),
             **kwargs,
         )
 
