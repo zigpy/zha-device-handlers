@@ -1087,19 +1087,20 @@ async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device)
                 defs.holiday_target_temperature.name: 2200,
                 defs.holiday_enabled.name: True,
             },
-            manufacturer=0x1234,
+            manufacturer=None,
         )
 
     assert len(result) == 2
     assert write_raw.await_count == 2
-    written = write_raw.await_args_list[0].args[0]
-    assert written == {
-        defs.holiday_schedule.id: private_cluster._encode_holiday_schedule(
-            tp_wgzba.HolidayOperation.Target_Temperature, 5, 2200
-        )
-    }
-    assert write_raw.await_args_list[0].kwargs["manufacturer"] == 0x1234
-    assert write_raw.await_args_list[1].args[0] == {defs.holiday_enabled.id: True}
+    schedule_call, enable_call = write_raw.await_args_list
+    schedule_attr = schedule_call.args[0][0]
+    assert schedule_attr.attrid == defs.holiday_schedule.id
+    assert schedule_attr.value.value == private_cluster._encode_holiday_schedule(
+        tp_wgzba.HolidayOperation.Target_Temperature, 5, 2200
+    )
+    assert schedule_call.kwargs["manufacturer_code"] is None
+    assert enable_call.args[0][0].attrid == defs.holiday_enabled.id
+    assert bool(enable_call.args[0][0].value.value)
 
 
 async def test_tp_wgzba_anti_stuck_ui_writes_packed_schedule(tp_wgzba_device):
@@ -1121,16 +1122,20 @@ async def test_tp_wgzba_anti_stuck_ui_writes_packed_schedule(tp_wgzba_device):
             }
         )
 
-    assert result == success
+    assert len(result) == 1
+    assert len(result[0]) == 1
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert result[0][0].attrid == defs.valve_anti_stuck_schedule.id
     written = next(
-        call.args[0]
+        attr
         for call in write_raw.await_args_list
-        if defs.valve_anti_stuck_schedule.id in call.args[0]
+        for attr in call.args[0]
+        if attr.attrid == defs.valve_anti_stuck_schedule.id
     )
     expected = private_cluster._encode_valve_anti_stuck_schedule(
         tp_wgzba.WeeklyScheduleUiDay.Saturday, 900, 10
     )
-    assert written[defs.valve_anti_stuck_schedule.id] == expected
+    assert written.value.value == expected
     assert private_cluster.get(defs.valve_anti_stuck_schedule.name) == expected
 
 
