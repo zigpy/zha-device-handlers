@@ -19,16 +19,6 @@ from zhaquirks import LocalDataCluster
 from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, UnitOfTime
 from zhaquirks.clusters import CustomCluster
 
-SONOFF_CLUSTER_FC11_ID = 0xFC11
-
-ATTR_SONOFF_ZONE_ENABLE = 0x2016
-ATTR_SONOFF_LEARNING_STATE = 0x2017
-ATTR_SONOFF_ILLUM_OFFSET = 0x2018
-ATTR_SONOFF_FINE_TUNE_SENSITIVITY = 0x2021
-
-CMD_SPATIAL_LEARNING = 0x04
-CMD_START_LEARNING_NOW = 0xFD
-
 
 class SpatialLearningState(t.enum8):
     """Spatial learning state enum."""
@@ -59,25 +49,23 @@ class SpatialLearningUiState(t.enum8):
 class SonoffSNZB06P24FC11Cluster(CustomCluster):
     """Sonoff manufacturer specific cluster for SNZB-06P24."""
 
-    cluster_id = SONOFF_CLUSTER_FC11_ID
+    cluster_id = 0xFC11
     ep_attribute = "sonoff_manufacturer"
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         zone_enable: Final = ZCLAttributeDef(
-            id=ATTR_SONOFF_ZONE_ENABLE, type=t.bitmap16, manufacturer_code=None
+            id=0x2016, type=t.bitmap16, manufacturer_code=None
         )
         learning_state: Final = ZCLAttributeDef(
-            id=ATTR_SONOFF_LEARNING_STATE,
-            type=SpatialLearningState,
-            manufacturer_code=None,
+            id=0x2017, type=SpatialLearningState, manufacturer_code=None
         )
         illumination_offset: Final = ZCLAttributeDef(
-            id=ATTR_SONOFF_ILLUM_OFFSET, type=t.int16s, manufacturer_code=None
+            id=0x2018, type=t.int16s, manufacturer_code=None
         )
         fine_tune_sensitivity: Final = ZCLAttributeDef(
-            id=ATTR_SONOFF_FINE_TUNE_SENSITIVITY, type=t.int8s, manufacturer_code=None
+            id=0x2021, type=t.int8s, manufacturer_code=None
         )
 
     class ServerCommandDefs(BaseCommandDefs):
@@ -86,7 +74,7 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
         # The device answers with the same command and direction, followed
         # by the expected end time or the result
         spatial_learning: Final = foundation.ZCLCommandDef(
-            id=CMD_SPATIAL_LEARNING,
+            id=0x04,
             schema={
                 "sub_command": SpatialLearningSubCommand,
                 "sequence": t.uint64_t,
@@ -94,10 +82,7 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
             },
         )
         # Not sent as is, see command()
-        start_learning_now: Final = foundation.ZCLCommandDef(
-            id=CMD_START_LEARNING_NOW,
-            schema={},
-        )
+        start_learning_now: Final = foundation.ZCLCommandDef(id=0xFD, schema={})
 
     def __init__(self, *args, **kwargs):
         """Init and listen for zone mask changes."""
@@ -324,13 +309,12 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         )
 
 
-SONOFF_SNZB06P24 = (
+(
     QuirkBuilder("SONOFF", "SNZB-06P24")
     .replaces(SonoffSNZB06P24FC11Cluster)
     .adds(SonoffSNZB06P24LocalCluster)
-    # Illumination Offset (Cluster 0xFC11, Attr 0x2018)
     .number(
-        attribute_name="illumination_offset",
+        attribute_name=SonoffSNZB06P24FC11Cluster.AttributeDefs.illumination_offset.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
         min_value=-1000,
         max_value=1000,
@@ -339,9 +323,8 @@ SONOFF_SNZB06P24 = (
         translation_key="illumination_offset",
         fallback_name="Illumination offset",
     )
-    # Fine-tune Sensitivity (Cluster 0xFC11, Attr 0x2021)
     .number(
-        attribute_name="fine_tune_sensitivity",
+        attribute_name=SonoffSNZB06P24FC11Cluster.AttributeDefs.fine_tune_sensitivity.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
         min_value=-6,
         max_value=6,
@@ -350,18 +333,14 @@ SONOFF_SNZB06P24 = (
         translation_key="fine_tune_sensitivity",
         fallback_name="Fine-tune sensitivity",
     )
-    # Spatial Learning Button
-    # Cmd 0x04, SubCmd=0 (Start), Sequence=timestamp_ms
     .command_button(
-        command_name="start_learning_now",
+        command_name=SonoffSNZB06P24FC11Cluster.ServerCommandDefs.start_learning_now.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        command_args=(),
         translation_key="spatial_learning",
         fallback_name="Start spatial learning",
     )
-    # Spatial Learning UI State (virtual)
     .enum(
-        attribute_name="spatial_learning_ui_state",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.spatial_learning_ui_state.name,
         enum_class=SpatialLearningUiState,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         entity_type=EntityType.STANDARD,
@@ -369,62 +348,53 @@ SONOFF_SNZB06P24 = (
         translation_key="spatial_learning_ui_state",
         fallback_name="Spatial learning state",
     )
-    # Spatial Learning Countdown (virtual)
     .sensor(
-        attribute_name="spatial_learning_countdown",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.spatial_learning_countdown.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         unit=UnitOfTime.SECONDS,
         suggested_display_precision=0,
         translation_key="spatial_learning_countdown",
         fallback_name="Spatial learning countdown",
     )
-    # Zone 1-7 Enable (Switches) - Zone 1 combines 0-50cm + 50-100cm
     .switch(
-        attribute_name="zone_0_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_0_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_0_enable",
         fallback_name="Zone 1 (0m-1m)",
     )
     .switch(
-        attribute_name="zone_2_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_2_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_2_enable",
         fallback_name="Zone 2 (1m-1.5m)",
     )
     .switch(
-        attribute_name="zone_3_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_3_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_3_enable",
         fallback_name="Zone 3 (1.5m-2m)",
     )
     .switch(
-        attribute_name="zone_4_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_4_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_4_enable",
         fallback_name="Zone 4 (2m-2.5m)",
     )
     .switch(
-        attribute_name="zone_5_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_5_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_5_enable",
         fallback_name="Zone 5 (2.5m-3m)",
     )
     .switch(
-        attribute_name="zone_6_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_6_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_6_enable",
         fallback_name="Zone 6 (3m-3.5m)",
     )
     .switch(
-        attribute_name="zone_7_enable",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_7_enable.name,
         cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
-        entity_type=EntityType.CONFIG,
         translation_key="zone_7_enable",
         fallback_name="Zone 7 (3.5m-4m)",
     )
