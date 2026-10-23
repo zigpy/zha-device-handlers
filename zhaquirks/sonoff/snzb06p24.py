@@ -50,10 +50,10 @@ class SpatialLearningSubCommand(t.enum8):
 class SpatialLearningUiState(t.enum8):
     """Spatial learning UI state enum."""
 
-    IDLE = 0x00
-    START = 0x01
-    COUNTDOWN = 0x02
-    TIMEOUT = 0x03
+    Idle = 0x00
+    Start = 0x01
+    Countdown = 0x02
+    Timeout = 0x03
 
 
 class SonoffSNZB06P24FC11Cluster(CustomCluster):
@@ -205,7 +205,7 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
     # mask is read, writes always start from the mask read from the device.
     _DEFAULT_VALUES = {
         **dict.fromkeys(_ZONE_BITS, t.Bool.true),
-        AttributeDefs.spatial_learning_ui_state.id: SpatialLearningUiState.IDLE,
+        AttributeDefs.spatial_learning_ui_state.id: SpatialLearningUiState.Idle,
         AttributeDefs.spatial_learning_countdown.id: 0,
     }
 
@@ -271,7 +271,7 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         self._cancel_tasks()
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
-            SpatialLearningUiState.START,
+            SpatialLearningUiState.Start,
         )
         self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
         self._timeout_task = asyncio.create_task(self._timeout())
@@ -281,7 +281,7 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         self._cancel_tasks()
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
-            SpatialLearningUiState.COUNTDOWN,
+            SpatialLearningUiState.Countdown,
         )
         self._countdown_task = asyncio.create_task(self._countdown(duration))
         self._timeout_task = asyncio.create_task(self._timeout())
@@ -292,7 +292,7 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
-            SpatialLearningUiState.IDLE,
+            SpatialLearningUiState.Idle,
         )
 
     def _cancel_tasks(self) -> None:
@@ -315,12 +315,12 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
-            SpatialLearningUiState.TIMEOUT,
+            SpatialLearningUiState.Timeout,
         )
         await asyncio.sleep(5)
         self._update_attribute(
             self.AttributeDefs.spatial_learning_ui_state.id,
-            SpatialLearningUiState.IDLE,
+            SpatialLearningUiState.Idle,
         )
 
 
@@ -348,7 +348,7 @@ SONOFF_SNZB06P24 = (
         step=1,
         mode="slider",
         translation_key="fine_tune_sensitivity",
-        fallback_name="Fine-tune Sensitivity",
+        fallback_name="Fine-tune sensitivity",
     )
     # Spatial Learning Button
     # Cmd 0x04, SubCmd=0 (Start), Sequence=timestamp_ms
