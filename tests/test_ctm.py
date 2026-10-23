@@ -7,7 +7,7 @@ from zha.application.platforms.binary_sensor.device_class import BinarySensorDev
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.profiles import zha
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -16,6 +16,7 @@ from zhaquirks.ctm import CTM_MANUF_NAME
 zhaquirks.setup()
 
 VALVE_MODEL = "AX Valve Controller"
+SENSOR_MODEL = "AX Water Sensor"
 
 # Bits 4 and 5 are always set by the device, so every zone status builds on them.
 IDLE = IasZone.ZoneStatus.Supervision_reports | IasZone.ZoneStatus.Restore_reports
@@ -35,17 +36,21 @@ def valve(zigpy_device_from_v2_quirk):
     )
 
 
-@pytest.fixture
-def definition():
-    """Return the quirk definition registered for the AX Valve Controller."""
+def quirk_definition(model):
+    """Return the quirk definition registered for a CTM Lyng model."""
     for entry in DEVICE_REGISTRY:
         if any(
-            model_info.manufacturer == CTM_MANUF_NAME
-            and model_info.model == VALVE_MODEL
+            model_info.manufacturer == CTM_MANUF_NAME and model_info.model == model
             for model_info in entry.device_match.applies_to
         ):
             return entry.zha_device_factory.quirk_definition
-    pytest.fail(f"no v2 quirk registered for {CTM_MANUF_NAME} {VALVE_MODEL}")
+    pytest.fail(f"no v2 quirk registered for {CTM_MANUF_NAME} {model}")
+
+
+@pytest.fixture
+def definition():
+    """Return the quirk definition registered for the AX Valve Controller."""
+    return quirk_definition(VALVE_MODEL)
 
 
 @pytest.fixture
@@ -129,3 +134,89 @@ def test_valve_default_ias_zone_entity_removed(definition):
 
     assert rule.function(object.__new__(IASZone))
     assert not rule.function(object.__new__(BinarySensor))
+
+
+@pytest.fixture
+def sensor(zigpy_device_from_v2_quirk):
+    """Return a quirked AX Water Sensor."""
+    return zigpy_device_from_v2_quirk(
+        CTM_MANUF_NAME,
+        SENSOR_MODEL,
+        cluster_ids={
+            1: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+            },
+        },
+    )
+
+
+@pytest.fixture
+def sensor_entities():
+    """Map unique_id suffix to entity metadata for the water sensor quirk."""
+    definition = quirk_definition(SENSOR_MODEL)
+    return {em.unique_id_suffix: em for em in definition.entity_metadata}
+
+
+def test_sensor_zone_status_entities(sensor_entities):
+    """The quirk adds the live leak and battery bits next to the default entity."""
+    assert set(sensor_entities) == {"active_water_leak", "battery_low"}
+
+    for em in sensor_entities.values():
+        assert em.endpoint_id == 1
+        assert em.cluster_id == IasZone.cluster_id
+        assert em.attribute_name == IasZone.AttributeDefs.zone_status.name
+
+    active = sensor_entities["active_water_leak"]
+    assert active.device_class == BinarySensorDeviceClass.MOISTURE
+    assert active.entity_type == EntityType.STANDARD
+
+    battery_low = sensor_entities["battery_low"]
+    assert battery_low.device_class == BinarySensorDeviceClass.BATTERY
+    assert battery_low.entity_type == EntityType.DIAGNOSTIC
+
+
+def test_sensor_default_ias_zone_entity_kept():
+    """The default IAS zone entity stays as the latched leak alarm."""
+    assert not quirk_definition(SENSOR_MODEL).disabled_default_entities
+
+
+@pytest.mark.parametrize(
+    ("zone_status", "active_water_leak", "battery_low"),
+    [
+        # Bit 6 (Trouble) is always set by the sensor.
+        (IDLE | IasZone.ZoneStatus.Trouble, False, False),
+        (
+            IDLE
+            | IasZone.ZoneStatus.Trouble
+            | IasZone.ZoneStatus.Alarm_1
+            | IasZone.ZoneStatus.Alarm_2,
+            True,
+            False,
+        ),
+        # Leak gone, alarm not yet acknowledged.
+        (IDLE | IasZone.ZoneStatus.Trouble | IasZone.ZoneStatus.Alarm_2, False, False),
+        (IDLE | IasZone.ZoneStatus.Trouble | IasZone.ZoneStatus.Battery, False, True),
+    ],
+)
+def test_sensor_zone_status_converters(
+    sensor_entities, zone_status, active_water_leak, battery_low
+):
+    """Each binary sensor decodes its own bit out of the shared zone status."""
+    active = sensor_entities["active_water_leak"]
+    assert active.attribute_converter(zone_status) is active_water_leak
+    assert (
+        sensor_entities["battery_low"].attribute_converter(zone_status) is battery_low
+    )
+
+
+@pytest.mark.parametrize(
+    ("voltage", "percentage"),
+    [(33, 200), (32, 200), (29, 114), (25, 0), (24, 0)],
+)
+def test_sensor_battery_percentage(sensor, voltage, percentage):
+    """The battery percentage is derived from the reported voltage."""
+    power = sensor.endpoints[1].power
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, voltage)
+    attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
+    assert power.get(attr) == percentage
