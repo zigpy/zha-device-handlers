@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
-from zha.application.platforms import BaseEntity, PlatformEntity
+from zha.application.platforms import PlatformEntity
 from zha.zigbee.device import Device
 import zigpy.device
 import zigpy.zcl
@@ -42,7 +42,7 @@ class QuirkV2Device(Device):
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
 
-    def discover_entities(self) -> Iterator[BaseEntity]:
+    def discover_entities(self) -> Iterator[PlatformEntity]:
         """Yield the default entities plus the quirk's exposed v2 entities."""
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)

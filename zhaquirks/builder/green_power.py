@@ -15,7 +15,7 @@ from frozendict import frozendict
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import discovery  # noqa: F401
-from zha.application.platforms import BaseEntity, PlatformEntity
+from zha.application.platforms import PlatformEntity
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceRegistry,
@@ -60,7 +60,7 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
 
-    def discover_entities(self) -> Iterator[BaseEntity]:
+    def discover_entities(self) -> Iterator[PlatformEntity]:
         """Yield the quirk's entities."""
         yield from super().discover_entities()
 
