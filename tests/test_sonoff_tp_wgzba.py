@@ -927,6 +927,103 @@ async def test_tp_wgzba_failed_vendor_writes_do_not_update_cache(tp_wgzba_device
         assert private_cluster.get(raw_attribute.name) is None
 
 
+async def test_tp_wgzba_multi_remote_source_write(tp_wgzba_device):
+    """Write a second remote source only with multi-source firmware support."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with (
+        mock.patch.object(
+            private_cluster,
+            "_supports_multi_remote_temperature",
+            mock.AsyncMock(return_value=True),
+        ),
+        mock.patch.object(
+            private_cluster,
+            "write_attributes_raw",
+            mock.AsyncMock(return_value=success),
+        ) as write_raw,
+    ):
+        result = await private_cluster.write_attributes(
+            {defs.remote_temperature_source2.name: 2150}
+        )
+
+    # The virtual source uses the shared vendor linkage attribute on the wire.
+    write_raw.assert_awaited_once()
+    written = write_raw.await_args.args[0][0]
+    assert written.attrid == defs.remote_attribute_linkage.id
+    assert written.value.value == private_cluster._encode_multi_remote_temperature(
+        2, 2150
+    )
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert private_cluster.get(defs.remote_temperature_source2.name) == 2150
+
+
+async def test_tp_wgzba_old_firmware_rejects_second_remote_source(tp_wgzba_device):
+    """Reject source two on firmware that supports only one remote sensor."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+
+    with (
+        mock.patch.object(
+            private_cluster,
+            "_supports_multi_remote_temperature",
+            mock.AsyncMock(return_value=False),
+        ),
+        mock.patch.object(
+            private_cluster, "write_attributes_raw", mock.AsyncMock()
+        ) as write_raw,
+    ):
+        result = await private_cluster.write_attributes(
+            {defs.remote_temperature_source2.name: 2150}
+        )
+
+    # Unsupported firmware must not receive a linkage write for source two.
+    write_raw.assert_not_awaited()
+    assert result[0][0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+    assert result[0][0].attrid == defs.remote_temperature_source2.id
+
+
+@pytest.mark.parametrize(
+    "temperature", [2150, tp_wgzba.REMOTE_TEMPERATURE_UNBIND_VALUE]
+)
+async def test_tp_wgzba_old_firmware_first_remote_source(tp_wgzba_device, temperature):
+    """Bind and unbind source one using the legacy firmware payloads."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with (
+        mock.patch.object(
+            private_cluster,
+            "_supports_multi_remote_temperature",
+            mock.AsyncMock(return_value=False),
+        ),
+        mock.patch.object(
+            private_cluster,
+            "write_attributes_raw",
+            mock.AsyncMock(return_value=success),
+        ) as write_raw,
+    ):
+        result = await private_cluster.write_attributes(
+            {defs.remote_temperature_source1.name: temperature}
+        )
+
+    # Source one uses the legacy linkage format on older firmware.
+    expected = (
+        tp_wgzba.REMOTE_TEMPERATURE_UNBIND_PAYLOAD
+        if temperature == tp_wgzba.REMOTE_TEMPERATURE_UNBIND_VALUE
+        else private_cluster._encode_remote_attribute_linkage(
+            tp_wgzba.TemperatureSensorSelect.external, temperature
+        )
+    )
+    write_raw.assert_awaited_once()
+    assert write_raw.await_args.args[0][0].value.value == expected
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert private_cluster.get(defs.remote_temperature_source1.name) == temperature
+
+
 async def test_tp_wgzba_private_ui_commands(tp_wgzba_device):
     """Test temporary and weekly schedule UI command dispatch."""
     endpoint = tp_wgzba_device.endpoints[1]
@@ -1101,6 +1198,94 @@ async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device)
     assert schedule_call.kwargs["manufacturer_code"] is None
     assert enable_call.args[0][0].attrid == defs.holiday_enabled.id
     assert bool(enable_call.args[0][0].value.value)
+
+
+async def test_tp_wgzba_active_holiday_edit_preserves_start(tp_wgzba_device):
+    """Keep the original start time when editing an active holiday schedule."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    start_time = 123456
+    private_cluster._update_attribute(
+        defs.holiday_schedule.id,
+        private_cluster._encode_holiday_schedule(
+            tp_wgzba.HolidayOperation.Target_Temperature,
+            5,
+            2200,
+            start_time=start_time,
+        ),
+    )
+    private_cluster._update_attribute(defs.holiday_enabled.id, True)
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        private_cluster, "write_attributes_raw", mock.AsyncMock(return_value=success)
+    ) as write_raw:
+        result = await private_cluster.write_attributes(
+            {defs.holiday_duration_days.name: 10}
+        )
+
+    # The active edit must change the end time without restarting the holiday.
+    expected = private_cluster._encode_holiday_schedule(
+        tp_wgzba.HolidayOperation.Target_Temperature,
+        10,
+        2200,
+        start_time=start_time,
+    )
+    write_raw.assert_awaited_once()
+    assert write_raw.await_args.args[0][0].value.value == expected
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert private_cluster.get(defs.holiday_schedule.name) == expected
+    assert private_cluster.get(defs.holiday_enabled.name) is True
+
+
+async def test_tp_wgzba_holiday_write_failure_keeps_switch_off(tp_wgzba_device):
+    """Leave holiday disabled when its schedule write fails."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    failure = [
+        [
+            foundation.WriteAttributesStatusRecord(
+                foundation.Status.FAILURE, defs.holiday_schedule.id
+            )
+        ]
+    ]
+
+    with mock.patch.object(
+        private_cluster, "write_attributes_raw", mock.AsyncMock(return_value=failure)
+    ) as write_raw:
+        result = await private_cluster.write_attributes(
+            {
+                defs.holiday_duration_days.name: 5,
+                defs.holiday_enabled.name: True,
+            }
+        )
+
+    # A failed schedule write must not send the enable attribute.
+    write_raw.assert_awaited_once()
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert result[0][0].attrid == defs.holiday_schedule.id
+    assert not private_cluster.get(defs.holiday_enabled.name)
+
+
+async def test_tp_wgzba_active_holiday_rejects_invalid_schedule(tp_wgzba_device):
+    """Reject active edits when the cached schedule has no valid start time."""
+    private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = private_cluster.AttributeDefs
+    private_cluster._update_attribute(defs.holiday_enabled.id, True)
+    private_cluster._update_attribute(defs.holiday_schedule.id, b"invalid")
+
+    with mock.patch.object(
+        private_cluster, "write_attributes_raw", mock.AsyncMock()
+    ) as write_raw:
+        result = await private_cluster.write_attributes(
+            {defs.holiday_duration_days.name: 10}
+        )
+
+    # Without a valid start time, keep the active device schedule untouched.
+    write_raw.assert_not_awaited()
+    assert result[0][0].status == foundation.Status.FAILURE
+    assert result[0][0].attrid == defs.holiday_duration_days.id
+    assert private_cluster.get(defs.holiday_enabled.name) is True
 
 
 async def test_tp_wgzba_anti_stuck_ui_writes_packed_schedule(tp_wgzba_device):
