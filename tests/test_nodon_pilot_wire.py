@@ -5,7 +5,6 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 
 import zhaquirks
-from zhaquirks.builder.metadata import PreventDefaultEntityCreationMetadata
 from zhaquirks.nodon.pilot_wire import (
     NODON_PILOT_WIRE_CLUSTER_ID,
     AdeoPilotWireCluster,
@@ -18,23 +17,25 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize("builder", [nodon, adeo])
-def test_pilot_wire_on_off_entities_not_created(builder):
-    """No default entity is created for the On/Off cluster.
+def test_pilot_wire_only_on_off_switch_hidden(builder):
+    """Only the On/Off switch is hidden, not the start-up behavior select."""
 
-    The On/Off cluster is a legacy fallback for controllers without pilot wire
-    support. The firmware does not support start_up_on_off, so the start-up
-    behavior select is hidden along with the switch.
-    """
-    assert (
-        PreventDefaultEntityCreationMetadata(
-            endpoint_id=1,
-            cluster_id=OnOff.cluster_id,
-            cluster_type=ClusterType.Server,
-            unique_id_suffix=None,
-            function=None,
-        )
-        in builder.disabled_default_entities
-    )
+    class Switch:
+        pass
+
+    class StartupOnOffSelectEntity:
+        pass
+
+    metas = [
+        meta
+        for meta in builder.disabled_default_entities
+        if meta.endpoint_id == 1
+        and meta.cluster_id == OnOff.cluster_id
+        and meta.cluster_type == ClusterType.Server
+    ]
+    assert len(metas) == 1
+    assert metas[0].function(Switch())
+    assert not metas[0].function(StartupOnOffSelectEntity())
 
 
 @pytest.mark.parametrize(
