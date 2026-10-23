@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import datetime
 from enum import IntEnum
 from typing import Any, Final
 
-from homeassistant.util import dt as dt_util
+try:
+    from homeassistant.util import dt as dt_util
+except ModuleNotFoundError:
+    dt_util = None
 
 try:
     from zha.application.platforms.number import NumberMode
@@ -1629,7 +1633,10 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         if start_time is None:
             # Firmware stores local Zigbee-epoch seconds; start new schedules at
             # local midnight.
-            local_now = dt_util.now()
+            if dt_util is None:
+                local_now = datetime.now().astimezone()
+            else:
+                local_now = dt_util.now()
             local_midnight = local_now.replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
@@ -1881,7 +1888,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         parts = value.strip().split(".")
         if len(parts) != 3 or any(not part.isdigit() for part in parts):
             return None
-        return tuple(int(part) for part in parts)  # type: ignore[return-value]
+        return int(parts[0]), int(parts[1]), int(parts[2])
 
     async def _supports_multi_remote_temperature(self) -> bool:
         """Read and evaluate Basic sw_build_id, conservatively defaulting to T01."""
@@ -1924,7 +1931,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         slots = [REMOTE_TEMPERATURE_UNBIND_VALUE] * len(REMOTE_TEMPERATURE_SOURCE_IDS)
         raw = cls._as_bytes(value)
         if raw is None or len(raw) < 3:
-            return tuple(slots)  # type: ignore[return-value]
+            return slots[0], slots[1], slots[2]
         offset = 3
         for _ in range(raw[0]):
             if offset + 2 > len(raw):
@@ -1961,7 +1968,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                     slots[slot_index] = int.from_bytes(
                         item_value, "little", signed=True
                     )
-        return tuple(slots)  # type: ignore[return-value]
+        return slots[0], slots[1], slots[2]
 
     @classmethod
     def _encode_remote_attribute_linkage(
@@ -2268,10 +2275,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
         display_mode = self._device_work_mode_from_system(mode)
         if mode_source is not None:
-            try:
+            with suppress(ValueError):
                 display_mode = TPWGZBADeviceWorkMode(int(mode_source))
-            except ValueError:
-                pass
         super()._update_attribute(self.AttributeDefs.device_work_mode.id, display_mode)
         return display_mode
 
@@ -2788,7 +2793,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
         return source_results + write_result
 
-    async def write_attributes(
+    async def write_attributes(  # noqa: C901
         self,
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         **kwargs,
