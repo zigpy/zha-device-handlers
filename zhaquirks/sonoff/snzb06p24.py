@@ -83,22 +83,20 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
+        # The device answers with the same command and direction, followed
+        # by the expected end time or the result
         spatial_learning: Final = foundation.ZCLCommandDef(
             id=CMD_SPATIAL_LEARNING,
-            schema={"sub_command": SpatialLearningSubCommand, "sequence": t.uint64_t},
+            schema={
+                "sub_command": SpatialLearningSubCommand,
+                "sequence": t.uint64_t,
+                "data?": t.Bytes,
+            },
         )
         # Not sent as is, see command()
         start_learning_now: Final = foundation.ZCLCommandDef(
             id=CMD_START_LEARNING_NOW,
             schema={},
-        )
-
-    class ClientCommandDefs(BaseCommandDefs):
-        """Client command definitions."""
-
-        spatial_learning: Final = foundation.ZCLCommandDef(
-            id=CMD_SPATIAL_LEARNING,
-            schema={"param1": t.uint8_t, "param2": t.uint64_t},
         )
 
     def __init__(self, *args, **kwargs):
@@ -142,33 +140,32 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
             **kwargs,
         )
 
-    def deserialize(self, data: bytes):
-        """Deserialize cluster data with custom spatial learning parsing."""
-        hdr, payload = foundation.ZCLHeader.deserialize(data)
-
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Any,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Track the spatial learning progress reported by the device."""
         if (
-            hdr.frame_control.frame_type == foundation.FrameType.CLUSTER_COMMAND
-            and hdr.command_id == CMD_SPATIAL_LEARNING
+            hdr.direction != foundation.Direction.Client_to_Server
+            or hdr.command_id != self.ServerCommandDefs.spatial_learning.id
         ):
-            self._handle_spatial_learning_payload(bytes(payload))
-            return hdr, []
-
-        return super().deserialize(hdr.serialize() + payload)
-
-    def _handle_spatial_learning_payload(self, payload: bytes) -> None:
-        """Handle incoming spatial learning command payloads."""
-        if not payload:
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
             return
 
-        cmd_type = payload[0]
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
-        if cmd_type == 0x01 and len(payload) >= 17:
-            start_ts = int.from_bytes(payload[1:9], "little")
-            end_ts = int.from_bytes(payload[9:17], "little")
-            duration_sec = max(0, end_ts - start_ts) // 1000
-            self.endpoint.sonoff_presence_local.learning_started(duration_sec)
-        elif cmd_type == 0x02 and len(payload) >= 11:
-            self.endpoint.sonoff_presence_local.learning_finished()
+        local = self.endpoint.sonoff_presence_local
+        if args.sub_command == SpatialLearningSubCommand.Started:
+            # Expected end time, in ms like the sequence we sent
+            if args.data is not None and len(args.data) >= 8:
+                end_time = int.from_bytes(args.data[:8], "little")
+                local.learning_started(max(0, end_time - args.sequence) // 1000)
+        elif args.sub_command == SpatialLearningSubCommand.Result:
+            local.learning_finished()
 
 
 class SonoffSNZB06P24LocalCluster(LocalDataCluster):
