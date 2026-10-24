@@ -70,28 +70,48 @@ def test_valve_endpoint_device_type_replaced(valve):
     assert valve.endpoints[1].device_type == zha.DeviceType.ON_OFF_OUTPUT
 
 
+WATER_LEAK = str(IasZone.cluster_id)
+
+
 def test_valve_zone_status_entities(entities):
     """The quirk splits the IAS zone status into three binary sensors."""
-    assert set(entities) == {"water_leak", "valve_alarm", "mains_power"}
+    assert set(entities) == {WATER_LEAK, "active_water_leak", "mains_power"}
 
     for em in entities.values():
         assert em.endpoint_id == 2
         assert em.cluster_id == IasZone.cluster_id
         assert em.attribute_name == IasZone.AttributeDefs.zone_status.name
 
-    assert entities["water_leak"].device_class == BinarySensorDeviceClass.MOISTURE
-    assert entities["water_leak"].entity_type == EntityType.STANDARD
+    water_leak = entities[WATER_LEAK]
+    assert water_leak.device_class == BinarySensorDeviceClass.MOISTURE
+    assert water_leak.entity_type == EntityType.STANDARD
+    assert water_leak.translation_key == "water_leak"
 
-    valve_alarm = entities["valve_alarm"]
-    assert valve_alarm.device_class == BinarySensorDeviceClass.PROBLEM
-    assert valve_alarm.entity_type == EntityType.STANDARD
+    active = entities["active_water_leak"]
+    assert active.device_class == BinarySensorDeviceClass.MOISTURE
+    assert active.entity_type == EntityType.STANDARD
+    assert active.translation_key == "active_water_leak"
 
     assert entities["mains_power"].device_class == BinarySensorDeviceClass.POWER
     assert entities["mains_power"].entity_type == EntityType.DIAGNOSTIC
 
 
+def test_valve_default_ias_zone_entity_replaced(definition):
+    """The default IAS zone entity is replaced by the Water leak sensor.
+
+    The rule matches on endpoint and cluster, which also covers the quirk's own
+    entities, so the filter has to discriminate on the entity class itself.
+    """
+    (rule,) = definition.disabled_default_entities
+    assert rule.endpoint_id == 2
+    assert rule.cluster_id == IasZone.cluster_id
+
+    assert rule.function(object.__new__(IASZone))
+    assert not rule.function(object.__new__(BinarySensor))
+
+
 @pytest.mark.parametrize(
-    ("zone_status", "water_leak", "valve_alarm", "mains_power"),
+    ("zone_status", "water_leak", "active_water_leak", "mains_power"),
     [
         # No leak, mains present.
         (IDLE, False, False, True),
@@ -103,37 +123,19 @@ def test_valve_zone_status_entities(entities):
             True,
         ),
         # Leak gone, but Alarm_2 stays latched until acknowledged on the device.
-        (IDLE | IasZone.ZoneStatus.Alarm_2, False, True, True),
+        (IDLE | IasZone.ZoneStatus.Alarm_2, True, False, True),
         # Mains lost.
         (IDLE | IasZone.ZoneStatus.AC_mains, False, False, False),
     ],
 )
 def test_valve_zone_status_converters(
-    entities, zone_status, water_leak, valve_alarm, mains_power
+    entities, zone_status, water_leak, active_water_leak, mains_power
 ):
-    """Each binary sensor decodes its own bit out of the shared zone status.
-
-    ``Alarm_2`` latching is the reason the leak and alarm bits are split: ZHA's
-    default IAS zone entity reports ``Alarm_1 | Alarm_2``, so it stays on after
-    the water is gone until someone presses the button on the device.
-    """
-    assert entities["water_leak"].attribute_converter(zone_status) is water_leak
-    assert entities["valve_alarm"].attribute_converter(zone_status) is valve_alarm
+    """Each binary sensor decodes its own bits out of the shared zone status."""
+    assert entities[WATER_LEAK].attribute_converter(zone_status) is water_leak
+    active = entities["active_water_leak"]
+    assert active.attribute_converter(zone_status) is active_water_leak
     assert entities["mains_power"].attribute_converter(zone_status) is mains_power
-
-
-def test_valve_default_ias_zone_entity_removed(definition):
-    """The redundant default IAS zone entity is removed.
-
-    The rule matches on endpoint and cluster, which also covers the quirk's own
-    entities, so the filter has to discriminate on the entity class itself.
-    """
-    (rule,) = definition.disabled_default_entities
-    assert rule.endpoint_id == 2
-    assert rule.cluster_id == IasZone.cluster_id
-
-    assert rule.function(object.__new__(IASZone))
-    assert not rule.function(object.__new__(BinarySensor))
 
 
 @pytest.fixture
@@ -170,6 +172,7 @@ def test_sensor_zone_status_entities(sensor_entities):
     active = sensor_entities["active_water_leak"]
     assert active.device_class == BinarySensorDeviceClass.MOISTURE
     assert active.entity_type == EntityType.STANDARD
+    assert active.translation_key == "active_water_leak"
 
     battery_low = sensor_entities["battery_low"]
     assert battery_low.device_class == BinarySensorDeviceClass.BATTERY
