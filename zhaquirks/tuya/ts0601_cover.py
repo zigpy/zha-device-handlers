@@ -672,6 +672,7 @@ class TuyaDreamBlindsCluster(TuyaManufacturerWindowCover):
         if not hdr.frame_control.disable_default_response:
             self.send_default_rsp(hdr, foundation.Status.SUCCESS)
 
+
 class TuyaDreamBlindsControl(TuyaWindowCoverControl):
     """Window covering control cluster with 0-180 degree tilt/dimming support."""
 
