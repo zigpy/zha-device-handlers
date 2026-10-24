@@ -45,10 +45,10 @@ mypy zhaquirks/
 
 ### V2 Quirks (Preferred for New Quirks)
 
-Use `QuirkBuilder` from `zigpy.quirks.v2` for declarative quirk definition:
+Use `QuirkBuilder` from `zhaquirks.builder` for declarative quirk definition:
 
 ```python
-from zigpy.quirks.v2 import QuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 
 (
     QuirkBuilder("Manufacturer", "Model")
@@ -126,7 +126,7 @@ All entity methods require `fallback_name`. Common parameters:
 
 `reporting_config` sets up automatic attribute reporting from the device:
 ```python
-from zigpy.quirks.v2 import ReportingConfig
+from zhaquirks.builder import ReportingConfig
 
 .sensor(
     attribute_name="measured_value",
@@ -404,7 +404,7 @@ See `tuya.md` for detailed Tuya quirk documentation including finding DPs and al
 V1 quirks inherit from `CustomDevice` with explicit `signature` and `replacement` dicts. The signature must match the device exactly; the replacement defines what ZHA should use instead:
 
 ```python
-from zigpy.quirks import CustomDevice
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.const import MODELS_INFO, ENDPOINTS, INPUT_CLUSTERS, ...
 
 class MyDevice(CustomDevice):
@@ -433,7 +433,7 @@ class MyDevice(CustomDevice):
 **Extending a ZCL cluster** - Add manufacturer-specific attributes to a standard cluster:
 
 ```python
-from zigpy.quirks import CustomCluster
+from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.clusters.general import OnOff
 
 class CustomOnOffCluster(CustomCluster, OnOff):
@@ -448,7 +448,7 @@ class CustomOnOffCluster(CustomCluster, OnOff):
 **Fully custom cluster** - For manufacturer-specific clusters not based on ZCL:
 
 ```python
-from zigpy.quirks import CustomCluster
+from zhaquirks.clusters import CustomCluster
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 class VOCIndex(CustomCluster):
@@ -569,14 +569,14 @@ from zhaquirks.const import (
 )
 
 # Quirk building
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import (  # Unit constants
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityPlatform, EntityType
+from zhaquirks.builder import (  # Unit constants
     UnitOfTemperature, UnitOfTime, UnitOfEnergy, UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zhaquirks.builder import BinarySensorDeviceClass
+from zhaquirks.builder import NumberDeviceClass
+from zhaquirks.builder import SensorDeviceClass, SensorStateClass
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 # Cluster types

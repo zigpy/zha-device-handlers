@@ -2,25 +2,22 @@
 
 import asyncio
 import time
-from typing import Any, Final, Union
+from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType, UnitOfTime
 import zigpy.types as t
-from zigpy.zcl import BaseCommandDefs, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    BaseCommandDefs,
+    foundation,
+)
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
-SONOFF_CLUSTER_FC11_ID = 0xFC11
-
-ATTR_SONOFF_ZONE_ENABLE = 0x2016
-ATTR_SONOFF_LEARNING_STATE = 0x2017
-ATTR_SONOFF_ILLUM_OFFSET = 0x2018
-ATTR_SONOFF_FINE_TUNE_SENSITIVITY = 0x2021
-ATTR_SONOFF_SPATIAL_UI_STATE = 0x3010
-ATTR_SONOFF_SPATIAL_COUNTDOWN = 0x3011
-
-CMD_SPATIAL_LEARNING = 0x04
-CMD_START_LEARNING_NOW = 0xFD
+from zhaquirks import LocalDataCluster
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 
 class SpatialLearningState(t.enum8):
@@ -32,368 +29,310 @@ class SpatialLearningState(t.enum8):
     Failure = 0x03
 
 
+class SpatialLearningSubCommand(t.enum8):
+    """Spatial learning sub commands."""
+
+    Start = 0x00
+    Started = 0x01
+    Result = 0x02
+
+
 class SpatialLearningUiState(t.enum8):
     """Spatial learning UI state enum."""
 
-    IDLE = 0x00
-    START = 0x01
-    COUNTDOWN = 0x02
-    TIMEOUT = 0x03
+    Idle = 0x00
+    Start = 0x01
+    Countdown = 0x02
+    Timeout = 0x03
 
 
 class SonoffSNZB06P24FC11Cluster(CustomCluster):
     """Sonoff manufacturer specific cluster for SNZB-06P24."""
 
-    cluster_id = SONOFF_CLUSTER_FC11_ID
+    cluster_id = 0xFC11
     ep_attribute = "sonoff_manufacturer"
 
-    attributes = {
-        ATTR_SONOFF_ZONE_ENABLE: ("zone_enable", t.bitmap16),
-        ATTR_SONOFF_LEARNING_STATE: ("learning_state", SpatialLearningState),
-        ATTR_SONOFF_ILLUM_OFFSET: ("illumination_offset", t.int16s),
-        ATTR_SONOFF_FINE_TUNE_SENSITIVITY: ("fine_tune_sensitivity", t.int8s),
-        ATTR_SONOFF_SPATIAL_UI_STATE: (
-            "spatial_learning_ui_state",
-            SpatialLearningUiState,
-        ),
-        ATTR_SONOFF_SPATIAL_COUNTDOWN: (
-            "spatial_learning_countdown",
-            t.uint16_t,
-        ),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        zone_enable: Final = ZCLAttributeDef(
+            id=0x2016, type=t.bitmap16, manufacturer_code=None
+        )
+        learning_state: Final = ZCLAttributeDef(
+            id=0x2017, type=SpatialLearningState, manufacturer_code=None
+        )
+        illumination_offset: Final = ZCLAttributeDef(
+            id=0x2018, type=t.int16s, manufacturer_code=None
+        )
+        fine_tune_sensitivity: Final = ZCLAttributeDef(
+            id=0x2021, type=t.int8s, manufacturer_code=None
+        )
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
+        # The device answers with the same command and direction, followed
+        # by the expected end time or the result
         spatial_learning: Final = foundation.ZCLCommandDef(
-            id=CMD_SPATIAL_LEARNING,
-            schema={"param1": t.uint8_t, "param2": t.uint64_t},
+            id=0x04,
+            schema={
+                "sub_command": SpatialLearningSubCommand,
+                "sequence": t.uint64_t,
+                "data?": t.Bytes,
+            },
         )
-        start_learning_now: Final = foundation.ZCLCommandDef(
-            id=CMD_START_LEARNING_NOW,
-            schema={},
+        # Not sent as is, see command()
+        start_learning_now: Final = foundation.ZCLCommandDef(id=0xFD, schema={})
+
+    def __init__(self, *args, **kwargs):
+        """Init and listen for zone mask changes."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReadEvent.event_type, self._handle_zone_change)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_zone_change)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_zone_change)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_zone_change)
+
+    def _handle_zone_change(
+        self,
+        event: AttributeReadEvent
+        | AttributeReportedEvent
+        | AttributeUpdatedEvent
+        | AttributeWrittenEvent,
+    ) -> None:
+        """Sync the zone switches to the local cluster on mask change."""
+        if isinstance(event, AttributeWrittenEvent) and event.status != Status.SUCCESS:
+            return
+        if event.attribute_id == self.AttributeDefs.zone_enable.id:
+            self.endpoint.sonoff_presence_local.update_zones(event.value)
+
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Read the zone mask during pairing to populate the zone switches."""
+        await self.read_attributes([self.AttributeDefs.zone_enable.id])
+
+    async def command(self, command_id, *args, **kwargs):
+        """Send start_learning_now as a spatial learning start request."""
+        if command_id != self.ServerCommandDefs.start_learning_now.id:
+            return await super().command(command_id, *args, **kwargs)
+
+        local = self.endpoint.sonoff_presence_local
+        local.learning_requested()
+
+        # The reply echoes the sequence next to the expected end time of the
+        # learning, both in ms, so the sequence has to be the current time
+        try:
+            response = await super().command(
+                self.ServerCommandDefs.spatial_learning.id,
+                SpatialLearningSubCommand.Start,
+                int(time.time() * 1000),
+                **kwargs,
+            )
+        except (Exception, asyncio.CancelledError):
+            local.learning_finished()
+            raise
+
+        if getattr(response, "status", Status.SUCCESS) != Status.SUCCESS:
+            local.learning_finished()
+        return response
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Any,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Track the spatial learning progress reported by the device."""
+        if (
+            hdr.direction != foundation.Direction.Client_to_Server
+            or hdr.command_id != self.ServerCommandDefs.spatial_learning.id
+        ):
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+            return
+
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+        local = self.endpoint.sonoff_presence_local
+        if args.sub_command == SpatialLearningSubCommand.Started:
+            # Expected end time, in ms like the sequence we sent
+            if args.data is not None and len(args.data) >= 8:
+                end_time = int.from_bytes(args.data[:8], "little")
+                local.learning_started(max(0, end_time - args.sequence) // 1000)
+        elif args.sub_command == SpatialLearningSubCommand.Result:
+            local.learning_finished()
+
+
+class SonoffSNZB06P24LocalCluster(LocalDataCluster):
+    """Local cluster for the zone switches and spatial learning progress."""
+
+    cluster_id = 0xFBFE
+    ep_attribute = "sonoff_presence_local"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        zone_0_enable: Final = ZCLAttributeDef(id=0x1000, type=t.Bool)
+        zone_2_enable: Final = ZCLAttributeDef(id=0x1002, type=t.Bool)
+        zone_3_enable: Final = ZCLAttributeDef(id=0x1003, type=t.Bool)
+        zone_4_enable: Final = ZCLAttributeDef(id=0x1004, type=t.Bool)
+        zone_5_enable: Final = ZCLAttributeDef(id=0x1005, type=t.Bool)
+        zone_6_enable: Final = ZCLAttributeDef(id=0x1006, type=t.Bool)
+        zone_7_enable: Final = ZCLAttributeDef(id=0x1007, type=t.Bool)
+        spatial_learning_ui_state: Final = ZCLAttributeDef(
+            id=0x3010, type=SpatialLearningUiState
         )
+        spatial_learning_countdown: Final = ZCLAttributeDef(id=0x3011, type=t.uint16_t)
 
-    class ClientCommandDefs(BaseCommandDefs):
-        """Client command definitions."""
+    # Bits of the device zone mask, one per 0.5m band. Zone 1 covers the
+    # first two bands.
+    _ZONE_BITS: dict[int, int] = {
+        AttributeDefs.zone_0_enable.id: 0x0003,
+        AttributeDefs.zone_2_enable.id: 0x0004,
+        AttributeDefs.zone_3_enable.id: 0x0008,
+        AttributeDefs.zone_4_enable.id: 0x0010,
+        AttributeDefs.zone_5_enable.id: 0x0020,
+        AttributeDefs.zone_6_enable.id: 0x0040,
+        AttributeDefs.zone_7_enable.id: 0x0080,
+    }
 
-        spatial_learning: Final = foundation.ZCLCommandDef(
-            id=CMD_SPATIAL_LEARNING,
-            schema={"param1": t.uint8_t, "param2": t.uint64_t},
-        )
-
-    # Virtual attributes for zone enabling (0x1000 - 0x1007)
-    # These effectively map to bits 0-7 of ATTR_SONOFF_ZONE_ENABLE (0x2016)
-    attributes.update({0x1000 + i: (f"zone_{i}_enable", t.Bool) for i in range(8)})
+    # Every zone is enabled out of the box. This is only shown until the
+    # mask is read, writes always start from the mask read from the device.
+    _DEFAULT_VALUES = {
+        **dict.fromkeys(_ZONE_BITS, t.Bool.true),
+        AttributeDefs.spatial_learning_ui_state.id: SpatialLearningUiState.Idle,
+        AttributeDefs.spatial_learning_countdown.id: 0,
+    }
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._spatial_countdown_task: asyncio.Task | None = None
-        self._spatial_timeout_task: asyncio.Task | None = None
-        self._last_spatial_start_ts_ms: int | None = None
-        self._update_attribute(
-            ATTR_SONOFF_SPATIAL_UI_STATE, SpatialLearningUiState.IDLE
-        )
-        self._update_attribute(ATTR_SONOFF_SPATIAL_COUNTDOWN, 0)
+        self._countdown_task: asyncio.Task | None = None
+        self._timeout_task: asyncio.Task | None = None
+        self._zone_write_lock = asyncio.Lock()
+        self._zone_mask_needs_read = False
 
-    def request(
-        self,
-        general_command: bool,
-        command_id: Union[int, t.uint8_t],
-        schema: Any,
-        *args,
-        manufacturer: int | None = None,
-        expect_reply: bool = True,
-        tsn: int | None = None,
-        **kwargs,
-    ):
-        """Override request to handle virtual start_learning_now."""
-        if not general_command and (
-            command_id == CMD_START_LEARNING_NOW or command_id == "start_learning_now"
-        ):
-            # 0, timestamp_ms (little endian handled by uint64 type)
-            timestamp_ms = int(time.time() * 1000)
-            args = (0, timestamp_ms)
-            command_id = CMD_SPATIAL_LEARNING
-            manufacturer = 0x1286
-            self._last_spatial_start_ts_ms = timestamp_ms
-            self._set_spatial_ui_state(SpatialLearningUiState.START)
-            self._set_spatial_countdown(0)
-            # Retrieve schema for 0x04
-            cmd_def = self.server_commands.get(CMD_SPATIAL_LEARNING)
-            if cmd_def is not None:
-                if hasattr(cmd_def, "schema"):
-                    schema = cmd_def.schema
-                elif isinstance(cmd_def, (tuple, list)) and len(cmd_def) > 1:
-                    schema = cmd_def[1]
-
-        return super().request(
-            general_command,
-            command_id,
-            schema,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn,
-            **kwargs,
-        )
-
-    def deserialize(self, data: bytes):
-        """Deserialize cluster data with custom spatial learning parsing."""
-        hdr, payload = foundation.ZCLHeader.deserialize(data)
-
-        if (
-            hdr.frame_control.frame_type == foundation.FrameType.CLUSTER_COMMAND
-            and hdr.command_id == CMD_SPATIAL_LEARNING
-        ):
-            self._handle_spatial_learning_payload(bytes(payload))
-            return hdr, []
-
-        return super().deserialize(hdr.serialize() + payload)
-
-    def _handle_spatial_learning_payload(self, payload: bytes) -> None:
-        """Handle incoming spatial learning command payloads."""
-        if not payload:
-            return
-
-        cmd_type = payload[0]
-
-        if cmd_type == 0x01 and len(payload) >= 17:
-            start_ts = int.from_bytes(payload[1:9], "little")
-            end_ts = int.from_bytes(payload[9:17], "little")
-            self._last_spatial_start_ts_ms = start_ts
-
-            duration_ms = max(0, end_ts - start_ts)
-            duration_sec = int(duration_ms // 1000)
-
-            self._set_spatial_ui_state(SpatialLearningUiState.COUNTDOWN)
-            self._start_spatial_countdown(duration_sec)
-            self._start_spatial_timeout()
-        elif cmd_type == 0x02 and len(payload) >= 11:
-            self._stop_spatial_tasks()
-            self._set_spatial_countdown(0)
-            self._set_spatial_ui_state(SpatialLearningUiState.IDLE)
-
-    def _set_spatial_ui_state(self, state: SpatialLearningUiState) -> None:
-        self._update_attribute(ATTR_SONOFF_SPATIAL_UI_STATE, state)
-
-    def _set_spatial_countdown(self, seconds: int) -> None:
-        self._update_attribute(ATTR_SONOFF_SPATIAL_COUNTDOWN, max(0, int(seconds)))
-
-    def _stop_spatial_tasks(self) -> None:
-        if self._spatial_countdown_task and not self._spatial_countdown_task.done():
-            self._spatial_countdown_task.cancel()
-        if self._spatial_timeout_task and not self._spatial_timeout_task.done():
-            self._spatial_timeout_task.cancel()
-
-    def _start_spatial_countdown(self, seconds: int) -> None:
-        if self._spatial_countdown_task and not self._spatial_countdown_task.done():
-            self._spatial_countdown_task.cancel()
-        self._spatial_countdown_task = asyncio.create_task(
-            self._spatial_countdown_worker(seconds)
-        )
-
-    async def _spatial_countdown_worker(self, seconds: int) -> None:
-        remaining = max(0, int(seconds))
-        self._set_spatial_countdown(remaining)
-        while remaining > 0:
-            await asyncio.sleep(1)
-            remaining -= 1
-            self._set_spatial_countdown(remaining)
-
-    def _start_spatial_timeout(self) -> None:
-        if self._spatial_timeout_task and not self._spatial_timeout_task.done():
-            self._spatial_timeout_task.cancel()
-        self._spatial_timeout_task = asyncio.create_task(self._spatial_timeout_worker())
-
-    async def _spatial_timeout_worker(self) -> None:
-        await asyncio.sleep(60)
-        if self._spatial_countdown_task and not self._spatial_countdown_task.done():
-            self._spatial_countdown_task.cancel()
-        self._set_spatial_countdown(0)
-        self._set_spatial_ui_state(SpatialLearningUiState.TIMEOUT)
-        await asyncio.sleep(5)
-        self._set_spatial_ui_state(SpatialLearningUiState.IDLE)
-
-    async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
-        """Intercept read_attributes to handle virtual zone switches."""
-        virtual_attrs = set()
-        real_attributes = []
-
-        requested_ids = set()
-
-        for a in attributes:
-            aid = a
-            if isinstance(a, str):
-                if a in self.attributes_by_name:
-                    aid = self.attributes_by_name[a].id
-
-            requested_ids.add(aid)
-            if isinstance(aid, int) and 0x1000 <= aid <= 0x1007:
-                virtual_attrs.add(aid)
-            else:
-                real_attributes.append(a)
-
-        if not virtual_attrs:
-            return await super().read_attributes(
-                attributes, allow_cache, only_cache, manufacturer
-            )
-
-        # Ensure we read the bitmap if we need it for virtual attributes
-        if ATTR_SONOFF_ZONE_ENABLE not in requested_ids:
-            real_attributes.append(ATTR_SONOFF_ZONE_ENABLE)
-
-        success, failure = await super().read_attributes(
-            real_attributes, allow_cache, only_cache, manufacturer
-        )
-
-        if ATTR_SONOFF_ZONE_ENABLE in success:
-            bitmap_val = success[ATTR_SONOFF_ZONE_ENABLE]
-            for v_id in virtual_attrs:
-                idx = v_id - 0x1000
-                if idx == 0:
-                    val = bool(bitmap_val & 0x03)
-                else:
-                    val = bool(bitmap_val & (1 << idx))
-                success[v_id] = t.Bool(val)
-                self._update_attribute(v_id, t.Bool(val))
-
-        if ATTR_SONOFF_ZONE_ENABLE in failure:
-            err = failure[ATTR_SONOFF_ZONE_ENABLE]
-            for v_id in virtual_attrs:
-                failure[v_id] = err
-
-        # Remove bitmap if not requested (by ID or name)
-        if ATTR_SONOFF_ZONE_ENABLE not in requested_ids:
-            # Also check if user requested it by name "zone_enable"
-            # But we only track IDs in requested_ids.
-            # If 0x2016 isn't in requested_ids, we pop it.
-            success.pop(ATTR_SONOFF_ZONE_ENABLE, None)
-            failure.pop(ATTR_SONOFF_ZONE_ENABLE, None)
-
-        return success, failure
+    def update_zones(self, mask: int) -> None:
+        """Update the zone switches from the device mask."""
+        for attr_id, bits in self._ZONE_BITS.items():
+            self._update_attribute(attr_id, bool(mask & bits))
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+        self,
+        attributes: dict[str | int | ZCLAttributeDef, Any],
+        **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Intercept write_attributes to handle virtual zone switches."""
-
-        virtual_updates = {}
-        real_attributes = {}
-
+        """Translate zone switch writes into a mask write on the FC11 cluster."""
+        zones = {}
+        others = {}
         for attr, value in attributes.items():
-            attr_id = attr
-            if isinstance(attr, str):
-                if attr in self.attributes_by_name:
-                    attr_id = self.attributes_by_name[attr].id
-
-            # Check if it is one of our virtual attributes (0x1000 - 0x1007)
-            if isinstance(attr_id, int) and 0x1000 <= attr_id <= 0x1007:
-                zone_idx = attr_id - 0x1000
-                virtual_updates[zone_idx] = value
+            attr_id = self.find_attribute(attr).id
+            if attr_id in self._ZONE_BITS:
+                zones[attr_id] = value
             else:
-                real_attributes[attr] = value
+                others[attr] = value
 
-        if virtual_updates:
-            # We need the current mask to update specific bits
-            current_mask = self._attr_cache.get(ATTR_SONOFF_ZONE_ENABLE)
-
-            if current_mask is None:
-                # Attempt to read if not in cache
-                try:
-                    read_res = await self.read_attributes(
-                        [ATTR_SONOFF_ZONE_ENABLE], manufacturer=manufacturer
-                    )
-                    if ATTR_SONOFF_ZONE_ENABLE in read_res[0]:
-                        current_mask = read_res[0][ATTR_SONOFF_ZONE_ENABLE]
-                    else:
-                        current_mask = 0x00
-                except Exception:
-                    # Fallback if read fails
-                    current_mask = 0x00
-
-            # Calculate new mask
-            new_mask = current_mask
-            for idx, state in virtual_updates.items():
-                if idx == 0:
-                    if state:
-                        new_mask |= 0x03
-                    else:
-                        new_mask &= ~0x03
-                elif idx == 1 and 0 in virtual_updates:
-                    continue
-                elif state:
-                    new_mask |= 1 << idx
-                else:
-                    new_mask &= ~(1 << idx)
-
-            real_attributes[ATTR_SONOFF_ZONE_ENABLE] = new_mask
-
-            # Optimistically update virtual attributes in cache
-            for idx, state in virtual_updates.items():
-                if idx == 0:
-                    self._update_attribute(0x1000, t.Bool(state))
-                    self._update_attribute(0x1001, t.Bool(state))
-                else:
-                    self._update_attribute(0x1000 + idx, t.Bool(state))
-
-        # Perform the actual write
-        res = await super().write_attributes(real_attributes, manufacturer)
-
-        # Normalize response records.
-        if isinstance(res, list):
-            if res and isinstance(res[0], list):
-                records = res[0]
-            else:
-                records = res
-        elif hasattr(res, "status_records"):
-            records = res.status_records
-        else:
-            records = [res]
-
-        # Check if the bitmap write was successful
-        bitmap_status = foundation.Status.SUCCESS
-
-        for record in records:
-            if isinstance(record, foundation.WriteAttributesStatusRecord):
-                if record.attrid == ATTR_SONOFF_ZONE_ENABLE:
-                    bitmap_status = record.status
-                    break
-
-        # Generate records for virtual updates
-        if virtual_updates:
-            for idx in virtual_updates:
-                v_attr_id = 0x1000 + idx
-                # If bitmap write failed, report failure for virtual attrs too
-                records.append(
-                    foundation.WriteAttributesStatusRecord(bitmap_status, v_attr_id)
-                )
-
+        records = []
+        if others:
+            records += (await super().write_attributes(others, **kwargs))[0]
+        if zones:
+            # Keep concurrent switch changes from overwriting each other's bits.
+            async with self._zone_write_lock:
+                records += (await self._write_zones(zones, **kwargs))[0]
         return [records]
 
-    def _update_attribute(self, attrid, value):
-        """Update attribute value in cache and push to listeners."""
-        super()._update_attribute(attrid, value)
+    async def _write_zones(
+        self, zones: dict[int, Any], **kwargs
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        sonoff = self.endpoint.sonoff_manufacturer
+        mask_attr = SonoffSNZB06P24FC11Cluster.AttributeDefs.zone_enable
+        mask = sonoff.get(mask_attr.id)
 
-        # When the real mask is updated (e.g. report from device), update the virtual attributes
-        if attrid == ATTR_SONOFF_ZONE_ENABLE and isinstance(value, int):
-            for i in range(8):
-                if i == 0:
-                    is_on = bool(value & 0x03)
-                else:
-                    is_on = bool(value & (1 << i))
-                super()._update_attribute(0x1000 + i, t.Bool(is_on))
+        # Never write a guessed mask, it would change the other zones
+        if mask is None or self._zone_mask_needs_read:
+            success, failure = await sonoff.read_attributes([mask_attr.id])
+            if mask_attr.id not in success:
+                status = failure.get(mask_attr.id, Status.FAILURE)
+                return [[foundation.WriteAttributesStatusRecord(status, mask_attr.id)]]
+            mask = success[mask_attr.id]
+
+        mask = int(mask)
+        for attr_id, value in zones.items():
+            if value:
+                mask |= self._ZONE_BITS[attr_id]
+            else:
+                mask &= ~self._ZONE_BITS[attr_id]
+
+        # An interrupted write may have reached the device; an uncached write
+        # deliberately leaves the cached mask stale. Read it before the next edit.
+        self._zone_mask_needs_read = True
+        response = await sonoff.write_attributes({mask_attr.id: mask}, **kwargs)
+        self._zone_mask_needs_read = not kwargs.get("update_cache", True)
+        return response
+
+    def learning_requested(self) -> None:
+        """Show that spatial learning was requested, until the device answers."""
+        self._cancel_tasks()
+        self._update_attribute(
+            self.AttributeDefs.spatial_learning_ui_state.id,
+            SpatialLearningUiState.Start,
+        )
+        self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
+        self._timeout_task = asyncio.create_task(self._timeout())
+
+    def learning_started(self, duration: int) -> None:
+        """Count down while the device learns, give up after a minute."""
+        self._cancel_tasks()
+        self._update_attribute(
+            self.AttributeDefs.spatial_learning_ui_state.id,
+            SpatialLearningUiState.Countdown,
+        )
+        self._countdown_task = asyncio.create_task(self._countdown(duration))
+        self._timeout_task = asyncio.create_task(self._timeout())
+
+    def learning_finished(self) -> None:
+        """Return to idle once the device reports a result."""
+        self._cancel_tasks()
+        self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
+        self._update_attribute(
+            self.AttributeDefs.spatial_learning_ui_state.id,
+            SpatialLearningUiState.Idle,
+        )
+
+    def _cancel_tasks(self) -> None:
+        for task in (self._countdown_task, self._timeout_task):
+            if task is not None:
+                task.cancel()
+
+    async def _countdown(self, seconds: int) -> None:
+        for remaining in range(seconds, 0, -1):
+            self._update_attribute(
+                self.AttributeDefs.spatial_learning_countdown.id, remaining
+            )
+            await asyncio.sleep(1)
+        self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
+
+    async def _timeout(self) -> None:
+        await asyncio.sleep(60)
+        if self._countdown_task is not None:
+            self._countdown_task.cancel()
+        self._update_attribute(self.AttributeDefs.spatial_learning_countdown.id, 0)
+        self._update_attribute(
+            self.AttributeDefs.spatial_learning_ui_state.id,
+            SpatialLearningUiState.Timeout,
+        )
+        await asyncio.sleep(5)
+        self._update_attribute(
+            self.AttributeDefs.spatial_learning_ui_state.id,
+            SpatialLearningUiState.Idle,
+        )
 
 
-SONOFF_SNZB06P24 = (
+(
     QuirkBuilder("SONOFF", "SNZB-06P24")
     .replaces(SonoffSNZB06P24FC11Cluster)
-    # Illumination Offset (Cluster 0xFC11, Attr 0x2018)
+    .adds(SonoffSNZB06P24LocalCluster)
     .number(
-        attribute_name="illumination_offset",
+        attribute_name=SonoffSNZB06P24FC11Cluster.AttributeDefs.illumination_offset.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
         min_value=-1000,
         max_value=1000,
@@ -402,92 +341,78 @@ SONOFF_SNZB06P24 = (
         translation_key="illumination_offset",
         fallback_name="Illumination offset",
     )
-    # Fine-tune Sensitivity (Cluster 0xFC11, Attr 0x2021)
     .number(
-        attribute_name="fine_tune_sensitivity",
+        attribute_name=SonoffSNZB06P24FC11Cluster.AttributeDefs.fine_tune_sensitivity.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
         min_value=-6,
         max_value=6,
         step=1,
         mode="slider",
         translation_key="fine_tune_sensitivity",
-        fallback_name="Fine-tune Sensitivity",
+        fallback_name="Fine-tune sensitivity",
     )
-    # Spatial Learning Button
-    # Cmd 0x04, SubCmd=0 (Start), Sequence=timestamp_ms
     .command_button(
-        command_name="start_learning_now",
+        command_name=SonoffSNZB06P24FC11Cluster.ServerCommandDefs.start_learning_now.name,
         cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        command_args=(),
         translation_key="spatial_learning",
         fallback_name="Start spatial learning",
     )
-    # Spatial Learning UI State (virtual)
     .enum(
-        attribute_name="spatial_learning_ui_state",
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.spatial_learning_ui_state.name,
         enum_class=SpatialLearningUiState,
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
         translation_key="spatial_learning_ui_state",
         fallback_name="Spatial learning state",
     )
-    # Spatial Learning Countdown (virtual)
     .sensor(
-        attribute_name="spatial_learning_countdown",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.spatial_learning_countdown.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         unit=UnitOfTime.SECONDS,
         suggested_display_precision=0,
         translation_key="spatial_learning_countdown",
         fallback_name="Spatial learning countdown",
     )
-    # Zone 1-7 Enable (Switches) - Zone 1 combines 0-50cm + 50-100cm
     .switch(
-        attribute_name="zone_0_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_0_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_0_enable",
         fallback_name="Zone 1 (0m-1m)",
     )
     .switch(
-        attribute_name="zone_2_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_2_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_2_enable",
         fallback_name="Zone 2 (1m-1.5m)",
     )
     .switch(
-        attribute_name="zone_3_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_3_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_3_enable",
         fallback_name="Zone 3 (1.5m-2m)",
     )
     .switch(
-        attribute_name="zone_4_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_4_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_4_enable",
         fallback_name="Zone 4 (2m-2.5m)",
     )
     .switch(
-        attribute_name="zone_5_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_5_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_5_enable",
         fallback_name="Zone 5 (2.5m-3m)",
     )
     .switch(
-        attribute_name="zone_6_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_6_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_6_enable",
         fallback_name="Zone 6 (3m-3.5m)",
     )
     .switch(
-        attribute_name="zone_7_enable",
-        cluster_id=SonoffSNZB06P24FC11Cluster.cluster_id,
-        entity_type=EntityType.CONFIG,
+        attribute_name=SonoffSNZB06P24LocalCluster.AttributeDefs.zone_7_enable.name,
+        cluster_id=SonoffSNZB06P24LocalCluster.cluster_id,
         translation_key="zone_7_enable",
         fallback_name="Zone 7 (3.5m-4m)",
     )

@@ -1,13 +1,11 @@
 """Frient Smoke Alarm US (SCAZB-141)."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zha.quirks import SIREN_BASIC
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
-from zhaquirks.quirk_ids import SIREN_BASIC
 
 
 class DevelcoIasZoneCO(DevelcoIasZone):
