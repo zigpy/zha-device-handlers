@@ -4,6 +4,7 @@ import asyncio
 from unittest import mock
 
 import pytest
+from zigpy.exceptions import DeliveryError
 from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener
@@ -241,13 +242,23 @@ async def test_snzb06p24_zone_write_unreadable_mask(snzb06p24):
     ]
 
 
-async def test_snzb06p24_start_learning(snzb06p24):
+@pytest.mark.parametrize("status", [foundation.Status.SUCCESS, None])
+async def test_snzb06p24_start_learning(snzb06p24, status):
     """Test the button sends a spatial learning start with the time as sequence."""
     fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
     local = snzb06p24.endpoints[1].sonoff_presence_local
+    response = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Default_Response].schema(
+            command_id=FC11.ServerCommandDefs.spatial_learning.id, status=status
+        )
+        if status is not None
+        else None
+    )
 
     with (
-        mock.patch.object(fc11.endpoint, "request", mock.AsyncMock()) as request,
+        mock.patch.object(
+            fc11.endpoint, "request", mock.AsyncMock(return_value=response)
+        ) as request,
         mock.patch("time.time", return_value=SEQUENCE / 1000),
     ):
         await fc11.start_learning_now()
@@ -407,3 +418,135 @@ async def test_snzb06p24_local_write_stays_local(snzb06p24):
         [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
     ]
     assert local.get(COUNTDOWN.id) == 5
+
+
+async def test_snzb06p24_concurrent_zone_writes(snzb06p24):
+    """Concurrent switch changes must preserve both changes in the device mask."""
+    fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
+    local = snzb06p24.endpoints[1].sonoff_presence_local
+    fc11.update_attribute(ZONE_MASK.id, 0x01FF)
+    entered = asyncio.Event()
+    release = asyncio.Event()
+    masks = []
+
+    async def delayed_write(attributes, **kwargs):
+        masks.append(int(attributes[0].value.value))
+        if len(masks) == 1:
+            entered.set()
+            await release.wait()
+        return write_response()
+
+    with mock.patch.object(fc11, "write_attributes_raw", side_effect=delayed_write):
+        first = asyncio.create_task(local.write_attributes({ZONES[1].name: False}))
+        await entered.wait()
+        second = asyncio.create_task(local.write_attributes({ZONES[2].name: False}))
+        await asyncio.sleep(0)
+        release.set()
+        await asyncio.gather(first, second)
+
+    assert masks == [0x01FB, 0x01F3]
+    assert fc11.get(ZONE_MASK.id) == 0x01F3
+    assert local.get(ZONES[1].id) is False
+    assert local.get(ZONES[2].id) is False
+
+
+async def test_snzb06p24_zone_write_after_uncached_write(snzb06p24):
+    """A write without cache updates must not make the next write undo it."""
+    fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
+    local = snzb06p24.endpoints[1].sonoff_presence_local
+    fc11.update_attribute(ZONE_MASK.id, 0x01FF)
+
+    with (
+        mock.patch.object(
+            fc11, "write_attributes_raw", mock.AsyncMock(return_value=write_response())
+        ) as write,
+        mock.patch.object(
+            fc11, "_read_attributes", mock.AsyncMock(return_value=read_response(0x01FB))
+        ) as read,
+    ):
+        await local.write_attributes({ZONES[1].name: False}, update_cache=False)
+        assert local.get(ZONES[1].id) is True
+        await local.write_attributes({ZONES[2].name: False})
+
+    assert read.await_count == 1
+    assert write.call_args[0][0][0].value.value == 0x01F3
+
+
+@pytest.mark.parametrize(
+    "error", [DeliveryError("no acknowledgement"), asyncio.CancelledError()]
+)
+async def test_snzb06p24_zone_write_after_interruption(snzb06p24, error):
+    """Read back after an interrupted write that may have reached the device."""
+    fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
+    local = snzb06p24.endpoints[1].sonoff_presence_local
+    fc11.update_attribute(ZONE_MASK.id, 0x01FF)
+
+    with (
+        mock.patch.object(
+            fc11, "write_attributes_raw", mock.AsyncMock(side_effect=error)
+        ),
+        pytest.raises(type(error)),
+    ):
+        await local.write_attributes({ZONES[1].name: False})
+
+    assert local.get(ZONES[1].id) is True
+    with (
+        mock.patch.object(
+            fc11, "_read_attributes", mock.AsyncMock(return_value=read_response(0x01FB))
+        ) as read,
+        mock.patch.object(
+            fc11, "write_attributes_raw", mock.AsyncMock(return_value=write_response())
+        ) as write,
+    ):
+        await local.write_attributes({ZONES[2].name: False})
+
+    assert read.await_count == 1
+    assert write.call_args[0][0][0].value.value == 0x01F3
+
+
+@pytest.mark.parametrize(
+    "error",
+    [DeliveryError("no acknowledgement"), TimeoutError(), asyncio.CancelledError()],
+)
+async def test_snzb06p24_failed_learning_start(snzb06p24, error):
+    """A failed or cancelled request restores idle immediately."""
+    fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
+    local = snzb06p24.endpoints[1].sonoff_presence_local
+
+    with (
+        mock.patch.object(fc11.endpoint, "request", mock.AsyncMock(side_effect=error)),
+        pytest.raises(type(error)),
+    ):
+        await fc11.start_learning_now()
+
+    state = local.get(UI_STATE.id)
+    cancelling = local._timeout_task.cancelling()
+    local._cancel_tasks()
+    await asyncio.gather(local._timeout_task, return_exceptions=True)
+    assert state == SpatialLearningUiState.Idle
+    assert cancelling
+    assert local.get(COUNTDOWN.id) == 0
+
+
+async def test_snzb06p24_rejected_learning_start(snzb06p24):
+    """A negative default response ends the pending learning session."""
+    fc11 = snzb06p24.endpoints[1].sonoff_manufacturer
+    local = snzb06p24.endpoints[1].sonoff_presence_local
+    response = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Default_Response
+    ].schema(
+        command_id=FC11.ServerCommandDefs.spatial_learning.id,
+        status=foundation.Status.FAILURE,
+    )
+
+    with mock.patch.object(
+        fc11.endpoint, "request", mock.AsyncMock(return_value=response)
+    ):
+        assert await fc11.start_learning_now() == response
+
+    state = local.get(UI_STATE.id)
+    cancelling = local._timeout_task.cancelling()
+    local._cancel_tasks()
+    await asyncio.gather(local._timeout_task, return_exceptions=True)
+    assert state == SpatialLearningUiState.Idle
+    assert cancelling

@@ -109,21 +109,30 @@ class SonoffSNZB06P24FC11Cluster(CustomCluster):
         """Read the zone mask during pairing to populate the zone switches."""
         await self.read_attributes([self.AttributeDefs.zone_enable.id])
 
-    def command(self, command_id, *args, **kwargs):
+    async def command(self, command_id, *args, **kwargs):
         """Send start_learning_now as a spatial learning start request."""
         if command_id != self.ServerCommandDefs.start_learning_now.id:
-            return super().command(command_id, *args, **kwargs)
+            return await super().command(command_id, *args, **kwargs)
 
-        self.endpoint.sonoff_presence_local.learning_requested()
+        local = self.endpoint.sonoff_presence_local
+        local.learning_requested()
 
         # The reply echoes the sequence next to the expected end time of the
         # learning, both in ms, so the sequence has to be the current time
-        return super().command(
-            self.ServerCommandDefs.spatial_learning.id,
-            SpatialLearningSubCommand.Start,
-            int(time.time() * 1000),
-            **kwargs,
-        )
+        try:
+            response = await super().command(
+                self.ServerCommandDefs.spatial_learning.id,
+                SpatialLearningSubCommand.Start,
+                int(time.time() * 1000),
+                **kwargs,
+            )
+        except (Exception, asyncio.CancelledError):
+            local.learning_finished()
+            raise
+
+        if getattr(response, "status", Status.SUCCESS) != Status.SUCCESS:
+            local.learning_finished()
+        return response
 
     def handle_cluster_request(
         self,
@@ -199,6 +208,8 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         super().__init__(*args, **kwargs)
         self._countdown_task: asyncio.Task | None = None
         self._timeout_task: asyncio.Task | None = None
+        self._zone_write_lock = asyncio.Lock()
+        self._zone_mask_needs_read = False
 
     def update_zones(self, mask: int) -> None:
         """Update the zone switches from the device mask."""
@@ -224,7 +235,9 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         if others:
             records += (await super().write_attributes(others, **kwargs))[0]
         if zones:
-            records += (await self._write_zones(zones, **kwargs))[0]
+            # Keep concurrent switch changes from overwriting each other's bits.
+            async with self._zone_write_lock:
+                records += (await self._write_zones(zones, **kwargs))[0]
         return [records]
 
     async def _write_zones(
@@ -235,7 +248,7 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
         mask = sonoff.get(mask_attr.id)
 
         # Never write a guessed mask, it would change the other zones
-        if mask is None:
+        if mask is None or self._zone_mask_needs_read:
             success, failure = await sonoff.read_attributes([mask_attr.id])
             if mask_attr.id not in success:
                 status = failure.get(mask_attr.id, Status.FAILURE)
@@ -249,7 +262,12 @@ class SonoffSNZB06P24LocalCluster(LocalDataCluster):
             else:
                 mask &= ~self._ZONE_BITS[attr_id]
 
-        return await sonoff.write_attributes({mask_attr.id: mask}, **kwargs)
+        # An interrupted write may have reached the device; an uncached write
+        # deliberately leaves the cached mask stale. Read it before the next edit.
+        self._zone_mask_needs_read = True
+        response = await sonoff.write_attributes({mask_attr.id: mask}, **kwargs)
+        self._zone_mask_needs_read = not kwargs.get("update_cache", True)
+        return response
 
     def learning_requested(self) -> None:
         """Show that spatial learning was requested, until the device answers."""
