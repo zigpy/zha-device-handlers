@@ -247,6 +247,7 @@ async def test_green_power_quirk_entity_removed(zigpy_gpd):
                 CommandEvent,
                 command_id=GPDCommandID.Toggle,
                 event_type="toggle",
+                unique_id_suffix="button",
                 fallback_name="Button",
             )
             .add_to_registry()

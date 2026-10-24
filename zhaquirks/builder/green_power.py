@@ -166,8 +166,15 @@ class GreenPowerQuirkBuilder:
         self.friendly_model = model
         return self
 
-    def entity(self, entity_class: type[PlatformEntity], **kwargs: Any) -> Self:
+    def entity(
+        self,
+        entity_class: type[PlatformEntity],
+        *,
+        unique_id_suffix: str,
+        **kwargs: Any,
+    ) -> Self:
         """Add an entity, passing `kwargs` to its constructor."""
+        kwargs["unique_id_suffix"] = unique_id_suffix
         self.entities.append((entity_class, frozendict(kwargs)))
         return self
 
