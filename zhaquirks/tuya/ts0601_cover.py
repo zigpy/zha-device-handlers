@@ -637,8 +637,8 @@ class TuyaCloneCover0601(TuyaWindowCover):
     }
 
 
-class InvertedTuyaManufacturerWindowCover(TuyaManufacturerWindowCover):
-    """Invert position, handle DP 21 continuous angle tilt, and ACK incoming reports."""
+class TuyaDreamBlindsCluster(TuyaManufacturerWindowCover):
+    """Handle DP 21 continuous angle tilt and ACK incoming reports."""
 
     def handle_cluster_request(
         self,
@@ -671,17 +671,6 @@ class InvertedTuyaManufacturerWindowCover(TuyaManufacturerWindowCover):
         # ACK to prevent motor retransmit storms
         if not hdr.frame_control.disable_default_response:
             self.send_default_rsp(hdr, foundation.Status.SUCCESS)
-
-    def _update_attribute(self, attrid, value):
-        if attrid == 0x0008:
-            try:
-                inverted_value = 100 - int(value)
-                super()._update_attribute(attrid, inverted_value)
-                return
-            except (ValueError, TypeError) as e:
-                self.debug(f"Error inverting position {value}: {e}")
-        super()._update_attribute(attrid, value)
-
 
 class TuyaDreamBlindsControl(TuyaWindowCoverControl):
     """Window covering control cluster with 0-180 degree tilt/dimming support."""
@@ -765,6 +754,8 @@ class TuyaDreamBlindsControl(TuyaWindowCoverControl):
 class TuyaDreamBlindsCover0601(TuyaWindowCover):
     """Quirk for Tuya Vertical Dream Blinds (_TZE204_wzre8hu2 TS0601)."""
 
+    tuya_cover_inverted_by_default = True
+
     signature = {
         MODELS_INFO: [
             ("_TZE204_wzre8hu2", "TS0601"),
@@ -802,7 +793,7 @@ class TuyaDreamBlindsCover0601(TuyaWindowCover):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    InvertedTuyaManufacturerWindowCover,
+                    TuyaDreamBlindsCluster,
                     TuyaDreamBlindsControl,
                 ],
                 OUTPUT_CLUSTERS: [
