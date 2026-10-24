@@ -7,9 +7,9 @@ from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
-    NumberDeviceClass,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
