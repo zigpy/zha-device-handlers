@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI wireless dimmer ICTC-G-1."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -32,6 +31,7 @@ from zhaquirks.const import (
     ROTATED,
 )
 from zhaquirks.ikea import IKEA, DoublingPowerConfig1CRXCluster
+from zhaquirks.legacy import CustomDevice
 
 
 class IkeaDimmer(CustomDevice):

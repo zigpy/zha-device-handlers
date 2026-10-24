@@ -1,7 +1,6 @@
 """SmartThings SmartSense Motion quirk."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota
 
 from zhaquirks.const import (
@@ -12,6 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.smartthings import SMART_THINGS, SmartThingsIasZone
 
 SMARTSENSE_MOTION_DEVICE_TYPE = 0x013A  # decimal = 314
