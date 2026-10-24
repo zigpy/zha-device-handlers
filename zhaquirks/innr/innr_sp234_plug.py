@@ -1,7 +1,6 @@
 """Innr SP 234 plug."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -29,6 +28,7 @@ from zhaquirks.innr import (
     ElectricalMeasurementClusterInnr,
     MeteringClusterInnrOld,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class SP234(CustomDevice):

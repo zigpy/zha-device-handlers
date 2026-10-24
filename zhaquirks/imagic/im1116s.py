@@ -1,7 +1,6 @@
 """Device handler for GreatStar iMagic 1116-S sensor."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -17,6 +16,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.imagic import IMAGIC
+from zhaquirks.legacy import CustomDevice
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC02  # decimal = 64514

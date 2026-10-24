@@ -3,12 +3,13 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
 
@@ -250,3 +251,76 @@ async def test_double_power_config_firmware(
         # check log output if we expect a warning
         if expect_log_warning:
             assert f"sw_build_id is not a number: {firmware} for device" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "move_cmd,move_mode,stop_cmd,expected_event",
+    [
+        (
+            None,
+            None,
+            LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            None,
+        ),  # stop_with_on_off without prior move
+        (
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+            0,
+            LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            "move_up_release",
+        ),  # move up + stop_with_on_off (0x07)
+        (
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+            0,
+            LevelControl.ServerCommandDefs.stop.id,
+            "move_up_release",
+        ),  # move up + stop (0x03)
+        (
+            LevelControl.ServerCommandDefs.move.id,
+            1,
+            LevelControl.ServerCommandDefs.stop.id,
+            "move_down_release",
+        ),  # move down + stop (0x03)
+        (
+            LevelControl.ServerCommandDefs.move.id,
+            1,
+            LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            "move_down_release",
+        ),  # move down + stop_with_on_off (0x07)
+    ],
+)
+async def test_bilresa_direction_tracking(
+    zigpy_device_from_v2_quirk, move_cmd, move_mode, stop_cmd, expected_event
+):
+    """Test Bilresa remote direction tracking for long press releases."""
+    device = zigpy_device_from_v2_quirk(
+        IKEA,
+        "09B9",
+        cluster_ids={1: {LevelControl.cluster_id: ClusterType.Server}},
+    )
+
+    level_cluster = device.endpoints[1].in_clusters[LevelControl.cluster_id]
+    assert isinstance(level_cluster, IkeaBilresaLevelControl)
+
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
+
+    # Send move command if provided
+    if move_cmd is not None:
+        hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
+        level_cluster.handle_cluster_request(hdr_move, [move_mode, 83])
+
+    # Send stop command
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=stop_cmd)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+
+    # Verify expected directional release event
+    if expected_event is None:
+        listener.zha_send_event.assert_not_called()
+    else:
+        # Find the directional release event among all fired events
+        release_calls = [
+            c
+            for c in listener.zha_send_event.call_args_list
+            if c == mock.call(expected_event, [])
+        ]
+        assert len(release_calls) == 1

@@ -1,9 +1,8 @@
 """Module for Inovelli quirks implementations."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
@@ -13,6 +12,7 @@ from zigpy.zcl.foundation import (
     ZCLHeader,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -36,6 +36,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.inovelli.types import MMWaveArea, MMWaveTarget
 
 _LOGGER = logging.getLogger(__name__)
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
@@ -146,12 +147,12 @@ class InovelliCluster(CustomCluster):
         )
         power_type = ZCLAttributeDef(
             id=0x0015,
-            type=t.uint8_t,
+            type=t.Bool,
             is_manufacturer_specific=True,
         )
         internal_temp_monitor = ZCLAttributeDef(
             id=0x0020,
-            type=t.uint8_t,
+            type=t.int8s,
             is_manufacturer_specific=True,
         )
         overheated = ZCLAttributeDef(
@@ -232,9 +233,7 @@ class InovelliCluster(CustomCluster):
         hdr: ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster request."""
         _LOGGER.debug(
@@ -317,7 +316,7 @@ class InovelliVZM30SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -647,7 +646,7 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -677,6 +676,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         leading_or_trailing_edge = ZCLAttributeDef(
             id=0x001A,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dimming_algorithm = ZCLAttributeDef(
+            id=0x001B,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -880,6 +884,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+        aux_detection_level = ZCLAttributeDef(
+            id=0x007C,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         binding_off_to_on_sync_level = ZCLAttributeDef(
             id=0x007D,
             type=t.Bool,
@@ -907,6 +916,11 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         led_color_for_bound_control = ZCLAttributeDef(
             id=0x0086,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        dumb_detection_level = ZCLAttributeDef(
+            id=0x00A5,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -987,7 +1001,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         periodic_power_and_energy_reports = ZCLAttributeDef(
             id=0x0013,
-            type=t.uint8_t,
+            type=t.uint16_t,
             is_manufacturer_specific=True,
         )
         active_energy_reports = ZCLAttributeDef(
@@ -997,6 +1011,16 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
         switch_type = ZCLAttributeDef(
             id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
@@ -1265,14 +1289,236 @@ class InovelliVZM32SNCluster(InovelliCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
-        relay_click_in_on_off_mode = ZCLAttributeDef(
-            id=0x0105,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
         disable_clear_notifications_double_tap = ZCLAttributeDef(
             id=0x0106,
             type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+
+class MMWaveControlId(t.enum8):
+    """MMWave control command IDs."""
+
+    Reset_to_factory = 0x00
+    Auto_generate_interference_area = 0x01
+    Obtain_areas = 0x02
+    Clear_interference_area = 0x03
+    Reset_detection_area = 0x04
+    Clear_stay_areas = 0x05
+
+
+class InovelliVZM32SNMMWaveCluster(CustomCluster):
+    """Inovelli VZM32-SN MMWave custom cluster."""
+
+    cluster_id = 0xFC32
+    ep_attribute = "inovelli_vzm32snmmwave_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        mmwave_height_minimum_floor = ZCLAttributeDef(
+            id=0x0065,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_height_maximum_ceiling = ZCLAttributeDef(
+            id=0x0066,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_minimum_left = ZCLAttributeDef(
+            id=0x0067,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_width_maximum_right = ZCLAttributeDef(
+            id=0x0068,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_minimum_near = ZCLAttributeDef(
+            id=0x0069,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_depth_maximum_far = ZCLAttributeDef(
+            id=0x006A,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_target_info_report = ZCLAttributeDef(
+            id=0x006B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_stay_life = ZCLAttributeDef(
+            id=0x006C,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_sensitivity = ZCLAttributeDef(
+            id=0x0070,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_trigger = ZCLAttributeDef(
+            id=0x0071,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_hold_time = ZCLAttributeDef(
+            id=0x0072,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_version = ZCLAttributeDef(
+            id=0x0073,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions.
+
+        Commands 0x01-0x03 (set_{interference,detection,stay}_area) match
+        Z2M's zigbee-herdsman-converters inovelli.ts definitions for the
+        same cluster (setInterferenceArea / setDetectionArea / setStayArea).
+        Each command defines one of the device's four configurable areas.
+        The wire-level area_id is 0-indexed (0..3) per inovelli.ts, while the
+        corresponding report payloads (report_interference_area /
+        report_detection_area / report_stay_area in ClientCommandDefs) expose
+        the same areas as fields named area_1..area_4 to match Inovelli's
+        user-facing 1-indexed labeling. Mapping: area_id=0 -> area_1, ...,
+        area_id=3 -> area_4. Bounds are in millimeters on the x (width),
+        y (depth), and z (height) axes.
+
+        Note: firmware v1.00 has a reported bug on set_stay_area where the
+        x_min and x_max parameters are swapped and sign-inverted on write
+        (community report:
+        https://community.inovelli.com/t/zigbee-motion-switch-project-linus-bug-enhancement-thread/20438/251).
+        Callers who need asymmetric x-axis stay zones on v1.00 can
+        pre-compensate by sending x_min=-b, x_max=-a to end up with a
+        stored range of (a, b). Symmetric zones (x range [-n, +n]) are
+        self-correcting and need no compensation. Status of the bug in
+        v1.01/v1.02 beta firmware is undocumented.
+        """
+
+        mmwave_control_command = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "control_id": MMWaveControlId,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_interference_area = ZCLCommandDef(
+            id=0x01,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_detection_area = ZCLCommandDef(
+            id=0x02,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+        set_stay_area = ZCLCommandDef(
+            id=0x03,
+            schema={
+                "area_id": t.uint8_t,
+                "x_min": t.int16s,
+                "x_max": t.int16s,
+                "y_min": t.int16s,
+                "y_max": t.int16s,
+                "z_min": t.int16s,
+                "z_max": t.int16s,
+            },
+            is_manufacturer_specific=True,
+        )
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions.
+
+        These are reports sent from the device to the coordinator. The three
+        area reports (report_interference_area / report_detection_area /
+        report_stay_area) are emitted in response to a server command_id=0x00
+        with control_id=Obtain_areas; each returns all four configured areas
+        for that category plus a `count` of how many slots are populated.
+
+        report_target_info streams live target positions when the
+        mmwave_target_info_report attribute (0x006B) is enabled; each target
+        in the `targets` list is an int16 (x, y, z, dop, target_id) tuple.
+
+        anyone_in_reporting_area is emitted asynchronously on stay-area
+        occupancy transitions, giving per-area occupancy state.
+
+        Names and payload layouts match zigbee-herdsman-converters'
+        `inovelli.ts` for the same cluster.
+        """
+
+        anyone_in_reporting_area = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "area_1": t.uint8_t,
+                "area_2": t.uint8_t,
+                "area_3": t.uint8_t,
+                "area_4": t.uint8_t,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_target_info = ZCLCommandDef(
+            id=0x01,
+            schema={
+                "target_num": t.uint8_t,
+                "targets": t.List[MMWaveTarget],
+            },
+            is_manufacturer_specific=True,
+        )
+        report_interference_area = ZCLCommandDef(
+            id=0x02,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_detection_area = ZCLCommandDef(
+            id=0x03,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
+            },
+            is_manufacturer_specific=True,
+        )
+        report_stay_area = ZCLCommandDef(
+            id=0x04,
+            schema={
+                "count": t.uint8_t,
+                "area_1": MMWaveArea,
+                "area_2": MMWaveArea,
+                "area_3": MMWaveArea,
+                "area_4": MMWaveArea,
+            },
             is_manufacturer_specific=True,
         )
 
