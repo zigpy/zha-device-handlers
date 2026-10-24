@@ -39,9 +39,14 @@ from zhaquirks.legacy import CustomDevice
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_IR_FREQUENCY: Final = 38000
+# Like Zigbee2MQTT, refuse carriers at or below 30 kHz: most likely kHz given as Hz.
+MIN_IR_FREQUENCY: Final = 30000
 IR_MSG_PART_MAX_LENGTH: Final = 0x38
 # Seconds to wait for the device to confirm it has the whole IR message to send.
 IR_SEND_TIMEOUT: Final = 10
+# A sleepy blaster (the battery TS1201) only gets each frame we send when it next
+# polls its parent, and a long code is several parts, so it gets far longer.
+IR_SEND_TIMEOUT_SLEEPY: Final = 60
 
 
 def ir_msg_part_crc(msg_part: bytes) -> int:
@@ -53,6 +58,8 @@ def ir_msg_for_code(
     code: str, freq: int = DEFAULT_IR_FREQUENCY, repeats: int = 0
 ) -> bytes:
     """Return the message the device expects for sending an IR code."""
+    if freq <= MIN_IR_FREQUENCY:
+        raise ValueError(f"IR carrier frequency is in Hz, got {freq}")
     return json.dumps(
         {
             "key_num": 1,
@@ -275,6 +282,14 @@ class ZosungIRTransmit(CustomCluster):
         self.send_lock = asyncio.Lock()
         self.pending_send: PendingIRSend | None = None
 
+    @property
+    def send_timeout(self) -> float:
+        """Return how long to wait for the device to confirm a send."""
+        node_desc = self.endpoint.device.node_desc
+        if node_desc is not None and node_desc.is_receiver_on_when_idle:
+            return IR_SEND_TIMEOUT
+        return IR_SEND_TIMEOUT_SLEEPY
+
     async def send_ir_msg(
         self, ir_msg: bytes, *, tsn: int | t.uint8_t | None = None
     ) -> None:
@@ -296,7 +311,7 @@ class ZosungIRTransmit(CustomCluster):
                     expect_reply=False,
                     tsn=tsn,
                 )
-                async with asyncio.timeout(IR_SEND_TIMEOUT):
+                async with asyncio.timeout(self.send_timeout):
                     await sent
             except TimeoutError:
                 _LOGGER.warning(

@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 import zigpy.types as t
 from zigpy.zcl import foundation
+import zigpy.zdo.types as zdo_t
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
@@ -15,8 +16,9 @@ import zhaquirks.tuya.ts1201
 
 zhaquirks.setup()
 
-# Learned by a physical ZS06 from a washlet remote ("wash and dry"). At 251 bytes it
-# spans five message parts, and its base64 form is longer than 255 characters.
+# Learned by a physical ZS06 from a washlet remote ("wash and dry"). At 251 bytes it is
+# learned in five parts, sent as a 414-byte message in eight, and its base64 form is
+# longer than 255 characters.
 REAL_LEARNED_IR_CODE = "DVQNzQaCAb4BggHyAYIBwAdAC0ADByMFvgG+AYIBQAtABwC+YAFAB+ALAwG+AcAvBSMFggG+AcADQAHAC4AHwB9ABwUjBb4BvgFAB4AD4AULQAFAEwe+ASMFvgG+AUALCIIBIwWCAYIBviABQAWAA0ATAL4gAUAHQAMAvmABgAcBhdDgAecAvuAAAUALgAPgBy8DvgGCAYADQAFAC4ABgAkBggHAL0AHwRvABwG+AeABA0AfQA9AB0AD4AULA74BIwWAAwG+AYAbAL4gAUATAb4BQAsBggHgAQtAAQGCAUADBCMFggG+IAEBIwWAAwu+AYIBvgGCAb4BvgE="  # codespell:ignore
 # The device sends at most one byte less than the part length it is asked for.
 DEVICE_PART_LENGTH = zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_LENGTH - 1
@@ -150,6 +152,11 @@ def ir_msg(code, freq=38000, num=1):
 def zs06(zigpy_device_from_quirk):
     """Return a ZS06 blaster whose endpoint requests always succeed."""
     dev = zigpy_device_from_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster_ZS06)
+    # The ZS06 is a mains-powered router, as its diagnostics report.
+    dev.node_desc = zdo_t.NodeDescriptor(
+        logical_type=zdo_t.LogicalType.Router,
+        mac_capability_flags=zdo_t.NodeDescriptor.MACCapabilityFlags(142),
+    )
     with mock.patch.object(
         dev.endpoints[1], "request", return_value=foundation.Status.SUCCESS
     ):
@@ -733,6 +740,41 @@ def test_ts1201_send_freq_and_repeats_are_optional():
         ("repeats", True),
     ]
     assert schema(code="AAAA").serialize() == schema(code="AAAA").code.serialize()
+
+
+@pytest.mark.parametrize(
+    ("node_desc", "timeout"),
+    [
+        # The battery TS1201: an end device whose radio is off when idle.
+        (
+            zdo_t.NodeDescriptor(
+                logical_type=zdo_t.LogicalType.EndDevice,
+                mac_capability_flags=zdo_t.NodeDescriptor.MACCapabilityFlags(128),
+            ),
+            zhaquirks.tuya.ts1201.IR_SEND_TIMEOUT_SLEEPY,
+        ),
+        (None, zhaquirks.tuya.ts1201.IR_SEND_TIMEOUT_SLEEPY),
+    ],
+)
+def test_ts1201_sleepy_blaster_gets_longer_to_confirm(zs06, node_desc, timeout):
+    """Test a blaster that only hears us when it polls gets a longer send window."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    assert transmit.send_timeout == zhaquirks.tuya.ts1201.IR_SEND_TIMEOUT
+
+    zs06.node_desc = node_desc
+    assert transmit.send_timeout == timeout
+
+
+@pytest.mark.parametrize("freq", [38, 30000])
+async def test_ts1201_send_rejects_carrier_in_khz(zs06, freq):
+    """Test a carrier frequency that can't be in Hz is refused, not sent."""
+    control = zs06.endpoints[1].zosung_ircontrol
+
+    with pytest.raises(ValueError, match="frequency is in Hz"):
+        await control.command(
+            control.ServerCommandDefs.IRSend.id, code="AAAA", freq=freq
+        )
+    assert zs06.endpoints[1].request.await_count == 0
 
 
 async def test_ts1201_read_last_learned_ir_code(zs06):
