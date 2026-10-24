@@ -341,9 +341,9 @@ class SinopeTechnologiesThermostat(CustomDevice):
     """SinopeTechnologiesThermostat custom device."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
-        # 2821, 65281] output_clusters=[65281, 25]>
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=0
+        # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820, 2821, 65281]
+        # output_clusters=[65281, 25]>
         MODELS_INFO: [
             (SINOPE, "TH1123ZB"),
             (SINOPE, "TH1124ZB"),
@@ -365,10 +365,13 @@ class SinopeTechnologiesThermostat(CustomDevice):
                     Diagnostic.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id, SINOPE_MANUFACTURER_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
             },
-            # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
-            # device_version=0 input_clusters=[1] output_clusters=[]>
+            # <SimpleDescriptor endpoint=196 profile=49757 device_type=769 device_version=0
+            # input_clusters=[1] output_clusters=[]>
             196: {
                 PROFILE_ID: 0xC25D,
                 DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
@@ -461,68 +464,8 @@ class SinopeTH1400ZB(CustomDevice):
     }
 
 
-class SinopeTH1300ZB(CustomDevice):
-    """TH1300ZB thermostat."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
-        # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
-        # output_clusters=[10, 25, 65281]>
-        MODELS_INFO: [(SINOPE, "TH1300ZB")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    Thermostat.cluster_id,
-                    UserInterface.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    UserInterface.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeTechnologiesElectricalMeasurementCluster,
-                    SinopeTechnologiesThermostatCluster,
-                    SinopeTechnologiesManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-            }
-        }
-    }
-
-
 class SinopeLineThermostats(CustomDevice):
-    """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostats."""
+    """TH1123ZB, TH1124ZB, TH1300ZB, TH1320ZB-04, TH1500ZB and OTH3600-GA-ZB thermostats."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
@@ -531,6 +474,8 @@ class SinopeLineThermostats(CustomDevice):
         MODELS_INFO: [
             (SINOPE, "TH1123ZB"),
             (SINOPE, "TH1124ZB"),
+            (SINOPE, "TH1300ZB"),
+            (SINOPE, "TH1320ZB-04"),
             (SINOPE, "TH1500ZB"),
             (SINOPE, "OTH3600-GA-ZB"),
         ],
