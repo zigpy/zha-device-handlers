@@ -291,6 +291,10 @@ class TuyaTemperatureHumidtySensor_ncw88jfq(CustomDevice):
     """Tuya temperature and humidity sensor."""
 
     signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
+        #  device_version=1
+        #  input_clusters=[1, 1026, 1029, 61184, 0]
+        #  output_clusters=[25, 10]>
         MODELS_INFO: [("_TZ3210_ncw88jfq", "TS0201")],
         ENDPOINTS: {
             1: {
