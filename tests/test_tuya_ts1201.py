@@ -669,6 +669,69 @@ async def test_ts1201_send_times_out_without_confirmation(zs06, caplog):
     assert (await task).status == foundation.Status.SUCCESS
 
 
+async def test_ts1201_cancelled_send_still_holds_the_blaster(zs06):
+    """Test a caller giving up does not let the next send overlap the transfer."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    first = await start_ir_send(control, code="AAAA")
+    first_seq = last_announced_seq(transmit)
+    second = await start_ir_send(control, code="BBBB")
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+    await asyncio.sleep(0)
+
+    # The blaster is still fetching the first message, so it is served and the
+    # second send waits instead of being announced over it.
+    assert last_announced_seq(transmit) == first_seq
+    assert await pull_ir_msg(transmit, first_seq, len(ir_msg("AAAA"))) == ir_msg("AAAA")
+    assert not second.done()
+
+    confirm_sent(transmit, first_seq)
+    await wait_for_zigpy_tasks()
+    second_seq = last_announced_seq(transmit)
+    assert second_seq == first_seq + 1
+    assert await pull_ir_msg(transmit, second_seq, len(ir_msg("BBBB"))) == ir_msg(
+        "BBBB"
+    )
+    confirm_sent(transmit, second_seq)
+    assert (await second).status == foundation.Status.SUCCESS
+
+
+async def test_ts1201_send_closes_the_transfer_before_the_next(zs06):
+    """Test the final acknowledgment goes out before the next send is announced."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    async def send_both():
+        for code in ("AAAA", "BBBB"):
+            await control.command(control.ServerCommandDefs.IRSend.id, code=code)
+
+    both = asyncio.create_task(send_both())
+    while not zs06.endpoints[1].request.await_count:
+        await asyncio.sleep(0)
+    first_seq = last_announced_seq(transmit)
+    await pull_ir_msg(transmit, first_seq, len(ir_msg("AAAA")))
+    confirm_sent(transmit, first_seq)
+    for _ in range(10):
+        await asyncio.sleep(0)
+        if sent_commands(zs06.endpoints[1].request, transmit)[-1][0] == 0x00:
+            break
+
+    frames = [
+        (command_id, args.seq)
+        for command_id, args in sent_commands(zs06.endpoints[1].request, transmit)
+        if command_id in (0x00, 0x05)
+    ]
+    assert frames == [(0x00, first_seq), (0x05, first_seq), (0x00, first_seq + 1)]
+
+    second_seq = first_seq + 1
+    await pull_ir_msg(transmit, second_seq, len(ir_msg("BBBB")))
+    confirm_sent(transmit, second_seq)
+    await both
+
+
 async def test_ts1201_send_fails_when_announcement_fails(zs06):
     """Test a send that cannot be announced fails and frees the next one."""
     control = zs06.endpoints[1].zosung_ircontrol
