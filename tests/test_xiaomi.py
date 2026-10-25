@@ -1527,6 +1527,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
         "mon,tue,wed,thu,fri|8:00.24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|-8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|25:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|24:00,22.0",
         "mon,tue,wed,thu,fri|8:00,03.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,31.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,mon|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
