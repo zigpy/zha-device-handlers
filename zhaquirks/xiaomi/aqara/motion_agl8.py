@@ -27,8 +27,6 @@ from zhaquirks.xiaomi import (
 
 _LOGGER = logging.getLogger(__name__)
 
-AQARA_MANUFACTURER_CODE: Final = 0x115F
-
 
 class FP300PowerConfigurationVoltage(XiaomiPowerConfigurationPercent):
     """Battery from the Aqara TLV report: voltage from tag 23, percentage from tag 24.
@@ -73,7 +71,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         aqara_attributes: Final = ZCLAttributeDef(
             id=XIAOMI_AQARA_ATTRIBUTE_E1,
             type=t.LVBytes,
-            manufacturer_code=AQARA_MANUFACTURER_CODE,
+            manufacturer_code=0x115F,
         )
 
         presence: Final = ZCLAttributeDef(
@@ -81,7 +79,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            manufacturer_code=AQARA_MANUFACTURER_CODE,
+            manufacturer_code=0x115F,
         )
 
         pir_detection: Final = ZCLAttributeDef(
@@ -89,7 +87,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            manufacturer_code=AQARA_MANUFACTURER_CODE,
+            manufacturer_code=0x115F,
         )
 
 
