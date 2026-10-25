@@ -120,6 +120,7 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    AqaraThermostatSensor,
     AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
@@ -1388,7 +1389,8 @@ def test_xiaomi_e1_thermostat_v2_quirk(zigpy_device_from_v2_quirk):
         ("binary_sensor", "64704-window_open"),
         ("binary_sensor", "64704-valve_alarm"),
         ("binary_sensor", "64704-calibrated"),
-        ("binary_sensor", "64704-sensor"),
+        ("switch", "64704-sensor"),
+        ("number", "64704-external_temperature"),
     }
 
 
@@ -1557,6 +1559,192 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_v2_quirk)
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
+
+
+def _mock_write_attributes(cluster, status=foundation.Status.SUCCESS, attrid=None):
+    """Patch a cluster's `_write_attributes` to return a single status record."""
+    return mock.patch.object(
+        cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=([foundation.WriteAttributesStatusRecord(status, attrid)],)
+        ),
+    )
+
+
+def _written_attributes(write_mock) -> list[tuple[int, Any]]:
+    """Return `(attrid, value)` for every attribute written through a mock."""
+    return [
+        (attr.attrid, attr.value.value)
+        for write_call in write_mock.mock_calls
+        for attr in write_call.args[0]
+    ]
+
+
+E1_TIMESTAMP = 0x6ADDE4EA
+E1_IEEE = "54:ef:44:10:00:9a:63:7f"
+
+
+@pytest.mark.parametrize(
+    "sensor, expected_commands",
+    [
+        (
+            AqaraThermostatSensor.External,
+            [
+                "aa713144125e02412e6adde4ea3d0454ef4410009a637f00158d00019d1b98"
+                "00010055130a0200006404cec2b6c80000000000013d6465",
+                "aa713444135a0241316adde4ea3d0554ef4410009a637f00158d00019d1b98"
+                "080007fd160a020ac9e8b1b8d4dacfdfc0eb0000000000013d0465",
+            ],
+        ),
+        (
+            AqaraThermostatSensor.Internal,
+            [
+                "aa711d44127204411a6adde4ea3d0554ef4410009a637f000000000000000000000000",
+                "aa711d44137104411a6adde4ea3d0454ef4410009a637f000000000000000000000000",
+            ],
+        ),
+    ],
+)
+async def test_xiaomi_e1_thermostat_sensor_mode_write(
+    zigpy_device_from_v2_quirk, sensor, expected_commands
+):
+    """Test selecting the temperature sensor sends the Lumi commands Z2M sends."""
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.airrtc.agl001",
+        cluster_ids={1: {XiaomiAqaraE1Cluster.cluster_id: ClusterType.Server}},
+        ieee=t.EUI64.convert(E1_IEEE),
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    thermostat_cluster = device.endpoints[1].thermostat
+
+    with (
+        _mock_write_attributes(opple_cluster),
+        mock.patch(
+            "zhaquirks.xiaomi.aqara.thermostat_agl001.time.time",
+            return_value=E1_TIMESTAMP,
+        ),
+        mock.patch.object(
+            thermostat_cluster,
+            "read_attributes",
+            mock.AsyncMock(side_effect=asyncio.TimeoutError),
+        ),
+    ):
+        result = await opple_cluster.write_attributes(
+            {AqaraThermostatSpecificCluster.AttributeDefs.sensor.name: sensor}
+        )
+
+        # like Z2M, the internal temperature is read again (best effort)
+        assert thermostat_cluster.read_attributes.await_count == (
+            sensor == AqaraThermostatSensor.Internal
+        )
+
+        assert _written_attributes(opple_cluster._write_attributes) == [
+            (0xFFF2, bytes.fromhex(command)) for command in expected_commands
+        ]
+
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS, 0x027E)]
+    ]
+    assert opple_cluster.get(0x027E) == sensor
+    # the command attribute itself is not cached
+    assert opple_cluster.get(0xFFF2) is None
+
+
+async def test_xiaomi_e1_thermostat_sensor_mode_write_failure(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a rejected command is reported and stops the sequence."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with _mock_write_attributes(opple_cluster, foundation.Status.FAILURE, 0xFFF2):
+        result = await opple_cluster.write_attributes(
+            {"sensor": AqaraThermostatSensor.External}
+        )
+
+        assert len(opple_cluster._write_attributes.mock_calls) == 1
+
+    assert result == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.FAILURE, 0x027E)]
+    ]
+    assert opple_cluster.get(0x027E) is None
+
+    with pytest.raises(ValueError):
+        await opple_cluster.write_attributes({"sensor": 2})
+
+
+async def test_xiaomi_e1_thermostat_external_temperature(zigpy_device_from_v2_quirk):
+    """Test the external temperature input."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+    external_temperature = (
+        AqaraThermostatSpecificCluster.AttributeDefs.external_temperature
+    )
+
+    with (
+        _mock_write_attributes(opple_cluster),
+        mock.patch.object(
+            opple_cluster,
+            "_read_attributes",
+            mock.AsyncMock(
+                return_value=(
+                    [
+                        foundation.ReadAttributeRecord(
+                            0x0277,
+                            foundation.Status.SUCCESS,
+                            foundation.TypeValue(DataTypeId.uint8, 1),
+                        )
+                    ],
+                )
+            ),
+        ),
+    ):
+        # nothing has been sent yet, and the value is never read from the device
+        assert await opple_cluster.read_attributes([external_temperature.name]) == (
+            {},
+            {external_temperature.name: foundation.Status.UNSUPPORTED_ATTRIBUTE},
+        )
+        assert len(opple_cluster._read_attributes.mock_calls) == 0
+
+        # 21.5 °C, sent as a float of the value in 0.01 °C, like Z2M does
+        result = await opple_cluster.write_attributes(
+            {external_temperature.name: 2150, "child_lock": 1}
+        )
+        assert _written_attributes(opple_cluster._write_attributes) == [
+            (
+                0xFFF2,
+                bytes.fromhex(
+                    "aa711344127c05411000158d00019d1b9800010055" + "4506 6000"
+                ),
+            ),
+            (0x0277, 1),
+        ]
+        assert [record.attrid for record in result[0]] == [0x1392, 0x0277]
+        assert opple_cluster.get(external_temperature.id) == 2150
+
+        # only the other attribute is read from the device
+        assert await opple_cluster.read_attributes(
+            [external_temperature.id, "child_lock"]
+        ) == ({external_temperature.id: 2150, "child_lock": 1}, {})
+        assert opple_cluster._read_attributes.mock_calls[0].args[0] == [0x0277]
+
+        opple_cluster._write_attributes.reset_mock()
+        for value in (-1, 5501):
+            with pytest.raises(ValueError):
+                await opple_cluster.write_attributes({external_temperature.id: value})
+        assert len(opple_cluster._write_attributes.mock_calls) == 0
+
+
+async def test_xiaomi_e1_thermostat_sensor_mode_report(zigpy_device_from_v2_quirk):
+    """Test a reported sensor value of 2 is shown as the external sensor."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    for reported, expected in ((0, 0), (1, 1), (2, 1)):
+        opple_cluster.update_attribute(0x027E, reported)
+        assert opple_cluster.get(0x027E) == expected
 
 
 @pytest.mark.parametrize(

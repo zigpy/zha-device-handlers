@@ -5,9 +5,11 @@ from __future__ import annotations
 from functools import reduce
 import math
 import struct
+import time
 from typing import Any, Final
 
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Ota
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -16,6 +18,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityType,
+    NumberDeviceClass,
     QuirkBuilder,
     UnitOfTemperature,
 )
@@ -47,6 +50,9 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+LUMI_COMMAND = 0xFFF2
+# Not a device attribute: holds the last external temperature sent to the device
+EXTERNAL_TEMPERATURE = 0x1392
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
@@ -60,6 +66,20 @@ DAYS_MAP = {
     "sun": 0x80,
 }
 NEXT_DAY_FLAG = 1 << 15
+
+
+# Placeholder ID of the "virtual" sensor the thermostat is linked to for external
+# temperature input, as used by the Aqara hub and Zigbee2MQTT
+EXTERNAL_SENSOR_ID = bytes.fromhex("00158d00019d1b98")
+EXTERNAL_TEMPERATURE_MIN = 0
+EXTERNAL_TEMPERATURE_MAX = 5500
+
+
+class AqaraThermostatSensor(t.enum8):
+    """Temperature sensor used by the thermostat."""
+
+    Internal = 0x00
+    External = 0x01
 
 
 class AqaraThermostatPreset(t.enum8):
@@ -379,6 +399,63 @@ class ScheduleSettings(t.LVBytes):
         return result
 
 
+def _lumi_command(counter: int, action: int, params: bytes) -> bytes:
+    """Build a Lumi command frame written to the `0xFFF2` attribute."""
+    header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
+    integrity = (512 - sum(header)) & 0xFF
+    return header + bytes([integrity, action, 0x41, len(params)]) + params
+
+
+def _sensor_mode_commands(sensor: AqaraThermostatSensor, ieee: t.EUI64) -> list[bytes]:
+    """Build the two commands linking or unlinking the external temperature sensor."""
+    device = bytes.fromhex(str(ieee).replace(":", ""))
+    timestamp = struct.pack(">I", int(time.time()))
+
+    if sensor == AqaraThermostatSensor.External:
+        params1 = (
+            timestamp
+            + b"\x3d\x04"
+            + device
+            + EXTERNAL_SENSOR_ID
+            + bytes(
+                [
+                    0x00, 0x01, 0x00, 0x55, 0x13, 0x0A, 0x02, 0x00,
+                    0x00, 0x64, 0x04, 0xCE, 0xC2, 0xB6, 0xC8, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x01, 0x3D, 0x64, 0x65,
+                ]
+            )
+        )  # fmt: skip
+        params2 = (
+            timestamp
+            + b"\x3d\x05"
+            + device
+            + EXTERNAL_SENSOR_ID
+            + bytes(
+                [
+                    0x08, 0x00, 0x07, 0xFD, 0x16, 0x0A, 0x02, 0x0A, 0xC9,
+                    0xE8, 0xB1, 0xB8, 0xD4, 0xDA, 0xCF, 0xDF, 0xC0, 0xEB,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D, 0x04, 0x65,
+                ]
+            )
+        )  # fmt: skip
+        action = 0x02
+    else:
+        params1 = timestamp + b"\x3d\x05" + device + bytes(12)
+        params2 = timestamp + b"\x3d\x04" + device + bytes(12)
+        action = 0x04
+
+    return [
+        _lumi_command(0x12, action, params1),
+        _lumi_command(0x13, action, params2),
+    ]
+
+
+def _external_temperature_command(temperature: int) -> bytes:
+    """Build the command reporting an external temperature, in 0.01 °C."""
+    params = EXTERNAL_SENSOR_ID + b"\x00\x01\x00\x55" + struct.pack(">f", temperature)
+    return _lumi_command(0x12, 0x05, params)
+
+
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
@@ -424,9 +501,122 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
         )
+        lumi_command: Final = ZCLAttributeDef(
+            id=LUMI_COMMAND, type=t.LVBytes, is_manufacturer_specific=True
+        )
+        external_temperature: Final = ZCLAttributeDef(
+            id=EXTERNAL_TEMPERATURE, type=t.int16s, is_manufacturer_specific=True
+        )
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Answer reads of the external temperature locally."""
+        local = [
+            attr
+            for attr in attributes
+            if self.find_attribute(attr).id == EXTERNAL_TEMPERATURE
+        ]
+        if not local:
+            return await super().read_attributes(attributes, *args, **kwargs)
+
+        remaining = [attr for attr in attributes if attr not in local]
+        successful_r, failed_r = {}, {}
+        if remaining:
+            successful_r, failed_r = await super().read_attributes(
+                remaining, *args, **kwargs
+            )
+
+        value = self.get(EXTERNAL_TEMPERATURE)
+        for attr in local:
+            if value is not None:
+                successful_r[attr] = value
+            else:
+                failed_r[attr] = foundation.Status.UNSUPPORTED_ATTRIBUTE
+        return successful_r, failed_r
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Send sensor selection and external temperature as Lumi commands."""
+        records = []
+        remaining_attributes = {}
+
+        for attr, value in attributes.items():
+            attr_id = self.find_attribute(attr).id
+            if attr_id == SENSOR:
+                if value not in list(AqaraThermostatSensor):
+                    raise ValueError(f"Invalid temperature sensor: {value!r}")
+                sensor = AqaraThermostatSensor(value)
+                commands = _sensor_mode_commands(sensor, self.endpoint.device.ieee)
+                status = await self._write_lumi_commands(commands, manufacturer)
+                if status == foundation.Status.SUCCESS:
+                    self._update_attribute(SENSOR, sensor)
+                    if sensor == AqaraThermostatSensor.Internal:
+                        await self._read_local_temperature()
+            elif attr_id == EXTERNAL_TEMPERATURE:
+                temperature = int(value)
+                if not (
+                    EXTERNAL_TEMPERATURE_MIN <= temperature <= EXTERNAL_TEMPERATURE_MAX
+                ):
+                    raise ValueError(
+                        f"External temperature must be between"
+                        f" {EXTERNAL_TEMPERATURE_MIN} and {EXTERNAL_TEMPERATURE_MAX}"
+                        f" (0.01 °C), got {temperature}"
+                    )
+                command = _external_temperature_command(temperature)
+                status = await self._write_lumi_commands([command], manufacturer)
+                if status == foundation.Status.SUCCESS:
+                    self._update_attribute(EXTERNAL_TEMPERATURE, temperature)
+            else:
+                remaining_attributes[attr] = value
+                continue
+
+            records.append(
+                foundation.WriteAttributesStatusRecord(status=status, attrid=attr_id)
+            )
+
+        if remaining_attributes:
+            result = await super().write_attributes(
+                remaining_attributes, manufacturer, **kwargs
+            )
+            records.extend(result[0])
+        return [records]
+
+    async def _read_local_temperature(self) -> None:
+        """Read the internal temperature again after leaving the external sensor."""
+        try:
+            await self.endpoint.thermostat.read_attributes(
+                [Thermostat.AttributeDefs.local_temperature.name]
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.debug("Failed to read the local temperature: %r", exc)
+
+    async def _write_lumi_commands(
+        self, commands: list[bytes], manufacturer: int | UndefinedType | None
+    ) -> foundation.Status:
+        """Write Lumi commands in order, stopping at the first failure."""
+        for command in commands:
+            result = await super().write_attributes(
+                {LUMI_COMMAND: command}, manufacturer, update_cache=False
+            )
+            for record in result[0]:
+                if record.status != foundation.Status.SUCCESS:
+                    return record.status
+        return foundation.Status.SUCCESS
 
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
+        if attrid == SENSOR and value == 2:
+            # Also reported while the external temperature input is in use, which
+            # Zigbee2MQTT treats the same as an external sensor
+            value = AqaraThermostatSensor.External
         if attrid == BATTERY_PERCENTAGE:
             self.endpoint.power.battery_percent_reported(value)
         elif attrid == SYSTEM_MODE:
@@ -514,13 +704,28 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         translation_key="calibrated",
         fallback_name="Calibrated",
     )
-    .binary_sensor(
+    .switch(
         attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.sensor.name,
         cluster_id=AqaraThermostatSpecificCluster.cluster_id,
-        entity_type=EntityType.DIAGNOSTIC,
+        on_value=AqaraThermostatSensor.External,
+        off_value=AqaraThermostatSensor.Internal,
         unique_id_suffix="64704-sensor",
-        translation_key="external_sensor",
-        fallback_name="External sensor",
+        translation_key="external_temperature_sensor",
+        fallback_name="External temperature sensor",
+    )
+    .number(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.external_temperature.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        min_value=EXTERNAL_TEMPERATURE_MIN / 100,
+        max_value=EXTERNAL_TEMPERATURE_MAX / 100,
+        step=0.1,
+        multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        mode="box",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unique_id_suffix="64704-external_temperature",
+        translation_key="external_temperature_sensor_value",
+        fallback_name="External temperature sensor value",
     )
     .add_to_registry()
 )
