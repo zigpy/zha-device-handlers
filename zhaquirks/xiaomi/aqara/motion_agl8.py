@@ -1,11 +1,17 @@
 """Quirk for Aqara lumi.sensor_occupy.agl8."""
 
 import logging
-from typing import Any, Final
+from typing import Final
 
 from zigpy import types as t
+from zigpy.typing import AddressingMode
 from zigpy.zcl import AttributeReadEvent
-from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    DataTypeId,
+    ZCLAttributeDef,
+    ZCLHeader,
+)
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
@@ -28,39 +34,18 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfigurationPercent):
     """Battery from the Aqara TLV report: voltage from tag 23, percentage from tag 24.
 
     The device also pushes standard PowerConfiguration reports, but those contradict the
-    TLV values (e.g. a stuck or zero percentage). Only values derived from the TLV report
-    may enter the attribute cache, so there is a single source of truth.
+    TLV values (e.g. a stuck or zero percentage). They are ignored, so values derived from
+    the TLV report are the single source of truth.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Init."""
-        self._tlv_battery_update = False
-        super().__init__(*args, **kwargs)
-
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        """Drop battery attribute updates that don't come from the TLV report."""
-        if not self._tlv_battery_update and attrid in (
-            self.BATTERY_VOLTAGE_ATTR,
-            self.BATTERY_PERCENTAGE_REMAINING,
-        ):
-            return
-        super()._update_attribute(attrid, value)
-
-    def battery_reported(self, voltage_mv: int) -> None:
-        """Battery voltage reported from the TLV report."""
-        self._tlv_battery_update = True
-        try:
-            super().battery_reported(voltage_mv)
-        finally:
-            self._tlv_battery_update = False
-
-    def battery_percent_reported(self, battery_percent: int) -> None:
-        """Battery percentage reported from the TLV report."""
-        self._tlv_battery_update = True
-        try:
-            super().battery_percent_reported(battery_percent)
-        finally:
-            self._tlv_battery_update = False
+    def handle_cluster_general_request(
+        self,
+        hdr: ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Ignore the device's standard battery reports."""
 
 
 class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):

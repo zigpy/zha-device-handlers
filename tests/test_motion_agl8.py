@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
@@ -80,7 +81,38 @@ def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
     assert power_listener.attribute_updates[1][1] == 200
 
 
-def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2_quirk):
+def send_battery_report(device, attr_id: int, value: int) -> None:
+    """Deliver a standard PowerConfiguration attribute report from the device."""
+    cluster = device.endpoints[1].power
+    hdr = foundation.ZCLHeader.general(
+        tsn=1,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Client_to_Server,
+    )
+    command = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema(
+        attribute_reports=[
+            foundation.Attribute(
+                attrid=attr_id,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint8, value=t.uint8_t(value)
+                ),
+            )
+        ]
+    )
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(hdr.serialize() + command.serialize()),
+        )
+    )
+
+
+async def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2_quirk):
     """Test that standard PowerConfiguration reports can't overwrite the TLV values."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     manu_cluster = device.endpoints[1].aqara_fp300_manu
@@ -96,8 +128,8 @@ def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2_quirk
     assert power_cluster.get(percent_id) == 150
 
     # Contradicting reports on the standard cluster are dropped
-    power_cluster.update_attribute(percent_id, 0)
-    power_cluster.update_attribute(voltage_id, 0)
+    send_battery_report(device, percent_id, 0)
+    send_battery_report(device, voltage_id, 0)
     assert power_cluster.get(voltage_id) == pytest.approx(29.5)
     assert power_cluster.get(percent_id) == 150
 
@@ -109,13 +141,13 @@ def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2_quirk
     assert power_cluster.get(percent_id) == 140
 
 
-def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
+async def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
     """Test that nothing is cached from standard reports before the first TLV report."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     power_cluster = device.endpoints[1].power
 
-    power_cluster.update_attribute(
-        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id, 0
+    send_battery_report(
+        device, PowerConfiguration.AttributeDefs.battery_percentage_remaining.id, 0
     )
 
     assert (
