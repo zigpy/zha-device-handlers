@@ -430,6 +430,13 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
             attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
+        elif self.endpoint.device.model == "lumi.sensor_occupy.agl8":
+            attribute_names.update(
+                {
+                    23: BATTERY_VOLTAGE_MV,
+                    24: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
+                }
+            )
         elif self.endpoint.device.model in [
             "lumi.motion.agl02",
             "lumi.motion.ac02",
