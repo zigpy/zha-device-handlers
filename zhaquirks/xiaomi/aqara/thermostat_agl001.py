@@ -10,8 +10,13 @@ from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import DeviceTemperature, Ota, PowerConfiguration
+from zigpy.zcl import ClusterType, OtaQueryCacheUpdatedEvent, foundation
+from zigpy.zcl.clusters.general import (
+    DeviceTemperature,
+    Ota,
+    PowerConfiguration,
+    QueryNextImageCommand,
+)
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -53,6 +58,7 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+FIRMWARE_VERSION = 0x00EE
 LUMI_COMMAND = 0xFFF2
 # Not a device attribute: holds the last external temperature sent to the device
 EXTERNAL_TEMPERATURE = 0x1392
@@ -525,6 +531,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         battery_percentage: Final = ZCLAttributeDef(
             id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
         )
+        firmware_version: Final = ZCLAttributeDef(
+            id=FIRMWARE_VERSION, type=t.uint32_t, is_manufacturer_specific=True
+        )
         lumi_command: Final = ZCLAttributeDef(
             id=LUMI_COMMAND, type=t.LVBytes, is_manufacturer_specific=True
         )
@@ -635,6 +644,15 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                     return record.status
         return foundation.Status.SUCCESS
 
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Read the firmware version used to correct the OTA version."""
+        if not self.is_server:
+            return
+        try:
+            await self.read_attributes([FIRMWARE_VERSION])
+        except Exception as exc:  # noqa: BLE001
+            self.debug("Failed to read the firmware version: %r", exc)
+
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
         if attrid == SENSOR and value == 2:
@@ -649,6 +667,84 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
         super()._update_attribute(attrid, value)
+        if attrid == FIRMWARE_VERSION and value is not None:
+            # Reports without a manufacturer code only update zigpy's legacy cache,
+            # which would leave an older value read during configuration in place
+            self._attr_cache.set_value(self.find_attribute(FIRMWARE_VERSION), value)
+            ota = self.endpoint.out_clusters.get(Ota.cluster_id)
+            if isinstance(ota, AqaraThermostatOtaCluster):
+                ota.correct_file_version()
+
+
+class AqaraThermostatOtaCluster(CustomCluster, Ota):
+    """OTA cluster correcting the firmware version the thermostat reports.
+
+    The thermostat reports a low, incorrect `current_file_version` in both the OTA
+    attribute and its `query_next_image` command, so it looks out of date even right
+    after an update. The real, OTA-comparable version is reported on the Aqara
+    cluster (attribute 0x00EE), which Zigbee2MQTT substitutes for this model too.
+    """
+
+    def _real_file_version(self) -> int | None:
+        """Return the firmware version reported on the Aqara cluster, if known."""
+        # Read the cache directly: it also holds values from reports without a
+        # manufacturer code, which `Cluster.get()` does not return
+        return self.endpoint.in_clusters[
+            AqaraThermostatSpecificCluster.cluster_id
+        ]._attr_cache.get(FIRMWARE_VERSION)
+
+    def correct_file_version(self) -> None:
+        """Correct an already received `current_file_version` with the real version."""
+        real_version = self._real_file_version()
+        if real_version is None:
+            return
+
+        current_version = self.get(Ota.AttributeDefs.current_file_version.id)
+        if current_version not in (None, real_version):
+            self._update_attribute(
+                Ota.AttributeDefs.current_file_version.id, real_version
+            )
+
+        # zigpy checks for updates with the last `query_next_image` it received
+        query_cmd: QueryNextImageCommand | None = getattr(self, "last_query_cmd", None)
+        if query_cmd is not None and query_cmd.current_file_version != real_version:
+            self.last_query_cmd = query_cmd.replace(current_file_version=real_version)
+            # zigpy persists the query from this event and restores it on startup
+            self.emit(
+                OtaQueryCacheUpdatedEvent.event_type,
+                OtaQueryCacheUpdatedEvent(
+                    device_ieee=str(self.endpoint.device.ieee),
+                    endpoint_id=self.endpoint.endpoint_id,
+                    cluster_type=self.cluster_type,
+                    cluster_id=self.cluster_id,
+                    manufacturer_code=query_cmd.manufacturer_code,
+                    image_type=query_cmd.image_type,
+                    current_file_version=real_version,
+                    hardware_version=getattr(query_cmd, "hardware_version", None),
+                ),
+            )
+
+    def _update_attribute(self, attrid, value):
+        """Replace the reported `current_file_version` with the real version."""
+        if attrid == Ota.AttributeDefs.current_file_version.id and (
+            (real_version := self._real_file_version()) is not None
+        ):
+            value = real_version
+        super()._update_attribute(attrid, value)
+
+    def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
+        """Replace the `current_file_version` of `query_next_image` commands.
+
+        zigpy keeps this command to decide whether an image is available, so the
+        version has to be corrected before it is handled.
+        """
+        if (
+            hdr.direction == foundation.Direction.Client_to_Server
+            and hdr.command_id == Ota.ServerCommandDefs.query_next_image.id
+            and (real_version := self._real_file_version()) is not None
+        ):
+            args = args.replace(current_file_version=real_version)
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 # Unique ID suffixes keep the `{ieee}-1-64704-<attribute>` IDs of the entities ZHA used
@@ -662,7 +758,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     .adds(AqaraThermostatDeviceTemperature)
     .replaces(AqaraThermostatSpecificCluster)
     .replaces(AqaraThermostatSpecificCluster, cluster_type=ClusterType.Client)
-    .adds(Ota, cluster_type=ClusterType.Client)
+    .adds(AqaraThermostatOtaCluster, cluster_type=ClusterType.Client)
     .switch(
         attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.window_detection.name,
         cluster_id=AqaraThermostatSpecificCluster.cluster_id,

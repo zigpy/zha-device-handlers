@@ -16,6 +16,7 @@ from zigpy.zcl import (
     AttributeUpdatedEvent,
     Cluster,
     ClusterType,
+    OtaQueryCacheUpdatedEvent,
     foundation,
 )
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -120,6 +121,7 @@ import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AqaraThermostatDeviceTemperature,
+    AqaraThermostatOtaCluster,
     AqaraThermostatPowerConfiguration,
     AqaraThermostatSensor,
     AqaraThermostatSpecificCluster,
@@ -1369,7 +1371,7 @@ def test_xiaomi_e1_thermostat_v2_quirk(zigpy_device_from_v2_quirk):
     assert isinstance(endpoint.opple_cluster, AqaraThermostatSpecificCluster)
     assert isinstance(endpoint.power, AqaraThermostatPowerConfiguration)
     assert isinstance(endpoint.device_temperature, AqaraThermostatDeviceTemperature)
-    assert Ota.cluster_id in endpoint.out_clusters
+    assert isinstance(endpoint.out_clusters[Ota.cluster_id], AqaraThermostatOtaCluster)
 
     # The entities used to be created by ZHA itself, with `{ieee}-1-64704-<attr>`
     # unique IDs. The quirk must keep those, or existing entities are orphaned.
@@ -1763,6 +1765,114 @@ async def test_xiaomi_e1_thermostat_heartbeat(zigpy_device_from_v2_quirk):
     assert power.get("battery_voltage") == 29
     # the voltage does not override the percentage the thermostat reports
     assert power.get("battery_percentage_remaining") == 160
+
+
+@pytest.mark.parametrize("manufacturer", [0x115F, None])
+async def test_xiaomi_e1_thermostat_ota_file_version(
+    zigpy_device_from_v2_quirk, manufacturer
+):
+    """Test the wrong OTA `current_file_version` is replaced with the real version."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    device.node_desc = device.node_desc.replace(manufacturer_code=0x115F)
+    opple_cluster = device.endpoints[1].opple_cluster
+    ota_cluster = device.endpoints[1].out_clusters[Ota.cluster_id]
+    assert isinstance(ota_cluster, AqaraThermostatOtaCluster)
+
+    current_file_version = Ota.AttributeDefs.current_file_version.id
+    wrong_version = 0x0000001E
+    real_version = 0x00000407
+
+    captured_tasks = []
+    ota_cluster.create_catching_task = lambda coro, *args, **kwargs: (
+        captured_tasks.append(coro)
+    )
+
+    def query_next_image(tsn):
+        ota_cluster.handle_cluster_request(
+            foundation.ZCLHeader.cluster(
+                tsn=tsn, command_id=Ota.ServerCommandDefs.query_next_image.id
+            ),
+            Ota.ServerCommandDefs.query_next_image.schema(
+                field_control=Ota.QueryNextImageCommand.FieldControl(0),
+                manufacturer_code=0x115F,
+                image_type=0x0000,
+                current_file_version=wrong_version,
+            ),
+        )
+
+    # without the real version, the reported one is kept
+    ota_cluster.update_attribute(current_file_version, wrong_version)
+    assert ota_cluster.get(current_file_version) == wrong_version
+    query_next_image(1)
+    await captured_tasks.pop()
+    assert ota_cluster.last_query_cmd.current_file_version == wrong_version
+
+    # a stale value read during configuration must not mask a newer report
+    opple_cluster.update_attribute(0x00EE, 0x00000300)
+
+    query_cache_events = []
+    ota_cluster.on_event(
+        OtaQueryCacheUpdatedEvent.event_type, query_cache_events.append
+    )
+
+    # the real version arrives in a report, with or without a manufacturer code,
+    # and corrects the already cached version
+    hdr = foundation.ZCLHeader.general(
+        tsn=1,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        manufacturer=manufacturer,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    attr = foundation.Attribute(
+        attrid=0x00EE,
+        value=foundation.TypeValue(
+            type=DataTypeId.uint32, value=t.uint32_t(real_version)
+        ),
+    )
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(hdr.serialize() + attr.serialize()),
+        )
+    )
+    assert ota_cluster.get(current_file_version) == real_version
+    assert ota_cluster.last_query_cmd.current_file_version == real_version
+    # the corrected query is persisted
+    assert query_cache_events[-1].current_file_version == real_version
+
+    # later reports of the wrong version are corrected too
+    ota_cluster.update_attribute(current_file_version, wrong_version)
+    assert ota_cluster.get(current_file_version) == real_version
+
+    # and so is `query_next_image`, which zigpy keeps to check for updates
+    query_next_image(2)
+    await captured_tasks.pop()
+    assert ota_cluster.last_query_cmd.current_file_version == real_version
+
+
+async def test_xiaomi_e1_thermostat_reads_firmware_version(zigpy_device_from_v2_quirk):
+    """Test the firmware version is read when the thermostat is configured."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    client_cluster = device.endpoints[1].out_clusters[opple_cluster.cluster_id]
+
+    with (
+        mock.patch.object(
+            opple_cluster,
+            "read_attributes",
+            mock.AsyncMock(side_effect=asyncio.TimeoutError),
+        ),
+        mock.patch.object(client_cluster, "read_attributes", mock.AsyncMock()),
+    ):
+        # a sleeping thermostat does not fail the configuration
+        await device.apply_custom_configuration()
+        opple_cluster.read_attributes.assert_awaited_once_with([0x00EE])
+        # only the server cluster reads it
+        client_cluster.read_attributes.assert_not_awaited()
 
 
 async def test_xiaomi_e1_thermostat_sensor_mode_report(zigpy_device_from_v2_quirk):
