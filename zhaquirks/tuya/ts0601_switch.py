@@ -2,8 +2,16 @@
 
 from zha.quirks import TUYA_PLUG_MANUFACTURER
 from zigpy.profiles import zgp, zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
+from zhaquirks.builder import (
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -13,6 +21,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     MoesSwitchManufCluster,
     TuyaOnOff,
@@ -1487,3 +1496,153 @@ class TuyaSwitchX16GP(TuyaSwitch):
             },
         }
     }
+
+
+class TuyaTempSwitchWorkMode(t.enum8):
+    """Tuya smart temperature switch work mode."""
+
+    Heating = 0x00
+    Cooling = 0x02
+
+
+class TuyaTempSwitchTempUnit(t.enum8):
+    """Tuya smart temperature switch temperature unit."""
+
+    Celsius = 0x00
+    Fahrenheit = 0x01
+
+
+(
+    # ALTO TS5Z smart temperature switch. Controls an output relay from a
+    # temperature probe, with manual and automatic heating/cooling modes.
+    TuyaQuirkBuilder("_TZE284_roujjevx", "TS0601")
+    # DP 2: output relay state
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="on_off",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch",
+        fallback_name="Output",
+    )
+    # DP 9: automatic mode (thermostat function enabled)
+    .tuya_switch(
+        dp_id=9,
+        attribute_name="autowork",
+        translation_key="autowork",
+        fallback_name="Automatic mode",
+    )
+    # DP 8: work mode (heating/cooling)
+    .tuya_enum(
+        dp_id=8,
+        attribute_name="work_mode",
+        enum_class=TuyaTempSwitchWorkMode,
+        translation_key="work_mode",
+        fallback_name="Work mode",
+    )
+    # DP 20: temperature unit
+    .tuya_enum(
+        dp_id=20,
+        attribute_name="temperature_unit",
+        enum_class=TuyaTempSwitchTempUnit,
+        translation_key="display_unit",
+        fallback_name="Temperature unit",
+    )
+    # DP 27: measured temperature, reported in tenths of a degree C
+    .tuya_temperature(dp_id=27, scale=10)
+    # DP 28: measured temperature, reported in tenths of a degree F
+    .tuya_sensor(
+        dp_id=28,
+        attribute_name="temperature_f",
+        type=t.int16s,
+        converter=lambda x: x / 10,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.FAHRENHEIT,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="temperature_f",
+        fallback_name="Temperature F",
+    )
+    # DP 22: setpoint in tenths of a degree C
+    .tuya_number(
+        dp_id=22,
+        attribute_name="temperature_c_setpoint",
+        type=t.int16s,
+        min_value=-20,
+        max_value=102,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_c_setpoint",
+        fallback_name="Temperature C setpoint",
+    )
+    # DP 21: setpoint in tenths of a degree F
+    .tuya_number(
+        dp_id=21,
+        attribute_name="temperature_f_setpoint",
+        type=t.int16s,
+        min_value=-4,
+        max_value=221,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.FAHRENHEIT,
+        translation_key="temperature_f_setpoint",
+        fallback_name="Temperature F setpoint",
+    )
+    # DP 29: deadband between setpoint and measured temperature, tenths
+    .tuya_number(
+        dp_id=29,
+        attribute_name="temperature_range",
+        type=t.int16s,
+        min_value=1,
+        max_value=9,
+        step=0.5,
+        multiplier=0.1,
+        translation_key="deadzone_temperature",
+        fallback_name="Temperature range",
+    )
+    # DP 30: temperature calibration in whole degrees F
+    .tuya_number(
+        dp_id=30,
+        attribute_name="temperature_calibration",
+        type=t.int16s,
+        min_value=-9,
+        max_value=9,
+        step=1,
+        unit=UnitOfTemperature.FAHRENHEIT,
+        translation_key="local_temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    # DP 4: countdown to toggle the output, in seconds
+    .tuya_number(
+        dp_id=4,
+        attribute_name="countdown",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=86400,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="countdown",
+        fallback_name="Countdown",
+    )
+    # DP 55: turn-on delay for cooling mode, in minutes
+    .tuya_number(
+        dp_id=55,
+        attribute_name="cooling_delay",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="cooling_delay",
+        fallback_name="Cooling delay",
+    )
+    # DP 56: enable the cooling turn-on delay
+    .tuya_switch(
+        dp_id=56,
+        attribute_name="cooling_delay_switch",
+        translation_key="cooling_delay_switch",
+        fallback_name="Cooling delay",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
