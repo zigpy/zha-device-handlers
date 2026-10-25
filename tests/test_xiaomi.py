@@ -78,7 +78,6 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiCustomDeviceV2,
-    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
@@ -120,6 +119,8 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    AqaraThermostatDeviceTemperature,
+    AqaraThermostatPowerConfiguration,
     AqaraThermostatSensor,
     AqaraThermostatSpecificCluster,
     ScheduleEvent,
@@ -1366,7 +1367,8 @@ def test_xiaomi_e1_thermostat_v2_quirk(zigpy_device_from_v2_quirk):
     assert isinstance(device, XiaomiCustomDeviceV2)
     assert isinstance(endpoint.thermostat, ThermostatCluster)
     assert isinstance(endpoint.opple_cluster, AqaraThermostatSpecificCluster)
-    assert isinstance(endpoint.power, XiaomiPowerConfiguration)
+    assert isinstance(endpoint.power, AqaraThermostatPowerConfiguration)
+    assert isinstance(endpoint.device_temperature, AqaraThermostatDeviceTemperature)
     assert Ota.cluster_id in endpoint.out_clusters
 
     # The entities used to be created by ZHA itself, with `{ieee}-1-64704-<attr>`
@@ -1384,6 +1386,8 @@ def test_xiaomi_e1_thermostat_v2_quirk(zigpy_device_from_v2_quirk):
         ("switch", "64704-window_detection"),
         ("switch", "64704-valve_detection"),
         ("switch", "64704-child_lock"),
+        ("switch", "64704-schedule"),
+        ("button", "64704-calibrate"),
         ("select", "64704-preset"),
         ("number", "64704-away_preset_temperature"),
         ("binary_sensor", "64704-window_open"),
@@ -1735,6 +1739,30 @@ async def test_xiaomi_e1_thermostat_external_temperature(zigpy_device_from_v2_qu
             with pytest.raises(ValueError):
                 await opple_cluster.write_attributes({external_temperature.id: value})
         assert len(opple_cluster._write_attributes.mock_calls) == 0
+
+
+async def test_xiaomi_e1_thermostat_heartbeat(zigpy_device_from_v2_quirk):
+    """Test the heartbeat device temperature and battery handling."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    endpoint = device.endpoints[1]
+    power = endpoint.power
+
+    assert await power.read_attributes(["battery_quantity", "battery_size"]) == (
+        {"battery_quantity": 2, "battery_size": BatterySize.AA},
+        {},
+    )
+
+    endpoint.opple_cluster.update_attribute(0x040A, 80)
+    assert power.get("battery_percentage_remaining") == 160
+
+    # device temperature 25 °C (key 3, int8) and battery voltage 2.9 V (key 1, uint16)
+    endpoint.opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, b"\x03\x28\x19\x01\x21\x54\x0b"
+    )
+    assert endpoint.device_temperature.get("current_temperature") == 2500
+    assert power.get("battery_voltage") == 29
+    # the voltage does not override the percentage the thermostat reports
+    assert power.get("battery_percentage_remaining") == 160
 
 
 async def test_xiaomi_e1_thermostat_sensor_mode_report(zigpy_device_from_v2_quirk):

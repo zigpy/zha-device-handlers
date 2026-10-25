@@ -11,7 +11,7 @@ from typing import Any, Final
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Ota
+from zigpy.zcl.clusters.general import DeviceTemperature, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -23,11 +23,13 @@ from zhaquirks.builder import (
     UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import BatterySize
 from zhaquirks.xiaomi import (
     LUMI,
+    DeviceTemperatureCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDeviceV2,
-    XiaomiPowerConfiguration,
+    XiaomiPowerConfigurationPercent,
 )
 
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
@@ -37,6 +39,7 @@ XIAOMI_SYSTEM_MODE_MAP = {
     1: Thermostat.SystemMode.Heat,
 }
 
+CALIBRATE = 0x0270
 SYSTEM_MODE = 0x0271
 PRESET = 0x0272
 WINDOW_DETECTION = 0x0273
@@ -399,6 +402,24 @@ class ScheduleSettings(t.LVBytes):
         return result
 
 
+class AqaraThermostatPowerConfiguration(XiaomiPowerConfigurationPercent):
+    """Power configuration for the two AA batteries of the thermostat."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._CONSTANT_ATTRIBUTES = {
+            PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
+            PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
+        }
+
+
+class AqaraThermostatDeviceTemperature(DeviceTemperatureCluster):
+    """Device temperature, taken from the thermostat's heartbeat."""
+
+    _VALID_ATTRIBUTES = {DeviceTemperature.AttributeDefs.current_temperature.id}
+
+
 def _lumi_command(counter: int, action: int, params: bytes) -> bytes:
     """Build a Lumi command frame written to the `0xFFF2` attribute."""
     header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
@@ -462,6 +483,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
         """Attribute definitions."""
 
+        calibrate: Final = ZCLAttributeDef(
+            id=CALIBRATE, type=t.uint8_t, is_manufacturer_specific=True
+        )
         system_mode: Final = ZCLAttributeDef(
             id=SYSTEM_MODE, type=t.uint8_t, is_manufacturer_specific=True
         )
@@ -634,7 +658,8 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     .zigpy_device_class(XiaomiCustomDeviceV2)
     .replaces(ThermostatCluster)
     .replaces(ThermostatCluster, cluster_type=ClusterType.Client)
-    .replaces(XiaomiPowerConfiguration)
+    .replaces(AqaraThermostatPowerConfiguration)
+    .adds(AqaraThermostatDeviceTemperature)
     .replaces(AqaraThermostatSpecificCluster)
     .replaces(AqaraThermostatSpecificCluster, cluster_type=ClusterType.Client)
     .adds(Ota, cluster_type=ClusterType.Client)
@@ -658,6 +683,13 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         unique_id_suffix="64704-child_lock",
         translation_key="child_lock",
         fallback_name="Child lock",
+    )
+    .switch(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.schedule.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-schedule",
+        translation_key="schedule_enable",
+        fallback_name="Schedule enable",
     )
     .enum(
         attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.preset.name,
@@ -726,6 +758,14 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         unique_id_suffix="64704-external_temperature",
         translation_key="external_temperature_sensor_value",
         fallback_name="External temperature sensor value",
+    )
+    .write_attr_button(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.calibrate.name,
+        attribute_value=1,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-calibrate",
+        translation_key="calibrate_valve",
+        fallback_name="Calibrate valve",
     )
     .add_to_registry()
 )
