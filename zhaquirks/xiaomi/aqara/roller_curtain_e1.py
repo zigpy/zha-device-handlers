@@ -100,6 +100,10 @@ class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
         )
 
 
+# Aqara sends command echoes together with this attribute in a single report
+AQARA_EVENT_ATTRIBUTE = 0xF000
+
+
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """AnalogOutput cluster reporting current position and used for writing target position."""
 
@@ -121,6 +125,44 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
         self.on_event(
             AttributeReportedEvent.event_type, self._handle_attribute_read_or_reported
         )
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Drop command echoes that the motor sends together with an Aqara event.
+
+        The motor reports ``0`` (close), ``1`` (open) or ``2`` (stop) in
+        ``present_value`` next to attribute ``0xF000``. Real position reports and
+        read responses carry ``present_value`` on its own, so these values are
+        not positions and must not move the cover to 0-2 %.
+        """
+        if (
+            hdr.command_id == foundation.GeneralCommand.Report_Attributes
+            and any(
+                report.attrid == AQARA_EVENT_ATTRIBUTE
+                for report in args.attribute_reports
+            )
+            and any(
+                report.attrid == self.AttributeDefs.present_value.id
+                for report in args.attribute_reports
+            )
+        ):
+            attribute_reports = args.attribute_reports
+            args.attribute_reports = [
+                report
+                for report in attribute_reports
+                if report.attrid != self.AttributeDefs.present_value.id
+            ]
+            try:
+                super().handle_cluster_general_request(hdr, args, **kwargs)
+            finally:
+                args.attribute_reports = attribute_reports
+            return
+
+        super().handle_cluster_general_request(hdr, args, **kwargs)
 
     def _handle_attribute_read_or_reported(
         self, event: AttributeReadEvent | AttributeReportedEvent

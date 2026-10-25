@@ -2400,6 +2400,61 @@ async def test_xiaomi_e1_roller_window_covering_read_redirection(
 
 
 @pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
+async def test_xiaomi_e1_roller_aqara_event_reports_ignored(
+    zigpy_device_from_v2_quirk, model
+):
+    """Test Aqara event reports do not move the cover to the command echo value."""
+    device = zigpy_device_from_v2_quirk(LUMI, model)
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
+    analog_cluster = device.endpoints[1].analog_output
+    present_value_id = AnalogOutput.AttributeDefs.present_value.id
+
+    header = foundation.ZCLHeader()
+    header.command_id = foundation.GeneralCommand.Report_Attributes
+    header.frame_control = foundation.FrameControl.general().replace(
+        disable_default_response=1
+    )
+    header.tsn = 42
+
+    def report(*attributes: foundation.Attribute) -> foundation.Report_Attributes:
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Report_Attributes
+        ].schema(attribute_reports=list(attributes))
+
+    def present_value(value: float) -> foundation.Attribute:
+        return foundation.Attribute(
+            attrid=present_value_id,
+            value=foundation.TypeValue(type=foundation.DataTypeId.single, value=value),
+        )
+
+    # the motor sends command echoes (2 = stop) together with the Aqara event
+    # attribute; they are not positions and must be ignored
+    analog_cluster.handle_cluster_general_request(
+        header,
+        report(
+            present_value(2.0),
+            foundation.Attribute(
+                attrid=0xF000,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint32, value=0x00020000
+                ),
+            ),
+        ),
+    )
+    assert window_covering_listener.attribute_updates == []
+
+    # a position report without the event attribute still updates the cover
+    analog_cluster.handle_cluster_general_request(header, report(present_value(40.0)))
+    assert window_covering_listener.attribute_updates == [(window_covering_attr_id, 60)]
+
+
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
 async def test_xiaomi_e1_roller_position_updates(
     zigpy_device_from_v2_quirk,
     model,
