@@ -51,6 +51,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.legacy import (
     CustomDevice,
     get_quirk_list,
@@ -118,14 +119,8 @@ XIAOMI_NODE_DESC = NodeDescriptor(
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiCustomDevice(CustomDevice):
-    """Custom device representing xiaomi devices."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        if not hasattr(self, BATTERY_SIZE):
-            self.battery_size = BatterySize.CR2032
-        super().__init__(*args, **kwargs)
+class XiaomiZclDirectionMixin:
+    """Match ZCL packets that Aqara devices send with the wrong `direction` bit."""
 
     def _find_zcl_cluster(
         self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
@@ -135,13 +130,13 @@ class XiaomiCustomDevice(CustomDevice):
         # Aqara devices seem to be very lax with their ZCL header's `direction` field,
         # we should try "flipping" it if matching doesn't work normally.
         try:
-            return super()._find_zcl_cluster_strict(hdr, packet)
+            return self._find_zcl_cluster_strict(hdr, packet)
         except KeyError:
             _LOGGER.debug(
                 "Packet is coming in the wrong direction, swapping direction and trying again",
             )
 
-            return super()._find_zcl_cluster_strict(
+            return self._find_zcl_cluster_strict(
                 hdr.replace(
                     frame_control=hdr.frame_control.replace(
                         direction=hdr.frame_control.direction.flip()
@@ -149,6 +144,26 @@ class XiaomiCustomDevice(CustomDevice):
                 ),
                 packet,
             )
+
+
+class XiaomiCustomDevice(XiaomiZclDirectionMixin, CustomDevice):
+    """Custom device representing xiaomi devices."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        if not hasattr(self, BATTERY_SIZE):
+            self.battery_size = BatterySize.CR2032
+        super().__init__(*args, **kwargs)
+
+
+class XiaomiCustomDeviceV2(XiaomiZclDirectionMixin, CustomZigpyDevice):
+    """Zigpy device class for Xiaomi v2 quirks, the counterpart of `XiaomiCustomDevice`."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        if not hasattr(self, BATTERY_SIZE):
+            self.battery_size = BatterySize.CR2032
+        super().__init__(*args, **kwargs)
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):

@@ -7,6 +7,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -22,10 +23,13 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
     DeviceTemperature,
+    Identify,
     MultistateInput,
     MultistateOutput,
     OnOff,
+    Ota,
     PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -43,6 +47,7 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks.builder.device import QuirkV2Factory
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
@@ -70,7 +75,10 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiCustomDeviceV2,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
@@ -111,7 +119,12 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
-from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    AqaraThermostatSpecificCluster,
+    ScheduleEvent,
+    ScheduleSettings,
+    ThermostatCluster,
+)
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 import zhaquirks.xiaomi.mija.smoke
@@ -1327,6 +1340,58 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
 
 
+def _e1_thermostat_device(zigpy_device_from_v2_quirk):
+    """Create a quirked Aqara E1 thermostat with its real cluster layout."""
+    return zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.airrtc.agl001",
+        cluster_ids={
+            1: {
+                Identify.cluster_id: ClusterType.Server,
+                Thermostat.cluster_id: ClusterType.Server,
+                Time.cluster_id: ClusterType.Server,
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                XiaomiAqaraE1Cluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+
+def test_xiaomi_e1_thermostat_v2_quirk(zigpy_device_from_v2_quirk):
+    """Test the E1 thermostat quirk clusters and its entity unique IDs."""
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
+    endpoint = device.endpoints[1]
+
+    assert isinstance(device, XiaomiCustomDeviceV2)
+    assert isinstance(endpoint.thermostat, ThermostatCluster)
+    assert isinstance(endpoint.opple_cluster, AqaraThermostatSpecificCluster)
+    assert isinstance(endpoint.power, XiaomiPowerConfiguration)
+    assert Ota.cluster_id in endpoint.out_clusters
+
+    # The entities used to be created by ZHA itself, with `{ieee}-1-64704-<attr>`
+    # unique IDs. The quirk must keep those, or existing entities are orphaned.
+    quirk = next(
+        entry
+        for entry in DEVICE_REGISTRY
+        if isinstance(entry.zha_device_factory, QuirkV2Factory)
+        and (LUMI, "lumi.airrtc.agl001") in entry.device_match.applies_to
+    )
+    assert {
+        (em.entity_platform.value, em.unique_id_suffix)
+        for em in quirk.zha_device_factory.quirk_definition.entity_metadata
+    } == {
+        ("switch", "64704-window_detection"),
+        ("switch", "64704-valve_detection"),
+        ("switch", "64704-child_lock"),
+        ("select", "64704-preset"),
+        ("number", "64704-away_preset_temperature"),
+        ("binary_sensor", "64704-window_open"),
+        ("binary_sensor", "64704-valve_alarm"),
+        ("binary_sensor", "64704-calibrated"),
+        ("binary_sensor", "64704-sensor"),
+    }
+
+
 @pytest.mark.parametrize(
     "attr_redirect, attr_no_redirect",
     [
@@ -1338,13 +1403,13 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ],
 )
 async def test_xiaomi_e1_thermostat_rw_redirection(
-    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
     attr_redirect,
     attr_no_redirect,
 ):
     """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat with id and named reads/writes."""
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
 
     opple_cluster = device.endpoints[1].opple_cluster
     thermostat_cluster = device.endpoints[1].thermostat
@@ -1451,11 +1516,10 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert len(opple_cluster._write_attributes.mock_calls) == 0
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
-async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
+async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_v2_quirk):
     """Test update_attribute on Xiaomi E1 thermostat."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = _e1_thermostat_device(zigpy_device_from_v2_quirk)
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)

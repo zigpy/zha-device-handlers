@@ -7,26 +7,23 @@ import math
 import struct
 from typing import Any, Final
 
-from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Ota
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    UnitOfTemperature,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.xiaomi import (
     LUMI,
     XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
+    XiaomiCustomDeviceV2,
     XiaomiPowerConfiguration,
 )
 
@@ -63,6 +60,14 @@ DAYS_MAP = {
     "sun": 0x80,
 }
 NEXT_DAY_FLAG = 1 << 15
+
+
+class AqaraThermostatPreset(t.enum8):
+    """Thermostat preset."""
+
+    Manual = 0x00
+    Auto = 0x01
+    Away = 0x02
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -432,53 +437,90 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
 
 
-class AGL001(XiaomiCustomDevice):
-    """Aqara E1 Radiator Thermostat (AGL001) Device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=1
-        # input_clusters=[0, 1, 3, 513, 64704]
-        # output_clusters=[3, 513, 64704]>
-        MODELS_INFO: [(LUMI, "lumi.airrtc.agl001")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration,
-                    AqaraThermostatSpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    AqaraThermostatSpecificCluster,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+# Unique ID suffixes keep the `{ieee}-1-64704-<attribute>` IDs of the entities ZHA used
+# to create for this device (cluster ID 0xFCC0 = 64704).
+(
+    QuirkBuilder(LUMI, "lumi.airrtc.agl001")
+    .zigpy_device_class(XiaomiCustomDeviceV2)
+    .replaces(ThermostatCluster)
+    .replaces(ThermostatCluster, cluster_type=ClusterType.Client)
+    .replaces(XiaomiPowerConfiguration)
+    .replaces(AqaraThermostatSpecificCluster)
+    .replaces(AqaraThermostatSpecificCluster, cluster_type=ClusterType.Client)
+    .adds(Ota, cluster_type=ClusterType.Client)
+    .switch(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.window_detection.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    .switch(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.valve_detection.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-valve_detection",
+        translation_key="valve_detection",
+        fallback_name="Valve detection",
+    )
+    .switch(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.child_lock.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .enum(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.preset.name,
+        enum_class=AqaraThermostatPreset,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        unique_id_suffix="64704-preset",
+        translation_key="preset",
+        fallback_name="Preset",
+    )
+    .number(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.away_preset_temperature.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        mode="slider",
+        unique_id_suffix="64704-away_preset_temperature",
+        translation_key="away_preset_temperature",
+        fallback_name="Away preset temperature",
+    )
+    .binary_sensor(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.window_open.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.WINDOW,
+        unique_id_suffix="64704-window_open",
+        fallback_name="Window open",
+    )
+    .binary_sensor(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.valve_alarm.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        unique_id_suffix="64704-valve_alarm",
+        translation_key="valve_alarm",
+        fallback_name="Valve alarm",
+    )
+    .binary_sensor(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.calibrated.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="64704-calibrated",
+        translation_key="calibrated",
+        fallback_name="Calibrated",
+    )
+    .binary_sensor(
+        attribute_name=AqaraThermostatSpecificCluster.AttributeDefs.sensor.name,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="64704-sensor",
+        translation_key="external_sensor",
+        fallback_name="External sensor",
+    )
+    .add_to_registry()
+)
