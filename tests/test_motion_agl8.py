@@ -87,7 +87,7 @@ def send_battery_report(device, attr_id: int, value: int) -> None:
     hdr = foundation.ZCLHeader.general(
         tsn=1,
         command_id=foundation.GeneralCommand.Report_Attributes,
-        direction=foundation.Direction.Client_to_Server,
+        direction=foundation.Direction.Server_to_Client,
     )
     command = foundation.GENERAL_COMMANDS[
         foundation.GeneralCommand.Report_Attributes
