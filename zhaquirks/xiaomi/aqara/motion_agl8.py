@@ -75,14 +75,12 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         # A read response only emits AttributeReadEvent, which the Xiaomi cluster doesn't handle
         self.on_event(AttributeReadEvent.event_type, self._handle_attribute_event)
 
-    async def bind(self, **kwargs):
-        """Bind and read the Aqara TLV struct, as newer firmware doesn't push it by itself."""
-        result = await super().bind(**kwargs)
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Read the Aqara TLV struct on (re)configuration, as newer firmware doesn't push it."""
         try:
             await self.read_attributes([self.AttributeDefs.aqara_attributes.id])
         except Exception as exc:  # noqa: BLE001
             _LOGGER.debug("Failed to read initial battery state: %s", exc)
-        return result
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for Aqara FP300 manu cluster."""

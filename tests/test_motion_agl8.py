@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import Cluster, foundation
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 
 from tests.common import ClusterListener
@@ -126,8 +126,8 @@ def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
     )
 
 
-async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
-    """Test that binding also reads the Aqara TLV struct and that the response updates the battery."""
+async def test_aqara_fp300_configuration_reads_tlv_struct(zigpy_device_from_v2_quirk):
+    """Test that (re)configuration reads the Aqara TLV struct and that the response updates the battery."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     manu_cluster = device.endpoints[1].aqara_fp300_manu
     power_cluster = device.endpoints[1].power
@@ -141,18 +141,13 @@ async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
         ),
     )
 
-    with (
-        mock.patch.object(
-            Cluster, "bind", new_callable=mock.AsyncMock, return_value=[0]
-        ),
-        mock.patch.object(
-            manu_cluster,
-            "read_attributes_raw",
-            new_callable=mock.AsyncMock,
-            return_value=[[record]],
-        ) as mock_read,
-    ):
-        assert await manu_cluster.bind() == [0]
+    with mock.patch.object(
+        manu_cluster,
+        "read_attributes_raw",
+        new_callable=mock.AsyncMock,
+        return_value=[[record]],
+    ) as mock_read:
+        await device.apply_custom_configuration()
 
     mock_read.assert_awaited_once()
     assert mock_read.mock_calls[0].args[0] == [XIAOMI_AQARA_ATTRIBUTE_E1]
@@ -168,23 +163,20 @@ async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
     )
 
 
-async def test_aqara_fp300_bind_survives_read_failure(zigpy_device_from_v2_quirk):
-    """Test that a failing TLV read doesn't fail the bind."""
+async def test_aqara_fp300_configuration_survives_read_failure(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a failing TLV read doesn't fail the configuration."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     manu_cluster = device.endpoints[1].aqara_fp300_manu
 
-    with (
-        mock.patch.object(
-            Cluster, "bind", new_callable=mock.AsyncMock, return_value=[0]
-        ),
-        mock.patch.object(
-            manu_cluster,
-            "read_attributes_raw",
-            new_callable=mock.AsyncMock,
-            side_effect=TimeoutError,
-        ),
+    with mock.patch.object(
+        manu_cluster,
+        "read_attributes_raw",
+        new_callable=mock.AsyncMock,
+        side_effect=TimeoutError,
     ):
-        assert await manu_cluster.bind() == [0]
+        await device.apply_custom_configuration()
 
 
 def test_fp300_presence_binary_sensor_updates(zigpy_device_from_v2_quirk):
