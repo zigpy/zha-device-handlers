@@ -1545,7 +1545,7 @@ class TuyaTempSwitchTempUnit(t.enum8):
         attribute_name="temperature_unit",
         enum_class=TuyaTempSwitchTempUnit,
         translation_key="display_unit",
-        fallback_name="Temperature unit",
+        fallback_name="Display unit",
     )
     # DP 27: measured temperature, reported in tenths of a degree C
     .tuya_temperature(dp_id=27, scale=10)
@@ -1598,7 +1598,7 @@ class TuyaTempSwitchTempUnit(t.enum8):
         step=0.5,
         multiplier=0.1,
         translation_key="deadzone_temperature",
-        fallback_name="Temperature range",
+        fallback_name="Deadzone temperature",
     )
     # DP 30: temperature calibration in whole degrees F
     .tuya_number(
@@ -1610,7 +1610,7 @@ class TuyaTempSwitchTempUnit(t.enum8):
         step=1,
         unit=UnitOfTemperature.FAHRENHEIT,
         translation_key="local_temperature_calibration",
-        fallback_name="Temperature calibration",
+        fallback_name="Local temperature calibration",
     )
     # DP 4: countdown to toggle the output, in seconds
     .tuya_number(
