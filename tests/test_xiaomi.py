@@ -11,6 +11,7 @@ import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
+    AttributeReadEvent,
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     Cluster,
@@ -1670,6 +1671,32 @@ async def test_xiaomi_p1_t1_motion_sensor(
     assert len(illuminance_listener.attribute_updates) == 3
     assert illuminance_listener.attribute_updates[2][0] == zcl_iilluminance_id
     assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
+
+
+async def test_xiaomi_cluster_parses_attribute_read_response(zigpy_device_from_quirk):
+    """Test that a read response of the Aqara struct is parsed like a report."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.motion_acn001.MotionE1)
+    opple_cluster = device.endpoints[1].opple_cluster
+    illuminance_listener = ClusterListener(device.endpoints[1].illuminance)
+    value = create_aqara_attr_report({101: 20})
+
+    opple_cluster.emit(
+        AttributeReadEvent.event_type,
+        AttributeReadEvent(
+            device_ieee=str(device.ieee),
+            endpoint_id=1,
+            cluster_type=ClusterType.Server,
+            cluster_id=opple_cluster.cluster_id,
+            attribute_name="aqara_attributes",
+            attribute_id=XIAOMI_AQARA_ATTRIBUTE_E1,
+            manufacturer_code=None,
+            raw_value=value,
+            value=value,
+        ),
+    )
+
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(20) + 1
 
 
 @pytest.mark.parametrize(

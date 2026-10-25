@@ -11,7 +11,13 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.typing import AddressingMode
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    foundation,
+)
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -163,9 +169,10 @@ class XiaomiCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
         self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_event)
 
     def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
     ) -> None:
         """Handle attribute report event and dispatch Xiaomi blob data."""
         attrid = event.attribute_id
