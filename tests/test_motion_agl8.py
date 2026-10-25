@@ -1,5 +1,7 @@
 """Tests for Aqara FP300 (lumi.sensor_occupy.agl8)."""
 
+from unittest import mock
+
 import pytest
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -54,7 +56,7 @@ def test_fp300_power_configuration_cluster_present(zigpy_device_from_v2_quirk):
 
 
 def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
-    """Test battery updates from Aqara E1 TLV report."""
+    """Test battery voltage from tag 23 and percentage from tag 24 of the E1 TLV report."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
 
     manu_cluster = device.endpoints[1].in_clusters[AqaraFP300ManuCluster.cluster_id]
@@ -68,22 +70,53 @@ def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
 
     manu_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE_E1,
-        create_aqara_attr_report({23: 2950, 24: 87}),
+        create_aqara_attr_report({23: 3012, 24: 100}),
     )
 
     assert len(power_listener.attribute_updates) == 2
     assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
-    assert power_listener.attribute_updates[0][1] == pytest.approx(29.5)
+    assert power_listener.attribute_updates[0][1] == pytest.approx(30.1)
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
-    assert power_listener.attribute_updates[1][1] == 150
+    assert power_listener.attribute_updates[1][1] == 200
 
 
-def test_aqara_fp300_ignores_device_reported_percentage(zigpy_device_from_v2_quirk):
-    """Test that the device's own battery percentage report is ignored in favor of voltage."""
+def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2_quirk):
+    """Test that standard PowerConfiguration reports can't overwrite the TLV values."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    manu_cluster = device.endpoints[1].aqara_fp300_manu
+    power_cluster = device.endpoints[1].power
+
+    voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    manu_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({23: 2950, 24: 75})
+    )
+    assert power_cluster.get(voltage_id) == pytest.approx(29.5)
+    assert power_cluster.get(percent_id) == 150
+
+    # Contradicting reports on the standard cluster are dropped
+    power_cluster.update_attribute(percent_id, 0)
+    power_cluster.update_attribute(voltage_id, 0)
+    assert power_cluster.get(voltage_id) == pytest.approx(29.5)
+    assert power_cluster.get(percent_id) == 150
+
+    # The next TLV report still updates both
+    manu_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({23: 2900, 24: 70})
+    )
+    assert power_cluster.get(voltage_id) == pytest.approx(29.0)
+    assert power_cluster.get(percent_id) == 140
+
+
+def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
+    """Test that nothing is cached from standard reports before the first TLV report."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     power_cluster = device.endpoints[1].power
 
-    power_cluster.battery_percent_reported(50)
+    power_cluster.update_attribute(
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id, 0
+    )
 
     assert (
         power_cluster.get(
@@ -91,6 +124,45 @@ def test_aqara_fp300_ignores_device_reported_percentage(zigpy_device_from_v2_qui
         )
         is None
     )
+
+
+async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
+    """Test that binding the manufacturer cluster also reads the Aqara TLV struct."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    manu_cluster = device.endpoints[1].aqara_fp300_manu
+
+    with (
+        mock.patch.object(
+            AqaraFP300ManuCluster.__bases__[0], "bind", new_callable=mock.AsyncMock
+        ) as mock_bind,
+        mock.patch.object(
+            manu_cluster, "read_attributes", new_callable=mock.AsyncMock
+        ) as mock_read,
+    ):
+        mock_bind.return_value = [foundation.Status.SUCCESS]
+        assert await manu_cluster.bind() == [foundation.Status.SUCCESS]
+
+    mock_read.assert_awaited_once_with([XIAOMI_AQARA_ATTRIBUTE_E1], manufacturer=0x115F)
+
+
+async def test_aqara_fp300_bind_survives_read_failure(zigpy_device_from_v2_quirk):
+    """Test that a failing TLV read doesn't fail the bind."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    manu_cluster = device.endpoints[1].aqara_fp300_manu
+
+    with (
+        mock.patch.object(
+            AqaraFP300ManuCluster.__bases__[0], "bind", new_callable=mock.AsyncMock
+        ) as mock_bind,
+        mock.patch.object(
+            manu_cluster,
+            "read_attributes",
+            new_callable=mock.AsyncMock,
+            side_effect=TimeoutError,
+        ),
+    ):
+        mock_bind.return_value = [foundation.Status.SUCCESS]
+        assert await manu_cluster.bind() == [foundation.Status.SUCCESS]
 
 
 def test_fp300_presence_binary_sensor_updates(zigpy_device_from_v2_quirk):
