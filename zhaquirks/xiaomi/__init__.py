@@ -185,7 +185,7 @@ class XiaomiCluster(CustomCluster):
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
-        elif attrid == MODEL:
+        elif attrid == MODEL and not isinstance(event, AttributeReadEvent):
             # 0x0005 = model attribute.
             # Xiaomi sensors send the model attribute when their reset button is
             # pressed quickly.
