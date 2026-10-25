@@ -120,13 +120,11 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         cluster_id=AqaraFP300ManuCluster.cluster_id,
         device_class=BinarySensorDeviceClass.OCCUPANCY,
         entity_type=EntityType.STANDARD,
-        primary=True,
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=900,
             reportable_change=1,
         ),
-        translation_key="occupancy",
         fallback_name="Occupancy",
     )
     .binary_sensor(
@@ -140,8 +138,7 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         ),
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
-        translation_key="pir_detection",
-        fallback_name="PIR detection",
+        fallback_name="Motion",
     )
     .add_to_registry()
 )
