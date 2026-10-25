@@ -156,6 +156,7 @@ async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
 
     mock_read.assert_awaited_once()
     assert mock_read.mock_calls[0].args[0] == [XIAOMI_AQARA_ATTRIBUTE_E1]
+    assert mock_read.mock_calls[0].kwargs["manufacturer"] == 0x115F
     assert power_cluster.get(
         PowerConfiguration.AttributeDefs.battery_voltage.id
     ) == pytest.approx(29.9)
