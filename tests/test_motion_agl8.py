@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 
 from tests.common import ClusterListener
@@ -127,22 +127,44 @@ def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
 
 
 async def test_aqara_fp300_bind_reads_tlv_struct(zigpy_device_from_v2_quirk):
-    """Test that binding the manufacturer cluster also reads the Aqara TLV struct."""
+    """Test that binding also reads the Aqara TLV struct and that the response updates the battery."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     manu_cluster = device.endpoints[1].aqara_fp300_manu
+    power_cluster = device.endpoints[1].power
+
+    record = foundation.ReadAttributeRecord(
+        attrid=XIAOMI_AQARA_ATTRIBUTE_E1,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(
+            type=foundation.DataTypeId.octstr,
+            value=create_aqara_attr_report({23: 2987, 24: 91}),
+        ),
+    )
 
     with (
         mock.patch.object(
-            AqaraFP300ManuCluster.__bases__[0], "bind", new_callable=mock.AsyncMock
-        ) as mock_bind,
+            Cluster, "bind", new_callable=mock.AsyncMock, return_value=[0]
+        ),
         mock.patch.object(
-            manu_cluster, "read_attributes", new_callable=mock.AsyncMock
+            manu_cluster,
+            "read_attributes_raw",
+            new_callable=mock.AsyncMock,
+            return_value=[[record]],
         ) as mock_read,
     ):
-        mock_bind.return_value = [foundation.Status.SUCCESS]
-        assert await manu_cluster.bind() == [foundation.Status.SUCCESS]
+        assert await manu_cluster.bind() == [0]
 
-    mock_read.assert_awaited_once_with([XIAOMI_AQARA_ATTRIBUTE_E1], manufacturer=0x115F)
+    mock_read.assert_awaited_once()
+    assert mock_read.mock_calls[0].args[0] == [XIAOMI_AQARA_ATTRIBUTE_E1]
+    assert power_cluster.get(
+        PowerConfiguration.AttributeDefs.battery_voltage.id
+    ) == pytest.approx(29.9)
+    assert (
+        power_cluster.get(
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+        )
+        == 182
+    )
 
 
 async def test_aqara_fp300_bind_survives_read_failure(zigpy_device_from_v2_quirk):
@@ -152,17 +174,16 @@ async def test_aqara_fp300_bind_survives_read_failure(zigpy_device_from_v2_quirk
 
     with (
         mock.patch.object(
-            AqaraFP300ManuCluster.__bases__[0], "bind", new_callable=mock.AsyncMock
-        ) as mock_bind,
+            Cluster, "bind", new_callable=mock.AsyncMock, return_value=[0]
+        ),
         mock.patch.object(
             manu_cluster,
-            "read_attributes",
+            "read_attributes_raw",
             new_callable=mock.AsyncMock,
             side_effect=TimeoutError,
         ),
     ):
-        mock_bind.return_value = [foundation.Status.SUCCESS]
-        assert await manu_cluster.bind() == [foundation.Status.SUCCESS]
+        assert await manu_cluster.bind() == [0]
 
 
 def test_fp300_presence_binary_sensor_updates(zigpy_device_from_v2_quirk):

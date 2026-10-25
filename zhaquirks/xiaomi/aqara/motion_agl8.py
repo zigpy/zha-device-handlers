@@ -4,6 +4,7 @@ import logging
 from typing import Any, Final
 
 from zigpy import types as t
+from zigpy.zcl import AttributeReadEvent
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import (
@@ -68,19 +69,29 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
     cluster_id = 0xFCC0
     ep_attribute = "aqara_fp300_manu"
 
-    async def bind(self):
+    def __init__(self, *args, **kwargs) -> None:
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # A read response only emits AttributeReadEvent, which the Xiaomi cluster doesn't handle
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_event)
+
+    async def bind(self, **kwargs):
         """Bind and read the Aqara TLV struct, as newer firmware doesn't push it by itself."""
-        result = await super().bind()
+        result = await super().bind(**kwargs)
         try:
-            await self.read_attributes(
-                [XIAOMI_AQARA_ATTRIBUTE_E1], manufacturer=AQARA_MANUFACTURER_CODE
-            )
+            await self.read_attributes([self.AttributeDefs.aqara_attributes.id])
         except Exception as exc:  # noqa: BLE001
             _LOGGER.debug("Failed to read initial battery state: %s", exc)
         return result
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for Aqara FP300 manu cluster."""
+
+        aqara_attributes: Final = ZCLAttributeDef(
+            id=XIAOMI_AQARA_ATTRIBUTE_E1,
+            type=t.LVBytes,
+            manufacturer_code=AQARA_MANUFACTURER_CODE,
+        )
 
         presence: Final = ZCLAttributeDef(
             id=0x0142,
