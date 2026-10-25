@@ -101,6 +101,7 @@ class TuyaGarageSwitchTO(CustomDevice):
             ("_TZE200_nklqjk62", "TS0601"),
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE204_nklqjk62", "TS0601"),
+            ("_TZE204_wfxuhoea", "TS0601"),  # LoraTap GDC311ZBQ1, reported in #5453
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
