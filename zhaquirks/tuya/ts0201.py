@@ -238,7 +238,9 @@ class MoesTemperatureHumidtySensorWithScreen(CustomDevice):
         },
     }
 
+
 _LOGGER = logging.getLogger(__name__)
+
 
 class RelativeHumidityFolded(CustomCluster, RelativeHumidity):
     """Handles invalid humidity values from Tuya devices using frame control field context."""
@@ -268,7 +270,11 @@ class RelativeHumidityFolded(CustomCluster, RelativeHumidity):
         # Fallback
         _LOGGER.debug(
             "[0x%04x] TS0201 quirk fallback used | FCF=0x%02x | raw=%d | reported=%d (%.1f%%)",
-            nwk, fcf, raw, raw, raw / 100,
+            nwk,
+            fcf,
+            raw,
+            raw,
+            raw / 100,
         )
         return raw
 
@@ -279,6 +285,7 @@ class RelativeHumidityFolded(CustomCluster, RelativeHumidity):
             value = self._fix_humidity(value, fcf or 0, nwk)
 
         super()._update_attribute(attrid, value)
+
 
 class TuyaTemperatureHumidtySensor_ncw88jfq(CustomDevice):
     """Tuya temperature and humidity sensor."""
@@ -294,7 +301,7 @@ class TuyaTemperatureHumidtySensor_ncw88jfq(CustomDevice):
                     PowerConfiguration.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
-                    0xEF00, # Unknown
+                    0xEF00,  # Unknown
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
