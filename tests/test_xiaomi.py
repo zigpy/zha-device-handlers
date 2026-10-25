@@ -2422,7 +2422,7 @@ async def test_xiaomi_e1_roller_aqara_event_reports_ignored(
     )
     header.tsn = 42
 
-    def report(*attributes: foundation.Attribute) -> foundation.Report_Attributes:
+    def report(*attributes: foundation.Attribute) -> Any:
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Report_Attributes
         ].schema(attribute_reports=list(attributes))
