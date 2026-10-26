@@ -188,6 +188,8 @@ async def test_mfg_cluster_divisor_report_default_response(zigpy_device_from_v2_
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
 
+    # Synthetic frame, not a captured device report: the real divisor report sets
+    # Disable Default Response, so default response requested is set here on purpose.
     # Frame: 0x08 (non-mfr-specific, server-to-client, default response requested),
     #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
     with mock.patch.object(metering_cluster, "send_default_rsp") as default_rsp_mock:
