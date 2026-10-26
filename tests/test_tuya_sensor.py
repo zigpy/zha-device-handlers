@@ -8,7 +8,11 @@ from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurem
 import zhaquirks
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zhaquirks.tuya.tuya_sensor import TuyaTimeFormat
+from zhaquirks.tuya.tuya_sensor import (
+    NoManufTimeTuyaMCUCluster,
+    TuyaTimeFormat,
+    ZT08ManufCluster,
+)
 
 # Tuya datapoint type bytes (see zhaquirks.tuya.TuyaDPType)
 _DP_VALUE = 0x02
@@ -205,16 +209,17 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
 
 
-async def test_handle_get_data_hodyryli(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize("manuf", ["_TZE284_hodyryli", "_TZE2841000000_hodyryli"])
+async def test_handle_get_data_hodyryli(zigpy_device_from_v2_quirk, manuf):
     """Test _TZE284_hodyryli: internal/external temp, humidity, battery, time format."""
 
-    quirked = zigpy_device_from_v2_quirk("_TZE284_hodyryli", "TS0601")
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
     ep = quirked.endpoints[1]
 
     assert ep.basic is not None
     assert isinstance(ep.basic, Basic)
     assert ep.tuya_manufacturer is not None
-    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    assert isinstance(ep.tuya_manufacturer, ZT08ManufCluster)
 
     # Positive values across every datapoint the quirk maps.
     message = _tuya_frame(
@@ -279,3 +284,17 @@ async def test_hodyryli_battery_mapping(
     assert status == foundation.Status.SUCCESS
 
     assert ep.power.get("battery_percentage_remaining") == expected
+
+
+def test_hodyryli_set_time_without_manufacturer_code():
+    """Test ZT08 cluster sends set_time and expects set_time_request without manuf code."""
+
+    assert not ZT08ManufCluster.ServerCommandDefs.set_time.is_manufacturer_specific
+    assert (
+        not ZT08ManufCluster.ClientCommandDefs.set_time_request.is_manufacturer_specific
+    )
+    # The shared cluster used by other devices is left untouched.
+    assert (
+        NoManufTimeTuyaMCUCluster.ClientCommandDefs.set_time_request
+        is TuyaMCUCluster.ClientCommandDefs.set_time_request
+    )

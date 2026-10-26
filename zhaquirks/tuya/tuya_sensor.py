@@ -2,15 +2,18 @@
 
 import datetime
 
-from zha.application import EntityPlatform, EntityType
-from zha.application.platforms.sensor.device_class import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
-from zha.units import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -64,6 +67,10 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
             schema={"time": TuyaTimePayload},
             is_manufacturer_specific=False,
         )
+
+
+class ZT08ManufCluster(NoManufTimeTuyaMCUCluster):
+    """Tuya MCU cluster that also expects set_time_request without manufacturer code."""
 
     class ClientCommandDefs(TuyaMCUCluster.ClientCommandDefs):
         """Client command definitions."""
@@ -399,6 +406,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 # Sensor with clock, internal/external temperature and humidity
 (
     TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")
+    .applies_to(
+        "_TZE2841000000_hodyryli", "TS0601"
+    )  # corrupted manufacturer id variant
     # Internal temperature (DP 1, scale=10)
     .tuya_temperature(dp_id=1, scale=10)
     # Internal humidity (DP 2)
@@ -411,7 +421,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         converter=lambda x: {0: 20, 1: 100, 2: 200}.get(x, 0),
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
-    # External temperature sensor (DP 38, value needs to be divided by 10 to get correct temperature)
+    # External temperature probe (DP 38, 0.1 C, signed)
     .tuya_sensor(
         dp_id=38,
         attribute_name="temperature_external",
@@ -433,5 +443,5 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         fallback_name="Time format",
     )
     .skip_configuration()
-    .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
+    .add_to_registry(replacement_cluster=ZT08ManufCluster)
 )
