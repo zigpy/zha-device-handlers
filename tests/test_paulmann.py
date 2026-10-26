@@ -1,8 +1,14 @@
 """Tests for Paulmann quirks."""
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 
+from tests.common import ButtonEventRecorder, send_command
+import zhaquirks
 import zhaquirks.paulmann.fourbtnremote
+
+zhaquirks.setup()
 
 
 @pytest.mark.parametrize("manufacturer", ("Paulmann LichtGmbH", "Paulmann Licht GmbH"))
@@ -50,3 +56,51 @@ def test_fourbtnremote_signature(assert_signature_matches_quirk, manufacturer):
     assert_signature_matches_quirk(
         zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn, signature
     )
+
+
+async def test_fourbtnremote_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the Paulmann 4-button remote."""
+    quirk = zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn
+    device = DEVICE_REGISTRY.resolve(zigpy_device_from_quirk(quirk, apply_quirk=False))
+    assert isinstance(device, quirk)
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        f"button_{number}": ["press_end", "long_press_start", "long_press_end"]
+        for number in (1, 2, 3, 4)
+    }
+
+    for endpoint_id, (on_button, off_button) in (
+        (1, ("button_1", "button_2")),
+        (2, ("button_3", "button_4")),
+    ):
+        send_command(device, endpoint_id, OnOff.cluster_id, "on")
+        send_command(device, endpoint_id, OnOff.cluster_id, "off")
+        assert recorder.pop() == [(on_button, "press_end"), (off_button, "press_end")]
+
+        # Both buttons of an endpoint stop with the same command
+        for button, move_mode in ((on_button, 0), (off_button, 1)):
+            send_command(
+                device,
+                endpoint_id,
+                LevelControl.cluster_id,
+                "move_with_on_off",
+                move_mode,
+                50,
+            )
+            send_command(
+                device, endpoint_id, LevelControl.cluster_id, "stop_with_on_off"
+            )
+            assert recorder.pop() == [
+                (button, "long_press_start"),
+                (button, "long_press_end"),
+            ]
+
+        # A stop without a hold fires nothing
+        send_command(device, endpoint_id, LevelControl.cluster_id, "stop_with_on_off")
+        assert recorder.pop() == []
+
+    # A move at another rate is no trigger of the remote
+    send_command(device, 1, LevelControl.cluster_id, "move_with_on_off", 0, 20)
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    assert recorder.pop() == []

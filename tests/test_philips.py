@@ -3,11 +3,12 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import Cluster
-from zigpy.zcl.clusters.general import OnOff
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl import Cluster, ClusterType
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.const import (
     BUTTON_1,
@@ -37,17 +38,22 @@ from zhaquirks.device import CustomEndpoint
 import zhaquirks.philips
 from zhaquirks.philips import (
     PHILIPS,
+    RWL_BUTTON_NAMES,
     SIGNIFY,
     Button,
     ButtonPressQueue,
     PhilipsRemoteCluster,
+    PhilipsRwlRemoteCluster,
     PressType,
 )
 from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
 from zhaquirks.philips.rwl022 import PhilipsRWL022
 from zhaquirks.philips.rwlfirstgen import PhilipsRWLFirstGen, PhilipsRWLFirstGen2
-from zhaquirks.philips.wall_switch import PhilipsWallSwitch
+from zhaquirks.philips.wall_switch import (
+    PhilipsWallSwitch,
+    PhilipsWallSwitchNewFirmware,
+)
 
 zhaquirks.setup()
 
@@ -387,9 +393,31 @@ def test_PhilipsRemoteCluster_short_press(
     for q in cluster.button_press_queue.values():
         q.fire()
 
-    assert listener.zha_send_event.call_count == 2
+    assert listener.zha_send_event.call_count == 4
 
     calls = [
+        # The press and release as the device reports them
+        mock.call(
+            f"{button}_initial_press",
+            {
+                "button": button,
+                "press_type": "initial_press",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 0, 0, 0],
+            },
+        ),
+        mock.call(
+            f"{button}_press_release",
+            {
+                "button": button,
+                "press_type": "press_release",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 2, 0, 0],
+            },
+        ),
+        # The press and release sent once the multi-press window has passed
         mock.call(
             f"{button}_{events[0]}",
             {
@@ -481,7 +509,12 @@ def test_PhilipsRemoteCluster_multi_press(
     for q in cluster.button_press_queue.values():
         q.fire()
 
-    assert listener.zha_send_event.call_count == 1
+    # An initial press and a press release for every press, then the multi-press
+    assert listener.zha_send_event.call_count == 2 * count + 1
+    assert [c.args[0] for c in listener.zha_send_event.call_args_list[:-1]] == [
+        f"{button}_initial_press",
+        f"{button}_press_release",
+    ] * count
     args_button_id = count + 2
     listener.zha_send_event.assert_has_calls(
         [
@@ -597,9 +630,20 @@ def test_PhilipsRemoteCluster_long_press(
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 3, 0, count * 40 + 10])
     cluster.button_press_queue.fire()
 
-    assert listener.zha_send_event.call_count == count + 1
+    assert listener.zha_send_event.call_count == count + 2
 
-    calls = []
+    calls = [
+        mock.call(
+            f"{button}_initial_press",
+            {
+                "button": button,
+                "press_type": "initial_press",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 0, 0, 0],
+            },
+        )
+    ]
     for i in range(0, count):
         calls.append(
             mock.call(
@@ -771,7 +815,16 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
                     b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
                 ],
             ),
-            ["left_press", "left_short_release", "right_press", "right_short_release"],
+            [
+                "left_initial_press",
+                "left_press_release",
+                "right_initial_press",
+                "right_press_release",
+                "left_press",
+                "left_short_release",
+                "right_press",
+                "right_short_release",
+            ],
         ),
     ),
 )
@@ -789,17 +842,15 @@ def test_PhilipsRemoteCluster_multi_button_press(
     remote_listener = mock.MagicMock()
     remote_cluster.add_listener(remote_listener)
 
-    expected_event_count = 0
     for button in button_events:
         for eventData in button:
             hdr, args = remote_cluster.deserialize(eventData)
             remote_cluster.handle_message(hdr, args)
-            expected_event_count += 1
 
     for q in remote_cluster.button_press_queue.values():
         q.fire()
 
-    assert remote_listener.zha_send_event.call_count == expected_event_count
+    assert remote_listener.zha_send_event.call_count == len(expected_actions)
 
     for i, expected_action in enumerate(expected_actions):
         assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
@@ -865,8 +916,9 @@ async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     )
     device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
 
-    # we emit those from PhilipsRdm002RemoteCluster. One hold, one long_press_release event.
-    assert listener.zha_send_event.call_count == 2
+    # we emit those from PhilipsRdm002RemoteCluster. One initial press, one hold, one
+    # long_press_release event.
+    assert listener.zha_send_event.call_count == 3
 
     # one for each frame received, except for the one we balckhole, so 4 - 1
     assert listener.cluster_command.call_count == 3
@@ -937,3 +989,181 @@ def test_rom001_signature(assert_signature_matches_quirk, manufacturer, model):
         },
     }
     assert_signature_matches_quirk(PhilipsROM001, signature)
+
+
+PHILIPS_BUTTON_EVENT_TYPES = [
+    "press_start",
+    "press_end",
+    "long_press_start",
+    "long_press_end",
+]
+
+
+@pytest.mark.parametrize(
+    "quirk, endpoint_id, buttons",
+    (
+        (
+            PhilipsRWLFirstGen,
+            2,
+            {1: "button_on", 2: "button_dim_up", 3: "button_dim_down", 4: "button_off"},
+        ),
+        (
+            PhilipsRWLFirstGen2,
+            2,
+            {1: "button_on", 2: "button_dim_up", 3: "button_dim_down", 4: "button_off"},
+        ),
+        (
+            PhilipsRWL022,
+            1,
+            {
+                1: "button_toggle",
+                2: "button_dim_up",
+                3: "button_dim_down",
+                4: "button_hue",
+            },
+        ),
+        (
+            PhilipsRDM002,
+            1,
+            {1: "button_1", 2: "button_2", 3: "button_3", 4: "button_4"},
+        ),
+        (PhilipsROM001, 1, {1: "button"}),
+        (PhilipsWallSwitch, 1, {1: "button_left", 2: "button_right"}),
+        (PhilipsWallSwitchNewFirmware, 1, {1: "button_left", 2: "button_right"}),
+    ),
+)
+async def test_button_events(zigpy_device_from_quirk, quirk, endpoint_id, buttons):
+    """Test the button event entities of the Philips remotes."""
+    device = DEVICE_REGISTRY.resolve(zigpy_device_from_quirk(quirk, apply_quirk=False))
+    assert isinstance(device, quirk)
+
+    cluster = device.endpoints[endpoint_id].philips_remote_cluster
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == dict.fromkeys(
+        buttons.values(), PHILIPS_BUTTON_EVENT_TYPES
+    )
+
+    def notify(button: int, press_type: int, duration: int = 0) -> None:
+        send_command(
+            device,
+            endpoint_id,
+            cluster.cluster_id,
+            "notification",
+            button,
+            0x300000,
+            press_type,
+            0x21,
+            duration,
+            cluster_type=ClusterType.Server,
+            manufacturer=0x100B,
+        )
+
+    for button, suffix in buttons.items():
+        # Short press: the initial press and the short release as they arrive
+        notify(button, 0)
+        notify(button, 2, 1)
+        assert recorder.pop() == [(suffix, "press_start"), (suffix, "press_end")]
+
+        # The press derived after the multi-press window fires nothing
+        for queue in cluster.button_press_queue.values():
+            queue.fire()
+            queue.reset()
+        assert recorder.pop() == []
+
+        # Long press: the hold is repeated while the button is held
+        notify(button, 0)
+        notify(button, 1, 8)
+        notify(button, 1, 16)
+        notify(button, 1, 24)
+        notify(button, 3, 26)
+        assert recorder.pop() == [
+            (suffix, "press_start"),
+            (suffix, "long_press_start"),
+            (suffix, "long_press_end"),
+        ]
+
+        # A second hold fires again
+        notify(button, 0)
+        notify(button, 1, 8)
+        notify(button, 3, 10)
+        assert recorder.pop() == [
+            (suffix, "press_start"),
+            (suffix, "long_press_start"),
+            (suffix, "long_press_end"),
+        ]
+
+    # Multi press: every press and release, never the derived double press
+    first_button, first_suffix = next(iter(buttons.items()))
+    notify(first_button, 0)
+    notify(first_button, 2, 1)
+    notify(first_button, 0)
+    notify(first_button, 2, 1)
+    for queue in cluster.button_press_queue.values():
+        queue.fire()
+        queue.reset()
+    assert recorder.pop() == [
+        (first_suffix, "press_start"),
+        (first_suffix, "press_end"),
+        (first_suffix, "press_start"),
+        (first_suffix, "press_end"),
+    ]
+
+    # Unknown buttons, such as the dial of the tap dial, fire nothing
+    notify(20, 1)
+    notify(99, 0)
+    assert recorder.pop() == []
+
+
+async def test_rdm002_dial_no_button_events(zigpy_device_from_quirk):
+    """Test that rotating the tap dial does not fire button events."""
+    device = DEVICE_REGISTRY.resolve(
+        zigpy_device_from_quirk(PhilipsRDM002, apply_quirk=False)
+    )
+    recorder = await ButtonEventRecorder.create(device)
+
+    # step_with_on_off(step_mode=Down, step_size=68, transition_time=4)
+    send_command(device, 1, LevelControl.cluster_id, "step_with_on_off", 1, 68, 4)
+    # Notification of the dial rotation
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(
+            b"\x1d\x0b\x10\xe8\x00\x14\x00\x010\x01)Z\xff!d\x00)Z\xff!d\x00)Z\xff!\x90\x01"
+        )
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    assert recorder.pop() == []
+
+
+def test_button_event_entities_skip_mapped_native_press_types():
+    """Test that press types a subclass maps itself are not declared again."""
+
+    class MappedPressCluster(PhilipsRwlRemoteCluster):
+        PRESS_TYPES = {
+            **PhilipsRwlRemoteCluster.PRESS_TYPES,
+            0: PressType(SHORT_PRESS, "press"),
+        }
+
+    entities = MappedPressCluster.generate_button_event_entities(
+        endpoint_id=1, names=RWL_BUTTON_NAMES
+    )
+    assert [event.event_type for event in entities[0].events] == [
+        "press_end",
+        "long_press_start",
+        "long_press_end",
+    ]
+
+    entities = PhilipsRwlRemoteCluster.generate_button_event_entities(
+        endpoint_id=1, names=RWL_BUTTON_NAMES
+    )
+    assert [event.event_type for event in entities[0].events] == [
+        "press_start",
+        "press_end",
+        "long_press_start",
+        "long_press_end",
+    ]

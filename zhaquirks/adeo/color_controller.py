@@ -4,7 +4,7 @@ from typing import Any
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     BUTTON_1,
@@ -269,3 +270,54 @@ class AdeoColorController(CustomDevice):
             ARGS: [0, 0xD],
         },
     }
+
+    # The on, off and preset buttons report one command per press. The buttons
+    # around the circle are left out: what they send depends on the mode the
+    # center button switches, and holding them is not modeled.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_on",
+            translation_key="on_button",
+            fallback_name="On button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_OFF),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_off",
+            translation_key="off_button",
+            fallback_name="Off button",
+        ),
+        *(
+            ButtonEventMetadata(
+                events=[
+                    ButtonEvent(
+                        event_type=ButtonEventType.SINGLE_PRESS,
+                        trigger=(SHORT_PRESS, button),
+                    ),
+                ],
+                cluster_id=Scenes.cluster_id,
+                cluster_type=ClusterType.Client,
+                unique_id_suffix=f"button_{number}",
+                translation_key="numbered_button",
+                translation_placeholders={"button_number": str(number)},
+                fallback_name=f"Button {number}",
+            )
+            for number, button in enumerate(
+                (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4), start=1
+            )
+        ),
+    )

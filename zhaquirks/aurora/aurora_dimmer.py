@@ -1,6 +1,7 @@
 """Device handler for Aurora dimmer switch, battery powered."""
 
 from zigpy.profiles import zgp, zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -12,6 +13,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 
 from zhaquirks import EventableCluster, PowerConfigurationCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
@@ -234,3 +236,35 @@ class AuroraDimmerBatteryPowered(CustomDevice):
             ARGS: [],
         },
     }
+
+    # Pressing a knob reports one command per press. Turning it stays a trigger.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, RIGHT),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=1,
+            unique_id_suffix="button_right",
+            translation_key="right_button",
+            fallback_name="Right button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, LEFT),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=2,
+            unique_id_suffix="button_left",
+            translation_key="left_button",
+            fallback_name="Left button",
+        ),
+    )

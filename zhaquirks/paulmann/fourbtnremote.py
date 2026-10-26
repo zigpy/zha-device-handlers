@@ -1,6 +1,7 @@
 """Device handler for Paulmann 4-button remote control."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -15,6 +16,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -40,6 +42,38 @@ from zhaquirks.const import (
 )
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.paulmann import PAULMANN, PAULMANN_VARIANT
+
+
+def _button_event_entity(button: str, number: int, endpoint_id: int):
+    """Return the button event entity of a button.
+
+    A short press is sent on release, as the buttons can be held. The two buttons
+    of an endpoint stop with the same command, which ends the hold of the held one
+    (of both, if both are held at once).
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, button)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, button),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=endpoint_id,
+        unique_id_suffix=f"button_{number}",
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": str(number)},
+        fallback_name=f"Button {number}",
+    )
 
 
 class PaulmannRemote4Btn(CustomDevice):
@@ -198,3 +232,11 @@ class PaulmannRemote4Btn(CustomDevice):
             ENDPOINT_ID: 2,
         },
     }
+
+    # The left pair (buttons 1 and 2) uses endpoint 1, the right pair endpoint 2
+    button_event_entities = (
+        _button_event_entity(BUTTON_1, 1, 1),
+        _button_event_entity(BUTTON_2, 2, 1),
+        _button_event_entity(BUTTON_3, 3, 2),
+        _button_event_entity(BUTTON_4, 4, 2),
+    )
