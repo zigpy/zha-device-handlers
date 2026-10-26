@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.measurement import RelativeHumidity
 from zhaquirks.builder import (
     LIGHT_LUX,
     PERCENTAGE,
-    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
@@ -389,6 +388,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
 
 class TuyaSoilWaterWarning(t.enum8):
     """Tuya soil sensor water shortage warning enum."""
