@@ -27,6 +27,7 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBE000Cluster,
+    smart_remote_button_events,
 )
 
 
@@ -163,3 +164,5 @@ class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
             },
         },
     }
+
+    button_event_entities = smart_remote_button_events(replacement, buttons=6)

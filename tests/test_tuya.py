@@ -2,6 +2,7 @@
 
 import base64
 import datetime
+import itertools
 import struct
 from typing import Final
 from unittest import mock
@@ -13,11 +14,16 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.common import (
+    ButtonEventRecorder,
+    ClusterListener,
+    send_command,
+    wait_for_zigpy_tasks,
+)
 import zhaquirks
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -33,9 +39,12 @@ from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
+import zhaquirks.tuya.ts004f
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
+import zhaquirks.tuya.ts0044
+import zhaquirks.tuya.ts0046
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
@@ -2224,3 +2233,309 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit1.msg_length == 4
     assert transmit2.ir_msg == []
     assert transmit2.msg_length == 0
+
+
+def resolve_v1_quirk(zigpy_device_from_quirk, quirk: type[CustomDevice]) -> Device:
+    """Return a device built from a v1 quirk's signature, resolved like ZHA does."""
+    device = zhaquirks.ZHA_DEVICE_REGISTRY.resolve(
+        zigpy_device_from_quirk(quirk, apply_quirk=False)
+    )
+    assert type(device) is quirk
+    return device
+
+
+def receive_frame(
+    device: Device, endpoint_id: int, cluster_id: int, data: bytes
+) -> None:
+    """Receive a raw ZCL frame from one of the device's endpoints."""
+    hdr, _ = foundation.ZCLHeader.deserialize(data)
+    device.packet_received(
+        t.ZigbeePacket(
+            src_ep=endpoint_id,
+            dst_ep=1,
+            tsn=hdr.tsn,
+            profile_id=zha.PROFILE_ID,
+            cluster_id=cluster_id,
+            data=t.SerializableBytes(data),
+        )
+    )
+
+
+_PRESS_TYPE_TSNS = itertools.cycle(range(256))
+
+
+def send_press_type(device: Device, endpoint_id: int, press_type: int) -> None:
+    """Receive the `press_type` command of a Tuya scene remote button.
+
+    The remote sends it client to server, also from endpoints whose On/Off cluster
+    the quirk keeps as an input cluster.
+    """
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=next(_PRESS_TYPE_TSNS),
+        command_id=0xFD,
+        direction=foundation.Direction.Client_to_Server,
+    )
+    receive_frame(
+        device, endpoint_id, OnOff.cluster_id, hdr.serialize() + bytes([press_type])
+    )
+
+
+SCENE_REMOTE_EVENT_TYPES = ["single_press", "multi_press", "long_press_end"]
+
+
+@pytest.mark.parametrize(
+    "quirk, buttons",
+    (
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, 1),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, 1),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA, 1),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041_var04, 1),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041PollControl, 1),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, 2),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TO, 2),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TOPlusA, 2),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042NO, 2),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TI, 3),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TO, 3),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusA, 3),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusB, 3),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, 3),
+        (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, 4),
+        (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO, 4),
+        (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusA, 4),
+        (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusB, 4),
+        (zhaquirks.tuya.ts0046.TuyaSmartRemote0046, 6),
+        (zhaquirks.tuya.ts004f.TuyaSmartRemote004FROK, 1),
+    ),
+)
+async def test_scene_remote_button_events(zigpy_device_from_quirk, quirk, buttons):
+    """Test the button events of the Tuya scene remotes."""
+    device = resolve_v1_quirk(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    names = (
+        ["button"]
+        if buttons == 1
+        else [f"button_{button}" for button in range(1, buttons + 1)]
+    )
+    assert recorder.event_types() == dict.fromkeys(names, SCENE_REMOTE_EVENT_TYPES)
+
+    for endpoint_id, name in enumerate(names, start=1):
+        # single, double, hold
+        send_press_type(device, endpoint_id, 0)
+        send_press_type(device, endpoint_id, 1)
+        send_press_type(device, endpoint_id, 2)
+
+        assert recorder.pop() == [
+            (name, "single_press"),
+            (name, "multi_press", {"press_count": 2}),
+            (name, "long_press_end"),
+        ]
+
+    # An unknown press type fires nothing
+    send_press_type(device, 1, 3)
+    assert recorder.pop() == []
+
+
+async def test_smart_knob_button_events(zigpy_device_from_quirk):
+    """Test that the smart knob only fires button events in event mode."""
+    device = resolve_v1_quirk(
+        zigpy_device_from_quirk, zhaquirks.tuya.ts004f.TuyaSmartRemote004FROK
+    )
+    recorder = await ButtonEventRecorder.create(device)
+
+    # Command mode press and hold, and a rotation in event mode
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    send_command(device, 1, 0x0300, "move_saturation", 1, 50)
+    send_command(device, 1, 0x0300, "stop_move_step")
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=next(_PRESS_TYPE_TSNS),
+        command_id=0xFC,
+        direction=foundation.Direction.Client_to_Server,
+    )
+    receive_frame(device, 1, OnOff.cluster_id, hdr.serialize() + b"\x00")
+    assert recorder.pop() == []
+
+    send_press_type(device, 1, 0)
+    assert recorder.pop() == [("button", "single_press")]
+
+
+DIMMER_SWITCH_EVENT_TYPES = {
+    "button_on": ["single_press"],
+    "button_off": ["single_press"],
+    "button_dim_up": ["press_end", "long_press_start", "long_press_end"],
+    "button_dim_down": ["press_end", "long_press_start", "long_press_end"],
+}
+
+
+def send_dimmer_switch_commands(device: Device) -> None:
+    """Receive the commands of the dimmer switch buttons in command mode."""
+    level = LevelControl.cluster_id
+
+    send_command(device, 1, OnOff.cluster_id, "on")
+    send_command(device, 1, OnOff.cluster_id, "off")
+
+    # Dim up pressed, held and released
+    send_command(device, 1, level, "step", LevelControl.StepMode.Up, 51, 10)
+    send_command(device, 1, level, "move", LevelControl.MoveMode.Up, 51)
+    send_command(device, 1, level, "stop")
+
+    # A stop while no button is held fires nothing
+    send_command(device, 1, level, "stop")
+
+    # Dim down pressed, held and released
+    send_command(device, 1, level, "step", LevelControl.StepMode.Down, 51, 10)
+    send_command(device, 1, level, "move", LevelControl.MoveMode.Down, 51)
+    send_command(device, 1, level, "stop")
+
+
+DIMMER_SWITCH_EVENTS = [
+    ("button_on", "single_press"),
+    ("button_off", "single_press"),
+    ("button_dim_up", "press_end"),
+    ("button_dim_up", "long_press_start"),
+    ("button_dim_up", "long_press_end"),
+    ("button_dim_down", "press_end"),
+    ("button_dim_down", "long_press_start"),
+    ("button_dim_down", "long_press_end"),
+]
+
+
+async def test_dimmer_switch_button_events(zigpy_device_from_quirk):
+    """Test the button events of the TS004F dimmer switch in command mode."""
+    device = resolve_v1_quirk(
+        zigpy_device_from_quirk, zhaquirks.tuya.ts004f.TuyaSmartRemote004F
+    )
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == DIMMER_SWITCH_EVENT_TYPES
+
+    send_dimmer_switch_commands(device)
+    assert recorder.pop() == DIMMER_SWITCH_EVENTS
+
+    # Without the scene endpoints, the scene presses fire nothing
+    send_press_type(device, 1, 0)
+    assert recorder.pop() == []
+
+
+async def test_dimmer_switch_scene_button_events(zigpy_device_from_quirk):
+    """Test the button events of the TS004F dimmer switch in both modes."""
+    device = resolve_v1_quirk(
+        zigpy_device_from_quirk, zhaquirks.tuya.ts004f.TuyaSmartRemote004FDMS
+    )
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        **{f"button_{button}": SCENE_REMOTE_EVENT_TYPES for button in range(1, 5)},
+        **DIMMER_SWITCH_EVENT_TYPES,
+    }
+
+    # Event (scene) mode
+    for button in range(1, 5):
+        send_press_type(device, button, 0)
+        send_press_type(device, button, 1)
+        send_press_type(device, button, 2)
+
+        assert recorder.pop() == [
+            (f"button_{button}", "single_press"),
+            (f"button_{button}", "multi_press", {"press_count": 2}),
+            (f"button_{button}", "long_press_end"),
+        ]
+
+    # Command mode
+    send_dimmer_switch_commands(device)
+    assert recorder.pop() == DIMMER_SWITCH_EVENTS
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.tuya.ts004f.TuyaSmartRemote004FSK,
+        zhaquirks.tuya.ts004f.TuyaSmartRemote004FSK_v2,
+    ),
+)
+async def test_smart_button_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button events of the TS004F smart button in both modes."""
+    device = resolve_v1_quirk(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": SCENE_REMOTE_EVENT_TYPES,
+        "button_command_mode": [
+            "single_press",
+            "multi_press",
+            "long_press_start",
+            "long_press_end",
+        ],
+    }
+
+    # Event (scene) mode
+    send_press_type(device, 1, 0)
+    send_press_type(device, 1, 1)
+    send_press_type(device, 1, 2)
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_end"),
+    ]
+
+    # Command mode: single, double, held with repeated steps, and the repeated stop
+    # of the release
+    level = LevelControl.cluster_id
+    send_command(device, 1, OnOff.cluster_id, "on")
+    send_command(device, 1, OnOff.cluster_id, "off")
+    send_command(device, 1, level, "step", LevelControl.StepMode.Up, 85, 1)
+    send_command(device, 1, level, "step", LevelControl.StepMode.Up, 85, 1)
+    send_command(device, 1, level, "step", LevelControl.StepMode.Up, 85, 1)
+    send_command(device, 1, level, "stop")
+    send_command(device, 1, level, "stop")
+
+    assert recorder.pop() == [
+        ("button_command_mode", "single_press"),
+        ("button_command_mode", "multi_press", {"press_count": 2}),
+        ("button_command_mode", "long_press_start"),
+        ("button_command_mode", "long_press_end"),
+    ]
+
+    # The level some firmware sends with a single press fires nothing
+    send_command(device, 1, level, "move_to_level", 102, 1)
+    assert recorder.pop() == []
+
+
+async def test_ts0021_button_events(zigpy_device_from_quirk):
+    """Test the button events of the TS0021 scene remote."""
+    device = resolve_v1_quirk(zigpy_device_from_quirk, zhaquirks.tuya.ts0021.TS0021)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button_1": SCENE_REMOTE_EVENT_TYPES,
+        "button_2": SCENE_REMOTE_EVENT_TYPES,
+    }
+
+    for frame in (
+        ZCL_TUYA_BUTTON_1_SINGLE_PRESS,
+        ZCL_TUYA_BUTTON_1_DOUBLE_PRESS,
+        ZCL_TUYA_BUTTON_1_LONG_PRESS,
+        ZCL_TUYA_BUTTON_2_SINGLE_PRESS,
+        ZCL_TUYA_BUTTON_2_DOUBLE_PRESS,
+        ZCL_TUYA_BUTTON_2_LONG_PRESS,
+    ):
+        receive_frame(device, 1, TuyaNewManufCluster.cluster_id, frame)
+
+    assert recorder.pop() == [
+        ("button_1", "single_press"),
+        ("button_1", "multi_press", {"press_count": 2}),
+        ("button_1", "long_press_end"),
+        ("button_2", "single_press"),
+        ("button_2", "multi_press", {"press_count": 2}),
+        ("button_2", "long_press_end"),
+    ]
+
+    # An unknown value of the button 1 datapoint is an attribute update that fires
+    # nothing
+    listener = ClusterListener(device.endpoints[1].tuya_manufacturer)
+    receive_frame(
+        device,
+        1,
+        TuyaNewManufCluster.cluster_id,
+        b"\tm\x06\x01&\x01\x04\x00\x01\x03",
+    )
+    assert listener.attribute_updates == [("btn_1_pressed", 3)]
+    assert recorder.pop() == []
