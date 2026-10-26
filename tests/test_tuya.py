@@ -260,6 +260,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == 0
 
@@ -277,6 +278,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp.status == 0
 
@@ -401,6 +403,7 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -482,6 +485,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -504,6 +508,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -526,6 +531,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -548,6 +554,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -635,6 +642,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -657,6 +665,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -679,6 +688,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -701,6 +711,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -722,6 +733,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -942,6 +954,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -964,6 +977,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -986,6 +1000,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1007,6 +1022,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1029,6 +1045,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1051,6 +1068,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1074,6 +1092,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1096,6 +1115,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1118,6 +1138,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1140,6 +1161,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1162,6 +1184,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1184,6 +1207,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1206,6 +1230,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1228,6 +1253,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1250,6 +1276,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1272,6 +1299,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1294,6 +1322,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1312,6 +1341,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1329,6 +1359,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1345,6 +1376,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1374,6 +1406,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
 
 
@@ -1430,6 +1463,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1452,6 +1486,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1474,6 +1509,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1495,6 +1531,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1659,7 +1696,11 @@ async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
         assert len(bind_mock.mock_calls) == 0
 
 
-def test_ts1201_signature(assert_signature_matches_quirk):
+@pytest.mark.parametrize(
+    "manufacturer",
+    ("_TZ3290_ot6ewjvmejq5ekhl", "_TZ3290_yyax9ajf"),
+)
+def test_ts1201_signature(assert_signature_matches_quirk, manufacturer):
     """Test TS1201 remote signature is matched to its quirk."""
     signature = {
         "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
@@ -1680,7 +1721,7 @@ def test_ts1201_signature(assert_signature_matches_quirk):
                 "out_clusters": ["0x000a", "0x0019"],
             }
         },
-        "manufacturer": "_TZ3290_ot6ewjvmejq5ekhl",
+        "manufacturer": manufacturer,
         "model": "TS1201",
         "class": "zhaquirks.tuya.ts1201.ZosungIRBlaster",
     }
@@ -1748,6 +1789,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp == foundation.Status.SUCCESS
 
@@ -1773,6 +1815,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[0][2].command.name
@@ -1811,6 +1854,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[1][2].command.name
@@ -1842,6 +1886,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[2][2].command.name
@@ -1873,6 +1918,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[3][2].command.name
@@ -1913,6 +1959,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
 
         # simulate receive_ir_frame_00
@@ -1936,6 +1983,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[4][2].command.name
@@ -1994,6 +2042,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[7][2].command.name
@@ -2017,6 +2066,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert rsp == foundation.Status.SUCCESS
 
