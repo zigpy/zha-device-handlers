@@ -1204,6 +1204,8 @@ async def test_constant_attributes_mfg_specific_definition(caplog) -> None:
         _CONSTANT_ATTRIBUTES = {  # noqa: RUF012
             ConstantAttributesCluster.AttributeDefs.mfg_specific: 3,
             "unknown": 1,
+            # Same name, different ID
+            foundation.ZCLAttributeDef(id=0x0999, type=t.uint8_t, name="other"): 4,
             foundation.ZCLAttributeDef(id=0x0303, type=t.uint8_t): 2,
         }
 

@@ -56,10 +56,15 @@ class CustomCluster(zigpy.zcl.Cluster):
                 matches = key == attrid
             else:
                 try:
-                    matches = (
-                        attr_def is not None
-                        and self.find_attribute(key).name == attr_def.name
-                    )
+                    key_def = self.find_attribute(key)
+
+                    if (
+                        isinstance(key, foundation.ZCLAttributeDef)
+                        and key.id != key_def.id
+                    ):
+                        raise KeyError(key.name)  # noqa: TRY301
+
+                    matches = attr_def is not None and key_def.name == attr_def.name
                 except KeyError:
                     # Don't break every read of the cluster over a bad key
                     _LOGGER.error(
