@@ -14,6 +14,7 @@ from zhaquirks.builder import (
     EntityType,
     NumberDeviceClass,
     SensorDeviceClass,
+    SensorStateClass,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -389,6 +390,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .add_to_registry()
 )
 
+class TuyaSoilWaterWarning(t.enum8):
+    """Tuya soil sensor water shortage warning enum."""
+
+    Normal = 0x00
+    Alarm = 0x01
+
+
 (
     TuyaQuirkBuilder("Arteco", "ZS-304Z")
     .tuya_temperature(dp_id=5, scale=10)
@@ -404,44 +412,39 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     )
     .tuya_sensor(
         dp_id=3,
-        type=t.uint16_t,
+        type=t.uint32_t,
         attribute_name="soil_moisture",
         unit=PERCENTAGE,
         device_class=SensorDeviceClass.MOISTURE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_type=EntityType.STANDARD,
         translation_key="soil_moisture",
         fallback_name="Soil moisture",
     )
     .tuya_sensor(
         dp_id=101,
-        type=t.uint16_t,
+        type=t.uint32_t,
         attribute_name="humidity_value",
         unit=PERCENTAGE,
         device_class=SensorDeviceClass.HUMIDITY,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_type=EntityType.STANDARD,
         translation_key="humidity",
         fallback_name="Humidity",
     )
-    .tuya_dp_attribute(
+    .tuya_enum(
         dp_id=111,
         attribute_name="water_warning",
-        converter=lambda x: not bool(x),
-    )
-    .binary_sensor(
-        attribute_name="water_warning",
-        cluster_id=TuyaMCUCluster.cluster_id,
-        endpoint_id=1,
+        enum_class=TuyaSoilWaterWarning,
+        entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
-        device_class=BinarySensorDeviceClass.MOISTURE,
-        initially_disabled=False,
-        attribute_initialized_from_cache=True,
         translation_key="water_warning",
         fallback_name="Water warning",
     )
     .tuya_number(
         dp_id=103,
         attribute_name="soil_moisture_sampling",
-        type=t.uint16_t,
+        type=t.uint32_t,
         unit=UnitOfTime.SECONDS,
         min_value=5,
         max_value=3600,
@@ -454,7 +457,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=104,
         attribute_name="soil_moisture_calibration",
-        type=t.int16s,
+        type=t.int32s,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
@@ -467,20 +470,20 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=105,
         attribute_name="humidity_calibration",
-        type=t.int16s,
+        type=t.int32s,
         unit=PERCENTAGE,
         min_value=-30,
         max_value=30,
         step=1,
         entity_type=EntityType.CONFIG,
         device_class=NumberDeviceClass.HUMIDITY,
-        translation_key="humidity_calibration",
-        fallback_name="Humidity Calibration",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
     )
     .tuya_number(
         dp_id=106,
         attribute_name="illuminance_calibration",
-        type=t.int16s,
+        type=t.int32s,
         unit=LIGHT_LUX,
         min_value=-1000,
         max_value=1000,
@@ -493,21 +496,21 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=107,
         attribute_name="temperature_calibration",
-        type=t.int16s,
-        unit=UnitOfTemperature.KELVIN,
+        type=t.int32s,
+        unit=UnitOfTemperature.CELSIUS,
         min_value=-2,
         max_value=2,
         step=0.1,
         multiplier=10,
         entity_type=EntityType.CONFIG,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        translation_key="temperature_calibration",
-        fallback_name="Temperature Calibration",
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
     )
     .tuya_number(
         dp_id=110,
         attribute_name="soil_warning",
-        type=t.uint16_t,
+        type=t.uint32_t,
         unit=PERCENTAGE,
         min_value=0,
         max_value=100,
