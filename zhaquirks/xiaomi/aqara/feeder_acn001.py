@@ -7,7 +7,12 @@ from typing import Any, Final
 
 from zigpy import types
 from zigpy.profiles import zgp, zha
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -163,9 +168,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
 
     def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
     ) -> None:
-        """Handle attribute report/update event to parse feeder attribute."""
+        """Handle attribute report/update/read event to parse feeder attribute."""
         # `XiaomiCluster.__init__` already subscribes this handler to the events
         super()._handle_attribute_event(event)
 
