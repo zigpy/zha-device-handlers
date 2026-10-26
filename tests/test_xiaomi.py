@@ -1266,6 +1266,32 @@ async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_quirk):
     parse_mock.assert_called_once_with(b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03")
 
 
+async def test_aqara_feeder_xiaomi_struct_battery_voltage(zigpy_device_from_quirk):
+    """Test Aqara C1 pet feeder ignores battery voltage without a power cluster."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    assert not hasattr(opple_cluster.endpoint, "power")
+
+    attribute_reports: list[int] = []
+    opple_cluster.on_event(
+        AttributeReportedEvent.event_type,
+        lambda event: attribute_reports.append(event.attribute_id),
+    )
+
+    # struct with only battery voltage (key 1): 3000 mV
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(b"\x1c_\x11{\n\xf7\x00A\x04\x01!\xb8\x0b"),
+        )
+    )
+
+    assert attribute_reports == [0x00F7]
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
     """Test update_attribute on Aqara smoke sensor."""
