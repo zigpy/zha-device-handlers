@@ -1,5 +1,6 @@
 """Test XBee device."""
 
+import asyncio
 from collections.abc import Callable, Iterator
 from unittest import mock
 
@@ -452,6 +453,213 @@ async def test_remote_at_non_native(
             "params": {},
         }
     )
+
+
+@pytest.fixture
+def xbee_at_requests(
+    xbee_device: XBeeCommon,
+) -> Iterator[asyncio.Queue[tuple[XBeeCommon, bytes]]]:
+    """Capture outgoing AT requests without completing their responses."""
+    requests: asyncio.Queue[tuple[XBeeCommon, bytes]] = asyncio.Queue()
+
+    async def send_request(
+        device: XBeeCommon,
+        profile: int,
+        cluster: int,
+        source_endpoint: int,
+        destination_endpoint: int,
+        sequence: int,
+        data: bytes,
+        **kwargs: object,
+    ) -> None:
+        requests.put_nowait((device, data))
+
+    with mock.patch.object(
+        xbee_device.application, "request", side_effect=send_request
+    ):
+        yield requests
+
+
+def _receive_at_response(device: XBeeCommon, data: bytes) -> None:
+    """Deliver a raw XBee AT response through the quirk's packet decoder."""
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=XBEE_PROFILE_ID,
+            cluster_id=XBEE_AT_RESPONSE_CLUSTER,
+            src_ep=XBEE_AT_ENDPOINT,
+            dst_ep=XBEE_AT_ENDPOINT,
+            data=t.SerializableBytes(data),
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "reply_order",
+    [
+        pytest.param((0, 1), id="first-device-first"),
+        pytest.param((1, 0), id="second-device-first"),
+    ],
+)
+async def test_remote_at_concurrent_devices(
+    xbee_device: XBeeCommon,
+    zigpy_device_from_quirk: Callable[..., XBeeCommon],
+    xbee_at_requests: asyncio.Queue[tuple[XBeeCommon, bytes]],
+    reply_order: tuple[int, int],
+) -> None:
+    """Devices using the same frame ID receive only their own AT responses."""
+    second_device = zigpy_device_from_quirk(
+        type(xbee_device),
+        ieee=t.EUI64.convert("00:13:a2:00:41:98:23:f9"),
+        nwk=t.NWK(0x5678),
+    )
+    first_request = asyncio.create_task(xbee_device.remote_at("M0"))
+    _, first_data = await xbee_at_requests.get()
+    second_request = asyncio.create_task(second_device.remote_at("M1"))
+    _, second_data = await xbee_at_requests.get()
+    try:
+        assert first_data[3] == second_data[3] == 1
+        replies = (
+            (xbee_device, b"\x01M0\x00\x00\x7b"),
+            (second_device, b"\x01M1\x00\x03\x15"),
+        )
+        for index in reply_order:
+            _receive_at_response(*replies[index])
+        first_result, second_result = await asyncio.gather(
+            first_request, second_request
+        )
+        assert (first_result, second_result) == (123, 789)
+    finally:
+        first_request.cancel()
+        second_request.cancel()
+        await asyncio.gather(first_request, second_request, return_exceptions=True)
+
+
+async def test_remote_at_unmatched_response(xbee_device: XBeeCommon) -> None:
+    """An unsolicited AT response is ignored."""
+    _receive_at_response(xbee_device, b"\x01M0\x00\x00\x00")
+
+
+async def test_remote_at_duplicate_response(
+    xbee_device: XBeeCommon,
+    xbee_at_requests: asyncio.Queue[tuple[XBeeCommon, bytes]],
+) -> None:
+    """Duplicate responses are harmless before and after request cleanup."""
+    request = asyncio.create_task(xbee_device.remote_at("M0"))
+    await xbee_at_requests.get()
+    try:
+        _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+        _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+        assert await request == 123
+        _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+    finally:
+        request.cancel()
+        await asyncio.gather(request, return_exceptions=True)
+
+
+@pytest.mark.usefixtures("xbee_at_requests")
+async def test_remote_at_timeout_cleanup(xbee_device: XBeeCommon) -> None:
+    """A timed-out request releases its frame ID and ignores a late response."""
+    with (
+        mock.patch("zhaquirks.xbee.REMOTE_AT_COMMAND_TIMEOUT", 0),
+        pytest.raises(TimeoutError),
+    ):
+        await xbee_device.remote_at("M0")
+
+    assert (
+        not xbee_device.endpoints[XBEE_AT_ENDPOINT]
+        .in_clusters[XBEE_AT_RESPONSE_CLUSTER]
+        ._awaiting
+    )
+    _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+
+
+async def test_remote_at_cancellation_cleanup(
+    xbee_device: XBeeCommon,
+    xbee_at_requests: asyncio.Queue[tuple[XBeeCommon, bytes]],
+) -> None:
+    """Cancelling a request awaiting its response releases its frame ID."""
+    request = asyncio.create_task(xbee_device.remote_at("M0"))
+    await xbee_at_requests.get()
+    request.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await request
+
+    assert (
+        not xbee_device.endpoints[XBEE_AT_ENDPOINT]
+        .in_clusters[XBEE_AT_RESPONSE_CLUSTER]
+        ._awaiting
+    )
+    _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+
+
+@pytest.mark.parametrize(
+    "responses",
+    [
+        pytest.param((), id="no-response"),
+        pytest.param((b"\x01M0\x00\x00\x7b",), id="success-response"),
+        pytest.param((b"\x01M0\x04",), id="error-response"),
+    ],
+)
+async def test_remote_at_cancellation_during_send(
+    xbee_device: XBeeCommon, responses: tuple[bytes, ...]
+) -> None:
+    """Cancellation during transmission clears pending state, even after a response."""
+    send_started = asyncio.Event()
+    send_pending = asyncio.Event()
+
+    async def send_request(*args: object, **kwargs: object) -> None:
+        for response_data in responses:
+            _receive_at_response(xbee_device, response_data)
+        send_started.set()
+        await send_pending.wait()
+
+    with mock.patch.object(
+        xbee_device.application, "request", side_effect=send_request
+    ):
+        request = asyncio.create_task(xbee_device.remote_at("M0"))
+        await send_started.wait()
+        request.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await request
+
+    assert (
+        not xbee_device.endpoints[XBEE_AT_ENDPOINT]
+        .in_clusters[XBEE_AT_RESPONSE_CLUSTER]
+        ._awaiting
+    )
+    _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
+
+
+@pytest.mark.parametrize(
+    "responses",
+    [
+        pytest.param((), id="no-response"),
+        pytest.param((b"\x01M0\x00\x00\x7b",), id="success-response"),
+        pytest.param((b"\x01M0\x04",), id="error-response"),
+    ],
+)
+async def test_remote_at_send_failure_cleanup(
+    xbee_device: XBeeCommon, responses: tuple[bytes, ...]
+) -> None:
+    """A send failure is propagated even when a response arrived first."""
+
+    async def send_request(*args: object, **kwargs: object) -> None:
+        for response_data in responses:
+            _receive_at_response(xbee_device, response_data)
+        raise RuntimeError("Transmission failed")
+
+    with (
+        mock.patch.object(xbee_device.application, "request", side_effect=send_request),
+        pytest.raises(RuntimeError, match="^Transmission failed$"),
+    ):
+        await xbee_device.remote_at("M0")
+
+    assert (
+        not xbee_device.endpoints[XBEE_AT_ENDPOINT]
+        .in_clusters[XBEE_AT_RESPONSE_CLUSTER]
+        ._awaiting
+    )
+    _receive_at_response(xbee_device, b"\x01M0\x00\x00\x7b")
 
 
 @pytest.mark.parametrize(
