@@ -162,14 +162,13 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         if ZCL_WEIGHT_DISPENSED not in self._attr_cache:
             self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
 
-        # Subscribe to attribute events to parse feeder_attr
-        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
-
     def _handle_attribute_event(
         self, event: AttributeReportedEvent | AttributeUpdatedEvent
     ) -> None:
         """Handle attribute report/update event to parse feeder attribute."""
+        # `XiaomiCluster.__init__` already subscribes this handler to the events
+        super()._handle_attribute_event(event)
+
         if event.attribute_id == FEEDER_ATTR:
             self._parse_feeder_attribute(event.value)
 
