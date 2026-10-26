@@ -1073,3 +1073,123 @@ async def test_local_data_cluster(device_mock) -> None:
     assert (
         configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
     )
+
+
+class ConstantAttributesCluster(CustomCluster):
+    """Cluster with a standard and a manufacturer-specific attribute sharing an ID."""
+
+    cluster_id = 0x1235
+
+    class AttributeDefs(foundation.BaseAttributeDefs):
+        """Attribute definitions."""
+
+        standard = foundation.ZCLAttributeDef(id=0x0302, type=t.uint16_t)
+        mfg_specific = foundation.ZCLAttributeDef(
+            id=0x0302,
+            type=t.enum16,
+            is_manufacturer_specific=True,
+            manufacturer_code=0x1015,
+        )
+        other = foundation.ZCLAttributeDef(id=0x0303, type=t.uint8_t)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        ConstantAttributesCluster.AttributeDefs.standard,
+        "standard",
+    ],
+)
+async def test_constant_attributes_definition_or_name(device_mock, key) -> None:
+    """Constant attributes keyed by definition or name only match that attribute."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(ConstantAttributesCluster, constant_attributes={key: 1000})
+        .add_to_registry(registry)
+    )
+    cluster = registry.resolve(device_mock).endpoints[1].in_clusters[0x1235]
+    mfg_def = cluster.AttributeDefs.mfg_specific
+
+    assert cluster.get("standard") == 1000
+    assert cluster.get(cluster.AttributeDefs.standard) == 1000
+    assert await cluster.read_attributes(["standard"]) == ({"standard": 1000}, {})
+
+    # The manufacturer-specific attribute with the same ID is not shadowed
+    assert cluster.get("mfg_specific") is None
+    cluster._update_attribute(mfg_def, 7)
+    assert cluster.get("mfg_specific") == 7
+    assert cluster.get("standard") == 1000
+
+    with mock.patch.object(
+        zigpy.zcl.Cluster,
+        "read_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    foundation.ReadAttributeRecord(
+                        0x0302,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(type=None, value=9),
+                    )
+                ]
+            ]
+        ),
+    ) as read_raw:
+        assert await cluster.read_attributes([mfg_def]) == ({mfg_def: 9}, {})
+
+    # The read was sent to the device instead of being answered locally
+    assert read_raw.mock_calls == [mock.call([0x0302], manufacturer=0x1015)]
+
+
+async def test_constant_attributes_id_matches_all(device_mock) -> None:
+    """An ID key keeps matching every attribute with that ID."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(ConstantAttributesCluster, constant_attributes={0x0303: 5})
+        .add_to_registry(registry)
+    )
+    cluster = registry.resolve(device_mock).endpoints[1].in_clusters[0x1235]
+
+    assert cluster.get("other") == 5
+    assert await cluster.read_attributes([0x0303]) == ({0x0303: 5}, {})
+
+
+async def test_constant_attributes_class_attribute() -> None:
+    """Names and definitions work in the `_CONSTANT_ATTRIBUTES` class attribute."""
+
+    class Cluster(ConstantAttributesCluster):
+        """Test cluster."""
+
+        _CONSTANT_ATTRIBUTES = {  # noqa: RUF012
+            ConstantAttributesCluster.AttributeDefs.standard: 1,
+            "other": 2,
+        }
+
+    cluster = Cluster(mock.MagicMock(), is_server=True)
+
+    assert cluster.get("standard") == 1
+    assert cluster.get("other") == 2
+    assert await cluster.read_attributes(["standard", "other"]) == (
+        {"standard": 1, "other": 2},
+        {},
+    )
+
+
+async def test_local_data_cluster_constant_definition(device_mock) -> None:
+    """A `LocalDataCluster` serves constants keyed by definition."""
+
+    class Cluster(zhaquirks.LocalDataCluster, ConstantAttributesCluster):
+        """Test cluster."""
+
+        _CONSTANT_ATTRIBUTES = {  # noqa: RUF012
+            ConstantAttributesCluster.AttributeDefs.standard: 1000
+        }
+
+    cluster = Cluster(mock.MagicMock(), is_server=True)
+
+    assert await cluster.read_attributes(["standard"]) == ({"standard": 1000}, {})
+    assert cluster.get("standard") == 1000
