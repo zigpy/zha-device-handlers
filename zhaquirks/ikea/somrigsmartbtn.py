@@ -40,6 +40,7 @@ from zhaquirks.ikea import (
     IKEA_CLUSTER_ID,
     PowerConfig1AAACluster,
     ShortcutV2Cluster,
+    shortcut_v2_button_event_entity,
 )
 from zhaquirks.legacy import CustomDevice
 
@@ -162,3 +163,8 @@ class IkeaSomrigSmartButton(CustomDevice):
         (LONG_PRESS, BUTTON_2): {ENDPOINT_ID: 2, COMMAND: COMMAND_M_LONG_PRESS},
         (LONG_RELEASE, BUTTON_2): {ENDPOINT_ID: 2, COMMAND: COMMAND_M_LONG_RELEASE},
     }
+
+    button_event_entities = (
+        shortcut_v2_button_event_entity(BUTTON_1, endpoint_id=1, number=1),
+        shortcut_v2_button_event_entity(BUTTON_2, endpoint_id=2, number=2),
+    )

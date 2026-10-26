@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden SYMFONISK sound remote gen2."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -13,6 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -54,6 +56,7 @@ from zhaquirks.ikea import (
     PowerConfig2AAACluster,
     ShortcutV1Cluster,
     ShortcutV2Cluster,
+    shortcut_v2_button_event_entity,
 )
 from zhaquirks.legacy import CustomDevice
 
@@ -104,6 +107,78 @@ class Symfonisk2CommonTriggers:
             PARAMS: {"step_mode": 1},
         },
     }
+
+    # Play/pause and the track buttons send one command per press. The volume
+    # buttons send a move_with_on_off for a short press and repeat a move while held,
+    # with nothing on release, so their holds stay device triggers. When the short
+    # press is sent is not known, so it is a single press.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TOGGLE),
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_play_pause",
+            translation_key="play_pause_button",
+            fallback_name="Play/pause button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, DIM_UP),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_volume_up",
+            translation_key="volume_up_button",
+            fallback_name="Volume up button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, DIM_DOWN),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_volume_down",
+            translation_key="volume_down_button",
+            fallback_name="Volume down button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, RIGHT),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_next",
+            translation_key="next_button",
+            fallback_name="Next button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, LEFT),
+                ),
+            ],
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_previous",
+            translation_key="previous_button",
+            fallback_name="Previous button",
+        ),
+    )
 
 
 class IkeaSymfoniskGen2v1(CustomDevice):
@@ -196,6 +271,58 @@ class IkeaSymfoniskGen2v1(CustomDevice):
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 3},
             },
         },
+    )
+
+    # The dot buttons send one event per single, double or long press, with
+    # nothing on release
+    button_event_entities = (
+        *Symfonisk2CommonTriggers.button_event_entities,
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, BUTTON_1),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, BUTTON_1),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, BUTTON_1),
+                ),
+            ],
+            cluster_id=ShortcutV1Cluster.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_1",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": "1"},
+            fallback_name="Button 1",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, BUTTON_2),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, BUTTON_2),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, BUTTON_2),
+                ),
+            ],
+            cluster_id=ShortcutV1Cluster.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_2",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": "2"},
+            fallback_name="Button 2",
+        ),
     )
 
 
@@ -343,4 +470,10 @@ class IkeaSymfoniskGen2v2(CustomDevice):
             (LONG_PRESS, BUTTON_2): {ENDPOINT_ID: 3, COMMAND: COMMAND_M_LONG_PRESS},
             (LONG_RELEASE, BUTTON_2): {ENDPOINT_ID: 3, COMMAND: COMMAND_M_LONG_RELEASE},
         },
+    )
+
+    button_event_entities = (
+        *Symfonisk2CommonTriggers.button_event_entities,
+        shortcut_v2_button_event_entity(BUTTON_1, endpoint_id=2, number=1),
+        shortcut_v2_button_event_entity(BUTTON_2, endpoint_id=3, number=2),
     )
