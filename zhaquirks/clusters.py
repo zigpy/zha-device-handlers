@@ -8,10 +8,13 @@ round-trip.
 
 from __future__ import annotations
 
+import logging
 import typing
 
 import zigpy.zcl
 from zigpy.zcl import foundation
+
+_LOGGER = logging.getLogger(__name__)
 
 type ConstantAttributeKey = int | str | foundation.ZCLAttributeDef
 
@@ -30,6 +33,10 @@ class CustomCluster(zigpy.zcl.Cluster):
         self, attrid: int, manufacturer: int | None
     ) -> foundation.ZCLAttributeDef | None:
         """Find the definition a read of `attrid` with `manufacturer` refers to."""
+        # Only definition and name keys need it, and resolving can emit warnings
+        if all(isinstance(key, int) for key in self._CONSTANT_ATTRIBUTES or ()):
+            return None
+
         for kwargs in ({"manufacturer_code": manufacturer}, {}):
             try:
                 return self.find_attribute(attrid, **kwargs)
@@ -48,10 +55,19 @@ class CustomCluster(zigpy.zcl.Cluster):
             if isinstance(key, int):
                 matches = key == attrid
             else:
-                matches = (
-                    attr_def is not None
-                    and self.find_attribute(key).name == attr_def.name
-                )
+                try:
+                    matches = (
+                        attr_def is not None
+                        and self.find_attribute(key).name == attr_def.name
+                    )
+                except KeyError:
+                    # Don't break every read of the cluster over a bad key
+                    _LOGGER.error(
+                        "Ignoring constant attribute %r, not an attribute of %s",
+                        key,
+                        type(self).__name__,
+                    )
+                    continue
 
             if matches:
                 return True, value

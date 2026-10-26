@@ -1193,3 +1193,44 @@ async def test_local_data_cluster_constant_definition(device_mock) -> None:
 
     assert await cluster.read_attributes(["standard"]) == ({"standard": 1000}, {})
     assert cluster.get("standard") == 1000
+
+
+async def test_constant_attributes_mfg_specific_definition(caplog) -> None:
+    """A constant for the manufacturer-specific attribute leaves the standard one."""
+
+    class Cluster(ConstantAttributesCluster):
+        """Test cluster."""
+
+        _CONSTANT_ATTRIBUTES = {  # noqa: RUF012
+            ConstantAttributesCluster.AttributeDefs.mfg_specific: 3,
+            "unknown": 1,
+            foundation.ZCLAttributeDef(id=0x0303, type=t.uint8_t): 2,
+        }
+
+    cluster = Cluster(mock.MagicMock(), is_server=True)
+
+    assert cluster.get("mfg_specific") == 3
+    assert cluster.get("standard") is None
+
+    # Keys that aren't attributes of the cluster are ignored, not fatal
+    assert cluster.get("other") is None
+    assert "Ignoring constant attribute 'unknown'" in caplog.text
+
+    with mock.patch.object(
+        zigpy.zcl.Cluster,
+        "read_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    foundation.ReadAttributeRecord(
+                        0x0302,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(type=None, value=9),
+                    )
+                ]
+            ]
+        ),
+    ) as read_raw:
+        assert await cluster.read_attributes(["standard"]) == ({"standard": 9}, {})
+
+    assert read_raw.mock_calls == [mock.call([0x0302], manufacturer=None)]
