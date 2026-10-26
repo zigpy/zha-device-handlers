@@ -14,7 +14,7 @@ from zigpy.zgp.commands import GPContactStatusPayload
 from zigpy.zgp.types import ApplicationID, GPDCommandID, SrcID
 
 import zhaquirks
-from zhaquirks.enocean.ptm216z import PTM216ZButton
+from zhaquirks.enocean.ptm216z import CONTACT_A0, CONTACT_A1, PTM216ZButton
 
 zhaquirks.setup()
 
@@ -122,7 +122,6 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
 
     events.clear()
 
-    # The switch only reports that every contact is open again
     emit(ptm216z, GPDCommandID.Release8BitVector, 0)
     assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == expected
     assert all(
@@ -139,6 +138,30 @@ def test_ptm216z_release_without_press(ptm216z, buttons):
     emit(ptm216z, GPDCommandID.Release8BitVector, 0)
 
     assert events == []
+
+
+def test_ptm216z_partial_release(ptm216z, buttons):
+    """Test that a release only ends the presses of contacts that opened."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    emit(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0 | CONTACT_A1)
+    events.clear()
+
+    emit(ptm216z, GPDCommandID.Release8BitVector, CONTACT_A1)
+    assert [
+        (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+        for event in events
+    ] == [("button_a0", ButtonEventType.PRESS_END)]
+
+    events.clear()
+
+    emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+    assert [
+        (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+        for event in events
+    ] == [("button_a1", ButtonEventType.PRESS_END)]
 
 
 def test_ptm216z_captured_sequence(ptm216z, buttons):
