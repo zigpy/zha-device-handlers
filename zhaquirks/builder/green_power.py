@@ -176,7 +176,11 @@ class GreenPowerQuirkBuilder:
 
     def device_class(self, custom_device_class: type[QuirkGreenPowerDevice]) -> Self:
         """Set a custom ZHA device class."""
-        assert issubclass(custom_device_class, QuirkGreenPowerDevice)
+        if not issubclass(custom_device_class, QuirkGreenPowerDevice):
+            raise TypeError(
+                f"{custom_device_class} is not a subclass of QuirkGreenPowerDevice"
+            )
+
         self.custom_device_class = custom_device_class
         return self
 

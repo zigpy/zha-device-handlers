@@ -177,6 +177,12 @@ def test_green_power_quirk_custom_device_class(zigpy_gpd):
         assert isinstance(zha_device, CustomGreenPowerDevice)
 
 
+def test_green_power_quirk_invalid_device_class():
+    """Test that a device class not based on `QuirkGreenPowerDevice` is rejected."""
+    with pytest.raises(TypeError):
+        GreenPowerQuirkBuilder().device_class(GreenPowerDevice)
+
+
 def test_green_power_quirk_entities(zigpy_gpd):
     """Test entities declared by a Green Power quirk."""
     with DEVICE_REGISTRY.preserve_state():
