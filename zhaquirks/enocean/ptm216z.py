@@ -77,6 +77,8 @@ class PTM216ZButton(BaseEvent):
         PTM216ZButton,
         contact=CONTACT_A0,
         unique_id_suffix="button_a0",
+        translation_key="rocker_top",
+        translation_placeholders={"rocker": "A"},
         fallback_name="Rocker A top",
         primary=True,
     )
@@ -84,18 +86,24 @@ class PTM216ZButton(BaseEvent):
         PTM216ZButton,
         contact=CONTACT_A1,
         unique_id_suffix="button_a1",
+        translation_key="rocker_bottom",
+        translation_placeholders={"rocker": "A"},
         fallback_name="Rocker A bottom",
     )
     .entity(
         PTM216ZButton,
         contact=CONTACT_B0,
         unique_id_suffix="button_b0",
+        translation_key="rocker_top",
+        translation_placeholders={"rocker": "B"},
         fallback_name="Rocker B top",
     )
     .entity(
         PTM216ZButton,
         contact=CONTACT_B1,
         unique_id_suffix="button_b1",
+        translation_key="rocker_bottom",
+        translation_placeholders={"rocker": "B"},
         fallback_name="Rocker B bottom",
     )
     .add_to_registry()
