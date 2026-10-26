@@ -2076,14 +2076,32 @@ async def test_xiaomi_e1_roller_battery_percentage_read_redirection(
     ]
     assert power_cluster.get(battery_attr.id) == 152
 
-    # with an empty Aqara cache, a cache-only read doesn't fail on the device
+    # with an empty Aqara cache, a cache-only read uses the power cluster's cache
     opple_cluster._attr_cache.clear()
     with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
         success, failure = await power_cluster.read_attributes(
             [battery_attr.name], allow_cache=True, only_cache=True
         )
     assert opple_read.call_count == 2
-    assert success == {}
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
+    # an invalid battery percentage is read as the ZCL invalid value
+    opple_read.return_value = (
+        [
+            foundation.ReadAttributeRecord(
+                0x040A,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(DataTypeId.uint8, t.uint8_t(0xFF)),
+            )
+        ],
+    )
+    power_listener.attribute_updates.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes([battery_attr.name])
+    assert success == {battery_attr.name: 0xFF}
+    assert power_listener.attribute_updates == []
+    assert power_cluster.get(battery_attr.id) == 152
 
 
 @pytest.mark.parametrize(

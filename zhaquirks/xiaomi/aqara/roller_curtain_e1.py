@@ -83,13 +83,19 @@ class RedirectAttributesCluster(CustomCluster):
             if redirected_attr_def not in attr_defs:
                 continue
 
-            # Skip this attribute and read it from the other cluster, which knows the
-            # manufacturer code of its own attribute
+            # Skip this attribute and read it from the other cluster
             other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
             other_success, other_failure = await other_cluster.read_attributes(
-                [target_attr],
-                **{k: v for k, v in kwargs.items() if k != "manufacturer"},
+                [target_attr], **kwargs
             )
+
+            if (
+                kwargs.get("only_cache")
+                and target_attr not in other_success
+                and target_attr not in other_failure
+            ):
+                # Nothing cached on the other cluster, use this cluster's cache
+                continue
 
             # Remove it from the remaining attributes
             attr_key = attr_defs.pop(redirected_attr_def)
@@ -321,7 +327,8 @@ class PowerConfigurationRollerE1(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining: (
             XiaomiAqaraRollerE1.AttributeDefs.battery_percentage,
             XiaomiAqaraRollerE1,
-            lambda x: x * 2,
+            # ZCL battery percentage is in 0.5% steps, 0xFF is invalid
+            lambda x: x * 2 if 0 <= x <= 100 else 0xFF,
         ),
     }
 
