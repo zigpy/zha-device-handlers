@@ -8,6 +8,7 @@ import enum
 import logging
 from typing import Any
 
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -21,7 +22,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster, LocalDataCluster
-from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
+from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 from zhaquirks.legacy import CustomDevice
 
 from .types import ATCommand, BinaryString, Bytes, IOSample
@@ -670,6 +671,7 @@ class XBeeCommon(CustomDevice):
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
             XBEE_DATA_ENDPOINT: {
+                PROFILE_ID: zha.PROFILE_ID,
                 INPUT_CLUSTERS: [
                     XBeeDigitalIOCluster,
                     XBeeSerialDataCluster,

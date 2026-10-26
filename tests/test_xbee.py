@@ -1,14 +1,18 @@
 """Test XBee device."""
 
+from collections.abc import Callable, Iterator
 from unittest import mock
 
 import pytest
+from zha.zigbee.endpoint import Endpoint
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import AnalogOutput, Basic, LevelControl, OnOff
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.const import ENDPOINTS, PROFILE_ID
 from zhaquirks.xbee import (
     XBEE_AT_ENDPOINT,
     XBEE_AT_REQUEST_CLUSTER,
@@ -17,11 +21,49 @@ from zhaquirks.xbee import (
     XBEE_DATA_ENDPOINT,
     XBEE_IO_CLUSTER,
     XBEE_PROFILE_ID,
+    XBeeCommon,
 )
 from zhaquirks.xbee.xbee3_io import XBee3Sensor
 from zhaquirks.xbee.xbee_io import XBeeSensor
 
 zhaquirks.setup()
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(XBeeSensor, id="xbee2"),
+        pytest.param(XBee3Sensor, id="xbee3"),
+    ]
+)
+def xbee_device(
+    request: pytest.FixtureRequest,
+    zigpy_device_from_quirk: Callable[[type[XBeeCommon]], XBeeCommon],
+) -> XBeeCommon:
+    """Create an XBee device with the requested quirk."""
+    return zigpy_device_from_quirk(request.param)
+
+
+@pytest.fixture
+def zha_event_listener(xbee_device: XBeeCommon) -> Iterator[mock.Mock]:
+    """Listen for quirk events forwarded through a real ZHA endpoint."""
+    device = mock.Mock(unique_id=str(xbee_device.ieee))
+    endpoint = Endpoint.new(xbee_device.endpoints[XBEE_DATA_ENDPOINT], device)
+    yield device.emit_zha_event
+    endpoint.on_remove()
+
+
+def test_endpoint_profiles(xbee_device: XBeeCommon) -> None:
+    """Expose the event relay as ZHA while preserving the XBee wire signatures."""
+    assert (
+        xbee_device.signature[ENDPOINTS][XBEE_DATA_ENDPOINT][PROFILE_ID]
+        == XBEE_PROFILE_ID
+    )
+    assert (
+        xbee_device.signature[ENDPOINTS][XBEE_AT_ENDPOINT][PROFILE_ID]
+        == XBEE_PROFILE_ID
+    )
+    assert xbee_device.endpoints[XBEE_DATA_ENDPOINT].profile_id == zha.PROFILE_ID
+    assert xbee_device.endpoints[XBEE_AT_ENDPOINT].profile_id == XBEE_PROFILE_ID
 
 
 async def test_basic_cluster(zigpy_device_from_quirk):
@@ -141,21 +183,20 @@ async def test_analog_output(zigpy_device_from_quirk):
         m1.reset_mock()
 
 
-async def test_send_serial_data(zigpy_device_from_quirk):
+async def test_send_serial_data(xbee_device: XBeeCommon) -> None:
     """Test sending serial data to XBee device."""
 
-    xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
-    xbee3_device.application.request.reset_mock()
+    xbee_device.application.request.reset_mock()
 
     # Send serial data
     _, status = (
-        await xbee3_device.endpoints[XBEE_DATA_ENDPOINT]
+        await xbee_device.endpoints[XBEE_DATA_ENDPOINT]
         .out_clusters[XBEE_DATA_CLUSTER]
         .command(0, "Test UART data")
     )
 
-    xbee3_device.application.request.assert_awaited_once_with(
-        xbee3_device,
+    xbee_device.application.request.assert_awaited_once_with(
+        xbee_device,
         XBEE_PROFILE_ID,
         XBEE_DATA_CLUSTER,
         XBEE_DATA_ENDPOINT,
@@ -167,18 +208,18 @@ async def test_send_serial_data(zigpy_device_from_quirk):
     assert status == foundation.Status.SUCCESS
 
 
-async def test_receive_serial_data(zigpy_device_from_quirk):
+async def test_receive_serial_data(
+    xbee_device: XBeeCommon, zha_event_listener: mock.Mock
+) -> None:
     """Test receiving serial data to XBee device."""
 
-    xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
-
     listener = mock.MagicMock()
-    xbee3_device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
+    xbee_device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
         LevelControl.cluster_id
     ].add_listener(listener)
 
     # Receive serial data
-    xbee3_device.packet_received(
+    xbee_device.packet_received(
         t.ZigbeePacket(
             profile_id=XBEE_PROFILE_ID,
             cluster_id=XBEE_DATA_CLUSTER,
@@ -190,6 +231,17 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
 
     listener.zha_send_event.assert_called_once_with(
         "receive_data", {"data": "Test UART data"}
+    )
+
+    zha_event_listener.assert_called_once_with(
+        {
+            "unique_id": f"{xbee_device.ieee}:232:0x0008_CLIENT",
+            "endpoint_id": XBEE_DATA_ENDPOINT,
+            "cluster_id": LevelControl.cluster_id,
+            "command": "receive_data",
+            "args": {"data": "Test UART data"},
+            "params": {},
+        }
     )
 
 
@@ -334,26 +386,25 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
     ),
 )
 async def test_remote_at_non_native(
-    zigpy_device_from_quirk,
-    command_id,
-    request_value,
-    request_data,
-    response_data,
-    response_command,
-    response_value,
-):
+    xbee_device: XBeeCommon,
+    zha_event_listener: mock.Mock,
+    command_id: int,
+    request_value: int | bytes | None,
+    request_data: bytes,
+    response_data: bytes,
+    response_command: str,
+    response_value: int | bytes | None,
+) -> None:
     """Test remote AT commands with non-XBee coordinator."""
 
-    xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
-
     listener = mock.MagicMock()
-    xbee3_device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
+    xbee_device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
         LevelControl.cluster_id
     ].add_listener(listener)
 
-    def mock_at_response(*args, **kwargs):
+    def mock_at_response(*args: object, **kwargs: object) -> object:
         """Simulate remote AT command response from device."""
-        xbee3_device.packet_received(
+        xbee_device.packet_received(
             t.ZigbeePacket(
                 profile_id=XBEE_PROFILE_ID,
                 cluster_id=XBEE_AT_RESPONSE_CLUSTER,
@@ -364,20 +415,20 @@ async def test_remote_at_non_native(
         )
         return mock.DEFAULT
 
-    xbee3_device.application.request.reset_mock()
-    xbee3_device.application.request.configure_mock(side_effect=mock_at_response)
+    xbee_device.application.request.reset_mock()
+    xbee_device.application.request.configure_mock(side_effect=mock_at_response)
 
     # Send remote AT command request
     _, status = (
-        await xbee3_device.endpoints[XBEE_AT_ENDPOINT]
+        await xbee_device.endpoints[XBEE_AT_ENDPOINT]
         .out_clusters[XBEE_AT_REQUEST_CLUSTER]
         .command(command_id, request_value)
     )
 
-    xbee3_device.application.request.configure_mock(side_effect=None)
+    xbee_device.application.request.configure_mock(side_effect=None)
 
-    xbee3_device.application.request.assert_awaited_once_with(
-        xbee3_device,
+    xbee_device.application.request.assert_awaited_once_with(
+        xbee_device,
         XBEE_PROFILE_ID,
         XBEE_AT_REQUEST_CLUSTER,
         XBEE_AT_ENDPOINT,
@@ -389,6 +440,17 @@ async def test_remote_at_non_native(
     assert status == foundation.Status.SUCCESS
     listener.zha_send_event.assert_called_once_with(
         response_command, {"response": response_value}
+    )
+
+    zha_event_listener.assert_called_once_with(
+        {
+            "unique_id": f"{xbee_device.ieee}:232:0x0008_CLIENT",
+            "endpoint_id": XBEE_DATA_ENDPOINT,
+            "cluster_id": LevelControl.cluster_id,
+            "command": response_command,
+            "args": {"response": response_value},
+            "params": {},
+        }
     )
 
 
