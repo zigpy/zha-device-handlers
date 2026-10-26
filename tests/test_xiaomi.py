@@ -2086,6 +2086,14 @@ async def test_xiaomi_e1_roller_battery_percentage_read_redirection(
     assert success == {battery_attr.name: 152}
     assert failure == {}
 
+    # also when the Aqara attribute is cached as unsupported
+    opple_cluster.add_unsupported_attribute(0x040A)
+    success, failure = await power_cluster.read_attributes(
+        [battery_attr.name], allow_cache=True, only_cache=True
+    )
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
     # an invalid battery percentage is read as the ZCL invalid value
     opple_read.return_value = (
         [

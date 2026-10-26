@@ -89,12 +89,8 @@ class RedirectAttributesCluster(CustomCluster):
                 [target_attr], **kwargs
             )
 
-            if (
-                kwargs.get("only_cache")
-                and target_attr not in other_success
-                and target_attr not in other_failure
-            ):
-                # Nothing cached on the other cluster, use this cluster's cache
+            if kwargs.get("only_cache") and target_attr not in other_success:
+                # No value cached on the other cluster, use this cluster's cache
                 continue
 
             # Remove it from the remaining attributes
