@@ -1,12 +1,14 @@
 """Tests for xiaomi."""
 
 import asyncio
+import itertools
 import logging
 import math
 from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DeviceRegistry
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -48,6 +50,7 @@ from tests.common import (
     send_command,
 )
 import zhaquirks
+from zhaquirks import _legacy_quirk_to_registry_entry
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON_1,
@@ -79,6 +82,7 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.ctrl_ln
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
@@ -110,15 +114,26 @@ import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+import zhaquirks.xiaomi.aqara.opple_remote
+import zhaquirks.xiaomi.aqara.opple_switch
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
+import zhaquirks.xiaomi.aqara.remote_b186acn01
+import zhaquirks.xiaomi.aqara.remote_b286acn01
+import zhaquirks.xiaomi.aqara.remote_e1
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
+import zhaquirks.xiaomi.aqara.sensor_switch_aq3
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_acn047
+import zhaquirks.xiaomi.aqara.switch_aq2
+import zhaquirks.xiaomi.aqara.switch_h1_double
+import zhaquirks.xiaomi.aqara.switch_h1_single
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.sensor_switch
 import zhaquirks.xiaomi.mija.smoke
 
 zhaquirks.setup()
@@ -2892,3 +2907,461 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+_REPORT_TSNS = itertools.cycle(range(256))
+
+
+def button_device(zigpy_device_from_quirk, quirk):
+    """Return a device quirked through ZHA's registry, which adds its button events."""
+    raw_device = zigpy_device_from_quirk(quirk, apply_quirk=False)
+    if NODE_DESCRIPTOR in quirk.signature:
+        raw_device.node_desc = quirk.signature[NODE_DESCRIPTOR]
+
+    # Signatures matching any endpoint leave its profile to the device, which uses ZHA
+    for endpoint_id, endpoint in quirk.signature[ENDPOINTS].items():
+        if PROFILE_ID not in endpoint:
+            raw_device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+
+    registry = DeviceRegistry()
+    registry.register(_legacy_quirk_to_registry_entry(quirk))
+    device = registry.resolve(raw_device)
+    assert isinstance(device, quirk)
+    return device
+
+
+def report_attribute(device, endpoint_id, cluster_id, attr_id, value):
+    """Receive an attribute report frame from one of the device's clusters."""
+    tsn = next(_REPORT_TSNS)
+    hdr = foundation.ZCLHeader.general(
+        tsn=tsn,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    report = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema(attribute_reports=[Attribute(attr_id, value)])
+
+    device.packet_received(
+        t.ZigbeePacket(
+            src_ep=endpoint_id,
+            dst_ep=1,
+            tsn=tsn,
+            profile_id=zha.PROFILE_ID,
+            cluster_id=cluster_id,
+            data=t.SerializableBytes(hdr.serialize() + report.serialize()),
+        )
+    )
+
+
+def present_value(value: int) -> TypeValue:
+    """Return a multistate input present value, as Aqara buttons report it."""
+    return TypeValue(type=DataTypeId.uint16, value=t.uint16_t(value))
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3,
+        zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B,
+        zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B2,
+    ],
+)
+async def test_aqara_mini_switch_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button events of the Aqara mini switches with a multistate input."""
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start", "long_press_end"]
+    }
+
+    # single, double, hold and release (AQ3 and B1ACN01 values), shake
+    for value in (1, 2, 16, 17, 0, 255, 18):
+        report_attribute(
+            device, 1, MultistateInput.cluster_id, 0x0055, present_value(value)
+        )
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+    ]
+
+
+def single_double_hold(button: str) -> list:
+    """Return the events of a single, double and triple press and a hold."""
+    return [
+        (button, "single_press"),
+        (button, "multi_press", {"press_count": 2}),
+        (button, "multi_press", {"press_count": 3}),
+        (button, "long_press_start"),
+    ]
+
+
+async def test_aqara_b186acn01_button_events(zigpy_device_from_quirk):
+    """Test the button events of the Aqara single rocker wireless remote switch."""
+    quirk = zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start"]
+    }
+
+    for value in (1, 2, 0):
+        report_attribute(
+            device, 1, MultistateInput.cluster_id, 0x0055, present_value(value)
+        )
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+    ]
+
+
+async def test_aqara_b286acn01_button_events(zigpy_device_from_quirk):
+    """Test the button events of the Aqara double rocker wireless remote switch."""
+    quirk = zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    types = ["single_press", "multi_press", "long_press_start"]
+    assert recorder.event_types() == {
+        "button_left": types,
+        "button_right": types,
+        "button_both": types,
+    }
+
+    for endpoint_id in (1, 2, 3):
+        for value in (1, 2, 0):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    assert recorder.pop() == [
+        (button, event_type, *attributes)
+        for button in ("button_left", "button_right", "button_both")
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+            ("long_press_start",),
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "quirk, buttons",
+    [
+        (zhaquirks.xiaomi.aqara.remote_e1.RemoteE1SingleRocker1, {1: "button"}),
+        (
+            zhaquirks.xiaomi.aqara.remote_e1.RemoteE1DoubleRocker1,
+            {1: "button_left", 2: "button_right", 3: "button_both"},
+        ),
+    ],
+)
+async def test_aqara_e1_remote_button_events(zigpy_device_from_quirk, quirk, buttons):
+    """Test the button events of the Aqara E1 wireless remote switches."""
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        button: ["single_press", "multi_press", "long_press_start"]
+        for button in buttons.values()
+    }
+
+    for endpoint_id in buttons:
+        # single, double, triple, hold, and a release the remote does not send
+        for value in (1, 2, 3, 0, 255):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    # The command mode toggle cannot be told apart by button
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+
+    assert recorder.pop() == [
+        event for button in buttons.values() for event in single_double_hold(button)
+    ]
+
+
+OPPLE_REMOTES = [
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB286OPCN01, 2),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB286OPCN01Alt, 2),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB286OPCN01V2, 2),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB286OPCN01V3, 1),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB286OPCN01V4, 2),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB486OPCN01, 4),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB486OPCN01V2, 4),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB486OPCN01V3, 4),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB486OPCN01V4, 4),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB686OPCN01, 6),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB686OPCN01V2, 6),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB686OPCN01V3, 6),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB686OPCN01V4, 6),
+    (zhaquirks.xiaomi.aqara.opple_remote.RemoteB686OPCN01V5, 6),
+]
+
+
+@pytest.mark.parametrize("quirk, buttons", OPPLE_REMOTES)
+async def test_aqara_opple_remote_button_events(
+    zigpy_device_from_quirk, quirk, buttons
+):
+    """Test the button events of the Aqara Opple remotes."""
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        f"button_{number}": [
+            "single_press",
+            "multi_press",
+            "long_press_start",
+            "long_press_end",
+        ]
+        for number in range(1, buttons + 1)
+    }
+
+    # The quirked device has multistate inputs on further endpoints than it has
+    # buttons, which have no button event entity
+    for endpoint_id, endpoint in device.endpoints.items():
+        if endpoint_id == 0 or MultistateInput.cluster_id not in endpoint.in_clusters:
+            continue
+
+        for value in (1, 2, 3, 0, 255):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    # Command mode
+    send_command(device, 1, OnOff.cluster_id, "off")
+
+    assert recorder.pop() == [
+        event
+        for number in range(1, buttons + 1)
+        for event in [
+            *single_double_hold(f"button_{number}"),
+            (f"button_{number}", "long_press_end"),
+        ]
+    ]
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitch1,
+        zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitch2,
+        zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitch3,
+        zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitch4,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchWithNeutral1,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchWithNeutral3,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchWithNeutral4,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchNoNeutral,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchNoNeutral2,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchNoNeutralAlt,
+    ],
+)
+async def test_aqara_double_wall_switch_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button events of the Aqara double rocker wall switches."""
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    types = ["single_press", "multi_press"]
+    assert recorder.event_types() == {
+        "button_1": types,
+        "button_2": types,
+        "button_both": types,
+    }
+
+    for endpoint_id in (41, 42, 51):
+        for value in (1, 2):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    # The warning sent before leaving the network, when a button is held long
+    report_attribute(
+        device, 1, 0xFCC0, 0x00FC, TypeValue(type=DataTypeId.bool_, value=t.Bool.false)
+    )
+
+    assert recorder.pop() == [
+        (button, event_type, *attributes)
+        for button in ("button_1", "button_2", "button_both")
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        zhaquirks.xiaomi.aqara.switch_h1_single.AqaraH1SingleRockerSwitchWithNeutral,
+        zhaquirks.xiaomi.aqara.switch_h1_single.AqaraH1SingleRockerSwitchWithNeutralAlt,
+        zhaquirks.xiaomi.aqara.switch_h1_single.AqaraH1SingleRockerSwitchNoNeutral,
+        zhaquirks.xiaomi.aqara.switch_h1_single.AqaraSingleButtonSwitchWithNeutral,
+    ],
+)
+async def test_aqara_single_wall_switch_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button events of the Aqara single rocker wall switches."""
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {"button": ["single_press", "multi_press"]}
+
+    for value in (1, 2):
+        report_attribute(
+            device, 41, MultistateInput.cluster_id, 0x0055, present_value(value)
+        )
+
+    # The warning sent before leaving the network, when the button is held long
+    report_attribute(
+        device, 1, 0xFCC0, 0x00FC, TypeValue(type=DataTypeId.bool_, value=t.Bool.false)
+    )
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+    ]
+
+
+def on_off(value: int) -> TypeValue:
+    """Return an on/off attribute value, as Aqara buttons report presses."""
+    return TypeValue(type=DataTypeId.bool_, value=t.uint8_t(value))
+
+
+async def test_aqara_ctrl_ln_button_events(zigpy_device_from_quirk):
+    """Test the button events of the Aqara wall switches with neutral."""
+    device = button_device(
+        zigpy_device_from_quirk, zhaquirks.xiaomi.aqara.ctrl_ln.CtrlLn
+    )
+    recorder = await ButtonEventRecorder.create(device)
+    types = ["single_press", "multi_press"]
+    assert recorder.event_types() == {
+        "button_1": types,
+        "button_2": types,
+        "button_both": types,
+    }
+
+    for endpoint_id in (5, 6, 7):
+        for value in (1, 2):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    assert recorder.pop() == [
+        (button, event_type, *attributes)
+        for button in ("button_1", "button_2", "button_both")
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+        )
+    ]
+
+
+async def test_aqara_t2_relay_button_events(zigpy_device_from_quirk):
+    """Test the button events of the inputs of the Aqara T2 relay."""
+    quirk = zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button_1": ["single_press"],
+        "button_2": ["single_press"],
+    }
+
+    for endpoint_id in (1, 2):
+        for value in (1, 2):
+            report_attribute(
+                device,
+                endpoint_id,
+                MultistateInput.cluster_id,
+                0x0055,
+                present_value(value),
+            )
+
+    assert recorder.pop() == [
+        ("button_1", "single_press"),
+        ("button_2", "single_press"),
+    ]
+
+
+async def test_aqara_aq2_mini_switch_button_events(zigpy_device_from_quirk):
+    """Test the button events of the Aqara mini switch reporting presses as on/off."""
+    quirk = zhaquirks.xiaomi.aqara.switch_aq2.SwitchAQ2
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {"button": ["single_press", "multi_press"]}
+
+    report_attribute(device, 1, OnOff.cluster_id, 0x0000, on_off(1))
+    for count in (2, 3, 4, 128):
+        report_attribute(
+            device,
+            1,
+            OnOff.cluster_id,
+            0x8000,
+            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(count)),
+        )
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "multi_press", {"press_count": 3}),
+        ("button", "multi_press", {"press_count": 4}),
+    ]
+
+
+async def test_mija_button_events(zigpy_device_from_quirk):
+    """Test the button events of the Mija wireless switch."""
+    quirk = zhaquirks.xiaomi.mija.sensor_switch.MijaButton
+    device = button_device(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {"button": ["press_end"]}
+
+    on_off_cluster = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    zha_listener = mock.MagicMock()
+    on_off_cluster.add_listener(zha_listener)
+
+    # A short press, a double press, and a hold
+    report_attribute(device, 1, OnOff.cluster_id, 0x0000, on_off(0))
+    report_attribute(device, 1, OnOff.cluster_id, 0x0000, on_off(1))
+    report_attribute(
+        device,
+        1,
+        OnOff.cluster_id,
+        0x8000,
+        TypeValue(type=DataTypeId.uint8, value=t.uint8_t(2)),
+    )
+    report_attribute(device, 1, OnOff.cluster_id, 0x0000, on_off(0))
+    # The hold timer runs out
+    on_off_cluster._timer_handle.cancel()
+    on_off_cluster._hold_timeout()
+    report_attribute(device, 1, OnOff.cluster_id, 0x0000, on_off(1))
+
+    assert recorder.pop() == [("button", "press_end"), ("button", "press_end")]
+
+    # The derived click and hold events are unchanged
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call("button_up", []),
+        mock.call("click", {"click_type": "single"}),
+        mock.call("click", {"click_type": "double"}),
+        mock.call("hold", []),
+        mock.call("button_up", []),
+        mock.call("release", []),
+    ]

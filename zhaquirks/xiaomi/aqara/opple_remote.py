@@ -2,6 +2,7 @@
 
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -14,6 +15,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_LONG_PRESS,
@@ -133,6 +135,54 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+def _button_event_entities(buttons: int) -> tuple[ButtonEventMetadata, ...]:
+    """Return the button event entities of the first buttons of an Opple remote.
+
+    In the event mode the quirk sets, the remote counts the presses itself and
+    reports a hold at the hold threshold and its release. The commands of its
+    command mode stay device triggers.
+    """
+    return tuple(
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(ALT_SHORT_PRESS, button),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(ALT_DOUBLE_PRESS, button),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(TRIPLE_PRESS, button),
+                    press_count=3,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(ALT_LONG_PRESS, button),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, button),
+                ),
+            ],
+            cluster_id=MultistateInput.cluster_id,
+            cluster_type=ClusterType.Server,
+            endpoint_id=endpoint_id,
+            unique_id_suffix=f"button_{endpoint_id}",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id}",
+        )
+        for endpoint_id, button in enumerate(
+            (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, BUTTON_6)[:buttons],
+            start=1,
+        )
+    )
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -267,6 +317,8 @@ class RemoteB286OPCN01(XiaomiCustomDevice):
         (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_2_RELEASE},
     }
 
+    button_event_entities = _button_event_entities(2)
+
 
 class RemoteB286OPCN01V2(XiaomiCustomDevice):
     """Aqara Opple 2 button remote device."""
@@ -353,6 +405,8 @@ class RemoteB286OPCN01V2(XiaomiCustomDevice):
 
     device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
 
+    button_event_entities = _button_event_entities(2)
+
 
 class RemoteB286OPCN01Alt(XiaomiCustomDevice):
     """Aqara Opple 2 button remote device (after alternate mode is enabled)."""
@@ -423,6 +477,8 @@ class RemoteB286OPCN01Alt(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
+
+    button_event_entities = _button_event_entities(2)
 
 
 class RemoteB486OPCN01(XiaomiCustomDevice):
@@ -556,6 +612,8 @@ class RemoteB486OPCN01(XiaomiCustomDevice):
         (ALT_LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_4_HOLD},
         (LONG_RELEASE, BUTTON_4): {COMMAND: COMMAND_4_RELEASE},
     }
+
+    button_event_entities = _button_event_entities(4)
 
 
 class RemoteB686OPCN01(XiaomiCustomDevice):
@@ -730,6 +788,8 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
         (LONG_RELEASE, BUTTON_6): {COMMAND: COMMAND_6_RELEASE},
     }
 
+    button_event_entities = _button_event_entities(6)
+
 
 class RemoteB286OPCN01V3(XiaomiCustomDevice):
     """Aqara Opple 2 button remote device."""
@@ -795,6 +855,9 @@ class RemoteB286OPCN01V3(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
+
+    # The replacement has no endpoint 2, so the events of button 2 never arrive
+    button_event_entities = _button_event_entities(1)
 
 
 class RemoteB286OPCN01V4(XiaomiCustomDevice):
@@ -924,6 +987,8 @@ class RemoteB286OPCN01V4(XiaomiCustomDevice):
 
     device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
 
+    button_event_entities = _button_event_entities(2)
+
 
 class RemoteB486OPCN01V2(XiaomiCustomDevice):
     """Aqara Opple 4 button remote device."""
@@ -997,6 +1062,8 @@ class RemoteB486OPCN01V2(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB486OPCN01.device_automation_triggers
+
+    button_event_entities = _button_event_entities(4)
 
 
 class RemoteB486OPCN01V3(XiaomiCustomDevice):
@@ -1078,6 +1145,8 @@ class RemoteB486OPCN01V3(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB486OPCN01.device_automation_triggers
+
+    button_event_entities = _button_event_entities(4)
 
 
 class RemoteB486OPCN01V4(XiaomiCustomDevice):
@@ -1203,6 +1272,8 @@ class RemoteB486OPCN01V4(XiaomiCustomDevice):
 
     device_automation_triggers = RemoteB486OPCN01.device_automation_triggers
 
+    button_event_entities = _button_event_entities(4)
+
 
 class RemoteB686OPCN01V2(XiaomiCustomDevice):
     """Aqara Opple 6 button remote device."""
@@ -1288,6 +1359,8 @@ class RemoteB686OPCN01V2(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB686OPCN01.device_automation_triggers
+
+    button_event_entities = _button_event_entities(6)
 
 
 class RemoteB686OPCN01V3(XiaomiCustomDevice):
@@ -1417,6 +1490,8 @@ class RemoteB686OPCN01V3(XiaomiCustomDevice):
 
     device_automation_triggers = RemoteB686OPCN01.device_automation_triggers
 
+    button_event_entities = _button_event_entities(6)
+
 
 class RemoteB686OPCN01V4(XiaomiCustomDevice):
     """Aqara Opple 6 button remote device."""
@@ -1529,6 +1604,8 @@ class RemoteB686OPCN01V4(XiaomiCustomDevice):
 
     device_automation_triggers = RemoteB686OPCN01.device_automation_triggers
 
+    button_event_entities = _button_event_entities(6)
+
 
 class RemoteB686OPCN01V5(XiaomiCustomDevice):
     """Aqara Opple 6 button remote device."""
@@ -1619,3 +1696,5 @@ class RemoteB686OPCN01V5(XiaomiCustomDevice):
     }
 
     device_automation_triggers = RemoteB686OPCN01.device_automation_triggers
+
+    button_event_entities = _button_event_entities(6)

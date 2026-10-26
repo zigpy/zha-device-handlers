@@ -1,6 +1,7 @@
 """Xiaomi aqara single key switch device."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -13,6 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ATTR_ID,
     COMMAND,
@@ -197,3 +199,32 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: HOLD},
     }
+
+    # The device counts the presses itself and reports a hold at the hold threshold,
+    # without a release. lumi.sensor_86sw1 only reports presses as on/off
+    # attribute reports, which fire none of these.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, SHORT_PRESS),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, DOUBLE_PRESS),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, LONG_PRESS),
+                ),
+            ],
+            cluster_id=MultistateInput.cluster_id,
+            cluster_type=ClusterType.Server,
+            endpoint_id=1,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )

@@ -1,6 +1,7 @@
 """Aqara E1-series wireless remote."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -10,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_SHORT_PRESS,
@@ -54,6 +56,49 @@ from zhaquirks.xiaomi.aqara.opple_remote import (
 from zhaquirks.xiaomi.aqara.remote_h1 import AqaraRemoteManuSpecificCluster
 
 BOTH_BUTTONS = "both_buttons"
+
+
+def _button_event_entity(
+    button: str,
+    endpoint_id: int,
+    unique_id_suffix: str,
+    translation_key: str,
+    name: str,
+) -> ButtonEventMetadata:
+    """Return the button event entity of one of the buttons, or of both together.
+
+    In event mode, the remote counts the presses itself and reports a hold at the
+    hold threshold, without a release. In fast click mode, it only reports single
+    presses. The toggle and off commands of command mode cannot be told apart by
+    button, so they stay device triggers.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, button),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+        ],
+        cluster_id=MultistateInputCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=endpoint_id,
+        unique_id_suffix=unique_id_suffix,
+        translation_key=translation_key,
+        fallback_name=name,
+    )
 
 
 class RemoteE1SingleRocker1(XiaomiCustomDevice):
@@ -115,6 +160,10 @@ class RemoteE1SingleRocker1(XiaomiCustomDevice):
         (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE},
         (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF},
     }
+
+    button_event_entities = (
+        _button_event_entity(LEFT, 1, "button", "button", "Button"),
+    )
 
 
 class RemoteE1DoubleRocker1(XiaomiCustomDevice):
@@ -224,3 +273,11 @@ class RemoteE1DoubleRocker1(XiaomiCustomDevice):
         (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE},
         (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF},
     }
+
+    button_event_entities = (
+        _button_event_entity(LEFT, 1, "button_left", "left_button", "Left button"),
+        _button_event_entity(RIGHT, 2, "button_right", "right_button", "Right button"),
+        _button_event_entity(
+            BOTH_BUTTONS, 3, "button_both", "both_buttons", "Both buttons"
+        ),
+    )

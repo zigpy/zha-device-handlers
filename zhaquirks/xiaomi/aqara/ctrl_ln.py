@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -20,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -54,6 +56,44 @@ from zhaquirks.xiaomi import (
 )
 
 ATTRIBUTE_PRESENT_VALUE = "present_value"
+
+
+def _button_event_entity(
+    button: str, endpoint_id: int, number: int | None
+) -> ButtonEventMetadata:
+    """Return the button event entity of a numbered button, or of both together.
+
+    The switch counts the presses itself.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=endpoint_id,
+        **(
+            {
+                "unique_id_suffix": "button_both",
+                "translation_key": "both_buttons",
+                "fallback_name": "Both buttons",
+            }
+            if number is None
+            else {
+                "unique_id_suffix": f"button_{number}",
+                "translation_key": "numbered_button",
+                "translation_placeholders": {"button_number": str(number)},
+                "fallback_name": f"Button {number}",
+            }
+        ),
+    )
 
 
 class CtrlLn(XiaomiCustomDevice):
@@ -234,3 +274,11 @@ class CtrlLn(XiaomiCustomDevice):
             ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 2},
         },
     }
+
+    # The switch counts the presses itself. The single rocker version only has
+    # button 1, the double rocker one reports pressing both rockers as button 3.
+    button_event_entities = (
+        _button_event_entity(BUTTON_1, 5, 1),
+        _button_event_entity(BUTTON_2, 6, 2),
+        _button_event_entity(BUTTON_3, 7, None),
+    )
