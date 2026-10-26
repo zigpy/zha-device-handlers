@@ -15,6 +15,7 @@ import zigpy.zcl
 from zigpy.zcl import foundation
 
 _LOGGER = logging.getLogger(__name__)
+_REPORTED_KEYS: set[tuple[type, ConstantAttributeKey]] = set()
 
 type ConstantAttributeKey = int | str | foundation.ZCLAttributeDef
 
@@ -67,11 +68,13 @@ class CustomCluster(zigpy.zcl.Cluster):
                     matches = attr_def is not None and key_def.name == attr_def.name
                 except KeyError:
                     # Don't break every read of the cluster over a bad key
-                    _LOGGER.error(
-                        "Ignoring constant attribute %r, not an attribute of %s",
-                        key,
-                        type(self).__name__,
-                    )
+                    if (type(self), key) not in _REPORTED_KEYS:
+                        _REPORTED_KEYS.add((type(self), key))
+                        _LOGGER.error(
+                            "Ignoring constant attribute %s, not an attribute of %s",
+                            getattr(key, "name", key),
+                            type(self).__name__,
+                        )
                     continue
 
             if matches:

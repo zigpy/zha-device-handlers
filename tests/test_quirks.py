@@ -1216,7 +1216,8 @@ async def test_constant_attributes_mfg_specific_definition(caplog) -> None:
 
     # Keys that aren't attributes of the cluster are ignored, not fatal
     assert cluster.get("other") is None
-    assert "Ignoring constant attribute 'unknown'" in caplog.text
+    assert cluster.get("other") is None
+    assert caplog.text.count("Ignoring constant attribute unknown") == 1
 
     with mock.patch.object(
         zigpy.zcl.Cluster,
