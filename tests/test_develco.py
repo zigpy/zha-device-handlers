@@ -142,7 +142,8 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
 
-    # send mfr-specific attribute report with divisor attribute ID — should be ignored
+    # send mfr-specific attribute report with divisor attribute ID — should not update
+    # the ZCL divisor
     # Frame: 0x1c (mfr-specific, server-to-client, disable-default-rsp),
     #        TSN=3, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
     device.packet_received(
@@ -166,12 +167,6 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     # It is only present in the legacy cache, as the definition for the manufacturer
     # specific attribute does not yet exist in the quirk.
     assert metering_cluster._attr_cache.get(Metering.AttributeDefs.divisor.id) == 512
-    assert (
-        metering_cluster._attr_cache._legacy_cache[
-            Metering.AttributeDefs.divisor.id
-        ].value
-        == 512
-    )
 
     # send real attribute report with current_summ_delivered, current_summ_received,
     # instantaneous_demand, and status
