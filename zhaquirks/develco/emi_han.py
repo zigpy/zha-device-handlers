@@ -25,17 +25,14 @@ class FrientMetering(CustomCluster, Metering):
     ) -> None:
         """Filter out incorrect divisor attribute reports from device."""
         if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            # Filter out divisor attribute reports
+            # Drop the divisor: the device reports a wrong value, not a real measurement
             args.attribute_reports = [
                 attr
                 for attr in args.attribute_reports
                 if attr.attrid != Metering.AttributeDefs.divisor.id
             ]
 
-            # Don't process if no attributes remain
-            if not args.attribute_reports:
-                return
-
+        # Process even when no attributes remain, to send any requested default response
         super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 
