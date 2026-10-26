@@ -4,11 +4,12 @@ from typing import Any, Final
 
 from zha.quirks import SE_POLL_SUMMATION
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -16,6 +17,9 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_CLICK,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     ENDPOINT_ID,
     TURN_OFF,
     TURN_ON,
@@ -377,6 +381,99 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                 COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
+    )
+    # The factory default input configuration ("Dimmer single", ubisys technical
+    # reference, InputActions) and the quirk's "Dimmer double" mode use the inputs as
+    # push-buttons: a short press sends toggle (single) or on/off (double) on release,
+    # holding for a second sends move_with_on_off and the release after it a stop
+    # (stop_with_on_off by factory default, stop when written by the quirk).
+    # The "Toggle" mode sends toggle when the input goes down instead; the switch
+    # modes are for latching switches.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(COMMAND_CLICK, BUTTON_1),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(TURN_ON, BUTTON_1),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    ENDPOINT_ID: 2,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_MOVE_ON_OFF,
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    ENDPOINT_ID: 2,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_STOP_ON_OFF,
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    ENDPOINT_ID: 2,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_STOP,
+                },
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+        unique_id_suffix="button_1",
+        translation_key="numbered_button",
+        fallback_name="Button 1",
+        translation_placeholders={"button_number": "1"},
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(COMMAND_CLICK, BUTTON_2),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(TURN_OFF, BUTTON_2),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    ENDPOINT_ID: 3,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_MOVE_ON_OFF,
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    ENDPOINT_ID: 3,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_STOP_ON_OFF,
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    ENDPOINT_ID: 3,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    COMMAND: COMMAND_STOP,
+                },
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=3,
+        unique_id_suffix="button_2",
+        translation_key="numbered_button",
+        fallback_name="Button 2",
+        translation_placeholders={"button_number": "2"},
     )
     .add_to_registry()
 )

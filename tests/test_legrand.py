@@ -3,13 +3,22 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import AttributeUnsupportedEvent
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
+from zigpy.zcl.clusters.general import (
+    BinaryInput,
+    LevelControl,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
+from tests.common import ButtonEventRecorder, send_command
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
+
+MoveMode = LevelControl.MoveMode
 
 zhaquirks.setup()
 
@@ -141,3 +150,105 @@ async def test_legrand_identify_command(zigpy_device_from_v2_quirk):
         assert request.call_args_list[1].kwargs["identify_time"] == IDENTIFY_TIME
         assert "effect_id" not in request.call_args_list[1].kwargs
         assert "effect_variant" not in request.call_args_list[1].kwargs
+
+
+def _remote_switch(zigpy_device_from_v2_quirk, model, endpoint_ids):
+    """Create a Legrand wireless remote switch ready to send commands."""
+    device = zigpy_device_from_v2_quirk(
+        f" {LEGRAND}",
+        model,
+        cluster_ids={
+            endpoint_id: {
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Client,
+                LevelControl.cluster_id: ClusterType.Client,
+            }
+            for endpoint_id in endpoint_ids
+        },
+    )
+    for endpoint_id in endpoint_ids:
+        device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+        device.endpoints[endpoint_id].device_type = zha.DeviceType.DIMMER_SWITCH
+    return device
+
+
+@pytest.mark.parametrize("rate", [255, 100])
+async def test_remote_switch_button_events(zigpy_device_from_v2_quirk, rate):
+    """Test the button events of the two halves of the Legrand remote switch."""
+    device = _remote_switch(zigpy_device_from_v2_quirk, " Remote switch", [1])
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_on": ["press_end", "long_press_start", "long_press_end"],
+        "button_off": ["press_end", "long_press_start", "long_press_end"],
+    }
+
+    send_command(device, 1, OnOff.cluster_id, "on")
+    send_command(device, 1, OnOff.cluster_id, "off")
+    send_command(device, 1, LevelControl.cluster_id, "move", MoveMode.Up, rate)
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+    send_command(device, 1, LevelControl.cluster_id, "move", MoveMode.Down, rate)
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+    assert recorder.pop() == [
+        ("button_on", "press_end"),
+        ("button_off", "press_end"),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]
+
+    # a stop without a hold is no release of either half
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    assert recorder.pop() == []
+
+
+@pytest.mark.parametrize(
+    "model, buttons",
+    [
+        (" Double gangs remote switch", [1, 2]),
+        (" NLWO - Triple remote switch", [1, 2, 3]),
+    ],
+)
+async def test_multi_gang_remote_switch_button_events(
+    zigpy_device_from_v2_quirk, model, buttons
+):
+    """Test the button events of each half of each rocker of the remote switches."""
+    device = _remote_switch(zigpy_device_from_v2_quirk, model, buttons)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        f"button_{button}_{half}": ["press_end", "long_press_start", "long_press_end"]
+        for button in buttons
+        for half in ("on", "off")
+    }
+
+    for button in buttons:
+        send_command(device, button, OnOff.cluster_id, "on")
+        send_command(device, button, OnOff.cluster_id, "off")
+        send_command(device, button, LevelControl.cluster_id, "move", MoveMode.Up, 255)
+        send_command(device, button, LevelControl.cluster_id, "stop")
+        send_command(
+            device, button, LevelControl.cluster_id, "move", MoveMode.Down, 100
+        )
+        send_command(device, button, LevelControl.cluster_id, "stop")
+        assert recorder.pop() == [
+            (f"button_{button}_on", "press_end"),
+            (f"button_{button}_off", "press_end"),
+            (f"button_{button}_on", "long_press_start"),
+            (f"button_{button}_on", "long_press_end"),
+            (f"button_{button}_off", "long_press_start"),
+            (f"button_{button}_off", "long_press_end"),
+        ]
+
+    # a hold on one rocker is not released by the stop of another
+    send_command(device, 1, LevelControl.cluster_id, "move", MoveMode.Up, 255)
+    send_command(device, 2, LevelControl.cluster_id, "stop")
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    assert recorder.pop() == [
+        ("button_1_on", "long_press_start"),
+        ("button_1_on", "long_press_end"),
+    ]

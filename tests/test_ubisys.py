@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import AttributeWrittenEvent, ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -10,7 +11,7 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import Status
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.ubisys import (
     InputMode,
@@ -1401,3 +1402,141 @@ async def test_c4_input_mode_write(ubisys_c4, attr_name, input_index, source_ep)
     # Verify the correct attribute was cached
     attr_def = getattr(UbisysC4InputConfigCluster.AttributeDefs, attr_name)
     assert (attr_def.id, mode) in input_config_listener.attribute_updates
+
+
+def _button_device(zigpy_device_from_v2_quirk, model, cluster_ids, button_endpoints):
+    """Create a ubisys device with its input endpoints ready to send commands."""
+    device = zigpy_device_from_v2_quirk("ubisys", model, cluster_ids=cluster_ids)
+    for endpoint_id in button_endpoints:
+        device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+        device.endpoints[endpoint_id].device_type = zha.DeviceType.DIMMER_SWITCH
+    return device
+
+
+@pytest.mark.parametrize(
+    "model, button_endpoints",
+    [
+        ("S1-R (5601)", {1: 2, 2: 3}),
+        ("S2 (5502)", {1: 3, 2: 4}),
+        ("S2-R (5602)", {1: 3, 2: 4}),
+        ("C4 (5504)", {1: 1, 2: 2, 3: 3, 4: 4}),
+    ],
+)
+async def test_push_button_events(zigpy_device_from_v2_quirk, model, button_endpoints):
+    """Test the button events of the inputs in their push-button default."""
+    device = _button_device(
+        zigpy_device_from_v2_quirk,
+        model,
+        {
+            **{
+                endpoint_id: {
+                    OnOff.cluster_id: ClusterType.Client,
+                    LevelControl.cluster_id: ClusterType.Client,
+                }
+                for endpoint_id in button_endpoints.values()
+            },
+            232: {UbisysCluster.cluster_id: ClusterType.Server},
+        },
+        button_endpoints.values(),
+    )
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        f"button_{button}": ["press_start"] for button in button_endpoints
+    }
+
+    for button, endpoint_id in button_endpoints.items():
+        send_command(device, endpoint_id, OnOff.cluster_id, "toggle")
+        assert recorder.pop() == [(f"button_{button}", "press_start")]
+
+        # the latching switch modes send on/off, which are not button events
+        send_command(device, endpoint_id, OnOff.cluster_id, "on")
+        send_command(device, endpoint_id, OnOff.cluster_id, "off")
+        send_command(device, endpoint_id, LevelControl.cluster_id, "stop")
+        assert recorder.pop() == []
+
+
+async def test_s1_has_no_button_events(zigpy_device_from_v2_quirk):
+    """Test that the S1 input, a rocker switch by default, is no button."""
+    device = _button_device(
+        zigpy_device_from_v2_quirk,
+        "S1 (5501)",
+        {
+            2: {OnOff.cluster_id: ClusterType.Client},
+            232: {UbisysCluster.cluster_id: ClusterType.Server},
+        },
+        [2],
+    )
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {}
+
+
+@pytest.mark.parametrize("model", ["D1 (5503)", "D1-R (5603)"])
+async def test_d1_button_events(zigpy_device_from_v2_quirk, model):
+    """Test the button events of the D1 inputs in the push-button dimmer modes."""
+    device = _button_device(
+        zigpy_device_from_v2_quirk,
+        model,
+        {
+            2: {
+                OnOff.cluster_id: ClusterType.Client,
+                LevelControl.cluster_id: ClusterType.Client,
+            },
+            3: {
+                OnOff.cluster_id: ClusterType.Client,
+                LevelControl.cluster_id: ClusterType.Client,
+            },
+            4: {ElectricalMeasurement.cluster_id: ClusterType.Server},
+            232: {UbisysCluster.cluster_id: ClusterType.Server},
+        },
+        [2, 3],
+    )
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_1": ["press_end", "long_press_start", "long_press_end"],
+        "button_2": ["press_end", "long_press_start", "long_press_end"],
+    }
+
+    # factory default "Dimmer single": toggle on release, alternating move, stop
+    for button, endpoint_id in (("button_1", 2), ("button_2", 3)):
+        send_command(device, endpoint_id, OnOff.cluster_id, "toggle")
+        send_command(
+            device,
+            endpoint_id,
+            LevelControl.cluster_id,
+            "move_with_on_off",
+            LevelControl.MoveMode.Up,
+            50,
+        )
+        send_command(device, endpoint_id, LevelControl.cluster_id, "stop_with_on_off")
+        send_command(
+            device,
+            endpoint_id,
+            LevelControl.cluster_id,
+            "move_with_on_off",
+            LevelControl.MoveMode.Down,
+            50,
+        )
+        send_command(device, endpoint_id, LevelControl.cluster_id, "stop")
+        assert recorder.pop() == [
+            (button, "press_end"),
+            (button, "long_press_start"),
+            (button, "long_press_end"),
+            (button, "long_press_start"),
+            (button, "long_press_end"),
+        ]
+
+    # "Dimmer double" written by the quirk: on from input 1, off from input 2
+    send_command(device, 2, OnOff.cluster_id, "on")
+    send_command(device, 3, OnOff.cluster_id, "off")
+    assert recorder.pop() == [("button_1", "press_end"), ("button_2", "press_end")]
+
+    # off from input 1 and on from input 2 are only sent in the switch modes
+    send_command(device, 2, OnOff.cluster_id, "off")
+    send_command(device, 3, OnOff.cluster_id, "on")
+    send_command(
+        device, 2, LevelControl.cluster_id, "move", LevelControl.MoveMode.Up, 50
+    )
+    assert recorder.pop() == []
