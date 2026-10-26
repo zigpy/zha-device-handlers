@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput
 
-from zhaquirks import CustomCluster
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.xiaomi import LUMI, BasicCluster
 
 
