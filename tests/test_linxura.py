@@ -3,10 +3,12 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import AttributeUpdatedEvent
 from zigpy.zcl.clusters.security import IasZone
 
+from tests.common import ButtonEventRecorder
 import zhaquirks
 import zhaquirks.linxura
 
@@ -129,3 +131,44 @@ async def test_button_triggers(zigpy_device_from_quirk, message, button, press_t
             "press_type": press_type,
         },
     )
+
+
+async def test_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the Linxura smart controller."""
+    device = DEVICE_REGISTRY.resolve(
+        zigpy_device_from_quirk(
+            zhaquirks.linxura.button.LinxuraButton, apply_quirk=False
+        )
+    )
+    assert isinstance(device, zhaquirks.linxura.button.LinxuraButton)
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        f"button_{number}": ["single_press", "multi_press", "long_press_start"]
+        for number in (1, 2, 3, 4)
+    }
+
+    for number in (1, 2, 3, 4):
+        # Zone status reports of two single presses, a double and a long press, and
+        # an invalid one
+        for tsn, zone_status in enumerate((1, 1, 3, 5, 6), start=10 * number):
+            device.packet_received(
+                t.ZigbeePacket(
+                    profile_id=260,
+                    cluster_id=IasZone.cluster_id,
+                    src_ep=1,
+                    dst_ep=1,
+                    tsn=tsn,
+                    data=t.SerializableBytes(
+                        bytes([0x18, tsn, 0x0A, 0x02, 0x00, 0x19])
+                        + t.bitmap16(zone_status + 6 * (number - 1)).serialize()
+                    ),
+                )
+            )
+
+        assert recorder.pop() == [
+            (f"button_{number}", "single_press"),
+            (f"button_{number}", "single_press"),
+            (f"button_{number}", "multi_press", {"press_count": 2}),
+            (f"button_{number}", "long_press_start"),
+        ]

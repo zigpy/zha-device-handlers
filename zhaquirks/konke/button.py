@@ -2,6 +2,7 @@
 
 from zha.quirks import KONKE_BUTTON
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -12,6 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -31,6 +33,32 @@ from zhaquirks.konke import KONKE, KonkeOnOffCluster
 from zhaquirks.legacy import CustomDevice
 
 KONKE_CLUSTER_ID = 0xFCC0
+
+# The button tells single from double presses, and reports a hold once
+BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, SHORT_PRESS),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, DOUBLE_PRESS),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, LONG_PRESS),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    ),
+)
 
 
 class KonkeButtonRemote1(CustomDevice):
@@ -85,6 +113,8 @@ class KonkeButtonRemote1(CustomDevice):
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
     }
 
+    button_event_entities = BUTTON_EVENT_ENTITIES
+
 
 class KonkeButtonRemote2(CustomDevice):
     """Konke 1-button remote device 2nd variant."""
@@ -138,3 +168,5 @@ class KonkeButtonRemote2(CustomDevice):
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
     }
+
+    button_event_entities = BUTTON_EVENT_ENTITIES

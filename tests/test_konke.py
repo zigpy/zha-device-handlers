@@ -4,9 +4,10 @@ import asyncio
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 
-from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
+from tests.common import ZCL_IAS_MOTION_COMMAND, ButtonEventRecorder, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     COMMAND_DOUBLE,
@@ -131,3 +132,42 @@ async def test_konke_button(zigpy_device_from_quirk, quirk):
     assert listener.zha_send_event.call_args_list[0][0][0] == COMMAND_HOLD
     assert listener.zha_send_event.call_args_list[0][0][1][PRESS_TYPE] == COMMAND_HOLD
     assert listener.zha_send_event.call_args_list[0][0][1][COMMAND_ID] == 0x82
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.konke.button.KonkeButtonRemote1,
+        zhaquirks.konke.button.KonkeButtonRemote2,
+    ),
+)
+async def test_konke_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entity of the Konke button remotes."""
+    device = DEVICE_REGISTRY.resolve(zigpy_device_from_quirk(quirk, apply_quirk=False))
+    assert isinstance(device, quirk)
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start"]
+    }
+
+    # single, double and long press reports
+    for tsn, value in enumerate((0x80, 0x81, 0x82), start=0x57):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=0x0006,
+                src_ep=1,
+                dst_ep=1,
+                tsn=tsn,
+                data=t.SerializableBytes(
+                    bytes([0x08, tsn, 0x0A, 0x00, 0x00, 0x10, value])
+                ),
+            )
+        )
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+    ]

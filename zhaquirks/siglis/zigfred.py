@@ -5,7 +5,7 @@ from typing import Any
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -19,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.foundation import BaseCommandDefs
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
@@ -111,6 +112,44 @@ class ZigfredCluster(CustomCluster):
         """Handle cluster specific commands."""
         if hdr.command_id == ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT:
             self._process_button_event(args[0])
+
+
+# Each button tells single from double presses, and reports a hold when it is
+# reached and when the button is released. The hold report carries a duration, so
+# it may be repeated while held; only the first one is a long press start.
+BUTTON_EVENT_ENTITIES = tuple(
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+                repeats=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, button),
+                while_held=True,
+            ),
+        ],
+        cluster_id=ZIGFRED_CLUSTER_ID,
+        cluster_type=ClusterType.Server,
+        endpoint_id=5,
+        unique_id_suffix=button,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": str(number)},
+        fallback_name=f"Button {number}",
+    )
+    for number, button in enumerate((BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4), start=1)
+)
 
 
 class ZigfredUno(CustomDevice):
@@ -258,6 +297,8 @@ class ZigfredUno(CustomDevice):
         (LONG_RELEASE, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_RELEASE}"},
         (LONG_RELEASE, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_RELEASE}"},
     }
+
+    button_event_entities = BUTTON_EVENT_ENTITIES
 
 
 class ZigfredPlus(CustomDevice):
@@ -527,3 +568,5 @@ class ZigfredPlus(CustomDevice):
         (LONG_RELEASE, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_RELEASE}"},
         (LONG_RELEASE, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_RELEASE}"},
     }
+
+    button_event_entities = BUTTON_EVENT_ENTITIES

@@ -1,6 +1,7 @@
 """Device handler for Sourcing & Creation EB-SB-1B (Boulanger Essentielb 8009289) smart button."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -14,9 +15,12 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
     COMMAND_STEP,
     COMMAND_STEP_COLOR_TEMP,
     COMMAND_STOP,
@@ -117,3 +121,45 @@ class SourcingAndCreationSmartButton(CustomDevice):
             ENDPOINT_ID: 1,
         },
     }
+
+    # The button tells single from double presses, and toggles with on and off.
+    # It steps the level while held and stops when released. The short press
+    # trigger matches every event of the on/off cluster, including the attribute
+    # update ZHA relays for each command, so the commands are matched instead.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                *(
+                    ButtonEvent(
+                        event_type=ButtonEventType.SINGLE_PRESS,
+                        event_data={
+                            COMMAND: command,
+                            CLUSTER_ID: OnOff.cluster_id,
+                            ENDPOINT_ID: 1,
+                        },
+                    )
+                    for command in (COMMAND_ON, COMMAND_OFF)
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, TURN_ON),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    trigger=(LONG_PRESS, TURN_ON),
+                    repeats=True,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, TURN_ON),
+                    while_held=True,
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )

@@ -39,6 +39,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.icasa import ON_OFF_BUTTON_EVENT_ENTITIES
 from zhaquirks.legacy import CustomDevice
 
 
@@ -125,3 +126,5 @@ class IcasaKPD12(CustomDevice):
             PARAMS: {"move_mode": 1, "rate": 50},
         },
     }
+
+    button_event_entities = ON_OFF_BUTTON_EVENT_ENTITIES

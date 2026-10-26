@@ -3,13 +3,14 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     COMMAND_M_INITIAL_PRESS,
@@ -21,6 +22,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
+    SinopeDM2500ZB,
+    SinopeDM2550ZB,
     SinopeTechnologieslight,
     SinopeTechnologiesManufacturerCluster,
 )
@@ -260,3 +263,75 @@ async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
         val = config.get("args", {}).get("value")
         if val is not None:
             assert type(val) is int, type(val)
+
+
+@pytest.mark.parametrize(
+    "quirk", (SinopeTechnologieslight, SinopeDM2500ZB, SinopeDM2550ZB)
+)
+async def test_sinope_light_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entities of the light switch and dimmer paddles."""
+    device = DEVICE_REGISTRY.resolve(zigpy_device_from_quirk(quirk, apply_quirk=False))
+    assert isinstance(device, quirk)
+
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_on": ["single_press", "multi_press", "long_press_end"],
+        "button_off": ["single_press", "multi_press", "long_press_end"],
+    }
+
+    for tsn, action in enumerate(
+        (
+            # Single, double and long press of the on paddle
+            ButtonAction.Pressed_on,
+            ButtonAction.Released_on,
+            ButtonAction.Pressed_on,
+            ButtonAction.Double_on,
+            ButtonAction.Pressed_on,
+            ButtonAction.Long_on,
+            # Single, double and long press of the off paddle
+            ButtonAction.Pressed_off,
+            ButtonAction.Released_off,
+            ButtonAction.Pressed_off,
+            ButtonAction.Double_off,
+            ButtonAction.Pressed_off,
+            ButtonAction.Long_off,
+        ),
+        start=10,
+    ):
+        hdr = foundation.ZCLHeader.general(
+            tsn,
+            foundation.GeneralCommand.Report_Attributes,
+            SINOPE_MANUFACTURER_ID,
+            foundation.Direction.Server_to_Client,
+        )
+        attr = foundation.Attribute(
+            attrid=SinopeTechnologiesManufacturerCluster.AttributeDefs.action_report.id,
+            value=foundation.TypeValue(type=t.enum8(0x30), value=action),
+        )
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+                src_ep=1,
+                dst_ep=1,
+                tsn=tsn,
+                data=t.SerializableBytes(
+                    hdr.serialize()
+                    + foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Report_Attributes
+                    ]
+                    .schema([attr])
+                    .serialize()
+                ),
+            )
+        )
+
+    assert recorder.pop() == [
+        ("button_on", "single_press"),
+        ("button_on", "multi_press", {"press_count": 2}),
+        ("button_on", "long_press_end"),
+        ("button_off", "single_press"),
+        ("button_off", "multi_press", {"press_count": 2}),
+        ("button_off", "long_press_end"),
+    ]

@@ -2,6 +2,7 @@
 
 # pylint disable=C0103
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -14,13 +15,17 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
+    CLUSTER_ID,
     COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
     COMMAND_PRESS,
     DEVICE_TYPE,
     ENDPOINT_ID,
@@ -147,3 +152,35 @@ class CentraLite3450L(CustomDevice):
         (SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_PRESS, ENDPOINT_ID: 3},
         (SHORT_PRESS, BUTTON_4): {COMMAND: COMMAND_PRESS, ENDPOINT_ID: 4},
     }
+
+    # Each button sends on from its endpoint when pressed and off when released
+    button_event_entities = tuple(
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START,
+                    event_data={
+                        COMMAND: COMMAND_ON,
+                        CLUSTER_ID: OnOff.cluster_id,
+                        ENDPOINT_ID: endpoint_id,
+                    },
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={
+                        COMMAND: COMMAND_OFF,
+                        CLUSTER_ID: OnOff.cluster_id,
+                        ENDPOINT_ID: endpoint_id,
+                    },
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=endpoint_id,
+            unique_id_suffix=f"button_{endpoint_id}",
+            translation_key="numbered_button",
+            translation_placeholders={"button_number": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id}",
+        )
+        for endpoint_id in (1, 2, 3, 4)
+    )
