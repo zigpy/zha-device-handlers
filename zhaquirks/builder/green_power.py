@@ -170,6 +170,12 @@ class GreenPowerQuirkBuilder:
         **kwargs: Any,
     ) -> Self:
         """Add an entity, passing `kwargs` to its constructor."""
+        if any(
+            entity_kwargs["unique_id_suffix"] == unique_id_suffix
+            for _, entity_kwargs in self.entities
+        ):
+            raise ValueError(f"Duplicate unique_id_suffix: {unique_id_suffix!r}")
+
         kwargs["unique_id_suffix"] = unique_id_suffix
         self.entities.append((entity_class, frozendict(kwargs)))
         return self

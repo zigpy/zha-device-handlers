@@ -260,6 +260,26 @@ def test_green_power_quirk_entities(zigpy_gpd):
         )
 
 
+def test_green_power_quirk_duplicate_unique_id_suffix():
+    """Test that two entities with the same unique ID suffix are rejected."""
+    builder = GreenPowerQuirkBuilder().entity(
+        CommandEvent,
+        command_id=GPDCommandID.Press1of1,
+        event_type="press",
+        unique_id_suffix="button",
+        fallback_name="Button 1",
+    )
+
+    with pytest.raises(ValueError):
+        builder.entity(
+            CommandEvent,
+            command_id=GPDCommandID.Toggle,
+            event_type="toggle",
+            unique_id_suffix="button",
+            fallback_name="Button 2",
+        )
+
+
 async def test_green_power_quirk_entity_removed(zigpy_gpd):
     """Test that a removed entity stops listening for GPD commands."""
     with DEVICE_REGISTRY.preserve_state():
