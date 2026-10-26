@@ -25,7 +25,7 @@ class FrientMetering(CustomCluster, Metering):
     ) -> None:
         """Filter out incorrect divisor attribute reports from device."""
         if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            # Filter out divisor attribute reports
+            # Drop the divisor: the device reports a wrong value, not a real measurement
             args.attribute_reports = [
                 attr
                 for attr in args.attribute_reports
