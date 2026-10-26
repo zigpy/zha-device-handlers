@@ -5,7 +5,7 @@ from typing import Any
 from zha.application.platforms.event import BaseEvent
 from zha.zigbee.device import GreenPowerDevice
 from zigpy.device import GreenPowerCommandReceived
-from zigpy.zgp.types import GPDCommandID
+from zigpy.zgp.types import DeviceID, GPDCommandID
 
 from zhaquirks.builder import ButtonEventType, EventDeviceClass, GreenPowerQuirkBuilder
 
@@ -68,7 +68,9 @@ class PTM216ZButton(BaseEvent):
 
 (
     GreenPowerQuirkBuilder()
-    .src_id_range(0x01550000, 0x0155FFFF)
+    # The PTM 215ZE shares the SrcID block but is an on/off switch
+    .applies_to(device_id=DeviceID.GenericSwitch)
+    .src_id_range(0x01500000, 0x015FFFFF)
     .friendly_name(manufacturer="EnOcean", model="PTM 216Z")
     .entity(
         PTM216ZButton,

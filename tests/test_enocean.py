@@ -11,7 +11,7 @@ from zigpy.device import (
     GreenPowerDevice as ZigpyGreenPowerDevice,
 )
 from zigpy.zgp.commands import GPContactStatusPayload
-from zigpy.zgp.types import ApplicationID, GPDCommandID, SrcID
+from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 import zhaquirks
 from zhaquirks.enocean.ptm216z import CONTACT_A0, CONTACT_A1, PTM216ZButton
@@ -26,11 +26,13 @@ CAPTURED_PRESSES = [0x01, 0x04, 0x02, 0x08, 0x03, 0x0C, 0x05, 0x0A]
 @pytest.fixture
 def ptm216z(MockAppController):
     """Create the zigpy GPD for a PTM 216Z."""
-    return ZigpyGreenPowerDevice(
+    gpd = ZigpyGreenPowerDevice(
         MockAppController,
         application_id=ApplicationID.SrcID,
         src_id=SrcID(0x0155F443),
     )
+    gpd.device_id = DeviceID.GenericSwitch
+    return gpd
 
 
 @pytest.fixture
@@ -64,12 +66,32 @@ def emit(device, command_id: GPDCommandID, contact_status: int) -> None:
     )
 
 
-def test_ptm216z_matches(ptm216z):
-    """Test that the quirk matches a PTM 216Z by its SrcID."""
-    entry = DEVICE_REGISTRY.match_green_power_entry(ptm216z)
+@pytest.mark.parametrize("src_id", [0x01500000, 0x01511223, 0x0155F443, 0x015FFFFF])
+def test_ptm216z_matches(MockAppController, src_id):
+    """Test that the quirk matches a PTM 216Z anywhere in its SrcID block."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = DeviceID.GenericSwitch
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
 
     assert entry is not None
     assert entry.source.module == "zhaquirks.enocean.ptm216z"
+
+
+def test_ptm216z_does_not_match_ptm215ze(MockAppController):
+    """Test that the quirk ignores a PTM 215ZE in the same SrcID block."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(0x0155F443),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+
+    assert DEVICE_REGISTRY.match_green_power_entry(gpd) is None
 
 
 def test_ptm216z_does_not_match_other_vendors(MockAppController):
