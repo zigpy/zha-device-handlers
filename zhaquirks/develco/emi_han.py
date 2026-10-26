@@ -32,10 +32,7 @@ class FrientMetering(CustomCluster, Metering):
                 if attr.attrid != Metering.AttributeDefs.divisor.id
             ]
 
-            # Don't process if no attributes remain
-            if not args.attribute_reports:
-                return
-
+        # Process even when no attributes remain, to send any requested default response
         super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 

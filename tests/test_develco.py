@@ -181,6 +181,31 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     )
 
 
+async def test_mfg_cluster_divisor_report_default_response(zigpy_device_from_v2_quirk):
+    """Test Frient EMI Norwegian HAN still acknowledges filtered divisor reports."""
+    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+
+    metering_cluster = device.endpoints[2].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+
+    # Frame: 0x08 (non-mfr-specific, server-to-client, default response requested),
+    #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
+    with mock.patch.object(metering_cluster, "send_default_rsp") as default_rsp_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=Metering.cluster_id,
+                src_ep=2,
+                dst_ep=2,
+                data=t.SerializableBytes(b"\x08\x01\x0a\x02\x03\x22\x00\x02\x00"),
+            )
+        )
+
+    default_rsp_mock.assert_called_once_with(mock.ANY, foundation.Status.SUCCESS)
+    assert len(metering_listener.attribute_updates) == 0
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
+
+
 async def test_hmszb_120_power_config_battery_percent_from_voltage(
     zigpy_device_from_v2_quirk,
 ):
