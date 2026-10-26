@@ -1,7 +1,6 @@
 """Philips Hue devices."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
@@ -51,6 +50,19 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX017")
     .friendly_name(
         model="Hue Festavia gradient light string",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX024")  # 91ft
+    .applies_to(SIGNIFY, "LCX025")  # 45ft
+    .applies_to(SIGNIFY, "LCX026")  # Likely model for 22ft
+    .friendly_name(
+        model="Hue Festavia globe outdoor string lights",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
@@ -125,20 +137,6 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "915005988501")
     .friendly_name(
         model="Hue Play gradient light tube",
-        manufacturer="Philips",
-    )
-    .replaces(PhilipsHueLightCluster, endpoint_id=11)
-    .add_to_registry()
-)
-
-(
-    QuirkBuilder()
-    .applies_to(SIGNIFY, "929003116301")
-    .applies_to(SIGNIFY, "929003116401")
-    .applies_to(SIGNIFY, "929003116501")
-    .applies_to(SIGNIFY, "929003116601")
-    .friendly_name(
-        model="Hue Perifo light tube",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
@@ -243,6 +241,105 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX004")
     .friendly_name(
         model="Hue Gradient lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCX029")
+    .friendly_name(
+        model="Hue Festavia globe outdoor string lights",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCT016")
+    .friendly_name(
+        model="Hue white and color ambiance E26/E27/E14",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCA009")
+    .friendly_name(
+        model="Hue white and color ambiance E26/A19 1600lm",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL001")
+    .friendly_name(
+        model="Hue white and color ambiance LightStrip plus",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929003528702")
+    .friendly_name(
+        model="Hue Sana wall light",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTA008")
+    .friendly_name(
+        model="Hue white ambiance E27 with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTW004")
+    .friendly_name(
+        model="Hue white ambiance E26/E27",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LTO005")
+    .friendly_name(
+        model="Hue white ambiance G40 E26 filament globe with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929003531502")
+    .friendly_name(
+        model="Hue white ambiance ceiling white Enrave M with Bluetooth",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)

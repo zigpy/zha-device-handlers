@@ -25,7 +25,7 @@ All v2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP conve
 Most v2 quirks will match only on the model and manufacturer. This reduces duplicated code where a new variant appears with a slightly different signature. Should you need to filter on a signature as well, use `.filter`.
 
 ```python
-from zigpy.quirks import signature_matches
+from zhaquirks.legacy import signature_matches
 
 .filter(signature_matches(device_signature))
 ```

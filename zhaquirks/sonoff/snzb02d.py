@@ -1,10 +1,15 @@
-"""Sonoff SNZB-02D - Zigbee LCD smart temperature humidity sensor."""
+"""Sonoff SNZB-02D、SNZB02DR2 - Zigbee LCD smart temperature humidity sensor."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import (
+    PERCENTAGE,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfTemperature,
+)
+from zhaquirks.clusters import CustomCluster
 
 
 class TemperatureUnit(t.enum16):
@@ -68,6 +73,7 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-02D")
+    .applies_to("SONOFF", "SNZB-02DR2")
     .replaces(CustomSonoffCluster)
     .number(
         CustomSonoffCluster.AttributeDefs.comfort_temperature_min.name,
@@ -130,7 +136,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_offset",

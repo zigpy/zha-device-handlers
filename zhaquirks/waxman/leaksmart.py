@@ -1,10 +1,9 @@
 """Device handler for WAXMAN leakSMART."""
 
 # pylint: disable=W0102
-from typing import Any, Optional, Union
+from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -20,6 +19,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_COMMAND,
     DEVICE_TYPE,
@@ -29,6 +29,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
@@ -41,11 +42,14 @@ ZONE_TYPE = 0x0001
 class EmulatedIasZone(LocalDataCluster, IasZone):
     """Emulated IAS zone cluster."""
 
+    _CONSTANT_ATTRIBUTES = {
+        ZONE_TYPE: MOISTURE_TYPE,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.ias_bus.add_listener(self)
-        super()._update_attribute(ZONE_TYPE, MOISTURE_TYPE)
 
     async def bind(self):
         """Bind cluster."""
@@ -86,9 +90,7 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == WAXMAN_CMDID:

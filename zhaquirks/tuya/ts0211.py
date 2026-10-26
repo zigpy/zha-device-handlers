@@ -1,9 +1,8 @@
 """Tuya Doorbell."""
 
-from typing import Optional, Union
+from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
@@ -21,6 +20,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class IasZoneDoorbellCluster(CustomCluster, IasZone):
@@ -29,11 +29,9 @@ class IasZoneDoorbellCluster(CustomCluster, IasZone):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[IasZone.ZoneStatus],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Handle cluster request."""
         # args looks like [<ZoneStatus.Alarm_1: 1>, <bitmap8.0: 0>, 0, 0]

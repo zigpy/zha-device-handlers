@@ -1,7 +1,6 @@
 """Device handler for Sourcing & Creation EB-SB-1B (Boulanger Essentielb 8009289) smart button."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -34,6 +33,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class SourcingAndCreationSmartButton(CustomDevice):

@@ -1,9 +1,10 @@
 """NodOn pilot wire heating module."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747

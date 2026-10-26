@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -1024,9 +1024,9 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -1408,13 +1408,14 @@ class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
 class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
     """Binary cluster for the window detection function of the heating thermostats."""
 
+    _CONSTANT_ATTRIBUTES = {
+        BinaryInput.AttributeDefs.description.id: "Open Window Detected",
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_detection_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Open Window Detected"
-        )
 
     def set_value(self, value):
         """Set opened window value."""
@@ -1470,9 +1471,9 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -1549,18 +1550,19 @@ class ZONNSMARTOnlineMode(ZONNSMARTHelperOnOff):
 class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
     """AnalogOutput cluster for setting temperature offset."""
 
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Temperature Offset",
+        AnalogOutput.AttributeDefs.max_present_value.id: 5,
+        AnalogOutput.AttributeDefs.min_present_value.id: -5,
+        AnalogOutput.AttributeDefs.resolution.id: 0.1,
+        AnalogOutput.AttributeDefs.application_type.id: 0x0009,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.temperature_calibration_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Temperature Offset"
-        )
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, 5)
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, -5)
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.1)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0x0009)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set new temperature offset value."""
@@ -1593,24 +1595,21 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
 class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
     """AnalogOutput cluster for temperature when opened window detected."""
 
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Opened Window Temperature",
+        AnalogOutput.AttributeDefs.max_present_value.id: ZONNSMART_MAX_TEMPERATURE_VAL
+        / 100,
+        AnalogOutput.AttributeDefs.min_present_value.id: ZONNSMART_MIN_TEMPERATURE_VAL
+        / 100,
+        AnalogOutput.AttributeDefs.resolution.id: 0.5,
+        AnalogOutput.AttributeDefs.application_type.id: 0 << 16,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_temperature_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Opened Window Temperature"
-        )
-        self._update_attribute(
-            self.attributes_by_name["max_present_value"].id,
-            ZONNSMART_MAX_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(
-            self.attributes_by_name["min_present_value"].id,
-            ZONNSMART_MIN_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.5)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set temperature value when opened window detected."""

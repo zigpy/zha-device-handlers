@@ -1,12 +1,21 @@
 """Ubisys Switching Actuator S1 quirk."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zha.quirks import SE_POLL_SUMMATION
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
-from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import (
+    BUTTON,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_CLICK,
+    ENDPOINT_ID,
+    TURN_OFF,
+    TURN_ON,
+)
+from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 
 class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -20,6 +29,21 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
+    .replaces(UbisysCluster, endpoint_id=232)
+    .adds(UbisysInputConfigCluster)
+    .enum(
+        attribute_name=UbisysInputConfigCluster.AttributeDefs.input_mode.name,
+        enum_class=InputMode,
+        cluster_id=UbisysInputConfigCluster.cluster_id,
+        translation_key="input_mode",
+        fallback_name="Input mode",
+    )
+    .switch(
+        attribute_name=UbisysInputConfigCluster.AttributeDefs.detached.name,
+        cluster_id=UbisysInputConfigCluster.cluster_id,
+        translation_key="detached",
+        fallback_name="Detached mode",
+    )
     .replaces(UbisysElectricalMeasurement, endpoint_id=3)
     # The device exposes total active power on multiple attributes,
     # but only supports attribute reporting on the SE "instantaneous demand" attribute,
@@ -45,6 +69,16 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
                 ENDPOINT_ID: 2,
                 CLUSTER_ID: OnOff.cluster_id,
                 COMMAND: OnOff.ServerCommandDefs.toggle.name,
+            },
+            (TURN_ON, BUTTON): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.on.name,
+            },
+            (TURN_OFF, BUTTON): {
+                ENDPOINT_ID: 2,
+                CLUSTER_ID: OnOff.cluster_id,
+                COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
     )
