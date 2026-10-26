@@ -8,17 +8,79 @@ round-trip.
 
 from __future__ import annotations
 
+import logging
 import typing
 
 import zigpy.zcl
 from zigpy.zcl import foundation
+
+_LOGGER = logging.getLogger(__name__)
+_REPORTED_KEYS: set[tuple[type, ConstantAttributeKey]] = set()
+
+type ConstantAttributeKey = int | str | foundation.ZCLAttributeDef
 
 
 class CustomCluster(zigpy.zcl.Cluster):
     """Custom cluster implementation for quirks."""
 
     _skip_registry = True
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] | None = None
+    # Keys are attribute IDs, attribute names or attribute definitions of this cluster.
+    # An ID matches every attribute with that ID, regardless of its manufacturer code.
+    # A name or definition only matches that one attribute, which is what separates a
+    # manufacturer-specific attribute from a standard one with the same ID.
+    _CONSTANT_ATTRIBUTES: dict[ConstantAttributeKey, typing.Any] | None = None
+
+    def _find_constant_attribute(
+        self, attrid: int, manufacturer: int | None
+    ) -> foundation.ZCLAttributeDef | None:
+        """Find the definition a read of `attrid` with `manufacturer` refers to."""
+        # Only definition and name keys need it, and resolving can emit warnings
+        if all(isinstance(key, int) for key in self._CONSTANT_ATTRIBUTES or ()):
+            return None
+
+        for kwargs in ({"manufacturer_code": manufacturer}, {}):
+            try:
+                return self.find_attribute(attrid, **kwargs)
+            except KeyError:
+                continue
+
+        return None
+
+    def _get_constant_attribute(
+        self,
+        attrid: int,
+        attr_def: foundation.ZCLAttributeDef | None,
+    ) -> tuple[bool, typing.Any]:
+        """Return `(True, value)` if the attribute has a constant value."""
+        for key, value in (self._CONSTANT_ATTRIBUTES or {}).items():
+            if isinstance(key, int):
+                matches = key == attrid
+            else:
+                try:
+                    key_def = self.find_attribute(key)
+
+                    if (
+                        isinstance(key, foundation.ZCLAttributeDef)
+                        and key.id != key_def.id
+                    ):
+                        raise KeyError(key.name)  # noqa: TRY301
+
+                    matches = attr_def is not None and key_def.name == attr_def.name
+                except KeyError:
+                    # Don't break every read of the cluster over a bad key
+                    if (type(self), key) not in _REPORTED_KEYS:
+                        _REPORTED_KEYS.add((type(self), key))
+                        _LOGGER.error(
+                            "Ignoring constant attribute %s, not an attribute of %s",
+                            getattr(key, "name", key),
+                            type(self).__name__,
+                        )
+                    continue
+
+            if matches:
+                return True, value
+
+        return False, None
 
     async def read_attributes_raw(
         self, attributes: list[int], manufacturer: int | None = None, **kwargs
@@ -29,22 +91,24 @@ class CustomCluster(zigpy.zcl.Cluster):
                 attributes, manufacturer=manufacturer, **kwargs
             )
 
-        succeeded = [
-            foundation.ReadAttributeRecord(
-                attrid=attr,
-                status=foundation.Status.SUCCESS,
-                value=foundation.TypeValue(
-                    type=None,
-                    value=self._CONSTANT_ATTRIBUTES[attr],
-                ),
-            )
-            for attr in attributes
-            if attr in self._CONSTANT_ATTRIBUTES
-        ]
+        succeeded = []
+        attrs_to_read = []
 
-        attrs_to_read = [
-            attr for attr in attributes if attr not in self._CONSTANT_ATTRIBUTES
-        ]
+        for attr in attributes:
+            found, value = self._get_constant_attribute(
+                attr, self._find_constant_attribute(attr, manufacturer)
+            )
+
+            if found:
+                succeeded.append(
+                    foundation.ReadAttributeRecord(
+                        attrid=attr,
+                        status=foundation.Status.SUCCESS,
+                        value=foundation.TypeValue(type=None, value=value),
+                    )
+                )
+            else:
+                attrs_to_read.append(attr)
 
         if not attrs_to_read:
             return [succeeded]
@@ -75,11 +139,10 @@ class CustomCluster(zigpy.zcl.Cluster):
 
         # Ensure we check the constant attributes dictionary first, since their values
         # will not be in the attribute cache but can be read immediately.
-        if (
-            self._CONSTANT_ATTRIBUTES is not None
-            and attr_def.id in self._CONSTANT_ATTRIBUTES
-        ):
-            return self._CONSTANT_ATTRIBUTES[attr_def.id]
+        found, value = self._get_constant_attribute(attr_def.id, attr_def)
+
+        if found:
+            return value
 
         return super().get(key, default)
 

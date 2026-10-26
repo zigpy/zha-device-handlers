@@ -42,7 +42,6 @@ import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
@@ -64,6 +63,7 @@ from zhaquirks.builder.metadata import (
     ZCLEnumMetadata,
     ZCLSensorMetadata,
 )
+from zhaquirks.clusters import ConstantAttributeKey
 from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -79,7 +79,8 @@ class AddCluster:
     """Add a cluster to an endpoint.
 
     `cluster` is either a bare cluster id or a `Cluster` subclass. When
-    `constant_attributes` is provided (mapping `ZCLAttributeDef` to value), the
+    `constant_attributes` is provided (mapping attribute definition, name or ID to
+    value, see `CustomCluster._CONSTANT_ATTRIBUTES`), the
     values are served by the cluster without contacting the device; this
     requires `cluster` to be a `CustomCluster` subclass.
     """
@@ -87,7 +88,7 @@ class AddCluster:
     cluster: int | type[Cluster]
     endpoint_id: int = 1
     cluster_type: ClusterType = ClusterType.Server
-    constant_attributes: frozendict[ZCLAttributeDef, Any] = field(
+    constant_attributes: frozendict[ConstantAttributeKey, Any] = field(
         default_factory=frozendict
     )
 
@@ -116,10 +117,7 @@ class AddCluster:
             cluster = endpoint.add_output_cluster(cluster_id, cluster)
 
         if self.constant_attributes:
-            cluster._CONSTANT_ATTRIBUTES = {
-                attribute.id: value
-                for attribute, value in self.constant_attributes.items()
-            }
+            cluster._CONSTANT_ATTRIBUTES = dict(self.constant_attributes)
 
         return device
 
@@ -478,7 +476,7 @@ class QuirkBuilder:
         cluster: int | type[Cluster],
         cluster_type: ClusterType = ClusterType.Server,
         endpoint_id: int = 1,
-        constant_attributes: dict[ZCLAttributeDef, Any] | None = None,
+        constant_attributes: dict[ConstantAttributeKey, Any] | None = None,
     ) -> Self:
         """Add an `AddCluster` operation and return self.
 
@@ -488,9 +486,9 @@ class QuirkBuilder:
         subclass of Cluster or CustomCluster, it will be used to create a new
         cluster instance.
 
-        If constant_attributes is provided, it should be a dictionary of ZCLAttributeDef
-        instances and their values. These attributes will be added to the cluster when
-        the quirk is applied and the values will be constant.
+        If constant_attributes is provided, it should be a dictionary of attributes and
+        their values. An attribute is a ZCLAttributeDef, its name or its ID. The values
+        are served by the cluster and stay constant once the quirk is applied.
         """
         self.adds_ops.append(
             AddCluster(

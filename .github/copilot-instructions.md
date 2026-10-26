@@ -92,7 +92,7 @@ Firmware version filtering is useful when different firmware versions need diffe
 Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
-- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
+- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster); keys are attribute definitions, names or IDs
 - `.removes(cluster_id, endpoint_id=1, cluster_type=ClusterType.Server)` - Remove a cluster
 - `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace cluster with custom implementation
 - `.replace_cluster_occurrences(cluster_class, replace_server=True, replace_client=True)` - Replace across all endpoints
@@ -487,15 +487,15 @@ operating_mode = ZCLAttributeDef(
 )
 ```
 
-**`_CONSTANT_ATTRIBUTES`**: Force specific attribute values, overriding what the device reports. Useful when devices report incorrect values (e.g., wrong multiplier/divisor for energy metering):
+**`_CONSTANT_ATTRIBUTES`**: Force specific attribute values, overriding what the device reports. Useful when devices report incorrect values (e.g., wrong multiplier/divisor for energy metering). Keys can be attribute IDs, names or definitions. Prefer definitions or names: an ID matches every attribute with that ID, including manufacturer-specific ones, while a definition or name only matches that attribute:
 
 ```python
 class MeteringClusterFixed(CustomCluster, Metering):
     """Fix incorrect multiplier and divisor values."""
 
     _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 100,
+        Metering.AttributeDefs.multiplier: 1,
+        Metering.AttributeDefs.divisor: 100,
     }
 ```
 

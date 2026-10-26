@@ -37,7 +37,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
-from zhaquirks.clusters import CustomCluster
+from zhaquirks.clusters import ConstantAttributeKey, CustomCluster
 from zhaquirks.legacy import (
     DEVICE_REGISTRY,
     PENDING_LEGACY_QUIRKS,
@@ -85,14 +85,14 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls.
 
-    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids, names or definitions.
     Set _DEFAULT_VALUES to provide default values for attribute ids. These are
     returned when no value is cached yet, but are overridden by any cached value.
     Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _CONSTANT_ATTRIBUTES: dict[ConstantAttributeKey, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,8 +133,12 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
+            found, value = self._get_constant_attribute(
+                record.attrid,
+                self._find_constant_attribute(record.attrid, manufacturer),
+            )
+            if found:
+                record.value.value = value
             else:
                 record.value.value = self._attr_cache.get(
                     record.attrid, self._DEFAULT_VALUES.get(record.attrid)
