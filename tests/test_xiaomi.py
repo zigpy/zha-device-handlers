@@ -1942,6 +1942,39 @@ async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, qu
     )
 
 
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,))
+async def test_xiaomi_battery_voltage_without_power_cluster(
+    zigpy_device_from_quirk, caplog, quirk
+):
+    """Test a battery voltage is ignored on an endpoint without a power cluster.
+
+    The rest of the Aqara struct must still be applied.
+    """
+    caplog.set_level(logging.DEBUG)  # relevant message is currently DEBUG level
+
+    device = zigpy_device_from_quirk(quirk)
+    assert not hasattr(device.endpoints[1], "power")
+    basic_cluster = device.endpoints[1].basic
+
+    electrical_listener = ClusterListener(device.endpoints[1].electrical_measurement)
+
+    # battery voltage (key 1) followed by power (key 152)
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2300, 152: 12.5})
+    )
+
+    # confirm that the power after the battery voltage was still applied
+    assert electrical_listener.attribute_updates == [
+        (ElectricalMeasurement.AttributeDefs.active_power.id, 125)
+    ]
+
+    # confirm that a debug message was logged
+    assert (
+        "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
+        in caplog.text
+    )
+
+
 def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
     """Test Aqara E1 roller curtain battery reporting."""
     # Ideally, get a real Xiaomi "heartbeat" message to test.
