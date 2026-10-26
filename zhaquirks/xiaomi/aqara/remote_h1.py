@@ -3,10 +3,10 @@
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import Identify, OnOff
+from zigpy.zcl.clusters.general import Identify, MultistateInput, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_SHORT_PRESS,
@@ -126,6 +126,39 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
             },
         }
     )
+    # Button events of the "event" operation mode, the toggle and off commands of the
+    # "command" mode stay device triggers. In the "multiple" click mode the remote
+    # counts the presses itself, so its single press is a resolved one. In the
+    # `Single` ("fast") click mode it reports one single press per click and never a
+    # multi press or hold.
+    # The hold is sent at the hold threshold, the remote sends no release.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, BUTTON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, BUTTON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, BUTTON),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, BUTTON),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    )
     .add_to_registry()
 )
 
@@ -187,6 +220,96 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
                 ARGS: [],
             },
         }
+    )
+    # Button events of the "event" operation mode, the "command" mode does not tell
+    # the buttons apart. The single press is resolved in the "multiple" click mode,
+    # the `Single` ("fast") one reports one single press per click and never a
+    # multi press or hold.
+    # The hold is sent at the hold threshold, without a release.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, LEFT),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, LEFT),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, LEFT),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, LEFT),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        unique_id_suffix="button_left",
+        translation_key="left_button",
+        fallback_name="Left button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, RIGHT),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, RIGHT),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, RIGHT),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, RIGHT),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=2,
+        unique_id_suffix="button_right",
+        translation_key="right_button",
+        fallback_name="Right button",
+    )
+    # The remote reports pressing both buttons together on its own endpoint
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, BOTH_BUTTONS),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, BOTH_BUTTONS),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, BOTH_BUTTONS),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, BOTH_BUTTONS),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=3,
+        unique_id_suffix="button_both",
+        translation_key="both_buttons",
+        fallback_name="Both buttons",
     )
     .add_to_registry()
 )

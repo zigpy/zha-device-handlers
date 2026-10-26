@@ -4,7 +4,7 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     COMMAND,
@@ -54,7 +54,7 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-(
+quad_zig_sw_quirk = (
     QuirkBuilder(SMARTHJEMMET, "QUAD-ZIG-SW")
     .applies_to(SMARTHJEMMET, "MULTI-ZIG-SW")
     .skip_configuration()
@@ -83,5 +83,45 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
             }
         }
     )
-    .add_to_registry()
 )
+
+# The multi-click mode resolves the press count, so the single press is a resolved
+# one. The release is classified by the hold, as it is not known whether the switch
+# also sends it after a short press.
+for i in range(1, 5):
+    quad_zig_sw_quirk.button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, f"button_{i}"),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, f"button_{i}"),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, f"button_{i}"),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, f"button_{i}"),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, f"button_{i}"),
+                while_held=True,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=i + 1,
+        unique_id_suffix=f"button_{i}",
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": str(i)},
+        fallback_name=f"Button {i}",
+    )
+
+quad_zig_sw_quirk.add_to_registry()

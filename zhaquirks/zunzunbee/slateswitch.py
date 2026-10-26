@@ -1,9 +1,9 @@
 """ZunZunBee button device."""
 
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
@@ -78,7 +78,19 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-(
+BUTTONS = (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    BUTTON_5,
+    BUTTON_6,
+    BUTTON_7,
+    BUTTON_8,
+)
+
+
+slate_switch_quirk = (
     QuirkBuilder(ZUNZUNBEE, "SSWZ8T")
     .replaces(ZunZunBeeIASCluster)
     .device_automation_triggers(
@@ -88,17 +100,32 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
                 CLUSTER_ID: IasZone.cluster_id,
             }
             for press_type in (SHORT_PRESS, LONG_PRESS)
-            for button in (
-                BUTTON_1,
-                BUTTON_2,
-                BUTTON_3,
-                BUTTON_4,
-                BUTTON_5,
-                BUTTON_6,
-                BUTTON_7,
-                BUTTON_8,
-            )
+            for button in BUTTONS
         }
     )
-    .add_to_registry()
 )
+
+# The switch reports each press once, as short or long. A short press can only be
+# told apart from a long one on release. The long press is taken as reported at the
+# hold threshold, as the switch sends no release.
+for number, button in enumerate(BUTTONS, start=1):
+    slate_switch_quirk.button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(SHORT_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+        ],
+        cluster_id=IasZone.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=button,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": str(number)},
+        fallback_name=f"Button {number}",
+    )
+
+slate_switch_quirk.add_to_registry()

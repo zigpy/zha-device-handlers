@@ -3,10 +3,13 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.profiles import zha
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
 from zhaquirks.candeo import CANDEO
 from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
@@ -745,3 +748,160 @@ def test_candeo_scene_switch_remote_ring_stopped_rotating(
     assert ring_event[1][ROTATED] == previous_rotation_direction
 
     assert listener.zha_send_event.call_count == 1
+
+
+def send_scene_switch_remote_command(
+    device, message_type: int, field_1: int, field_2: int, field_3: int
+) -> None:
+    """Receive a frame of the C-ZB-SR5BR manufacturer specific cluster."""
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=send_scene_switch_remote_command.tsn,
+        command_id=(
+            CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+        ),
+        direction=foundation.Direction.Client_to_Server,
+    )
+    send_scene_switch_remote_command.tsn += 1
+    payload = (
+        hdr.serialize()
+        + CandeoSceneSwitchRemoteClusterCommand(
+            message_type, field_1, field_2, field_3
+        ).serialize()
+    )
+
+    device.packet_received(
+        t.ZigbeePacket(
+            src_ep=1,
+            dst_ep=1,
+            tsn=hdr.tsn,
+            profile_id=zha.PROFILE_ID,
+            cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+            data=t.SerializableBytes(payload),
+        )
+    )
+
+
+send_scene_switch_remote_command.tsn = 1
+
+
+async def test_candeo_scene_switch_remote_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the C-ZB-SR5BR."""
+    device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
+    device.endpoints[1].profile_id = zha.PROFILE_ID
+    device.endpoints[1].device_type = zha.DeviceType.REMOTE_CONTROL
+
+    recorder = await ButtonEventRecorder.create(device)
+    event_types = ["single_press", "multi_press", "long_press_start", "long_press_end"]
+    assert recorder.event_types() == {
+        BUTTON_1: event_types,
+        BUTTON_2: event_types,
+        BUTTON_3: event_types,
+        BUTTON_4: event_types,
+        BUTTON_CENTRE: event_types,
+    }
+    assert recorder.entities[BUTTON_1].translation_key == "numbered_button"
+    assert recorder.entities[BUTTON_CENTRE].translation_key == "center_button"
+
+    button_press = CandeoSceneSwitchRemoteMessageType.button_press
+    actions = CandeoSceneSwitchRemoteButtonActionMap
+
+    for button in CandeoSceneSwitchRemoteButtonNumberMap:
+        # a release before a hold is not classified
+        for action in (
+            actions.release,
+            actions.press,
+            actions.double,
+            actions.hold,
+            actions.release,
+        ):
+            send_scene_switch_remote_command(device, button_press, 0, button, action)
+
+    # ring rotation is no button event
+    send_scene_switch_remote_command(
+        device,
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        CandeoSceneSwitchRemoteRingDirectionMap.left,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        1,
+    )
+
+    assert recorder.pop() == [
+        (button, event_type, *attributes)
+        for button in (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_CENTRE)
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+            ("long_press_start",),
+            ("long_press_end",),
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["C-ZB-RD1P-REM", "C-ZB-RD1Pv2-REM", "C-ZB-RD1P-DPM", "C-ZB-RD1Pv2-DPM"],
+)
+async def test_candeo_rotary_dimmer_remote_button_events(
+    zigpy_device_from_v2_quirk, model
+):
+    """Test the button event entity of the knob of the RD1P in remote mode."""
+    device = zigpy_device_from_v2_quirk(
+        CANDEO,
+        model,
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            2: {
+                OnOff.cluster_id: ClusterType.Client,
+                LevelControl.cluster_id: ClusterType.Client,
+            }
+        },
+    )
+    device.endpoints[2].profile_id = zha.PROFILE_ID
+    device.endpoints[2].device_type = zha.DeviceType.DIMMER_SWITCH
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start", "long_press_end"]
+    }
+    assert recorder.entities["button"].endpoint.id == 2
+
+    for command in ("release", "press", "double", "hold", "release"):
+        send_command(device, 2, OnOff.cluster_id, command)
+
+    # rotation is no button event
+    send_command(device, 2, LevelControl.cluster_id, "started_rotating", direction=0)
+    send_command(device, 2, LevelControl.cluster_id, "stopped_rotating")
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+    ]
+
+
+async def test_candeo_rotary_dimmer_v2_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entity of the knob of the RD1Pv2 in dimmer mode."""
+    device = zigpy_device_from_v2_quirk(
+        CANDEO,
+        "C-ZB-RD1Pv2-DIM",
+        endpoint_ids=[1, 2],
+        cluster_ids={
+            1: {OnOff.cluster_id: ClusterType.Server},
+            2: {OnOff.cluster_id: ClusterType.Client},
+        },
+    )
+    device.endpoints[2].profile_id = zha.PROFILE_ID
+    device.endpoints[2].device_type = zha.DeviceType.DIMMER_SWITCH
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {"button": ["long_press_start", "long_press_end"]}
+
+    # the double press stays a device trigger, as the dimmer reports no single press
+    for command in ("release", "double", "hold", "release"):
+        send_command(device, 2, OnOff.cluster_id, command)
+
+    assert recorder.pop() == [
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+    ]
