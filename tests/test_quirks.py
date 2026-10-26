@@ -996,6 +996,67 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
             )
 
 
+@pytest.mark.parametrize("use_builder_constants", [False, True])
+async def test_custom_cluster_constant_attributes_supported(
+    device_mock, use_builder_constants: bool
+) -> None:
+    """Ensure constant attributes are never reported as unsupported."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    if use_builder_constants:
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(
+                TestCluster,
+                constant_attributes={TestCluster.AttributeDefs.constant_attr: 10},
+            )
+            .add_to_registry(registry)
+        )
+    else:
+        TestCluster._CONSTANT_ATTRIBUTES = {
+            TestCluster.AttributeDefs.constant_attr.id: 10
+        }
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(TestCluster)
+            .add_to_registry(registry)
+        )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    constant_attr = TestCluster.AttributeDefs.constant_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    # the device marked both attributes unsupported before the quirk was applied
+    cluster._attr_cache.mark_unsupported(constant_attr)
+    cluster._attr_cache.mark_unsupported(device_attr)
+
+    # the constant is still supported, like `get()` still returns it
+    for attr in (constant_attr, constant_attr.id, constant_attr.name):
+        assert not cluster.is_attribute_unsupported(attr)
+    assert cluster.get(constant_attr.name) == 10
+
+    # attributes without a constant still follow the device
+    assert cluster.is_attribute_unsupported(device_attr)
+
+    # unknown attributes are left to zigpy
+    with pytest.raises(KeyError):
+        cluster.is_attribute_unsupported("unknown_attr")
+
+
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
     registry = DeviceRegistry()
