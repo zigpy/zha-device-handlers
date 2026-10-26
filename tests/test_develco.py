@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import pytest
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -158,11 +159,14 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
 
     # An attribute update with the divisor ID is emitted, but as the manufacturer bit
     # is set, the value in the attribute cache for the divisor should NOT be updated.
+    # The quirk keeps forcing the divisor to 1000.
     assert len(metering_listener.attribute_updates) == 1
     assert metering_listener.attribute_updates == [
         (Metering.AttributeDefs.divisor.id, 512)
     ]
-    assert metering_cluster.get(Metering.AttributeDefs.divisor) is None
+    assert metering_cluster.get(Metering.AttributeDefs.divisor) == 1000
+    with pytest.raises(KeyError):
+        metering_cluster._attr_cache.get_value(Metering.AttributeDefs.divisor)
 
     # It is only present in the legacy cache, as the definition for the manufacturer
     # specific attribute does not yet exist in the quirk.
@@ -196,6 +200,45 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert metering_cluster.get(Metering.AttributeDefs.current_summ_received.id) == 0
     assert metering_cluster.get(Metering.AttributeDefs.instantaneous_demand.id) == 4001
     assert metering_cluster.get(Metering.AttributeDefs.status.id) == 0
+
+
+async def test_mfg_cluster_divisor_report_default_response(zigpy_device_from_v2_quirk):
+    """Test Frient EMI Norwegian HAN divisor reports are acknowledged and ignored."""
+    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+
+    metering_cluster = device.endpoints[2].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+
+    # Synthetic frame, not a captured device report: the real divisor report sets
+    # Disable Default Response, so default response requested is set here on purpose.
+    # Frame: 0x08 (non-mfr-specific, server-to-client, default response requested),
+    #        TSN=1, cmd=0x0a (Report_Attributes), attr=0x0302 (divisor), value=512
+    with mock.patch.object(metering_cluster, "send_default_rsp") as default_rsp_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=Metering.cluster_id,
+                src_ep=2,
+                dst_ep=2,
+                data=t.SerializableBytes(b"\x08\x01\x0a\x02\x03\x22\x00\x02\x00"),
+            )
+        )
+
+    default_rsp_mock.assert_called_once_with(mock.ANY, foundation.Status.SUCCESS)
+    assert metering_listener.attribute_updates == [
+        (Metering.AttributeDefs.divisor.id, 512)
+    ]
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
+
+
+async def test_mfg_cluster_stale_divisor(zigpy_device_from_v2_quirk):
+    """Test Frient EMI Norwegian HAN ignores a stale cached divisor."""
+    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+    metering_cluster = device.endpoints[2].smartenergy_metering
+
+    # Installs from before zigpy 0.91 can have the interface mode cached as divisor
+    metering_cluster._attr_cache.set_value(Metering.AttributeDefs.divisor, 512)
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.name) == 1000
 
 
 async def test_hmszb_120_power_config_battery_percent_from_voltage(

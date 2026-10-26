@@ -2,17 +2,30 @@
 
 from __future__ import annotations
 
-from zhaquirks.builder import QuirkBuilder
+from zigpy.zcl.clusters.smartenergy import Metering
 
-# This quirk had a workaround for blocking attribute reports with the ZCL divisor
-# attribute ID and manufacturer-specific bit set. The underlying issue of incorrectly
-# parsing manufacturer-specific attribute reports for ZCL attributes was resolved
-# with zigpy 0.91.0.
-# There's still a test for this device which tests that the divisor is not incorrectly
-# updated. The quirk will also be expanded to support manufacturer-specific
-# attributes for this device, so it's kept, even though there's no functionality now.
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
+
+
+class FrientMetering(CustomCluster, Metering):
+    """Frient EMI Norwegian HAN Metering cluster definition.
+
+    The device also has a manufacturer-specific "interface mode" attribute with the
+    divisor's ID (0x0302), reported with the manufacturer-specific bit set. Since
+    zigpy 0.91, such reports no longer update the ZCL divisor, so they aren't
+    filtered anymore.
+
+    The divisor is still forced to 1000, the fixed value from the technical manual.
+    Installs from before zigpy 0.91 can have the interface mode value (512) cached as
+    the divisor, and it's unverified what the device answers to a plain divisor read.
+    """
+
+    _CONSTANT_ATTRIBUTES = {Metering.AttributeDefs.divisor.id: 1000}
+
 
 (
     QuirkBuilder("frient A/S", "EMIZB-132")
+    .replaces(FrientMetering, endpoint_id=2)
     .add_to_registry()
-)  # fmt: skip
+)
