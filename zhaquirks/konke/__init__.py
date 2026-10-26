@@ -89,7 +89,7 @@ class KonkeOnOffCluster(CustomCluster):
 
                 event_args = {
                     PRESS_TYPE: press_type,
-                    COMMAND_ID: value.value,  # to maintain backwards compatibility
+                    COMMAND_ID: int(value),  # to maintain backwards compatibility
                 }
                 self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
 

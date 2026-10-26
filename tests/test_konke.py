@@ -181,6 +181,12 @@ async def test_konke_button_general_requests(zigpy_device_from_quirk, quirk):
         assert listener.zha_send_event.call_count == 2
         assert default_rsp_mock.call_count == 3
 
+        # button event sent as uint8 instead of Bool still fires its event
+        receive(b"\x08[\n\x00\x00\x20\x81")
+        assert listener.zha_send_event.call_count == 3
+        assert listener.zha_send_event.call_args[0][1][COMMAND_ID] == 0x81
+        assert default_rsp_mock.call_count == 4
+
         # read attributes request from the device is answered
-        receive(b"\x00[\x00\x01\x00")
+        receive(b"\x08\\\x00\x01\x00")
         assert read_rsp_mock.call_count == 1
