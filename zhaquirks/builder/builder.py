@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -48,6 +48,8 @@ from zigpy.zdo.types import NodeDescriptor
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
+    ButtonEvent,
+    ButtonEventMetadata,
     ChangedEntityMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
@@ -63,6 +65,8 @@ from zhaquirks.builder.metadata import (
     ZCLCommandButtonMetadata,
     ZCLEnumMetadata,
     ZCLSensorMetadata,
+    validate_button_event_entities,
+    validate_button_event_triggers,
 )
 from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
 
@@ -943,6 +947,45 @@ class QuirkBuilder:
         )
         return self
 
+    def button_event(
+        self,
+        *,
+        events: Sequence[ButtonEvent],
+        cluster_id: int,
+        cluster_type: ClusterType,
+        unique_id_suffix: str,
+        translation_key: str,
+        fallback_name: str,
+        endpoint_id: int = 1,
+        initially_disabled: bool = False,
+        primary: bool | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
+        """Add an EntityMetadata containing ButtonEventMetadata and return self.
+
+        This method allows exposing a button event entity in Home Assistant, one per
+        physical button, firing standard button event types for the `zha_event`s
+        the device sends. The entity is attached to the given cluster, which has to
+        exist on the device, but fires for the `zha_event`s of any cluster.
+        """
+        self._add_entity_metadata(
+            ButtonEventMetadata(
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+                entity_platform=EntityPlatform.EVENT,
+                entity_type=EntityType.STANDARD,
+                initially_disabled=initially_disabled,
+                unique_id_suffix=unique_id_suffix,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders or {},
+                fallback_name=fallback_name,
+                events=events,
+                primary=primary,
+            )
+        )
+        return self
+
     def device_automation_triggers(
         self, device_automation_triggers: dict[tuple[str, str], dict[str, str]]
     ) -> Self:
@@ -1073,6 +1116,13 @@ class QuirkBuilder:
             firmware_version_max=self.firmware_version_max,
             firmware_version_allow_missing=self.firmware_version_allow_missing,
         )
+
+        validate_button_event_entities(self.entity_metadata)
+        for entity_metadata in self.entity_metadata:
+            if isinstance(entity_metadata, ButtonEventMetadata):
+                validate_button_event_triggers(
+                    entity_metadata, self.device_automation_triggers_metadata
+                )
 
         manufacturer, model = self.manufacturer_model_metadata[0]
 
