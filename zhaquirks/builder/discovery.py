@@ -25,6 +25,7 @@ from zha.application.platforms import (
     sensor,
     switch,
 )
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import ClusterType, ReportingConfig
 
 from zhaquirks.builder.metadata import (
@@ -59,7 +60,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
 
 def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     """Return the keyword arguments common to every quirk entity."""
-    return {
+    kwargs: dict[str, Any] = {
         "from_quirk": True,
         "fallback_name": entity_metadata.fallback_name,
         "translation_key": entity_metadata.translation_key,
@@ -69,6 +70,11 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
         "primary": entity_metadata.primary,
         "initially_disabled": entity_metadata.initially_disabled,
     }
+
+    if entity_metadata.child_device_id is not UNDEFINED:
+        kwargs["child_device_id"] = entity_metadata.child_device_id
+
+    return kwargs
 
 
 def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:

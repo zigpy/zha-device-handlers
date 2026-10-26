@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
@@ -12,8 +12,10 @@ from typing import TYPE_CHECKING, Any
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
 from zha.application.platforms import BaseEntity, PlatformEntity
+from zha.zigbee.child_device import ChildDevice
 from zha.zigbee.device import Device
 import zigpy.device
+from zigpy.typing import UNDEFINED
 import zigpy.zcl
 
 from zhaquirks.builder.discovery import discover_quirks_v2_entities
@@ -72,6 +74,21 @@ class QuirkV2Device(Device):
         self,
     ) -> dict[tuple[str, str], dict[str, str]]:
         return dict(self._quirk_definition.device_automation_triggers)
+
+    def _quirk_child_devices(self) -> Sequence[ChildDevice] | None:
+        if self._quirk_definition.child_devices is None:
+            return None
+
+        return [
+            ChildDevice(
+                id=child_device.id,
+                endpoint_ids=child_device.endpoint_ids,
+                translation_key=child_device.translation_key,
+                translation_placeholders=child_device.translation_placeholders or None,
+                fallback_name=child_device.fallback_name,
+            )
+            for child_device in self._quirk_definition.child_devices
+        ]
 
     def _is_entity_removed_by_quirk(self, entity: PlatformEntity) -> bool:
         if entity.PLATFORM == Platform.VIRTUAL:
@@ -134,6 +151,8 @@ class QuirkV2Device(Device):
                 )
             if meta.new_fallback_name is not None:
                 entity._attr_fallback_name = meta.new_fallback_name
+            if meta.new_child_device_id is not UNDEFINED:
+                entity._attr_child_device_id = meta.new_child_device_id
 
 
 @dataclass(frozen=True)
