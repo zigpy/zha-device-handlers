@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -20,6 +21,7 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -376,7 +378,6 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_hsgrhjpf", "TS0601"),
             ("_TZE200_68nvbio9", "TS0601"),
             ("_TZE200_ergbiejo", "TS0601"),
-            ("_TZE200_nhyj64w2", "TS0601"),
             ("_TZE200_cf1sl3tj", "TS0601"),
             ("_TZE200_7eue9vhc", "TS0601"),
             ("_TZE200_bv1jcqqu", "TS0601"),
@@ -701,6 +702,70 @@ class BorderSetting(t.enum8):
         unique_id_suffix="border_remove_all",
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+class MoesCoverCalibration(t.enum8):
+    """Moes cover calibration values."""
+
+    Start = 0x00
+    Stop = 0x01
+
+
+class MoesCoverMotorReversal(t.enum8):
+    """Moes cover motor reversal values."""
+
+    Off = 0x00
+    On = 0x01
+
+
+(
+    # Moes ZTS-EUR-C "Zigbee + RF curtain switch" wall switch.
+    # The stock TuyaMoesCover0601 quirk covered open/close/stop/position but
+    # did not expose the calibration (DP3), backlight (DP7) and motor
+    # reversal (DP8) datapoints. They are exposed here as entities.
+    #
+    # Note: `tuya_cover` can't be used because this device reports position
+    # and accepts position commands on the SAME datapoint (DP2), while
+    # `tuya_cover` requires separate state/control DPs. DP1 and DP2 are
+    # mapped manually to the same effect.
+    TuyaQuirkBuilder("_TZE200_nhyj64w2", "TS0601")
+    .tuya_dp(
+        1,
+        TuyaWindowCovering.ep_attribute,
+        TuyaWindowCovering.AttributeDefs.tuya_cover_command.name,
+    )
+    .tuya_dp(
+        2,
+        TuyaWindowCovering.ep_attribute,
+        WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+        converter=lambda x: 100 - x,
+        dp_converter=lambda x: 100 - x,
+    )
+    .adds(TuyaWindowCovering)
+    .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
+    .tuya_enum(
+        dp_id=3,
+        attribute_name="calibration",
+        enum_class=MoesCoverCalibration,
+        translation_key="cover_calibration",
+        fallback_name="Calibration",
+    )
+    .tuya_switch(
+        dp_id=7,
+        attribute_name="backlight",
+        translation_key="cover_backlight",
+        fallback_name="Backlight",
+    )
+    .tuya_enum(
+        dp_id=8,
+        attribute_name="motor_reversal",
+        enum_class=MoesCoverMotorReversal,
+        translation_key="motor_reversal",
+        fallback_name="Motor reversal",
     )
     .skip_configuration()
     .add_to_registry()
