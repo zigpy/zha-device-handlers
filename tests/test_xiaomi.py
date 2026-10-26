@@ -1979,6 +1979,114 @@ def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
+    ("value", "expected_percentage"),
+    [
+        (76, 152),
+        (0, 0),
+        (100, 200),
+        (0xFF, None),  # uint8 non-value
+        (101, None),
+    ],
+)
+async def test_xiaomi_e1_roller_battery_percentage_report(
+    zigpy_device_from_v2_quirk, value, expected_percentage
+):
+    """Test Aqara E1 roller forwards Aqara battery percentage reports."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # manufacturer-specific report of 0x040A (uint8) with Lumi's manufacturer code
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x1c\x5f\x11\x01\x0a\x0a\x04\x20" + bytes([value])
+            ),
+        )
+    )
+
+    assert opple_cluster.get("battery_percentage") == value
+
+    if expected_percentage is None:
+        assert power_listener.attribute_updates == []
+        return
+
+    assert power_listener.attribute_updates == [
+        (
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
+            expected_percentage,
+        )
+    ]
+
+
+async def test_xiaomi_e1_roller_battery_percentage_read_redirection(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller reads the battery percentage from the Aqara cluster."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+    battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
+
+    opple_read = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    0x040A,
+                    foundation.Status.SUCCESS,
+                    foundation.TypeValue(DataTypeId.uint8, t.uint8_t(76)),
+                )
+            ],
+        )
+    )
+
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        # same calls as ZHA's startup reads, by name and by id
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name, PowerConfiguration.AttributeDefs.battery_voltage.name],
+            allow_cache=False,
+            only_cache=False,
+        )
+        assert success == {battery_attr.name: 152}
+        assert failure == {
+            PowerConfiguration.AttributeDefs.battery_voltage.name: (
+                foundation.Status.UNSUPPORTED_ATTRIBUTE
+            )
+        }
+
+        success, failure = await power_cluster.read_attributes([battery_attr.id])
+        assert success == {battery_attr.id: 152}
+        assert failure == {}
+
+    # the device was asked for the Aqara attribute, with Lumi's manufacturer code
+    assert opple_read.call_count == 2
+    assert opple_read.mock_calls[0].args[0] == [0x040A]
+    assert opple_read.mock_calls[0].kwargs["manufacturer"] == 0x115F
+
+    # the read responses updated the power cluster through the Aqara cluster
+    assert power_listener.attribute_updates == [
+        (battery_attr.id, 152),
+        (battery_attr.id, 152),
+    ]
+    assert power_cluster.get(battery_attr.id) == 152
+
+    # with an empty Aqara cache, a cache-only read doesn't fail on the device
+    opple_cluster._attr_cache.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name], allow_cache=True, only_cache=True
+        )
+    assert opple_read.call_count == 2
+    assert success == {}
+
+
+@pytest.mark.parametrize(
     "raw_report, expected_results",
     (
         [
