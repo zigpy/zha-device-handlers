@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-from zigpy.quirks import CustomEndpoint
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
@@ -34,6 +33,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.device import CustomEndpoint
 import zhaquirks.philips
 from zhaquirks.philips import (
     PHILIPS,

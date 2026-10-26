@@ -1,8 +1,8 @@
 """Tuya fingerbot."""
 
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTime
 import zigpy.types as t
 
+from zhaquirks.builder import PERCENTAGE, UnitOfTime
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -26,6 +26,8 @@ class FingerBotReverse(t.enum8):
 (
     TuyaQuirkBuilder("_TZ3210_dse8ogfy", "TS0001")
     .applies_to("_TZ3210_j4pdtz9v", "TS0001")
+    .applies_to("_TZ3210_7vgttna6", "TS0001")
+    .applies_to("_TZ3210_a04acm9s", "TS0001")
     .tuya_enum(
         dp_id=101,
         attribute_name="mode",

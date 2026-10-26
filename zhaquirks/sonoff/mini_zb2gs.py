@@ -1,10 +1,11 @@
 """Sonoff MINI-ZB2GS and MINI-ZB2GS-L - Zigbee Switches."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
