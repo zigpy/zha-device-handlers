@@ -11,7 +11,6 @@ import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
-    AttributeReadEvent,
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     Cluster,
@@ -1673,30 +1672,88 @@ async def test_xiaomi_p1_t1_motion_sensor(
     assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
 
 
-async def test_xiaomi_cluster_parses_attribute_read_response(zigpy_device_from_quirk):
+async def test_xiaomi_cluster_parses_attribute_read_response(
+    zigpy_device_from_v2_quirk,
+):
     """Test that a read response of the Aqara struct is parsed like a report."""
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.motion_acn001.MotionE1)
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
     opple_cluster = device.endpoints[1].opple_cluster
-    illuminance_listener = ClusterListener(device.endpoints[1].illuminance)
-    value = create_aqara_attr_report({101: 20})
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
 
-    opple_cluster.emit(
-        AttributeReadEvent.event_type,
-        AttributeReadEvent(
-            device_ieee=str(device.ieee),
-            endpoint_id=1,
-            cluster_type=ClusterType.Server,
-            cluster_id=opple_cluster.cluster_id,
-            attribute_name="aqara_attributes",
-            attribute_id=XIAOMI_AQARA_ATTRIBUTE_E1,
-            manufacturer_code=None,
-            raw_value=value,
-            value=value,
-        ),
+    # battery voltage 3000 mV, battery percentage 50%
+    struct = create_aqara_attr_report({1: 3000, 101: 50})
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(DataTypeId.octstr, t.LVBytes(struct)),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    with mock.patch.object(
+        opple_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    ):
+        for read in range(1, 3):
+            success, failure = await opple_cluster.read_attributes(
+                [opple_cluster.AttributeDefs.aqara_attributes.name]
+            )
+            assert not failure
+
+            # each read is parsed exactly once, a repeated value included
+            assert len(power_listener.attribute_updates) == 2 * read
+
+    assert power_cluster.get("battery_voltage") == 30
+    assert power_cluster.get("battery_percentage_remaining") == 100
+
+
+async def test_xiaomi_cluster_model_read_no_event(zigpy_device_from_v2_quirk):
+    """Test that reading the model doesn't fire the reset button event."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    basic_cluster = device.endpoints[1].basic
+    zha_listener = mock.MagicMock()
+    basic_cluster.add_listener(zha_listener)
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(
+                    DataTypeId.string, t.CharacterString("lumi.curtain.acn002")
+                ),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    with mock.patch.object(
+        basic_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    ):
+        success, failure = await basic_cluster.read_attributes(
+            [basic_cluster.AttributeDefs.model.name]
+        )
+
+    assert success == {basic_cluster.AttributeDefs.model.name: "lumi.curtain.acn002"}
+    assert zha_listener.zha_send_event.mock_calls == []
+
+    # a model report from a reset button press still fires it
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=basic_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x18\x01\x0a\x05\x00\x42\x13lumi.curtain.acn002"
+            ),
+        )
     )
-
-    assert len(illuminance_listener.attribute_updates) == 1
-    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(20) + 1
+    assert len(zha_listener.zha_send_event.mock_calls) == 1
 
 
 @pytest.mark.parametrize(
