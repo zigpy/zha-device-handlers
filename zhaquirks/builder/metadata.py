@@ -231,7 +231,10 @@ class ButtonEvent:
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ButtonEventMetadata(EntityMetadata):
-    """Metadata for an exposed button event entity."""
+    """Metadata for an exposed button event entity.
+
+    v1 quirks expose these in their `button_event_entities` class attribute.
+    """
 
     entity_platform: EntityPlatform = attrs.field(default=EntityPlatform.EVENT)
     entity_type: EntityType = attrs.field(default=EntityType.STANDARD)

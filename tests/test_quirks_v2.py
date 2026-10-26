@@ -3,11 +3,12 @@
 import collections
 
 from zha.application import EntityPlatform, EntityType
-from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry
+from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry, ReplaceZigpyDevice
 
 import zhaquirks
 from zhaquirks.builder.device import QuirkV2Factory
 from zhaquirks.builder.metadata import QuirkDefinition, ZCLEnumMetadata
+from zhaquirks.legacy import CustomDevice
 
 zhaquirks.setup()
 
@@ -55,6 +56,15 @@ def test_translation_key_and_fallback_name_match() -> None:
             )
 
 
+def is_v1_quirk(entry: QuirkRegistryEntry) -> bool:
+    """Return whether a registry entry is a v1 quirk exposing button event entities."""
+    return any(
+        isinstance(transform, ReplaceZigpyDevice)
+        and issubclass(transform.device_cls, CustomDevice)
+        for transform in entry.zigpy_transforms
+    )
+
+
 def test_manufacturer_model_metadata_unique() -> None:
     """Ensure that each manufacturer-model pair is unique across all v2 quirks."""
     # quirk_locations is a list and not a set below,
@@ -66,6 +76,10 @@ def test_manufacturer_model_metadata_unique() -> None:
     )
 
     for entry, _definition in ALL_QUIRK_V2:
+        # v1 quirks match by signature, so variants share the manufacturer and model
+        if is_v1_quirk(entry):
+            continue
+
         match = entry.device_match
         if (
             match.firmware_version_min is not None

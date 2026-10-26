@@ -1,9 +1,16 @@
 """Tests for button event entities of quirks v2."""
 
+import pathlib
+import sys
+
 import pytest
 from zha.application import EntityPlatform, EntityType, Platform
 from zha.application.platforms.event import ZhaEventButton
-from zha.quirks import DeviceRegistry
+from zha.quirks import (
+    DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
+    DeviceRegistry,
+    ReplaceZigpyDevice,
+)
 import zigpy.device
 import zigpy.profiles.zha
 import zigpy.types as t
@@ -11,9 +18,17 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 
 from tests.common import ButtonEventRecorder
-from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
+from tests.test_quirks import ALL_QUIRK_CLASSES
+import zhaquirks
+from zhaquirks import _legacy_quirk_to_registry_entry
+from zhaquirks.builder import (
+    ButtonEvent,
+    ButtonEventMetadata,
+    ButtonEventType,
+    QuirkBuilder,
+)
+from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.discovery import QUIRKS_ENTITY_META_TO_ENTITY_CLASS
-from zhaquirks.builder.metadata import ButtonEventMetadata
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -21,14 +36,23 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STOP,
+    DEVICE_TYPE,
     DIM_UP,
     ENDPOINT_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
+
+zhaquirks.setup()
 
 TRIGGERS = {
     (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
@@ -569,3 +593,264 @@ def test_button_event_frozen() -> None:
         "params": {"a": (3,)},
     }
     assert hash(event)
+
+
+def v1_remote_quirk(**attributes) -> type[CustomDevice]:
+    """Return an unregistered v1 quirk for the remote."""
+
+    class Remote(CustomDevice):
+        """Remote quirk, registered once its signature is set."""
+
+    quirk = Remote
+    for name, value in attributes.items():
+        setattr(quirk, name, value)
+
+    quirk.signature = {
+        MODELS_INFO: [("manufacturer", "remote")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [Basic.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id],
+            }
+        },
+    }
+    quirk.replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [Basic.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id],
+            }
+        },
+    }
+    return quirk
+
+
+V1_BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    ),
+)
+
+
+async def test_v1_button_event_entities(zigpy_device: zigpy.device.Device) -> None:
+    """Test that a v1 quirk exposes button event entities."""
+    quirk = v1_remote_quirk(
+        device_automation_triggers=TRIGGERS,
+        button_event_entities=V1_BUTTON_EVENT_ENTITIES,
+    )
+    entry = _legacy_quirk_to_registry_entry(quirk)
+    assert entry.zha_device_factory.quirk_definition.entity_metadata == (
+        V1_BUTTON_EVENT_ENTITIES
+    )
+
+    registry = DeviceRegistry()
+    registry.register(entry)
+    quirked = registry.resolve(zigpy_device)
+    assert isinstance(quirked, quirk)
+
+    recorder = await ButtonEventRecorder.create(quirked)
+    assert isinstance(recorder.zha_device, QuirkV2Device)
+    assert recorder.event_types() == {
+        "button_on": ["press_end", "long_press_start", "long_press_end"]
+    }
+
+    # The triggers still come from the v1 quirk
+    assert recorder.zha_device.device_automation_triggers == {
+        ("device_offline", "device_offline"): {"device_event_type": "device_offline"},
+        **TRIGGERS,
+    }
+
+    # on, move_with_on_off(Up, 50), stop
+    send(quirked, OnOff.cluster_id, b"\x01\x01\x01")
+    send(quirked, LevelControl.cluster_id, b"\x01\x02\x05\x00\x32")
+    send(quirked, LevelControl.cluster_id, b"\x01\x03\x03")
+
+    assert recorder.pop() == [
+        ("button_on", "press_end"),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+    ]
+
+
+def test_v1_without_button_event_entities() -> None:
+    """Test that a v1 quirk without button event entities keeps the plain device."""
+    quirk = v1_remote_quirk(device_automation_triggers=TRIGGERS)
+
+    assert _legacy_quirk_to_registry_entry(quirk).zha_device_factory is None
+
+
+def test_v1_button_event_unknown_trigger() -> None:
+    """Test that a v1 button event can only use triggers the quirk defines."""
+    quirk = v1_remote_quirk(button_event_entities=V1_BUTTON_EVENT_ENTITIES)
+
+    with pytest.raises(ValueError, match="uses a device automation trigger"):
+        _legacy_quirk_to_registry_entry(quirk)
+
+
+def _cluster_ids(clusters: list) -> set[int]:
+    """Return the cluster IDs of the clusters of a v1 replacement endpoint."""
+    return {c if isinstance(c, int) else c.cluster_id for c in clusters}
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [q for q in ALL_QUIRK_CLASSES if q.button_event_entities],
+)
+def test_v1_button_event_entities_valid(quirk: type[CustomDevice]) -> None:
+    """Test that v1 quirks register and their entities are attached to clusters."""
+    # Registration validates the entities, and an invalid quirk is only logged
+    _legacy_quirk_to_registry_entry(quirk)
+    assert any(
+        isinstance(transform, ReplaceZigpyDevice) and transform.device_cls is quirk
+        for entry in ZHA_DEVICE_REGISTRY
+        for transform in entry.zigpy_transforms
+    ), f"{quirk} is not registered"
+
+    for entity in quirk.button_event_entities:
+        endpoint = quirk.replacement[ENDPOINTS][entity.endpoint_id]
+        clusters = endpoint.get(
+            OUTPUT_CLUSTERS
+            if entity.cluster_type == ClusterType.Client
+            else INPUT_CLUSTERS,
+            [],
+        )
+        assert entity.cluster_id in _cluster_ids(clusters)
+
+
+def test_button_event_entities_unique() -> None:
+    """Test that the button event entities of every quirk have unique IDs."""
+    for entry in ZHA_DEVICE_REGISTRY:
+        factory = entry.zha_device_factory
+        if not isinstance(factory, QuirkV2Factory):
+            continue
+
+        keys = [
+            (entity.endpoint_id, entity.unique_id_suffix)
+            for entity in factory.quirk_definition.entity_metadata
+            if isinstance(entity, ButtonEventMetadata)
+        ]
+        assert len(keys) == len(set(keys)), f"Duplicate button events in {entry}"
+
+
+def test_v1_button_event_duplicate_entity() -> None:
+    """Test that a v1 quirk cannot define a button event entity twice."""
+    quirk = v1_remote_quirk(
+        device_automation_triggers=TRIGGERS,
+        button_event_entities=V1_BUTTON_EVENT_ENTITIES * 2,
+    )
+
+    with pytest.raises(ValueError, match="'button_on' on endpoint 1 is defined twice"):
+        _legacy_quirk_to_registry_entry(quirk)
+
+
+CUSTOM_V1_QUIRK = '''
+"""Custom v1 remote quirk."""
+
+from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import Basic, OnOff
+
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
+from zhaquirks.const import (
+    COMMAND,
+    COMMAND_ON,
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
+)
+from zhaquirks.legacy import CustomDevice
+
+ENDPOINT = {
+    PROFILE_ID: zha.PROFILE_ID,
+    DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+    INPUT_CLUSTERS: [Basic.cluster_id],
+    OUTPUT_CLUSTERS: [OnOff.cluster_id],
+}
+
+
+class __NAME__(CustomDevice):
+    """Custom remote."""
+
+    signature = {MODELS_INFO: [("custom", "__NAME__")], ENDPOINTS: {1: ENDPOINT}}
+    replacement = {ENDPOINTS: {1: ENDPOINT}}
+    device_automation_triggers = {(SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON}}
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, __SUBTYPE__),
+                )
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_on",
+            translation_key="on_button",
+            fallback_name="On button",
+        ),
+    )
+'''
+
+
+def test_v1_invalid_custom_quirk(
+    tmp_path: pathlib.Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that an invalid v1 custom quirk is skipped without failing the setup."""
+    custom_quirks = tmp_path / "custom_zha_quirks"
+    custom_quirks.mkdir()
+    (custom_quirks / "bad_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "BadRemote").replace(
+            "__SUBTYPE__", "TURN_OFF"
+        )
+    )
+    (custom_quirks / "good_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "GoodRemote").replace(
+            "__SUBTYPE__", "TURN_ON"
+        )
+    )
+
+    try:
+        zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+
+        assert "Failed to register quirk" in caplog.text
+        assert (
+            "uses a device automation trigger the quirk does not define" in caplog.text
+        )
+
+        sources = {entry.source.label for entry in ZHA_DEVICE_REGISTRY}
+        assert any("GoodRemote" in label for label in sources)
+        assert not any("BadRemote" in label for label in sources)
+    finally:
+        # Purge the custom quirks again, so they don't leak into other tests
+        for path in custom_quirks.glob("*.py"):
+            path.unlink()
+        zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+        sys.modules.pop("good_remote", None)
+        sys.modules.pop("bad_remote", None)

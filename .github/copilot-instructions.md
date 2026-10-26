@@ -357,6 +357,8 @@ Each `ButtonEvent` fires its event type for the `zha_event`s matching the data o
 
 The entity is only attached to `cluster_id`, it fires for the `zha_event`s of any cluster. `.prevent_default_entity_creation()` also removes quirk entities it matches, so attach the entity to a cluster the quirk doesn't prevent entities on.
 
+v1 quirks (`CustomDevice` subclasses) expose the same entities in a `button_event_entities` class attribute: a tuple of `ButtonEventMetadata(events=[...], cluster_id=..., cluster_type=..., unique_id_suffix=..., translation_key=..., fallback_name=...)`, taking the same arguments as `.button_event()`. Their `trigger=` keys refer to the class's `device_automation_triggers`.
+
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
 - `.device_class(custom_device_class)` - Use a custom device class (e.g., `CustomDeviceV2` subclass for special request handling)
