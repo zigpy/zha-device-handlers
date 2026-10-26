@@ -36,8 +36,8 @@ if TYPE_CHECKING:
 class GreenPowerQuirkDefinition:
     """ZHA-level metadata for a Green Power quirk."""
 
-    friendly_manufacturer: str | None = None
-    friendly_model: str | None = None
+    friendly_manufacturer: str
+    friendly_model: str
     entities: tuple[tuple[type[PlatformEntity], frozendict[str, Any]], ...] = ()
 
 
@@ -70,14 +70,10 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
             )
 
     def _resolve_manufacturer(self) -> str:
-        if self._quirk_definition.friendly_manufacturer is not None:
-            return self._quirk_definition.friendly_manufacturer
-        return super()._resolve_manufacturer()
+        return self._quirk_definition.friendly_manufacturer
 
     def _resolve_model(self) -> str:
-        if self._quirk_definition.friendly_model is not None:
-            return self._quirk_definition.friendly_model
-        return super()._resolve_model()
+        return self._quirk_definition.friendly_model
 
 
 @dataclass(frozen=True)
@@ -202,6 +198,9 @@ class GreenPowerQuirkBuilder:
                 "At least one matching criterion must be specified for a Green Power"
                 " quirk"
             )
+
+        if self.friendly_manufacturer is None or self.friendly_model is None:
+            raise ValueError("A Green Power quirk must have a friendly name")
 
         quirk_definition = GreenPowerQuirkDefinition(
             friendly_manufacturer=self.friendly_manufacturer,

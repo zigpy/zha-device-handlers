@@ -104,12 +104,14 @@ def test_green_power_quirk_builder_no_match(zigpy_gpd):
         (
             GreenPowerQuirkBuilder()
             .applies_to(device_id=DeviceID.GenericSwitch)
+            .friendly_name(manufacturer="Acme", model="Switch")
             .add_to_registry()
         )
         (
             GreenPowerQuirkBuilder()
             .applies_to(device_id=DeviceID.OnOffSwitch)
             .src_id_range(0x00400000, 0x0040FFFF)
+            .friendly_name(manufacturer="Acme", model="Switch")
             .add_to_registry()
         )
 
@@ -127,7 +129,12 @@ def test_green_power_quirk_builder_ieee_prefix(MockAppController):
     )
 
     with DEVICE_REGISTRY.preserve_state():
-        entry = GreenPowerQuirkBuilder().ieee_prefix("04:cd:15").add_to_registry()
+        entry = (
+            GreenPowerQuirkBuilder()
+            .ieee_prefix("04:cd:15")
+            .friendly_name(manufacturer="Acme", model="Switch")
+            .add_to_registry()
+        )
 
         assert DEVICE_REGISTRY.match_green_power_entry(gpd) is entry
 
@@ -143,6 +150,14 @@ def test_green_power_quirk_builder_requires_criteria():
         GreenPowerQuirkBuilder().applies_to()
 
 
+def test_green_power_quirk_builder_requires_friendly_name():
+    """Test that a quirk without a friendly name is rejected."""
+    with pytest.raises(ValueError):
+        GreenPowerQuirkBuilder().applies_to(
+            device_id=DeviceID.OnOffSwitch
+        ).add_to_registry()
+
+
 def test_green_power_quirk_custom_device_class(zigpy_gpd):
     """Test that a custom ZHA device class is used by the factory."""
 
@@ -154,6 +169,7 @@ def test_green_power_quirk_custom_device_class(zigpy_gpd):
             GreenPowerQuirkBuilder()
             .applies_to(device_id=DeviceID.OnOffSwitch)
             .device_class(CustomGreenPowerDevice)
+            .friendly_name(manufacturer="Acme", model="Switch")
             .add_to_registry()
         )
 
@@ -182,6 +198,7 @@ def test_green_power_quirk_entities(zigpy_gpd):
                 unique_id_suffix="button_2",
                 fallback_name="Button 2",
             )
+            .friendly_name(manufacturer="Acme", model="Switch")
             .add_to_registry()
         )
 
@@ -250,6 +267,7 @@ async def test_green_power_quirk_entity_removed(zigpy_gpd):
                 unique_id_suffix="button",
                 fallback_name="Button",
             )
+            .friendly_name(manufacturer="Acme", model="Switch")
             .add_to_registry()
         )
 
