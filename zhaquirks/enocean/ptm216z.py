@@ -10,7 +10,8 @@ from zigpy.zgp.types import DeviceID, GPDCommandID
 from zhaquirks.builder import ButtonEventType, EventDeviceClass, GreenPowerQuirkBuilder
 
 # The switch has two rockers, each with two contacts, reported as a bit in the 8-bit
-# vector of the GPD press command. Bits 4-7 are unused.
+# vector of the GPD press command. Bit 4 is the energy bar, which is not exposed. Bits
+# 5-7 are unused.
 CONTACT_A0 = 0b0001
 CONTACT_A1 = 0b0010
 CONTACT_B0 = 0b0100
