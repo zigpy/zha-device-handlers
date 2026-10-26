@@ -4,11 +4,16 @@ import struct
 from unittest import mock
 from unittest.mock import MagicMock
 
+import pytest
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 
+from tests.common import ButtonEventRecorder, send_command
 import zhaquirks
-from zhaquirks.inovelli import InovelliVZM32SNMMWaveCluster
+from zhaquirks.builder.metadata import ButtonEventMetadata
+from zhaquirks.inovelli import InovelliCluster, InovelliVZM32SNMMWaveCluster
 from zhaquirks.inovelli.types import MMWaveArea, MMWaveTarget
 
 zhaquirks.setup()
@@ -149,3 +154,204 @@ def test_vzm32_mmwave_anyone_in_reporting_area():
     assert rest == b""
     assert parsed.area_1 == 1 and parsed.area_2 == 0
     assert parsed.area_3 == 1 and parsed.area_4 == 0
+
+
+INOVELLI_MANUFACTURER_CODE = 0x122F
+
+# Inovelli button index -> button event entity unique_id suffix
+INOVELLI_BUTTON_ENTITIES = {
+    1: "button_down",
+    2: "button_up",
+    3: "button_config",
+    4: "button_aux_down",
+    5: "button_aux_up",
+    6: "button_aux_config",
+}
+
+INOVELLI_BUTTON_EVENT_TYPES = [
+    "single_press",
+    "multi_press",
+    "long_press_start",
+    "long_press_end",
+    "press_end",
+]
+
+
+def _set_switch_endpoint(device, endpoint_id: int) -> None:
+    """Give a test endpoint the profile and device type of the real one."""
+    device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+    device.endpoints[endpoint_id].device_type = zha.DeviceType.DIMMER_SWITCH
+
+
+def _inovelli_button_device(zigpy_device_from_v2_quirk, model: str):
+    """Create a quirked Inovelli switch with its button endpoint 2."""
+    device = zigpy_device_from_v2_quirk(
+        "Inovelli",
+        model,
+        cluster_ids={2: {InovelliCluster.cluster_id: ClusterType.Client}},
+    )
+    _set_switch_endpoint(device, 2)
+    return device
+
+
+def _send_button_event(device, button: int, press_type: int, endpoint_id=2) -> None:
+    """Receive a button event (scene) frame from an endpoint of the device."""
+    send_command(
+        device,
+        endpoint_id,
+        InovelliCluster.cluster_id,
+        "button_event",
+        button_pressed=button,
+        press_type=press_type,
+        manufacturer=INOVELLI_MANUFACTURER_CODE,
+    )
+
+
+@pytest.mark.parametrize("model", ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN"])
+async def test_button_events(zigpy_device_from_v2_quirk, model):
+    """Test the button event entities of the Inovelli switches."""
+    device = _inovelli_button_device(zigpy_device_from_v2_quirk, model)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == dict.fromkeys(
+        INOVELLI_BUTTON_ENTITIES.values(), INOVELLI_BUTTON_EVENT_TYPES
+    )
+    for suffix, entity in recorder.entities.items():
+        assert entity.endpoint.id == 2
+        # aux switch buttons only report their own events with unique aux scenes
+        assert entity.entity_registry_enabled_default is (
+            not suffix.startswith("button_aux_")
+        )
+
+    for button, suffix in INOVELLI_BUTTON_ENTITIES.items():
+        # pressed 1x, 2x .. 5x: the device resolves the number of taps
+        for press_type in (0, 3, 4, 5, 6):
+            _send_button_event(device, button, press_type)
+        # held, then released
+        _send_button_event(device, button, 2)
+        _send_button_event(device, button, 1)
+        # released outside a hold
+        _send_button_event(device, button, 1)
+
+        assert recorder.pop() == [
+            (suffix, "single_press"),
+            (suffix, "multi_press", {"press_count": 2}),
+            (suffix, "multi_press", {"press_count": 3}),
+            (suffix, "multi_press", {"press_count": 4}),
+            (suffix, "multi_press", {"press_count": 5}),
+            (suffix, "long_press_start"),
+            (suffix, "long_press_end"),
+            (suffix, "press_end"),
+        ]
+
+
+async def test_button_events_release_while_held(zigpy_device_from_v2_quirk):
+    """Test that a release only ends a hold of the same button."""
+    device = _inovelli_button_device(zigpy_device_from_v2_quirk, "VZM31-SN")
+    recorder = await ButtonEventRecorder.create(device)
+
+    # a release without a hold ends a short press
+    _send_button_event(device, 2, 1)
+    assert recorder.pop() == [("button_up", "press_end")]
+
+    # a release of another button does not end the hold
+    _send_button_event(device, 2, 2)
+    _send_button_event(device, 1, 1)
+    _send_button_event(device, 2, 1)
+    assert recorder.pop() == [
+        ("button_up", "long_press_start"),
+        ("button_down", "press_end"),
+        ("button_up", "long_press_end"),
+    ]
+
+    # a second release after the hold ended is not the end of a hold
+    _send_button_event(device, 2, 1)
+    assert recorder.pop() == [("button_up", "press_end")]
+
+
+@pytest.mark.parametrize("model", ["VZM30-SN", "VZM35-SN"])
+async def test_button_events_other_endpoint(zigpy_device_from_v2_quirk, model):
+    """Test that button events from endpoint 3 fire no button events."""
+    device = zigpy_device_from_v2_quirk(
+        "Inovelli",
+        model,
+        cluster_ids={
+            2: {InovelliCluster.cluster_id: ClusterType.Client},
+            3: {InovelliCluster.cluster_id: ClusterType.Client},
+        },
+    )
+    _set_switch_endpoint(device, 2)
+    _set_switch_endpoint(device, 3)
+    recorder = await ButtonEventRecorder.create(device)
+    assert set(recorder.entities) == set(INOVELLI_BUTTON_ENTITIES.values())
+
+    for button in INOVELLI_BUTTON_ENTITIES:
+        for press_type in (0, 3, 4, 5, 6, 2, 1):
+            _send_button_event(device, button, press_type, endpoint_id=3)
+    assert recorder.pop() == []
+
+    # the same frame from endpoint 2 does fire
+    _send_button_event(device, 2, 0)
+    assert recorder.pop() == [("button_up", "single_press")]
+
+
+async def test_vzm35_button_cluster_added_by_quirk(zigpy_device_from_v2_quirk):
+    """Test the VZM35-SN button entities when the quirk adds the button cluster.
+
+    Devices paired with an old firmware lack the 0xFC31 client cluster on
+    endpoint 2 in the zigpy database, so the quirk adds it.
+    """
+    device = zigpy_device_from_v2_quirk("Inovelli", "VZM35-SN", endpoint_ids=[1, 2])
+    _set_switch_endpoint(device, 2)
+    assert InovelliCluster.cluster_id in device.endpoints[2].out_clusters
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert set(recorder.entities) == set(INOVELLI_BUTTON_ENTITIES.values())
+
+    _send_button_event(device, 2, 0)
+    assert recorder.pop() == [("button_up", "single_press")]
+
+
+async def test_button_events_unrelated(zigpy_device_from_v2_quirk):
+    """Test that LED effect notifications fire no button events."""
+    device = _inovelli_button_device(zigpy_device_from_v2_quirk, "VZM31-SN")
+    recorder = await ButtonEventRecorder.create(device)
+
+    send_command(
+        device,
+        2,
+        InovelliCluster.cluster_id,
+        "led_effect_complete",
+        notification_type=16,
+        manufacturer=INOVELLI_MANUFACTURER_CODE,
+    )
+    send_command(
+        device,
+        2,
+        InovelliCluster.cluster_id,
+        "led_effect_complete",
+        notification_type=255,
+        manufacturer=INOVELLI_MANUFACTURER_CODE,
+    )
+    assert recorder.pop() == []
+
+
+async def test_vzm36_no_button_events(zigpy_device_from_v2_quirk):
+    """Test that the VZM36 canopy module, without buttons, has no button events."""
+    entries = [
+        entry
+        for entry in DEVICE_REGISTRY
+        if entry.source.module == "zhaquirks.inovelli.VZM36"
+    ]
+    assert entries
+    for entry in entries:
+        definition = entry.zha_device_factory.quirk_definition
+        assert definition.entity_metadata
+        assert not any(
+            isinstance(entity_metadata, ButtonEventMetadata)
+            for entity_metadata in definition.entity_metadata
+        )
+
+    device = zigpy_device_from_v2_quirk("Inovelli", "VZM36", endpoint_ids=[1, 2])
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {}

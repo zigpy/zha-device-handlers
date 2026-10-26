@@ -7,6 +7,7 @@ from zigpy.zcl import ClusterType
 import zhaquirks
 from zhaquirks.builder.builder import ReplaceCluster, ReplaceClusterOccurrences
 from zhaquirks.builder.device import QuirkV2Factory
+from zhaquirks.builder.metadata import ButtonEventMetadata
 from zhaquirks.inovelli.builder import INOVELLI_CLUSTER_ID, INOVELLI_MMWAVE_CLUSTER_ID
 
 zhaquirks.setup()
@@ -21,7 +22,7 @@ def _inovelli_v2_entries():
         factory = entry.zha_device_factory
         if not isinstance(factory, QuirkV2Factory):
             continue
-        if "inovelli" not in str(entry.source.file).lower():
+        if not entry.source.module.startswith("zhaquirks.inovelli."):
             continue
         model = str(entry.source.file).split("/")[-1]
         if model in seen:
@@ -56,9 +57,11 @@ def _inovelli_clusters_by_endpoint(entry, cluster_id):
 
 
 # Number of Inovelli manufacturer-cluster (0xFC31 / 0xFC32) entities each device
-# file is expected to expose. Locks the per-model set: for VZM30/31/35/36 this is
-# the set derived from the ZHA library's registration rules; VZM32-SN additionally
-# exposes its mmWave-specific entities.
+# file is expected to expose, other than the button event entities (anchored on
+# the 0xFC31 client cluster, tested in test_inovelli_blue.py). Locks the
+# per-model set: for VZM30/31/35/36 this is the set derived from the ZHA
+# library's registration rules; VZM32-SN additionally exposes its mmWave-specific
+# entities.
 EXPECTED_ENTITY_COUNTS = {
     "VZM30SN.py": 38,
     "VZM31SN.py": 40,
@@ -88,7 +91,10 @@ def test_inovelli_entity_unique_id_suffix(model, entry):
     """
     definition = entry.zha_device_factory.quirk_definition
     inovelli_entities = [
-        em for em in definition.entity_metadata if em.cluster_id in INOVELLI_CLUSTER_IDS
+        em
+        for em in definition.entity_metadata
+        if em.cluster_id in INOVELLI_CLUSTER_IDS
+        and not isinstance(em, ButtonEventMetadata)
     ]
     assert len(inovelli_entities) == EXPECTED_ENTITY_COUNTS[model]
 
@@ -122,7 +128,7 @@ def test_inovelli_entity_attribute_names_exist(model, entry):
         inovelli_entities = [
             em
             for em in entry.zha_device_factory.quirk_definition.entity_metadata
-            if em.cluster_id == cluster_id
+            if em.cluster_id == cluster_id and not isinstance(em, ButtonEventMetadata)
         ]
 
         for em in inovelli_entities:

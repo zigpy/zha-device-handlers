@@ -71,5 +71,6 @@ from zhaquirks.inovelli.builder import InovelliQuirkBuilder
     .inovelli_mmwave_detect_trigger()
     .inovelli_mmwave_hold_time()
     .device_automation_triggers(INOVELLI_AUTOMATION_TRIGGERS)
+    .inovelli_button_events()
     .add_to_registry()
 )
