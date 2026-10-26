@@ -14,7 +14,7 @@ class HueTapButton(BaseEvent):
     """Event entity for a single button of the switch."""
 
     _attr_device_class = EventDeviceClass.BUTTON
-    _attr_event_types = [ButtonEventType.PRESS_END]
+    _attr_event_types = [ButtonEventType.PRESS_START]
 
     def __init__(
         self, device: GreenPowerDevice, *, command_id: GPDCommandID, **kwargs: Any
@@ -38,8 +38,8 @@ class HueTapButton(BaseEvent):
         if event.command_id != self._command_id:
             return
 
-        # The switch sends one command per press, a completed press for HA
-        self._trigger_event(ButtonEventType.PRESS_END)
+        # The switch sends one command when the button goes down and none on release
+        self._trigger_event(ButtonEventType.PRESS_START)
 
 
 (

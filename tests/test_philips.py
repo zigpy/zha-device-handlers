@@ -986,4 +986,4 @@ def test_hue_tap_buttons(MockAppController, command_id, suffix):
     assert [
         (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
         for event in events
-    ] == [(suffix, ButtonEventType.PRESS_END)]
+    ] == [(suffix, ButtonEventType.PRESS_START)]
