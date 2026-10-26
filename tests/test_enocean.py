@@ -94,13 +94,14 @@ def test_ptm216z_does_not_match_ptm215ze(MockAppController):
     assert DEVICE_REGISTRY.match_green_power_entry(gpd) is None
 
 
-def test_ptm216z_does_not_match_other_vendors(MockAppController):
-    """Test that the quirk ignores a GPD outside of EnOcean's SrcID block."""
+def test_ptm216z_does_not_match_outside_src_id_block(MockAppController):
+    """Test that the quirk ignores a GPD outside of the PTM 216Z SrcID block."""
     gpd = ZigpyGreenPowerDevice(
         MockAppController,
         application_id=ApplicationID.SrcID,
         src_id=SrcID(0x01700001),
     )
+    gpd.device_id = DeviceID.GenericSwitch
 
     assert DEVICE_REGISTRY.match_green_power_entry(gpd) is None
 
