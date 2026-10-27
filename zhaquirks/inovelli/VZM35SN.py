@@ -58,5 +58,6 @@ from zhaquirks.inovelli.builder import InovelliQuirkBuilder
     .inovelli_internal_temperature()
     .inovelli_overheated()
     .device_automation_triggers(INOVELLI_AUTOMATION_TRIGGERS)
+    .inovelli_button_events()
     .add_to_registry()
 )

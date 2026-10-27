@@ -17,8 +17,11 @@ from enum import Enum
 from typing import Self
 
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 
 from zhaquirks.builder import (
+    ButtonEvent,
+    ButtonEventType,
     EntityPlatform,
     EntityType,
     QuirkBuilder,
@@ -26,7 +29,26 @@ from zhaquirks.builder import (
     SensorStateClass,
     UnitOfTemperature,
 )
-from zhaquirks.inovelli import InovelliCluster
+from zhaquirks.const import (
+    COMMAND_HOLD,
+    COMMAND_PRESS,
+    COMMAND_RELEASE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
+    TRIPLE_PRESS,
+)
+from zhaquirks.inovelli import (
+    AUX_CONFIG,
+    AUX_OFF,
+    AUX_ON,
+    CONFIG,
+    INOVELLI_AUTOMATION_TRIGGERS,
+    OFF,
+    ON,
+    InovelliCluster,
+)
 
 INOVELLI_CLUSTER_ID = InovelliCluster.cluster_id  # 0xFC31 == 64561
 INOVELLI_MMWAVE_CLUSTER_ID = 0xFC32  # 64562, VZM32-SN mmWave cluster
@@ -799,3 +821,85 @@ class InovelliQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
             cluster_id=INOVELLI_MMWAVE_CLUSTER_ID,
         )
+
+    # --- event entities --------------------------------------------------
+
+    def inovelli_button_events(self) -> Self:
+        """Add a button event entity per paddle / config button (and aux switch).
+
+        The device resolves taps itself and reports them with its ``button_event``
+        command from endpoint 2: pressed 1x (a resolved single tap), 2x to 5x, held
+        and released. Assumed, not confirmed on hardware: held is sent once, at the
+        hold threshold, and released follows a hold. A release while held ends the
+        hold; any other release is the end of a short press, so the mapping holds
+        whether or not the device also sends a release after taps. Only events from
+        endpoint 2 count, like in Zigbee2MQTT. The aux switch buttons only report
+        their own events with "aux switch unique scenes" enabled, so they start
+        disabled.
+        """
+        buttons = (
+            # trigger subtype, unique_id_suffix, translation_key, fallback_name, aux
+            (ON, "button_up", "up_button", "Up button", False),
+            (OFF, "button_down", "down_button", "Down button", False),
+            (CONFIG, "button_config", "config_button", "Config button", False),
+            (AUX_ON, "button_aux_up", "aux_up_button", "Aux up button", True),
+            (AUX_OFF, "button_aux_down", "aux_down_button", "Aux down button", True),
+            (
+                AUX_CONFIG,
+                "button_aux_config",
+                "aux_config_button",
+                "Aux config button",
+                True,
+            ),
+        )
+
+        def from_ep2(trigger_type: str, subtype: str) -> dict:
+            """Return the data of a device trigger, limited to endpoint 2."""
+            return {
+                **INOVELLI_AUTOMATION_TRIGGERS[(trigger_type, subtype)],
+                ENDPOINT_ID: 2,
+            }
+
+        for subtype, unique_id_suffix, translation_key, fallback_name, aux in buttons:
+            self.button_event(
+                events=[
+                    ButtonEvent(
+                        event_type=ButtonEventType.SINGLE_PRESS,
+                        event_data=from_ep2(COMMAND_PRESS, subtype),
+                    ),
+                    *(
+                        ButtonEvent(
+                            event_type=ButtonEventType.MULTI_PRESS,
+                            event_data=from_ep2(trigger_type, subtype),
+                            press_count=press_count,
+                        )
+                        for trigger_type, press_count in (
+                            (DOUBLE_PRESS, 2),
+                            (TRIPLE_PRESS, 3),
+                            (QUADRUPLE_PRESS, 4),
+                            (QUINTUPLE_PRESS, 5),
+                        )
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_START,
+                        event_data=from_ep2(COMMAND_HOLD, subtype),
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_END,
+                        event_data=from_ep2(COMMAND_RELEASE, subtype),
+                        while_held=True,
+                    ),
+                    ButtonEvent(
+                        event_type=ButtonEventType.PRESS_END,
+                        event_data=from_ep2(COMMAND_RELEASE, subtype),
+                    ),
+                ],
+                cluster_id=INOVELLI_CLUSTER_ID,
+                cluster_type=ClusterType.Client,
+                endpoint_id=2,
+                unique_id_suffix=unique_id_suffix,
+                translation_key=translation_key,
+                fallback_name=fallback_name,
+                initially_disabled=aux,
+            )
+        return self
