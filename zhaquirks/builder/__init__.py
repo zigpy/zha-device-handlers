@@ -17,10 +17,11 @@ from zha.application.platforms.sensor.device_class import (
 from zha.units import *  # noqa: F401, F403
 
 from zhaquirks.builder.builder import QuirkBuilder
-from zhaquirks.builder.metadata import ReportingConfig
+from zhaquirks.builder.metadata import EntityFilter, ReportingConfig
 
 __all__ = [
     "BinarySensorDeviceClass",
+    "EntityFilter",
     "EntityPlatform",
     "EntityType",
     "NumberDeviceClass",
