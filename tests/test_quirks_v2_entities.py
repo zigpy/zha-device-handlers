@@ -1,15 +1,20 @@
 """End-to-end tests for the quirks v2 entity APIs."""
 
+from collections.abc import Iterator
+import itertools
 from typing import Any
+from unittest import mock
 
 import pytest
 from zha.application import Platform
+from zha.application.platforms import PlatformEntity
 from zha.application.platforms.button import IdentifyButton
 from zha.application.platforms.cover import Cover
 from zha.application.platforms.light import HueLight, Light
 from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.quirks import DeviceRegistry
+from zha.zigbee.device import Device
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
@@ -447,3 +452,26 @@ def test_entity_filter_cluster_type_requires_cluster_id() -> None:
     """Test that a filter cannot match on a cluster type alone."""
     with pytest.raises(ValueError):
         EntityFilter(cluster_type=ClusterType.Server)
+
+
+async def test_default_discovery_failure_keeps_earlier_entities() -> None:
+    """Test that entities discovered before a failure in ZHA's discovery are kept."""
+    registry = DeviceRegistry()
+    QuirkBuilder("CentraLite", "3405-L").add_to_registry(registry)
+
+    discover_entities = Device.discover_entities
+
+    def failing_discovery(device: Device) -> Iterator[PlatformEntity]:
+        yield from itertools.islice(discover_entities(device), 2)
+        raise RuntimeError("Discovery failed")
+
+    with mock.patch.object(Device, "discover_entities", failing_discovery):
+        async with zha_gateway() as gateway:
+            device = await join_device_from_diagnostics(
+                gateway, "centralite-3405-l-0x10025310.json", registry
+            )
+
+            assert set(device.platform_entities) == {
+                (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-rssi"),
+                (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-lqi"),
+            }

@@ -48,7 +48,17 @@ class QuirkV2Device(Device):
 
     def discover_entities(self) -> Iterator[PlatformEntity]:
         """Yield the default entities plus the quirk's exposed and added entities."""
-        yield from self._replace_entities(list(super().discover_entities()))
+        entities: list[PlatformEntity] = []
+
+        try:
+            for entity in super().discover_entities():
+                entities.append(entity)
+        except Exception:
+            # Keep the entities discovered before the failure, as ZHA does
+            yield from self._replace_entities(entities)
+            raise
+
+        yield from self._replace_entities(entities)
         yield from discover_quirks_v2_entities(self)
 
         # An exception would end this generator, so one failing entity is skipped
