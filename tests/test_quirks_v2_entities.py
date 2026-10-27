@@ -32,6 +32,16 @@ class DeviceValueSensor(BaseSensor):
         return self._value
 
 
+class CachedAttributeSensor(Sensor):
+    """Sensor that is only supported if its attribute has a value."""
+
+    def _is_supported(self) -> bool:
+        if self._cluster.get(self._attribute_name) is None:
+            return False
+
+        return super()._is_supported()
+
+
 class EffectLight(HueLight):
     """Hue light subclass to replace the default one."""
 
@@ -66,6 +76,60 @@ async def test_adds_device_entity() -> None:
         assert type(entity) is DeviceValueSensor
         assert entity.native_value == 5
         assert entity.identifiers.endpoint_id is None
+
+
+async def test_adds_entity_support_check() -> None:
+    """Test that an added entity is only created if supported, unless force-created."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .adds_entity(
+            CachedAttributeSensor,
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
+            unique_id_suffix="cached",
+            fallback_name="Cached",
+        )
+        .adds_entity(
+            CachedAttributeSensor,
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            attribute_name=TemperatureMeasurement.AttributeDefs.tolerance.name,
+            unique_id_suffix="uncached",
+            fallback_name="Uncached",
+        )
+        .adds_entity(
+            CachedAttributeSensor,
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            attribute_name=TemperatureMeasurement.AttributeDefs.tolerance.name,
+            force_create=True,
+            unique_id_suffix="uncached_forced",
+            fallback_name="Uncached forced",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        cluster = device.device.endpoints[1].temperature
+
+        assert cluster.get(TemperatureMeasurement.AttributeDefs.tolerance.name) is None
+        assert (
+            Platform.SENSOR,
+            "00:0d:6f:00:05:65:83:f2-1-cached",
+        ) in device.platform_entities
+        assert (
+            Platform.SENSOR,
+            "00:0d:6f:00:05:65:83:f2-1-uncached",
+        ) not in device.platform_entities
+        assert (
+            Platform.SENSOR,
+            "00:0d:6f:00:05:65:83:f2-1-uncached_forced",
+        ) in device.platform_entities
 
 
 async def test_adds_zcl_entity() -> None:
