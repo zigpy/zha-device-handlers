@@ -246,10 +246,9 @@ def test_tuya_data_repr_empty():
     data = TuyaData()
     assert repr(data) == "TuyaData(dp_type=None, function=0, raw=None)"
 
-    data.dp_type = TuyaDPType.VALUE
-    assert repr(data) == (
-        "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=None)"
-    )
+    for dp_type in TuyaDPType:
+        data.dp_type = dp_type
+        assert repr(data) == f"TuyaData(dp_type={dp_type!r}, function=0, raw=None)"
 
 
 @pytest.mark.parametrize(

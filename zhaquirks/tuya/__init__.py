@@ -246,7 +246,7 @@ class TuyaData:
         )
         try:
             payload = self.payload
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
             payload = None
         if payload is not None:
             fields += f", *payload={payload!r}"
