@@ -70,15 +70,19 @@ class QuirkV2Device(Device):
                 if replaced.filter.matches(entity)
             ]
 
-            if len(indices) != 1:
+            # Discovery yields an entity twice for a cluster that is both an input and
+            # an output cluster. ZHA keeps the first one, so it is the one replaced.
+            matched = {(entities[i].PLATFORM, entities[i].unique_id) for i in indices}
+
+            if len(matched) != 1:
                 self.error(
                     "Replacement %r must match one entity, matched %d",
                     replaced,
-                    len(indices),
+                    len(matched),
                 )
                 continue
 
-            [index] = indices
+            index = indices[0]
             entity = entities[index]
 
             kwargs = dict(replaced.kwargs)

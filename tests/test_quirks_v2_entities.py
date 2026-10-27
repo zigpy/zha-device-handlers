@@ -5,11 +5,13 @@ from typing import Any
 import pytest
 from zha.application import Platform
 from zha.application.platforms.button import IdentifyButton
+from zha.application.platforms.cover import Cover
 from zha.application.platforms.light import HueLight, Light
 from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.quirks import DeviceRegistry
 from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
@@ -41,6 +43,10 @@ class CachedAttributeSensor(Sensor):
             return False
 
         return super()._is_supported()
+
+
+class QuirkCover(Cover):
+    """Cover subclass to replace the default one."""
 
 
 class EffectLight(HueLight):
@@ -222,6 +228,32 @@ async def test_replaces_entity() -> None:
 
         assert [(type(e), e.unique_id) for e in lights] == [
             (EffectLight, f"{device.ieee}-11")
+        ]
+
+
+async def test_replaces_entity_discovered_twice() -> None:
+    """Test replacing an entity that discovery yields for both cluster directions."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("NodOn", "SIN-4-RS-20")
+        .replaces_entity(
+            Cover, QuirkCover, endpoint_id=1, cluster_id=WindowCovering.cluster_id
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "nodon-sin-4-rs-20-0x00030104.json", registry
+        )
+        covers = [
+            entity
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM == Platform.COVER
+        ]
+
+        assert [(type(e), e.unique_id) for e in covers] == [
+            (QuirkCover, f"{device.ieee}-1-258")
         ]
 
 
