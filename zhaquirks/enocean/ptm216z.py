@@ -73,7 +73,7 @@ class PTM216ZButton(BaseEvent):
     .applies_to(device_id=DeviceID.GenericSwitch)
     .src_id_range(0x01500000, 0x015FFFFF)
     .friendly_name(manufacturer="EnOcean", model="PTM 216Z")
-    .entity(
+    .adds_entity(
         PTM216ZButton,
         contact=CONTACT_A0,
         unique_id_suffix="button_a0",
@@ -81,7 +81,7 @@ class PTM216ZButton(BaseEvent):
         translation_placeholders={"rocker": "A"},
         fallback_name="Rocker A top",
     )
-    .entity(
+    .adds_entity(
         PTM216ZButton,
         contact=CONTACT_A1,
         unique_id_suffix="button_a1",
@@ -89,7 +89,7 @@ class PTM216ZButton(BaseEvent):
         translation_placeholders={"rocker": "A"},
         fallback_name="Rocker A bottom",
     )
-    .entity(
+    .adds_entity(
         PTM216ZButton,
         contact=CONTACT_B0,
         unique_id_suffix="button_b0",
@@ -97,7 +97,7 @@ class PTM216ZButton(BaseEvent):
         translation_placeholders={"rocker": "B"},
         fallback_name="Rocker B top",
     )
-    .entity(
+    .adds_entity(
         PTM216ZButton,
         contact=CONTACT_B1,
         unique_id_suffix="button_b1",

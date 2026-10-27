@@ -47,7 +47,7 @@ class HueTapButton(BaseEvent):
     .applies_to(device_id=DeviceID.OnOffSwitch)
     .src_id_range(0x00400000, 0x004FFFFF)
     .friendly_name(manufacturer="Philips", model="Hue Tap")
-    .entity(
+    .adds_entity(
         HueTapButton,
         command_id=GPDCommandID.Toggle,
         unique_id_suffix="button_1",
@@ -55,7 +55,7 @@ class HueTapButton(BaseEvent):
         translation_placeholders={"number": "1"},
         fallback_name="Button 1",
     )
-    .entity(
+    .adds_entity(
         HueTapButton,
         command_id=GPDCommandID.RecallScene0,
         unique_id_suffix="button_2",
@@ -63,7 +63,7 @@ class HueTapButton(BaseEvent):
         translation_placeholders={"number": "2"},
         fallback_name="Button 2",
     )
-    .entity(
+    .adds_entity(
         HueTapButton,
         command_id=GPDCommandID.RecallScene1,
         unique_id_suffix="button_3",
@@ -71,7 +71,7 @@ class HueTapButton(BaseEvent):
         translation_placeholders={"number": "3"},
         fallback_name="Button 3",
     )
-    .entity(
+    .adds_entity(
         HueTapButton,
         command_id=GPDCommandID.RecallScene2,
         unique_id_suffix="button_4",

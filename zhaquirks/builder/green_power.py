@@ -160,7 +160,7 @@ class GreenPowerQuirkBuilder:
         self.friendly_model = model
         return self
 
-    def entity(
+    def adds_entity(
         self,
         entity_class: type[PlatformEntity],
         *,
