@@ -80,7 +80,6 @@ class PTM216ZButton(BaseEvent):
         translation_key="rocker_top",
         translation_placeholders={"rocker": "A"},
         fallback_name="Rocker A top",
-        primary=True,
     )
     .entity(
         PTM216ZButton,
