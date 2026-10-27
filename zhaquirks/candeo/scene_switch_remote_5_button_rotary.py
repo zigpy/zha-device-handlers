@@ -3,10 +3,10 @@
 from typing import Final
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLCommandDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.candeo import CANDEO
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
@@ -217,6 +217,35 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         self.listener_event(ZHA_SEND_EVENT, button_action, {BUTTON: button_number})
 
 
+def _button_events(button: str) -> list[ButtonEvent]:
+    """Return the button events of a button.
+
+    The buttons resolve double presses, so their single press is a resolved one.
+    The release is classified by the hold, as it is not known whether the remote
+    also sends it after a short press.
+    """
+    return [
+        ButtonEvent(
+            event_type=ButtonEventType.SINGLE_PRESS,
+            trigger=(SHORT_PRESS, button),
+        ),
+        ButtonEvent(
+            event_type=ButtonEventType.MULTI_PRESS,
+            trigger=(DOUBLE_PRESS, button),
+            press_count=2,
+        ),
+        ButtonEvent(
+            event_type=ButtonEventType.LONG_PRESS_START,
+            trigger=(LONG_PRESS, button),
+        ),
+        ButtonEvent(
+            event_type=ButtonEventType.LONG_PRESS_END,
+            trigger=(LONG_RELEASE, button),
+            while_held=True,
+        ),
+    ]
+
+
 (
     QuirkBuilder(CANDEO, "C-ZB-SR5BR")
     .replaces(CandeoSceneSwitchRemoteCluster)
@@ -353,6 +382,51 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                 ARGS: {ROTATED: RIGHT},
             },
         }
+    )
+    # One button event entity per button, the ring rotation stays device triggers only
+    .button_event(
+        events=_button_events(BUTTON_1),
+        cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=BUTTON_1,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": "1"},
+        fallback_name="Button 1",
+    )
+    .button_event(
+        events=_button_events(BUTTON_2),
+        cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=BUTTON_2,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": "2"},
+        fallback_name="Button 2",
+    )
+    .button_event(
+        events=_button_events(BUTTON_3),
+        cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=BUTTON_3,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": "3"},
+        fallback_name="Button 3",
+    )
+    .button_event(
+        events=_button_events(BUTTON_4),
+        cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=BUTTON_4,
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": "4"},
+        fallback_name="Button 4",
+    )
+    .button_event(
+        events=_button_events(BUTTON_CENTRE),
+        cluster_id=CandeoSceneSwitchRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix=BUTTON_CENTRE,
+        translation_key="center_button",
+        fallback_name="Center button",
     )
     .add_to_registry()
 )

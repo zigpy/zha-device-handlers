@@ -3,9 +3,11 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 from zigpy.zcl import AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import MultistateInput
 
+from tests.common import ButtonEventRecorder
 import zhaquirks
 
 zhaquirks.setup()
@@ -60,3 +62,45 @@ def test_quadzigsw(zigpy_device_from_v2_quirk, endpoint):
     cluster.update_attribute(multistate_value, 4)
     assert listener.zha_send_event.call_count == 5
     listener.zha_send_event.assert_called_with("hold", {"value": 4})
+
+
+@pytest.mark.parametrize("model", ["QUAD-ZIG-SW", "MULTI-ZIG-SW"])
+async def test_quadzigsw_button_events(zigpy_device_from_v2_quirk, model):
+    """Test the button event entities of the SmartHjemmet QUAD-ZIG-SW."""
+    device = zigpy_device_from_v2_quirk(
+        "smarthjemmet.dk", model, endpoint_ids=[1, 2, 3, 4, 5]
+    )
+    for endpoint_id in (2, 3, 4, 5):
+        device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+        device.endpoints[endpoint_id].device_type = 0xFFFE
+
+    recorder = await ButtonEventRecorder.create(device)
+    event_types = [
+        "single_press",
+        "multi_press",
+        "long_press_start",
+        "long_press_end",
+    ]
+    assert recorder.event_types() == {f"button_{i}": event_types for i in range(1, 5)}
+    assert recorder.entities["button_4"].endpoint.id == 5
+
+    present_value = MultistateInput.AttributeDefs.present_value.id
+
+    for endpoint_id in (2, 3, 4, 5):
+        cluster = device.endpoints[endpoint_id].multistate_input
+        # release (not classified before a hold), single, double, triple, hold,
+        # release, unknown
+        for value in (0, 1, 2, 3, 4, 0, 5):
+            cluster.update_attribute(present_value, value)
+
+    assert recorder.pop() == [
+        (f"button_{i}", event_type, *attributes)
+        for i in range(1, 5)
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+            ("multi_press", {"press_count": 3}),
+            ("long_press_start",),
+            ("long_press_end",),
+        )
+    ]

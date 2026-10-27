@@ -41,7 +41,12 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
-from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.common import (
+    ZCL_OCC_ATTR_RPT_OCC,
+    ButtonEventRecorder,
+    ClusterListener,
+    send_command,
+)
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
@@ -2883,6 +2888,80 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
     assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+async def test_h1_single_rocker_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entity of the Aqara H1 single rocker remote."""
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.remote.b18ac1",
+        cluster_ids={1: {OnOff.cluster_id: ClusterType.Client}},
+    )
+    device.endpoints[1].profile_id = zha.PROFILE_ID
+    device.endpoints[1].device_type = zha.DeviceType.ON_OFF_LIGHT_SWITCH
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start"],
+    }
+
+    cluster = device.endpoints[1].multistate_input
+    present_value = MultistateInput.AttributeDefs.present_value.id
+
+    # "event" operation mode: hold, single, double, triple, release (never sent)
+    for value in (0, 1, 2, 3, 255):
+        cluster.update_attribute(present_value, value)
+
+    # The "command" operation mode stays device triggers
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+    send_command(device, 1, OnOff.cluster_id, "off")
+    send_command(device, 1, OnOff.cluster_id, "on")
+
+    assert recorder.pop() == [
+        ("button", "long_press_start"),
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "multi_press", {"press_count": 3}),
+    ]
+
+
+async def test_h1_double_rocker_button_events(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the Aqara H1 double rocker remote."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
+    for endpoint_id in (1, 2, 3):
+        device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+        device.endpoints[endpoint_id].device_type = zha.DeviceType.ON_OFF_LIGHT_SWITCH
+
+    recorder = await ButtonEventRecorder.create(device)
+    assert recorder.event_types() == {
+        "button_left": ["single_press", "multi_press", "long_press_start"],
+        "button_right": ["single_press", "multi_press", "long_press_start"],
+        "button_both": ["single_press", "multi_press", "long_press_start"],
+    }
+    assert recorder.entities["button_left"].endpoint.id == 1
+    assert recorder.entities["button_right"].endpoint.id == 2
+    assert recorder.entities["button_both"].endpoint.id == 3
+
+    present_value = MultistateInput.AttributeDefs.present_value.id
+
+    for endpoint_id in (1, 2, 3):
+        cluster = device.endpoints[endpoint_id].multistate_input
+        for value in (1, 2, 3, 0, 255):
+            cluster.update_attribute(present_value, value)
+
+    # The "command" operation mode does not tell the buttons apart
+    send_command(device, 1, OnOff.cluster_id, "toggle")
+
+    assert recorder.pop() == [
+        (button, event_type, *attributes)
+        for button in ("button_left", "button_right", "button_both")
+        for event_type, *attributes in (
+            ("single_press",),
+            ("multi_press", {"press_count": 2}),
+            ("multi_press", {"press_count": 3}),
+            ("long_press_start",),
+        )
+    ]
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
