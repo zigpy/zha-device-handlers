@@ -18,11 +18,13 @@ from zha.quirks import DeviceRegistry
 from zha.zigbee.device import Device
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.clusters.general import LevelControl, OnOff, Ota
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 from zhaquirks.builder import EntityFilter, QuirkBuilder
+
+IEEE = "00:0d:6f:00:05:65:83:f2"
 
 
 class DeviceValueSensor(BaseSensor):
@@ -468,7 +470,9 @@ def test_entity_filter_cluster_type_requires_cluster_id() -> None:
 async def test_default_discovery_failure_keeps_earlier_entities() -> None:
     """Test that entities discovered before a failure in ZHA's discovery are kept."""
     registry = DeviceRegistry()
-    QuirkBuilder("CentraLite", "3405-L").add_to_registry(registry)
+    QuirkBuilder("CentraLite", "3405-L").replaces_entity(
+        RSSISensor, QuirkRSSISensor
+    ).add_to_registry(registry)
 
     discover_entities = Device.discover_entities
 
@@ -486,9 +490,15 @@ async def test_default_discovery_failure_keeps_earlier_entities() -> None:
                 (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-rssi"),
                 (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-lqi"),
             }
-
-
-IEEE = "00:0d:6f:00:05:65:83:f2"
+            # The replacement is applied to the entities kept before the failure
+            assert (
+                type(
+                    device.get_platform_entity(
+                        Platform.SENSOR, unique_id="00:0d:6f:00:05:65:83:f2-1-0-rssi"
+                    )
+                )
+                is QuirkRSSISensor
+            )
 
 
 @pytest.mark.parametrize(
@@ -513,6 +523,12 @@ IEEE = "00:0d:6f:00:05:65:83:f2"
         ),
         (EntityFilter(cluster_id=1026, cluster_type=ClusterType.Client), set()),
         (EntityFilter(cluster_id=1026), {f"{IEEE}-1-1026"}),
+        # The alarm control panel is bound to a client (output) cluster
+        (
+            EntityFilter(cluster_id=1281, cluster_type=ClusterType.Client),
+            {f"{IEEE}-1-1281"},
+        ),
+        (EntityFilter(cluster_id=1281, cluster_type=ClusterType.Server), set()),
         # The suffix matches whole `-`-separated trailing parts, with or without `-`
         (EntityFilter(unique_id_suffix="1026"), {f"{IEEE}-1-1026"}),
         (EntityFilter(unique_id_suffix="-1026"), {f"{IEEE}-1-1026"}),
@@ -583,9 +599,37 @@ async def test_replaces_entity_with_filter_and_kwargs() -> None:
         assert type(entity) is Temperature
         assert entity.fallback_name == "Filtered temperature"
 
-        # Other entities are untouched
-        battery = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1")
-        assert battery.fallback_name != "Filtered temperature"
+
+async def test_replaces_entity_filter_excludes_entity(caplog) -> None:
+    """Test that a replacement whose filter excludes the entity keeps the default."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(Temperature, Temperature, endpoint_id=2, fallback_name="Nope")
+        .replaces_entity(
+            Temperature,
+            Temperature,
+            filter=EntityFilter(platform=Platform.BINARY_SENSOR),
+            fallback_name="Nope",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1026")
+
+        assert entity.fallback_name != "Nope"
+        # Each replacement is reported separately (the device initializes twice)
+        records = [
+            r.getMessage()
+            for r in caplog.records
+            if "must match one entity, matched 0" in r.getMessage()
+        ]
+        assert any("endpoint_id=2" in message for message in records)
+        assert any("BINARY_SENSOR" in message for message in records)
 
 
 async def test_replaces_entity_creation_failure(caplog) -> None:
@@ -613,11 +657,18 @@ async def test_removes_entity_cluster_type() -> None:
     registry = DeviceRegistry()
     (
         QuirkBuilder("CentraLite", "3405-L")
+        # The temperature cluster is a server cluster, so nothing is removed
         .removes_entity(
             EntityFilter(
                 endpoint_id=1,
                 cluster_id=TemperatureMeasurement.cluster_id,
                 cluster_type=ClusterType.Client,
+            )
+        )
+        # The alarm control panel is bound to a client cluster
+        .removes_entity(
+            EntityFilter(
+                endpoint_id=1, cluster_id=1281, cluster_type=ClusterType.Client
             )
         )
         .add_to_registry(registry)
@@ -628,8 +679,32 @@ async def test_removes_entity_cluster_type() -> None:
             gateway, "centralite-3405-l-0x10025310.json", registry
         )
 
-        # The temperature cluster is a server cluster, so nothing is removed
         assert (Platform.SENSOR, f"{IEEE}-1-1026") in device.platform_entities
+        assert (
+            Platform.ALARM_CONTROL_PANEL,
+            f"{IEEE}-1-1281",
+        ) not in device.platform_entities
+
+
+async def test_prevent_default_entity_creation_matches_both_directions() -> None:
+    """Test that removing by cluster ID alone matches client clusters too."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .prevent_default_entity_creation(endpoint_id=1, cluster_id=1281)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+
+        assert (
+            Platform.ALARM_CONTROL_PANEL,
+            f"{IEEE}-1-1281",
+        ) not in device.platform_entities
+        assert (Platform.BINARY_SENSOR, f"{IEEE}-1-1280") in device.platform_entities
 
 
 async def test_removes_entity_filters_combined() -> None:
@@ -686,6 +761,46 @@ async def test_removed_entity_can_be_added_back() -> None:
 
         assert type(entity) is Sensor
         assert entity.fallback_name == "Added temperature"
+
+
+async def test_adds_entity_client_cluster() -> None:
+    """Test adding an entity bound to a client (output) cluster."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .adds_entity(
+            Sensor,
+            endpoint_id=1,
+            cluster_id=Ota.cluster_id,
+            cluster_type=ClusterType.Client,
+            attribute_name=Ota.AttributeDefs.current_file_version.name,
+            unique_id_suffix="ota_client",
+            fallback_name="OTA client",
+            force_create=True,
+        )
+        .adds_entity(
+            Sensor,
+            endpoint_id=1,
+            cluster_id=Ota.cluster_id,
+            attribute_name=Ota.AttributeDefs.current_file_version.name,
+            unique_id_suffix="ota_server",
+            fallback_name="OTA server",
+            force_create=True,
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=f"{IEEE}-1-ota_client"
+        )
+
+        assert entity.cluster is device.device.endpoints[1].out_clusters[Ota.cluster_id]
+        # The cluster is not a server cluster, so the second entity cannot be created
+        assert (Platform.SENSOR, f"{IEEE}-1-ota_server") not in device.platform_entities
 
 
 def test_adds_entity_cluster_type_default() -> None:
@@ -749,7 +864,6 @@ async def test_change_entity_metadata_uses_entity_filter() -> None:
         assert temperature.primary is True
         assert battery.fallback_name == "Changed battery"
         assert rssi.fallback_name != "Changed battery"
-        assert rssi.fallback_name != "Not applied"
 
 
 async def test_v2_entity_unique_id_omits_cluster_id() -> None:
