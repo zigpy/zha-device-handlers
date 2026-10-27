@@ -718,7 +718,7 @@ async def test_bosch_radiator_thermostat_II_automatic_valve_adapt(
     success = BoschValveAdaptStatus.Success
 
     async def status(value):
-        cluster.update_attribute(attrs.valve_adapt_status.id, value)
+        cluster.update_attribute(attrs.valve_adapt_status, value)
         await asyncio.sleep(0)
 
     async def requested(value):
