@@ -389,7 +389,9 @@ async def test_removes_entity() -> None:
     (
         QuirkBuilder("CentraLite", "3405-L")
         .removes_entity(EntityFilter(entity_cls=IdentifyButton))
-        .removes_entity(platform=Platform.SENSOR, unique_id_suffix="1-1026")
+        .removes_entity(
+            EntityFilter(platform=Platform.SENSOR, unique_id_suffix="1-1026")
+        )
         .add_to_registry(registry)
     )
 

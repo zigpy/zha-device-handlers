@@ -253,8 +253,9 @@ class AddedEntityMetadata:
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ReplacedEntityMetadata:
-    """Metadata to replace the default entity matching a filter."""
+    """Metadata to replace the default entity of exactly `base_cls` matching a filter."""
 
+    base_cls: type[PlatformEntity] = attrs.field()
     filter: EntityFilter = attrs.field()
     entity_cls: type[PlatformEntity] = attrs.field()
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)

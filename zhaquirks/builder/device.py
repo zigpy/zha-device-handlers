@@ -77,7 +77,7 @@ class QuirkV2Device(Device):
             indices = [
                 index
                 for index, entity in enumerate(entities)
-                if replaced.filter.matches(entity)
+                if type(entity) is replaced.base_cls and replaced.filter.matches(entity)
             ]
 
             # Discovery yields an entity twice for a cluster that is both an input and

@@ -12,7 +12,6 @@ import pathlib
 from types import FrameType
 from typing import Any, Self, overload
 
-import attrs
 from frozendict import frozendict
 from zha.application import (  # noqa: F401
     EntityPlatform,
@@ -989,21 +988,17 @@ class QuirkBuilder:
     ) -> Self:
         """Do not create default entities."""
         return self.removes_entity(
-            endpoint_id=endpoint_id,
-            cluster_id=cluster_id,
-            cluster_type=cluster_type,
-            unique_id_suffix=unique_id_suffix,
-            function=function,
+            EntityFilter(
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+                unique_id_suffix=unique_id_suffix,
+                function=function,
+            )
         )
 
-    def removes_entity(self, *filters: EntityFilter, **filter_kwargs: Any) -> Self:
-        """Remove entities matching any of the filters.
-
-        Keyword arguments are shorthand for one more `EntityFilter`.
-        """
-        if filter_kwargs:
-            filters = (*filters, EntityFilter(**filter_kwargs))
-
+    def removes_entity(self, *filters: EntityFilter) -> Self:
+        """Remove entities matching any of the filters."""
         self.disabled_default_entities.extend(filters)
         return self
 
@@ -1090,7 +1085,8 @@ class QuirkBuilder:
 
         self.replaced_entities.append(
             ReplacedEntityMetadata(
-                filter=attrs.evolve(filter, entity_cls=base_cls),
+                base_cls=base_cls,
+                filter=filter,
                 entity_cls=new_cls,
                 kwargs=kwargs,
             )
