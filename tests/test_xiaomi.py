@@ -1300,6 +1300,76 @@ def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
         cluster.get("not_a_real_attribute", missing_attribute_default)
 
 
+async def test_aqara_feeder_read_attributes(zigpy_device_from_v2_quirk):
+    """Test the fake feeder attributes are never sent and never marked unsupported."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+    fake_attrs = [
+        OppleCluster.AttributeDefs.feeding,
+        OppleCluster.AttributeDefs.last_feeding_source,
+        OppleCluster.AttributeDefs.last_feeding_size,
+        OppleCluster.AttributeDefs.portions_dispensed,
+        OppleCluster.AttributeDefs.weight_dispensed,
+        OppleCluster.AttributeDefs.error_detected,
+        OppleCluster.AttributeDefs.disable_led_indicator,
+        OppleCluster.AttributeDefs.child_lock,
+        OppleCluster.AttributeDefs.feeding_mode,
+        OppleCluster.AttributeDefs.serving_size,
+        OppleCluster.AttributeDefs.portion_weight,
+    ]
+
+    # Same as the device: UNSUPPORTED_ATTRIBUTE for everything that is read
+    async def unsupported_read(*args, **kwargs):
+        raise AssertionError("fake attributes must not be sent")
+
+    cluster.request = mock.AsyncMock(side_effect=unsupported_read)
+
+    success, failure = await cluster.read_attributes(
+        fake_attrs, allow_cache=True, manufacturer=0x115F
+    )
+    assert not failure
+    assert success[OppleCluster.AttributeDefs.serving_size] == 1
+    assert success[OppleCluster.AttributeDefs.feeding_mode] == FeedingMode.Manual
+    # No default: left out instead of failing
+    assert OppleCluster.AttributeDefs.feeding not in success
+    assert OppleCluster.AttributeDefs.last_feeding_source not in success
+    cluster.request.assert_not_called()
+
+    # Reported values win over defaults
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    success, _ = await cluster.read_attributes(["serving_size"], only_cache=True)
+    assert success["serving_size"] == 3
+
+    # Marks from earlier quirk versions are ignored
+    cluster.add_unsupported_attribute(ZCL_CHILD_LOCK, manufacturer_code=0x115F)
+    for attr in fake_attrs:
+        assert not cluster.is_attribute_unsupported(attr)
+    assert not cluster.is_attribute_unsupported(ZCL_CHILD_LOCK)
+
+    # The real attribute still goes to the device
+    cluster.request.reset_mock()
+    cluster.request.side_effect = None
+    cluster.request.return_value = [
+        [
+            foundation.ReadAttributeRecord(
+                FEEDER_ATTR, foundation.Status.UNSUPPORTED_ATTRIBUTE, None
+            )
+        ]
+    ]
+    _, failure = await cluster.read_attributes([FEEDER_ATTR], allow_cache=True)
+    cluster.request.assert_called_once()
+    assert FEEDER_ATTR in failure
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
     """Test update_attribute on Aqara smoke sensor."""

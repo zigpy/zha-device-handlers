@@ -6,6 +6,7 @@ import logging
 from typing import Any, Final
 
 from zigpy import types
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -48,6 +49,8 @@ ZCL_CHILD_LOCK = 0x138F
 ZCL_FEEDING_MODE = 0x1390
 ZCL_SERVING_SIZE = 0x1391
 ZCL_PORTION_WEIGHT = 0x1392
+
+FAKE_ATTRIBUTE_IDS: Final = frozenset(range(ZCL_FEEDING, ZCL_PORTION_WEIGHT + 1))
 
 AQARA_TO_ZCL: dict[int, int] = {
     FEEDING: ZCL_FEEDING,
@@ -152,6 +155,65 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         if value is not None:
             return value
         return self._DEFAULT_VALUES.get(attr_def.id, default)
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        **kwargs,
+    ) -> Any:
+        """Read attributes, answering the quirk-defined ones without sending them.
+
+        The device does not know the fake attribute ids and answers
+        UNSUPPORTED_ATTRIBUTE, which would be persisted and make ZHA drop the
+        entities. They are answered from the cache or `_DEFAULT_VALUES` instead,
+        and those without either are left out of the result, so no mark is recorded.
+        """
+        success: dict[Any, Any] = {}
+        attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
+
+        for attribute in attributes:
+            try:
+                attr_def = self.find_attribute(
+                    attribute, manufacturer_code=kwargs.get("manufacturer", UNDEFINED)
+                )
+            except KeyError:
+                attrs_to_read.append(attribute)
+                continue
+
+            if attr_def.id not in FAKE_ATTRIBUTE_IDS:
+                attrs_to_read.append(attribute)
+                continue
+
+            value = super().get(attr_def.id)
+            if value is None:
+                value = self._DEFAULT_VALUES.get(attr_def.id)
+            if value is not None:
+                success[attribute] = attr_def.type(value)
+
+        failure: dict[Any, Any] = {}
+        if attrs_to_read:
+            read_success, failure = await super().read_attributes(
+                attrs_to_read, allow_cache=allow_cache, only_cache=only_cache, **kwargs
+            )
+            success.update(read_success)
+
+        return success, failure
+
+    def is_attribute_unsupported(
+        self, attr: int | str | foundation.ZCLAttributeDef
+    ) -> bool:
+        """Report the quirk-defined attributes as supported.
+
+        This also clears UNSUPPORTED marks recorded by earlier versions of the quirk.
+        """
+        try:
+            if self.find_attribute(attr).id in FAKE_ATTRIBUTE_IDS:
+                return False
+        except KeyError:
+            pass
+        return super().is_attribute_unsupported(attr)
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -271,13 +333,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 
 (
-    QuirkBuilder(
-        None, "aqara.feeder.acn001"
-    )  # device does not provide manufacturer during interview
-    .friendly_name(
-        manufacturer="Aqara", model="aqara.feeder.acn001"
-    )  # v2 entities only take over
-    # cleanly once the native classes are removed (zigpy/zha#883) if the model string matches.
+    # The device does not provide a manufacturer during the interview
+    QuirkBuilder(None, "aqara.feeder.acn001")
+    # v2 entities only take over cleanly once the native classes are removed
+    # (zigpy/zha#883), if the model string matches
+    .friendly_name(manufacturer="Aqara", model="aqara.feeder.acn001")
     .removes(OnOff.cluster_id)
     .adds(Time)
     .replaces(OppleCluster)
