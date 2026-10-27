@@ -176,3 +176,14 @@ def test_adds_entity_binding() -> None:
 
     with pytest.raises(ValueError):
         builder.adds_entity(DeviceValueSensor, endpoint_id=1, value=5)
+
+
+def test_replaces_entity_keeps_filter() -> None:
+    """Test that a device-bound replacement keeps the fields of its filter."""
+    builder = QuirkBuilder("CentraLite", "3405-L").replaces_entity(
+        Sensor, DeviceValueSensor, filter=EntityFilter(endpoint_id=1), value=5
+    )
+
+    assert builder.disabled_default_entities == [
+        EntityFilter(entity_cls=Sensor, endpoint_id=1)
+    ]

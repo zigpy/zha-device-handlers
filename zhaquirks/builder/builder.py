@@ -1076,15 +1076,17 @@ class QuirkBuilder:
         The entities are matched on the given endpoint and cluster, and `filter`.
         `new_cls` is created as with `adds_entity`.
         """
-        self.removes_entity(
-            attrs.evolve(
-                filter or EntityFilter(),
-                entity_cls=base_cls,
+        entity_filter = attrs.evolve(filter or EntityFilter(), entity_cls=base_cls)
+
+        if cluster_id is not None:
+            entity_filter = attrs.evolve(
+                entity_filter,
                 endpoint_id=endpoint_id,
                 cluster_id=cluster_id,
                 cluster_type=cluster_type,
             )
-        )
+
+        self.removes_entity(entity_filter)
         return self._add_entity(
             new_cls,
             endpoint_id=endpoint_id,
