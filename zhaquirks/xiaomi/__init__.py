@@ -10,9 +10,14 @@ from typing import Any, Final
 from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, Cluster, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    foundation,
+)
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -41,6 +46,7 @@ from zhaquirks import (
     OccupancyWithReset,
     QuickInitDevice,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -50,6 +56,11 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
     BatterySize,
+)
+from zhaquirks.legacy import (
+    CustomDevice,
+    get_quirk_list,
+    register_uninitialized_device_message_handler,
 )
 
 AQARA = "Aqara"
@@ -158,9 +169,10 @@ class XiaomiCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
         self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_event)
 
     def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
     ) -> None:
         """Handle attribute report event and dispatch Xiaomi blob data."""
         attrid = event.attribute_id
@@ -173,7 +185,7 @@ class XiaomiCluster(CustomCluster):
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
-        elif attrid == MODEL:
+        elif attrid == MODEL and not isinstance(event, AttributeReadEvent):
             # 0x0005 = model attribute.
             # Xiaomi sensors send the model attribute when their reset button is
             # pressed quickly.
@@ -830,7 +842,7 @@ def handle_quick_init(
     if not model:
         return
 
-    for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
+    for quirk in get_quirk_list(LUMI, model):
         if not issubclass(quirk, XiaomiQuickInitDevice):
             continue
 
@@ -853,4 +865,4 @@ def handle_quick_init(
     return True
 
 
-zigpy.quirks.register_uninitialized_device_message_handler(handle_quick_init)
+register_uninitialized_device_message_handler(handle_quick_init)

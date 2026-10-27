@@ -211,7 +211,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         mcu_connection_status_rsp = foundation.ZCLCommandDef(
             id=TUYA_MCU_CONNECTION_STATUS,
             schema={"payload": TuyaConnectionStatus},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     def __init__(self, *args, **kwargs):
@@ -673,7 +673,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             14: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
-                converter=lambda x: PowerOnState(x),
+                converter=PowerOnState,
             )
         }
     )
@@ -682,7 +682,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             15: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
-                converter=lambda x: MoesBacklight(x),
+                converter=MoesBacklight,
             ),
         }
     )

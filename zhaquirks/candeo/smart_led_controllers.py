@@ -1,8 +1,8 @@
 """Candeo smart led controllers."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.lighting import Color
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.candeo import (
     CANDEO,
     CandeoCCTColorCluster,

@@ -9,13 +9,11 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from zha.quirks import DeviceRegistry
 from zigpy import zcl
 import zigpy.device
 import zigpy.endpoint
 import zigpy.profiles
-import zigpy.quirks as zq
-from zigpy.quirks import CustomDevice, DeviceRegistry
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 import zigpy.types as t
 from zigpy.zcl import foundation
 import zigpy.zdo.types
@@ -23,7 +21,10 @@ import zigpy.zdo.types
 import zhaquirks
 from zhaquirks import const
 import zhaquirks.bosch.motion
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder.metadata import ReportingConfig
 import zhaquirks.centralite.cl_3310S
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
     COMMAND,
@@ -52,7 +53,10 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+import zhaquirks.innr.innr_sp120_plug
 import zhaquirks.konke
+import zhaquirks.legacy as zq
+from zhaquirks.legacy import CustomDevice
 import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
@@ -290,7 +294,7 @@ def test_dev_from_signature(
     "quirk",
     (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice)),
 )
-def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
+def test_quirk_quickinit(quirk: CustomDevice) -> None:
     """Make sure signature in QuickInit Devices have all required attributes."""
 
     if not issubclass(quirk, zhaquirks.QuickInitDevice):
@@ -321,9 +325,12 @@ def test_signature(quirk: CustomDevice) -> None:
         return False
 
     # enforce new style of signature
+    assert quirk.signature is not None
     assert ENDPOINTS in quirk.signature
-    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]
+
+    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]  # type: ignore[unreachable]
     assert not numeric
+
     assert set(quirk.signature).issubset(SIGNATURE_ALLOWED)
     models_info = quirk.signature.get(MODELS_INFO)
     if models_info is not None:
@@ -499,7 +506,7 @@ def test_custom_quirk_loading(
         '''
 """Device handler for Bosch motion sensors."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zhaquirks.legacy import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -567,6 +574,12 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
+
+    # The custom quirk must also resolve through ZHA's runtime registry, not only the
+    # legacy `get_device` path: the two are drained separately during `setup()`, and a
+    # custom quirk imported after the initial drain must still reach ZHA's registry.
+    resolved = zhaquirks.ZHA_DEVICE_REGISTRY.resolve(device)
+    assert type(resolved).__name__ == "TestReplacementISWZPR1WP13"
 
 
 def test_zigpy_custom_cluster_pollution() -> None:
@@ -735,7 +748,7 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             ):
                 continue
 
-            assert issubclass(cluster, zigpy.quirks.CustomCluster)
+            assert issubclass(cluster, CustomCluster)
 
             # Check if attributes match based on cluster endpoint attribute
             if not (
@@ -983,6 +996,67 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
             )
 
 
+@pytest.mark.parametrize("use_builder_constants", [False, True])
+async def test_custom_cluster_constant_attributes_supported(
+    device_mock, use_builder_constants: bool
+) -> None:
+    """Ensure constant attributes are never reported as unsupported."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    if use_builder_constants:
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(
+                TestCluster,
+                constant_attributes={TestCluster.AttributeDefs.constant_attr: 10},
+            )
+            .add_to_registry(registry)
+        )
+    else:
+        TestCluster._CONSTANT_ATTRIBUTES = {
+            TestCluster.AttributeDefs.constant_attr.id: 10
+        }
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(TestCluster)
+            .add_to_registry(registry)
+        )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    constant_attr = TestCluster.AttributeDefs.constant_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    # the device marked both attributes unsupported before the quirk was applied
+    cluster._attr_cache.mark_unsupported(constant_attr)
+    cluster._attr_cache.mark_unsupported(device_attr)
+
+    # the constant is still supported, like `get()` still returns it
+    for attr in (constant_attr, constant_attr.id, constant_attr.name):
+        assert not cluster.is_attribute_unsupported(attr)
+    assert cluster.get(constant_attr.name) == 10
+
+    # attributes without a constant still follow the device
+    assert cluster.is_attribute_unsupported(device_attr)
+
+    # unknown attributes are left to zigpy
+    with pytest.raises(KeyError):
+        cluster.is_attribute_unsupported("unknown_attr")
+
+
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
     registry = DeviceRegistry()
@@ -1003,16 +1077,21 @@ async def test_local_data_cluster(device_mock) -> None:
             default_attr = foundation.ZCLAttributeDef(id=3, type=t.uint8_t)
 
     (
-        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
         .adds(TestLocalCluster)
-        .add_to_registry()
+        .add_to_registry(registry)
     )
-    device = registry.get_device(device_mock)
+    device = registry.resolve(device_mock)
     cluster = device.endpoints[1].in_clusters[0x1234]
     assert isinstance(cluster, TestLocalCluster)
 
-    # reading constant attribute works
+    events = []
+    cluster.on_event(zcl.AttributeReadEvent.event_type, events.append)
+
+    # reading constant attribute works, without caching or emitting it
     assert await cluster.read_attributes([1]) == ({1: 10}, {})
+    assert 1 not in cluster._attr_cache
+    assert events == []
 
     # reading valid attribute returns None with success status
     assert await cluster.read_attributes([2]) == ({2: None}, {})
@@ -1060,3 +1139,133 @@ async def test_local_data_cluster(device_mock) -> None:
     assert (
         configure_rsp[cluster.AttributeDefs.constant_attr] == foundation.Status.SUCCESS
     )
+
+
+@pytest.mark.parametrize("use_builder_constants", [False, True])
+async def test_custom_cluster_constant_attributes_not_cached(
+    device_mock, use_builder_constants: bool
+) -> None:
+    """Ensure constant attributes are served on read without being cached."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            constant_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    if use_builder_constants:
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(
+                TestCluster,
+                constant_attributes={TestCluster.AttributeDefs.constant_attr: 10},
+            )
+            .add_to_registry(registry)
+        )
+    else:
+        TestCluster._CONSTANT_ATTRIBUTES = {
+            TestCluster.AttributeDefs.constant_attr.id: 10
+        }
+        (
+            QuirkBuilder(device_mock.manufacturer, device_mock.model)
+            .adds(TestCluster)
+            .add_to_registry(registry)
+        )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    constant_attr = TestCluster.AttributeDefs.constant_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    events = []
+    for event_type in (
+        zcl.AttributeReadEvent.event_type,
+        zcl.AttributeUpdatedEvent.event_type,
+    ):
+        cluster.on_event(event_type, events.append)
+
+    rsp = [
+        [
+            foundation.ReadAttributeRecord(
+                attrid=device_attr.id,
+                status=foundation.Status.SUCCESS,
+                value=foundation.TypeValue(type=None, value=t.uint8_t(5)),
+            )
+        ]
+    ]
+
+    with mock.patch.object(
+        cluster, "_read_attributes", mock.AsyncMock(return_value=rsp)
+    ) as read_mock:
+        success, failure = await cluster.read_attributes(
+            [constant_attr.name, device_attr.name]
+        )
+
+    # only the non-constant attribute is read from the device
+    assert read_mock.call_count == 1
+    assert read_mock.mock_calls[0].args[0] == [device_attr.id]
+
+    assert success == {constant_attr.name: 10, device_attr.name: 5}
+    assert failure == {}
+
+    # the constant is neither cached nor emitted, so it is not persisted
+    assert constant_attr.id not in cluster._attr_cache
+    assert device_attr.id in cluster._attr_cache
+    assert [event.attribute_id for event in events] == [device_attr.id]
+
+    # it is still served by `get()` and cache-only reads
+    assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr.id], only_cache=True) == (
+        {constant_attr.id: 10},
+        {},
+    )
+
+    # reading only constant attributes does not send a request at all
+    with mock.patch.object(cluster, "_read_attributes", mock.AsyncMock()) as read_mock:
+        assert await cluster.read_attributes([constant_attr]) == (
+            {constant_attr: 10},
+            {},
+        )
+
+    assert read_mock.call_count == 0
+    assert constant_attr.id not in cluster._attr_cache
+
+    # a stale unsupported mark from before the quirk applied does not hide the constant
+    cluster._attr_cache.mark_unsupported(constant_attr)
+    assert not cluster.is_attribute_unsupported(constant_attr.name)
+    assert cluster.get(constant_attr.name) == 10
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )
+
+    # a stale cached value, e.g. persisted under an older quirk, is ignored too
+    cluster._attr_cache.set_value(constant_attr, 99)
+    assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
+        {constant_attr: 10},
+        {},
+    )
+
+    # reading the same constant attribute twice is rejected, like any other attribute
+    with pytest.raises(ValueError, match="Cannot read the same attribute twice"):
+        await cluster.read_attributes([constant_attr.id, constant_attr.name])
+
+    # unknown attributes are left to zigpy, which rejects them before any request
+    for unknown_attr in (0xFFFF, "unknown_attr"):
+        with (
+            mock.patch.object(
+                cluster, "_read_attributes", mock.AsyncMock()
+            ) as read_mock,
+            pytest.raises(KeyError),
+        ):
+            await cluster.read_attributes([constant_attr, unknown_attr])
+
+        assert read_mock.call_count == 0

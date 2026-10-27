@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,6 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008

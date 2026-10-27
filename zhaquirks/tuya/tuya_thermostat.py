@@ -1,18 +1,20 @@
 """Tuya TS0601 Thermostat."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
-from zigpy.quirks.v2.homeassistant import (
+from zigpy.types import t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
+
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
 )
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-from zigpy.types import t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import RunningState, Thermostat
-
 from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster

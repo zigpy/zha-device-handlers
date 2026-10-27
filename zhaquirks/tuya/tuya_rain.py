@@ -1,11 +1,16 @@
 """Quirk for TS0207 rain sensors."""
 
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType, UnitOfElectricPotential
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import (
+    LIGHT_LUX,
+    BinarySensorDeviceClass,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricPotential,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
@@ -31,7 +36,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         attribute_name="average_light_intensity_20mins",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=SensorDeviceClass.ILLUMINANCE,
         unit=LIGHT_LUX,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="average_light_intensity_20mins",
@@ -42,7 +47,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         attribute_name="todays_max_light_intensity",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=SensorDeviceClass.ILLUMINANCE,
         unit=LIGHT_LUX,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="todays_max_light_intensity",
