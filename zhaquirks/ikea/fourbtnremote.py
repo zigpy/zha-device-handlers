@@ -1,8 +1,9 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
 from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import LevelControl, OnOff, Scenes
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -12,6 +13,7 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
+    COMMAND_RELEASE,
     COMMAND_STOP,
     COMMAND_STOP_ON_OFF,
     DIM_DOWN,
@@ -105,6 +107,133 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
                 },
             },
         }
+    )
+    # The remote also sends an `on` about 500 ms after an arrow hold is released,
+    # which fires a press of the on button like its device trigger:
+    # https://github.com/Koenkk/zigbee2mqtt/issues/13335
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            # Older firmware ends both holds with a stop_with_on_off, newer firmware
+            # the off hold with a stop (zigpy/zha-device-handlers#2028, deCONZ's
+            # ikeaStyrbarMap), so either stop ends the hold of the button held
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_STOP_ON_OFF,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_STOP,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_OFF)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            # Older firmware ends both holds with a stop_with_on_off, newer firmware
+            # the off hold with a stop (zigpy/zha-device-handlers#2028, deCONZ's
+            # ikeaStyrbarMap), so either stop ends the hold of the button held
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_STOP_ON_OFF,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_STOP,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
+    )
+    # The arrows send the same release, so it ends the hold of the arrow held
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, LEFT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, LEFT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_RELEASE,
+                    CLUSTER_ID: Scenes.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_left",
+        translation_key="left_button",
+        fallback_name="Left button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, RIGHT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, RIGHT),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_RELEASE,
+                    CLUSTER_ID: Scenes.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                while_held=True,
+            ),
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_right",
+        translation_key="right_button",
+        fallback_name="Right button",
     )
     .add_to_registry()
 )

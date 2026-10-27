@@ -1,13 +1,16 @@
 """Tests for Third Reality quirks."""
 
+import itertools
 from unittest import mock
 
 import pytest
-from zigpy.zcl import ClusterType
+from zigpy.profiles import zha
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ButtonEventRecorder, ClusterListener
 import zhaquirks
 from zhaquirks.thirdreality.button import MultistateInputCluster
 import zhaquirks.thirdreality.night_light
@@ -134,3 +137,100 @@ async def test_third_reality_three_button_v2_ignores_unknown_press_type(
 
     multistate_cluster.update_attribute(0x0055, 42)
     assert listener.zha_send_event.call_count == 0
+
+
+_TSNS = itertools.cycle(range(256))
+
+
+def report_present_value(device, endpoint_id, value) -> None:
+    """Receive a `present_value` report frame from a multistate input cluster."""
+    attribute = MultistateInput.AttributeDefs.present_value
+    header = foundation.ZCLHeader.general(
+        tsn=next(_TSNS),
+        command_id=foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    )
+    report = foundation.Attribute(
+        attrid=attribute.id,
+        value=foundation.TypeValue(
+            type=attribute.zcl_type, value=attribute.type(value)
+        ),
+    )
+    schema = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Report_Attributes
+    ].schema
+    device.packet_received(
+        t.ZigbeePacket(
+            src_ep=endpoint_id,
+            dst_ep=1,
+            tsn=header.tsn,
+            profile_id=zha.PROFILE_ID,
+            cluster_id=MultistateInput.cluster_id,
+            data=t.SerializableBytes(header.serialize() + schema([report]).serialize()),
+        )
+    )
+
+
+GESTURES = ["single_press", "multi_press", "long_press_start", "long_press_end"]
+
+
+async def test_third_reality_button_event_entity(zigpy_device_from_v2_quirk):
+    """Test the button event entity of the Third Reality button."""
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSB22BZ",
+        cluster_ids={1: {MultistateInput.cluster_id: ClusterType.Server}},
+    )
+    device.endpoints[1].profile_id = zha.PROFILE_ID
+    device.endpoints[1].device_type = zha.DeviceType.REMOTE_CONTROL
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {"button": GESTURES}
+
+    # Single, double, hold and release; a release without a hold and 42, which is
+    # no press type, fire nothing
+    for value in (1, 255, 2, 0, 255, 255, 42):
+        report_present_value(device, 1, value)
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+    ]
+
+
+async def test_third_reality_three_button_event_entities(zigpy_device_from_v2_quirk):
+    """Test the button event entities of the Third Reality three-button remote."""
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSB01085Z",
+        cluster_ids={
+            ep: {MultistateInput.cluster_id: ClusterType.Server} for ep in (1, 2, 3)
+        },
+    )
+    for endpoint_id in (1, 2, 3):
+        device.endpoints[endpoint_id].profile_id = zha.PROFILE_ID
+        device.endpoints[endpoint_id].device_type = zha.DeviceType.REMOTE_CONTROL
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_1": GESTURES,
+        "button_2": GESTURES,
+        "button_3": GESTURES,
+    }
+
+    for endpoint_id in (1, 2, 3):
+        for value in (1, 255, 2, 0, 255, 255, 42):
+            report_present_value(device, endpoint_id, value)
+
+    assert recorder.pop() == [
+        event
+        for button in ("button_1", "button_2", "button_3")
+        for event in (
+            (button, "single_press"),
+            (button, "multi_press", {"press_count": 2}),
+            (button, "long_press_start"),
+            (button, "long_press_end"),
+        )
+    ]
