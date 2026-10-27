@@ -1227,6 +1227,14 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.window_temperature_bus.listener_event(
                 "set_value", value
             )
+        elif attrid == ZONNSMART_COMFORT_TEMP_ATTR:
+            self.endpoint.device.comfort_temperature_bus.listener_event(
+                "set_value", value / 10
+            )
+        elif attrid == ZONNSMART_ECO_TEMP_ATTR:
+            self.endpoint.device.eco_temperature_bus.listener_event(
+                "set_value", value / 10
+            )
         elif attrid in (ZONNSMART_MODE_ATTR, ZONNSMART_FROST_PROTECT_ATTR):
             self.endpoint.device.thermostat_bus.listener_event(
                 "mode_change", attrid, value
@@ -1592,6 +1600,96 @@ class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
+class ZONNSMARTComfortTemperature(LocalDataCluster, AnalogOutput):
+    """AnalogOutput cluster for the comfort temperature (auto mode)."""
+
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Comfort Temperature",
+        AnalogOutput.AttributeDefs.max_present_value.id: 30,
+        AnalogOutput.AttributeDefs.min_present_value.id: 5,
+        AnalogOutput.AttributeDefs.resolution.id: 0.5,
+        AnalogOutput.AttributeDefs.application_type.id: 0x0009,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.comfort_temperature_bus.add_listener(self)
+
+    def set_value(self, value):
+        """Set new comfort temperature value."""
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
+
+    def get_value(self):
+        """Get current comfort temperature value."""
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Modify value before passing it to the set_data tuya command."""
+        for attrid, value in attributes.items():
+            if isinstance(attrid, str):
+                attrid = self.attributes_by_name[attrid].id
+            if attrid not in self.attributes:
+                self.error("%d is not a valid attribute id", attrid)
+                continue
+            self._update_attribute(attrid, value)
+
+            await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
+                {ZONNSMART_COMFORT_TEMP_ATTR: value * 10}, **kwargs
+            )
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+
+class ZONNSMARTEcoTemperature(LocalDataCluster, AnalogOutput):
+    """AnalogOutput cluster for the eco temperature (auto mode)."""
+
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Eco Temperature",
+        AnalogOutput.AttributeDefs.max_present_value.id: 30,
+        AnalogOutput.AttributeDefs.min_present_value.id: 5,
+        AnalogOutput.AttributeDefs.resolution.id: 0.5,
+        AnalogOutput.AttributeDefs.application_type.id: 0x0009,
+        AnalogOutput.AttributeDefs.engineering_units.id: 62,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.eco_temperature_bus.add_listener(self)
+
+    def set_value(self, value):
+        """Set new eco temperature value."""
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
+
+    def get_value(self):
+        """Get current eco temperature value."""
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Modify value before passing it to the set_data tuya command."""
+        for attrid, value in attributes.items():
+            if isinstance(attrid, str):
+                attrid = self.attributes_by_name[attrid].id
+            if attrid not in self.attributes:
+                self.error("%d is not a valid attribute id", attrid)
+                continue
+            self._update_attribute(attrid, value)
+
+            await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
+                {ZONNSMART_ECO_TEMP_ATTR: value * 10}, **kwargs
+            )
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+
 class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
     """AnalogOutput cluster for temperature when opened window detected."""
 
@@ -1909,6 +2007,8 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         self.temperature_calibration_bus = Bus()
         self.window_detection_bus = Bus()
         self.window_temperature_bus = Bus()
+        self.comfort_temperature_bus = Bus()
+        self.eco_temperature_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -1976,6 +2076,22 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
                 DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
                 INPUT_CLUSTERS: [
                     ZONNSMARTOnlineMode,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    ZONNSMARTComfortTemperature,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    ZONNSMARTEcoTemperature,
                 ],
                 OUTPUT_CLUSTERS: [],
             },

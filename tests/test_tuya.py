@@ -13,7 +13,7 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogOutput, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -92,6 +92,12 @@ ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = (
 ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL = b"\t2\x01\x03\x04\x02\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE = b"\t2\x01\x03\x04\x02\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
+ZCL_TUYA_VALVE_ZONNSMART_COMFORT_TEMP = (
+    b"\t\x01\x01\x00\x01\x68\x02\x00\x04\x00\x00\x00\xd2"
+)
+ZCL_TUYA_VALVE_ZONNSMART_ECO_TEMP = (
+    b"\t\x01\x01\x00\x01\x69\x02\x00\x04\x00\x00\x00\xaa"
+)
 
 ZCL_TUYA_VALVE_HAOZEE_TEMPERATURE = b"\tp\x02\x00\x02\x7f\x02\x00\x04\x00\x00\x00\xd2"
 
@@ -595,6 +601,81 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             cluster=0xEF00,
             sequence=4,
             data=b"\x01\x04\x00\x00\x04\x6b\x01\x00\x01\x01",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+            retries=None,
+            retry_delay=None,
+            aps_encryption=False,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_eco_comfort_temperature(zigpy_device_from_quirk, quirk):
+    """Test that eco and comfort temperatures are exposed and updated."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+
+    comfort_cluster = valve_dev.endpoints[4].in_clusters[AnalogOutput.cluster_id]
+    eco_cluster = valve_dev.endpoints[5].in_clusters[AnalogOutput.cluster_id]
+
+    for frame in (
+        ZCL_TUYA_VALVE_ZONNSMART_COMFORT_TEMP,
+        ZCL_TUYA_VALVE_ZONNSMART_ECO_TEMP,
+    ):
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert comfort_cluster.get_value() == 21.0
+    assert eco_cluster.get_value() == 17.0
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_send_eco_comfort_temperature(zigpy_device_from_quirk, quirk):
+    """Test that eco and comfort temperatures are written to the device."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+    comfort_cluster = valve_dev.endpoints[4].in_clusters[AnalogOutput.cluster_id]
+    eco_cluster = valve_dev.endpoints[5].in_clusters[AnalogOutput.cluster_id]
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await comfort_cluster.write_attributes({"present_value": 22.0})
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01h\x02\x00\x04\x00\x00\x00\xdc",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=None,
+            retries=None,
+            retry_delay=None,
+            aps_encryption=False,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await eco_cluster.write_attributes({"present_value": 17.5})
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02i\x02\x00\x04\x00\x00\x00\xaf",
             command_id=0,
             timeout=5,
             expect_reply=False,
