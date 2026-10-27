@@ -211,7 +211,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         mcu_connection_status_rsp = foundation.ZCLCommandDef(
             id=TUYA_MCU_CONNECTION_STATUS,
             schema={"payload": TuyaConnectionStatus},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     def __init__(self, *args, **kwargs):
