@@ -383,13 +383,22 @@ Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_k
 **Custom Entity Classes:**
 Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
 
-- New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster.
-- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`. It must match exactly one entity of exactly `zha_cls`, and `cls` must keep its unique ID.
+- New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster. The entity is only created if `cls.is_supported()` passes; `force_create=True` skips the check.
+- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`. It must match exactly one entity of exactly `zha_cls`. `cls` must be the same kind (ZCL or device-bound) and keep the unique ID.
 
 Example: a switch per relay bit of a mask attribute:
 ```python
 class DetachRelaySwitch(ConfigurableAttributeSwitch):
     _attribute_name = SonoffCluster.AttributeDefs.detach_relay_mask.name
+    _server_cluster_config = {
+        SonoffCluster.cluster_id: ClusterConfig(
+            attributes={
+                SonoffCluster.AttributeDefs.detach_relay_mask: AttrConfig(
+                    read_on_startup=True
+                ),
+            },
+        ),
+    }
 
     def __init__(self, *args, relay: SonoffDetachedRelayMask, **kwargs) -> None:
         self._relay = relay
@@ -397,8 +406,7 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
 
     @property
     def is_on(self) -> bool:
-        mask = self._cluster.get(self._attribute_name)
-        return mask is not None and bool(mask & self._relay)
+        return bool(self._cluster.get(self._attribute_name) & self._relay)
 
     async def async_turn_on_off(self, state: bool) -> None:
         mask = self._cluster.get(self._attribute_name)
