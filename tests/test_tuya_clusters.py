@@ -1,5 +1,6 @@
 """Test units for new Tuya cluster framework."""
 
+import logging
 from unittest import mock
 
 import pytest
@@ -329,7 +330,9 @@ def test_tuya_get_data_invalid_datapoint(TuyaCluster, data, caplog):
 
     assert status == zcl_f.Status.SUCCESS
     assert payloads == [210]
-    assert "Ignoring invalid datapoint 1" in caplog.text
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "Ignoring invalid datapoint 1 " in warnings[0]
 
 
 def test_tuya_get_data_no_datapoints(TuyaCluster):
