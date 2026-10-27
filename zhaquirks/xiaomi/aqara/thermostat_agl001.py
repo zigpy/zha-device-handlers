@@ -203,7 +203,6 @@ class ScheduleEvent:
 
     @staticmethod
     def _validate_time(time):
-        # 0 is a valid time-of-day (00:00 / midnight) in this minutes-since-midnight encoding.
         if time < 0:
             raise ValueError("Time must be between 00:00 and 23:59")
         if time >= 24 * 60:
