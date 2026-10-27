@@ -6,7 +6,7 @@ import logging
 from typing import Any, Final
 
 from zigpy import types
-from zigpy.typing import UNDEFINED
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -161,6 +161,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         attributes: list[int | str | foundation.ZCLAttributeDef],
         allow_cache: bool = False,
         only_cache: bool = False,
+        manufacturer: int | UndefinedType | None = UNDEFINED,
         **kwargs,
     ) -> Any:
         """Read attributes, answering the quirk-defined ones without sending them.
@@ -172,11 +173,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """
         success: dict[Any, Any] = {}
         attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
+        fake_defs: set[foundation.ZCLAttributeDef] = set()
 
         for attribute in attributes:
             try:
                 attr_def = self.find_attribute(
-                    attribute, manufacturer_code=kwargs.get("manufacturer", UNDEFINED)
+                    attribute, manufacturer_code=manufacturer
                 )
             except KeyError:
                 attrs_to_read.append(attribute)
@@ -186,6 +188,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 attrs_to_read.append(attribute)
                 continue
 
+            if attr_def in fake_defs:
+                raise ValueError(
+                    f"Cannot read the same attribute twice in the same call: {attr_def}"
+                )
+
+            fake_defs.add(attr_def)
             value = super().get(attr_def.id)
             if value is None:
                 value = self._DEFAULT_VALUES.get(attr_def.id)
@@ -195,7 +203,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         failure: dict[Any, Any] = {}
         if attrs_to_read:
             read_success, failure = await super().read_attributes(
-                attrs_to_read, allow_cache=allow_cache, only_cache=only_cache, **kwargs
+                attrs_to_read,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+                **kwargs,
             )
             success.update(read_success)
 
@@ -206,7 +218,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     ) -> bool:
         """Report the quirk-defined attributes as supported.
 
-        This also clears UNSUPPORTED marks recorded by earlier versions of the quirk.
+        This also masks UNSUPPORTED marks recorded by earlier versions of the quirk.
         """
         try:
             if self.find_attribute(attr).id in FAKE_ATTRIBUTE_IDS:

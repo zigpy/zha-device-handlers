@@ -1327,7 +1327,7 @@ async def test_aqara_feeder_read_attributes(zigpy_device_from_v2_quirk):
         OppleCluster.AttributeDefs.portion_weight,
     ]
 
-    # Same as the device: UNSUPPORTED_ATTRIBUTE for everything that is read
+    # The device would answer UNSUPPORTED_ATTRIBUTE, so nothing may be sent
     async def unsupported_read(*args, **kwargs):
         raise AssertionError("fake attributes must not be sent")
 
@@ -1354,6 +1354,16 @@ async def test_aqara_feeder_read_attributes(zigpy_device_from_v2_quirk):
     for attr in fake_attrs:
         assert not cluster.is_attribute_unsupported(attr)
     assert not cluster.is_attribute_unsupported(ZCL_CHILD_LOCK)
+
+    with pytest.raises(ValueError, match="same attribute twice"):
+        await cluster.read_attributes(["serving_size", ZCL_SERVING_SIZE])
+
+    # Unknown attributes are left to zigpy
+    with pytest.raises(KeyError):
+        await cluster.read_attributes(["not_a_real_attribute"])
+    assert not cluster.is_attribute_unsupported(OppleCluster.AttributeDefs.feeder_attr)
+    with pytest.raises(KeyError):
+        cluster.is_attribute_unsupported("not_a_real_attribute")
 
     # The real attribute still goes to the device
     cluster.request.reset_mock()
