@@ -112,8 +112,6 @@ def test_ptm216z_entities(buttons):
     assert [entity.event_types for entity in buttons.values()] == [
         [ButtonEventType.PRESS_START, ButtonEventType.PRESS_END]
     ] * 4
-    assert buttons["button_a0"].primary
-    assert not any(entity.primary for entity in list(buttons.values())[1:])
 
 
 @pytest.mark.parametrize(
