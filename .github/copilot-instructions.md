@@ -386,7 +386,7 @@ Use the builder entity methods when an entity maps to one attribute. When it nee
 - New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster.
 - Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`.
 
-Example: a switch per relay bit of a mask attribute (`zhaquirks/sonoff/zbm5.py`):
+Example: a switch per relay bit of a mask attribute:
 ```python
 class DetachRelaySwitch(ConfigurableAttributeSwitch):
     _attribute_name = SonoffCluster.AttributeDefs.detach_relay_mask.name
