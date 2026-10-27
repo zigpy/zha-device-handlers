@@ -43,6 +43,9 @@ WINDOW_OPEN_ATTR_ID = 0x4042
 # Boost heating preset mode.
 BOOST_HEATING_ATTR_ID = 0x4043
 
+# Error state bitmap, bit n set means error E(n+1).
+ERROR_STATE_ATTR_ID = 0x5000
+
 """Bosch specific user interface attribute ids."""
 
 # Display orientation with values BoschDisplayOrientation.
@@ -136,6 +139,13 @@ BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
 )
 
 
+def format_error_state(value: int) -> str:
+    """Return "ok" or the active error codes, e.g. "E01 - E03"."""
+
+    errors = [f"E{bit + 1:02d}" for bit in range(8) if value & (1 << bit)]
+    return " - ".join(errors) if errors else "ok"
+
+
 def get_attribute_id_or_name(
     attribute: ZCLAttributeDef, attributes: dict[str | int, Any] | list[int | str]
 ) -> int | str | None:
@@ -190,6 +200,12 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         remote_temperature: Final = ZCLAttributeDef(
             id=REMOTE_TEMPERATURE_ATTR_ID,
             type=t.int16s,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        error_state: Final = ZCLAttributeDef(
+            id=ERROR_STATE_ATTR_ID,
+            type=t.bitmap8,
             manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
@@ -516,6 +532,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
+    )
+    # Error state: "ok" or the active error codes.
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.error_state.name,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        attribute_converter=format_error_state,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        translation_key="error_status",
+        fallback_name="Error status",
     )
     # Valve calibration.
     .command_button(

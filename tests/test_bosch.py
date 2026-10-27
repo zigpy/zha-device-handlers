@@ -2,6 +2,8 @@
 
 from unittest import mock
 
+from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
@@ -652,3 +654,33 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(
             ]
             == ControlSequenceOfOperation.Cooling_Only
         )
+
+
+def _bosch_trv_entity(device, attribute_name):
+    """Return the quirk entity metadata of an attribute."""
+
+    entry = getattr(device, QUIRK_REGISTRY_ENTRY_ATTR)
+    (metadata,) = (
+        em
+        for em in entry.zha_device_factory.quirk_definition.entity_metadata
+        if getattr(em, "attribute_name", None) == attribute_name
+    )
+    return metadata
+
+
+def test_bosch_radiator_thermostat_II_error_state(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II error state shows the active error codes."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    error_state = _bosch_trv_entity(
+        device, BoschTrvThermostatCluster.AttributeDefs.error_state.name
+    )
+
+    for value, text in (
+        (0x00, "ok"),
+        (0x02, "E02"),
+        (0x05, "E01 - E03"),
+        (0x80, "E08"),
+        (0xFF, "E01 - E02 - E03 - E04 - E05 - E06 - E07 - E08"),
+    ):
+        assert error_state.attribute_converter(t.bitmap8(value)) == text
