@@ -1021,6 +1021,11 @@ class QuirkBuilder:
         A `ZclPlatformEntity` is bound to the given endpoint and cluster, any other
         `PlatformEntity` only to the device.
         """
+        if "unique_id" in kwargs:
+            raise ValueError(
+                "The quirk sets the unique ID base, use `unique_id_suffix` instead"
+            )
+
         if issubclass(entity_cls, ZclPlatformEntity):
             if endpoint_id is None or cluster_id is None:
                 raise ValueError(
@@ -1059,6 +1064,11 @@ class QuirkBuilder:
         `new_cls` is created with the unique ID base of the entity it replaces, and
         `kwargs`. It must keep the unique ID.
         """
+        if "unique_id" in kwargs:
+            raise ValueError(
+                "A replacement keeps the unique ID of the entity it replaces"
+            )
+
         if issubclass(base_cls, ZclPlatformEntity) != issubclass(
             new_cls, ZclPlatformEntity
         ):

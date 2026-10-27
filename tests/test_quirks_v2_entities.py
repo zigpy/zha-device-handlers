@@ -416,6 +416,17 @@ def test_adds_entity_binding() -> None:
         builder.adds_entity(DeviceValueSensor, endpoint_id=1, value=5)
 
 
+def test_entity_unique_id_kwarg_rejected() -> None:
+    """Test that added and replacement entities cannot set their own unique ID."""
+    builder = QuirkBuilder("CentraLite", "3405-L")
+
+    with pytest.raises(ValueError):
+        builder.adds_entity(DeviceValueSensor, value=5, unique_id="custom")
+
+    with pytest.raises(ValueError):
+        builder.replaces_entity(Temperature, Temperature, unique_id="custom")
+
+
 def test_replaces_entity_arguments() -> None:
     """Test that entities are replaced by the same kind, matched by one kind of filter."""
     builder = QuirkBuilder("CentraLite", "3405-L")
