@@ -9,13 +9,11 @@ import pathlib
 from types import FrameType
 from typing import TYPE_CHECKING, Any, Self
 
-from frozendict import frozendict
-
 # `discovery` must be imported before `zha.zigbee.device`: the platform modules
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import discovery  # noqa: F401
-from zha.application.platforms import PlatformEntity
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceRegistry,
@@ -26,7 +24,10 @@ from zha.quirks import (
 )
 from zha.zigbee.device import GreenPowerDevice
 import zigpy.device
+from zigpy.zcl import ClusterType
 from zigpy.zgp.types import DeviceID, SrcID
+
+from zhaquirks.builder.metadata import AddedEntityMetadata
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
@@ -38,7 +39,7 @@ class GreenPowerQuirkDefinition:
 
     friendly_manufacturer: str
     friendly_model: str
-    entities: tuple[tuple[type[PlatformEntity], frozendict[str, Any]], ...] = ()
+    added_entities: tuple[AddedEntityMetadata, ...] = ()
 
 
 class QuirkGreenPowerDevice(GreenPowerDevice):
@@ -64,8 +65,8 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
         """Yield the quirk's entities."""
         yield from super().discover_entities()
 
-        for entity_class, kwargs in self._quirk_definition.entities:
-            yield entity_class(self, unique_id=str(self.ieee), **kwargs)
+        for added in self._quirk_definition.added_entities:
+            yield added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
 
     def _resolve_manufacturer(self) -> str:
         return self._quirk_definition.friendly_manufacturer
@@ -102,7 +103,7 @@ class GreenPowerQuirkBuilder:
         self.filters: list[GreenPowerFilterType] = []
         self.friendly_manufacturer: str | None = None
         self.friendly_model: str | None = None
-        self.entities: list[tuple[type[PlatformEntity], frozendict[str, Any]]] = []
+        self.added_entities: list[AddedEntityMetadata] = []
         self.custom_device_class: type[QuirkGreenPowerDevice] | None = None
 
         current_frame: FrameType = inspect.currentframe()
@@ -162,20 +163,37 @@ class GreenPowerQuirkBuilder:
 
     def adds_entity(
         self,
-        entity_class: type[PlatformEntity],
+        entity_cls: type[PlatformEntity],
         *,
         unique_id_suffix: str,
         **kwargs: Any,
     ) -> Self:
-        """Add an entity, passing `kwargs` to its constructor."""
+        """Add an entity bound to the device, created with `kwargs`."""
+        if issubclass(entity_cls, ZclPlatformEntity):
+            raise TypeError(
+                f"{entity_cls!r} needs a ZCL cluster, Green Power devices have none"
+            )
+
+        if "unique_id" in kwargs:
+            raise ValueError(
+                "The quirk sets the unique ID base, use `unique_id_suffix` instead"
+            )
+
         if any(
-            entity_kwargs["unique_id_suffix"] == unique_id_suffix
-            for _, entity_kwargs in self.entities
+            added.kwargs["unique_id_suffix"] == unique_id_suffix
+            for added in self.added_entities
         ):
             raise ValueError(f"Duplicate unique_id_suffix: {unique_id_suffix!r}")
 
-        kwargs["unique_id_suffix"] = unique_id_suffix
-        self.entities.append((entity_class, frozendict(kwargs)))
+        self.added_entities.append(
+            AddedEntityMetadata(
+                entity_cls=entity_cls,
+                endpoint_id=None,
+                cluster_id=None,
+                cluster_type=ClusterType.Server,
+                kwargs={**kwargs, "unique_id_suffix": unique_id_suffix},
+            )
+        )
         return self
 
     def device_class(self, custom_device_class: type[QuirkGreenPowerDevice]) -> Self:
@@ -213,7 +231,7 @@ class GreenPowerQuirkBuilder:
         quirk_definition = GreenPowerQuirkDefinition(
             friendly_manufacturer=self.friendly_manufacturer,
             friendly_model=self.friendly_model,
-            entities=tuple(self.entities),
+            added_entities=tuple(self.added_entities),
         )
 
         base = (

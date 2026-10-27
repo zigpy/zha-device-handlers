@@ -9,6 +9,7 @@ from zha.application.platforms.event import (
     EntityEventTriggeredEvent,
     TriggeredEvent,
 )
+from zha.application.platforms.sensor import Sensor
 from zha.quirks import DEVICE_REGISTRY, QUIRK_REGISTRY_ENTRY_ATTR
 from zha.zigbee.device import GreenPowerDevice
 from zigpy.device import (
@@ -277,6 +278,29 @@ def test_green_power_quirk_duplicate_unique_id_suffix():
             event_type="toggle",
             unique_id_suffix="button",
             fallback_name="Button 2",
+        )
+
+
+def test_green_power_quirk_entity_arguments():
+    """Test that only device-bound entities without their own unique ID are added."""
+    builder = GreenPowerQuirkBuilder()
+
+    with pytest.raises(TypeError):
+        builder.adds_entity(
+            Sensor,
+            attribute_name="present_value",
+            unique_id_suffix="sensor",
+            fallback_name="Sensor",
+        )
+
+    with pytest.raises(ValueError):
+        builder.adds_entity(
+            CommandEvent,
+            command_id=GPDCommandID.Toggle,
+            event_type="toggle",
+            unique_id="custom",
+            unique_id_suffix="button",
+            fallback_name="Button",
         )
 
 
