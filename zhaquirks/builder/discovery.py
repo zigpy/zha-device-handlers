@@ -66,6 +66,8 @@ def quirk_unique_id_base(device: Device, endpoint: Endpoint) -> str:
 def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     """Return the keyword arguments common to every quirk entity."""
     return {
+        # The entity classes' support checks are written for ZHA's discovery
+        "force_create": True,
         "fallback_name": entity_metadata.fallback_name,
         "translation_key": entity_metadata.translation_key,
         "translation_placeholders": entity_metadata.translation_placeholders or None,

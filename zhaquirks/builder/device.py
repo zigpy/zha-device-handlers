@@ -91,7 +91,6 @@ class QuirkV2Device(Device):
                 new_entity = replaced.entity_cls(
                     device=self,
                     unique_id=entity.unique_id_base,
-                    discovered=entity.discovered,
                     **kwargs,
                 )
             except Exception:  # noqa: BLE001
