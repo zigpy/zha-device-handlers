@@ -658,6 +658,19 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="battery_low",
         fallback_name="Battery low",
     )
+    # Child lock: an on/off switch instead of the multi-level default select.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=UserInterface.cluster_id,
+        function=lambda entity: entity.__class__.__name__ == "KeypadLockout",
+    )
+    .switch(
+        UserInterface.AttributeDefs.keypad_lockout.name,
+        BoschUserInterfaceCluster.cluster_id,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
     # Valve calibration.
     .command_button(
         BoschThermostatCluster.ServerCommandDefs.calibrate_valve.name,

@@ -7,7 +7,11 @@ from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
+from zigpy.zcl.clusters.hvac import (
+    ControlSequenceOfOperation,
+    Thermostat,
+    UserInterface,
+)
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
@@ -671,6 +675,17 @@ def _bosch_trv_entity(device, attribute_name):
     return metadata
 
 
+def _bosch_trv_prevented(device, cluster_id, class_name):
+    """Return whether the quirk prevents a default entity of a class."""
+
+    entry = getattr(device, QUIRK_REGISTRY_ENTRY_ATTR)
+    entity = type(class_name, (), {})()
+    return any(
+        meta.cluster_id == cluster_id and meta.function(entity)
+        for meta in entry.zha_device_factory.quirk_definition.disabled_default_entities
+    )
+
+
 def test_bosch_radiator_thermostat_II_error_state(zigpy_device_from_v2_quirk):
     """Test the Radiator Thermostat II error state shows the active error codes."""
 
@@ -804,3 +819,19 @@ def test_bosch_radiator_thermostat_II_battery_low(zigpy_device_from_v2_quirk):
         assert battery_low.attribute_converter(t.bitmap32(1 << bit)) is (
             bit in low_bits
         ), bit
+
+
+def test_bosch_radiator_thermostat_II_child_lock(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II child lock replaces the keypad lockout."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    child_lock = _bosch_trv_entity(
+        device, UserInterface.AttributeDefs.keypad_lockout.name
+    )
+
+    assert child_lock.cluster_id == UserInterface.cluster_id
+    assert (child_lock.off_value, child_lock.on_value) == (0, 1)
+    assert _bosch_trv_prevented(device, UserInterface.cluster_id, "KeypadLockout")
+    assert not _bosch_trv_prevented(
+        device, UserInterface.cluster_id, "ZCLEnumSelectEntity"
+    )
