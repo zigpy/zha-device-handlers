@@ -39,7 +39,7 @@ from zhaquirks.builder.metadata import (
 )
 
 if TYPE_CHECKING:
-    from zha.zigbee.device import Device
+    from zha.zigbee.device import ZigbeeDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     return {}
 
 
-def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
+def discover_quirks_v2_entities(device: ZigbeeDevice) -> Iterator[PlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
     if quirk_metadata is None or not quirk_metadata.entity_metadata:

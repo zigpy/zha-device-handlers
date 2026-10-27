@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
 from zha.application.platforms import BaseEntity, PlatformEntity
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.zcl
 
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from zha.application.gateway import Gateway
 
 
-class QuirkV2Device(Device):
+class QuirkV2Device(ZigbeeDevice):
     """Base ZHA device for QuirkBuilder."""
 
     def __init__(
