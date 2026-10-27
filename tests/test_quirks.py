@@ -1239,8 +1239,8 @@ async def test_custom_cluster_constant_attributes_not_cached(
     assert constant_attr.id not in cluster._attr_cache
 
     # a stale unsupported mark from before the quirk applied does not hide the constant
-    # from `get()` or reads
     cluster._attr_cache.mark_unsupported(constant_attr)
+    assert not cluster.is_attribute_unsupported(constant_attr.name)
     assert cluster.get(constant_attr.name) == 10
     assert await cluster.read_attributes([constant_attr], allow_cache=True) == (
         {constant_attr: 10},
