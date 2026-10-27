@@ -20,15 +20,18 @@ from zha.application.platforms import (
     PlatformEntity,
     binary_sensor,
     button,
+    event,
     number,
     select,
     sensor,
     switch,
 )
+from zha.application.platforms.event.const import ATTR_PRESS_COUNT
 from zigpy.zcl import ClusterType, ReportingConfig
 
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
+    ButtonEventMetadata,
     EntityMetadata,
     NumberMetadata,
     SwitchMetadata,
@@ -54,6 +57,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
     (Platform.SELECT, ZCLEnumMetadata): select.ZCLEnumSelectEntity,
     (Platform.NUMBER, NumberMetadata): number.NumberConfigurationEntity,
     (Platform.SWITCH, SwitchMetadata): switch.ConfigurableAttributeSwitch,
+    (Platform.EVENT, ButtonEventMetadata): event.ZhaEventButton,
 }
 
 
@@ -71,7 +75,44 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     }
 
 
-def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
+def _button_event_matches(
+    entity_metadata: ButtonEventMetadata, device: Device
+) -> list[event.ZhaEventMatch]:
+    """Return the `zha_event` matches of a button event entity."""
+    triggers = device.device_automation_triggers
+    event_matches = []
+
+    for button_event in entity_metadata.events:
+        if button_event.trigger is not None:
+            if button_event.trigger not in triggers:
+                raise ValueError(
+                    f"Device {device.ieee} has no device automation trigger"
+                    f" {button_event.trigger} for button event entity"
+                    f" {entity_metadata.unique_id_suffix!r}"
+                )
+            event_data = triggers[button_event.trigger]
+        else:
+            assert button_event.event_data is not None
+            event_data = button_event.event_data
+
+        event_matches.append(
+            event.ZhaEventMatch(
+                event_type=button_event.event_type,
+                event_data=event_data,
+                event_attributes=(
+                    {ATTR_PRESS_COUNT: button_event.press_count}
+                    if button_event.press_count is not None
+                    else {}
+                ),
+                repeats=button_event.repeats,
+                while_held=button_event.while_held,
+            )
+        )
+
+    return event_matches
+
+
+def _platform_kwargs(entity_metadata: EntityMetadata, device: Device) -> dict[str, Any]:
     """Return the platform-specific keyword arguments for a quirk entity."""
     if isinstance(entity_metadata, ZCLSensorMetadata):
         return {
@@ -118,6 +159,8 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
             "attribute_name": entity_metadata.attribute_name,
             "attribute_value": entity_metadata.attribute_value,
         }
+    if isinstance(entity_metadata, ButtonEventMetadata):
+        return {"event_matches": _button_event_matches(entity_metadata, device)}
     if isinstance(entity_metadata, ZCLCommandButtonMetadata):
         return {
             "command_name": entity_metadata.command_name,
@@ -187,13 +230,23 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
             )
             continue
 
-        entity = entity_class(
-            endpoint=endpoint,
-            device=device,
-            cluster=cluster,
-            **_generic_kwargs(entity_metadata),
-            **_platform_kwargs(entity_metadata),
-        )
+        # A failing entity must not end discovery of the quirk's other entities
+        try:
+            entity = entity_class(
+                endpoint=endpoint,
+                device=device,
+                cluster=cluster,
+                **_generic_kwargs(entity_metadata),
+                **_platform_kwargs(entity_metadata, device),
+            )
+        except Exception:
+            _LOGGER.exception(
+                "Device: %s-%s failed to create entity with metadata: %s",
+                str(device.ieee),
+                device.name,
+                entity_metadata,
+            )
+            continue
 
         # Translate quirks v2 reporting/attribute-init metadata into a
         # per-instance cluster config that the cluster_config aggregator picks up

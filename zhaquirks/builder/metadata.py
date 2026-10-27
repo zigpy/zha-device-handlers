@@ -9,7 +9,7 @@ classes take plain keyword arguments and know nothing about it.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from enum import Enum
 from typing import Any
 
@@ -17,6 +17,7 @@ import attrs
 from frozendict import frozendict
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
+from zha.application.platforms.event.const import ButtonEventType
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
@@ -154,6 +155,167 @@ class ZCLCommandButtonMetadata(EntityMetadata):
     command_name: str = attrs.field()
     args: tuple = attrs.field(default=())
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ButtonEvent:
+    """An event type a button event entity fires, and the `zha_event` firing it.
+
+    The `zha_event` is given either as the key of one of the quirk's device
+    automation triggers, so the event fires for the `zha_event`s that trigger's data
+    matches, or as `event_data` matched like the data of such a trigger.
+    """
+
+    event_type: ButtonEventType = attrs.field(converter=ButtonEventType)
+    trigger: tuple[str, str] | None = attrs.field(
+        default=None,
+        converter=lambda t: (
+            tuple(t) if isinstance(t, Iterable) and not isinstance(t, str) else t
+        ),
+    )
+    event_data: frozendict[str, Any] | None = attrs.field(
+        default=None, converter=lambda d: None if d is None else recursive_freeze(d)
+    )
+    # The number of presses of a `multi_press`
+    press_count: int | None = attrs.field(default=None)
+    # The device repeats this `long_press_start` while the button is held
+    repeats: bool = attrs.field(default=False)
+    # Only match while the button is held, to classify a `long_press_end` the device
+    # does not tell apart, by button or from a short press
+    while_held: bool = attrs.field(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the button event."""
+        if (self.trigger is None) == (self.event_data is None):
+            raise ValueError(
+                f"A button event needs either a trigger or event data: {self}"
+            )
+
+        if self.trigger is not None and (
+            not isinstance(self.trigger, tuple)
+            or len(self.trigger) != 2
+            or not all(isinstance(part, str) for part in self.trigger)
+        ):
+            raise ValueError(
+                f"A trigger is a (type, subtype) pair of strings: {self.trigger!r}"
+            )
+
+        if self.event_data is not None and not self.event_data:
+            raise ValueError(f"Empty event data matches every zha_event: {self}")
+
+        if (self.event_type == ButtonEventType.MULTI_PRESS) != (
+            self.press_count is not None
+        ):
+            raise ValueError(
+                f"A press count is required for '{ButtonEventType.MULTI_PRESS}' and"
+                f" only allowed there: {self}"
+            )
+
+        if self.repeats and self.event_type != ButtonEventType.LONG_PRESS_START:
+            raise ValueError(
+                f"Only '{ButtonEventType.LONG_PRESS_START}' can repeat: {self}"
+            )
+
+        if self.while_held and self.event_type != ButtonEventType.LONG_PRESS_END:
+            raise ValueError(
+                f"Only '{ButtonEventType.LONG_PRESS_END}' can match while held: {self}"
+            )
+
+        if self.press_count is not None and (
+            isinstance(self.press_count, bool)
+            or not isinstance(self.press_count, int)
+            or self.press_count < 2
+        ):
+            raise ValueError(f"A multi press needs at least two presses: {self}")
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ButtonEventMetadata(EntityMetadata):
+    """Metadata for an exposed button event entity."""
+
+    entity_platform: EntityPlatform = attrs.field(default=EntityPlatform.EVENT)
+    entity_type: EntityType = attrs.field(default=EntityType.STANDARD)
+    # Required: most buttons are on client clusters, and there is no attribute or
+    # command name to derive a unique ID suffix from
+    cluster_type: ClusterType = attrs.field(converter=ClusterType)
+    unique_id_suffix: str = attrs.field(
+        validator=[attrs.validators.instance_of(str), attrs.validators.min_len(1)]
+    )
+    events: tuple[ButtonEvent, ...] = attrs.field(converter=tuple)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the button event metadata."""
+        super().__attrs_post_init__()
+
+        if not self.events:
+            raise ValueError(f"A button event entity needs events: {self}")
+
+        event_types = {event.event_type for event in self.events}
+        if (
+            ButtonEventType.MULTI_PRESS in event_types
+            and ButtonEventType.SINGLE_PRESS not in event_types
+        ):
+            raise ValueError(
+                f"'{ButtonEventType.MULTI_PRESS}' is only allowed together with"
+                f" '{ButtonEventType.SINGLE_PRESS}': {self}"
+            )
+
+        # A repeated hold is only fired again after another event of the entity
+        if any(event.repeats for event in self.events) and event_types == {
+            ButtonEventType.LONG_PRESS_START
+        }:
+            raise ValueError(
+                f"A repeated '{ButtonEventType.LONG_PRESS_START}' needs another event"
+                f" type ending the hold: {self}"
+            )
+
+        if (
+            any(event.while_held for event in self.events)
+            and ButtonEventType.LONG_PRESS_START not in event_types
+        ):
+            raise ValueError(
+                f"Matching while held needs a '{ButtonEventType.LONG_PRESS_START}':"
+                f" {self}"
+            )
+
+
+def validate_button_event_triggers(
+    entity_metadata: ButtonEventMetadata,
+    device_automation_triggers: dict[tuple[str, str], Any],
+) -> None:
+    """Validate that a button event entity only uses triggers the quirk defines."""
+    for event in entity_metadata.events:
+        if event.trigger is None:
+            continue
+
+        if event.trigger not in device_automation_triggers:
+            raise ValueError(
+                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                " device automation trigger the quirk does not define"
+            )
+
+        if not device_automation_triggers[event.trigger]:
+            raise ValueError(
+                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                " device automation trigger without data, which matches every"
+                " zha_event"
+            )
+
+
+def validate_button_event_entities(entities: Iterable[EntityMetadata]) -> None:
+    """Validate that a quirk's button event entities have unique IDs."""
+    seen: set[tuple[int, str]] = set()
+
+    for entity_metadata in entities:
+        if not isinstance(entity_metadata, ButtonEventMetadata):
+            continue
+
+        key = (entity_metadata.endpoint_id, entity_metadata.unique_id_suffix)
+        if key in seen:
+            raise ValueError(
+                f"Button event entity {key[1]!r} on endpoint {key[0]} is defined twice"
+            )
+        seen.add(key)
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
