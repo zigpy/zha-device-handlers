@@ -415,6 +415,7 @@ class SimulatedController:
         expand_error: Exception | None = None,
         expand_reply: asyncio.Event | None = None,
         read_errors: int = 0,
+        mode_failures: int = 0,
     ) -> None:
         """Initialize the simulation with the bus cluster the quirk talks to."""
         self.bus = bus
@@ -422,7 +423,8 @@ class SimulatedController:
         self.scan_status = scan_status
         self.expand_error = expand_error
         self.expand_reply = expand_reply  # holds back the reply to an expand scan
-        self.read_errors = read_errors
+        self.read_errors = read_errors  # status reads that fail on the radio
+        self.mode_failures = mode_failures  # run-mode reads that fail on bus_mode only
 
     async def request(self, cluster, _general, command_id, *args, **kwargs):
         """Answer a command like the device would."""
@@ -445,11 +447,11 @@ class SimulatedController:
             self.read_errors -= 1
             raise zigpy.exceptions.DeliveryError("no route")
         mode, self.mode = self.mode, DaliBusMode.Run
-        return {
-            "bus_mode": mode,
-            "bus_status": DaliBusStatus(0),
-            "virtual_gears": t.uint64_t(0),
-        }, {}
+        success = {"bus_status": DaliBusStatus(0), "virtual_gears": t.uint64_t(0)}
+        if self.mode_failures and mode == DaliBusMode.Run:
+            self.mode_failures -= 1
+            return success, {"bus_mode": FAILURE}
+        return {"bus_mode": mode, **success}, {}
 
 
 @contextlib.contextmanager
@@ -563,6 +565,28 @@ async def test_newer_scan_supersedes_pending_follow_up(
         (bus, BUS_SCAN.id, DaliScanMode.Expand_system),
     ]
     assert bus._follow_up_scan is False
+
+
+async def test_attribute_failure_keeps_scan_polling_fast(
+    sdc2_device, fast_polling, monkeypatch
+):
+    """A bus_mode read failing on the device keeps the fast cadence of a running scan."""
+    monkeypatch.setattr(BegaDaliBus, "POLL_SLOW_S", 5)
+    monkeypatch.setattr(BegaDaliBus, "POLL_BOOST_S", 0)  # the boost must not mask it
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+
+    # reads: Scan, then bus_mode fails, then Run
+    with simulated(bus, mode_failures=1) as request:
+        await bus.command(BUS_SCAN.id, scan_mode=DaliScanMode.New_installation)
+        # at the slow cadence the follow-up would only come after POLL_SLOW_S
+        await wait_until(lambda: request.call_count >= 3, timeout=1.0)
+
+    assert [scan_mode for _, _, scan_mode in sent_commands(request)] == [
+        None,
+        DaliScanMode.New_installation,
+        DaliScanMode.Expand_system,
+    ]
 
 
 async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_polling):

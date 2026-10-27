@@ -253,7 +253,8 @@ class BegaDaliBus(CustomCluster):
                 self.debug("Status poll failed: %r", exc)
             else:
                 mode = result.get(self.AttributeDefs.bus_mode.name)
-                fast = mode is not None and mode != DaliBusMode.Run
+                if mode is not None:  # keep the current pace after attribute errors
+                    fast = mode != DaliBusMode.Run
                 if mode == DaliBusMode.Scan:
                     self._scan_seen = True
                 elif (
