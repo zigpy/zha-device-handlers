@@ -20,6 +20,9 @@ from zhaquirks.builder import (
 )
 from zhaquirks.clusters import CustomCluster
 
+# Bosch manufacturer code, sent with all manufacturer specific requests.
+BOSCH_MANUFACTURER_CODE = 0x1209
+
 """Bosch specific thermostat attribute ids."""
 
 # Mode of operation with values BoschOperatingMode.
@@ -155,7 +158,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         operating_mode: Final = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         pi_heating_demand: Final = ZCLAttributeDef(
@@ -163,25 +166,31 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.uint8_t,
             zcl_type=DataTypeId.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         valve_adapt_status: Final = ZCLAttributeDef(
             id=VALVE_ADAPT_STATUS_ATTR_ID,
             type=BoschValveAdaptStatus,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=WINDOW_OPEN_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         boost_heating: Final = ZCLAttributeDef(
-            id=BOOST_HEATING_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=BOOST_HEATING_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         remote_temperature: Final = ZCLAttributeDef(
-            id=REMOTE_TEMPERATURE_ATTR_ID, type=t.int16s, is_manufacturer_specific=True
+            id=REMOTE_TEMPERATURE_ATTR_ID,
+            type=t.int16s,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
@@ -190,7 +199,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         calibrate_valve: Final = ZCLCommandDef(
             id=CALIBRATE_VALVE_CMD_ID,
             schema={},
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
     async def write_attributes(
@@ -431,27 +440,27 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             id=SCREEN_ORIENTATION_ATTR_ID,
             type=BoschDisplayOrientation,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_on_time: Final = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_brightness: Final = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         displayed_temperature: Final = ZCLAttributeDef(
             id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
 
