@@ -71,11 +71,11 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
         "weekly_schedule_ui_apply",
         "temporary_mode_ui_apply",
         "holiday_enabled",
-        "holiday_operation",
         "holiday_duration_days",
         "valve_anti_stuck_enable",
         "default_display_page",
     } <= metadata_suffixes
+    assert "holiday_operation" not in metadata_suffixes
     assert any(
         metadata.cluster_id == OccupancySensing.cluster_id
         and metadata.attribute_name
@@ -1106,16 +1106,13 @@ def test_tp_wgzba_holiday_and_anti_stuck_schedule_codecs(tp_wgzba_device):
     """Test packed schedule decoding, defaults, and boundary clamping."""
     private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
 
-    holiday_payload = private_cluster._encode_holiday_schedule(
-        tp_wgzba.HolidayOperation.Target_Temperature, 7, 2150
-    )
+    holiday_payload = private_cluster._encode_holiday_schedule(7, 2150)
+    assert holiday_payload[13] == 0x00
     assert private_cluster._decode_holiday_schedule(holiday_payload) == (
-        tp_wgzba.HolidayOperation.Target_Temperature,
         7,
         2150,
     )
     assert private_cluster._decode_holiday_schedule(b"invalid") == (
-        tp_wgzba.HolidayOperation.Off,
         tp_wgzba.HOLIDAY_DURATION_DAYS_MIN,
         tp_wgzba.WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
     )
@@ -1139,9 +1136,7 @@ def test_tp_wgzba_schedule_attribute_updates_mirror_ui_values(tp_wgzba_device):
     """Test raw schedule updates populate the editable UI attributes."""
     private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
     defs = private_cluster.AttributeDefs
-    holiday_payload = private_cluster._encode_holiday_schedule(
-        tp_wgzba.HolidayOperation.Off, 14, 1800
-    )
+    holiday_payload = private_cluster._encode_holiday_schedule(14, 1800)
     anti_stuck_payload = private_cluster._encode_valve_anti_stuck_schedule(
         tp_wgzba.WeeklyScheduleUiDay.Wednesday, 450, 8
     )
@@ -1151,9 +1146,6 @@ def test_tp_wgzba_schedule_attribute_updates_mirror_ui_values(tp_wgzba_device):
         defs.valve_anti_stuck_schedule.id, anti_stuck_payload
     )
 
-    assert private_cluster.get(defs.holiday_operation.name) == (
-        tp_wgzba.HolidayOperation.Off
-    )
     assert private_cluster.get(defs.holiday_duration_days.name) == 14
     assert private_cluster.get(defs.holiday_target_temperature.name) == 1800
     assert private_cluster.get(defs.valve_anti_stuck_day.name) == (
@@ -1167,9 +1159,6 @@ async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device)
     """Test enabling holiday writes its packed schedule before the enable flag."""
     private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
     defs = private_cluster.AttributeDefs
-    private_cluster._update_attribute(
-        defs.holiday_operation.id, tp_wgzba.HolidayOperation.Target_Temperature
-    )
     private_cluster._update_attribute(defs.holiday_duration_days.id, 5)
     private_cluster._update_attribute(defs.holiday_target_temperature.id, 2200)
     success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
@@ -1179,7 +1168,6 @@ async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device)
     ) as write_raw:
         result = await private_cluster.write_attributes(
             {
-                defs.holiday_operation.name: tp_wgzba.HolidayOperation.Target_Temperature,
                 defs.holiday_duration_days.name: 5,
                 defs.holiday_target_temperature.name: 2200,
                 defs.holiday_enabled.name: True,
@@ -1193,8 +1181,9 @@ async def test_tp_wgzba_enabling_holiday_writes_packed_schedule(tp_wgzba_device)
     schedule_attr = schedule_call.args[0][0]
     assert schedule_attr.attrid == defs.holiday_schedule.id
     assert schedule_attr.value.value == private_cluster._encode_holiday_schedule(
-        tp_wgzba.HolidayOperation.Target_Temperature, 5, 2200
+        5, 2200
     )
+    assert schedule_attr.value.value[13] == 0x00
     assert schedule_call.kwargs["manufacturer_code"] is None
     assert enable_call.args[0][0].attrid == defs.holiday_enabled.id
     assert bool(enable_call.args[0][0].value.value)
@@ -1208,7 +1197,6 @@ async def test_tp_wgzba_active_holiday_edit_preserves_start(tp_wgzba_device):
     private_cluster._update_attribute(
         defs.holiday_schedule.id,
         private_cluster._encode_holiday_schedule(
-            tp_wgzba.HolidayOperation.Target_Temperature,
             5,
             2200,
             start_time=start_time,
@@ -1226,7 +1214,6 @@ async def test_tp_wgzba_active_holiday_edit_preserves_start(tp_wgzba_device):
 
     # The active edit must change the end time without restarting the holiday.
     expected = private_cluster._encode_holiday_schedule(
-        tp_wgzba.HolidayOperation.Target_Temperature,
         10,
         2200,
         start_time=start_time,

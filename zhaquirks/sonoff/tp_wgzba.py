@@ -127,7 +127,6 @@ WEEKLY_SCHEDULE_UI_TEMP_ATTR_IDS = tuple(0x7200 + index for index in range(1, 13
 WEEKLY_SCHEDULE_UI_TIME_ATTR_IDS = tuple(0x720C + index for index in range(1, 13))
 WEEKLY_SCHEDULE_UI_TRANSITION_COUNT_ATTR_ID = 0x7219
 
-HOLIDAY_OPERATION_ATTR_ID = 0x7300
 HOLIDAY_DURATION_DAYS_ATTR_ID = 0x7301
 HOLIDAY_TARGET_TEMPERATURE_ATTR_ID = 0x7302
 ANTISTUCK_DAY_ATTR_ID = 0x7400
@@ -368,13 +367,6 @@ class TPWGZBADeviceWorkMode(t.enum8):
     Schedule = 0x04
     Temporary_Manual = 0x05
     Holiday = 0x06
-
-
-class HolidayOperation(t.enum8):
-    """Holiday temperature-control operation supported by the product UI."""
-
-    Target_Temperature = 0x00
-    Off = 0x01
 
 
 class DefaultDisplayPage(t.enum8):
@@ -900,9 +892,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         weekly_schedule_ui_transition_count: Final = ZCLAttributeDef(
             id=WEEKLY_SCHEDULE_UI_TRANSITION_COUNT_ATTR_ID, type=t.uint8_t, access="rw"
         )
-        holiday_operation: Final = ZCLAttributeDef(
-            id=HOLIDAY_OPERATION_ATTR_ID, type=HolidayOperation, access="rw"
-        )
         holiday_duration_days: Final = ZCLAttributeDef(
             id=HOLIDAY_DURATION_DAYS_ATTR_ID, type=t.uint16_t, access="rw"
         )
@@ -1115,10 +1104,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         self._update_attribute(
             self.AttributeDefs.temporary_mode_ui_target_temperature.id,
             TEMPORARY_MODE_BOOST_TARGET_TEMP_X100,
-        )
-        self._update_attribute(
-            self.AttributeDefs.holiday_operation.id,
-            HolidayOperation.Off,
         )
         self._update_attribute(
             self.AttributeDefs.holiday_duration_days.id,
@@ -1577,8 +1562,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             return None
 
     @classmethod
-    def _decode_holiday_schedule(cls, value: Any) -> tuple[HolidayOperation, int, int]:
-        """Decode the holiday schedule struct into the three editable UI values."""
+    def _decode_holiday_schedule(cls, value: Any) -> tuple[int, int]:
+        """Decode holiday duration and target temperature from the schedule."""
 
         raw = cls._as_bytes(value)
         if (
@@ -1589,29 +1574,17 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             or raw[12] != ZCL_DATA_TYPE_UINT8
             or raw[14] != ZCL_DATA_TYPE_UINT16
         ):
-            return (
-                HolidayOperation.Off,
-                HOLIDAY_DURATION_DAYS_MIN,
-                WEEKLY_SCHEDULE_UI_TEMP_MIN_X100,
-            )
+            return (HOLIDAY_DURATION_DAYS_MIN, WEEKLY_SCHEDULE_UI_TEMP_MIN_X100)
 
         start_time = int.from_bytes(raw[3:7], "little", signed=False)
         end_time = int.from_bytes(raw[8:12], "little", signed=False)
-        operation_value = raw[13]
         target_temperature = int.from_bytes(raw[15:17], "little", signed=False)
-        # The product UI intentionally does not expose the legacy force-open mode.
-        operation = (
-            HolidayOperation(operation_value)
-            if operation_value in HolidayOperation._value2member_map_
-            else HolidayOperation.Off
-        )
         duration_days = cls._clamp(
             (end_time - start_time) // HOLIDAY_SECONDS_PER_DAY,
             HOLIDAY_DURATION_DAYS_MIN,
             HOLIDAY_DURATION_DAYS_MAX,
         )
         return (
-            operation,
             duration_days,
             cls._clamp(
                 target_temperature,
@@ -1623,7 +1596,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
     @classmethod
     def _encode_holiday_schedule(
         cls,
-        operation: HolidayOperation,
         duration_days: int,
         target_temperature: int,
         start_time: int | None = None,
@@ -1643,13 +1615,14 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             holiday_epoch = HOLIDAY_ZIGBEE_EPOCH.replace(tzinfo=local_midnight.tzinfo)
             start_time = int((local_midnight - holiday_epoch).total_seconds())
         end_time = start_time + duration_days * HOLIDAY_SECONDS_PER_DAY
+        # The operation field always selects target temperature.
         return (
             ZCL_STRUCT_FOUR_ITEM_COUNT
             + bytes([ZCL_DATA_TYPE_UINT32])
             + start_time.to_bytes(4, "little", signed=False)
             + bytes([ZCL_DATA_TYPE_UINT32])
             + end_time.to_bytes(4, "little", signed=False)
-            + bytes([ZCL_DATA_TYPE_UINT8, int(operation)])
+            + bytes([ZCL_DATA_TYPE_UINT8, 0x00])
             + bytes([ZCL_DATA_TYPE_UINT16])
             + target_temperature.to_bytes(2, "little", signed=False)
         )
@@ -2136,12 +2109,7 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 self.AttributeDefs.relay_output_type_relay2.id, relay2
             )
         elif attrid == self.AttributeDefs.holiday_schedule.id:
-            operation, duration_days, target_temperature = (
-                self._decode_holiday_schedule(value)
-            )
-            super()._update_attribute(
-                self.AttributeDefs.holiday_operation.id, operation
-            )
+            duration_days, target_temperature = self._decode_holiday_schedule(value)
             super()._update_attribute(
                 self.AttributeDefs.holiday_duration_days.id, duration_days
             )
@@ -2469,21 +2437,17 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             ),
             (
                 {
-                    self.AttributeDefs.holiday_operation.id,
                     self.AttributeDefs.holiday_duration_days.id,
                     self.AttributeDefs.holiday_target_temperature.id,
                 },
                 self.AttributeDefs.holiday_schedule.id,
                 lambda raw: {
-                    self.AttributeDefs.holiday_operation.id: self._decode_holiday_schedule(
-                        raw
-                    )[0],
                     self.AttributeDefs.holiday_duration_days.id: self._decode_holiday_schedule(
                         raw
-                    )[1],
+                    )[0],
                     self.AttributeDefs.holiday_target_temperature.id: self._decode_holiday_schedule(
                         raw
-                    )[2],
+                    )[1],
                 },
             ),
             (
@@ -2923,15 +2887,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
 
         holiday_ui_updates: dict[int, Any] = {}
-        has_holiday_operation, holiday_operation_value = self._pop_attribute_value(
-            remaining_attributes, self.AttributeDefs.holiday_operation
-        )
-        if has_holiday_operation:
-            holiday_ui_updates[self.AttributeDefs.holiday_operation.id] = (
-                HolidayOperation(
-                    self._clamp(self._coerce_int(holiday_operation_value), 0, 1)
-                )
-            )
         has_holiday_duration, holiday_duration_value = self._pop_attribute_value(
             remaining_attributes, self.AttributeDefs.holiday_duration_days
         )
@@ -2974,10 +2929,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         holiday_schedule_write_failed = False
 
         if holiday_update_while_enabled or holiday_enable_transition:
-            operation_value = holiday_ui_updates.get(
-                self.AttributeDefs.holiday_operation.id,
-                self.get(self.AttributeDefs.holiday_operation.name),
-            )
             duration_value = holiday_ui_updates.get(
                 self.AttributeDefs.holiday_duration_days.id,
                 self.get(self.AttributeDefs.holiday_duration_days.name),
@@ -2985,17 +2936,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             target_value = holiday_ui_updates.get(
                 self.AttributeDefs.holiday_target_temperature.id,
                 self.get(self.AttributeDefs.holiday_target_temperature.name),
-            )
-            operation = HolidayOperation(
-                self._clamp(
-                    self._coerce_int(
-                        int(HolidayOperation.Off)
-                        if operation_value is None
-                        else operation_value
-                    ),
-                    0,
-                    1,
-                )
             )
             duration_days = self._clamp(
                 self._coerce_int(
@@ -3051,7 +2991,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
             if not holiday_schedule_write_failed:
                 holiday_schedule = self._encode_holiday_schedule(
-                    operation,
                     duration_days,
                     target_temperature,
                     start_time=start_time,
@@ -3534,13 +3473,6 @@ _BUILDER = (
         SonoffTPWGZBAPrivateCluster.cluster_id,
         translation_key="holiday_mode",
         fallback_name="Holiday mode",
-    )
-    .enum(
-        SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_operation.name,
-        HolidayOperation,
-        SonoffTPWGZBAPrivateCluster.cluster_id,
-        translation_key="holiday_operation",
-        fallback_name="Holiday operation",
     )
     .number(
         SonoffTPWGZBAPrivateCluster.AttributeDefs.holiday_duration_days.name,
