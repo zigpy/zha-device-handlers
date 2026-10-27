@@ -691,6 +691,24 @@ async def test_zonnsmart_send_eco_comfort_temperature(zigpy_device_from_quirk, q
         ]
 
 
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_eco_comfort_unknown_attribute(zigpy_device_from_quirk, quirk):
+    """Test that unknown attributes are rejected without a device write."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+    comfort_cluster = valve_dev.endpoints[4].in_clusters[AnalogOutput.cluster_id]
+    eco_cluster = valve_dev.endpoints[5].in_clusters[AnalogOutput.cluster_id]
+
+    with mock.patch.object(tuya_cluster.endpoint, "request") as m1:
+        for cluster in (comfort_cluster, eco_cluster):
+            (status,) = await cluster.write_attributes({0x1234: 20})
+            assert status == [
+                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            ]
+        m1.assert_not_called()
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
 async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     """Test thermostatic valves standard reporting from incoming commands."""
