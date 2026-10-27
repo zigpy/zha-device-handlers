@@ -615,6 +615,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="window_open",
         fallback_name="Window open",
     )
@@ -628,6 +629,24 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
+    )
+    # Setpoint change source: replaces the default ZHA sensor, which does not
+    # configure reporting.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        function=lambda entity: entity.__class__.__name__ == "SetpointChangeSource",
+    )
+    .enum(
+        Thermostat.AttributeDefs.setpoint_change_source.name,
+        Thermostat.SetpointChangeSource,
+        BoschThermostatCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        unique_id_suffix=f"{Thermostat.cluster_id}-setpoint_change_source",
+        translation_key="setpoint_change_source",
+        fallback_name="Setpoint change source",
     )
     # Error state: "ok" or the active error codes.
     .sensor(

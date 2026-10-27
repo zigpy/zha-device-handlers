@@ -835,3 +835,25 @@ def test_bosch_radiator_thermostat_II_child_lock(zigpy_device_from_v2_quirk):
     assert not _bosch_trv_prevented(
         device, UserInterface.cluster_id, "ZCLEnumSelectEntity"
     )
+
+
+def test_bosch_radiator_thermostat_II_reporting(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II reports setpoint source and window open."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    source = _bosch_trv_entity(
+        device, Thermostat.AttributeDefs.setpoint_change_source.name
+    )
+    window_open = _bosch_trv_entity(
+        device, BoschTrvThermostatCluster.AttributeDefs.window_open.name
+    )
+
+    assert source.reporting_config is not None
+    assert window_open.reporting_config is not None
+
+    # same unique id as the default ZHA sensor it replaces
+    assert source.unique_id_suffix == f"{Thermostat.cluster_id}-setpoint_change_source"
+    assert _bosch_trv_prevented(device, Thermostat.cluster_id, "SetpointChangeSource")
+    assert not _bosch_trv_prevented(
+        device, Thermostat.cluster_id, "SetpointChangeSourceTimestamp"
+    )
