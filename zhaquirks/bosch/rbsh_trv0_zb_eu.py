@@ -5,6 +5,7 @@ from typing import Any, Final
 from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import (
     ControlSequenceOfOperation,
     Thermostat,
@@ -13,6 +14,7 @@ from zigpy.zcl.clusters.hvac import (
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import (
+    BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
@@ -147,6 +149,9 @@ VALVE_ADAPT_STARTABLE = (
     BoschValveAdaptStatus.ReadyToCalibrate,
     BoschValveAdaptStatus.Error,
 )
+
+"""Battery alarm state bits 0-3, 10-13 and 20-23: low battery on any source."""
+BATTERY_LOW_MASK = 0x00F03C0F
 
 
 def format_error_state(value: int) -> str:
@@ -642,6 +647,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         attribute_initialized_from_cache=False,
         translation_key="automatic_valve_adapt",
         fallback_name="Automatic valve adaptation requested",
+    )
+    # Low battery.
+    .binary_sensor(
+        PowerConfiguration.AttributeDefs.battery_alarm_state.name,
+        PowerConfiguration.cluster_id,
+        device_class=BinarySensorDeviceClass.BATTERY,
+        attribute_converter=lambda value: bool(value & BATTERY_LOW_MASK),
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        translation_key="battery_low",
+        fallback_name="Battery low",
     )
     # Valve calibration.
     .command_button(

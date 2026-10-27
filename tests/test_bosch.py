@@ -6,6 +6,7 @@ from unittest import mock
 from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
@@ -786,3 +787,20 @@ async def test_bosch_radiator_thermostat_II_automatic_valve_adapt(
         release.set()
         await asyncio.sleep(0)
         assert request.await_count == 1
+
+
+def test_bosch_radiator_thermostat_II_battery_low(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II battery low uses the alarm bits only."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    battery_low = _bosch_trv_entity(
+        device, PowerConfiguration.AttributeDefs.battery_alarm_state.name
+    )
+
+    # bits 0-3, 10-13 and 20-23 are the alarms of battery sources 1, 2 and 3
+    low_bits = {*range(4), *range(10, 14), *range(20, 24)}
+    assert battery_low.attribute_converter(t.bitmap32(0)) is False
+    for bit in range(32):
+        assert battery_low.attribute_converter(t.bitmap32(1 << bit)) is (
+            bit in low_bits
+        ), bit
