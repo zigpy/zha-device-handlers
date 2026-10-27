@@ -81,13 +81,18 @@ class QuirkV2Device(Device):
             [index] = indices
             entity = entities[index]
 
+            kwargs = dict(replaced.kwargs)
+
+            if isinstance(entity, ZclPlatformEntity):
+                kwargs["endpoint"] = entity.endpoint
+                kwargs["cluster"] = entity.cluster
+
             try:
                 new_entity = replaced.entity_cls(
-                    endpoint=entity.endpoint,
                     device=self,
-                    cluster=entity.cluster,
-                    discovered=True,
-                    **replaced.kwargs,
+                    unique_id=entity.unique_id_base,
+                    discovered=entity.discovered,
+                    **kwargs,
                 )
             except Exception:  # noqa: BLE001
                 self.error("Failed to create replacement %r", replaced, exc_info=True)

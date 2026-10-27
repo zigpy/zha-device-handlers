@@ -256,7 +256,7 @@ class ReplacedEntityMetadata:
     """Metadata to replace the default entity matching a filter."""
 
     filter: EntityFilter = attrs.field()
-    entity_cls: type[ZclPlatformEntity] = attrs.field()
+    entity_cls: type[PlatformEntity] = attrs.field()
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 

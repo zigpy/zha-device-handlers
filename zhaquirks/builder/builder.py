@@ -1044,8 +1044,8 @@ class QuirkBuilder:
 
     def replaces_entity(
         self,
-        base_cls: type[ZclPlatformEntity],
-        new_cls: type[ZclPlatformEntity],
+        base_cls: type[PlatformEntity],
+        new_cls: type[PlatformEntity],
         *,
         endpoint_id: int | None = None,
         cluster_id: int | None = None,
@@ -1056,13 +1056,16 @@ class QuirkBuilder:
         """Replace the one default entity of exactly `base_cls` with one of `new_cls`.
 
         The entity is matched by `filter`, or by the given endpoint and cluster.
-        `new_cls` is created as ZHA's discovery creates `base_cls`, with `kwargs`, and
-        must keep its unique ID.
+        `new_cls` is created with the unique ID base of the entity it replaces, and
+        `kwargs`. It must keep the unique ID.
         """
-        if not issubclass(base_cls, ZclPlatformEntity) or not issubclass(
+        if issubclass(base_cls, ZclPlatformEntity) != issubclass(
             new_cls, ZclPlatformEntity
         ):
-            raise TypeError("Only ZCL entities can be replaced")
+            raise TypeError(
+                "A ZCL entity can only be replaced with a ZCL entity, a device-bound"
+                " entity only with a device-bound entity"
+            )
 
         if filter is None:
             filter = EntityFilter(

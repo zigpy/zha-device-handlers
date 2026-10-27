@@ -6,7 +6,7 @@ import pytest
 from zha.application import Platform
 from zha.application.platforms.button import IdentifyButton
 from zha.application.platforms.light import HueLight, Light
-from zha.application.platforms.sensor import BaseSensor, Sensor, Temperature
+from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.quirks import DeviceRegistry
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
@@ -34,6 +34,10 @@ class DeviceValueSensor(BaseSensor):
 
 class EffectLight(HueLight):
     """Hue light subclass to replace the default one."""
+
+
+class QuirkRSSISensor(RSSISensor):
+    """RSSI sensor subclass to replace the default device-bound one."""
 
 
 class RenamedTemperature(Temperature):
@@ -178,6 +182,30 @@ async def test_replaces_entity_with_same_class() -> None:
         assert entity.fallback_name == "Replaced temperature"
 
 
+async def test_replaces_device_entity() -> None:
+    """Test replacing a default device-bound entity, keeping its unique ID."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(RSSISensor, QuirkRSSISensor)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        rssi_sensors = [
+            entity
+            for entity in device.platform_entities.values()
+            if isinstance(entity, RSSISensor) and entity.unique_id.endswith("-rssi")
+        ]
+
+        assert [(type(e), e.unique_id) for e in rssi_sensors] == [
+            (QuirkRSSISensor, "00:0d:6f:00:05:65:83:f2-1-0-rssi")
+        ]
+
+
 async def test_replaces_entity_no_match(caplog) -> None:
     """Test that a replacement matching no entity keeps the default one."""
     registry = DeviceRegistry()
@@ -259,7 +287,7 @@ def test_adds_entity_binding() -> None:
 
 
 def test_replaces_entity_arguments() -> None:
-    """Test that only ZCL entities are replaced, matched by one kind of filter."""
+    """Test that entities are replaced by the same kind, matched by one kind of filter."""
     builder = QuirkBuilder("CentraLite", "3405-L")
 
     with pytest.raises(TypeError):
