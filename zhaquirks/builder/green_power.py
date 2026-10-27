@@ -65,9 +65,7 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
         yield from super().discover_entities()
 
         for entity_class, kwargs in self._quirk_definition.entities:
-            yield entity_class(
-                self, unique_id=str(self.ieee), from_quirk=True, **kwargs
-            )
+            yield entity_class(self, unique_id=str(self.ieee), **kwargs)
 
     def _resolve_manufacturer(self) -> str:
         return self._quirk_definition.friendly_manufacturer
