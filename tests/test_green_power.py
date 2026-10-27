@@ -304,6 +304,45 @@ def test_green_power_quirk_entity_arguments():
         )
 
 
+class FailingEvent(CommandEvent):
+    """Event entity that fails to be created."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Fail to initialize."""
+        raise RuntimeError("Failed to initialize")
+
+
+async def test_green_power_quirk_failing_entity_skipped(zigpy_gpd, caplog):
+    """Test that an entity failing to be created does not stop the others."""
+    with DEVICE_REGISTRY.preserve_state():
+        entry = (
+            GreenPowerQuirkBuilder()
+            .applies_to(device_id=DeviceID.OnOffSwitch)
+            .adds_entity(
+                FailingEvent,
+                command_id=GPDCommandID.Toggle,
+                event_type="toggle",
+                unique_id_suffix="failing",
+                fallback_name="Failing",
+            )
+            .adds_entity(
+                CommandEvent,
+                command_id=GPDCommandID.Toggle,
+                event_type="toggle",
+                unique_id_suffix="button",
+                fallback_name="Button",
+            )
+            .friendly_name(manufacturer="Acme", model="Switch")
+            .add_to_registry()
+        )
+
+        zha_device = entry.zha_device_factory(zigpy_gpd, MagicMock())
+        (entity,) = zha_device.discover_entities()
+
+        assert type(entity) is CommandEvent
+        assert "Failed to create added entity" in caplog.text
+
+
 async def test_green_power_quirk_entity_removed(zigpy_gpd):
     """Test that a removed entity stops listening for GPD commands."""
     with DEVICE_REGISTRY.preserve_state():

@@ -27,6 +27,7 @@ import zigpy.device
 from zigpy.zcl import ClusterType
 from zigpy.zgp.types import DeviceID, SrcID
 
+from zhaquirks.builder.device import create_added_entities
 from zhaquirks.builder.metadata import AddedEntityMetadata
 
 if TYPE_CHECKING:
@@ -65,8 +66,7 @@ class QuirkGreenPowerDevice(GreenPowerDevice):
         """Yield the quirk's entities."""
         yield from super().discover_entities()
 
-        for added in self._quirk_definition.added_entities:
-            yield added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
+        yield from create_added_entities(self, self._quirk_definition.added_entities)
 
     def _resolve_manufacturer(self) -> str:
         return self._quirk_definition.friendly_manufacturer
