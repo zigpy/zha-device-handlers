@@ -239,6 +239,19 @@ class TuyaData:
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
+    def __repr__(self) -> str:
+        """Show the type and raw bytes, plus the payload if it decodes."""
+        fields = (
+            f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
+        )
+        try:
+            payload = self.payload
+        except (TypeError, ValueError):
+            payload = None
+        if payload is not None:
+            fields += f", *payload={payload!r}"
+        return f"{type(self).__name__}({fields})"
+
     def serialize(self) -> bytes:
         """Serialize Tuya data."""
         return (

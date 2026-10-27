@@ -14,6 +14,7 @@ from zhaquirks.tuya import (
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
+    TuyaDPType,
     TuyaNewManufCluster,
 )
 
@@ -204,6 +205,51 @@ def test_tuya_data_unknown():
 
     with pytest.raises(ValueError):
         r.payload = 0
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    (
+        (
+            b"\x02\x00\x04\x00\x00\x00\xd2",
+            "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, "
+            "raw=b'\\x00\\x00\\x00\\xd2', *payload=210)",
+        ),
+        (
+            b"\x03\x00\x04Tuya",
+            "TuyaData(dp_type=<TuyaDPType.STRING: 3>, function=0, "
+            "raw=b'Tuya', *payload='Tuya')",
+        ),
+        # invalid payloads are left out
+        (
+            b"\x02\x00\x01\x00",
+            "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\\x00')",
+        ),
+        (
+            b"\x06\x00\x01\x00",
+            "TuyaData(dp_type=<TuyaDPType.undefined_0x06: 6>, function=0, "
+            "raw=b'\\x00')",
+        ),
+    ),
+)
+def test_tuya_data_repr(data, expected):
+    """Test the TuyaData repr shows the datapoint, also when it is invalid."""
+
+    r, _ = TuyaData.deserialize(data)
+    assert repr(r) == expected
+    assert repr(TuyaDatapointData(2, r)) == f"TuyaDatapointData(dp=2, data={expected})"
+
+
+def test_tuya_data_repr_empty():
+    """Test the repr of an empty TuyaData."""
+
+    data = TuyaData()
+    assert repr(data) == "TuyaData(dp_type=None, function=0, raw=None)"
+
+    data.dp_type = TuyaDPType.VALUE
+    assert repr(data) == (
+        "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=None)"
+    )
 
 
 @pytest.mark.parametrize(
