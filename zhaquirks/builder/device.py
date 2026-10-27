@@ -51,8 +51,15 @@ class QuirkV2Device(Device):
         yield from super().discover_entities()
         yield from discover_quirks_v2_entities(self)
 
+        # An exception would end this generator, so one failing entity is skipped
         for added in self._quirk_definition.added_entities:
-            yield self._create_added_entity(added)
+            try:
+                entity = self._create_added_entity(added)
+            except Exception:  # noqa: BLE001
+                self.error("Failed to create added entity %r", added, exc_info=True)
+                continue
+
+            yield entity
 
     def _create_added_entity(self, added: AddedEntityMetadata) -> PlatformEntity:
         if not issubclass(added.entity_cls, ZclPlatformEntity):

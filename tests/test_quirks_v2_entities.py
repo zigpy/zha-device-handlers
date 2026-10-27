@@ -88,7 +88,7 @@ async def test_adds_zcl_entity() -> None:
 
 
 async def test_adds_entity_missing_cluster_fails(caplog) -> None:
-    """Test that an added entity on a missing cluster is not created."""
+    """Test that an added entity on a missing cluster does not stop later ones."""
     registry = DeviceRegistry()
     (
         QuirkBuilder("CentraLite", "3405-L")
@@ -100,6 +100,7 @@ async def test_adds_entity_missing_cluster_fails(caplog) -> None:
             unique_id_suffix="missing",
             fallback_name="Missing",
         )
+        .adds_entity(DeviceValueSensor, value=5, fallback_name="Device value")
         .add_to_registry(registry)
     )
 
@@ -112,7 +113,11 @@ async def test_adds_entity_missing_cluster_fails(caplog) -> None:
             Platform.SENSOR,
             "00:0d:6f:00:05:65:83:f2-1-missing",
         ) not in device.platform_entities
-        assert "Failed to create entity during discovery" in caplog.text
+        assert (
+            Platform.SENSOR,
+            "00:0d:6f:00:05:65:83:f2-device_value",
+        ) in device.platform_entities
+        assert "Failed to create added entity" in caplog.text
 
 
 async def test_replaces_entity() -> None:
