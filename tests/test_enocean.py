@@ -53,15 +53,19 @@ def buttons(ptm216z):
     return {entity.unique_id.rsplit("-", 1)[-1]: entity for entity in entities}
 
 
-def emit(device, command_id: GPDCommandID, contact_status: int) -> None:
-    """Emit a GPD 8-bit vector command."""
+def emit(device, command_id: GPDCommandID, contact_status: int | None) -> None:
+    """Emit a GPD 8-bit vector command, unparsed if there is no contact status."""
     device.emit(
         GreenPowerCommandReceived.event_type,
         GreenPowerCommandReceived(
             device_ieee=str(device.ieee),
             endpoint_id=None,
             command_id=command_id,
-            command=GPContactStatusPayload(contact_status=contact_status),
+            command=(
+                None
+                if contact_status is None
+                else GPContactStatusPayload(contact_status=contact_status)
+            ),
         ),
     )
 
@@ -150,13 +154,18 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
     )
 
 
-def test_ptm216z_release_without_press(ptm216z, buttons):
-    """Test that a release nothing was pressed for fires nothing."""
+def test_ptm216z_ignored_commands(ptm216z, buttons):
+    """Test that commands not changing the state of a contact fire nothing."""
     events: list[EntityEventTriggeredEvent] = []
     for entity in buttons.values():
         entity.on_event(EntityEventTriggeredEvent.event, events.append)
 
+    # A release nothing was pressed for
     emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+    # A press zigpy could not parse
+    emit(ptm216z, GPDCommandID.Press8BitVector, None)
+    # A command other than the 8-bit vector press and release
+    emit(ptm216z, GPDCommandID.Toggle, CONTACT_A0)
 
     assert events == []
 

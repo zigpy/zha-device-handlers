@@ -76,10 +76,15 @@ def zigpy_gpd(MockAppController):
 
 def test_green_power_quirk_builder(zigpy_gpd):
     """Test matching and resolving a Green Power quirk."""
+    zigpy_gpd.gpd_manufacturer_id = 0x1234
+    zigpy_gpd.gpd_model_id = 0x5678
+
     with DEVICE_REGISTRY.preserve_state():
         entry = (
             GreenPowerQuirkBuilder()
-            .applies_to(device_id=DeviceID.OnOffSwitch)
+            .applies_to(
+                device_id=DeviceID.OnOffSwitch, manufacturer_id=0x1234, model_id=0x5678
+            )
             .src_id_range(0x01700000, 0x0170FFFF)
             .filter(lambda device: GPDCommandID.Toggle in device.commands)
             .friendly_name(manufacturer="EnOcean", model="PTM 215Z")
@@ -97,6 +102,8 @@ def test_green_power_quirk_builder(zigpy_gpd):
         assert zha_device.manufacturer == "EnOcean"
         assert zha_device.model == "PTM 215Z"
         assert zha_device.name == "EnOcean PTM 215Z"
+        assert zha_device.quirk_metadata.friendly_manufacturer == "EnOcean"
+        assert zha_device.quirk_metadata.friendly_model == "PTM 215Z"
 
 
 def test_green_power_quirk_builder_no_match(zigpy_gpd):
