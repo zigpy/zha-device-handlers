@@ -291,6 +291,11 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
 
 (
     TuyaQuirkBuilder("_TZE204_rtrmfadk", "TS0601")
+    .applies_to("_TZE200_9mjy74mp", "TS0601")
+    .applies_to("_TZE204_9mjy74mp", "TS0601")
+    # From the Zigbee2MQTT TRV601/TRV602 definitions, not tested on hardware
+    .applies_to("_TZE200_rtrmfadk", "TS0601")
+    .applies_to("_TZE204_cvcu2p6e", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostatV2.ep_attribute,
@@ -382,7 +387,8 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
-        step=1,
+        step=0.1,
+        multiplier=0.1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
