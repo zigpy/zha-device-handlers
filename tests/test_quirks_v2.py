@@ -31,6 +31,8 @@ def test_translation_key_and_fallback_name_match() -> None:
 
     # collect all translation keys and their quirk location and fallback names
     for entry, definition in ALL_QUIRK_V2:
+        quirk_location = f"{entry.source.file}:{entry.source.line}"
+
         for entity_metadata in definition.entity_metadata:
             if (translation_key := entity_metadata.translation_key) is None:
                 continue
@@ -38,9 +40,18 @@ def test_translation_key_and_fallback_name_match() -> None:
             # the same translation key with different fallback names
             if entity_metadata.translation_placeholders:
                 continue
-            quirk_location = f"{entry.source.file}:{entry.source.line}"
             translation_key_map[translation_key].add(
                 (quirk_location, entity_metadata.fallback_name)
+            )
+
+        # added and replacement entities are named via their constructor kwargs
+        for added in definition.added_entities:
+            if "translation_key" not in added.kwargs:
+                continue
+            if "translation_placeholders" in added.kwargs:
+                continue
+            translation_key_map[added.kwargs["translation_key"]].add(
+                (quirk_location, added.kwargs["fallback_name"])
             )
 
     # check that if multiple entity metadata entries exist for the same translation key,
