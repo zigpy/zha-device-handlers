@@ -203,6 +203,11 @@ class EntityFilter:
     device_class: str | None = attrs.field(default=None)
     function: Callable[[PlatformEntity], bool] | None = attrs.field(default=None)
 
+    def __attrs_post_init__(self) -> None:
+        """Validate the filter."""
+        if self.cluster_type is not None and self.cluster_id is None:
+            raise ValueError("`cluster_type` requires a `cluster_id`")
+
     def matches(self, entity: PlatformEntity) -> bool:
         """Return whether the entity matches the filter."""
         if self.entity_cls is not None and type(entity) is not self.entity_cls:

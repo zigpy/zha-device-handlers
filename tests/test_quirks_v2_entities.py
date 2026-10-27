@@ -8,6 +8,7 @@ from zha.application.platforms.button import IdentifyButton
 from zha.application.platforms.light import HueLight
 from zha.application.platforms.sensor import BaseSensor, Sensor
 from zha.quirks import DeviceRegistry
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
@@ -187,3 +188,9 @@ def test_replaces_entity_keeps_filter() -> None:
     assert builder.disabled_default_entities == [
         EntityFilter(entity_cls=Sensor, endpoint_id=1)
     ]
+
+
+def test_entity_filter_cluster_type_requires_cluster_id() -> None:
+    """Test that a filter cannot match on a cluster type alone."""
+    with pytest.raises(ValueError):
+        EntityFilter(cluster_type=ClusterType.Server)
