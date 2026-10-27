@@ -1714,7 +1714,7 @@ class TuyaNewManufCluster(CustomCluster):
                 "Received datapoint %s (%s, raw %s)",
                 record.dp,
                 record.data.dp_type,
-                record.data.raw.hex(),
+                record.data.raw,
             )
             try:
                 dp_handler = self.data_point_handlers[record.dp]
