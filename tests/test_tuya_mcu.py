@@ -1,5 +1,6 @@
 """Tests for Tuya quirks."""
 
+import asyncio
 import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -9,6 +10,7 @@ import time_machine
 from zha.quirks import DeviceRegistry
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zdo.types import NodeDescriptor
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -146,6 +148,37 @@ async def test_tuya_connection_status(
             tuya_cluster.TuyaConnectionStatus(tsn=mcu_tsn, status=b"\x01"),
             expect_reply=False,
         )
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
+)
+async def test_tuya_connection_status_rsp_no_manufacturer_code(
+    zigpy_device_from_quirk, quirk
+):
+    """Test the TUYA_MCU_CONNECTION_STATUS reply is sent without a manufacturer code."""
+
+    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device.node_desc = NodeDescriptor(manufacturer_code=0x1141)
+    tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
+
+    hdr, args = tuya_cluster.deserialize(b"\t\x13%/\x00")
+
+    with mock.patch.object(
+        tuya_device.endpoints[1], "request", new=mock.AsyncMock()
+    ) as request_mock:
+        tuya_cluster.handle_message(hdr, args)
+        await asyncio.sleep(0)
+
+    assert request_mock.await_count == 1
+    rsp_hdr, rsp_data = foundation.ZCLHeader.deserialize(
+        request_mock.await_args.kwargs["data"]
+    )
+    assert rsp_hdr.command_id == TUYA_MCU_CONNECTION_STATUS
+    assert not rsp_hdr.frame_control.is_manufacturer_specific
+    assert rsp_hdr.manufacturer is None
+    # MCU sequence number 0x2F echoed back, status 0x01 (connected)
+    assert rsp_data == b"\x2f\x01\x01"
 
 
 @pytest.mark.parametrize(
