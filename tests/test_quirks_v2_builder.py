@@ -408,8 +408,8 @@ async def test_quirks_v2_subscribes_to_multicast_group(device_mock):
         .subscribes_to_multicast_group(0x549A)
         .subscribes_to_multicast_group(0x1234)
         .subscribes_to_multicast_group(0x1234)  # Duplicated
-        .subscribes_to_multicast_group(0x1234)
         .subscribes_to_multicast_group(0xABCD)
+        .subscribes_to_multicast_group(0x1234)  # Duplicated
         .add_to_registry(registry)
     )
 
