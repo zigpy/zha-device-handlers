@@ -54,7 +54,12 @@ class QuirkV2Device(Device):
         # Subscribe to groups before we hand off to zigpy, in case downstream init
         # requires group membership
         for group_id in self._quirk_definition.multicast_groups:
-            await app.subscribe_to_multicast_group(group_id)
+            try:
+                await app.subscribe_to_multicast_group(group_id)
+            except Exception:
+                self.warning(
+                    "Failed to subscribe to group 0x%04X", group_id, exc_info=True
+                )
 
         await super().async_initialize(*args, **kwargs)
 

@@ -8,6 +8,7 @@ from frozendict import frozendict
 import pytest
 from zha.application.gateway import Gateway
 from zha.quirks import DeviceRegistry
+from zha.zigbee.device import Device as ZhaDevice
 from zigpy.const import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
@@ -460,6 +461,45 @@ async def test_quirks_v2_subscribes_to_multicast_group_on_initialize(
         call(group_id=0x549A, endpoint_id=1),
         call(group_id=0x549B, endpoint_id=1),
     ]
+
+
+async def test_quirks_v2_multicast_group_subscription_failure(
+    MockAppController: MockApp,
+    device_mock: Device,
+    zha_gateway: Gateway,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test a failed group subscription is logged and does not block initialization."""
+    registry = DeviceRegistry()
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .subscribes_to_multicast_group(0x549A)
+        .subscribes_to_multicast_group(0x549B)
+        .add_to_registry(registry)
+    )
+
+    zha_device = zha_gateway.get_or_create_device(registry.resolve(device_mock))
+    assert isinstance(zha_device, QuirkV2Device)
+
+    with (
+        patch.object(
+            MockAppController,
+            "_subscribe_to_multicast_group",
+            side_effect=[RuntimeError("Failed"), None],
+        ) as subscribe,
+        patch.object(ZhaDevice, "async_initialize") as parent_initialize,
+        caplog.at_level(logging.WARNING),
+    ):
+        await zha_device.async_initialize(from_cache=True)
+
+    assert subscribe.mock_calls == [
+        call(group_id=0x549A, endpoint_id=1),
+        call(group_id=0x549B, endpoint_id=1),
+    ]
+    assert "Failed to subscribe to group 0x549A" in caplog.text
+    assert "Failed to subscribe to group 0x549B" not in caplog.text
+    assert parent_initialize.mock_calls == [call(from_cache=True)]
 
 
 async def test_quirks_v2_device_automation_triggers_on_zigpy_device(device_mock):
