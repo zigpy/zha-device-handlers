@@ -1,6 +1,7 @@
 """Xiaomi aqara double key switch device."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -13,6 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
@@ -59,6 +61,42 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
+
+
+def _button_event_entity(
+    button: str,
+    endpoint_id: int,
+    unique_id_suffix: str,
+    translation_key: str,
+    name: str,
+) -> ButtonEventMetadata:
+    """Return the button event entity of one of the buttons, or of both together.
+
+    The device counts the presses itself and reports a hold at the hold threshold,
+    without a release.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=endpoint_id,
+        unique_id_suffix=unique_id_suffix,
+        translation_key=translation_key,
+        fallback_name=name,
+    )
 
 
 class RemoteB286ACN01(XiaomiCustomDevice):
@@ -217,3 +255,15 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         (SHORT_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_SINGLE, ENDPOINT_ID: 3},
         (LONG_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_HOLD, ENDPOINT_ID: 3},
     }
+
+    # lumi.sensor_86sw2 only reports presses as on/off attribute reports, which fire
+    # none of these
+    button_event_entities = (
+        _button_event_entity(BUTTON_1, 1, "button_left", "left_button", "Left button"),
+        _button_event_entity(
+            BUTTON_2, 2, "button_right", "right_button", "Right button"
+        ),
+        _button_event_entity(
+            BOTH_BUTTONS, 3, "button_both", "both_buttons", "Both buttons"
+        ),
+    )

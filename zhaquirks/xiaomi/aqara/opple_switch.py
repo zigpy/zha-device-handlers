@@ -5,6 +5,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -23,6 +24,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTR_ID,
@@ -135,6 +137,46 @@ class OppleSwitchCluster(OppleCluster):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+def _button_event_entity(
+    button: str, endpoint_id: int, number: int | None
+) -> ButtonEventMetadata:
+    """Return the button event entity of a numbered button, or of both together.
+
+    The switch counts the presses itself in multi-click mode and only reports
+    single presses in fast mode.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(COMMAND_BUTTON_SINGLE, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(COMMAND_BUTTON_DOUBLE, button),
+                press_count=2,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=endpoint_id,
+        **(
+            {
+                "unique_id_suffix": "button_both",
+                "translation_key": "both_buttons",
+                "fallback_name": "Both buttons",
+            }
+            if number is None
+            else {
+                "unique_id_suffix": f"button_{number}",
+                "translation_key": "numbered_button",
+                "translation_placeholders": {"button_number": str(number)},
+                "fallback_name": f"Button {number}",
+            }
+        ),
+    )
 
 
 class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
@@ -296,6 +338,16 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
             ARGS: {ATTR_ID: 0x00FC, VALUE: 0},
         },
     }
+
+    # The switch counts the presses itself in multi-click mode and only reports
+    # single presses in fast mode. Its "hold" is the warning it sends before leaving
+    # the network when a button is held long, the same for every button, so it
+    # stays a device trigger.
+    button_event_entities = (
+        _button_event_entity(BUTTON_1, 41, 1),
+        _button_event_entity(BUTTON_2, 42, 2),
+        _button_event_entity(BOTH_BUTTONS, 51, None),
+    )
 
 
 class XiaomiOpple2ButtonSwitch1(XiaomiOpple2ButtonSwitchBase):
