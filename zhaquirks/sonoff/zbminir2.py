@@ -1,10 +1,11 @@
-"""Sonoff ZBMINIR2 - Zigbee Switch."""
+"""Sonoff ZBMINIR2 and MINI-ZBD - Zigbee Switches."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
@@ -49,6 +50,7 @@ class SonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "ZBMINIR2")
+    .applies_to("SONOFF", "MINI-ZBD")
     .replaces(SonoffCluster)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,

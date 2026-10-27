@@ -6,7 +6,6 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, DeviceTemperature, Identify, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -20,6 +19,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 OCCUPANCY = 0x0000

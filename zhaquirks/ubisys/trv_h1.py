@@ -2,17 +2,27 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    EntityType,
-    UnitOfTemperature,
-    UnitOfTime,
-)
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
+
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
+
+
+class Season(t.enum8):
+    """Season mode for heating demand backup presets."""
+
+    Winter = 0x00
+    Summer = 0x01
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -111,7 +121,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         season = ZCLAttributeDef(
             id=0x001C,
-            type=t.Bool,
+            type=Season,
             access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Write,
             manufacturer_code=0x10F2,
         )

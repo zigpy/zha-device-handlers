@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class FrientMetering(CustomCluster, Metering):
@@ -20,24 +21,18 @@ class FrientMetering(CustomCluster, Metering):
         hdr: foundation.ZCLHeader,
         args: list,
         *,
-        dst_addressing: t.Addressing.Group
-        | t.Addressing.IEEE
-        | t.Addressing.NWK
-        | None = None,
+        dst_addressing: t.AddrMode | None = None,
     ) -> None:
         """Filter out incorrect divisor attribute reports from device."""
         if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            # Filter out divisor attribute reports
+            # Drop the divisor: the device reports a wrong value, not a real measurement
             args.attribute_reports = [
                 attr
                 for attr in args.attribute_reports
                 if attr.attrid != Metering.AttributeDefs.divisor.id
             ]
 
-            # Don't process if no attributes remain
-            if not args.attribute_reports:
-                return
-
+        # Process even when no attributes remain, to send any requested default response
         super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 

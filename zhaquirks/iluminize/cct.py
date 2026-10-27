@@ -1,7 +1,6 @@
 """Quirk for iluminize CCT actor."""
 
 from zigpy.profiles import zgp, zll
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,6 +25,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.iluminize import ILUMINIZE
+from zhaquirks.legacy import CustomDevice
 
 
 class IluminizeCCTColorCluster(CustomCluster, Color):

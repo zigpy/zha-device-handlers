@@ -1,14 +1,18 @@
 """Heiman HS1SA-E smoke sensor."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zha.quirks import SIREN_BASIC
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.quirk_ids import SIREN_BASIC
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+)
+from zhaquirks.clusters import CustomCluster
 
 
 class SmokeSirenEnum(t.enum8):
@@ -119,6 +123,7 @@ class CustomHeimanCluster(CustomCluster):
     QuirkBuilder()
     .applies_to("HEIMAN", "HS1SA-EF-3.0")
     .applies_to("HEIMAN", "HS1SA-E-PLUS")
+    .friendly_name(manufacturer="HEIMAN", model="HS1SA-E-PLUS")  # Used by newer fw
     .replaces(CustomHeimanCluster)
     .exposes_feature(SIREN_BASIC)
     .change_entity_metadata(
