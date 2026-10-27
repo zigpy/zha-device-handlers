@@ -1501,6 +1501,7 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon,tue,wed,thu,fri,sat,sun|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon|8:00,21.5|18:30,17.5|23:00,22.0|8:00,22.5",
+        "sat,sun|0:00,21.5|8:00,17.5|18:00,22.0|23:00,22.5",
     ],
 )
 async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
