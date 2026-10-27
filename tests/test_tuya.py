@@ -382,6 +382,33 @@ async def test_tuya_receive_attribute(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize("quirk", (TuyaTestDevice,))
+async def test_tuya_read_attributes(zigpy_device_from_quirk, quirk):
+    """Test read of tuya cluster attributes."""
+
+    test_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = test_dev.endpoints[1].tuya_manufacturer
+
+    tuya_cluster._update_attribute(
+        TuyaTestManufCluster.AttributeDefs.test_attribute.id, 5
+    )
+
+    with mock.patch.object(tuya_cluster, "_read_attributes") as read_mock:
+        for kwargs in (
+            {},
+            {"allow_cache": True},
+            {"only_cache": True},
+            {"allow_cache": False, "only_cache": False},
+        ):
+            success, failure = await tuya_cluster.read_attributes(
+                ["test_attribute"], **kwargs
+            )
+            assert success == {"test_attribute": 5}
+            assert failure == {}
+
+        read_mock.assert_not_called()
+
+
+@pytest.mark.parametrize("quirk", (TuyaTestDevice,))
 async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
     """Test conversion of attributes to tuya commands."""
 
