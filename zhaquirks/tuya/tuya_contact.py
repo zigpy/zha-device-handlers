@@ -1,10 +1,9 @@
 """Tuya contact sensors."""
 
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
