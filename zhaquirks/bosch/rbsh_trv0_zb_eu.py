@@ -2,6 +2,7 @@
 
 from typing import Any, Final
 
+from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
@@ -45,6 +46,9 @@ BOOST_HEATING_ATTR_ID = 0x4043
 
 # Error state bitmap, bit n set means error E(n+1).
 ERROR_STATE_ATTR_ID = 0x5000
+
+# Set by the TRV when it requests a valve adaptation (e.g. after an update).
+AUTOMATIC_VALVE_ADAPT_ATTR_ID = 0x5010
 
 """Bosch specific user interface attribute ids."""
 
@@ -138,6 +142,12 @@ BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
     min_interval=10, max_interval=10800, reportable_change=1
 )
 
+"""Valve adapt status values in which a valve adaptation can be started."""
+VALVE_ADAPT_STARTABLE = (
+    BoschValveAdaptStatus.ReadyToCalibrate,
+    BoschValveAdaptStatus.Error,
+)
+
 
 def format_error_state(value: int) -> str:
     """Return "ok" or the active error codes, e.g. "E01 - E03"."""
@@ -209,6 +219,13 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
+        automatic_valve_adapt: Final = ZCLAttributeDef(
+            id=AUTOMATIC_VALVE_ADAPT_ATTR_ID,
+            type=t.uint8_t,
+            zcl_type=DataTypeId.enum8,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
         """Bosch thermostat manufacturer specific server commands."""
 
@@ -217,6 +234,80 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             schema={},
             manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
+
+    # Progress of the valve adaptation requested by the TRV: whether the
+    # calibration command was sent, is still being sent, and whether the TRV
+    # has run an adaptation since. A valve that keeps failing is not adapted
+    # again on every status report.
+    _valve_adapt_sent: bool = False
+    _valve_adapt_sending: bool = False
+    _valve_adapt_ran: bool = False
+
+    def _update_attribute(
+        self, attrid: int | t.uint16_t | foundation.ZCLAttributeDef, value: Any
+    ) -> None:
+        """Track the valve adaptation requested by the TRV."""
+
+        super()._update_attribute(attrid, value)
+
+        if isinstance(attrid, foundation.ZCLAttributeDef):
+            attrid = attrid.id
+
+        if attrid == AUTOMATIC_VALVE_ADAPT_ATTR_ID:
+            if not value:
+                self._reset_valve_adaptation()
+                return
+            ignored = False
+        elif attrid == VALVE_ADAPT_STATUS_ATTR_ID:
+            if value == BoschValveAdaptStatus.Success:
+                self._reset_valve_adaptation()
+                return
+            if value == BoschValveAdaptStatus.CalibrationInProgress:
+                self._valve_adapt_ran = True
+                return
+            # still ready to calibrate after the command: the TRV ignored it
+            ignored = value == BoschValveAdaptStatus.ReadyToCalibrate
+        else:
+            return
+
+        self._check_valve_adaptation(ignored)
+
+    def _reset_valve_adaptation(self) -> None:
+        """Forget the adaptation, the next request starts from scratch."""
+
+        self._valve_adapt_sent = False
+        self._valve_adapt_ran = False
+
+    def _check_valve_adaptation(self, ignored: bool) -> None:
+        """Start the requested valve adaptation if the TRV allows it.
+
+        The command is sent again only when the TRV reports ready to calibrate
+        again without having run an adaptation, i.e. it ignored the command.
+        After a run, or an error right after the command, it is not.
+        """
+
+        if (
+            self.get(self.AttributeDefs.automatic_valve_adapt.name)
+            and self.get(self.AttributeDefs.valve_adapt_status.name)
+            in VALVE_ADAPT_STARTABLE
+            and not self._valve_adapt_sending
+            and not self._valve_adapt_ran
+            and (not self._valve_adapt_sent or ignored)
+        ):
+            self._valve_adapt_sent = True
+            self._valve_adapt_sending = True
+            self.create_catching_task(self._start_valve_adaptation())
+
+    async def _start_valve_adaptation(self) -> None:
+        """Send the calibration command, allow a retry if it was not delivered."""
+
+        try:
+            await self.calibrate_valve()
+        except (TimeoutError, ZigbeeException):
+            self._valve_adapt_sent = False
+            raise
+        finally:
+            self._valve_adapt_sending = False
 
     async def write_attributes(
         self,
@@ -542,6 +633,15 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="error_status",
         fallback_name="Error status",
+    )
+    # Valve adaptation requested by the TRV, started automatically.
+    .binary_sensor(
+        BoschThermostatCluster.AttributeDefs.automatic_valve_adapt.name,
+        BoschThermostatCluster.cluster_id,
+        attribute_converter=bool,
+        attribute_initialized_from_cache=False,
+        translation_key="automatic_valve_adapt",
+        fallback_name="Automatic valve adaptation requested",
     )
     # Valve calibration.
     .command_button(
