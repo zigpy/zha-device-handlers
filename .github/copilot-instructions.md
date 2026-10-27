@@ -294,6 +294,8 @@ Note there is **no cluster_id** between the endpoint and the suffix. This differ
 3. Otherwise `command_name` (for `.command_button()`)
 4. Otherwise no suffix
 
+Entities from `.adds_entity()` use the same format, with `{suffix}` from `unique_id_suffix=` or else the class's own suffix. Device-bound ones have no endpoint: `{device.ieee}-{suffix}`.
+
 **Breaking-change implications:**
 - Renaming `attribute_name` on a custom cluster used by an existing v2 quirk changes the default suffix and **breaks existing entities**. Avoid unless necessary.
 - Moving an entity to a different `endpoint_id` also changes the unique_id and breaks existing entities.
@@ -383,8 +385,8 @@ Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_k
 **Custom Entity Classes:**
 Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
 
-- New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster. The entity is only created if `cls.is_supported()` passes; `force_create=True` skips the check.
-- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`. It must match exactly one entity of exactly `zha_cls`. `cls` must be the same kind (ZCL or device-bound) and keep the unique ID.
+- New entity: `.adds_entity(cls, endpoint_id=..., cluster_id=..., **kwargs)`. `kwargs` go to `cls.__init__`. Device-bound entities (`PlatformEntity`, not `ZclPlatformEntity`) take no endpoint or cluster. The entity is only created if `cls.is_supported()` passes; `force_create=True` skips the check. Pass `unique_id_suffix` unless `cls` sets one: without a suffix, a ZCL entity gets `{ieee}-{endpoint_id}`, which default lights, switches and covers also use.
+- Changing a default ZHA entity: `.replaces_entity(zha_cls, cls, endpoint_id=..., cluster_id=...)`, or `filter=EntityFilter(...)` instead of the endpoint and cluster. It must match exactly one entity of exactly `zha_cls`. `cls` must be the same kind (ZCL or device-bound) and keep the unique ID.
 
 Example: a switch per relay bit of a mask attribute:
 ```python
