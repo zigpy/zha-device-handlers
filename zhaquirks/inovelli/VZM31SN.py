@@ -1,6 +1,8 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import KeepAlive
 
 from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM31SNCluster
 from zhaquirks.inovelli.builder import InovelliQuirkBuilder
@@ -9,6 +11,7 @@ from zhaquirks.inovelli.builder import InovelliQuirkBuilder
     InovelliQuirkBuilder("Inovelli", "VZM31-SN")
     .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
     .replace_cluster_occurrences(InovelliVZM31SNCluster)
+    .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
     # number entities
     .inovelli_remote_dimming_up_speed()
     .inovelli_local_dimming_up_speed()

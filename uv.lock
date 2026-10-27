@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -142,14 +142,11 @@ wheels = [
 
 [[package]]
 name = "aiosqlite"
-version = "0.21.0"
+version = "0.22.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/13/7d/8bca2bf9a247c2c5dfeec1d7a5f40db6518f88d314b8bca9da29670d2671/aiosqlite-0.21.0.tar.gz", hash = "sha256:131bb8056daa3bc875608c631c678cda73922a2d4ba8aec373b19f18c17e7aa3", size = 13454, upload-time = "2025-02-03T07:30:16.235Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/8a/64761f4005f17809769d23e518d915db74e6310474e733e3593cfc854ef1/aiosqlite-0.22.1.tar.gz", hash = "sha256:043e0bd78d32888c0a9ca90fc788b38796843360c855a7262a532813133a0650", size = 14821, upload-time = "2025-12-23T19:25:43.997Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/10/6c25ed6de94c49f88a91fa5018cb4c0f3625f31d5be9f771ebe5cc7cd506/aiosqlite-0.21.0-py3-none-any.whl", hash = "sha256:2549cf4057f95f53dcba16f2b64e8e2791d7e1adedb13197dd8ed77bb226d7d0", size = 15792, upload-time = "2025-02-03T07:30:13.6Z" },
+    { url = "https://files.pythonhosted.org/packages/00/b7/e3bf5133d697a08128598c8d0abc5e16377b51465a33756de24fa7dee953/aiosqlite-0.22.1-py3-none-any.whl", hash = "sha256:21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb", size = 17405, upload-time = "2025-12-23T19:25:42.139Z" },
 ]
 
 [[package]]
@@ -245,17 +242,18 @@ wheels = [
 
 [[package]]
 name = "bellows"
-version = "1.1.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "click-log" },
+    { name = "serialx" },
     { name = "voluptuous" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/69/cf/90aa6f6a67033adcde4e84e888be6013745abe61d532b33811b2b43784f3/bellows-1.1.0.tar.gz", hash = "sha256:1104d2cdeb2ed269cb279c4eb0f90e2fb7f0a6e1b8f9804c4a1798f79a2ae995", size = 196193, upload-time = "2026-09-29T17:17:18.279Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/9f/3f8e1343ae7828aa67a424fc5fd366cb7e81f2c10a9dcaf6e96c837639ba/bellows-1.2.1.tar.gz", hash = "sha256:44d9dbb0576b964b3fe238835bfbb26198b4f2d71010f0f6908a73170f224b6d", size = 206020, upload-time = "2026-10-23T18:16:25.593Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/8a/ed13a6652c5ce29312463c2f0e2f296ab40ac9a9eac28cc0be50e2987725/bellows-1.1.0-py3-none-any.whl", hash = "sha256:77a077ea50f1f9b0bf9a75bbf06be978f4bd49272da1264f9c2a2ae5363a2e00", size = 163671, upload-time = "2026-09-29T17:17:17.134Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/88/3acf251cfdd78d46346cf8fc6a1043c9bd7f1223eb555c22ef65943d8a22/bellows-1.2.1-py3-none-any.whl", hash = "sha256:834c6c4ab09cfb68c18619b0ee580ff0845e45bcc7092d9ce6e0528207e1c41a", size = 168270, upload-time = "2026-10-23T18:16:24.298Z" },
 ]
 
 [[package]]
@@ -1117,18 +1115,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mashumaro"
-version = "3.22"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/e3/a06dcd2e6df094c5e294721926f1f76da30f50823e2ac233a9198e804891/mashumaro-3.22.tar.gz", hash = "sha256:64538cc365204402a060ebde683a86505b5a4344acf6870d79021e9fbfe57360", size = 197845, upload-time = "2026-05-26T14:39:21.859Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/1c/92fd926c2e7763535454683250dbdd8d10aa2f2c62f58d6abbcce4d8b3fc/mashumaro-3.22-py3-none-any.whl", hash = "sha256:17dc4d7294c33ef380a8b929dda0608577aa2141988c00a0c4932310108fe71d", size = 95916, upload-time = "2026-05-26T14:39:20.233Z" },
-]
-
-[[package]]
 name = "mccabe"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1854,20 +1840,20 @@ wheels = [
 
 [[package]]
 name = "serialx"
-version = "1.10.0"
+version = "1.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/18/1880d96ad54cf2e9ba381971c0c4e82e6d0f1e5024c6403de32936f41761/serialx-1.10.0.tar.gz", hash = "sha256:9b69e8a31059bfbfff74186ea9da6790d0a21bb107451a833c10789e58aa368c", size = 708504, upload-time = "2026-09-04T01:48:09.04Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/80/20ddfe87f1f62f604112def5bfc65673bd6013496201a6dfd8cc56f40366/serialx-1.15.1.tar.gz", hash = "sha256:689dfbaf55f5f87ea0b6bcdcab135577ce1e70f98d490650b02a8b86eb0b0281", size = 393972, upload-time = "2026-10-27T00:09:52.576Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/52/b3/c77018d4e9f25d871130a467e6afa3aa372f279a619b792e9ed87df45bf3/serialx-1.10.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:7ecc1dcbefbe6a98f8f03bbe54bb1020fdd060c42df2853baf84d1c88859d6de", size = 292499, upload-time = "2026-09-04T01:48:01.284Z" },
-    { url = "https://files.pythonhosted.org/packages/4c/ec/045956b3daf493476014d253a7d1109aafba47575988e9e8c9239ebcd00e/serialx-1.10.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:f03549520c156fb18a0746ab20a4d3e0e4ce03d507213e561c5064d649f35206", size = 288804, upload-time = "2026-09-04T01:48:02.654Z" },
-    { url = "https://files.pythonhosted.org/packages/96/f2/6e02e60b87da815b009ec3cd29d490ec62dddaadac5f55e50e380a99fba3/serialx-1.10.0-cp310-abi3-win32.whl", hash = "sha256:ce3f62cf43b9453656369463a436571c2100ba1adcd8a4007baaa0ea497b120f", size = 192222, upload-time = "2026-09-04T01:48:04.027Z" },
-    { url = "https://files.pythonhosted.org/packages/be/dd/8ccdb032d6afe24cae51921a1283793b75a9f1affb63ac696f1de885771d/serialx-1.10.0-cp310-abi3-win_amd64.whl", hash = "sha256:7ef6639ff9dc47d47c6459876934eb5524d7199d090ed002328846b875f4604b", size = 198860, upload-time = "2026-09-04T01:48:05.486Z" },
-    { url = "https://files.pythonhosted.org/packages/01/95/578b0a3cc9cc7878733210fdeec0badc2766f780146c7455512280940f78/serialx-1.10.0-cp310-abi3-win_arm64.whl", hash = "sha256:97204439ecfb1881e0503201fef645771676b0ed07107ae329e161e3e5dc86c4", size = 195484, upload-time = "2026-09-04T01:48:06.767Z" },
-    { url = "https://files.pythonhosted.org/packages/64/61/da9aadc5cbdcf92a7fd8472489dd47c5a2e0f4d0bdf7c8a18efafe5dee44/serialx-1.10.0-py3-none-any.whl", hash = "sha256:256712ba329d9ce0d1d08e0ddc6e9cd5d55784d15d47a70ea64f3610b37e8091", size = 74631, upload-time = "2026-09-04T01:48:07.969Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/c2/3537e472f466cd96040f139aef60ef85cbba1e8dfcf5e80e7a294f96fc00/serialx-1.15.1-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:d011884e9440c6495e2b46fa0454db15a6a8600a96e42a21f1d8cee41d3b6cc4", size = 306558, upload-time = "2026-10-27T00:09:43.514Z" },
+    { url = "https://files.pythonhosted.org/packages/91/71/f3c5a6f464e2dc23ba057f3a3d3bca2839c331b7a0605e9acd133320b534/serialx-1.15.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:f4b548c1bfcd714b1f58ce8e89a6ffd6b366a85594e51a1a30ffc1056125965c", size = 302536, upload-time = "2026-10-27T00:09:45.454Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/cd/9e5e2f13dcefc1c78017643667164b7aa36f26280af1d22307387e58c539/serialx-1.15.1-cp310-abi3-win32.whl", hash = "sha256:6b7e269649b5064216e87241654687237bffbfe90bb48e6dd1fca38877c139bc", size = 205599, upload-time = "2026-10-27T00:09:46.983Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/ef/901b27441c6d36463643fa5a511415448de517f87f9e413e7365284e0569/serialx-1.15.1-cp310-abi3-win_amd64.whl", hash = "sha256:78cbfa9e8ddfccf52227064f26ca70d8a6426b8134ec4e53d5c8469ef8690f80", size = 212927, upload-time = "2026-10-27T00:09:48.451Z" },
+    { url = "https://files.pythonhosted.org/packages/09/91/0058592165914dc0a9eab21447a054242857a1cbff0278ade56af27fff60/serialx-1.15.1-cp310-abi3-win_arm64.whl", hash = "sha256:7c6ec682dd5cbc9ebba8f917bde3f133794c7ef45d2de93e6ddce09583ddb799", size = 209560, upload-time = "2026-10-27T00:09:49.886Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/bb/e5a6e65340a1a0c97ed088aabed6e24e0bb4abcb40e2bacf0617d43f1ce6/serialx-1.15.1-py3-none-any.whl", hash = "sha256:3361542c5b85a56bf9f3ca45d0d29e92a7c63aaf7c561e2b195c3cd0dfc909b1", size = 87883, upload-time = "2026-10-27T00:09:51.255Z" },
 ]
 
 [[package]]
@@ -2122,7 +2108,7 @@ wheels = [
 
 [[package]]
 name = "zha"
-version = "2.3.0"
+version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -2135,9 +2121,9 @@ dependencies = [
     { name = "zigpy-ziggurat" },
     { name = "zigpy-znp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/b0/6f2ae49ce08fa1970b4d26bd45858a1bab10240756d359a43ef8c5ca8618/zha-2.3.0.tar.gz", hash = "sha256:b42fdb05dfda54c936a2d6f28f9585dbcb495d333f7cf6580d9b98b0973ef371", size = 278290, upload-time = "2026-09-29T23:43:46.154Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/43/ce0a3eac6b2a108aa5cb9ab612709999cbce51ca761f007c54b3253b3200/zha-2.4.0.tar.gz", hash = "sha256:e2bd97eed6890b568bca9970fa3d2bee32bf3112d8aaed19dd48ac2bc5ca919c", size = 300112, upload-time = "2026-10-27T21:49:50.227Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/ee/92ada97baeffa30279228878cb9ca3df7b14ab98c9b017e4bc928f7a6df9/zha-2.3.0-py3-none-any.whl", hash = "sha256:1f6d79da682cf80beb81a854b86b15c1bff31158a837ff3bd0650c438932964c", size = 207009, upload-time = "2026-09-29T23:43:45.02Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/bf/eb465e772b1ecb8f3290ba5cf4e9a7ca3265e2ac0a14a6bdd07665e9f1e0/zha-2.4.0-py3-none-any.whl", hash = "sha256:c355105d47adc332aef04cd3b04fd46ad2febe74e70d96626a7b88cd79d6154f", size = 213686, upload-time = "2026-10-27T21:49:49.063Z" },
 ]
 
 [[package]]
@@ -2172,8 +2158,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "zha", specifier = ">=2.3.0" },
-    { name = "zigpy", specifier = ">=2.3.0" },
+    { name = "zha", specifier = ">=2.4.0" },
+    { name = "zigpy", specifier = ">=2.4.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -2200,7 +2186,7 @@ dev = [
 
 [[package]]
 name = "zigpy"
-version = "2.3.0"
+version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2214,22 +2200,22 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "voluptuous" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/f5/662817fe897f2ed2dee98091605dd37d7dc89ef204760213cec061d840e7/zigpy-2.3.0.tar.gz", hash = "sha256:228b42e78e834260118f090b60cd2c359cc8c9391e62cbf443251926b6013912", size = 347238, upload-time = "2026-09-29T22:56:25.381Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/9a/da161003948d403ef0ed31494c7efe79af9221e927557147dce10f970345/zigpy-2.4.0.tar.gz", hash = "sha256:f6d2fc5d6e33618b440e5beadcd5e16efaf119af4ab1a67b27f9430b2c4fe7f4", size = 387645, upload-time = "2026-10-21T19:54:32.08Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/81/622b7c1ab74d2265d251bb65972ca31db10ce48a55c64054da8cbe4f80b7/zigpy-2.3.0-py3-none-any.whl", hash = "sha256:d45d8e006b65511d9764a7b0f5cca0615ecdd18a02346898577b6057b79d8fbb", size = 263154, upload-time = "2026-09-29T22:56:23.632Z" },
+    { url = "https://files.pythonhosted.org/packages/df/8b/02a08ffe0475081a2d4e18d94a309e5cd28b18dcb3c7b6e8355855b7eb77/zigpy-2.4.0-py3-none-any.whl", hash = "sha256:e444b702e15f82341e49fe6471db1ae8889e068e5cf1555b1b5b08eccdb2e9dc", size = 292522, upload-time = "2026-10-21T19:54:30.611Z" },
 ]
 
 [[package]]
 name = "zigpy-deconz"
-version = "1.0.0"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "voluptuous" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/ed/5d34367a2dfa6131319c3edea842772a2b71b8b9c853430e7c3d7287d449/zigpy_deconz-1.0.0.tar.gz", hash = "sha256:28cb213eeecaf7929f2304de3c462ab39178fe9b6b1be2a525b16f86dff4015b", size = 48763, upload-time = "2026-07-28T19:56:44.693Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/6a/c7da552ff5341e45465bc91d25d49606704df928dadeeb41a81c014c416c/zigpy_deconz-1.1.0.tar.gz", hash = "sha256:831afe3e086080b45bda1339d2940d8503dfd67c4f052030a13c8b380bde3304", size = 50265, upload-time = "2026-10-23T14:58:56.617Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/08/e0050af0252ce13bf5f403b66d1d268992bf4af40cbfb9758b276cf22256/zigpy_deconz-1.0.0-py3-none-any.whl", hash = "sha256:824ed1f7b7c4f6309296296ac4432a6874d4932e859436f285d3c52f90fc5af5", size = 33562, upload-time = "2026-07-28T19:56:43.493Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/17/7b661800b23ebc59dedfecd84caabe512b9df4fc773fb1ad38b4503c9676/zigpy_deconz-1.1.0-py3-none-any.whl", hash = "sha256:0310038b816e839337dfadbe7c71e02a4418629981d71e3e5086c6140d0385c1", size = 34124, upload-time = "2026-10-23T14:58:55.581Z" },
 ]
 
 [[package]]
@@ -2261,17 +2247,16 @@ wheels = [
 
 [[package]]
 name = "zigpy-ziggurat"
-version = "1.1.1"
+version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiospinel" },
-    { name = "mashumaro" },
     { name = "zigpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/9b/d1f98bfd8a517db73021f36d8041583c0993e80878d6fd978664db8eac86/zigpy_ziggurat-1.1.1.tar.gz", hash = "sha256:d8bc0ef5a099a4207ccc3b0d41acc2b9f81e7b938cbee22d8fcd7d68a1b8e609", size = 54178, upload-time = "2026-07-28T23:11:49.48Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/60/631bd345c2d910f38de2e2e6bcaefb0b056884f037656ccac74593f88f2a/zigpy_ziggurat-1.2.0.tar.gz", hash = "sha256:ddb6b3dbd6dbef41a3bd60005c51ecf32d0b0eb267e28d9ba81a86d642341c55", size = 39849, upload-time = "2026-10-23T18:04:02.239Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/88/2fc708548c11ea8c2f07df910874b2b7a6a2ffeb1abcd6ccab9eabddee5c/zigpy_ziggurat-1.1.1-py3-none-any.whl", hash = "sha256:d839fcbc55a876ed3dfc0d17032efed1a5743fad30b8feb5fe0d67a646dd078e", size = 33261, upload-time = "2026-07-28T23:11:48.638Z" },
+    { url = "https://files.pythonhosted.org/packages/57/d3/e6ee8428d3be9bc16868e2a5d0adc1db856a956685e2baf2c76ac632dd7f/zigpy_ziggurat-1.2.0-py3-none-any.whl", hash = "sha256:4e1c2a540389d601a568ed60a1d951580b642881e68d674958ba24656d199778", size = 24664, upload-time = "2026-10-23T18:04:01.246Z" },
 ]
 
 [[package]]

@@ -92,7 +92,6 @@ class LocalDataCluster(CustomCluster):
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,12 +132,9 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(
-                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
-                )
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
