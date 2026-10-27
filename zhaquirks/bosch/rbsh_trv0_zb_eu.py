@@ -20,6 +20,7 @@ from zhaquirks.builder import (
     NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
+    UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
 
@@ -629,6 +630,29 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
+    )
+    # Local temperature offset: replaces the default ZHA entity, which is not
+    # created as long as the attribute was never read.
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        function=lambda entity: (
+            entity.__class__.__name__ == "BoschThermostatLocalTempCalibration"
+        ),
+    )
+    .number(
+        Thermostat.AttributeDefs.local_temperature_calibration.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-5,
+        max_value=5,
+        step=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        mode="box",
+        multiplier=0.1,
+        attribute_initialized_from_cache=False,
+        unique_id_suffix=f"{Thermostat.cluster_id}-local_temperature_calibration",
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     # Setpoint change source: replaces the default ZHA sensor, which does not
     # configure reporting.

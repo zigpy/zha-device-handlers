@@ -857,3 +857,27 @@ def test_bosch_radiator_thermostat_II_reporting(zigpy_device_from_v2_quirk):
     assert not _bosch_trv_prevented(
         device, Thermostat.cluster_id, "SetpointChangeSourceTimestamp"
     )
+
+
+def test_bosch_radiator_thermostat_II_temperature_offset(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II temperature offset is always created."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    offset = _bosch_trv_entity(
+        device, Thermostat.AttributeDefs.local_temperature_calibration.name
+    )
+
+    # same range, unique id and scaling as the default ZHA entity it replaces
+    assert (offset.min, offset.max, offset.step, offset.multiplier) == (
+        -5,
+        5,
+        0.1,
+        0.1,
+    )
+    assert offset.unique_id_suffix == (
+        f"{Thermostat.cluster_id}-local_temperature_calibration"
+    )
+    assert offset.attribute_initialized_from_cache is False
+    assert _bosch_trv_prevented(
+        device, Thermostat.cluster_id, "BoschThermostatLocalTempCalibration"
+    )
