@@ -47,8 +47,10 @@ from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
+    AttributeReportingConfigMetadata,
     BinarySensorMetadata,
     ChangedEntityMetadata,
+    ClusterConfigMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
     EntityMetadata,
@@ -326,6 +328,15 @@ class SetDeviceAutomationTriggers:
         return device
 
 
+@dataclass
+class ClusterConfigAccumulator:
+    """Mutable per-cluster config gathered while building, frozen into `ClusterConfigMetadata`."""
+
+    bind: bool = False
+    attributes: list[AttributeReportingConfigMetadata] = field(default_factory=list)
+    attribute_writes: dict[ZCLAttributeDef, Any] = field(default_factory=dict)
+
+
 class QuirkBuilder:
     """Builder compiling a declarative quirk into a registered `Device` subclass."""
 
@@ -361,6 +372,12 @@ class QuirkBuilder:
         self.entity_metadata: list[EntityMetadata] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
+        ] = {}
+        self.multicast_groups: list[int] = []
+        # Keyed by (endpoint_id, cluster_id, cluster_type) so bind, reporting, and
+        # attribute writes for the same cluster coalesce into one config record.
+        self.cluster_configs: dict[
+            tuple[int, int, ClusterType], ClusterConfigAccumulator
         ] = {}
 
         current_frame: FrameType = inspect.currentframe()
@@ -950,6 +967,65 @@ class QuirkBuilder:
         self.device_automation_triggers_metadata.update(device_automation_triggers)
         return self
 
+    def subscribes_to_multicast_group(self, group_id: int) -> Self:
+        """Register a group ID the coordinator must subscribe to."""
+        self.multicast_groups.append(group_id)
+        return self
+
+    def _cluster_config(
+        self, endpoint_id: int, cluster_id: int, cluster_type: ClusterType
+    ) -> ClusterConfigAccumulator:
+        """Return the mutable config accumulator for one cluster, creating it."""
+        return self.cluster_configs.setdefault(
+            (endpoint_id, cluster_id, cluster_type), ClusterConfigAccumulator()
+        )
+
+    def binds_cluster(
+        self,
+        cluster_id: int,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+    ) -> Self:
+        """Bind a cluster to the coordinator without exposing an entity."""
+        self._cluster_config(endpoint_id, cluster_id, cluster_type).bind = True
+        return self
+
+    def configures_reporting(
+        self,
+        cluster_id: int,
+        attribute_name: str,
+        reporting_config: ReportingConfig,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+        bind: bool = True,
+        read_on_startup: bool = False,
+    ) -> Self:
+        """Set up attribute reporting for a cluster without exposing an entity."""
+        config = self._cluster_config(endpoint_id, cluster_id, cluster_type)
+        config.bind = config.bind or bind
+        config.attributes.append(
+            AttributeReportingConfigMetadata(
+                attribute_name=attribute_name,
+                reporting_config=reporting_config,
+                read_on_startup=read_on_startup,
+            )
+        )
+        return self
+
+    def writes_attributes(
+        self,
+        *,
+        endpoint_id: int,
+        cluster_id: int,
+        cluster_type: ClusterType = ClusterType.Server,
+        attributes: dict[ZCLAttributeDef, Any],
+    ) -> Self:
+        """Write attributes to a cluster once, when the device is configured."""
+        self._cluster_config(
+            endpoint_id, cluster_id, cluster_type
+        ).attribute_writes.update(attributes)
+        return self
+
     def friendly_name(self, *, model: str, manufacturer: str) -> Self:
         """Rename the device."""
         self.friendly_name_metadata = FriendlyNameMetadata(
@@ -1088,6 +1164,22 @@ class QuirkBuilder:
             entity_metadata=tuple(self.entity_metadata),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
+            multicast_groups=tuple(self.multicast_groups),
+            cluster_configs=tuple(
+                ClusterConfigMetadata(
+                    endpoint_id=endpoint_id,
+                    cluster_id=cluster_id,
+                    cluster_type=cluster_type,
+                    bind=config.bind,
+                    attributes=tuple(config.attributes),
+                    attribute_writes=frozendict(config.attribute_writes),
+                )
+                for (
+                    endpoint_id,
+                    cluster_id,
+                    cluster_type,
+                ), config in self.cluster_configs.items()
+            ),
         )
 
         # Shared QuirkV2Device (or custom subclass) bound to this definition; no subclass minted.

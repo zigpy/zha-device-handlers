@@ -121,6 +121,12 @@ class OppleSwitchCluster(OppleCluster):
             id=0x0203, type=t.Bool, is_manufacturer_specific=True
         )
 
+    async def bind(self):
+        """Bind cluster and enable multi-press reporting mode."""
+        result = await super().bind()
+        await self.write_attributes({OppleCluster.AttributeDefs.mode: 0x01})
+        return result
+
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == 0x00FC:
