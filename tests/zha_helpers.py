@@ -218,6 +218,10 @@ async def join_device_from_diagnostics(
                     if attr_id in cluster.attributes:
                         cluster.update_attribute(attr_id, value)
 
+                for attr in cluster_data["attributes"]:
+                    if "unsupported" in attr and attr["unsupported"]:
+                        cluster.add_unsupported_attribute(int(attr["id"], 16))
+
                 _patch_cluster(cluster, values)
 
     gateway.application_controller.devices[device.ieee] = device

@@ -6,10 +6,11 @@ import pytest
 from zha.application import Platform
 from zha.application.platforms.button import IdentifyButton
 from zha.application.platforms.light import HueLight, Light
+from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.quirks import DeviceRegistry
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
@@ -44,6 +45,10 @@ class CachedAttributeSensor(Sensor):
 
 class EffectLight(HueLight):
     """Hue light subclass to replace the default one."""
+
+
+class QuirkOnLevel(OnLevelConfigurationEntity):
+    """On level subclass to replace the default one."""
 
 
 class QuirkRSSISensor(RSSISensor):
@@ -268,6 +273,35 @@ async def test_replaces_device_entity() -> None:
         assert [(type(e), e.unique_id) for e in rssi_sensors] == [
             (QuirkRSSISensor, "00:0d:6f:00:05:65:83:f2-1-0-rssi")
         ]
+
+
+async def test_replaces_unsupported_entity() -> None:
+    """Test that replacing an unsupported default entity creates no entity."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("Philips", "LCT014")
+        .replaces_entity(
+            OnLevelConfigurationEntity,
+            QuirkOnLevel,
+            endpoint_id=11,
+            cluster_id=LevelControl.cluster_id,
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "philips-lct014-0x01001a02.json", registry
+        )
+        cluster = device.device.endpoints[11].level
+
+        assert cluster.is_attribute_unsupported(
+            LevelControl.AttributeDefs.on_level.name
+        )
+        assert not any(
+            isinstance(e, OnLevelConfigurationEntity)
+            for e in device.platform_entities.values()
+        )
 
 
 async def test_replaces_entity_no_match(caplog) -> None:
