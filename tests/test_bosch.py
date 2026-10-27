@@ -2,15 +2,18 @@
 
 from unittest import mock
 
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
+    VALVE_POSITION_ATTR_ID,
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
+from zhaquirks.builder import EntityPlatform
 
 zhaquirks.setup()
 
@@ -379,6 +382,45 @@ async def test_bosch_radiator_thermostat_II_write_attributes(
             ]
             == BoschOperatingMode.Manual
         )
+
+
+async def test_bosch_radiator_thermostat_II_valve_position(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the Radiator Thermostat II exposes its valve position as a number."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    entry = DEVICE_REGISTRY.match_entry(device)
+    numbers = {
+        metadata.attribute_name: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if metadata.entity_platform == EntityPlatform.NUMBER
+    }
+    valve_position = numbers[
+        BoschTrvThermostatCluster.AttributeDefs.pi_heating_demand.name
+    ]
+    assert valve_position.cluster_id == BoschTrvThermostatCluster.cluster_id
+    assert (valve_position.min, valve_position.max, valve_position.step) == (0, 100, 1)
+    assert valve_position.translation_key == "valve_position"
+
+    bosch_thermostat_cluster = device.endpoints[1].thermostat
+    patch_bosch_trv_write = mock.patch.object(
+        bosch_thermostat_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=[[WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+        ),
+    )
+    with patch_bosch_trv_write as write:
+        await bosch_thermostat_cluster.write_attributes(
+            {valve_position.attribute_name: 40}
+        )
+
+    (records,), kwargs = write.call_args
+    assert [(record.attrid, record.value.value) for record in records] == [
+        (VALVE_POSITION_ATTR_ID, 40)
+    ]
+    assert kwargs["manufacturer"] is not None
 
 
 async def test_bosch_radiator_thermostat_II_read_attributes_paused(
