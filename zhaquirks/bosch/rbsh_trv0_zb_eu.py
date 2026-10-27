@@ -620,15 +620,17 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="window_open",
         fallback_name="Window open",
     )
-    # Remote temperature.
+    # Remote temperature: must be resent at least every 30 minutes, the TRV
+    # falls back to its internal sensor otherwise.
     .number(
         BoschThermostatCluster.AttributeDefs.remote_temperature.name,
         BoschThermostatCluster.cluster_id,
-        min_value=5,
-        max_value=30,
+        min_value=0,
+        max_value=35,
         step=0.1,
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="remote_temperature",
         fallback_name="Remote temperature",
     )
     # Local temperature offset: replaces the default ZHA entity, which is not
