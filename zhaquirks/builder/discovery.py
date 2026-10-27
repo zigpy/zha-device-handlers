@@ -17,7 +17,7 @@ from zha.application import Platform
 from zha.application.platforms import (
     AttrConfig,
     ClusterConfig,
-    PlatformEntity,
+    ZclPlatformEntity,
     binary_sensor,
     button,
     number,
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
-    tuple[Platform, type], type[PlatformEntity]
+    tuple[Platform, type], type[ZclPlatformEntity]
 ] = {
     (Platform.BUTTON, WriteAttributeButtonMetadata): button.WriteAttributeButton,
     (Platform.BUTTON, ZCLCommandButtonMetadata): button.Button,
@@ -127,7 +127,7 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     return {}
 
 
-def discover_quirks_v2_entities(device: ZigbeeDevice) -> Iterator[PlatformEntity]:
+def discover_quirks_v2_entities(device: ZigbeeDevice) -> Iterator[ZclPlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
     if quirk_metadata is None or not quirk_metadata.entity_metadata:
