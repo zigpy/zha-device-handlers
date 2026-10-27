@@ -53,23 +53,6 @@ def buttons(ptm216z):
     return {entity.unique_id.rsplit("-", 1)[-1]: entity for entity in entities}
 
 
-def emit(device, command_id: GPDCommandID, contact_status: int | None) -> None:
-    """Emit a GPD 8-bit vector command, unparsed if there is no contact status."""
-    device.emit(
-        GreenPowerCommandReceived.event_type,
-        GreenPowerCommandReceived(
-            device_ieee=str(device.ieee),
-            endpoint_id=None,
-            command_id=command_id,
-            command=(
-                None
-                if contact_status is None
-                else GPContactStatusPayload(contact_status=contact_status)
-            ),
-        ),
-    )
-
-
 @pytest.mark.parametrize("src_id", [0x01500000, 0x01511223, 0x0155F443, 0x015FFFFF])
 def test_ptm216z_matches(MockAppController, src_id):
     """Test that the quirk matches a PTM 216Z anywhere in its SrcID block."""
@@ -138,7 +121,15 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
     for entity in buttons.values():
         entity.on_event(EntityEventTriggeredEvent.event, events.append)
 
-    emit(ptm216z, GPDCommandID.Press8BitVector, contact_status)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Press8BitVector,
+            command=GPContactStatusPayload(contact_status=contact_status),
+        ),
+    )
     assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == expected
     assert all(
         event.triggered.event_type == ButtonEventType.PRESS_START for event in events
@@ -147,7 +138,15 @@ def test_ptm216z_press_and_release(ptm216z, buttons, contact_status, expected):
 
     events.clear()
 
-    emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Release8BitVector,
+            command=GPContactStatusPayload(contact_status=0),
+        ),
+    )
     assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == expected
     assert all(
         event.triggered.event_type == ButtonEventType.PRESS_END for event in events
@@ -161,11 +160,35 @@ def test_ptm216z_ignored_commands(ptm216z, buttons):
         entity.on_event(EntityEventTriggeredEvent.event, events.append)
 
     # A release nothing was pressed for
-    emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Release8BitVector,
+            command=GPContactStatusPayload(contact_status=0),
+        ),
+    )
     # A press zigpy could not parse
-    emit(ptm216z, GPDCommandID.Press8BitVector, None)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Press8BitVector,
+            command=None,
+        ),
+    )
     # A command other than the 8-bit vector press and release
-    emit(ptm216z, GPDCommandID.Toggle, CONTACT_A0)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Toggle,
+            command=GPContactStatusPayload(contact_status=CONTACT_A0),
+        ),
+    )
 
     assert events == []
 
@@ -176,10 +199,26 @@ def test_ptm216z_partial_release(ptm216z, buttons):
     for entity in buttons.values():
         entity.on_event(EntityEventTriggeredEvent.event, events.append)
 
-    emit(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0 | CONTACT_A1)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Press8BitVector,
+            command=GPContactStatusPayload(contact_status=CONTACT_A0 | CONTACT_A1),
+        ),
+    )
     events.clear()
 
-    emit(ptm216z, GPDCommandID.Release8BitVector, CONTACT_A1)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Release8BitVector,
+            command=GPContactStatusPayload(contact_status=CONTACT_A1),
+        ),
+    )
     assert [
         (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
         for event in events
@@ -187,7 +226,15 @@ def test_ptm216z_partial_release(ptm216z, buttons):
 
     events.clear()
 
-    emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+    ptm216z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm216z.ieee),
+            endpoint_id=None,
+            command_id=GPDCommandID.Release8BitVector,
+            command=GPContactStatusPayload(contact_status=0),
+        ),
+    )
     assert [
         (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
         for event in events
@@ -201,8 +248,24 @@ def test_ptm216z_captured_sequence(ptm216z, buttons):
         entity.on_event(EntityEventTriggeredEvent.event, events.append)
 
     for contact_status in CAPTURED_PRESSES:
-        emit(ptm216z, GPDCommandID.Press8BitVector, contact_status)
-        emit(ptm216z, GPDCommandID.Release8BitVector, 0)
+        ptm216z.emit(
+            GreenPowerCommandReceived.event_type,
+            GreenPowerCommandReceived(
+                device_ieee=str(ptm216z.ieee),
+                endpoint_id=None,
+                command_id=GPDCommandID.Press8BitVector,
+                command=GPContactStatusPayload(contact_status=contact_status),
+            ),
+        )
+        ptm216z.emit(
+            GreenPowerCommandReceived.event_type,
+            GreenPowerCommandReceived(
+                device_ieee=str(ptm216z.ieee),
+                endpoint_id=None,
+                command_id=GPDCommandID.Release8BitVector,
+                command=GPContactStatusPayload(contact_status=0),
+            ),
+        )
 
     presses = [
         e for e in events if e.triggered.event_type == ButtonEventType.PRESS_START
