@@ -4,12 +4,13 @@ from typing import Any, Final
 
 from zha.quirks import SE_POLL_SUMMATION
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -161,6 +162,41 @@ class UbisysS2InputConfigCluster(UbisysInputConfigCluster):
                 COMMAND: OnOff.ServerCommandDefs.off.name,
             },
         }
+    )
+    # Factory default input configuration (ubisys technical reference, InputActions):
+    # each input is a push-button sending toggle when it goes down. The quirk's
+    # "Toggle switch" and "On/off switch" input modes are for latching switches
+    # instead (and also send toggle/off on release), so their commands are not
+    # modeled as button events.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_START,
+                trigger=(COMMAND_CLICK, BUTTON_1),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=3,
+        unique_id_suffix="button_1",
+        translation_key="numbered_button",
+        fallback_name="Button 1",
+        translation_placeholders={"button_number": "1"},
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_START,
+                trigger=(COMMAND_CLICK, BUTTON_2),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=4,
+        unique_id_suffix="button_2",
+        translation_key="numbered_button",
+        fallback_name="Button 2",
+        translation_placeholders={"button_number": "2"},
     )
     .add_to_registry()
 )
