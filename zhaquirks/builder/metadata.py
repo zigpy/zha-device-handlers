@@ -248,8 +248,15 @@ class AddedEntityMetadata:
     endpoint_id: int | None = attrs.field()
     cluster_id: int | None = attrs.field()
     cluster_type: ClusterType = attrs.field()
-    # A replacement keeps the unique ID of the entity it replaces
-    replacement: bool = attrs.field(default=False)
+    kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ReplacedEntityMetadata:
+    """Metadata to replace the default entity matching a filter."""
+
+    filter: EntityFilter = attrs.field()
+    entity_cls: type[ZclPlatformEntity] = attrs.field()
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
@@ -302,6 +309,7 @@ class QuirkDefinition:
     )
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
     added_entities: tuple[AddedEntityMetadata, ...] = attrs.field(factory=tuple)
+    replaced_entities: tuple[ReplacedEntityMetadata, ...] = attrs.field(factory=tuple)
     device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )

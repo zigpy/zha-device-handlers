@@ -61,6 +61,7 @@ from zhaquirks.builder.metadata import (
     FriendlyNameMetadata,
     NumberMetadata,
     QuirkDefinition,
+    ReplacedEntityMetadata,
     ReportingConfig,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
@@ -364,6 +365,7 @@ class QuirkBuilder:
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
         self.added_entities: list[AddedEntityMetadata] = []
+        self.replaced_entities: list[ReplacedEntityMetadata] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -1019,25 +1021,6 @@ class QuirkBuilder:
         A `ZclPlatformEntity` is bound to the given endpoint and cluster, any other
         `PlatformEntity` only to the device.
         """
-        return self._add_entity(
-            entity_cls,
-            endpoint_id=endpoint_id,
-            cluster_id=cluster_id,
-            cluster_type=cluster_type,
-            replacement=False,
-            **kwargs,
-        )
-
-    def _add_entity(
-        self,
-        entity_cls: type[PlatformEntity],
-        *,
-        endpoint_id: int | None,
-        cluster_id: int | None,
-        cluster_type: ClusterType,
-        replacement: bool,
-        **kwargs: Any,
-    ) -> Self:
         if issubclass(entity_cls, ZclPlatformEntity):
             if endpoint_id is None or cluster_id is None:
                 raise ValueError(
@@ -1054,7 +1037,6 @@ class QuirkBuilder:
                 endpoint_id=endpoint_id,
                 cluster_id=cluster_id,
                 cluster_type=cluster_type,
-                replacement=replacement,
                 kwargs=kwargs,
             )
         )
@@ -1062,39 +1044,45 @@ class QuirkBuilder:
 
     def replaces_entity(
         self,
-        base_cls: type[PlatformEntity],
-        new_cls: type[PlatformEntity],
+        base_cls: type[ZclPlatformEntity],
+        new_cls: type[ZclPlatformEntity],
         *,
         endpoint_id: int | None = None,
         cluster_id: int | None = None,
-        cluster_type: ClusterType = ClusterType.Server,
+        cluster_type: ClusterType | None = None,
         filter: EntityFilter | None = None,
         **kwargs: Any,
     ) -> Self:
-        """Replace entities of exactly `base_cls` with one of `new_cls`.
+        """Replace the one default entity of exactly `base_cls` with one of `new_cls`.
 
-        The entities are matched on the given endpoint and cluster, and `filter`.
-        `new_cls` is created as with `adds_entity`.
+        The entity is matched by `filter`, or by the given endpoint and cluster.
+        `new_cls` is created as ZHA's discovery creates `base_cls`, with `kwargs`, and
+        must keep its unique ID.
         """
-        entity_filter = attrs.evolve(filter or EntityFilter(), entity_cls=base_cls)
+        if not issubclass(base_cls, ZclPlatformEntity) or not issubclass(
+            new_cls, ZclPlatformEntity
+        ):
+            raise TypeError("Only ZCL entities can be replaced")
 
-        if cluster_id is not None:
-            entity_filter = attrs.evolve(
-                entity_filter,
+        if filter is None:
+            filter = EntityFilter(
                 endpoint_id=endpoint_id,
                 cluster_id=cluster_id,
                 cluster_type=cluster_type,
             )
+        elif (endpoint_id, cluster_id, cluster_type) != (None, None, None):
+            raise ValueError(
+                "Pass either a `filter` or an `endpoint_id`/`cluster_id`/`cluster_type`"
+            )
 
-        self.removes_entity(entity_filter)
-        return self._add_entity(
-            new_cls,
-            endpoint_id=endpoint_id,
-            cluster_id=cluster_id,
-            cluster_type=cluster_type,
-            replacement=True,
-            **kwargs,
+        self.replaced_entities.append(
+            ReplacedEntityMetadata(
+                filter=attrs.evolve(filter, entity_cls=base_cls),
+                entity_cls=new_cls,
+                kwargs=kwargs,
+            )
         )
+        return self
 
     def change_entity_metadata(
         self,
@@ -1190,6 +1178,7 @@ class QuirkBuilder:
             changed_entity_metadata=tuple(self.changed_entity_metadata),
             entity_metadata=tuple(self.entity_metadata),
             added_entities=tuple(self.added_entities),
+            replaced_entities=tuple(self.replaced_entities),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
         )

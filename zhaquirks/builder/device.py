@@ -48,7 +48,7 @@ class QuirkV2Device(Device):
 
     def discover_entities(self) -> Iterator[PlatformEntity]:
         """Yield the default entities plus the quirk's exposed and added entities."""
-        yield from super().discover_entities()
+        yield from self._replace_entities(list(super().discover_entities()))
         yield from discover_quirks_v2_entities(self)
 
         # An exception would end this generator, so one failing entity is skipped
@@ -61,6 +61,51 @@ class QuirkV2Device(Device):
 
             yield entity
 
+    def _replace_entities(self, entities: list[PlatformEntity]) -> list[PlatformEntity]:
+        """Replace the default entities matched by the quirk's replacements."""
+        for replaced in self._quirk_definition.replaced_entities:
+            indices = [
+                index
+                for index, entity in enumerate(entities)
+                if replaced.filter.matches(entity)
+            ]
+
+            if len(indices) != 1:
+                self.error(
+                    "Replacement %r must match one entity, matched %d",
+                    replaced,
+                    len(indices),
+                )
+                continue
+
+            [index] = indices
+            entity = entities[index]
+
+            try:
+                new_entity = replaced.entity_cls(
+                    endpoint=entity.endpoint,
+                    device=self,
+                    cluster=entity.cluster,
+                    discovered=True,
+                    **replaced.kwargs,
+                )
+            except Exception:  # noqa: BLE001
+                self.error("Failed to create replacement %r", replaced, exc_info=True)
+                continue
+
+            if new_entity.unique_id != entity.unique_id:
+                self.error(
+                    "Replacement %r changes the unique ID from %s to %s",
+                    replaced,
+                    entity.unique_id,
+                    new_entity.unique_id,
+                )
+                continue
+
+            entities[index] = new_entity
+
+        return entities
+
     def _create_added_entity(self, added: AddedEntityMetadata) -> PlatformEntity:
         if not issubclass(added.entity_cls, ZclPlatformEntity):
             return added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
@@ -72,17 +117,12 @@ class QuirkV2Device(Device):
             else endpoint.zigpy_endpoint.out_clusters
         )
 
-        kwargs = dict(added.kwargs)
-
-        # A replacement keeps the unique ID of the entity it replaces
-        if not added.replacement:
-            kwargs["unique_id"] = quirk_unique_id_base(self, endpoint)
-
         return added.entity_cls(
             endpoint=endpoint,
             device=self,
             cluster=clusters[added.cluster_id],
-            **kwargs,
+            unique_id=quirk_unique_id_base(self, endpoint),
+            **added.kwargs,
         )
 
     def _quirk_exposes_features(self) -> set[str]:

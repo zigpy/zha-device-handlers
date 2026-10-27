@@ -5,8 +5,8 @@ from typing import Any
 import pytest
 from zha.application import Platform
 from zha.application.platforms.button import IdentifyButton
-from zha.application.platforms.light import HueLight
-from zha.application.platforms.sensor import BaseSensor, Sensor
+from zha.application.platforms.light import HueLight, Light
+from zha.application.platforms.sensor import BaseSensor, Sensor, Temperature
 from zha.quirks import DeviceRegistry
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
@@ -34,6 +34,12 @@ class DeviceValueSensor(BaseSensor):
 
 class EffectLight(HueLight):
     """Hue light subclass to replace the default one."""
+
+
+class RenamedTemperature(Temperature):
+    """Temperature sensor subclass with another unique ID suffix."""
+
+    _unique_id_suffix = "renamed"
 
 
 async def test_adds_device_entity() -> None:
@@ -146,6 +152,74 @@ async def test_replaces_entity() -> None:
         ]
 
 
+async def test_replaces_entity_with_same_class() -> None:
+    """Test replacing a default entity with one of the same class, keeping its ZCL unique ID."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(
+            Temperature,
+            Temperature,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            fallback_name="Replaced temperature",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id="00:0d:6f:00:05:65:83:f2-1-1026"
+        )
+
+        assert type(entity) is Temperature
+        assert entity.fallback_name == "Replaced temperature"
+
+
+async def test_replaces_entity_no_match(caplog) -> None:
+    """Test that a replacement matching no entity keeps the default one."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("Philips", "LCT014")
+        .replaces_entity(Light, EffectLight, endpoint_id=11)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "philips-lct014-0x01001a02.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.LIGHT, unique_id=f"{device.ieee}-11"
+        )
+
+        assert type(entity) is HueLight
+        assert "must match one entity, matched 0" in caplog.text
+
+
+async def test_replaces_entity_unique_id_change(caplog) -> None:
+    """Test that a replacement changing the unique ID keeps the default entity."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(Temperature, RenamedTemperature)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id="00:0d:6f:00:05:65:83:f2-1-1026"
+        )
+
+        assert type(entity) is Temperature
+        assert "changes the unique ID" in caplog.text
+
+
 async def test_removes_entity() -> None:
     """Test removing entities by class and by unique ID suffix."""
     registry = DeviceRegistry()
@@ -184,15 +258,20 @@ def test_adds_entity_binding() -> None:
         builder.adds_entity(DeviceValueSensor, endpoint_id=1, value=5)
 
 
-def test_replaces_entity_keeps_filter() -> None:
-    """Test that a device-bound replacement keeps the fields of its filter."""
-    builder = QuirkBuilder("CentraLite", "3405-L").replaces_entity(
-        Sensor, DeviceValueSensor, filter=EntityFilter(endpoint_id=1), value=5
-    )
+def test_replaces_entity_arguments() -> None:
+    """Test that only ZCL entities are replaced, matched by one kind of filter."""
+    builder = QuirkBuilder("CentraLite", "3405-L")
 
-    assert builder.disabled_default_entities == [
-        EntityFilter(entity_cls=Sensor, endpoint_id=1)
-    ]
+    with pytest.raises(TypeError):
+        builder.replaces_entity(Sensor, DeviceValueSensor, value=5)
+
+    with pytest.raises(ValueError):
+        builder.replaces_entity(
+            Temperature,
+            Temperature,
+            endpoint_id=1,
+            filter=EntityFilter(cluster_id=TemperatureMeasurement.cluster_id),
+        )
 
 
 def test_entity_filter_cluster_type_requires_cluster_id() -> None:
