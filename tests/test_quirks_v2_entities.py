@@ -13,6 +13,7 @@ from zha.application.platforms.cover import Cover
 from zha.application.platforms.light import HueLight, Light
 from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
+from zha.application.platforms.sensor.device_class import SensorDeviceClass
 from zha.quirks import DeviceRegistry
 from zha.zigbee.device import Device
 from zigpy.zcl import ClusterType
@@ -64,6 +65,14 @@ class QuirkOnLevel(OnLevelConfigurationEntity):
 
 class QuirkRSSISensor(RSSISensor):
     """RSSI sensor subclass to replace the default device-bound one."""
+
+
+class BrokenTemperature(Temperature):
+    """Temperature sensor subclass that cannot be created."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Fail to initialize."""
+        raise RuntimeError("Cannot create the entity")
 
 
 class RenamedTemperature(Temperature):
@@ -477,3 +486,293 @@ async def test_default_discovery_failure_keeps_earlier_entities() -> None:
                 (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-rssi"),
                 (Platform.SENSOR, "00:0d:6f:00:05:65:83:f2-1-0-lqi"),
             }
+
+
+IEEE = "00:0d:6f:00:05:65:83:f2"
+
+
+@pytest.mark.parametrize(
+    ("entity_filter", "expected"),
+    [
+        (EntityFilter(), None),  # An empty filter matches everything
+        (EntityFilter(entity_cls=Temperature), {f"{IEEE}-1-1026"}),
+        # The class must match exactly, subclasses do not match
+        (EntityFilter(entity_cls=BaseSensor), set()),
+        (EntityFilter(platform=Platform.BINARY_SENSOR), {f"{IEEE}-1-1280"}),
+        (EntityFilter(translation_key="rssi"), {f"{IEEE}-1-0-rssi"}),
+        (EntityFilter(device_class=SensorDeviceClass.TEMPERATURE), {f"{IEEE}-1-1026"}),
+        (
+            EntityFilter(platform=Platform.SENSOR, endpoint_id=1, cluster_id=1),
+            {f"{IEEE}-1-1"},
+        ),
+        # Only ZCL entities have an endpoint and a cluster
+        (EntityFilter(endpoint_id=2), set()),
+        (
+            EntityFilter(cluster_id=1026, cluster_type=ClusterType.Server),
+            {f"{IEEE}-1-1026"},
+        ),
+        (EntityFilter(cluster_id=1026, cluster_type=ClusterType.Client), set()),
+        (EntityFilter(cluster_id=1026), {f"{IEEE}-1-1026"}),
+        # The suffix matches whole `-`-separated trailing parts, with or without `-`
+        (EntityFilter(unique_id_suffix="1026"), {f"{IEEE}-1-1026"}),
+        (EntityFilter(unique_id_suffix="-1026"), {f"{IEEE}-1-1026"}),
+        (EntityFilter(unique_id_suffix="1-1026"), {f"{IEEE}-1-1026"}),
+        (EntityFilter(unique_id_suffix="026"), set()),
+        (
+            EntityFilter(function=lambda entity: entity.unique_id.endswith("-lqi")),
+            {f"{IEEE}-1-0-lqi"},
+        ),
+        # Every field that is set must match
+        (
+            EntityFilter(
+                platform=Platform.SENSOR, translation_key="lqi", endpoint_id=1
+            ),
+            set(),
+        ),
+        (
+            EntityFilter(platform=Platform.SENSOR, translation_key="rssi"),
+            {f"{IEEE}-1-0-rssi"},
+        ),
+    ],
+)
+async def test_entity_filter_matches(
+    entity_filter: EntityFilter, expected: set[str] | None
+) -> None:
+    """Test which of the default entities an entity filter matches."""
+    registry = DeviceRegistry()
+    QuirkBuilder("CentraLite", "3405-L").add_to_registry(registry)
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        matched = {
+            entity.unique_id
+            for entity in device.platform_entities.values()
+            if entity_filter.matches(entity)
+        }
+
+        if expected is None:
+            assert matched == {e.unique_id for e in device.platform_entities.values()}
+        else:
+            assert matched == expected
+
+
+async def test_replaces_entity_with_filter_and_kwargs() -> None:
+    """Test replacing an entity matched by a filter, creating it with the kwargs."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(
+            Temperature,
+            Temperature,
+            filter=EntityFilter(
+                platform=Platform.SENSOR, device_class=SensorDeviceClass.TEMPERATURE
+            ),
+            fallback_name="Filtered temperature",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1026")
+
+        assert type(entity) is Temperature
+        assert entity.fallback_name == "Filtered temperature"
+
+        # Other entities are untouched
+        battery = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1")
+        assert battery.fallback_name != "Filtered temperature"
+
+
+async def test_replaces_entity_creation_failure(caplog) -> None:
+    """Test that a replacement that cannot be created keeps the default entity."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .replaces_entity(Temperature, BrokenTemperature)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1026")
+
+        assert type(entity) is Temperature
+        assert "Failed to create replacement" in caplog.text
+        assert "Cannot create the entity" in caplog.text
+
+
+async def test_removes_entity_cluster_type() -> None:
+    """Test that removing by cluster only matches the given cluster direction."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .removes_entity(
+            EntityFilter(
+                endpoint_id=1,
+                cluster_id=TemperatureMeasurement.cluster_id,
+                cluster_type=ClusterType.Client,
+            )
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+
+        # The temperature cluster is a server cluster, so nothing is removed
+        assert (Platform.SENSOR, f"{IEEE}-1-1026") in device.platform_entities
+
+
+async def test_removes_entity_filters_combined() -> None:
+    """Test removing with several filters, by function and by cluster."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .removes_entity(
+            EntityFilter(
+                endpoint_id=1,
+                cluster_id=TemperatureMeasurement.cluster_id,
+                cluster_type=ClusterType.Server,
+            ),
+            EntityFilter(function=lambda entity: entity.unique_id.endswith("-lqi")),
+        )
+        .prevent_default_entity_creation(endpoint_id=1, cluster_id=3)
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+
+        assert (Platform.SENSOR, f"{IEEE}-1-1026") not in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-0-lqi") not in device.platform_entities
+        assert (Platform.BUTTON, f"{IEEE}-1-3") not in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-0-rssi") in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-1") in device.platform_entities
+
+
+async def test_removed_entity_can_be_added_back() -> None:
+    """Test removing a default entity and adding a replacement under the same ID."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .removes_entity(EntityFilter(entity_cls=Temperature))
+        .adds_entity(
+            Sensor,
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
+            unique_id_suffix="1026",
+            fallback_name="Added temperature",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1026")
+
+        assert type(entity) is Sensor
+        assert entity.fallback_name == "Added temperature"
+
+
+def test_adds_entity_cluster_type_default() -> None:
+    """Test that added entities default to the server cluster."""
+    entity = (
+        QuirkBuilder("CentraLite", "3405-L")
+        .adds_entity(
+            Sensor,
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
+            fallback_name="Extra temperature",
+        )
+        .added_entities[0]
+    )
+
+    assert entity.cluster_type is ClusterType.Server
+    assert entity.kwargs["fallback_name"] == "Extra temperature"
+
+    with pytest.raises(TypeError):
+        entity.kwargs["fallback_name"] = "Changed"  # The kwargs are frozen
+
+
+async def test_change_entity_metadata_uses_entity_filter() -> None:
+    """Test that metadata changes apply to the entities the filter matches only."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .change_entity_metadata(
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            new_fallback_name="Changed temperature",
+            new_translation_key="changed_temperature",
+            new_primary=True,
+        )
+        .change_entity_metadata(
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            cluster_type=ClusterType.Client,
+            new_fallback_name="Not applied",
+        )
+        .change_entity_metadata(
+            unique_id_suffix="1-1",
+            new_fallback_name="Changed battery",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        temperature = device.get_platform_entity(
+            Platform.SENSOR, unique_id=f"{IEEE}-1-1026"
+        )
+        battery = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-1")
+        rssi = device.get_platform_entity(Platform.SENSOR, unique_id=f"{IEEE}-1-0-rssi")
+
+        assert temperature.fallback_name == "Changed temperature"
+        assert temperature.translation_key == "changed_temperature"
+        assert temperature.primary is True
+        assert battery.fallback_name == "Changed battery"
+        assert rssi.fallback_name != "Changed battery"
+        assert rssi.fallback_name != "Not applied"
+
+
+async def test_v2_entity_unique_id_omits_cluster_id() -> None:
+    """Test that entities from quirk metadata use the endpoint-level unique ID base."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .sensor(
+            TemperatureMeasurement.AttributeDefs.tolerance.name,
+            TemperatureMeasurement.cluster_id,
+            endpoint_id=1,
+            translation_key="tolerance",
+            fallback_name="Tolerance",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=f"{IEEE}-1-tolerance"
+        )
+
+        assert entity.fallback_name == "Tolerance"
