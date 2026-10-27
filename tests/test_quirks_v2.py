@@ -1,8 +1,11 @@
 """General quirk v2 tests."""
 
 import collections
+from collections.abc import Mapping
+from typing import Any
 
 from zha.application import EntityPlatform, EntityType
+from zha.application.platforms import PlatformEntity
 from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry
 
 import zhaquirks
@@ -17,6 +20,17 @@ ALL_QUIRK_V2: list[tuple[QuirkRegistryEntry, QuirkDefinition]] = [
     for entry in DEVICE_REGISTRY
     if isinstance(entry.zha_device_factory, QuirkV2Factory)
 ]
+
+
+def _entity_name_attr(
+    entity_cls: type[PlatformEntity], kwargs: Mapping[str, Any], name: str
+) -> Any:
+    """Return an entity's naming kwarg, or the class's value if not passed."""
+    if name in kwargs:
+        return kwargs[name]
+
+    # Not every entity class defines a translation key
+    return getattr(entity_cls, f"_attr_{name}", None)
 
 
 def test_translation_key_and_fallback_name_match() -> None:
@@ -44,14 +58,23 @@ def test_translation_key_and_fallback_name_match() -> None:
                 (quirk_location, entity_metadata.fallback_name)
             )
 
-        # added and replacement entities are named via their constructor kwargs
-        for added in definition.added_entities:
-            if "translation_key" not in added.kwargs:
+        # added and replacement entities are named by their kwargs or their class
+        entity_classes = [
+            *((a.entity_cls, a.kwargs) for a in definition.added_entities),
+            *((r.entity_cls, r.kwargs) for r in definition.replaced_entities),
+        ]
+
+        for entity_cls, kwargs in entity_classes:
+            translation_key = _entity_name_attr(entity_cls, kwargs, "translation_key")
+            if translation_key is None:
                 continue
-            if "translation_placeholders" in added.kwargs:
+            if _entity_name_attr(entity_cls, kwargs, "translation_placeholders"):
                 continue
-            translation_key_map[added.kwargs["translation_key"]].add(
-                (quirk_location, added.kwargs["fallback_name"])
+            translation_key_map[translation_key].add(
+                (
+                    quirk_location,
+                    _entity_name_attr(entity_cls, kwargs, "fallback_name"),
+                )
             )
 
     # check that if multiple entity metadata entries exist for the same translation key,
