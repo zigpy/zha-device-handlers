@@ -14,4 +14,3 @@ class MotionCluster(MotionWithReset):
     """Motion cluster."""
 
     reset_s: int = 30
-    send_occupancy_event: bool = True

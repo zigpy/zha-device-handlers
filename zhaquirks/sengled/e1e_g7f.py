@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.foundation import BaseCommandDefs
 
-from zhaquirks import Bus
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     COMMAND,
@@ -45,23 +44,9 @@ from zhaquirks.legacy import CustomDevice
 class SengledE1EG7FOnOffCluster(CustomCluster, OnOff):
     """Sengled E1E-G7F OnOff cluster."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-
-        super().__init__(*args, **kwargs)
-
-        self.endpoint.device.on_off_bus.add_listener(self)
-
 
 class SengledE1EG7FLevelControlCluster(CustomCluster, LevelControl):
     """Sengled E1E-G7F LevelControl cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-
-        super().__init__(*args, **kwargs)
-
-        self.endpoint.device.level_control_bus.add_listener(self)
 
 
 class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
@@ -95,59 +80,51 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
         """Handle cluster request."""
 
         if args[0] == 1:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, COMMAND_ON, []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, COMMAND_ON, []
             )
         elif args[0] == 2:
             if args[2] == 2:
-                self.endpoint.device.level_control_bus.listener_event(
-                    "listener_event", ZHA_SEND_EVENT, COMMAND_STEP, [0, 2, 0]
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
+                    ZHA_SEND_EVENT, COMMAND_STEP, [0, 2, 0]
                 )
             else:
-                self.endpoint.device.level_control_bus.listener_event(
-                    "listener_event", ZHA_SEND_EVENT, COMMAND_STEP, [0, 1, 0]
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
+                    ZHA_SEND_EVENT, COMMAND_STEP, [0, 1, 0]
                 )
         elif args[0] == 3:
             if args[2] == 2:
-                self.endpoint.device.level_control_bus.listener_event(
-                    "listener_event", ZHA_SEND_EVENT, COMMAND_STEP, [1, 2, 0]
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
+                    ZHA_SEND_EVENT, COMMAND_STEP, [1, 2, 0]
                 )
             else:
-                self.endpoint.device.level_control_bus.listener_event(
-                    "listener_event", ZHA_SEND_EVENT, COMMAND_STEP, [1, 1, 0]
+                self.endpoint.out_clusters[LevelControl.cluster_id].listener_event(
+                    ZHA_SEND_EVENT, COMMAND_STEP, [1, 1, 0]
                 )
         elif args[0] == 4:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, COMMAND_OFF, []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, COMMAND_OFF, []
             )
         elif args[0] == 5:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "on_double", []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "on_double", []
             )
         elif args[0] == 6:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "on_long", []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "on_long", []
             )
         elif args[0] == 7:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "off_double", []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "off_double", []
             )
         elif args[0] == 8:
-            self.endpoint.device.on_off_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "off_long", []
+            self.endpoint.out_clusters[OnOff.cluster_id].listener_event(
+                ZHA_SEND_EVENT, "off_long", []
             )
 
 
 class SengledE1EG7F(CustomDevice):
     """Sengled E1E-G7F device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-
-        self.on_off_bus = Bus()
-        self.level_control_bus = Bus()
-
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("sengled", "E1E-G7F")],

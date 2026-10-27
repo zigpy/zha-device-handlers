@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,11 +28,6 @@ from zhaquirks.zhongxing import ZHONGXING, MotionCluster
 
 class SN10ZW(CustomDevice):
     """SN10ZW motion sensor."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.occupancy_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
