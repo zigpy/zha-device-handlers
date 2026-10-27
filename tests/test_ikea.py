@@ -3,8 +3,10 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.profiles import zha
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
     LevelControl,
@@ -16,9 +18,32 @@ from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ButtonEventRecorder, ClusterListener, send_command
 import zhaquirks
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
+from zhaquirks.ikea import (
+    IKEA,
+    IKEA_MATTER_SWITCH_CLUSTER_ID,
+    IKEA_SHORTCUT_CLUSTER_V1_ID,
+    IkeaBilresaLevelControl,
+)
+from zhaquirks.ikea.fivebtnremote import (
+    IkeaTradfriRemote1,
+    IkeaTradfriRemote2,
+    IkeaTradfriRemote3,
+    IkeaTradfriRemote4,
+    IkeaTradfriRemote5,
+)
+from zhaquirks.ikea.opencloseremote import IkeaTradfriOpenCloseRemote
+from zhaquirks.ikea.shortcutbtn import IkeaTradfriShortcutBtn, IkeaTradfriShortcutBtn2
+from zhaquirks.ikea.somrigsmartbtn import IkeaSomrigSmartButton
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
+from zhaquirks.ikea.symfonisk import IkeaSYMFONISK1, IkeaSYMFONISK2, IkeaSYMFONISK3
+from zhaquirks.ikea.symfonisk2 import IkeaSymfoniskGen2v1, IkeaSymfoniskGen2v2
+from zhaquirks.ikea.twobtnremote import (
+    IkeaRodretRemote2Btn,
+    IkeaRodretRemote2BtnNew,
+    IkeaTradfriRemote2Btn,
+    IkeaTradfriRemote2BtnZLL,
+)
 
 zhaquirks.setup()
 
@@ -437,4 +462,375 @@ async def test_bilresa_button_events(zigpy_device_from_v2_quirk):
         ("button_off", "multi_press", {"press_count": 2}),
         ("button_off", "long_press_start"),
         ("button_off", "long_press_end"),
+    ]
+
+
+IKEA_MANUFACTURER_CODE = 0x117C
+
+
+def v1_remote(zigpy_device_from_quirk, quirk):
+    """Return the device of a v1 IKEA remote quirk, resolved through the registry."""
+    device = DEVICE_REGISTRY.resolve(zigpy_device_from_quirk(quirk, apply_quirk=False))
+    assert type(device) is quirk
+    return device
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        IkeaTradfriRemote2Btn,
+        IkeaTradfriRemote2BtnZLL,
+        IkeaRodretRemote2Btn,
+        IkeaRodretRemote2BtnNew,
+    ],
+)
+async def test_on_off_switch_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entities of the TRADFRI on/off switch and RODRET."""
+    device = v1_remote(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    hold = ["press_end", "long_press_start", "long_press_end"]
+    assert recorder.event_types() == {"button_on": hold, "button_off": hold}
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    up, down = LevelControl.MoveMode.Up, LevelControl.MoveMode.Down
+
+    send(OnOff.cluster_id, "on")
+    send(LevelControl.cluster_id, "move_with_on_off", up, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    # Older firmware may end the hold of the on button with a stop
+    send(LevelControl.cluster_id, "move_with_on_off", up, 83)
+    send(LevelControl.cluster_id, "stop")
+    send(OnOff.cluster_id, "off")
+    # Newer firmware ends the hold of the off button with a stop_with_on_off too
+    send(LevelControl.cluster_id, "move", down, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(LevelControl.cluster_id, "move", down, 83)
+    send(LevelControl.cluster_id, "stop")
+    # A stop without a hold is no release
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(LevelControl.cluster_id, "stop")
+
+    assert recorder.pop() == [
+        ("button_on", "press_end"),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+        ("button_off", "press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        IkeaTradfriRemote1,
+        IkeaTradfriRemote2,
+        IkeaTradfriRemote3,
+        IkeaTradfriRemote4,
+        IkeaTradfriRemote5,
+    ],
+)
+async def test_five_button_remote_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entities of the TRADFRI remote control."""
+    device = v1_remote(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    hold = ["press_end", "long_press_start", "long_press_end"]
+    assert recorder.event_types() == {
+        "button_toggle": ["press_start", "long_press_start"],
+        "button_dim_up": hold,
+        "button_dim_down": hold,
+        "button_left": hold,
+        "button_right": hold,
+    }
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    up, down = LevelControl.MoveMode.Up, LevelControl.MoveMode.Down
+
+    # The toggle is sent for every press, the hold once or repeated
+    send(OnOff.cluster_id, "toggle")
+    send(OnOff.cluster_id, "toggle")
+    send(LevelControl.cluster_id, "move_to_level_with_on_off", 255, 0)
+    send(LevelControl.cluster_id, "move_to_level_with_on_off", 255, 0)
+    # Sent with the hold of the toggle button, not an arrow press or release
+    send(Scenes.cluster_id, "release", 0)
+    send(Scenes.cluster_id, "press", 2, 0, 0)
+    send(OnOff.cluster_id, "toggle")
+    send(LevelControl.cluster_id, "move_to_level_with_on_off", 255, 0)
+    assert recorder.pop() == [
+        ("button_toggle", "press_start"),
+        ("button_toggle", "press_start"),
+        ("button_toggle", "long_press_start"),
+        ("button_toggle", "press_start"),
+        ("button_toggle", "long_press_start"),
+    ]
+
+    # Older firmware ends the hold of either dim button with the same stop
+    send(LevelControl.cluster_id, "step_with_on_off", up, 43, 5)
+    send(LevelControl.cluster_id, "move_with_on_off", up, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(LevelControl.cluster_id, "move_with_on_off", up, 83)
+    send(LevelControl.cluster_id, "stop")
+    send(LevelControl.cluster_id, "step", down, 43, 5)
+    send(LevelControl.cluster_id, "move", down, 83)
+    send(LevelControl.cluster_id, "stop")
+    send(LevelControl.cluster_id, "move", down, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    send(LevelControl.cluster_id, "stop")
+    assert recorder.pop() == [
+        ("button_dim_up", "press_end"),
+        ("button_dim_up", "long_press_start"),
+        ("button_dim_up", "long_press_end"),
+        ("button_dim_up", "long_press_start"),
+        ("button_dim_up", "long_press_end"),
+        ("button_dim_down", "press_end"),
+        ("button_dim_down", "long_press_start"),
+        ("button_dim_down", "long_press_end"),
+        ("button_dim_down", "long_press_start"),
+        ("button_dim_down", "long_press_end"),
+    ]
+
+    # The arrows send the same release, which ends the hold of the arrow held
+    send(Scenes.cluster_id, "press", 257, 13, 0)
+    send(Scenes.cluster_id, "hold", 3329, 0)
+    send(Scenes.cluster_id, "release", 1234)
+    send(Scenes.cluster_id, "release", 1234)
+    send(Scenes.cluster_id, "press", 256, 13, 0)
+    send(Scenes.cluster_id, "hold", 3328, 0)
+    send(Scenes.cluster_id, "release", 1234)
+    assert recorder.pop() == [
+        ("button_left", "press_end"),
+        ("button_left", "long_press_start"),
+        ("button_left", "long_press_end"),
+        ("button_right", "press_end"),
+        ("button_right", "long_press_start"),
+        ("button_right", "long_press_end"),
+    ]
+
+
+async def test_open_close_remote_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the TRADFRI open/close remote."""
+    device = v1_remote(zigpy_device_from_quirk, IkeaTradfriOpenCloseRemote)
+    recorder = await ButtonEventRecorder.create(device)
+
+    events = ["press_start", "long_press_end"]
+    assert recorder.event_types() == {"button_open": events, "button_close": events}
+
+    def send(command):
+        send_command(device, 1, WindowCovering.cluster_id, command)
+
+    send("up_open")
+    send("up_open")
+    send("stop")
+    send("down_close")
+    send("stop")
+    assert recorder.pop() == [
+        ("button_open", "press_start"),
+        ("button_open", "press_start"),
+        ("button_open", "long_press_end"),
+        ("button_close", "press_start"),
+        ("button_close", "long_press_end"),
+    ]
+
+
+@pytest.mark.parametrize("quirk", [IkeaTradfriShortcutBtn, IkeaTradfriShortcutBtn2])
+async def test_shortcut_button_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entity of the TRADFRI shortcut button."""
+    device = v1_remote(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button": ["single_press", "multi_press", "long_press_start", "long_press_end"]
+    }
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    send(OnOff.cluster_id, "on")
+    send(OnOff.cluster_id, "off")
+    send(LevelControl.cluster_id, "move_with_on_off", LevelControl.MoveMode.Up, 83)
+    send(LevelControl.cluster_id, "stop_with_on_off")
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "long_press_start"),
+        ("button", "long_press_end"),
+    ]
+
+
+SHORTCUT_V2_EVENTS = [
+    "single_press",
+    "multi_press",
+    "long_press_start",
+    "long_press_end",
+]
+
+
+def send_shortcut_v2(device, endpoint_id, command, *args):
+    """Send a Shortcut V2 command of a dot button."""
+    send_command(
+        device,
+        endpoint_id,
+        IKEA_MATTER_SWITCH_CLUSTER_ID,
+        command,
+        *args,
+        manufacturer=IKEA_MANUFACTURER_CODE,
+    )
+
+
+def assert_shortcut_v2_button_events(device, recorder, endpoint_ids):
+    """Test the button events of the dot buttons sending Shortcut V2 commands."""
+    for number, endpoint_id in enumerate(endpoint_ids, start=1):
+        button = f"button_{number}"
+
+        def send(command, *args, endpoint_id=endpoint_id):
+            send_shortcut_v2(device, endpoint_id, command, *args)
+
+        # Single, double and long press, each starting with an initial press
+        send("initial_press", 0)
+        send("short_release", 0)
+        send("initial_press", 0)
+        send("multi_press_complete", 0, 2)
+        send("initial_press", 0)
+        send("long_press", 0)
+        send("long_release", 0)
+        # Only a double press is reported
+        send("multi_press_complete", 0, 3)
+
+        assert recorder.pop() == [
+            (button, "single_press"),
+            (button, "multi_press", {"press_count": 2}),
+            (button, "long_press_start"),
+            (button, "long_press_end"),
+        ]
+
+
+async def test_somrig_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the SOMRIG shortcut button."""
+    device = v1_remote(zigpy_device_from_quirk, IkeaSomrigSmartButton)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        "button_1": SHORTCUT_V2_EVENTS,
+        "button_2": SHORTCUT_V2_EVENTS,
+    }
+    assert_shortcut_v2_button_events(device, recorder, [1, 2])
+
+
+SYMFONISK_GEN2_EVENTS = {
+    "button_play_pause": ["single_press"],
+    "button_volume_up": ["single_press"],
+    "button_volume_down": ["single_press"],
+    "button_next": ["single_press"],
+    "button_previous": ["single_press"],
+}
+
+
+def assert_symfonisk_gen2_media_button_events(device, recorder):
+    """Test the button events of the media buttons of the SYMFONISK gen2."""
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    up, down = LevelControl.MoveMode.Up, LevelControl.MoveMode.Down
+    step_up, step_down = LevelControl.StepMode.Up, LevelControl.StepMode.Down
+
+    send(OnOff.cluster_id, "toggle")
+    send(LevelControl.cluster_id, "move_with_on_off", up, 255)
+    send(LevelControl.cluster_id, "move_with_on_off", down, 255)
+    send(LevelControl.cluster_id, "step", step_up, 1, 0)
+    send(LevelControl.cluster_id, "step", step_down, 1, 0)
+    # The repeated holds of the volume buttons stay device triggers
+    send(LevelControl.cluster_id, "move", up, 255)
+    send(LevelControl.cluster_id, "move", down, 255)
+
+    assert recorder.pop() == [
+        ("button_play_pause", "single_press"),
+        ("button_volume_up", "single_press"),
+        ("button_volume_down", "single_press"),
+        ("button_next", "single_press"),
+        ("button_previous", "single_press"),
+    ]
+
+
+async def test_symfonisk_gen2_v1_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the SYMFONISK gen2 on its first firmware."""
+    device = v1_remote(zigpy_device_from_quirk, IkeaSymfoniskGen2v1)
+    recorder = await ButtonEventRecorder.create(device)
+
+    dot = ["single_press", "multi_press", "long_press_start"]
+    assert recorder.event_types() == {
+        **SYMFONISK_GEN2_EVENTS,
+        "button_1": dot,
+        "button_2": dot,
+    }
+    assert_symfonisk_gen2_media_button_events(device, recorder)
+
+    for button in (1, 2):
+        for event in (1, 2, 3):
+            send_command(
+                device,
+                1,
+                IKEA_SHORTCUT_CLUSTER_V1_ID,
+                "shortcut_v1_events",
+                button,
+                event,
+                manufacturer=IKEA_MANUFACTURER_CODE,
+            )
+
+    assert recorder.pop() == [
+        ("button_1", "single_press"),
+        ("button_1", "multi_press", {"press_count": 2}),
+        ("button_1", "long_press_start"),
+        ("button_2", "single_press"),
+        ("button_2", "multi_press", {"press_count": 2}),
+        ("button_2", "long_press_start"),
+    ]
+
+
+async def test_symfonisk_gen2_v2_button_events(zigpy_device_from_quirk):
+    """Test the button event entities of the SYMFONISK gen2 on updated firmware."""
+    device = v1_remote(zigpy_device_from_quirk, IkeaSymfoniskGen2v2)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {
+        **SYMFONISK_GEN2_EVENTS,
+        "button_1": SHORTCUT_V2_EVENTS,
+        "button_2": SHORTCUT_V2_EVENTS,
+    }
+    assert_symfonisk_gen2_media_button_events(device, recorder)
+    assert_shortcut_v2_button_events(device, recorder, [2, 3])
+
+
+@pytest.mark.parametrize("quirk", [IkeaSYMFONISK1, IkeaSYMFONISK2, IkeaSYMFONISK3])
+async def test_symfonisk_gen1_button_events(zigpy_device_from_quirk, quirk):
+    """Test the button event entity of the SYMFONISK sound controller."""
+    device = v1_remote(zigpy_device_from_quirk, quirk)
+    recorder = await ButtonEventRecorder.create(device)
+
+    assert recorder.event_types() == {"button": ["single_press", "multi_press"]}
+
+    def send(cluster_id, command, *args):
+        send_command(device, 1, cluster_id, command, *args)
+
+    send(OnOff.cluster_id, "toggle")
+    send(LevelControl.cluster_id, "step", LevelControl.StepMode.Up, 1, 0)
+    send(LevelControl.cluster_id, "step", LevelControl.StepMode.Down, 1, 0)
+    # Rotating is not a button
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Up, 195)
+    send(LevelControl.cluster_id, "stop")
+
+    assert recorder.pop() == [
+        ("button", "single_press"),
+        ("button", "multi_press", {"press_count": 2}),
+        ("button", "multi_press", {"press_count": 3}),
     ]

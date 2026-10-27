@@ -4,13 +4,24 @@ import logging
 from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
+from zhaquirks.const import (
+    COMMAND,
+    COMMAND_M_MULTI_PRESS_COMPLETE,
+    ENDPOINT_ID,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PARAMS,
+    SHORT_PRESS,
+    ZHA_SEND_EVENT,
+    BatterySize,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -175,6 +186,49 @@ class ShortcutV2Cluster(EventableCluster):
             },
             is_manufacturer_specific=True,
         )
+
+
+def shortcut_v2_button_event_entity(
+    button: str, endpoint_id: int, number: int
+) -> ButtonEventMetadata:
+    """Return the button event entity of a dot button sending Shortcut V2 commands.
+
+    The button sends an initial_press for the first press only, then a
+    short_release once no second press followed, a multi_press_complete counting
+    two presses for a double press, or a long_press and a long_release.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            # The double press trigger fires for any count, but IKEA sends two
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                event_data={
+                    COMMAND: COMMAND_M_MULTI_PRESS_COMPLETE,
+                    ENDPOINT_ID: endpoint_id,
+                    PARAMS: {"total_number_of_presses_counted": 2},
+                },
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, button),
+            ),
+        ],
+        cluster_id=IKEA_MATTER_SWITCH_CLUSTER_ID,
+        cluster_type=ClusterType.Client,
+        endpoint_id=endpoint_id,
+        unique_id_suffix=f"button_{number}",
+        translation_key="numbered_button",
+        translation_placeholders={"button_number": str(number)},
+        fallback_name=f"Button {number}",
+    )
 
 
 # ZCL compliant IKEA power configuration clusters:
