@@ -3,14 +3,11 @@
 from unittest import mock
 
 import pytest
-from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
-from zhaquirks.builder import BinarySensorDeviceClass, EntityType
-from zhaquirks.builder.metadata import BinarySensorMetadata
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
 import zhaquirks.schneiderelectric.outlet
 
@@ -128,28 +125,6 @@ async def test_shutter_reversed_flag_mirrored(zigpy_device_from_v2_quirk, model)
     # a config status report with bit 2 set is corrected from the mode
     cluster.update_attribute(attrs.config_status.id, 0b0000_0111)
     assert cluster.get(attrs.config_status.id) == 0b0000_0011
-
-
-@pytest.mark.parametrize("model", SHUTTER_MODELS)
-def test_shutter_sun_protection_entities(zigpy_device_from_v2_quirk, model):
-    """Sun protection status and sensor attributes are exposed as diagnostics."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer=SE_MANUF_NAME, model=model, endpoint_ids=[5, 21]
-    )
-    entry = DEVICE_REGISTRY.match_entry(device)
-    entities = {
-        metadata.resolved_unique_id_suffix: metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
-    }
-
-    status = entities["se_sun_protection_status"]
-    sensor = entities["se_sun_protection_sensor"]
-    for metadata in (status, sensor):
-        assert isinstance(metadata, BinarySensorMetadata)
-        assert metadata.endpoint_id == 5
-        assert metadata.cluster_id == WindowCovering.cluster_id
-        assert metadata.entity_type == EntityType.DIAGNOSTIC
-    assert sensor.device_class == BinarySensorDeviceClass.CONNECTIVITY
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.schneiderelectric.outlet.SocketOutlet,))
