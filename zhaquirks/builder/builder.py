@@ -427,6 +427,7 @@ class QuirkBuilder:
 
     def firmware_version_filter(
         self,
+        *,
         min_version: int | None = None,
         max_version: int | None = None,
         allow_missing: bool = True,
@@ -483,6 +484,7 @@ class QuirkBuilder:
         self,
         cluster: int | type[Cluster],
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         constant_attributes: dict[ZCLAttributeDef, Any] | None = None,
     ) -> Self:
@@ -512,6 +514,7 @@ class QuirkBuilder:
         self,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
     ) -> Self:
         """Add a `RemoveCluster` operation and return self.
@@ -532,6 +535,7 @@ class QuirkBuilder:
         replacement_cluster_class: type[Cluster],
         cluster_id: int | None = None,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
     ) -> Self:
         """Add a `ReplaceCluster` operation and return self.
@@ -558,6 +562,7 @@ class QuirkBuilder:
     def replace_cluster_occurrences(
         self,
         replacement_cluster_class: type[Cluster],
+        *,
         replace_server_instances: bool = True,
         replace_client_instances: bool = True,
     ) -> Self:
@@ -622,6 +627,7 @@ class QuirkBuilder:
         enum_class: type[Enum],
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         entity_platform: EntityPlatform = EntityPlatform.SELECT,
         entity_type: EntityType = EntityType.CONFIG,
@@ -632,7 +638,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
@@ -665,6 +670,7 @@ class QuirkBuilder:
         attribute_name: str,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         divisor: int = 1,
         multiplier: int = 1,
@@ -681,7 +687,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
@@ -720,6 +725,7 @@ class QuirkBuilder:
         attribute_name: str,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         force_inverted: bool = False,
         invert_attribute_name: str | None = None,
@@ -734,7 +740,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
@@ -770,6 +775,7 @@ class QuirkBuilder:
         attribute_name: str,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         min_value: float | None = None,
         max_value: float | None = None,
@@ -786,7 +792,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
@@ -825,6 +830,7 @@ class QuirkBuilder:
         attribute_name: str,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         entity_type: EntityType = EntityType.DIAGNOSTIC,
         device_class: BinarySensorDeviceClass | None = None,
@@ -836,7 +842,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
@@ -871,6 +876,7 @@ class QuirkBuilder:
         attribute_value: int,
         cluster_id: int,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         entity_type: EntityType = EntityType.CONFIG,
         initially_disabled: bool = False,
@@ -879,7 +885,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing WriteAttributeButtonMetadata and return self.
@@ -914,6 +919,7 @@ class QuirkBuilder:
         command_args: tuple | None = None,
         command_kwargs: dict[str, Any] | None = None,
         cluster_type: ClusterType = ClusterType.Server,
+        *,
         endpoint_id: int = 1,
         entity_type: EntityType = EntityType.CONFIG,
         initially_disabled: bool = False,
@@ -921,7 +927,6 @@ class QuirkBuilder:
         translation_key: str | None = None,
         fallback_name: str | None = None,
         primary: bool | None = None,
-        *,
         translation_placeholders: dict[str, str] | None = None,
     ) -> Self:
         """Add an EntityMetadata containing ZCLCommandButtonMetadata and return self.
