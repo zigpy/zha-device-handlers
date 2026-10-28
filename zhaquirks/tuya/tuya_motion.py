@@ -13,6 +13,7 @@ from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
@@ -184,6 +185,21 @@ class TuyaMotionDetectionMode(t.enum8):
     Only_PIR = 0x00
     PIR_and_radar = 0x01
     Only_radar = 0x03
+
+
+class TuyaSolarPIRSensitivity(t.enum8):
+    """Solar PIR sensitivity values."""
+
+    High = 0x00
+    Low = 0x01
+
+
+class TuyaSolarPIRAlarmMode(t.enum8):
+    """Solar PIR alarm modes."""
+
+    Arm = 0x00
+    Silent = 0x01
+    Disarm = 0x02
 
 
 base_tuya_motion = (
@@ -1190,6 +1206,49 @@ base_tuya_motion = (
         translation_key="illuminance_interval",
         fallback_name="Illuminance interval",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya solar PIR occupancy sensor (TS0601_pir_solar in Zigbee2MQTT).
+(
+    TuyaQuirkBuilder("_TZE284_tre6haif", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_battery(dp_id=4, battery_type=None, battery_qty=None)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="motion_sensitivity",
+        enum_class=TuyaSolarPIRSensitivity,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="alarm_duration",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=180,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="alarm_duration",
+        fallback_name="Alarm duration",
+    )
+    .tuya_enum(
+        dp_id=102,
+        attribute_name="alarm_mode",
+        enum_class=TuyaSolarPIRAlarmMode,
+        translation_key="alarm_mode",
+        fallback_name="Alarm mode",
+    )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
