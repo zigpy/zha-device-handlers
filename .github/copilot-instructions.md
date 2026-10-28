@@ -355,10 +355,10 @@ Hide entities that ZHA would create by default. Without `cluster_type`, `cluster
 .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
 
 # Hide entities matching a condition
-.prevent_default_entity_creation(
+.removes_entity(
     endpoint_id=1,
     cluster_id=OnOff.cluster_id,
-    function=lambda entity: entity.device_class == "opening",
+    device_class=BinarySensorDeviceClass.OPENING,
 )
 ```
 
@@ -434,7 +434,7 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
 )
 ```
 
-Removing entities: `.removes_entity(EntityFilter(...))` with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
+Removing entities: `.removes_entity(...)` takes the filter fields as keyword arguments (or `EntityFilter(...)` instances, one per filter), with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
 
 ### Tuya Devices (TuyaQuirkBuilder)
 
