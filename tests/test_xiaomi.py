@@ -2282,6 +2282,7 @@ async def test_xiaomi_e1_driver_light_level(
     )
 
 
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
 @pytest.mark.parametrize(
     "command, value, read_current_position",
     [
@@ -2291,12 +2292,12 @@ async def test_xiaomi_e1_driver_light_level(
     ],
 )
 async def test_xiaomi_e1_roller_commands_1(
-    zigpy_device_from_v2_quirk, command, value, read_current_position
+    zigpy_device_from_v2_quirk, model, command, value, read_current_position
 ):
-    """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
+    """Test Aqara roller commands for basic movement functions using MultistateOutput Cluster."""
     device = zigpy_device_from_v2_quirk(
         LUMI,
-        "lumi.curtain.acn002",
+        model,
         cluster_ids={1: {MultistateOutput.cluster_id: ClusterType.Server}},
     )
 
@@ -2389,6 +2390,7 @@ async def test_xiaomi_e1_roller_commands_1(
         ]
 
 
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
 @pytest.mark.parametrize(
     "command, value, read_current_position",
     [
@@ -2396,10 +2398,10 @@ async def test_xiaomi_e1_roller_commands_1(
     ],
 )
 async def test_xiaomi_e1_roller_commands_2(
-    zigpy_device_from_v2_quirk, command, value, read_current_position
+    zigpy_device_from_v2_quirk, model, command, value, read_current_position
 ):
-    """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    """Test Aqara roller commands for go to lift percentage using AnalogOutput cluster."""
+    device = zigpy_device_from_v2_quirk(LUMI, model)
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
@@ -2520,15 +2522,17 @@ async def test_xiaomi_e1_roller_commands_2(
         ),  # Regular read failure
     ],
 )
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
 async def test_xiaomi_e1_roller_window_covering_read_redirection(
     zigpy_device_from_v2_quirk,
+    model,
     attr: foundation.ZCLAttributeDef,
     expected_value: int | None,
     target_attr: foundation.ZCLAttributeDef | None,
     target_cluster: Cluster | None,
 ):
-    """Test Aqara E1 roller WindowCovering attribute read redirection."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    """Test Aqara roller WindowCovering attribute read redirection."""
+    device = zigpy_device_from_v2_quirk(LUMI, model)
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
@@ -2617,11 +2621,68 @@ async def test_xiaomi_e1_roller_window_covering_read_redirection(
     )
 
 
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
+async def test_xiaomi_e1_roller_aqara_event_reports_ignored(
+    zigpy_device_from_v2_quirk, model
+):
+    """Test Aqara event reports do not move the cover to the command echo value."""
+    device = zigpy_device_from_v2_quirk(LUMI, model)
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
+    analog_cluster = device.endpoints[1].analog_output
+    present_value_id = AnalogOutput.AttributeDefs.present_value.id
+
+    header = foundation.ZCLHeader()
+    header.command_id = foundation.GeneralCommand.Report_Attributes
+    header.frame_control = foundation.FrameControl.general().replace(
+        disable_default_response=1
+    )
+    header.tsn = 42
+
+    def report(*attributes: foundation.Attribute) -> Any:
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Report_Attributes
+        ].schema(attribute_reports=list(attributes))
+
+    def present_value(value: float) -> foundation.Attribute:
+        return foundation.Attribute(
+            attrid=present_value_id,
+            value=foundation.TypeValue(type=foundation.DataTypeId.single, value=value),
+        )
+
+    # the motor sends command echoes (2 = stop) together with the Aqara event
+    # attribute; they are not positions and must be ignored
+    analog_cluster.handle_cluster_general_request(
+        header,
+        report(
+            present_value(2.0),
+            foundation.Attribute(
+                attrid=0xF000,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint32, value=0x00020000
+                ),
+            ),
+        ),
+    )
+    assert window_covering_listener.attribute_updates == []
+
+    # a position report without the event attribute still updates the cover
+    analog_cluster.handle_cluster_general_request(header, report(present_value(40.0)))
+    assert window_covering_listener.attribute_updates == [(window_covering_attr_id, 60)]
+
+
+@pytest.mark.parametrize("model", ("lumi.curtain.acn002", "lumi.curtain.hagl04"))
 async def test_xiaomi_e1_roller_position_updates(
     zigpy_device_from_v2_quirk,
+    model,
 ):
-    """Test Aqara E1 roller lift position updates on read/report only."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    """Test Aqara roller lift position updates on read/report only."""
+    device = zigpy_device_from_v2_quirk(LUMI, model)
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
