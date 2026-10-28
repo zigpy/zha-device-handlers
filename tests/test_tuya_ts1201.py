@@ -596,6 +596,242 @@ async def test_ts1201_learn_state_is_per_instance(zigpy_device_from_quirk):
     assert transmit2.msg_length == 0
 
 
+async def test_ts1201_learn_real_capture(zs06):
+    """Test a full learn of a code captured from a physical ZS06."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    control = zs06.endpoints[1].zosung_ircontrol
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    for position in range(0, len(code), DEVICE_PART_LENGTH):
+        learned_code_part(
+            transmit, position, code[position : position + DEVICE_PART_LENGTH]
+        )
+    await wait_for_zigpy_tasks()
+
+    commands = sent_commands(zs06.endpoints[1].request, transmit)
+    assert commands[0][0] == 0x01
+    requested = [args.position for command_id, args in commands if command_id == 0x02]
+    assert requested == list(range(0, len(code), DEVICE_PART_LENGTH))
+    assert commands[-1][0] == 0x04
+
+    learned_code_done(transmit)
+    await wait_for_zigpy_tasks()
+
+    assert zs06.last_learned_ir_code == REAL_LEARNED_IR_CODE
+    succ, _ = await control.read_attributes(("last_learned_ir_code",))
+    assert succ[0] == REAL_LEARNED_IR_CODE
+    # Learning mode is left once the code is in.
+    assert sent_commands(zs06.endpoints[1].request, control)[-1][1].data == (
+        b'{"study":1}'
+    )
+
+
+@pytest.mark.parametrize(
+    ("position", "crc"),
+    [
+        (0, 0x00),  # corrupted part
+        (DEVICE_PART_LENGTH, None),  # part ahead of the one requested
+    ],
+)
+async def test_ts1201_learn_rerequests_bad_part(zs06, position, crc):
+    """Test a corrupted or misplaced part is asked for again, not assembled."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    learned_code_part(
+        transmit, position, code[position : position + DEVICE_PART_LENGTH], crc=crc
+    )
+    await wait_for_zigpy_tasks()
+
+    assert transmit.ir_msg == []
+    command_id, args = sent_commands(zs06.endpoints[1].request, transmit)[-1]
+    assert command_id == 0x02
+    assert args.position == 0
+
+    # The retried part is accepted.
+    learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH])
+    await wait_for_zigpy_tasks()
+    assert bytes(transmit.ir_msg) == code[:DEVICE_PART_LENGTH]
+    assert transmit.msg_part_retries == 0
+
+
+async def test_ts1201_learn_rejects_part_past_announced_length(zs06):
+    """Test a part running past the announced length is asked for again."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    announce_learned_code(transmit, 4)
+    learned_code_part(transmit, 0, b"\x01\x02\x03\x04\x05")
+    await wait_for_zigpy_tasks()
+
+    assert transmit.ir_msg == []
+    command_id, args = sent_commands(zs06.endpoints[1].request, transmit)[-1]
+    assert command_id == 0x02
+    assert args.position == 0
+
+
+async def test_ts1201_learn_gives_up_after_bad_parts(zs06, caplog):
+    """Test a learn is abandoned after too many bad parts in a row."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    control = zs06.endpoints[1].zosung_ircontrol
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    for _ in range(zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_RETRIES + 1):
+        learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH], crc=0x00)
+    await wait_for_zigpy_tasks()
+
+    requests = [
+        command_id
+        for command_id, _ in sent_commands(zs06.endpoints[1].request, transmit)
+        if command_id == 0x02
+    ]
+    # The initial request plus one per allowed retry, and no more.
+    assert len(requests) == 1 + zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_RETRIES
+    assert transmit.msg_length == 0
+    assert "after 4 bad message parts" in caplog.text
+    # The device is taken out of learning mode instead of being left in it.
+    assert sent_commands(zs06.endpoints[1].request, control)[-1][1].data == (
+        b'{"study":1}'
+    )
+
+    # Nothing is learned from the abandoned transfer.
+    learned_code_done(transmit)
+    await wait_for_zigpy_tasks()
+    assert zs06.last_learned_ir_code == ""
+
+
+async def test_ts1201_learn_discards_incomplete_code(zs06, caplog):
+    """Test a learn that ends early does not publish a truncated code."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    control = zs06.endpoints[1].zosung_ircontrol
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH])
+    learned_code_done(transmit)
+    await wait_for_zigpy_tasks()
+
+    assert zs06.last_learned_ir_code == ""
+    assert "55 of 251 bytes received" in caplog.text
+    assert transmit.ir_msg == []
+    # Learning mode is still left.
+    assert sent_commands(zs06.endpoints[1].request, control)[-1][1].data == (
+        b'{"study":1}'
+    )
+
+
+async def test_ts1201_learn_gives_up_on_empty_parts(zs06):
+    """Test empty parts count as bad, so they can't keep the device learning."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    control = zs06.endpoints[1].zosung_ircontrol
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    for _ in range(zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_RETRIES + 1):
+        learned_code_part(transmit, 0, b"")
+    await wait_for_zigpy_tasks()
+
+    assert transmit.msg_length == 0
+    assert sent_commands(zs06.endpoints[1].request, control)[-1][1].data == (
+        b'{"study":1}'
+    )
+
+
+async def test_ts1201_learn_reacknowledges_resent_final_part(zs06):
+    """Test a final part resent after a lost 0x04 is acknowledged, not rejected."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+    positions = list(range(0, len(code), DEVICE_PART_LENGTH))
+
+    announce_learned_code(transmit, len(code))
+    for position in positions:
+        learned_code_part(
+            transmit, position, code[position : position + DEVICE_PART_LENGTH]
+        )
+    await wait_for_zigpy_tasks()
+    requests_before = len(sent_commands(zs06.endpoints[1].request, transmit))
+
+    # The device didn't get our 0x04, so it sends the last part again.
+    for _ in range(zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_RETRIES + 1):
+        learned_code_part(transmit, positions[-1], code[positions[-1] :])
+    await wait_for_zigpy_tasks()
+
+    resent = [
+        command_id
+        for command_id, _ in sent_commands(zs06.endpoints[1].request, transmit)[
+            requests_before:
+        ]
+    ]
+    assert resent == [0x04] * (zhaquirks.tuya.ts1201.IR_MSG_PART_MAX_RETRIES + 1)
+    assert transmit.msg_part_retries == 0
+
+    learned_code_done(transmit)
+    await wait_for_zigpy_tasks()
+    assert zs06.last_learned_ir_code == REAL_LEARNED_IR_CODE
+
+
+async def test_ts1201_learn_ignores_repeated_part(zs06):
+    """Test a part repeating bytes already received is neither re-requested nor bad."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code))
+    learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH])
+    await wait_for_zigpy_tasks()
+    requests = len(sent_commands(zs06.endpoints[1].request, transmit))
+
+    learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH])
+    await wait_for_zigpy_tasks()
+
+    assert len(sent_commands(zs06.endpoints[1].request, transmit)) == requests
+    assert bytes(transmit.ir_msg) == code[:DEVICE_PART_LENGTH]
+    assert transmit.msg_part_retries == 0
+
+
+async def test_ts1201_learn_ignores_frames_of_another_seq(zs06):
+    """Test parts and the end of another learn's seq don't touch this one."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    control = zs06.endpoints[1].zosung_ircontrol
+    code = base64.b64decode(REAL_LEARNED_IR_CODE)
+
+    announce_learned_code(transmit, len(code), seq=1)
+    await wait_for_zigpy_tasks()
+    requests = zs06.endpoints[1].request.await_count
+
+    learned_code_part(transmit, 0, code[:DEVICE_PART_LENGTH], seq=7)
+    learned_code_done(transmit, seq=7)
+    await wait_for_zigpy_tasks()
+
+    assert transmit.ir_msg == []
+    assert transmit.msg_length == len(code)
+    assert zs06.endpoints[1].request.await_count == requests
+    assert sent_commands(zs06.endpoints[1].request, control) == []
+
+
+async def test_ts1201_learn_ignores_end_with_nothing_learned(zs06, caplog):
+    """Test a 0x05 after the code was stored neither warns nor leaves study again."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    learned_code_done(transmit)
+    await wait_for_zigpy_tasks()
+
+    assert "Discarding" not in caplog.text
+    assert zs06.endpoints[1].request.await_count == 0
+
+
+async def test_ts1201_learn_ignores_part_without_announcement(zs06):
+    """Test a part arriving when no code is being learned is ignored."""
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    learned_code_part(transmit, 0, b"\x01\x02\x03\x04")
+    await wait_for_zigpy_tasks()
+
+    assert transmit.ir_msg == []
+    assert sent_commands(zs06.endpoints[1].request, transmit) == []
+
+
 async def test_ts1201_send_real_capture(zs06):
     """Test a full send of a code captured from a physical ZS06."""
     control = zs06.endpoints[1].zosung_ircontrol

@@ -19,14 +19,19 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
 )
 from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import (
@@ -40,7 +45,9 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import MoesBacklight, TuyaMCUCluster, TuyaOnOffNM
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
+import zhaquirks.tuya.ts004f
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
@@ -1600,9 +1607,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_TZ3000_awgcnkrh"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_TZ3400_deyjhapk"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TIIAS, "_TZ3000_ajsypttg"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3000_pwgcnkrh"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3400_leyjhapk"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB, "_TZ3000_fa9mlvja"),
+        (
+            zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB,
+            "another random manufacturer",
+        ),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3000_owgcnkrh"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3400_keyjhapk"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_some_random_manuf"),
@@ -1621,6 +1634,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "_TZ3000_qzjcsmar"),
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "_TYZB02_key8kk7r"),
         (zhaquirks.tuya.ts0043.TuyaSmartRemote0043NO, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC, "_TZ3000_famkxci2"),
+        (
+            zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC,
+            "another random manufacturer",
+        ),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_TZ3000_hjgcnkgs"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_TZ3000_ojgcnkkl"),
         (zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI, "_some_random_manuf"),
@@ -1637,6 +1655,33 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
 
     quirked_dev = get_device(zigpy_dev)
     assert isinstance(quirked_dev, quirk)
+
+
+async def test_ts0043_six_endpoint_button_events(zigpy_device_from_quirk):
+    """Test button presses on the six endpoint TS0043 match its automation triggers."""
+
+    quirk = zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC
+    device = zigpy_device_from_quirk(quirk)
+
+    # each frame gets its own sequence number, as the cluster drops repeated ones
+    for tsn, ((press, _button), trigger) in enumerate(
+        quirk.device_automation_triggers.items(), start=1
+    ):
+        on_off_cluster = device.endpoints[trigger[ENDPOINT_ID]].out_clusters[
+            OnOff.cluster_id
+        ]
+        zha_listener = mock.MagicMock()
+        on_off_cluster.add_listener(zha_listener)
+
+        press_type = {SHORT_PRESS: 0x00, DOUBLE_PRESS: 0x01, LONG_PRESS: 0x02}[press]
+        hdr, args = on_off_cluster.deserialize(
+            # cluster specific, client to server, default response disabled
+            bytes([0x11, tsn, 0xFD, press_type])
+        )
+        on_off_cluster.handle_message(hdr, args)
+
+        zha_listener.zha_send_event.assert_called_once_with(trigger[COMMAND], [])
+        on_off_cluster.remove_listener(zha_listener)
 
 
 def test_multiple_attributes_report():
