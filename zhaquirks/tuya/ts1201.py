@@ -76,7 +76,10 @@ class PendingIRSend(NamedTuple):
 
     seq: int
     msg: bytes
-    sent: asyncio.Future[None]
+    # Resolved by frame 0x04, when the device has the whole message.
+    confirmed: asyncio.Future[None]
+    # Resolved once our final 0x05 has gone out and the transfer is closed.
+    closed: asyncio.Future[None]
 
 
 class ZosungIRControl(CustomCluster):
@@ -296,10 +299,12 @@ class ZosungIRTransmit(CustomCluster):
     ) -> None:
         """Send an IR message and wait until the device confirms it has all of it.
 
-        The transfer runs in its own task, so a caller that gives up does not end
-        it: the blaster keeps fetching the message, and the next send has to wait
-        until it confirms or times out.
+        A caller that gives up while its send is queued drops it. Once the send has
+        its turn, the transfer runs in its own task, so a caller that gives up does
+        not end it: the blaster keeps fetching the message, and the next send has to
+        wait until it confirms or times out.
         """
+        await self.send_lock.acquire()
         transfer = asyncio.get_running_loop().create_task(
             self._transfer_ir_msg(ir_msg, tsn=tsn)
         )
@@ -308,7 +313,8 @@ class ZosungIRTransmit(CustomCluster):
         await asyncio.shield(transfer)
 
     def _transfer_done(self, transfer: asyncio.Task[None]) -> None:
-        """Forget a finished transfer, logging a failure nobody waited for."""
+        """Free the device for the next send, logging a failure nobody waited for."""
+        self.send_lock.release()
         self.transfers.discard(transfer)
         if not transfer.cancelled() and (exc := transfer.exception()) is not None:
             _LOGGER.debug(
@@ -318,35 +324,41 @@ class ZosungIRTransmit(CustomCluster):
     async def _transfer_ir_msg(
         self, ir_msg: bytes, *, tsn: int | t.uint8_t | None = None
     ) -> None:
-        """Run one transfer of an IR message to the device."""
-        async with self.send_lock:
-            self.seq = (self.seq + 1) % 0x10000
-            sent = asyncio.get_running_loop().create_future()
-            self.pending_send = PendingIRSend(self.seq, ir_msg, sent)
-            try:
-                await super().command(
-                    self.ServerCommandDefs.receive_ir_frame_00.id,
-                    seq=self.seq,
-                    length=len(ir_msg),
-                    unk1=0x00000000,
-                    clusterid=ZosungIRControl.cluster_id,
-                    unk2=0x01,
-                    cmd=ZosungIRControl.ServerCommandDefs.IRSend.id,
-                    unk3=0x0000,
-                    expect_reply=False,
-                    tsn=tsn,
-                )
-                async with asyncio.timeout(self.send_timeout):
-                    await sent
-            except TimeoutError:
-                _LOGGER.warning(
-                    "IR code was not confirmed by %s (seq: %s)",
-                    self.endpoint.device.ieee,
-                    self.seq,
-                )
-                raise
-            finally:
-                self.pending_send = None
+        """Run one transfer of an IR message to the device, holding `send_lock`."""
+        self.seq = (self.seq + 1) % 0x10000
+        loop = asyncio.get_running_loop()
+        pending = PendingIRSend(
+            self.seq, ir_msg, loop.create_future(), loop.create_future()
+        )
+        self.pending_send = pending
+        try:
+            await super().command(
+                self.ServerCommandDefs.receive_ir_frame_00.id,
+                seq=self.seq,
+                length=len(ir_msg),
+                unk1=0x00000000,
+                clusterid=ZosungIRControl.cluster_id,
+                unk2=0x01,
+                cmd=ZosungIRControl.ServerCommandDefs.IRSend.id,
+                unk3=0x0000,
+                expect_reply=False,
+                tsn=tsn,
+            )
+            async with asyncio.timeout(self.send_timeout):
+                await pending.confirmed
+        except TimeoutError:
+            _LOGGER.warning(
+                "IR code was not confirmed by %s (seq: %s)",
+                self.endpoint.device.ieee,
+                self.seq,
+            )
+            raise
+        else:
+            # The window only covers the device's confirmation; closing the
+            # transfer is ours, and the next send waits for it.
+            await pending.closed
+        finally:
+            self.pending_send = None
 
     async def acknowledge_sent(self, seq: int, pending: PendingIRSend | None) -> None:
         """Close the device's transfer, and only then let the next send start."""
@@ -359,8 +371,8 @@ class ZosungIRTransmit(CustomCluster):
             )
         finally:
             # The device has the whole message, so the send succeeded either way.
-            if pending is not None and not pending.sent.done():
-                pending.sent.set_result(None)
+            if pending is not None and not pending.closed.done():
+                pending.closed.set_result(None)
 
     def handle_cluster_request(
         self,
@@ -513,6 +525,8 @@ class ZosungIRTransmit(CustomCluster):
                     self.endpoint.device.ieee,
                     seq,
                 )
+                if not pending.confirmed.done():
+                    pending.confirmed.set_result(None)
             # Confirm an unknown seq too: it may be a repeat of a frame 0x04 whose
             # confirmation was lost.
             self.create_catching_task(self.acknowledge_sent(seq, pending))

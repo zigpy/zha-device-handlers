@@ -133,6 +133,18 @@ async def start_ir_send(control, **kwargs):
     return task
 
 
+async def wait_for_announcement(transmit, seq):
+    """Let the loop run until the IR message with `seq` is announced."""
+    for _ in range(20):
+        await asyncio.sleep(0)
+        if (0x00, seq) in [
+            (command_id, args.seq)
+            for command_id, args in sent_commands(transmit.endpoint.request, transmit)
+        ]:
+            return
+    raise AssertionError(f"IR message {seq} was never announced")
+
+
 def last_announced_seq(transmit):
     """Return the seq of the last IR message announced to the blaster."""
     command_id, args = sent_commands(transmit.endpoint.request, transmit)[-1]
@@ -689,14 +701,71 @@ async def test_ts1201_cancelled_send_still_holds_the_blaster(zs06):
     assert not second.done()
 
     confirm_sent(transmit, first_seq)
-    await wait_for_zigpy_tasks()
-    second_seq = last_announced_seq(transmit)
-    assert second_seq == first_seq + 1
+    second_seq = first_seq + 1
+    await wait_for_announcement(transmit, second_seq)
     assert await pull_ir_msg(transmit, second_seq, len(ir_msg("BBBB"))) == ir_msg(
         "BBBB"
     )
     confirm_sent(transmit, second_seq)
     assert (await second).status == foundation.Status.SUCCESS
+
+
+async def test_ts1201_cancelled_queued_send_is_dropped(zs06):
+    """Test a send whose caller gives up before its turn is never announced."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+
+    first = await start_ir_send(control, code="AAAA")
+    first_seq = last_announced_seq(transmit)
+    queued = await start_ir_send(control, code="BBBB")
+    queued.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await queued
+
+    await pull_ir_msg(transmit, first_seq, len(ir_msg("AAAA")))
+    confirm_sent(transmit, first_seq)
+    assert (await first).status == foundation.Status.SUCCESS
+    await wait_for_zigpy_tasks()
+
+    announced = [
+        args.seq
+        for command_id, args in sent_commands(zs06.endpoints[1].request, transmit)
+        if command_id == 0x00
+    ]
+    assert announced == [first_seq]
+    assert not transmit.send_lock.locked()
+
+
+async def test_ts1201_slow_final_ack_is_not_a_timeout(zs06):
+    """Test a confirmed send succeeds even if the final 0x05 outlasts the window."""
+    control = zs06.endpoints[1].zosung_ircontrol
+    transmit = zs06.endpoints[1].zosung_irtransmit
+    ack_sent = asyncio.Event()
+
+    async def request(*args, **kwargs):
+        if kwargs["cluster"] == transmit.cluster_id and kwargs["command_id"] == 0x05:
+            await ack_sent.wait()
+        return foundation.Status.SUCCESS
+
+    zs06.endpoints[1].request.side_effect = request
+    with mock.patch.object(
+        type(transmit),
+        "send_timeout",
+        new_callable=mock.PropertyMock,
+        return_value=0.01,
+    ):
+        task = await start_ir_send(control, code="AAAA")
+        seq = last_announced_seq(transmit)
+        await pull_ir_msg(transmit, seq, len(ir_msg("AAAA")))
+        confirm_sent(transmit, seq)
+        # The window runs out while the 0x05 is still going out.
+        await asyncio.sleep(0.02)
+        assert not task.done()
+        assert transmit.send_lock.locked()
+
+        ack_sent.set()
+        assert (await task).status == foundation.Status.SUCCESS
+    assert not transmit.send_lock.locked()
 
 
 async def test_ts1201_send_closes_the_transfer_before_the_next(zs06):
@@ -714,10 +783,7 @@ async def test_ts1201_send_closes_the_transfer_before_the_next(zs06):
     first_seq = last_announced_seq(transmit)
     await pull_ir_msg(transmit, first_seq, len(ir_msg("AAAA")))
     confirm_sent(transmit, first_seq)
-    for _ in range(10):
-        await asyncio.sleep(0)
-        if sent_commands(zs06.endpoints[1].request, transmit)[-1][0] == 0x00:
-            break
+    await wait_for_announcement(transmit, first_seq + 1)
 
     frames = [
         (command_id, args.seq)
