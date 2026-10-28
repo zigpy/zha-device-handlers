@@ -10,12 +10,15 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks import MotionWithReset
 from zhaquirks.builder import (
     LIGHT_LUX,
+    PERCENTAGE,
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
+    UnitOfTemperature,
     UnitOfTime,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
@@ -135,6 +138,14 @@ class TuyaHumanMotionState(t.enum8):
     Off = 0x00
     Small = 0x01
     Large = 0x02
+
+
+class MercatorRelayMode(t.enum8):
+    """Mercator Ikuu combination sensor relay mode."""
+
+    On = 0x00
+    Off = 0x01
+    Auto = 0x02
 
 
 class TuyaHumanMotionStateV02(t.enum8):
@@ -1632,6 +1643,91 @@ base_tuya_motion = (
     .replaces(MotionWithReset)
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Mercator Ikuu SSWMPIR-ZB combination sensor (PIR, lux, temperature, humidity, relay)
+# DP 105 is the relay: On and Off force it, Auto hands it to the PIR (DP 102/103/106).
+(
+    TuyaQuirkBuilder("_TZE200_agumlajc", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_illuminance(dp_id=101)
+    .tuya_number(
+        dp_id=102,
+        attribute_name="illuminance_threshold",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.ILLUMINANCE,
+        unit=LIGHT_LUX,
+        min_value=0,
+        max_value=1000,
+        step=1,
+        translation_key="illuminance_threshold",
+        fallback_name="Illuminance threshold",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="on_time",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=3600,
+        step=1,
+        translation_key="on_time",
+        fallback_name="On time",
+    )
+    .tuya_dp(
+        dp_id=104,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_enum(
+        dp_id=105,
+        attribute_name="relay_mode",
+        enum_class=MercatorRelayMode,
+        entity_type=EntityType.STANDARD,
+        translation_key="relay_mode",
+        fallback_name="Relay mode",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="motion_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="temperature_offset",
+        type=t.int16s,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-10,
+        max_value=10,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="humidity_offset",
+        type=t.int16s,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
     .skip_configuration()
     .add_to_registry()
 )
