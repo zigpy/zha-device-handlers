@@ -11,8 +11,8 @@ from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.hvac import Fan, Thermostat
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -29,7 +29,16 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice, get_device
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    PowerOnState,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
+from zhaquirks.tuya.mcu import MoesBacklight, TuyaMCUCluster, TuyaOnOffNM
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
@@ -1806,3 +1815,210 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+@pytest.mark.parametrize(
+    ("fan_mode", "expected_dps", "expected_mode"),
+    [
+        (Fan.FanMode.Off, [(1, False)], Fan.FanMode.Off),
+        (Fan.FanMode.Low, [(3, 0x01), (1, True)], Fan.FanMode.Low),
+        (Fan.FanMode.Medium, [(3, 0x02), (1, True)], Fan.FanMode.Medium),
+        (Fan.FanMode.High, [(3, 0x03), (1, True)], Fan.FanMode.High),
+        (Fan.FanMode.On, [(1, True)], Fan.FanMode.Medium),
+    ],
+)
+async def test_ts0601_fan_light_write_fan_mode(
+    zigpy_device_from_v2_quirk,
+    fan_mode,
+    expected_dps,
+    expected_mode,
+):
+    """Test writing fan_mode on TS0601 fan/light controller."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    fan_cluster = device.endpoints[1].in_clusters[Fan.cluster_id]
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await fan_cluster.write_attributes({Fan.AttributeDefs.fan_mode.id: fan_mode})
+
+        assert mock_cmd.call_count == len(expected_dps)
+        for idx, (exp_dp, exp_val) in enumerate(expected_dps):
+            tuya_command = mock_cmd.call_args_list[idx][0][1]
+            assert isinstance(tuya_command, TuyaCommand)
+            dp_data = tuya_command.datapoints[0]
+            assert dp_data.dp == exp_dp
+            assert dp_data.data.payload == exp_val
+
+        assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == expected_mode
+
+
+@pytest.mark.parametrize(
+    ("tuya_speed", "expected_fan_mode"),
+    [
+        (0x00, Fan.FanMode.Low),
+        (0x01, Fan.FanMode.Low),
+        (0x02, Fan.FanMode.Medium),
+        (0x03, Fan.FanMode.High),
+        (0x04, Fan.FanMode.High),
+    ],
+)
+async def test_ts0601_fan_light_write_custom_fan_speed(
+    zigpy_device_from_v2_quirk,
+    tuya_speed,
+    expected_fan_mode,
+):
+    """Test writing custom fan_speed attribute updates DP 3, DP 1, and fan_mode."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    fan_cluster = device.endpoints[1].in_clusters[Fan.cluster_id]
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    speed_enum = fan_cluster.AttributeDefs.fan_speed.type
+
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await fan_cluster.write_attributes(
+            {fan_cluster.AttributeDefs.fan_speed.id: speed_enum(tuya_speed)}
+        )
+
+        assert mock_cmd.call_count == 2
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 3
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload == tuya_speed
+        assert mock_cmd.call_args_list[1][0][1].datapoints[0].dp == 1
+        assert mock_cmd.call_args_list[1][0][1].datapoints[0].data.payload is True
+        assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == expected_fan_mode
+
+
+@pytest.mark.parametrize(
+    ("switch_state", "expected_fan_mode"),
+    [
+        (True, Fan.FanMode.Medium),
+        (False, Fan.FanMode.Off),
+    ],
+)
+async def test_ts0601_fan_light_write_custom_fan_switch(
+    zigpy_device_from_v2_quirk,
+    switch_state,
+    expected_fan_mode,
+):
+    """Test writing custom fan_switch attribute sends DP 1 and updates fan_mode."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    fan_cluster = device.endpoints[1].in_clusters[Fan.cluster_id]
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await fan_cluster.write_attributes(
+            {fan_cluster.AttributeDefs.fan_switch.id: switch_state}
+        )
+
+        assert mock_cmd.call_count == 1
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 1
+        assert (
+            mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload is switch_state
+        )
+        assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == expected_fan_mode
+
+
+async def test_ts0601_fan_light_dp_reports(zigpy_device_from_v2_quirk):
+    """Test incoming Tuya MCU datapoint reports on TS0601 fan/light controller."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    fan_cluster = device.endpoints[1].in_clusters[Fan.cluster_id]
+    on_off_cluster = device.endpoints[1].in_clusters[OnOff.cluster_id]
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    speed_enum = fan_cluster.AttributeDefs.fan_speed.type
+
+    assert isinstance(on_off_cluster, TuyaOnOffNM)
+
+    # Device reports DP 3 = High (0x03) and DP 1 = True (On)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=3, data=TuyaData(speed_enum.high))],
+        )
+    )
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(True))],
+        )
+    )
+    assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == Fan.FanMode.High
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) is True
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_speed.id) == speed_enum.high
+
+    # Device reports DP 1 = False (Off)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=3,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(False))],
+        )
+    )
+    assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == Fan.FanMode.Off
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) is False
+
+    # Device reports DP 3 = Low while fan_switch is False (fan_mode remains Off)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=4,
+            datapoints=[TuyaDatapointData(dp=3, data=TuyaData(speed_enum.low))],
+        )
+    )
+    assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == Fan.FanMode.Off
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_speed.id) == speed_enum.low
+
+    # Light switch (DP 5) incoming report & outgoing command
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=5,
+            datapoints=[TuyaDatapointData(dp=5, data=TuyaData(True))],
+        )
+    )
+    assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) is True
+
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await on_off_cluster.command(OnOff.ServerCommandDefs.off.id)
+        assert mock_cmd.call_count == 1
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 5
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload is False
+        assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) is False
+
+
+@pytest.mark.parametrize(
+    ("dp_id", "dp_val", "attr_name", "expected_val"),
+    [
+        (2, 360, "fan_timer", 360),
+        (7, 1800, "switch_1_timer", 1800),
+        (11, PowerOnState.Off, "power_on_state", PowerOnState.Off),
+        (11, PowerOnState.On, "power_on_state", PowerOnState.On),
+        (11, PowerOnState.LastState, "power_on_state", PowerOnState.LastState),
+        (12, MoesBacklight.off, "backlight_mode", MoesBacklight.off),
+        (13, True, "backlight_switch", True),
+        (102, 150, "current", 150),
+        (103, 2300, "voltage", 2300),
+        (104, 650, "power", 650),
+    ],
+)
+async def test_ts0601_fan_light_mcu_datapoints(
+    zigpy_device_from_v2_quirk,
+    dp_id,
+    dp_val,
+    attr_name,
+    expected_val,
+):
+    """Test TuyaMCUCluster datapoint updates for TS0601 fan/light controller."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+
+    status = tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=dp_id, data=TuyaData(dp_val))],
+        )
+    )
+    assert status == foundation.Status.SUCCESS
+
+    attr_id = getattr(tuya_cluster.AttributeDefs, attr_name).id
+    assert tuya_cluster.get(attr_id) == expected_val
