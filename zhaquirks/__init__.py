@@ -92,7 +92,6 @@ class LocalDataCluster(CustomCluster):
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,12 +132,9 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(
-                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
-                )
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
@@ -327,6 +323,11 @@ class _Motion(CustomCluster, IasZone):
         self._loop = asyncio.get_running_loop()
         self._timer_handle = None
 
+    @property
+    def reset_after(self) -> int:
+        """Seconds before resetting motion; override to derive from an attribute."""
+        return self.reset_s
+
     def _turn_off(self):
         self._timer_handle = None
         self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
@@ -355,7 +356,7 @@ class MotionWithReset(_Motion):
         if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
             if self.send_occupancy_event:
                 self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
 
@@ -381,7 +382,7 @@ class MotionOnEvent(_Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
 
 class _Occupancy(CustomCluster, OccupancySensing):
