@@ -259,9 +259,9 @@ def test_light_entity_names(sdc2_device):
 
     changes = {}
     for change in definition.changed_entity_metadata:
-        assert change.cluster_id == OnOff.cluster_id
-        assert change.function(light) and not change.function(switch)
-        changes[change.endpoint_id] = change
+        assert change.filter.cluster_id == OnOff.cluster_id
+        assert change.filter.function(light) and not change.filter.function(switch)
+        changes[change.filter.endpoint_id] = change
     assert set(changes) == {BUS_ENDPOINT, *GEAR_ENDPOINTS}
 
     assert changes[BUS_ENDPOINT].new_translation_key == "dali_broadcast"
