@@ -13,9 +13,10 @@ from zigpy.zcl import (
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     AttributeWrittenEvent,
+    ClusterType,
     foundation,
 )
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import KeepAlive, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
@@ -755,6 +756,9 @@ fault_reporting = ReportingConfig(
 common_quirk = (
     QuirkBuilder()
     .replaces(SonoffMiniZb1gpCluster)
+    # The devices read the coordinator's KeepAlive server without advertising the
+    # client cluster. Unanswered reads can make them rejoin or leave the network.
+    .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
     # The standard metering clusters expose sentinel values; the real
     # measurements are in the eWeLink manufacturer cluster 0xFC11 below.
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=Metering.cluster_id)

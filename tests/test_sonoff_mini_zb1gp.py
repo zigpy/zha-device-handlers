@@ -15,7 +15,7 @@ from zigpy.zcl import (
     ClusterType,
     foundation,
 )
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import KeepAlive, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -68,7 +68,7 @@ REAL_PROTECTION_STATE = SonoffProtectionState(
 
 
 def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
-    """Test that the Sonoff manufacturer cluster is replaced for both models."""
+    """Test shared cluster changes for both models."""
 
     for model in ("MINI-ZB1GP", "MINI-ZB1GSP"):
         device = zigpy_device_from_v2_quirk(
@@ -88,6 +88,10 @@ def test_mini_zb1gp_cluster_replaced(zigpy_device_from_v2_quirk):
             device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id],
             SonoffMiniZb1gpCluster,
         )
+        assert isinstance(
+            device.endpoints[1].out_clusters[KeepAlive.cluster_id], KeepAlive
+        )
+        assert KeepAlive.aps_encryption is True
 
 
 def test_mini_zb1gsp_relay_and_trigger_metadata(zigpy_device_from_v2_quirk):
