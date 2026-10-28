@@ -7,18 +7,26 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    GreenPowerProxy,
+    LevelControl,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.builder.metadata import EntityFilter
 from zhaquirks.const import (
     COMMAND,
     COMMAND_MOVE_DOWN_RELEASE,
@@ -40,7 +48,16 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.legacy import CustomDevice, get_device
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+    TuyaZBE000Cluster,
+    TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
+    TuyaZBMeteringCluster,
+    TuyaZBOnOffAttributeCluster,
+)
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts004f
@@ -1919,3 +1936,107 @@ async def test_ts004f_stop_without_move(zigpy_device_from_quirk):
     level_cluster.handle_cluster_request(hdr_stop, [])
 
     assert listener.zha_send_event.call_args_list == []
+
+
+# Attribute report from the Tongou breaker as seen on the air: frame control 0x08
+# (server to client, default response not disabled), TSN 0x3B, measured_value.
+TONGOU_TEMPERATURE_REPORT = b"\x08\x3b\x0a\x00\x00\x29\x85\x14"
+
+
+def _tongou_device(zigpy_device_from_quirk, manufacturer, ieee=None):
+    """Build a raw device with the full Tongou TO-Q-SY1-JZT signature."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts011f_plug.Plug_CB_Metering, ieee=ieee, apply_quirk=False
+    )
+    device.manufacturer = manufacturer
+    return device
+
+
+def test_ts011f_qeuvnohg_quirk_selection(zigpy_device_from_quirk):
+    """Test the Tongou breaker gets its own quirk, other TS011F keep the legacy one."""
+    device = DEVICE_REGISTRY.resolve(
+        _tongou_device(zigpy_device_from_quirk, "_TZ3000_qeuvnohg")
+    )
+
+    assert not isinstance(device, zhaquirks.tuya.ts011f_plug.Plug_CB_Metering)
+    ep = device.endpoints[1]
+    assert isinstance(ep.on_off, TuyaZBOnOffAttributeCluster)
+    assert isinstance(ep.smartenergy_metering, TuyaZBMeteringCluster)
+    assert isinstance(ep.electrical_measurement, TuyaZBElectricalMeasurement)
+    assert isinstance(ep.in_clusters[TuyaZBE000Cluster.cluster_id], TuyaZBE000Cluster)
+    assert isinstance(
+        ep.in_clusters[TuyaZBExternalSwitchTypeCluster.cluster_id],
+        TuyaZBExternalSwitchTypeCluster,
+    )
+    assert TemperatureMeasurement.cluster_id in ep.in_clusters
+    assert GreenPowerProxy.cluster_id in device.endpoints[242].out_clusters
+
+    # The cluster stays, but ZHA must not create an entity for it
+    entry = DEVICE_REGISTRY.match_entry(device)
+    assert (
+        EntityFilter(endpoint_id=1, cluster_id=TemperatureMeasurement.cluster_id)
+        in entry.zha_device_factory.quirk_definition.disabled_default_entities
+    )
+
+    other = DEVICE_REGISTRY.resolve(
+        _tongou_device(
+            zigpy_device_from_quirk,
+            "_TZ3000_other",
+            ieee=t.EUI64.convert("01:02:03:04:05:06:07:09"),
+        )
+    )
+    assert isinstance(other, zhaquirks.tuya.ts011f_plug.Plug_CB_Metering)
+
+    # Same manufacturer with another endpoint layout: neither quirk applies
+    raw = _tongou_device(
+        zigpy_device_from_quirk,
+        "_TZ3000_qeuvnohg",
+        ieee=t.EUI64.convert("01:02:03:04:05:06:07:0a"),
+    )
+    del raw.endpoints[242]
+    unmatched = DEVICE_REGISTRY.resolve(raw)
+    assert not isinstance(unmatched.endpoints[1].on_off, TuyaZBOnOffAttributeCluster)
+
+
+@pytest.mark.parametrize(
+    ("manufacturer", "report", "expected_response"),
+    [
+        # Dedicated quirk: the report is acknowledged with a Default Response
+        (
+            "_TZ3000_qeuvnohg",
+            TONGOU_TEMPERATURE_REPORT,
+            b"\x10\x3b\x0b\x0a\x00",
+        ),
+        # Default response disabled by the device: nothing to send
+        ("_TZ3000_qeuvnohg", b"\x18" + TONGOU_TEMPERATURE_REPORT[1:], None),
+        # Legacy quirk drops the cluster: the report is ignored, never acknowledged
+        ("_TZ3000_other", TONGOU_TEMPERATURE_REPORT, None),
+    ],
+)
+async def test_ts011f_qeuvnohg_acknowledges_temperature_reports(
+    zigpy_device_from_quirk, manufacturer, report, expected_response
+):
+    """Test temperature reports from the Tongou breaker get acknowledged."""
+    device = DEVICE_REGISTRY.resolve(
+        _tongou_device(zigpy_device_from_quirk, manufacturer)
+    )
+    device._packet_debouncer.filter = mock.MagicMock(return_value=False)
+
+    with mock.patch.object(device, "reply", new_callable=mock.AsyncMock) as reply:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                src_ep=1,
+                dst_ep=1,
+                cluster_id=TemperatureMeasurement.cluster_id,
+                data=t.SerializableBytes(report),
+            )
+        )
+        await wait_for_zigpy_tasks()
+
+    if expected_response is None:
+        reply.assert_not_called()
+    else:
+        reply.assert_called_once()
+        assert reply.call_args.kwargs["cluster"] == TemperatureMeasurement.cluster_id
+        assert bytes(reply.call_args.kwargs["data"]) == expected_response
