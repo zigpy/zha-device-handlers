@@ -122,6 +122,7 @@ class SmokeIasZone(CustomCluster, IasZone):
         again) would clear an active alarm, so `zone_status` is never read from
         the device, as was the case while this was a `LocalDataCluster`.
         """
+        attributes = list(attributes)
         zone_status = [attr for attr in attributes if self._is_zone_status(attr)]
         others = [attr for attr in attributes if attr not in zone_status]
 

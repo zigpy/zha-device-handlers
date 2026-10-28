@@ -1531,18 +1531,24 @@ async def test_aqara_smoke_sensor_zone_status_read_from_cache(zigpy_device_from_
     assert ias_cluster.get(zone_status.id) == 1
 
     # the device itself would answer zone_status without the alarm bit
-    with mock.patch.object(
-        ias_cluster, "read_attributes_raw", mock.AsyncMock()
-    ) as read_mock:
-        read_mock.return_value = (
+    device_values = {
+        zone_state.id: TypeValue(type=DataTypeId.enum8, value=1),
+        zone_status.id: TypeValue(type=DataTypeId.map16, value=0x0020),
+    }
+
+    async def read_attributes_raw(attr_ids, **kwargs):
+        return (
             [
                 foundation.ReadAttributeRecord(
-                    zone_state.id,
-                    foundation.Status.SUCCESS,
-                    TypeValue(type=DataTypeId.enum8, value=1),
+                    attr_id, foundation.Status.SUCCESS, device_values[attr_id]
                 )
+                for attr_id in attr_ids
             ],
         )
+
+    with mock.patch.object(
+        ias_cluster, "read_attributes_raw", side_effect=read_attributes_raw
+    ) as read_mock:
         for attr in (zone_status.id, zone_status.name, zone_status):
             success, failure = await ias_cluster.read_attributes([attr])
             assert success == {attr: 1}
