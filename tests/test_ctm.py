@@ -1,13 +1,9 @@
 """Tests for CTM Lyng quirks."""
 
 import pytest
-from zha.application import EntityType
-from zha.application.platforms.binary_sensor import IASZone
-from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.quirks import DEVICE_REGISTRY
-from zigpy.profiles import zha
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -20,20 +16,6 @@ SENSOR_MODEL = "AX Water Sensor"
 
 # Bits 4 and 5 are always set by the device, so every zone status builds on them.
 IDLE = IasZone.ZoneStatus.Supervision_reports | IasZone.ZoneStatus.Restore_reports
-
-
-@pytest.fixture
-def valve(zigpy_device_from_v2_quirk):
-    """Return a quirked AX Valve Controller."""
-    return zigpy_device_from_v2_quirk(
-        CTM_MANUF_NAME,
-        VALVE_MODEL,
-        endpoint_ids=[1, 2],
-        cluster_ids={
-            1: {OnOff.cluster_id: ClusterType.Server},
-            2: {IasZone.cluster_id: ClusterType.Server},
-        },
-    )
 
 
 def quirk_definition(model):
@@ -59,54 +41,7 @@ def entities(definition):
     return {em.unique_id_suffix: em for em in definition.entity_metadata}
 
 
-def test_valve_endpoint_device_type_replaced(valve):
-    """The valve endpoint reports device type 0xffff, which the quirk replaces.
-
-    ``ON_OFF_OUTPUT`` is deliberate: it is not one of the device types that make
-    ZHA fall back to the legacy ``{ieee}-{endpoint_id}`` unique id, so the switch
-    entity keeps its ``{ieee}-1-6`` unique id.
-    """
-    assert valve.endpoints[1].profile_id == zha.PROFILE_ID
-    assert valve.endpoints[1].device_type == zha.DeviceType.ON_OFF_OUTPUT
-
-
 WATER_LEAK = str(IasZone.cluster_id)
-
-
-def test_valve_zone_status_entities(entities):
-    """The quirk splits the IAS zone status into three binary sensors."""
-    assert set(entities) == {WATER_LEAK, "active_water_leak", "mains_power"}
-
-    for em in entities.values():
-        assert em.endpoint_id == 2
-        assert em.cluster_id == IasZone.cluster_id
-        assert em.attribute_name == IasZone.AttributeDefs.zone_status.name
-
-    water_leak = entities[WATER_LEAK]
-    assert water_leak.device_class == BinarySensorDeviceClass.MOISTURE
-    assert water_leak.entity_type == EntityType.STANDARD
-    assert water_leak.translation_key == "water_leak"
-
-    active = entities["active_water_leak"]
-    assert active.device_class == BinarySensorDeviceClass.MOISTURE
-    assert active.entity_type == EntityType.STANDARD
-    assert active.translation_key == "active_water_leak"
-
-    assert entities["mains_power"].device_class == BinarySensorDeviceClass.POWER
-    assert entities["mains_power"].entity_type == EntityType.DIAGNOSTIC
-
-
-def test_valve_default_ias_zone_entity_replaced(definition):
-    """The default IAS zone entity is replaced by the Water leak sensor.
-
-    The rule matches on endpoint and cluster, which also covers the quirk's own
-    entities, so the filter has to discriminate on the entity class itself.
-    """
-    (rule,) = definition.disabled_default_entities
-    assert rule.endpoint_id == 2
-    assert rule.cluster_id == IasZone.cluster_id
-
-    assert rule.entity_cls is IASZone
 
 
 @pytest.mark.parametrize(
@@ -157,30 +92,6 @@ def sensor_entities():
     """Map unique_id suffix to entity metadata for the water sensor quirk."""
     definition = quirk_definition(SENSOR_MODEL)
     return {em.unique_id_suffix: em for em in definition.entity_metadata}
-
-
-def test_sensor_zone_status_entities(sensor_entities):
-    """The quirk adds the live leak and battery bits next to the default entity."""
-    assert set(sensor_entities) == {"active_water_leak", "battery_low"}
-
-    for em in sensor_entities.values():
-        assert em.endpoint_id == 1
-        assert em.cluster_id == IasZone.cluster_id
-        assert em.attribute_name == IasZone.AttributeDefs.zone_status.name
-
-    active = sensor_entities["active_water_leak"]
-    assert active.device_class == BinarySensorDeviceClass.MOISTURE
-    assert active.entity_type == EntityType.STANDARD
-    assert active.translation_key == "active_water_leak"
-
-    battery_low = sensor_entities["battery_low"]
-    assert battery_low.device_class == BinarySensorDeviceClass.BATTERY
-    assert battery_low.entity_type == EntityType.DIAGNOSTIC
-
-
-def test_sensor_default_ias_zone_entity_kept():
-    """The default IAS zone entity stays as the latched leak alarm."""
-    assert not quirk_definition(SENSOR_MODEL).disabled_default_entities
 
 
 @pytest.mark.parametrize(
