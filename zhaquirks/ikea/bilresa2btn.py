@@ -22,12 +22,18 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
+from zhaquirks.ikea import (
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
+    IKEA,
+    IkeaLevelControl,
+    ScenesCluster,
+)
 
 (
     QuirkBuilder(IKEA, "09B9")
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
-    .replace_cluster_occurrences(IkeaBilresaLevelControl)
+    .replace_cluster_occurrences(IkeaLevelControl)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
@@ -42,7 +48,7 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
                 PARAMS: {"move_mode": 0},
             },
             (LONG_RELEASE, DIM_UP): {
-                COMMAND: "move_up_release",
+                COMMAND: COMMAND_MOVE_UP_RELEASE,
                 CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
             },
@@ -58,7 +64,7 @@ from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl, ScenesCluster
                 PARAMS: {"move_mode": 1},
             },
             (LONG_RELEASE, DIM_DOWN): {
-                COMMAND: "move_down_release",
+                COMMAND: COMMAND_MOVE_DOWN_RELEASE,
                 CLUSTER_ID: LevelControl.cluster_id,
                 ENDPOINT_ID: 1,
             },
