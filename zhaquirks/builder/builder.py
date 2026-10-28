@@ -16,11 +16,13 @@ from frozendict import frozendict
 from zha.application import (  # noqa: F401
     EntityPlatform,
     EntityType,
+    Platform,
     # `discovery` must be imported before `zha.zigbee.device`: the platform
     # modules it loads participate in an import cycle with the device module and
     # cannot be loaded while `zha.zigbee.device` is only partially initialized.
     discovery,
 )
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
@@ -37,7 +39,7 @@ from zha.quirks import (
     QuirkSource,
     ReplaceZigpyDevice,
 )
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -47,16 +49,18 @@ from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
+    AddedEntityMetadata,
     BinarySensorMetadata,
     ChangedEntityMetadata,
     DeviceAlertLevel,
     DeviceAlertMetadata,
+    EntityFilter,
     EntityMetadata,
     ExposesFeatureMetadata,
     FriendlyNameMetadata,
     NumberMetadata,
-    PreventDefaultEntityCreationMetadata,
     QuirkDefinition,
+    ReplacedEntityMetadata,
     ReportingConfig,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
@@ -327,7 +331,7 @@ class SetDeviceAutomationTriggers:
 
 
 class QuirkBuilder:
-    """Builder compiling a declarative quirk into a registered `Device` subclass."""
+    """Builder compiling a declarative quirk into a registered `ZigbeeDevice` subclass."""
 
     def __init__(
         self,
@@ -341,13 +345,13 @@ class QuirkBuilder:
         self.friendly_name_metadata: FriendlyNameMetadata | None = None
         self.exposes_features: list[ExposesFeatureMetadata] = []
         self.device_alerts: list[DeviceAlertMetadata] = []
-        self.disabled_default_entities: list[PreventDefaultEntityCreationMetadata] = []
+        self.disabled_default_entities: list[EntityFilter] = []
         self.changed_entity_metadata: list[ChangedEntityMetadata] = []
         self.filters: list[FilterType] = []
         self.firmware_version_min: int | None = None
         self.firmware_version_max: int | None = None
         self.firmware_version_allow_missing: bool = True
-        self.custom_device_class: type[Device] | None = None
+        self.custom_device_class: type[ZigbeeDevice] | None = None
         self.custom_zigpy_device_class: type[BaseCustomDevice] = CustomZigpyDevice
         self.device_node_descriptor: NodeDescriptor | None = None
         self.skip_device_configuration: bool = False
@@ -359,6 +363,8 @@ class QuirkBuilder:
         self.replaces_ops: list[ReplaceCluster] = []
         self.replace_occurrences_ops: list[ReplaceClusterOccurrences] = []
         self.entity_metadata: list[EntityMetadata] = []
+        self.added_entities: list[AddedEntityMetadata] = []
+        self.replaced_entities: list[ReplacedEntityMetadata] = []
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
@@ -437,16 +443,16 @@ class QuirkBuilder:
         return self
 
     def device_class(
-        self, custom_device_class: type[Device] | type[BaseCustomDevice]
+        self, custom_device_class: type[ZigbeeDevice] | type[BaseCustomDevice]
     ) -> Self:
         """Use `zha_device_class` or `zigpy_device_class` instead (legacy compatibility)."""
-        if issubclass(custom_device_class, Device):
+        if issubclass(custom_device_class, ZigbeeDevice):
             return self.zha_device_class(custom_device_class)
         else:
             return self.zigpy_device_class(custom_device_class)
 
-    def zha_device_class(self, custom_device_class: type[Device]) -> Self:
-        """Set the ZHA `Device` subclass used as the base of this quirk's class."""
+    def zha_device_class(self, custom_device_class: type[ZigbeeDevice]) -> Self:
+        """Set the ZHA `ZigbeeDevice` subclass used as the base of this quirk's class."""
         self.custom_device_class = custom_device_class
         return self
 
@@ -981,17 +987,109 @@ class QuirkBuilder:
         function: Callable[[Any], bool] | None = None,
     ) -> Self:
         """Do not create default entities."""
-        if cluster_id is not None and cluster_type is None:
-            cluster_type = ClusterType.Server
-
-        self.disabled_default_entities.append(
-            PreventDefaultEntityCreationMetadata(
+        return self.removes_entity(
+            EntityFilter(
                 endpoint_id=endpoint_id,
                 cluster_id=cluster_id,
                 cluster_type=cluster_type,
                 unique_id_suffix=unique_id_suffix,
                 function=function,
-            ),
+            )
+        )
+
+    def removes_entity(self, *filters: EntityFilter) -> Self:
+        """Remove entities matching any of the filters."""
+        self.disabled_default_entities.extend(filters)
+        return self
+
+    def adds_entity(
+        self,
+        entity_cls: type[PlatformEntity],
+        *,
+        endpoint_id: int | None = None,
+        cluster_id: int | None = None,
+        cluster_type: ClusterType = ClusterType.Server,
+        **kwargs: Any,
+    ) -> Self:
+        """Add an entity of the given class, created with `kwargs`.
+
+        A `ZclPlatformEntity` is bound to the given endpoint and cluster, any other
+        `PlatformEntity` only to the device.
+        """
+        if "unique_id" in kwargs:
+            raise ValueError(
+                "The quirk sets the unique ID base, use `unique_id_suffix` instead"
+            )
+
+        if issubclass(entity_cls, ZclPlatformEntity):
+            if endpoint_id is None or cluster_id is None:
+                raise ValueError(
+                    f"{entity_cls!r} requires an `endpoint_id` and a `cluster_id`"
+                )
+        elif endpoint_id is not None or cluster_id is not None:
+            raise ValueError(
+                f"{entity_cls!r} is bound to the device, not to an endpoint or cluster"
+            )
+
+        self.added_entities.append(
+            AddedEntityMetadata(
+                entity_cls=entity_cls,
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+                kwargs=kwargs,
+            )
+        )
+        return self
+
+    def replaces_entity(
+        self,
+        base_cls: type[PlatformEntity],
+        new_cls: type[PlatformEntity],
+        *,
+        endpoint_id: int | None = None,
+        cluster_id: int | None = None,
+        cluster_type: ClusterType | None = None,
+        filter: EntityFilter | None = None,
+        **kwargs: Any,
+    ) -> Self:
+        """Replace the one default entity of exactly `base_cls` with one of `new_cls`.
+
+        The entity is matched by `filter`, or by the given endpoint and cluster.
+        `new_cls` is created with the unique ID base of the entity it replaces, and
+        `kwargs`. It must keep the unique ID.
+        """
+        if "unique_id" in kwargs:
+            raise ValueError(
+                "A replacement keeps the unique ID of the entity it replaces"
+            )
+
+        if issubclass(base_cls, ZclPlatformEntity) != issubclass(
+            new_cls, ZclPlatformEntity
+        ):
+            raise TypeError(
+                "A ZCL entity can only be replaced with a ZCL entity, a device-bound"
+                " entity only with a device-bound entity"
+            )
+
+        if filter is None:
+            filter = EntityFilter(
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+            )
+        elif (endpoint_id, cluster_id, cluster_type) != (None, None, None):
+            raise ValueError(
+                "Pass either a `filter` or an `endpoint_id`/`cluster_id`/`cluster_type`"
+            )
+
+        self.replaced_entities.append(
+            ReplacedEntityMetadata(
+                base_cls=base_cls,
+                filter=filter,
+                entity_cls=new_cls,
+                kwargs=kwargs,
+            )
         )
         return self
 
@@ -1021,11 +1119,13 @@ class QuirkBuilder:
 
         self.changed_entity_metadata.append(
             ChangedEntityMetadata(
-                endpoint_id=endpoint_id,
-                cluster_id=cluster_id,
-                cluster_type=cluster_type,
-                unique_id_suffix=unique_id_suffix,
-                function=function,
+                filter=EntityFilter(
+                    endpoint_id=endpoint_id,
+                    cluster_id=cluster_id,
+                    cluster_type=cluster_type,
+                    unique_id_suffix=unique_id_suffix,
+                    function=function,
+                ),
                 new_primary=new_primary,
                 new_unique_id=new_unique_id,
                 new_translation_key=new_translation_key,
@@ -1086,6 +1186,8 @@ class QuirkBuilder:
             disabled_default_entities=tuple(self.disabled_default_entities),
             changed_entity_metadata=tuple(self.changed_entity_metadata),
             entity_metadata=tuple(self.entity_metadata),
+            added_entities=tuple(self.added_entities),
+            replaced_entities=tuple(self.replaced_entities),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
         )
