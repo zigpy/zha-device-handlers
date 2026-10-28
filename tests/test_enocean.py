@@ -14,8 +14,9 @@ from zigpy.zgp.commands import GPContactStatusPayload
 from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 import zhaquirks
+from zhaquirks.enocean import CONTACT_A0, CONTACT_A1
 from zhaquirks.enocean.ptm215z import PTM215ZButton
-from zhaquirks.enocean.ptm216z import CONTACT_A0, CONTACT_A1, PTM216ZButton
+from zhaquirks.enocean.ptm216z import PTM216ZButton
 
 zhaquirks.setup()
 

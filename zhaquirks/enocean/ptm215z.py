@@ -1,4 +1,4 @@
-"""EnOcean PTM 215Z self-powered double rocker switch, used in Friends of Hue switches."""
+"""EnOcean PTM 215Z self-powered double rocker switch."""
 
 from typing import Any
 
@@ -11,8 +11,8 @@ from zhaquirks.builder import ButtonEventType, EventDeviceClass, GreenPowerQuirk
 from zhaquirks.enocean import CONTACT_A0, CONTACT_A1, CONTACT_B0, CONTACT_B1
 
 # The contacts each command reports, and whether they were pressed or released. Only
-# both top or both bottom contacts can be pressed together. The energy bar is not
-# exposed.
+# both top or both bottom contacts are reported together, other combinations and the
+# energy bar are not exposed.
 COMMANDS: dict[GPDCommandID, tuple[int, bool]] = {
     GPDCommandID.RecallScene0: (CONTACT_A0, True),
     GPDCommandID.RecallScene4: (CONTACT_A0, False),
@@ -69,7 +69,8 @@ class PTM215ZButton(BaseEvent):
 
 (
     GreenPowerQuirkBuilder()
-    # The PTM 215ZE is also an on/off switch, but its SrcID block and commands differ
+    # Used in Friends of Hue switches. The PTM 215ZE is also an on/off switch, but its
+    # SrcID block and commands differ
     .applies_to(device_id=DeviceID.OnOffSwitch)
     .src_id_range(0x01700000, 0x017FFFFF)
     .src_id_range(0x01A40000, 0x01A4FFFF)
