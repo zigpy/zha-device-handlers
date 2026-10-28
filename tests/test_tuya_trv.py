@@ -346,3 +346,35 @@ async def test_handle_get_data_tmcu(
     assert tmcu_listener.attribute_updates[0][1] == value
 
     assert ep.tuya_manufacturer.get(attr_id) == value
+
+
+# Moes TRV801 (_TZE204_9mjy74mp, same datapoints) about 5 minutes after midnight:
+# dp 2 (setpoint) twice as a VALUE with 1 byte, then the real setpoint.
+# https://github.com/zigpy/zha-device-handlers/issues/4904
+TUYA_MIDNIGHT_REPORT = (
+    b"\t\x51\x02\x00\x8b\x02\x02\x00\x01\x00",  # dp 2, VALUE with 1 byte
+    b"\t\x52\x02\x00\x8c\x02\x02\x00\x01\x00",  # dp 2, VALUE with 1 byte
+    b"\t\x53\x02\x00\x8d\x02\x02\x00\x04\x00\x00\x00\xd2",  # dp 2, 21.0 °C
+    b"\t\x57\x02\x00\x91\x03\x02\x00\x04\x00\x00\x00\xcd",  # dp 3, 20.5 °C
+)
+
+
+def test_handle_get_data_invalid_datapoint(zigpy_device_from_v2_quirk):
+    """Test malformed datapoints are skipped and the reports are still acknowledged."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_rtrmfadk", "TS0601")
+    ep = quirked.endpoints[1]
+    thermostat_listener = ClusterListener(ep.thermostat)
+
+    with mock.patch.object(ep.tuya_manufacturer, "send_default_rsp") as default_rsp:
+        for msg in TUYA_MIDNIGHT_REPORT:
+            hdr, args = ep.tuya_manufacturer.deserialize(msg)
+            ep.tuya_manufacturer.handle_message(hdr, args)
+
+    assert [call.kwargs["status"] for call in default_rsp.call_args_list] == [
+        foundation.Status.SUCCESS
+    ] * len(TUYA_MIDNIGHT_REPORT)
+    assert thermostat_listener.attribute_updates == [
+        (Thermostat.AttributeDefs.occupied_heating_setpoint.id, 2100),
+        (Thermostat.AttributeDefs.local_temperature.id, 2050),
+    ]

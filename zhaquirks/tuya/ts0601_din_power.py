@@ -296,6 +296,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
 
 (
     TuyaQuirkBuilder("_TZE204_ugekduaj", "TS0601")
+    .applies_to("_TZE284_loejka0i", "TS0601")  # Nous D4Z, reported in #5461
     .tuya_dp(
         dp_id=101,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
