@@ -15,7 +15,7 @@ from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.application.platforms.sensor.device_class import SensorDeviceClass
 from zha.quirks import DeviceRegistry
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, Ota
@@ -474,13 +474,13 @@ async def test_default_discovery_failure_keeps_earlier_entities() -> None:
         RSSISensor, QuirkRSSISensor
     ).add_to_registry(registry)
 
-    discover_entities = Device.discover_entities
+    discover_entities = ZigbeeDevice.discover_entities
 
-    def failing_discovery(device: Device) -> Iterator[PlatformEntity]:
+    def failing_discovery(device: ZigbeeDevice) -> Iterator[PlatformEntity]:
         yield from itertools.islice(discover_entities(device), 2)
         raise RuntimeError("Discovery failed")
 
-    with mock.patch.object(Device, "discover_entities", failing_discovery):
+    with mock.patch.object(ZigbeeDevice, "discover_entities", failing_discovery):
         async with zha_gateway() as gateway:
             device = await join_device_from_diagnostics(
                 gateway, "centralite-3405-l-0x10025310.json", registry

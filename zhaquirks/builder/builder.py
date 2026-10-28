@@ -39,7 +39,7 @@ from zha.quirks import (
     QuirkSource,
     ReplaceZigpyDevice,
 )
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -331,7 +331,7 @@ class SetDeviceAutomationTriggers:
 
 
 class QuirkBuilder:
-    """Builder compiling a declarative quirk into a registered `Device` subclass."""
+    """Builder compiling a declarative quirk into a registered `ZigbeeDevice` subclass."""
 
     def __init__(
         self,
@@ -351,7 +351,7 @@ class QuirkBuilder:
         self.firmware_version_min: int | None = None
         self.firmware_version_max: int | None = None
         self.firmware_version_allow_missing: bool = True
-        self.custom_device_class: type[Device] | None = None
+        self.custom_device_class: type[ZigbeeDevice] | None = None
         self.custom_zigpy_device_class: type[BaseCustomDevice] = CustomZigpyDevice
         self.device_node_descriptor: NodeDescriptor | None = None
         self.skip_device_configuration: bool = False
@@ -443,16 +443,16 @@ class QuirkBuilder:
         return self
 
     def device_class(
-        self, custom_device_class: type[Device] | type[BaseCustomDevice]
+        self, custom_device_class: type[ZigbeeDevice] | type[BaseCustomDevice]
     ) -> Self:
         """Use `zha_device_class` or `zigpy_device_class` instead (legacy compatibility)."""
-        if issubclass(custom_device_class, Device):
+        if issubclass(custom_device_class, ZigbeeDevice):
             return self.zha_device_class(custom_device_class)
         else:
             return self.zigpy_device_class(custom_device_class)
 
-    def zha_device_class(self, custom_device_class: type[Device]) -> Self:
-        """Set the ZHA `Device` subclass used as the base of this quirk's class."""
+    def zha_device_class(self, custom_device_class: type[ZigbeeDevice]) -> Self:
+        """Set the ZHA `ZigbeeDevice` subclass used as the base of this quirk's class."""
         self.custom_device_class = custom_device_class
         return self
 
