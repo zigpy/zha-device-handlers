@@ -1195,6 +1195,46 @@ base_tuya_motion = (
 )
 
 
+# Tuya PIR motion + illuminance sensor, HOBEIAN ZG-204ZL
+(
+    TuyaQuirkBuilder("HOBEIAN", "ZG-204ZL")
+    # Occupancy (DP 1), battery (DP 4) and illuminance (DP 12) intentionally stay
+    # on the native IasZone (0x0500), PowerConfiguration (0x0001) and
+    # IlluminanceMeasurement (0x0400) clusters this device also exposes: mapping
+    # the datapoints as well would create duplicate entities.
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="presence_sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="fading_time",
+        enum_class=TuyaMotionFadeTime,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    # No skip_configuration(): unlike the pure-datapoint variants, this quirk
+    # keeps relying on the native IasZone / PowerConfiguration /
+    # IlluminanceMeasurement clusters, so ZHA must keep configuring them.
+    .add_to_registry()
+)
+
+
 # Tuya Mini human breath sensor ZY-M100-S_1
 (
     TuyaQuirkBuilder("_TZE204_sxm7l9xa", "TS0601")

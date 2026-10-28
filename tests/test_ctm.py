@@ -18,27 +18,23 @@ SENSOR_MODEL = "AX Water Sensor"
 IDLE = IasZone.ZoneStatus.Supervision_reports | IasZone.ZoneStatus.Restore_reports
 
 
-def quirk_definition(model):
-    """Return the quirk definition registered for a CTM Lyng model."""
-    for entry in DEVICE_REGISTRY:
-        if any(
-            model_info.manufacturer == CTM_MANUF_NAME and model_info.model == model
-            for model_info in entry.device_match.applies_to
-        ):
-            return entry.zha_device_factory.quirk_definition
-    pytest.fail(f"no v2 quirk registered for {CTM_MANUF_NAME} {model}")
+def entity_metadata(quirked_device):
+    """Map unique_id suffix to the entity metadata of the device's quirk."""
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    return {
+        metadata.resolved_unique_id_suffix: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
 
 
 @pytest.fixture
-def definition():
-    """Return the quirk definition registered for the AX Valve Controller."""
-    return quirk_definition(VALVE_MODEL)
-
-
-@pytest.fixture
-def entities(definition):
-    """Map unique_id suffix to entity metadata for the valve quirk."""
-    return {em.unique_id_suffix: em for em in definition.entity_metadata}
+def valve(zigpy_device_from_v2_quirk):
+    """Return a quirked AX Valve Controller."""
+    return zigpy_device_from_v2_quirk(
+        CTM_MANUF_NAME,
+        VALVE_MODEL,
+        cluster_ids={2: {IasZone.cluster_id: ClusterType.Server}},
+    )
 
 
 WATER_LEAK = str(IasZone.cluster_id)
@@ -63,9 +59,10 @@ WATER_LEAK = str(IasZone.cluster_id)
     ],
 )
 def test_valve_zone_status_converters(
-    entities, zone_status, water_leak, active_water_leak, mains_power
+    valve, zone_status, water_leak, active_water_leak, mains_power
 ):
     """Each binary sensor decodes its own bits out of the shared zone status."""
+    entities = entity_metadata(valve)
     assert entities[WATER_LEAK].attribute_converter(zone_status) is water_leak
     active = entities["active_water_leak"]
     assert active.attribute_converter(zone_status) is active_water_leak
@@ -87,13 +84,6 @@ def sensor(zigpy_device_from_v2_quirk):
     )
 
 
-@pytest.fixture
-def sensor_entities():
-    """Map unique_id suffix to entity metadata for the water sensor quirk."""
-    definition = quirk_definition(SENSOR_MODEL)
-    return {em.unique_id_suffix: em for em in definition.entity_metadata}
-
-
 @pytest.mark.parametrize(
     ("zone_status", "active_water_leak", "battery_low"),
     [
@@ -113,9 +103,10 @@ def sensor_entities():
     ],
 )
 def test_sensor_zone_status_converters(
-    sensor_entities, zone_status, active_water_leak, battery_low
+    sensor, zone_status, active_water_leak, battery_low
 ):
     """Each binary sensor decodes its own bit out of the shared zone status."""
+    sensor_entities = entity_metadata(sensor)
     active = sensor_entities["active_water_leak"]
     assert active.attribute_converter(zone_status) is active_water_leak
     assert (
