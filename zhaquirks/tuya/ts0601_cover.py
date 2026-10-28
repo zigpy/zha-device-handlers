@@ -654,6 +654,7 @@ class ClickControl(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
+    .applies_to("_TZE2841000000_3mzb0sdz", "TS0601")
     .applies_to("_TZE200_sq6affpe", "TS0601")
     .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
     .tuya_battery(dp_id=13)
