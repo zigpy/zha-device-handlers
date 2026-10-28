@@ -220,6 +220,11 @@ def test_tuya_data_unknown():
             "TuyaData(dp_type=<TuyaDPType.STRING: 3>, function=0, "
             "raw=b'Tuya', *payload='Tuya')",
         ),
+        # a RAW payload is the raw bytes, so it is not repeated
+        (
+            b"\x00\x00\x03\x02ab",
+            "TuyaData(dp_type=<TuyaDPType.RAW: 0>, function=0, raw=b'\\x02ab')",
+        ),
         # invalid payloads are left out
         (
             b"\x02\x00\x01\x00",
