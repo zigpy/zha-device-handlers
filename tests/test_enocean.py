@@ -14,7 +14,9 @@ from zigpy.zgp.commands import GPContactStatusPayload
 from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 import zhaquirks
-from zhaquirks.enocean.ptm216z import CONTACT_A0, CONTACT_A1, PTM216ZButton
+from zhaquirks.enocean import CONTACT_A0, CONTACT_A1
+from zhaquirks.enocean.ptm215z import PTM215ZButton
+from zhaquirks.enocean.ptm216z import PTM216ZButton
 
 zhaquirks.setup()
 
@@ -277,3 +279,158 @@ def test_ptm216z_captured_sequence(ptm216z, buttons):
     # Four single-contact presses and four two-contact presses, each released once
     assert len(presses) == 4 + 2 * 4
     assert [e.unique_id for e in presses] == [e.unique_id for e in releases]
+
+
+@pytest.fixture
+def ptm215z(MockAppController):
+    """Create the zigpy GPD for a PTM 215Z."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(0x01A41D99),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+    return gpd
+
+
+@pytest.fixture
+def ptm215z_buttons(ptm215z):
+    """Create the PTM 215Z quirk's event entities, keyed by their unique ID suffix."""
+    entry = DEVICE_REGISTRY.match_green_power_entry(ptm215z)
+    zha_device = entry.zha_device_factory(ptm215z, MagicMock())
+
+    assert zha_device.manufacturer == "EnOcean"
+    assert zha_device.model == "PTM 215Z"
+
+    entities = [
+        entity
+        for entity in zha_device.discover_entities()
+        if isinstance(entity, PTM215ZButton)
+    ]
+
+    for entity in entities:
+        entity.on_add()
+
+    return {entity.unique_id.rsplit("-", 1)[-1]: entity for entity in entities}
+
+
+@pytest.mark.parametrize(
+    "src_id", [0x01700000, 0x01711F3E, 0x017FFFFF, 0x01A40000, 0x01A41D99, 0x01A4FFFF]
+)
+def test_ptm215z_matches(MockAppController, src_id):
+    """Test that the quirk matches a PTM 215Z anywhere in its SrcID blocks."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
+
+    assert entry is not None
+    assert entry.source.module == "zhaquirks.enocean.ptm215z"
+
+
+@pytest.mark.parametrize(
+    ("src_id", "device_id"),
+    [
+        # Outside of the SrcID blocks
+        (0x016FFFFF, DeviceID.OnOffSwitch),
+        (0x01800000, DeviceID.OnOffSwitch),
+        (0x01A3FFFF, DeviceID.OnOffSwitch),
+        (0x01A50000, DeviceID.OnOffSwitch),
+        # A PTM 215ZE
+        (0x0155F443, DeviceID.OnOffSwitch),
+        # Not an on/off switch
+        (0x01A41D99, DeviceID.GenericSwitch),
+    ],
+)
+def test_ptm215z_does_not_match(MockAppController, src_id, device_id):
+    """Test that the quirk ignores other GPDs."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = device_id
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
+
+    assert entry is None or entry.source.module != "zhaquirks.enocean.ptm215z"
+
+
+def test_ptm215z_entities(ptm215z_buttons):
+    """Test that there is one entity per contact."""
+    assert list(ptm215z_buttons) == ["button_a0", "button_a1", "button_b0", "button_b1"]
+    assert [entity.event_types for entity in ptm215z_buttons.values()] == [
+        [ButtonEventType.PRESS_START, ButtonEventType.PRESS_END]
+    ] * 4
+
+
+@pytest.mark.parametrize(
+    ("press", "release", "expected"),
+    [
+        (GPDCommandID.RecallScene0, GPDCommandID.RecallScene4, ["button_a0"]),
+        (GPDCommandID.RecallScene1, GPDCommandID.RecallScene5, ["button_a1"]),
+        (GPDCommandID.RecallScene3, GPDCommandID.RecallScene7, ["button_b0"]),
+        (GPDCommandID.RecallScene2, GPDCommandID.RecallScene6, ["button_b1"]),
+        # Both top and both bottom contacts
+        (GPDCommandID.Press2of2, GPDCommandID.Release2of2, ["button_a0", "button_b0"]),
+        (GPDCommandID.Press1of2, GPDCommandID.Release1of2, ["button_a1", "button_b1"]),
+    ],
+)
+def test_ptm215z_press_and_release(ptm215z, ptm215z_buttons, press, release, expected):
+    """Test that a press and its release only fire the contacts that were pressed."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in ptm215z_buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    for command_id, event_type in [
+        (press, ButtonEventType.PRESS_START),
+        (release, ButtonEventType.PRESS_END),
+    ]:
+        ptm215z.emit(
+            GreenPowerCommandReceived.event_type,
+            GreenPowerCommandReceived(
+                device_ieee=str(ptm215z.ieee),
+                endpoint_id=None,
+                command_id=command_id,
+                command=None,
+            ),
+        )
+        assert [
+            (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+            for event in events
+        ] == [(suffix, event_type) for suffix in expected]
+
+        events.clear()
+
+
+@pytest.mark.parametrize(
+    "command_id",
+    [
+        # Commands not mapped to a contact, the energy bar among them
+        GPDCommandID.Toggle,
+        GPDCommandID.Press1of1,
+        GPDCommandID.ShortPress2of2,
+        GPDCommandID.Press8BitVector,
+    ],
+)
+def test_ptm215z_ignored_commands(ptm215z, ptm215z_buttons, command_id):
+    """Test that commands not reporting a contact fire nothing."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in ptm215z_buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    ptm215z.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(ptm215z.ieee),
+            endpoint_id=None,
+            command_id=command_id,
+            command=None,
+        ),
+    )
+
+    assert events == []
