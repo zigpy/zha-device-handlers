@@ -3,17 +3,67 @@
 import pytest
 from zigpy.profiles import zll
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Scenes,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
 from zhaquirks.innr.innr_sp120_plug import SP120
+from zhaquirks.innr.innr_sp240_plug import InnrCluster
 
 zhaquirks.setup()
 
 # firmware version that fixed the metering divisor bug (max_version is exclusive)
 SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
+
+
+@pytest.mark.parametrize(
+    "firmware_version",
+    [SP240_DIVISOR_FIX_FW_VERSION - 1, SP240_DIVISOR_FIX_FW_VERSION],
+)
+def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version):
+    """Test the SP 240 quirk keeps the device's cluster order.
+
+    ZHA configures reporting in this order, and the plug only has a few
+    reporting slots: Metering must stay ahead of Electrical Measurement.
+    """
+    raw_cluster_ids = [
+        Basic.cluster_id,
+        Identify.cluster_id,
+        Groups.cluster_id,
+        Scenes.cluster_id,
+        OnOff.cluster_id,
+        LevelControl.cluster_id,
+        Metering.cluster_id,
+        ElectricalMeasurement.cluster_id,
+        LightLink.cluster_id,
+        InnrCluster.cluster_id,
+    ]
+    device = zigpy_device_from_v2_quirk(
+        "innr",
+        "SP 240",
+        cluster_ids={1: dict.fromkeys(raw_cluster_ids, ClusterType.Server)},
+        firmware_version=firmware_version,
+    )
+
+    assert list(device.endpoints[1].in_clusters) == raw_cluster_ids
+    assert isinstance(
+        device.endpoints[1].in_clusters[Metering.cluster_id],
+        MeteringClusterInnrOld | MeteringClusterInnrNew,
+    )
+    assert isinstance(
+        device.endpoints[1].in_clusters[InnrCluster.cluster_id], InnrCluster
+    )
 
 
 @pytest.mark.parametrize(
