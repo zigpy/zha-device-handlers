@@ -1,18 +1,18 @@
 """ZHA Custom Quirk: NEO NAS-PS10B2 Human Presence Sensor (24 GHz mmWave).
 
-Unterstützte Geräte:
-  Modell-ID : TS0601
-  Hersteller: _TZE204_1youk3hj  (ältere Firmware)
-              _TZE284_1youk3hj  (neuere Firmware)
+Supported devices:
+  Model ID    : TS0601
+  Manufacturer: _TZE204_1youk3hj  (older firmware)
+              _TZE284_1youk3hj  (newer firmware)
 
-DP-Mapping – verifiziert via:
-  1. ZHA Debug-Log (live Gerätedaten)
-  2. offizieller Z2M-Quellcode (zigbee-herdsman-converters/src/devices/neo.ts)
+DP mapping – verified via:
+  1. ZHA debug log (live device data)
+  2. official Z2M source code (zigbee-herdsman-converters/src/devices/neo.ts)
 
   DP   1  presence               bool    READ
   DP  11  human_motion_state     enum    READ (0=none, 1=small, 2=large)
   DP  12  presence_time          uint32  SET  (3–600 s)
-  DP  13  motion_far_detection   uint32  SET  (150–600 cm, Schritte 75)
+  DP  13  motion_far_detection   uint32  SET  (150–600 cm, step 75)
   DP  15  motion_sensitivity     uint32  SET  (0–7)
   DP  16  motionless_sensitivity uint32  SET  (0–7)
   DP  19  dis_current            uint32  READ (0–600 cm)
@@ -34,11 +34,11 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
-    """Lokaler OccupancySensing-Cluster."""
+    """Local OccupancySensing cluster."""
 
 
 class TuyaHumanMotionState(t.enum8):
-    """DP 11 – Bewegungsstatus (read-only)."""
+    """DP 11 – Motion state (read-only)."""
 
     none = 0x00
     small = 0x01
@@ -46,14 +46,14 @@ class TuyaHumanMotionState(t.enum8):
 
 
 class TuyaWorkMode(t.enum8):
-    """DP 101 – Arbeitsmodus."""
+    """DP 101 – Work mode."""
 
     manual = 0x00
     auto = 0x01
 
 
 class TuyaLuxValue(t.enum8):
-    """DP 102 – Helligkeitsschwelle."""
+    """DP 102 – Illuminance threshold."""
 
     lux_10 = 0x00
     lux_20 = 0x01
@@ -62,7 +62,7 @@ class TuyaLuxValue(t.enum8):
 
 
 # ---------------------------------------------------------------------------
-# Quirk-Definition via TuyaQuirkBuilder
+# Quirk definition via TuyaQuirkBuilder
 # ---------------------------------------------------------------------------
 
 (
@@ -76,7 +76,7 @@ class TuyaLuxValue(t.enum8):
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
         converter=lambda x: x == 1,
     )
-    # DP 11 – Human Motion State (read-only, als Sensor nicht Select)
+    # DP 11 – Human Motion State (read-only, a sensor rather than a select)
     .tuya_enum(
         dp_id=11,
         attribute_name="human_motion_state",
@@ -109,7 +109,7 @@ class TuyaLuxValue(t.enum8):
         translation_key="presence_time",
         fallback_name="Presence time",
     )
-    # DP 13 – Motion Far Detection (Schritte 75 cm lt. Z2M)
+    # DP 13 – Motion Far Detection (step 75 cm per Z2M)
     .tuya_number(
         dp_id=13,
         attribute_name="motion_far_detection",
