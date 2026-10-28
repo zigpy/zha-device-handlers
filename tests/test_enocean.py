@@ -4,17 +4,24 @@ from unittest.mock import MagicMock
 
 import pytest
 from zha.application.platforms.event import EntityEventTriggeredEvent
-from zha.application.platforms.event.const import ButtonEventType
+from zha.application.platforms.event.const import ButtonEventType, EventDeviceClass
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import (
     GreenPowerCommandReceived,
     GreenPowerDevice as ZigpyGreenPowerDevice,
 )
+from zigpy.types import EUI64
 from zigpy.zgp.commands import GPContactStatusPayload
 from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 import zhaquirks
-from zhaquirks.enocean.ptm216z import CONTACT_A0, CONTACT_A1, PTM216ZButton
+from zhaquirks.enocean.ptm216z import (
+    CONTACT_A0,
+    CONTACT_A1,
+    CONTACT_B0,
+    CONTACT_B1,
+    PTM216ZButton,
+)
 
 zhaquirks.setup()
 
@@ -277,3 +284,192 @@ def test_ptm216z_captured_sequence(ptm216z, buttons):
     # Four single-contact presses and four two-contact presses, each released once
     assert len(presses) == 4 + 2 * 4
     assert [e.unique_id for e in presses] == [e.unique_id for e in releases]
+
+
+def emit_contact_status(
+    gpd: ZigpyGreenPowerDevice, command_id: GPDCommandID, contact_status: int
+) -> None:
+    """Emit an 8-bit vector press or release received from the switch."""
+    gpd.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(gpd.ieee),
+            endpoint_id=None,
+            command_id=command_id,
+            command=GPContactStatusPayload(contact_status=contact_status),
+        ),
+    )
+
+
+def collect_events(buttons) -> list[tuple[str, str]]:
+    """Collect the triggered events as (unique ID suffix, event type) pairs."""
+    events: list[tuple[str, str]] = []
+    for entity in buttons.values():
+        entity.on_event(
+            EntityEventTriggeredEvent.event,
+            lambda event: events.append(
+                (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+            ),
+        )
+
+    return events
+
+
+@pytest.mark.parametrize("src_id", [0x014FFFFF, 0x01600000])
+def test_ptm216z_does_not_match_next_to_src_id_block(MockAppController, src_id):
+    """Test that the quirk's SrcID block ends exactly at its bounds."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = DeviceID.GenericSwitch
+
+    assert DEVICE_REGISTRY.match_green_power_entry(gpd) is None
+
+
+def test_ptm216z_does_not_match_ieee_addressed(MockAppController):
+    """Test that the quirk ignores an IEEE-addressed generic switch."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.IEEE,
+        ieee=EUI64.convert("00:00:00:00:01:55:f4:43"),
+    )
+    gpd.device_id = DeviceID.GenericSwitch
+
+    assert DEVICE_REGISTRY.match_green_power_entry(gpd) is None
+
+
+def test_ptm216z_device(ptm216z):
+    """Test the name of the quirked device."""
+    entry = DEVICE_REGISTRY.match_green_power_entry(ptm216z)
+    zha_device = entry.zha_device_factory(ptm216z, MagicMock())
+
+    assert zha_device.manufacturer == "EnOcean"
+    assert zha_device.model == "PTM 216Z"
+
+
+def test_ptm216z_entity_metadata(ptm216z, buttons):
+    """Test the naming and classification of the contact entities."""
+    assert {
+        suffix: (
+            entity.unique_id,
+            entity.translation_key,
+            entity.translation_placeholders,
+            entity.fallback_name,
+        )
+        for suffix, entity in buttons.items()
+    } == {
+        "button_a0": (
+            f"{ptm216z.ieee}-button_a0",
+            "rocker_top",
+            {"rocker": "A"},
+            "Rocker A top",
+        ),
+        "button_a1": (
+            f"{ptm216z.ieee}-button_a1",
+            "rocker_bottom",
+            {"rocker": "A"},
+            "Rocker A bottom",
+        ),
+        "button_b0": (
+            f"{ptm216z.ieee}-button_b0",
+            "rocker_top",
+            {"rocker": "B"},
+            "Rocker B top",
+        ),
+        "button_b1": (
+            f"{ptm216z.ieee}-button_b1",
+            "rocker_bottom",
+            {"rocker": "B"},
+            "Rocker B bottom",
+        ),
+    }
+    assert all(
+        entity.device_class == EventDeviceClass.BUTTON for entity in buttons.values()
+    )
+    assert not any(entity.primary for entity in buttons.values())
+
+
+def test_ptm216z_press_while_held(ptm216z, buttons):
+    """Test that a contact closing or opening while another is held only fires it."""
+    events = collect_events(buttons)
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0)
+    assert events == [("button_a0", ButtonEventType.PRESS_START)]
+    events.clear()
+
+    # A second contact is pressed while the first one is held
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0 | CONTACT_B0)
+    assert events == [("button_b0", ButtonEventType.PRESS_START)]
+    events.clear()
+
+    # A press only carrying the second contact means the first one opened
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_B0)
+    assert events == [("button_a0", ButtonEventType.PRESS_END)]
+    events.clear()
+
+    emit_contact_status(ptm216z, GPDCommandID.Release8BitVector, 0)
+    assert events == [("button_b0", ButtonEventType.PRESS_END)]
+
+
+def test_ptm216z_repeated_press(ptm216z, buttons):
+    """Test that a repeated press only fires again after a release."""
+    events = collect_events(buttons)
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A1)
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A1)
+    assert events == [("button_a1", ButtonEventType.PRESS_START)]
+
+    emit_contact_status(ptm216z, GPDCommandID.Release8BitVector, 0)
+    emit_contact_status(ptm216z, GPDCommandID.Release8BitVector, 0)
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A1)
+    assert events == [
+        ("button_a1", ButtonEventType.PRESS_START),
+        ("button_a1", ButtonEventType.PRESS_END),
+        ("button_a1", ButtonEventType.PRESS_START),
+    ]
+
+
+def test_ptm216z_energy_bar_ignored(ptm216z, buttons):
+    """Test that the energy bar bit does not fire any contact."""
+    triggered: list[EntityEventTriggeredEvent] = []
+    for entity in buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, triggered.append)
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, 0b0001_0000)
+    assert triggered == []
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, 0b0001_0000 | CONTACT_B1)
+    assert [event.unique_id.rsplit("-", 1)[-1] for event in triggered] == ["button_b1"]
+    # The event carries the raw contact status, including the energy bar
+    assert triggered[0].triggered.event_attributes == {"contact_status": 0b0001_1000}
+
+
+def test_ptm216z_release_attributes(ptm216z, buttons):
+    """Test that a release event carries the contact status of the release."""
+    triggered: list[EntityEventTriggeredEvent] = []
+    for entity in buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, triggered.append)
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0 | CONTACT_A1)
+    emit_contact_status(ptm216z, GPDCommandID.Release8BitVector, CONTACT_A1)
+
+    assert [
+        (event.triggered.event_type, event.triggered.event_attributes)
+        for event in triggered
+    ] == [
+        (ButtonEventType.PRESS_START, {"contact_status": CONTACT_A0 | CONTACT_A1}),
+        (ButtonEventType.PRESS_START, {"contact_status": CONTACT_A0 | CONTACT_A1}),
+        (ButtonEventType.PRESS_END, {"contact_status": CONTACT_A1}),
+    ]
+
+
+async def test_ptm216z_entity_removed(ptm216z, buttons):
+    """Test that a removed entity stops listening for the switch's commands."""
+    events = collect_events(buttons)
+
+    await buttons["button_a0"].on_remove()
+
+    emit_contact_status(ptm216z, GPDCommandID.Press8BitVector, CONTACT_A0 | CONTACT_A1)
+    assert events == [("button_a1", ButtonEventType.PRESS_START)]

@@ -1,5 +1,6 @@
 """Tests for the Green Power quirk builder."""
 
+import inspect
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -10,7 +11,7 @@ from zha.application.platforms.event import (
     TriggeredEvent,
 )
 from zha.application.platforms.sensor import Sensor
-from zha.quirks import QUIRK_REGISTRY_ENTRY_ATTR, DeviceRegistry
+from zha.quirks import DEVICE_REGISTRY, QUIRK_REGISTRY_ENTRY_ATTR, DeviceRegistry
 from zha.zigbee.device import GreenPowerDevice
 from zigpy.device import (
     GreenPowerCommandReceived,
@@ -395,3 +396,293 @@ async def test_green_power_quirk_entity_removed(zigpy_gpd):
 
     zigpy_gpd.emit(GreenPowerCommandReceived.event_type, toggle)
     assert len(events) == 1
+
+
+def test_green_power_quirk_builder_source(zigpy_gpd):
+    """Test that the registry entry points at the quirk's own definition."""
+    registry = DeviceRegistry()
+
+    builder = GreenPowerQuirkBuilder(registry=registry)
+    line = inspect.currentframe().f_lineno - 1
+
+    entry = (
+        builder.applies_to(device_id=DeviceID.OnOffSwitch)
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    assert entry.source.module == __name__
+    assert entry.source.file == __file__
+    assert entry.source.line == line
+    assert entry.source.label == "(Acme / Switch)"
+
+
+def test_green_power_quirk_builder_default_registry():
+    """Test that the builder defaults to the global registry."""
+    assert GreenPowerQuirkBuilder().registry is DEVICE_REGISTRY
+
+
+def test_green_power_quirk_builder_registry_override(zigpy_gpd):
+    """Test that `add_to_registry` registers in the given registry only."""
+    builder_registry = DeviceRegistry()
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=builder_registry)
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry(registry)
+    )
+
+    assert registry.match_green_power_entry(zigpy_gpd) is entry
+    assert builder_registry.match_green_power_entry(zigpy_gpd) is None
+
+
+def test_green_power_quirk_builder_int_device_id(zigpy_gpd):
+    """Test that a plain integer device ID is accepted."""
+    registry = DeviceRegistry()
+
+    builder = GreenPowerQuirkBuilder(registry=registry).applies_to(device_id=0x02)
+    assert builder.device_id is DeviceID.OnOffSwitch
+
+    entry = builder.friendly_name(manufacturer="Acme", model="Switch").add_to_registry()
+    assert registry.match_green_power_entry(zigpy_gpd) is entry
+
+
+def test_green_power_quirk_builder_applies_to_accumulates():
+    """Test that repeated `applies_to` calls only set the given fields."""
+    builder = (
+        GreenPowerQuirkBuilder()
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .applies_to(manufacturer_id=0x1234)
+        .applies_to(model_id=0x5678)
+    )
+
+    assert builder.device_id is DeviceID.OnOffSwitch
+    assert builder.manufacturer_id == 0x1234
+    assert builder.model_id == 0x5678
+
+
+@pytest.mark.parametrize(
+    ("manufacturer_id", "model_id", "commands", "matches"),
+    [
+        (0x1234, 0x5678, [GPDCommandID.Toggle], True),
+        (0x1235, 0x5678, [GPDCommandID.Toggle], False),
+        (0x1234, 0x5679, [GPDCommandID.Toggle], False),
+        (None, None, [GPDCommandID.Toggle], False),
+        (0x1234, 0x5678, [GPDCommandID.Press1of1], False),
+    ],
+)
+def test_green_power_quirk_builder_every_criterion_must_match(
+    zigpy_gpd, manufacturer_id, model_id, commands, matches
+):
+    """Test that a quirk only matches when all of its criteria do."""
+    zigpy_gpd.gpd_manufacturer_id = manufacturer_id
+    zigpy_gpd.gpd_model_id = model_id
+    zigpy_gpd.commands = commands
+
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .applies_to(manufacturer_id=0x1234, model_id=0x5678)
+        .filter(lambda device: GPDCommandID.Toggle in device.commands)
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    assert registry.match_green_power_entry(zigpy_gpd) is (entry if matches else None)
+
+
+@pytest.mark.parametrize(
+    ("src_id", "matches"),
+    [
+        (0x003FFFFF, False),
+        (0x00400000, True),
+        (0x004FFFFF, True),
+        (0x00500000, False),
+        (0x01700000, True),
+        (0x0170FFFF, True),
+        (0x01710000, False),
+    ],
+)
+def test_green_power_quirk_builder_src_id_ranges(MockAppController, src_id, matches):
+    """Test that SrcID ranges are inclusive and any one of them matches."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .src_id_range(0x00400000, 0x004FFFFF)
+        .src_id_range(0x01700000, 0x0170FFFF)
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    assert registry.match_green_power_entry(gpd) is (entry if matches else None)
+
+
+@pytest.mark.parametrize(
+    ("ieee", "matches"),
+    [
+        ("04:cd:15:00:11:22:33:44", True),
+        ("04:cd:16:00:11:22:33:44", False),
+        # The prefix is matched from the most significant byte
+        ("44:33:22:11:00:15:cd:04", False),
+    ],
+)
+def test_green_power_quirk_builder_ieee_prefixes(MockAppController, ieee, matches):
+    """Test that an IEEE prefix only matches addresses starting with it."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.IEEE,
+        ieee=EUI64.convert(ieee),
+    )
+
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .ieee_prefix("04:cd:15")
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    assert registry.match_green_power_entry(gpd) is (entry if matches else None)
+
+
+def test_green_power_quirk_builder_src_id_range_or_ieee_prefix(
+    MockAppController, zigpy_gpd
+):
+    """Test that a quirk with both identity criteria matches either kind of GPD."""
+    ieee_gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.IEEE,
+        ieee=EUI64.convert("04:cd:15:00:11:22:33:44"),
+    )
+
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .src_id_range(0x01700000, 0x0170FFFF)
+        .ieee_prefix("04:cd:15")
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    assert registry.match_green_power_entry(zigpy_gpd) is entry
+    assert registry.match_green_power_entry(ieee_gpd) is entry
+
+
+@pytest.mark.parametrize("specific_first", [True, False])
+def test_green_power_quirk_builder_specificity(zigpy_gpd, specific_first):
+    """Test that a quirk with a SrcID range wins over a device ID-only quirk."""
+    registry = DeviceRegistry()
+
+    generic = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .friendly_name(manufacturer="Acme", model="Generic switch")
+    )
+    specific = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .src_id_range(0x01700000, 0x0170FFFF)
+        .friendly_name(manufacturer="Acme", model="Specific switch")
+    )
+
+    if specific_first:
+        specific_entry = specific.add_to_registry()
+        generic.add_to_registry()
+    else:
+        generic.add_to_registry()
+        specific_entry = specific.add_to_registry()
+
+    assert registry.match_green_power_entry(zigpy_gpd) is specific_entry
+
+
+def test_green_power_quirk_builder_duplicate_registration(zigpy_gpd):
+    """Test that registering an identical quirk twice keeps a single entry."""
+    registry = DeviceRegistry()
+
+    def register():
+        return (
+            GreenPowerQuirkBuilder(registry=registry)
+            .applies_to(device_id=DeviceID.OnOffSwitch)
+            .adds_entity(
+                CommandEvent,
+                command_id=GPDCommandID.Toggle,
+                event_type="toggle",
+                unique_id_suffix="button",
+                fallback_name="Button",
+            )
+            .friendly_name(manufacturer="Acme", model="Switch")
+            .add_to_registry()
+        )
+
+    first = register()
+    second = register()
+
+    assert first == second
+    assert list(registry) == [first]
+    assert registry.match_green_power_entry(zigpy_gpd) is first
+
+
+def test_green_power_quirk_without_entities(zigpy_gpd):
+    """Test that a quirk adding no entities only renames the device."""
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    zha_device = entry.zha_device_factory(zigpy_gpd, MagicMock())
+
+    assert zha_device.quirk_metadata.added_entities == ()
+    assert list(zha_device.discover_entities()) == []
+    assert zha_device.name == "Acme Switch"
+
+
+def test_green_power_quirk_entity_kwargs(zigpy_gpd):
+    """Test that `adds_entity` passes its arguments through to the entity."""
+    registry = DeviceRegistry()
+
+    entry = (
+        GreenPowerQuirkBuilder(registry=registry)
+        .applies_to(device_id=DeviceID.OnOffSwitch)
+        .adds_entity(
+            CommandEvent,
+            command_id=GPDCommandID.Toggle,
+            event_type="toggle",
+            unique_id_suffix="button_1",
+            translation_key="button_numbered",
+            translation_placeholders={"number": "1"},
+            fallback_name="Button 1",
+        )
+        .friendly_name(manufacturer="Acme", model="Switch")
+        .add_to_registry()
+    )
+
+    (added,) = entry.zha_device_factory.quirk_definition.added_entities
+    assert added.entity_cls is CommandEvent
+    assert added.endpoint_id is None
+    assert added.cluster_id is None
+
+    zha_device = entry.zha_device_factory(zigpy_gpd, MagicMock())
+    (entity,) = zha_device.discover_entities()
+
+    assert entity.device is zha_device
+    assert entity.unique_id == f"{zigpy_gpd.ieee}-button_1"
+    assert entity.translation_key == "button_numbered"
+    assert entity.translation_placeholders == {"number": "1"}
+    assert entity.fallback_name == "Button 1"

@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from zha.application.platforms.event import EntityEventTriggeredEvent
-from zha.application.platforms.event.const import ButtonEventType
+from zha.application.platforms.event.const import ButtonEventType, EventDeviceClass
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import (
     GreenPowerCommandReceived,
@@ -987,3 +987,151 @@ def test_hue_tap_buttons(MockAppController, command_id, suffix):
         (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
         for event in events
     ] == [(suffix, ButtonEventType.PRESS_START)]
+
+
+@pytest.fixture
+def hue_tap(MockAppController):
+    """Create the zigpy GPD for a Hue Tap."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(0x0042EEE5),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+    return gpd
+
+
+@pytest.fixture
+def hue_tap_buttons(hue_tap):
+    """Create the Hue Tap's event entities, keyed by their unique ID suffix."""
+    entry = DEVICE_REGISTRY.match_green_power_entry(hue_tap)
+    zha_device = entry.zha_device_factory(hue_tap, mock.MagicMock())
+
+    entities = list(zha_device.discover_entities())
+    for entity in entities:
+        entity.on_add()
+
+    return {entity.unique_id.rsplit("-", 1)[-1]: entity for entity in entities}
+
+
+def emit_hue_tap_command(gpd: ZigpyGreenPowerDevice, command_id: GPDCommandID) -> None:
+    """Emit a command received from the Hue Tap."""
+    gpd.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(gpd.ieee),
+            endpoint_id=None,
+            command_id=command_id,
+            command=None,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("src_id", "device_id", "matches"),
+    [
+        (0x00400000, DeviceID.OnOffSwitch, True),
+        (0x004FFFFF, DeviceID.OnOffSwitch, True),
+        (0x003FFFFF, DeviceID.OnOffSwitch, False),
+        (0x00500000, DeviceID.OnOffSwitch, False),
+        (0x0042EEE5, DeviceID.GenericSwitch, False),
+    ],
+)
+def test_hue_tap_matches(MockAppController, src_id, device_id, matches):
+    """Test that the Hue Tap quirk only matches its own SrcID block and device ID."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(src_id),
+    )
+    gpd.device_id = device_id
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
+
+    if matches:
+        assert entry.source.module == "zhaquirks.philips.hue_tap"
+    else:
+        assert entry is None
+
+
+def test_hue_tap_device(hue_tap):
+    """Test the name of the quirked Hue Tap."""
+    entry = DEVICE_REGISTRY.match_green_power_entry(hue_tap)
+    zha_device = entry.zha_device_factory(hue_tap, mock.MagicMock())
+
+    assert zha_device.manufacturer == "Philips"
+    assert zha_device.model == "Hue Tap"
+
+
+def test_hue_tap_entities(hue_tap, hue_tap_buttons):
+    """Test the naming and classification of the Hue Tap's buttons."""
+    assert list(hue_tap_buttons) == ["button_1", "button_2", "button_3", "button_4"]
+
+    for number, entity in enumerate(hue_tap_buttons.values(), start=1):
+        assert entity.unique_id == f"{hue_tap.ieee}-button_{number}"
+        assert entity.translation_key == "button_numbered"
+        assert entity.translation_placeholders == {"number": str(number)}
+        assert entity.fallback_name == f"Button {number}"
+        assert entity.event_types == [ButtonEventType.PRESS_START]
+        assert entity.device_class == EventDeviceClass.BUTTON
+        assert not entity.primary
+
+
+@pytest.mark.parametrize(
+    "command_id",
+    [
+        GPDCommandID.Off,
+        GPDCommandID.On,
+        GPDCommandID.Press1of1,
+        GPDCommandID.Release1of1,
+        GPDCommandID.RecallScene3,
+        GPDCommandID.Press8BitVector,
+    ],
+)
+def test_hue_tap_ignored_commands(hue_tap, hue_tap_buttons, command_id):
+    """Test that commands not sent by the Hue Tap's buttons fire nothing."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in hue_tap_buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    emit_hue_tap_command(hue_tap, command_id)
+
+    assert events == []
+
+
+def test_hue_tap_repeated_presses(hue_tap, hue_tap_buttons):
+    """Test that every press fires, since the Hue Tap sends no release."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in hue_tap_buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    emit_hue_tap_command(hue_tap, GPDCommandID.Toggle)
+    emit_hue_tap_command(hue_tap, GPDCommandID.Toggle)
+    emit_hue_tap_command(hue_tap, GPDCommandID.RecallScene2)
+
+    assert [
+        (
+            event.unique_id.rsplit("-", 1)[-1],
+            event.triggered.event_type,
+            event.triggered.event_attributes,
+        )
+        for event in events
+    ] == [
+        ("button_1", ButtonEventType.PRESS_START, {}),
+        ("button_1", ButtonEventType.PRESS_START, {}),
+        ("button_4", ButtonEventType.PRESS_START, {}),
+    ]
+
+
+async def test_hue_tap_entity_removed(hue_tap, hue_tap_buttons):
+    """Test that a removed button stops listening for the Hue Tap's commands."""
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in hue_tap_buttons.values():
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    await hue_tap_buttons["button_1"].on_remove()
+
+    emit_hue_tap_command(hue_tap, GPDCommandID.Toggle)
+    emit_hue_tap_command(hue_tap, GPDCommandID.RecallScene0)
+
+    assert [event.unique_id.rsplit("-", 1)[-1] for event in events] == ["button_2"]
