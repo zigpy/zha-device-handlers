@@ -2,7 +2,18 @@
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -14,12 +25,16 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_MCU_COMMAND,
+    NoManufacturerCluster,
+    TuyaLocalCluster,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaClusterData, TuyaMCUCluster
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -705,3 +720,190 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+# Maps ZCL WindowCovering server commands (up_open/down_close/stop) to this
+# device's "curtain_switch" Tuya datapoint values. On this device the
+# open/close values are reversed compared to the TuyaCoverControl default
+# (Open=0x00, Stop=0x01, Close=0x02) convention used by most Tuya covers.
+TUYA2ZB_COMMANDS = {
+    WindowCovering.ServerCommandDefs.up_open.id: 0x02,
+    WindowCovering.ServerCommandDefs.down_close.id: 0x00,
+    WindowCovering.ServerCommandDefs.stop.id: 0x01,
+}
+
+
+class TuyaWindowCovering0601MCU(
+    NoManufacturerCluster, WindowCovering, TuyaLocalCluster
+):
+    """Tuya MCU WindowCovering cluster."""
+
+    # Additional attributes for direction/calibration
+    attributes = WindowCovering.attributes.copy()
+    attributes.update(
+        {
+            # 0: close, 1: stop, 2: open (reversed from the usual Tuya convention
+            # on this device, see TUYA2ZB_COMMANDS above)
+            0xF000: ("curtain_switch", t.enum8, True),
+            0xF001: (
+                "accurate_calibration",
+                t.enum8,
+                True,
+            ),  # 0: calibration started, 1: calibration finished
+            0xF002: ("motor_steering", t.enum8, True),  # 0: default, 1: reverse
+            0xF003: ("travel", t.uint16_t, True),  # 30 to 9000 (units of 0.1 seconds)
+        }
+    )
+
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tsn: int | t.uint8_t | None = None,
+    ):
+        """Override the default Cluster command."""
+
+        self.debug(
+            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s",
+            command_id,
+            args,
+        )
+
+        if command_id in TUYA2ZB_COMMANDS:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr="curtain_switch",
+                attr_value=t.enum8(TUYA2ZB_COMMANDS[command_id]),
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
+            lift_value = args[0]
+
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr="current_position_lift_percentage",
+                attr_value=lift_value,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+        self.warning("Unsupported command_id: %s", command_id)
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
+
+
+class TuyaCoverManufCluster0601MCU(TuyaMCUCluster):
+    """Tuya with WindowCover data points."""
+
+    attributes = TuyaMCUCluster.attributes.copy()
+    attributes.update(
+        {
+            0x5000: ("backlight_mode", t.enum8, True),  # 0: off, 1: on
+            0x8001: (
+                "indicator_status",
+                t.enum8,
+                True,
+            ),  # 0: status, 1: position, 2: off (?backlight_mode?)
+        }
+    )
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaWindowCovering0601MCU.ep_attribute,
+            "curtain_switch",
+        ),
+        2: DPToAttributeMapping(
+            TuyaWindowCovering0601MCU.ep_attribute,
+            "current_position_lift_percentage",  # for slider movement (set)
+        ),
+        3: DPToAttributeMapping(
+            TuyaWindowCovering0601MCU.ep_attribute,
+            "current_position_lift_percentage",  # for slider updates (report)
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+    }
+
+
+class TuyaCover0601MCU(TuyaWindowCover):
+    """Tuya blind controller device with separate position set/report datapoints."""
+
+    signature = {
+        # "NodeDescriptor(
+        #     logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0,
+        #     reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+        #     mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>,
+        #     manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752,
+        #     maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>,
+        #     *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False,
+        #     *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False
+        # )
+        MODELS_INFO: [
+            ("_TZE200_yrugsphv", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaCoverManufCluster0601MCU.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaCoverManufCluster0601MCU,
+                    TuyaWindowCovering0601MCU,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
