@@ -1,97 +1,65 @@
-"""Test for Tuya water leak sensor."""
+"""Tests for Tuya water leak quirks."""
 
 import pytest
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_siren import NeoBatteryState
 
 zhaquirks.setup()
 
-ZCL_TUYA_WATER_PRESENCE = bytes.fromhex("09 e0 02 01 e9 01 04 00 01 01")
-ZCL_TUYA_WATER_ABSENCE = bytes.fromhex("09 e0 02 01 e9 01 04 00 01 00")
-ZCL_TUYA_WATER_LEAK_TRUE = bytes.fromhex("09 e1 02 01 ea 66 04 00 01 01")
-ZCL_TUYA_WATER_LEAK_FALSE = bytes.fromhex("09 e1 02 01 ea 66 04 00 01 00")
-ZCL_TUYA_BATTERY_37 = bytes.fromhex("09 da 02 01 e5 04 02 00 04 00 00 00 25")
-ZCL_TUYA_BATTERY_100 = bytes.fromhex("09 da 02 01 e5 04 02 00 04 00 00 00 64")
-ZCL_TUYA_ALARM_MODE_0 = bytes.fromhex("09 f0 02 01 f9 65 04 00 01 00")
-ZCL_TUYA_ALARM_MODE_1 = bytes.fromhex("09 f0 02 01 f9 65 04 00 01 01")
-ZCL_TUYA_RINGTONE_0 = bytes.fromhex("09 db 02 01 e6 67 04 00 01 00")
-ZCL_TUYA_RINGTONE_2 = bytes.fromhex("09 db 02 01 e6 67 04 00 01 02")
+ZCL_TUYA_LEAK = b"\x09\x4f\x02\x00\x04\x65\x01\x00\x01\x01"  # DP 101, bool, leak
+ZCL_TUYA_DRY = b"\x09\x51\x02\x00\x04\x65\x01\x00\x01\x00"  # DP 101, bool, dry
+ZCL_TUYA_BATTERY_LOW = b"\x09\x4e\x02\x00\x02\x66\x04\x00\x01\x03"  # DP 102, low
+ZCL_TUYA_BATTERY_FULL = b"\x09\x1a\x02\x00\x02\x66\x04\x00\x01\x00"  # DP 102, full
 
 
 @pytest.mark.parametrize(
-    "frame, expected_attr_id, expected_value",
+    "manuf,model",
     [
-        (ZCL_TUYA_WATER_PRESENCE, 0xEF01, True),
-        (ZCL_TUYA_WATER_ABSENCE, 0xEF01, False),
-        (ZCL_TUYA_WATER_LEAK_TRUE, 0xEF66, True),
-        (ZCL_TUYA_WATER_LEAK_FALSE, 0xEF66, False),
+        ("_TYST11_qq9mpfhw", "q9mpfhw"),
+        ("_TZE200_qq9mpfhw", "TS0601"),
     ],
 )
-async def test_water_sensors_state_report(
-    zigpy_device_from_v2_quirk, frame, expected_attr_id, expected_value
-):
-    """Test water presence and leak sensors."""
+async def test_tuya_water_leak_quirk(zigpy_device_from_v2_quirk, manuf, model):
+    """Test Tuya water leak quirks using IAS cluster."""
+    quirked_device = zigpy_device_from_v2_quirk(manuf, model)
+    ep = quirked_device.endpoints[1]
 
-    dev = zigpy_device_from_v2_quirk("_TZE284_1di7ujzp", "TS0601")
-    tuya_cluster = dev.endpoints[1].tuya_manufacturer
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    assert isinstance(ep.ias_zone, IasZone)
+    assert (
+        ep.ias_zone.get(IasZone.AttributeDefs.zone_type.id)
+        == IasZone.ZoneType.Water_Sensor
+    )
 
-    tuya_listener = ClusterListener(tuya_cluster)
-    hdr, args = tuya_cluster.deserialize(frame)
-    tuya_cluster.handle_message(hdr, args)
+    ias_listener = ClusterListener(ep.ias_zone)
+    zcl_ias_id = IasZone.AttributeDefs.zone_status.id
 
-    assert len(tuya_listener.attribute_updates) == 1
-    assert tuya_listener.attribute_updates[0][0] == expected_attr_id
-    assert tuya_listener.attribute_updates[0][1] == expected_value
+    hdr, data = ep.tuya_manufacturer.deserialize(ZCL_TUYA_LEAK)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
 
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == zcl_ias_id
+    assert ias_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
 
-@pytest.mark.parametrize(
-    "frame, expected_attr_id, expected_value",
-    [
-        (ZCL_TUYA_ALARM_MODE_0, 0xEF65, 0),
-        (ZCL_TUYA_ALARM_MODE_1, 0xEF65, 1),
-        (ZCL_TUYA_RINGTONE_0, 0xEF67, 0),
-        (ZCL_TUYA_RINGTONE_2, 0xEF67, 2),
-    ],
-)
-async def test_sensor_and_enum_state_report(
-    zigpy_device_from_v2_quirk, frame, expected_attr_id, expected_value
-):
-    """Test alarm mode and ringtone enum attributes."""
+    hdr, data = ep.tuya_manufacturer.deserialize(ZCL_TUYA_DRY)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
 
-    dev = zigpy_device_from_v2_quirk("_TZE284_1di7ujzp", "TS0601")
-    tuya_cluster = dev.endpoints[1].tuya_manufacturer
+    assert len(ias_listener.attribute_updates) == 2
+    assert ias_listener.attribute_updates[1][0] == zcl_ias_id
+    assert ias_listener.attribute_updates[1][1] == 0
 
-    tuya_listener = ClusterListener(tuya_cluster)
-    hdr, args = tuya_cluster.deserialize(frame)
-    tuya_cluster.handle_message(hdr, args)
-
-    assert len(tuya_listener.attribute_updates) == 1
-    assert tuya_listener.attribute_updates[0][0] == expected_attr_id
-    assert tuya_listener.attribute_updates[0][1] == expected_value
-
-
-@pytest.mark.parametrize(
-    "frame, expected_value",
-    [
-        (ZCL_TUYA_BATTERY_37, 37),
-        (ZCL_TUYA_BATTERY_100, 100),
-    ],
-)
-async def test_battery_via_tuya_cluster(
-    zigpy_device_from_v2_quirk, frame, expected_value
-):
-    """Test battery level via Tuya cluster."""
-
-    dev = zigpy_device_from_v2_quirk("_TZE284_1di7ujzp", "TS0601")
-
-    tuya_cluster = dev.endpoints[1].tuya_manufacturer
-    power_cluster = dev.endpoints[1].power
-
-    listener = ClusterListener(power_cluster)
-    hdr, args = tuya_cluster.deserialize(frame)
-    tuya_cluster.handle_message(hdr, args)
-
-    assert len(listener.attribute_updates) == 1
-    # Due to half-percent precision
-    assert listener.attribute_updates[0][1] == expected_value * 2
+    for message, expected in (
+        (ZCL_TUYA_BATTERY_LOW, NeoBatteryState.Low),
+        (ZCL_TUYA_BATTERY_FULL, NeoBatteryState.Full),
+    ):
+        hdr, data = ep.tuya_manufacturer.deserialize(message)
+        status = ep.tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+        assert ep.tuya_manufacturer.get("power_type") == expected

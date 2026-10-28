@@ -1,10 +1,9 @@
 """Tuya water leak sensor."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.types import enum8
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -31,15 +30,11 @@ class Ringtone(enum8):
 # output_clusters=[25, 10]>
 (
     TuyaQuirkBuilder("_TZE284_1di7ujzp", "TS0601")
-    .tuya_binary_sensor(  # Water presence (DP 1)
-        dp_id=1,
-        attribute_name="water_presence",
-        device_class=BinarySensorDeviceClass.MOISTURE,
-        fallback_name="Water presence",
-    )
+    .tuya_water_leak(dp_id=1)  # Water presence (DP 1)
     .tuya_binary_sensor(  # Water leak (DP 102)
         dp_id=102,
         attribute_name="water_leak",
+        entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.PROBLEM,
         fallback_name="Water leak",
     )

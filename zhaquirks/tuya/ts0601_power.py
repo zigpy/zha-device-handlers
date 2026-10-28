@@ -1,17 +1,20 @@
 """Tuya Power Meter."""
 
-from zigpy.quirks.v2 import EntityType, SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import (
+import zigpy.types as t
+from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+
+from zhaquirks.builder import (
     PERCENTAGE,
+    EntityType,
+    NumberDeviceClass,
+    SensorDeviceClass,
+    SensorStateClass,
     UnitOfElectricCurrent,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTime,
 )
-import zigpy.types as t
-from zigpy.zcl.clusters.general import LevelControl, OnOff
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping
@@ -269,7 +272,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         dp_id=102,
         attribute_name="update_frequency",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=5,
         max_value=3600,
