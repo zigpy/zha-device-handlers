@@ -1,11 +1,12 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import asyncio
-from typing import Any
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import MotionWithReset
 from zhaquirks.builder import (
@@ -13,11 +14,13 @@ from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    QuirkBuilder,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
     UnitOfTime,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -1633,5 +1636,65 @@ base_tuya_motion = (
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+class HobeianZG204ZSensitivity(t.enum8):
+    """HOBEIAN ZG-204Z PIR sensitivity."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
+class HobeianZG204ZKeepTime(t.enum8):
+    """HOBEIAN ZG-204Z time the PIR holds motion after the last movement."""
+
+    For_30_seconds = 0x00
+    For_60_seconds = 0x01
+    For_120_seconds = 0x02
+
+
+class HobeianZG204ZIasZone(CustomCluster, IasZone):
+    """IAS zone cluster with the keep time attribute added."""
+
+    class AttributeDefs(IasZone.AttributeDefs):
+        """Attribute definitions."""
+
+        # Plain uint8 on the wire, like the standard sensitivity attribute. The enums
+        # above only give the selects their options. Z2M reads and writes this
+        # attribute without a manufacturer code, so none is sent here either.
+        keep_time: Final = ZCLAttributeDef(
+            id=0xF001, type=t.uint8_t, manufacturer_code=None
+        )
+
+
+# HOBEIAN ZG-204Z PIR motion sensor
+# Settings are IAS zone attributes, the Tuya cluster in its signature is empty.
+(
+    QuirkBuilder("HOBEIAN", "ZG-204Z")
+    .replaces(HobeianZG204ZIasZone)
+    .enum(
+        attribute_name=IasZone.AttributeDefs.current_zone_sensitivity_level.name,
+        enum_class=HobeianZG204ZSensitivity,
+        cluster_id=IasZone.cluster_id,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .enum(
+        attribute_name=HobeianZG204ZIasZone.AttributeDefs.keep_time.name,
+        enum_class=HobeianZG204ZKeepTime,
+        cluster_id=IasZone.cluster_id,
+        translation_key="keep_time",
+        fallback_name="Keep time",
+    )
+    # The occupancy cluster only mirrors the IAS motion sensor, and its delay settings
+    # have no effect on this device.
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=OccupancySensing.cluster_id
+    )
+    # No skip_configuration(): ZHA would then also skip the initial attribute read and
+    # the selects above would stay blank.
     .add_to_registry()
 )
