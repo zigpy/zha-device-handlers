@@ -239,6 +239,20 @@ class TuyaData:
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
+    def __repr__(self) -> str:
+        """Show the type and raw bytes, plus the payload if it decodes and differs from raw."""
+        fields = (
+            f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
+        )
+        try:
+            payload = self.payload
+        except (AttributeError, TypeError, ValueError):
+            payload = None
+        # a RAW payload is `raw` itself, so don't show the same bytes twice
+        if payload is not None and self.dp_type != TuyaDPType.RAW:
+            fields += f", *payload={payload!r}"
+        return f"{type(self).__name__}({fields})"
+
     def serialize(self) -> bytes:
         """Serialize Tuya data."""
         return (
@@ -527,6 +541,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
@@ -589,7 +606,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):

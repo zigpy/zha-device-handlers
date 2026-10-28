@@ -1,15 +1,69 @@
 """Tests for Innr quirks."""
 
 import pytest
+from zigpy.profiles import zll
+import zigpy.types as t
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Scenes,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
+from zhaquirks.innr.innr_sp120_plug import SP120
+from zhaquirks.innr.innr_sp240_plug import InnrCluster
 
 zhaquirks.setup()
 
 # firmware version that fixed the metering divisor bug (max_version is exclusive)
 SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
+
+
+@pytest.mark.parametrize(
+    "firmware_version",
+    [SP240_DIVISOR_FIX_FW_VERSION - 1, SP240_DIVISOR_FIX_FW_VERSION],
+)
+def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version):
+    """Test the SP 240 quirk keeps the device's cluster order.
+
+    ZHA configures reporting in this order, and the plug only has a few
+    reporting slots: Metering must stay ahead of Electrical Measurement.
+    """
+    raw_cluster_ids = [
+        Basic.cluster_id,
+        Identify.cluster_id,
+        Groups.cluster_id,
+        Scenes.cluster_id,
+        OnOff.cluster_id,
+        LevelControl.cluster_id,
+        Metering.cluster_id,
+        ElectricalMeasurement.cluster_id,
+        LightLink.cluster_id,
+        InnrCluster.cluster_id,
+    ]
+    device = zigpy_device_from_v2_quirk(
+        "innr",
+        "SP 240",
+        cluster_ids={1: dict.fromkeys(raw_cluster_ids, ClusterType.Server)},
+        firmware_version=firmware_version,
+    )
+
+    assert list(device.endpoints[1].in_clusters) == raw_cluster_ids
+    assert isinstance(
+        device.endpoints[1].in_clusters[Metering.cluster_id],
+        MeteringClusterInnrOld | MeteringClusterInnrNew,
+    )
+    assert isinstance(
+        device.endpoints[1].in_clusters[InnrCluster.cluster_id], InnrCluster
+    )
 
 
 @pytest.mark.parametrize(
@@ -57,3 +111,80 @@ def test_innr_sp240_firmware_version_metering(
 
     # the constant divisor override is applied regardless of what the device reports
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == expected_divisor
+
+
+# Real SP 120 device-initiated metering report:
+#   fc=0x1c   -> manufacturer-specific, server-to-client, disable-default-response
+#   manuf=0x1166 (Innr), TSN=0x16, cmd=0x0a (Report_Attributes)
+#   attr 0x0430 (Innr manufacturer-specific, uint64) = 0
+#   attr 0x0000 (current_summ_delivered, uint48)     = 35
+SP120_MANUF_SUMMATION_REPORT = (
+    b"\x1c\x66\x11\x16\x0a"
+    b"\x30\x04\x27\x00\x00\x00\x00\x00\x00\x00\x00"
+    b"\x00\x00\x25\x23\x00\x00\x00\x00\x00"
+)
+
+
+async def test_sp120_manufacturer_framed_summation(zigpy_device_from_quirk):
+    """The manufacturer-framed summation report updates current_summ_delivered."""
+    device = zigpy_device_from_quirk(SP120)
+    metering_cluster = device.endpoints[1].smartenergy_metering
+
+    events = []
+    metering_cluster.on_event(AttributeReportedEvent.event_type, events.append)
+    metering_cluster.on_event(AttributeUpdatedEvent.event_type, events.append)
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zll.PROFILE_ID,
+            cluster_id=Metering.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(SP120_MANUF_SUMMATION_REPORT),
+        )
+    )
+
+    # Must resolve to the named standard attribute (None without the quirk).
+    summation_events = [
+        e
+        for e in events
+        if e.attribute_name == Metering.AttributeDefs.current_summ_delivered.name
+    ]
+    assert len(summation_events) == 1
+    assert summation_events[0].value == 35
+
+    # ...and cached as the standard attribute the energy sensor reads.
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_delivered) == 35
+
+
+async def test_sp120_plain_summation_still_parses(zigpy_device_from_quirk):
+    """A normal (non-manufacturer) summation report is unaffected by the override."""
+    device = zigpy_device_from_quirk(SP120)
+    metering_cluster = device.endpoints[1].smartenergy_metering
+
+    events = []
+    metering_cluster.on_event(AttributeReportedEvent.event_type, events.append)
+    metering_cluster.on_event(AttributeUpdatedEvent.event_type, events.append)
+
+    # fc=0x18 (no manufacturer bit), TSN=0x01, cmd=0x0a,
+    # attr 0x0000 (current_summ_delivered, uint48) = 1234
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zll.PROFILE_ID,
+            cluster_id=Metering.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x18\x01\x0a\x00\x00\x25\xd2\x04\x00\x00\x00\x00"
+            ),
+        )
+    )
+
+    summation_events = [
+        e
+        for e in events
+        if e.attribute_name == Metering.AttributeDefs.current_summ_delivered.name
+    ]
+    assert len(summation_events) == 1
+    assert summation_events[0].value == 1234
+    assert metering_cluster.get(Metering.AttributeDefs.current_summ_delivered) == 1234

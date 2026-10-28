@@ -160,6 +160,8 @@ tuya_gas_alarm_base = (
     .applies_to("_TZE200_yojqa8xn", "TS0601")
     .applies_to("_TZE204_zougpkpy", "TS0601")
     .applies_to("_TZE204_chbyv06x", "TS0601")
+    .applies_to("_TZE284_chbyv06x", "TS0601")
+    .applies_to("_TZE28C1000000_chbyv06x", "TS0601")
     .applies_to("_TZE204_yojqa8xn", "TS0601")
     .tuya_sensor(
         dp_id=2,
