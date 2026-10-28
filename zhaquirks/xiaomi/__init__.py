@@ -436,6 +436,13 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
             attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
+        elif self.endpoint.device.model == "lumi.sensor_occupy.agl8":
+            attribute_names.update(
+                {
+                    23: BATTERY_VOLTAGE_MV,
+                    24: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
+                }
+            )
         elif self.endpoint.device.model == "lumi.sensor_ht.agl001":
             # The W100 heartbeat carries no tag-1 battery voltage; battery percent is
             # in tag 102 (and its standard PowerConfiguration attribute reports 0).
