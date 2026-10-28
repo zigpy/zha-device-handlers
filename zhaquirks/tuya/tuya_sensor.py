@@ -10,6 +10,7 @@ from zhaquirks.builder import (
     PERCENTAGE,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
@@ -329,6 +330,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         min_value=5,
         max_value=3600,
         step=1,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="soil_sampling_interval",
         fallback_name="Soil sampling interval",
     )
@@ -373,6 +375,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         min_value=-2.0,
         max_value=2.0,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         multiplier=0.1,
         translation_key="temperature_offset",
         fallback_name="Temperature offset",
@@ -385,6 +388,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         min_value=0,
         max_value=100,
         step=1,
+        device_class=NumberDeviceClass.MOISTURE,
         translation_key="soil_warning_threshold",
         fallback_name="Soil warning threshold",
     )
