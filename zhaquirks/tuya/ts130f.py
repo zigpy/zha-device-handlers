@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -60,6 +61,29 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
         calibration: Final = ZCLAttributeDef(id=0xF001, type=t.enum8)
         motor_reversal: Final = ZCLAttributeDef(id=0xF002, type=t.enum8)
         calibration_time: Final = ZCLAttributeDef(id=0xF003, type=t.uint16_t)
+
+    def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
+        """Drop lift position reports that repeat the cached position.
+
+        Some units send every other position report twice, and all of them report
+        their start position right after a command. ZHA treats an unchanged position
+        during a transition as a stop, so the cover state flickers between
+        opening/closing and open/closed while the cover is moving.
+        """
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            cached = self.get(ATTR_CURRENT_POSITION_LIFT_PERCENTAGE)
+            reports = [
+                attr
+                for attr in args.attribute_reports
+                if not (
+                    attr.attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE
+                    and cached is not None
+                    and 100 - attr.value.value == cached
+                )
+            ]
+            if len(reports) != len(args.attribute_reports):
+                args = args.replace(attribute_reports=reports)
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
     def _update_attribute(self, attrid, value):
         if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
