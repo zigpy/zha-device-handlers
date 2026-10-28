@@ -705,3 +705,30 @@ class BorderSetting(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+(
+    # Zemismart BCM500DS-TYZ curtain motor. Same hardware family as
+    # _TZE200_xaabybja (handled by the v1 TuyaMoesCover0601_inv_position). The
+    # motor already reports 0=open/100=closed, matching the ZCL lift-percentage
+    # convention, so invert=False -- the v2 equivalent of the v1
+    # tuya_cover_inverted_by_default=True. Travel limits cannot be set over Zigbee
+    # on this model (DP 16 is ACKed but silently ignored on hardware), so no
+    # border buttons are exposed.
+    TuyaQuirkBuilder("_TZE200_rmymn92d", "TS0601")
+    .tuya_cover(
+        control_dp=1,
+        position_state_dp=3,
+        position_control_dp=2,
+        invert=False,
+    )
+    .tuya_enum(
+        dp_id=5,
+        attribute_name="motor_direction",
+        enum_class=MotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
