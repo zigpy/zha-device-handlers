@@ -1715,6 +1715,20 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+# Tuya PIR & luminance sensor, TS0601
+(
+    TuyaQuirkBuilder("_TZE200_f1pvdgoh", "TS0601")
+    .tuya_ias(
+        dp_id=1,
+        ias_cfg=TuyaMotionWithReset,
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+    )
+    .tuya_illuminance(dp_id=101)
+    .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
+
 # Tuya PIR motion sensor, TS0202
 # Sends its own IAS zone clear after its hold time, so no software reset:
 # a fixed reset would clear motion while the sensor is still occupied.
