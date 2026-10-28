@@ -40,6 +40,8 @@ class RelaySperaKeyAction(types.enum8):
     Single_click = 0x01
     Double_click = 0x02
     Long_press = 0x03
+    Follow_on = 0x04
+    Follow_off = 0x05
 
 
 class OnOff(CustomCluster, OnOffBase):
@@ -151,6 +153,16 @@ zb2gs_l_quirk = (
                 ENDPOINT_ID: 1,
                 COMMAND: "Long_press",
             },
+            ("External Switch 1 action", "Follow On"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 1,
+                COMMAND: "Follow_on",
+            },
+            ("External Switch 1 action", "Follow Off"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 1,
+                COMMAND: "Follow_off",
+            },
             ("External Switch 2 action", "Single Click"): {
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 2,
@@ -165,6 +177,16 @@ zb2gs_l_quirk = (
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 2,
                 COMMAND: "Long_press",
+            },
+            ("External Switch 2 action", "Follow On"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 2,
+                COMMAND: "Follow_on",
+            },
+            ("External Switch 2 action", "Follow Off"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 2,
+                COMMAND: "Follow_off",
             },
         }
     )
