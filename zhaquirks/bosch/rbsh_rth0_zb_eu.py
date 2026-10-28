@@ -4,6 +4,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.builder import (
     PERCENTAGE,
     BinarySensorDeviceClass,
@@ -129,6 +130,19 @@ class BoschSensorConnection(t.enum8):
     NotUsed = 0x00
     WithoutRegulation = 0xB0
     WithRegulation = 0xB1
+
+
+class BoschRoomThermostatPowerConfiguration(PowerConfigurationCluster):
+    """Power configuration cluster for Bosch Room Thermostat II.
+
+    The battery model (RBSH-RTH0-BAT-ZB-EU) reports battery voltage but marks
+    battery_percentage_remaining as unsupported, so ZHA's battery entity stays
+    unknown. Convert voltage to percentage using the same range as Zigbee2MQTT
+    (4x AAA, 4.4 V empty to 6.4 V full).
+    """
+
+    MIN_VOLTS = 4.4
+    MAX_VOLTS = 6.4
 
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
@@ -261,6 +275,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
+    .replaces(BoschRoomThermostatPowerConfiguration)
     # Heating demand, either valve duty cycle or PWM output.
     .sensor(
         BoschThermostatCluster.AttributeDefs.heating_demand.name,

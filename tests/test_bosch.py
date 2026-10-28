@@ -2,11 +2,13 @@
 
 from unittest import mock
 
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
+from zhaquirks.bosch.rbsh_rth0_zb_eu import BoschRoomThermostatPowerConfiguration
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
@@ -652,3 +654,38 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(
             ]
             == ControlSequenceOfOperation.Cooling_Only
         )
+
+
+async def test_bosch_room_thermostat_II_battery_percent_from_voltage(
+    zigpy_device_from_v2_quirk,
+):
+    """Test battery percent is derived from voltage on Room Thermostat II."""
+    device = zigpy_device_from_v2_quirk(
+        "Bosch",
+        "RBSH-RTH0-BAT-ZB-EU",
+        cluster_ids={1: {PowerConfiguration.cluster_id: ClusterType.Server}},
+    )
+
+    power = device.endpoints[1].power
+    assert isinstance(power, BoschRoomThermostatPowerConfiguration)
+    assert power.MIN_VOLTS == 4.4
+    assert power.MAX_VOLTS == 6.4
+
+    # 6.2 V as reported by the device: (6.2 - 4.4) / (6.4 - 4.4) * 200 = 180
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 62)
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == 180
+    )
+
+    # Invalid / unknown voltage values must not overwrite the computed percentage
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 0)
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == 180
+    )
+    power.update_attribute(PowerConfiguration.AttributeDefs.battery_voltage.id, 255)
+    assert (
+        power.get(PowerConfiguration.AttributeDefs.battery_percentage_remaining.id)
+        == 180
+    )
