@@ -118,6 +118,50 @@ class TuyaSmartRemote0041TI(CustomDevice):
     }
 
 
+class TuyaSmartRemote0041TIIAS(CustomDevice):
+    """Tuya 1-button remote device with time on in and IAS ancillary device type."""
+
+    signature = {
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1025, device_version=1, input_clusters=[0, 1, 6, 10], output_clusters=[25]))
+        # Tesla Smart TSL-SEN-BUTTON (_TZ3000_ajsypttg)
+        MODEL: "TS0041",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ANCILLARY_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                    Time.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
+                    TuyaSmartRemoteOnOffCluster,
+                    Time.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
+        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
+        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+    }
+
+
 class TuyaSmartRemote0041TOPlusA(CustomDevice):
     """Tuya 1-button remote device with time on out cluster."""
 
