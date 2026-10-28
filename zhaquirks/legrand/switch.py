@@ -2,7 +2,7 @@
 
 from zigpy.zcl.clusters.general import OnOff
 
-from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
+from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
 (
@@ -13,11 +13,9 @@ from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
     # that the BinaryInput is actually working for them. So we leave it commented out for now.
     # .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
     .removes_entity(
-        EntityFilter(
-            endpoint_id=1,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        device_class=BinarySensorDeviceClass.OPENING,
     )
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.led_dark.name,

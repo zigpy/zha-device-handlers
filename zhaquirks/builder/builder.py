@@ -997,9 +997,20 @@ class QuirkBuilder:
             )
         )
 
-    def removes_entity(self, *filters: EntityFilter) -> Self:
-        """Remove entities matching any of the filters."""
+    def removes_entity(self, *filters: EntityFilter, **filter_kwargs: Any) -> Self:
+        """Remove entities matching any of the filters.
+
+        Filters are given as `EntityFilter` instances, as keyword arguments that
+        are passed to `EntityFilter` (one more filter), or both.
+        """
+        if not filters and not filter_kwargs:
+            raise ValueError("`removes_entity` requires at least one filter")
+
         self.disabled_default_entities.extend(filters)
+
+        if filter_kwargs:
+            self.disabled_default_entities.append(EntityFilter(**filter_kwargs))
+
         return self
 
     def adds_entity(

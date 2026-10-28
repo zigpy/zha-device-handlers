@@ -736,6 +736,45 @@ async def test_removes_entity_filters_combined() -> None:
         assert (Platform.SENSOR, f"{IEEE}-1-1") in device.platform_entities
 
 
+async def test_removes_entity_keyword_arguments() -> None:
+    """Test removing with filter fields as keyword arguments, alone and mixed."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .removes_entity(
+            endpoint_id=1,
+            cluster_id=TemperatureMeasurement.cluster_id,
+            cluster_type=ClusterType.Server,
+        )
+        .removes_entity(
+            EntityFilter(function=lambda entity: entity.unique_id.endswith("-lqi")),
+            endpoint_id=1,
+            cluster_id=3,
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+
+        assert (Platform.SENSOR, f"{IEEE}-1-1026") not in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-0-lqi") not in device.platform_entities
+        assert (Platform.BUTTON, f"{IEEE}-1-3") not in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-0-rssi") in device.platform_entities
+        assert (Platform.SENSOR, f"{IEEE}-1-1") in device.platform_entities
+
+
+def test_removes_entity_requires_a_filter() -> None:
+    """Test that removing without any filter is an error, not a no-op."""
+    with pytest.raises(ValueError, match="requires at least one filter"):
+        QuirkBuilder("CentraLite", "3405-L").removes_entity()
+
+    with pytest.raises(TypeError):
+        QuirkBuilder("CentraLite", "3405-L").removes_entity(not_a_field=1)
+
+
 async def test_removed_entity_can_be_added_back() -> None:
     """Test removing a default entity and adding a replacement under the same ID."""
     registry = DeviceRegistry()

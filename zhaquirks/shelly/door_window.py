@@ -7,7 +7,6 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
-    EntityFilter,
     EntityPlatform,
     EntityType,
     QuirkBuilder,
@@ -34,11 +33,9 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
     # its unique id. The entity class filter is required: the rule would otherwise
     # also match the Door sensor itself, since that now ends in the same suffix.
     .removes_entity(
-        EntityFilter(
-            entity_cls=IASZone,
-            endpoint_id=1,
-            cluster_id=IasZone.cluster_id,
-        )
+        entity_cls=IASZone,
+        endpoint_id=1,
+        cluster_id=IasZone.cluster_id,
     )
     .binary_sensor(
         attribute_name=IasZone.AttributeDefs.zone_status.name,
