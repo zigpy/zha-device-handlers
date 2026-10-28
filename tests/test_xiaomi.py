@@ -1256,12 +1256,43 @@ async def test_aqara_feeder_attr_reports(
 
     # Check the expected attribute updates occurred
     expected_updates = [(c.args[0], c.args[1]) for c in calls]
-    actual_updates = attribute_updates[-call_count:]
-    assert len(actual_updates) == call_count
+    assert len(attribute_updates) == call_count
     for attr_id, value in expected_updates:
-        assert any(u[0] == attr_id and u[1] == value for u in actual_updates), (
-            f"Expected ({attr_id}, {value}) in {actual_updates}"
+        assert any(u[0] == attr_id and u[1] == value for u in attribute_updates), (
+            f"Expected ({attr_id}, {value}) in {attribute_updates}"
         )
+
+
+async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_v2_quirk):
+    """Test Aqara C1 pet feeder passes the 0x00F7 struct to the Xiaomi parser."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        opple_cluster, "_parse_aqara_attributes", return_value={}
+    ) as parse_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=opple_cluster.cluster_id,
+                src_ep=opple_cluster.endpoint.endpoint_id,
+                dst_ep=opple_cluster.endpoint.endpoint_id,
+                data=t.SerializableBytes(
+                    b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"
+                ),
+            )
+        )
+
+    parse_mock.assert_called_once_with(b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03")
 
 
 def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
