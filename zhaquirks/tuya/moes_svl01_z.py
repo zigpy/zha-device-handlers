@@ -60,6 +60,7 @@ class AutoOffMode(t.enum8):
 # TUYA MCU CLUSTER
 # =========================================================
 
+
 class PresenceSwitchCluster(TuyaMCUCluster):
     """MOES SVL01-Z Tuya MCU cluster."""
 
@@ -77,16 +78,12 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         await asyncio.sleep(2)
 
         if self.endpoint.in_clusters.get(self.cluster_id) is not self:
-            self.debug(
-                "MOES SVL01-Z: skipping query_data for stale cluster"
-            )
+            self.debug("MOES SVL01-Z: skipping query_data for stale cluster")
             return
 
         await self.command(TUYA_QUERY_DATA)
 
-        self.debug(
-            "MOES SVL01-Z: Tuya query_data (0x03) sent successfully"
-        )
+        self.debug("MOES SVL01-Z: Tuya query_data (0x03) sent successfully")
 
     class AttributeDefs(TuyaMCUCluster.AttributeDefs):
         """MOES-specific DP attributes."""
