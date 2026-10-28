@@ -5,6 +5,7 @@ from __future__ import annotations
 import collections
 import importlib
 import json
+import keyword
 from pathlib import Path
 import pkgutil
 from unittest import mock
@@ -442,9 +443,9 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
 
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all(m and m.isidentifier() for m in path.split(".")), (
-        f"{path} is not importable"
-    )
+    assert all(
+        m and m.isidentifier() and not keyword.iskeyword(m) for m in path.split(".")
+    ), f"{path} is not importable"
 
 
 def test_quirk_modules_importable() -> None:
@@ -453,7 +454,10 @@ def test_quirk_modules_importable() -> None:
     invalid = [
         module.name
         for module in pkgutil.walk_packages(zhaquirks.__path__, "zhaquirks.")
-        if not all(part.isidentifier() for part in module.name.split("."))
+        if not all(
+            part.isidentifier() and not keyword.iskeyword(part)
+            for part in module.name.split(".")
+        )
     ]
     assert not invalid, f"Modules are not importable: {invalid}"
 
