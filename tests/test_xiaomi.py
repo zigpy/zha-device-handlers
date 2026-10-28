@@ -3017,6 +3017,69 @@ async def test_xiaomi_e1_roller_device_lift_position_reports_ignored(
     assert window_covering_cluster.get(config_status_attr.name) == 0b0000_1011
 
 
+async def test_xiaomi_e1_roller_device_lift_position_reports_mixed_frame(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller only drops the lift position record from a mixed report."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    lift_attr = WindowCovering.AttributeDefs.current_position_lift_percentage
+    config_status_attr = WindowCovering.AttributeDefs.config_status
+
+    def report(*attributes: Attribute) -> None:
+        """Send a report that asks for a default response."""
+        hdr = foundation.ZCLHeader.general(
+            1,
+            foundation.GeneralCommand.Report_Attributes,
+            direction=foundation.Direction.Server_to_Client,
+        )
+        hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
+        cmd = (
+            foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+            .schema(list(attributes))
+            .serialize()
+        )
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=window_covering_cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr.serialize() + cmd),
+            )
+        )
+
+    lift_report = Attribute(
+        attrid=lift_attr.id, value=TypeValue(DataTypeId.uint8, t.uint8_t(0))
+    )
+    config_status_report = Attribute(
+        attrid=config_status_attr.id,
+        value=TypeValue(DataTypeId.map8, t.bitmap8(0b0000_1011)),
+    )
+
+    with mock.patch.object(window_covering_cluster, "send_default_rsp") as send_rsp:
+        # only the lift position record is dropped, the other record is kept
+        report(lift_report, config_status_report)
+
+        assert window_covering_cluster.get(lift_attr.name) is None
+        assert window_covering_cluster.get(config_status_attr.name) == 0b0000_1011
+        assert window_covering_listener.attribute_updates == [
+            (config_status_attr.id, 0b0000_1011)
+        ]
+        assert len(send_rsp.mock_calls) == 1
+
+        # a frame left empty by the filter still gets its default response
+        send_rsp.reset_mock()
+        window_covering_listener.attribute_updates.clear()
+        report(lift_report)
+
+        assert window_covering_cluster.get(lift_attr.name) is None
+        assert window_covering_listener.attribute_updates == []
+        assert len(send_rsp.mock_calls) == 1
+
+
 @pytest.mark.parametrize("endpoint", [(1), (2)])
 async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     """Test Aqara T2 relay."""
