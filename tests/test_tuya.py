@@ -496,6 +496,18 @@ async def test_haozee_away_days(zigpy_device_from_quirk, quirk):
     ]
 
 
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
+async def test_haozee_away_days_write(zigpy_device_from_quirk, quirk):
+    """Test Haozee thermostat maps an away mode duration write to its datapoint."""
+
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    assert thermostat_cluster.map_attribute("unoccupied_duration_days", 3) == {
+        0x0268: 3
+    }
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
 async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
