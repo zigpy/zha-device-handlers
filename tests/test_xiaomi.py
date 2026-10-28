@@ -105,6 +105,7 @@ import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.magnet_aq2
+import zhaquirks.xiaomi.aqara.motion_ac01
 import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
@@ -206,6 +207,76 @@ async def test_xiaomi_motion(zigpy_device_from_quirk, quirk):
     assert len(occupancy_listener.attribute_updates) == 2
     assert occupancy_listener.attribute_updates[1][0] == 0x0000
     assert occupancy_listener.attribute_updates[1][1] == 0
+
+
+@pytest.mark.parametrize("presence", [0, 1, 0xFF, 2, None])
+@pytest.mark.parametrize("initial", [0, 1])
+async def test_aqara_fp1_heartbeat(zigpy_device_from_quirk, presence, initial):
+    """Reconcile FP1 occupancy from heartbeat reports without replaying events."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.motion_ac01.AqaraLumiMotionAc01
+    )
+    opple = device.endpoints[1].opple_cluster
+    occupancy = device.endpoints[1].occupancy
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, initial)
+
+    # Heartbeat captured from an FP1 running firmware 0x36. Tag 102 is
+    # sensitivity on this firmware and must not be emitted as a presence event.
+    payload = bytes.fromhex(
+        "0328190521cf00082136010a21348e0c2014102001122000"
+        "6620026720006820006920016a20016b2003"
+    )
+    if presence is not None:
+        payload += bytes([101, 0x20, presence])
+    report = (
+        b"\x1c\x34\x12\x01\x0a"
+        + t.uint16_t(XIAOMI_AQARA_ATTRIBUTE_E1).serialize()
+        + b"\x41"
+        + t.LVBytes(payload).serialize()
+    )
+    expected = presence if presence in (0, 1) else initial
+    listener = mock.Mock()
+    opple.add_listener(listener)
+    for tsn in (1, 2):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=opple.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(report[:3] + bytes([tsn]) + report[4:]),
+            )
+        )
+        assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == expected
+    listener.zha_send_event.assert_not_called()
+
+    assert (
+        device.endpoints[1].device_temperature.get(
+            DeviceTemperature.AttributeDefs.current_temperature.id
+        )
+        == 2500
+    )
+
+
+async def test_aqara_fp1_presence_reports(zigpy_device_from_quirk):
+    """Keep independent presence reports and Leave events working as before."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.motion_ac01.AqaraLumiMotionAc01
+    )
+    opple = device.endpoints[1].opple_cluster
+    occupancy = device.endpoints[1].occupancy
+
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 1)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    listener = mock.Mock()
+    opple.add_listener(listener)
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE_EVENT, 1)
+    listener.zha_send_event.assert_called_once_with("Leave", {})
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 0xFF)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 0)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 0
 
 
 @pytest.fixture
