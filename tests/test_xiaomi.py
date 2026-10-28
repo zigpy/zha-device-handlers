@@ -90,9 +90,9 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
-    AqaraFeederAcn001,
     FeedingMode,
     FeedingSource,
+    OppleCluster,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -1074,11 +1074,20 @@ async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
     ],
 )
 async def test_aqara_feeder_write_attrs(
-    zigpy_device_from_quirk, attribute, value, expected_bytes
+    zigpy_device_from_v2_quirk, attribute, value, expected_bytes
 ):
     """Test Aqara C1 pet feeder attr writing."""
 
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
     opple_cluster._write_attributes = mock.AsyncMock(
         return_value=[
@@ -1117,7 +1126,9 @@ async def test_aqara_feeder_write_attrs(
             3,
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
-                mock.call(ZCL_LAST_FEEDING_SOURCE, FeedingSource.Remote, mock.ANY),
+                mock.call(
+                    ZCL_LAST_FEEDING_SOURCE, FeedingSource.HomeAssistant, mock.ANY
+                ),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
                 ),
@@ -1210,10 +1221,19 @@ async def test_aqara_feeder_write_attrs(
     ],
 )
 async def test_aqara_feeder_attr_reports(
-    zigpy_device_from_quirk, bytes_received, call_count, calls
+    zigpy_device_from_v2_quirk, bytes_received, call_count, calls
 ):
     """Test Aqara C1 pet feeder attr reports and parsing."""
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
 
     attribute_updates: list[tuple[int, Any]] = []
@@ -1243,9 +1263,18 @@ async def test_aqara_feeder_attr_reports(
         )
 
 
-async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_quirk):
+async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_v2_quirk):
     """Test Aqara C1 pet feeder passes the 0x00F7 struct to the Xiaomi parser."""
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
 
     with mock.patch.object(
@@ -1264,6 +1293,122 @@ async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_quirk):
         )
 
     parse_mock.assert_called_once_with(b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03")
+
+
+def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
+    """Test feeder defaults are available after the v2 cluster replacement."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+
+    assert cluster.get(ZCL_DISABLE_LED_INDICATOR) is False
+    assert cluster.get(ZCL_CHILD_LOCK) is False
+    assert cluster.get(ZCL_FEEDING_MODE) == FeedingMode.Manual
+    assert cluster.get(ZCL_SERVING_SIZE) == 1
+    assert cluster.get(ZCL_PORTION_WEIGHT) == 8
+    assert cluster.get(ZCL_ERROR_DETECTED) is False
+    assert cluster.get(ZCL_PORTIONS_DISPENSED) == 0
+    assert cluster.get(ZCL_WEIGHT_DISPENSED) == 0
+
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    assert cluster.get(ZCL_SERVING_SIZE) == 3
+
+    missing_attribute_default = object()
+    assert (
+        cluster.get(ZCL_LAST_FEEDING_SIZE, missing_attribute_default)
+        is missing_attribute_default
+    )
+
+    with pytest.raises(KeyError, match="not_a_real_attribute"):
+        cluster.get("not_a_real_attribute", missing_attribute_default)
+
+
+async def test_aqara_feeder_read_attributes(zigpy_device_from_v2_quirk):
+    """Test the fake feeder attributes are never sent and never marked unsupported."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+    fake_attrs = [
+        OppleCluster.AttributeDefs.feeding,
+        OppleCluster.AttributeDefs.last_feeding_source,
+        OppleCluster.AttributeDefs.last_feeding_size,
+        OppleCluster.AttributeDefs.portions_dispensed,
+        OppleCluster.AttributeDefs.weight_dispensed,
+        OppleCluster.AttributeDefs.error_detected,
+        OppleCluster.AttributeDefs.disable_led_indicator,
+        OppleCluster.AttributeDefs.child_lock,
+        OppleCluster.AttributeDefs.feeding_mode,
+        OppleCluster.AttributeDefs.serving_size,
+        OppleCluster.AttributeDefs.portion_weight,
+    ]
+
+    # The device would answer UNSUPPORTED_ATTRIBUTE, so nothing may be sent
+    async def unsupported_read(*args, **kwargs):
+        raise AssertionError("fake attributes must not be sent")
+
+    cluster.request = mock.AsyncMock(side_effect=unsupported_read)
+
+    success, failure = await cluster.read_attributes(
+        fake_attrs, allow_cache=True, manufacturer=0x115F
+    )
+    assert not failure
+    assert success[OppleCluster.AttributeDefs.serving_size] == 1
+    assert success[OppleCluster.AttributeDefs.feeding_mode] == FeedingMode.Manual
+    # No default: left out instead of failing
+    assert OppleCluster.AttributeDefs.feeding not in success
+    assert OppleCluster.AttributeDefs.last_feeding_source not in success
+    cluster.request.assert_not_called()
+
+    # Reported values win over defaults
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    success, _ = await cluster.read_attributes(["serving_size"], only_cache=True)
+    assert success["serving_size"] == 3
+
+    # Marks from earlier quirk versions are ignored
+    cluster.add_unsupported_attribute(ZCL_CHILD_LOCK, manufacturer_code=0x115F)
+    for attr in fake_attrs:
+        assert not cluster.is_attribute_unsupported(attr)
+    assert not cluster.is_attribute_unsupported(ZCL_CHILD_LOCK)
+
+    with pytest.raises(ValueError, match="same attribute twice"):
+        await cluster.read_attributes(["serving_size", ZCL_SERVING_SIZE])
+
+    # Unknown attributes are left to zigpy
+    with pytest.raises(KeyError):
+        await cluster.read_attributes(["not_a_real_attribute"])
+    assert not cluster.is_attribute_unsupported(OppleCluster.AttributeDefs.feeder_attr)
+    with pytest.raises(KeyError):
+        cluster.is_attribute_unsupported("not_a_real_attribute")
+
+    # The real attribute still goes to the device
+    cluster.request.reset_mock()
+    cluster.request.side_effect = None
+    cluster.request.return_value = [
+        [
+            foundation.ReadAttributeRecord(
+                FEEDER_ATTR, foundation.Status.UNSUPPORTED_ATTRIBUTE, None
+            )
+        ]
+    ]
+    _, failure = await cluster.read_attributes([FEEDER_ATTR], allow_cache=True)
+    cluster.request.assert_called_once()
+    assert FEEDER_ATTR in failure
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
@@ -1523,6 +1668,7 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon,tue,wed,thu,fri,sat,sun|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon|8:00,21.5|18:30,17.5|23:00,22.0|8:00,22.5",
+        "sat,sun|0:00,21.5|8:00,17.5|18:00,22.0|23:00,22.5",
     ],
 )
 async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
@@ -1548,6 +1694,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
         "mon,tue,wed,thu,fri|8:00.24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|-8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|25:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|24:00,22.0",
         "mon,tue,wed,thu,fri|8:00,03.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,31.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,mon|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
