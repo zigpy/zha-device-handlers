@@ -98,6 +98,14 @@ def test_phase_converters(raw, voltage, current, power):
     assert phase_power(raw) == power
 
 
+def test_phase_converters_payload_types():
+    """Test the phase converters accept serializable and list payloads."""
+    raw = [0x09, 0x01, 0x00, 0x04, 0xD2, 0x00, 0x01, 0x1C]
+    assert phase_voltage(raw) == 2305
+    assert phase_current(bytes(raw)) == 1234
+    assert phase_power(t.SerializableBytes(bytes(raw))) == 284
+
+
 def test_faults_and_status():
     """Test fault bitmap normalization and text conversion."""
     # bitmap16 arrives byte-swapped: 0x0100 means bit 0 (short circuit)
@@ -111,6 +119,9 @@ def test_faults_and_status():
     assert faults_to_text(1 << 16) == "unknown_0x1"
     assert faults_to_text("overload") == "overload"
     assert faults_to_text(None) == "None"
+
+    assert faults_to_text(b"\x00\x04") == "overload"
+    assert faults_to_text(b"") == "ok"
 
     assert status_to_text(0) == "standby"
     assert status_to_text(1) == "active"
