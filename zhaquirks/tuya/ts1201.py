@@ -277,7 +277,6 @@ class ZosungIRTransmit(CustomCluster):
     def __init__(self, *args, **kwargs):
         """Init cluster and its per-instance learn and send state."""
         super().__init__(*args, **kwargs)
-        self.current_position = 0
         self.msg_length = 0
         self.ir_msg: list[int] = []
         self.seq = 0
@@ -350,7 +349,7 @@ class ZosungIRTransmit(CustomCluster):
             _LOGGER.warning(
                 "IR code was not confirmed by %s (seq: %s)",
                 self.endpoint.device.ieee,
-                self.seq,
+                pending.seq,
             )
             raise
         else:
@@ -391,7 +390,6 @@ class ZosungIRTransmit(CustomCluster):
         if hdr.command_id == self.ServerCommandDefs.receive_ir_frame_00.id:
             _LOGGER.debug("Received IR frame 0x00 from %s", self.endpoint.device.ieee)
 
-            self.current_position = 0
             self.ir_msg.clear()
             self.msg_length = args.length
 
@@ -428,11 +426,6 @@ class ZosungIRTransmit(CustomCluster):
             _LOGGER.debug(
                 "IR-Message-Code01 received, sequence: %s, from %s",
                 args.seq,
-                self.endpoint.device.ieee,
-            )
-            _LOGGER.debug(
-                "Message to send: %s, to %s",
-                self.pending_send,
                 self.endpoint.device.ieee,
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:

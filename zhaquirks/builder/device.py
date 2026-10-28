@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
-from zha.zigbee.device import BaseDevice, Device
+from zha.zigbee.device import BaseDevice, ZigbeeDevice
 import zigpy.device
 import zigpy.zcl
 from zigpy.zcl import ClusterType
@@ -49,7 +49,7 @@ def _create_added_entity(
         return added.entity_cls(device, unique_id=str(device.ieee), **added.kwargs)
 
     # Only Zigbee devices have endpoints and clusters
-    assert isinstance(device, Device)
+    assert isinstance(device, ZigbeeDevice)
 
     endpoint = device.endpoints[added.endpoint_id]
     clusters = (
@@ -67,7 +67,7 @@ def _create_added_entity(
     )
 
 
-class QuirkV2Device(Device):
+class QuirkV2Device(ZigbeeDevice):
     """Base ZHA device for QuirkBuilder."""
 
     def __init__(
