@@ -35,45 +35,36 @@ class CustomCluster(zigpy.zcl.Cluster):
         they are kept out of the attribute cache. Otherwise, they would be persisted
         to the database as if the device reported them, and would outlive the quirk.
         """
-        if not self._CONSTANT_ATTRIBUTES:
-            return await super().read_attributes(
-                attributes,
-                allow_cache=allow_cache,
-                only_cache=only_cache,
-                manufacturer=manufacturer,
-                **kwargs,
-            )
-
         success: dict[typing.Any, typing.Any] = {}
         failure: dict[typing.Any, typing.Any] = {}
-        attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
-        constant_defs: set[foundation.ZCLAttributeDef] = set()
+        attrs_to_read: dict[
+            int | str | foundation.ZCLAttributeDef, foundation.ZCLAttributeDef
+        ] = {}
+        seen_defs: set[foundation.ZCLAttributeDef] = set()
 
         for attribute in attributes:
-            try:
-                attr_def = self.find_attribute(
-                    attribute, manufacturer_code=manufacturer
-                )
-            except KeyError:
-                # Let zigpy handle unknown attributes
-                attrs_to_read.append(attribute)
-                continue
+            # Unknown attributes raise a `KeyError`, like in zigpy
+            attr_def = self.find_attribute(attribute, manufacturer_code=manufacturer)
 
-            if attr_def.id not in self._CONSTANT_ATTRIBUTES:
-                attrs_to_read.append(attribute)
-                continue
-
-            if attr_def in constant_defs:
+            if attr_def in seen_defs:
                 raise ValueError(
                     f"Cannot read the same attribute twice in the same call: {attr_def}"
                 )
 
-            constant_defs.add(attr_def)
+            seen_defs.add(attr_def)
+
+            if (
+                self._CONSTANT_ATTRIBUTES is None
+                or attr_def.id not in self._CONSTANT_ATTRIBUTES
+            ):
+                attrs_to_read[attribute] = attr_def
+                continue
+
             value = self._CONSTANT_ATTRIBUTES[attr_def.id]
             success[attribute] = value if value is None else attr_def.type(value)
 
         if attrs_to_read:
-            read_success, read_failure = await super().read_attributes(
+            read_success, read_failure = await self._read_non_constant_attributes(
                 attrs_to_read,
                 allow_cache=allow_cache,
                 only_cache=only_cache,
@@ -84,6 +75,29 @@ class CustomCluster(zigpy.zcl.Cluster):
             failure.update(read_failure)
 
         return success, failure
+
+    async def _read_non_constant_attributes(
+        self,
+        attributes: dict[
+            int | str | foundation.ZCLAttributeDef, foundation.ZCLAttributeDef
+        ],
+        *,
+        allow_cache: bool,
+        only_cache: bool,
+        manufacturer: int | UndefinedType | None,
+        **kwargs,
+    ) -> typing.Any:
+        """Read attributes not in `_CONSTANT_ATTRIBUTES`, from the device by default.
+
+        `attributes` maps each requested key to its resolved attribute definition.
+        """
+        return await super().read_attributes(
+            list(attributes),
+            allow_cache=allow_cache,
+            only_cache=only_cache,
+            manufacturer=manufacturer,
+            **kwargs,
+        )
 
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute."""
