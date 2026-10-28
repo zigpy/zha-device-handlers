@@ -11,7 +11,7 @@ from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import GreenPowerProxy, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -20,7 +20,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.builder.metadata import PreventDefaultEntityCreationMetadata
+from zhaquirks.builder.metadata import EntityFilter
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -1856,13 +1856,7 @@ def test_ts011f_qeuvnohg_quirk_selection(zigpy_device_from_quirk):
     # The cluster stays, but ZHA must not create an entity for it
     entry = DEVICE_REGISTRY.match_entry(device)
     assert (
-        PreventDefaultEntityCreationMetadata(
-            endpoint_id=1,
-            cluster_id=TemperatureMeasurement.cluster_id,
-            cluster_type=ClusterType.Server,
-            unique_id_suffix=None,
-            function=None,
-        )
+        EntityFilter(endpoint_id=1, cluster_id=TemperatureMeasurement.cluster_id)
         in entry.zha_device_factory.quirk_definition.disabled_default_entities
     )
 
