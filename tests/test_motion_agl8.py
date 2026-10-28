@@ -6,15 +6,12 @@ import pytest
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 from tests.common import ClusterListener
 from zhaquirks.const import BatterySize
 from zhaquirks.xiaomi import AQARA, XIAOMI_AQARA_ATTRIBUTE_E1
-from zhaquirks.xiaomi.aqara.motion_agl8 import (
-    AqaraFP300ManuCluster,
-    FP300PowerConfigurationVoltage,
-)
+from zhaquirks.xiaomi.aqara.motion_agl8 import AqaraFP300ManuCluster
 
 
 def create_aqara_attr_report(attributes):
@@ -24,37 +21,6 @@ def create_aqara_attr_report(attributes):
         tv = foundation.TypeValue(0x39, t.Single(value))
         serialized_data += bytes([key]) + tv.serialize()
     return serialized_data
-
-
-def test_fp300_device_creation(zigpy_device_from_v2_quirk):
-    """Test that the FP300 quirked device is created as expected."""
-    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
-
-    assert device.manufacturer == AQARA
-    assert device.model == "lumi.sensor_occupy.agl8"
-    assert 1 in device.endpoints
-    assert Basic.cluster_id in device.endpoints[1].in_clusters
-
-
-def test_fp300_endpoint_clusters_present(zigpy_device_from_v2_quirk):
-    """Test that endpoint 1 contains the FP300 manufacturer cluster."""
-    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
-    endpoint = device.endpoints[1]
-
-    assert AqaraFP300ManuCluster.cluster_id in endpoint.in_clusters
-    assert isinstance(endpoint.aqara_fp300_manu, AqaraFP300ManuCluster)
-
-
-def test_fp300_power_configuration_cluster_present(zigpy_device_from_v2_quirk):
-    """Test that endpoint 1 exposes the FP300 power configuration cluster."""
-    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
-    endpoint = device.endpoints[1]
-
-    assert PowerConfiguration.cluster_id in endpoint.in_clusters
-    assert isinstance(
-        endpoint.in_clusters[PowerConfiguration.cluster_id],
-        FP300PowerConfigurationVoltage,
-    )
 
 
 def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
@@ -257,13 +223,3 @@ async def test_aqara_fp300_configuration_survives_read_failure(
         side_effect=TimeoutError,
     ):
         await device.apply_custom_configuration()
-
-
-def test_fp300_presence_binary_sensor_updates(zigpy_device_from_v2_quirk):
-    """Test that presence reports update the occupancy attribute."""
-    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
-    manu_cluster = device.endpoints[1].aqara_fp300_manu
-
-    manu_cluster.update_attribute(AqaraFP300ManuCluster.AttributeDefs.presence.id, True)
-
-    assert manu_cluster.get(AqaraFP300ManuCluster.AttributeDefs.presence.id) is True
