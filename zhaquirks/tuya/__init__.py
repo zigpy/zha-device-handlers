@@ -240,7 +240,7 @@ class TuyaData:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
     def __repr__(self) -> str:
-        """Show the type and raw bytes, plus the payload if it decodes."""
+        """Show the type and raw bytes, plus the payload if it decodes and differs from raw."""
         fields = (
             f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
         )
@@ -248,7 +248,8 @@ class TuyaData:
             payload = self.payload
         except (AttributeError, TypeError, ValueError):
             payload = None
-        if payload is not None:
+        # a RAW payload is `raw` itself, so don't show the same bytes twice
+        if payload is not None and self.dp_type != TuyaDPType.RAW:
             fields += f", *payload={payload!r}"
         return f"{type(self).__name__}({fields})"
 
