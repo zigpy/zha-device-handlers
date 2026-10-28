@@ -16,12 +16,15 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_PRESS,
     COMMAND_RELEASE,
     COMMAND_STEP,
@@ -45,13 +48,10 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.ikea import (
-    COMMAND_MOVE_DOWN_RELEASE,
-    COMMAND_MOVE_UP_RELEASE,
     IKEA,
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
-    IkeaLevelControl,
     PowerConfig1CRCluster,
     ScenesCluster,
 )
@@ -110,7 +110,7 @@ class IkeaTradfriRemote1(CustomDevice):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -256,7 +256,7 @@ class IkeaTradfriRemote2(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -316,7 +316,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -377,7 +377,7 @@ class IkeaTradfriRemote4(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -440,7 +440,7 @@ class IkeaTradfriRemote5(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],

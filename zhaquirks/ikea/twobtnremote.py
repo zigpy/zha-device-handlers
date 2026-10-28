@@ -15,11 +15,14 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_OFF,
     COMMAND_ON,
     DEVICE_TYPE,
@@ -39,12 +42,9 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.ikea import (
-    COMMAND_MOVE_DOWN_RELEASE,
-    COMMAND_MOVE_UP_RELEASE,
     IKEA,
     IKEA_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
-    IkeaLevelControl,
     PowerConfig1AAACluster,
 )
 from zhaquirks.legacy import CustomDevice
@@ -103,7 +103,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -192,7 +192,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -254,7 +254,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -316,7 +316,7 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaLevelControl,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
