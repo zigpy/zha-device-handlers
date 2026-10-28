@@ -7,6 +7,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zhaquirks.builder import (
     PERCENTAGE,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfElectricCurrent,
@@ -271,7 +272,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         dp_id=102,
         attribute_name="update_frequency",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=5,
         max_value=3600,
