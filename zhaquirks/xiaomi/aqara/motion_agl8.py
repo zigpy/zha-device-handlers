@@ -5,7 +5,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.typing import AddressingMode
-from zigpy.zcl import AttributeReadEvent
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     DataTypeId,
@@ -19,7 +19,10 @@ from zhaquirks.builder import (
     QuirkBuilder,
     ReportingConfig,
 )
+from zhaquirks.const import BatterySize
 from zhaquirks.xiaomi import (
+    BATTERY_QUANTITY_ATTR,
+    BATTERY_SIZE_ATTR,
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XiaomiAqaraE1Cluster,
     XiaomiPowerConfigurationPercent,
@@ -36,6 +39,15 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfigurationPercent):
     the TLV report are the single source of truth.
     """
 
+    def __init__(self, *args, **kwargs) -> None:
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # The FP300 runs on two CR2450 cells, as the device itself reports
+        self._CONSTANT_ATTRIBUTES = {
+            BATTERY_QUANTITY_ATTR: 2,
+            BATTERY_SIZE_ATTR: BatterySize.CR2450,
+        }
+
     def handle_cluster_general_request(
         self,
         hdr: ZCLHeader,
@@ -44,6 +56,11 @@ class FP300PowerConfigurationVoltage(XiaomiPowerConfigurationPercent):
         dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Ignore the device's standard battery reports."""
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, foundation.Status.SUCCESS)
+            return
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
@@ -51,12 +68,6 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
 
     cluster_id = 0xFCC0
     ep_attribute = "aqara_fp300_manu"
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-        # A read response only emits AttributeReadEvent, which the Xiaomi cluster doesn't handle
-        self.on_event(AttributeReadEvent.event_type, self._handle_attribute_event)
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Read the Aqara TLV struct on (re)configuration, as newer firmware doesn't push it."""

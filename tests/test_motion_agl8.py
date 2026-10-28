@@ -9,6 +9,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 
 from tests.common import ClusterListener
+from zhaquirks.const import BatterySize
 from zhaquirks.xiaomi import AQARA, XIAOMI_AQARA_ATTRIBUTE_E1
 from zhaquirks.xiaomi.aqara.motion_agl8 import (
     AqaraFP300ManuCluster,
@@ -81,13 +82,18 @@ def test_aqara_fp300_battery_from_e1_tlv(zigpy_device_from_v2_quirk):
     assert power_listener.attribute_updates[1][1] == 200
 
 
-def send_battery_report(device, attr_id: int, value: int) -> None:
+def send_battery_report(
+    device, attr_id: int, value: int, *, disable_default_response: bool = True
+) -> None:
     """Deliver a standard PowerConfiguration attribute report from the device."""
     cluster = device.endpoints[1].power
     hdr = foundation.ZCLHeader.general(
         tsn=1,
         command_id=foundation.GeneralCommand.Report_Attributes,
         direction=foundation.Direction.Server_to_Client,
+    )
+    hdr.frame_control = hdr.frame_control.replace(
+        disable_default_response=disable_default_response
     )
     command = foundation.GENERAL_COMMANDS[
         foundation.GeneralCommand.Report_Attributes
@@ -141,6 +147,39 @@ async def test_aqara_fp300_ignores_standard_battery_reports(zigpy_device_from_v2
     assert power_cluster.get(percent_id) == 140
 
 
+async def test_aqara_fp300_ignored_battery_report_gets_default_response(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a dropped standard report is still answered when the device asks for it."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    power_cluster = device.endpoints[1].power
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    with mock.patch.object(power_cluster, "send_default_rsp") as mock_rsp:
+        send_battery_report(device, percent_id, 0, disable_default_response=False)
+        assert mock_rsp.call_count == 1
+        assert mock_rsp.call_args.args[0].command_id == (
+            foundation.GeneralCommand.Report_Attributes
+        )
+
+        send_battery_report(device, percent_id, 0, disable_default_response=True)
+        assert mock_rsp.call_count == 1
+
+    assert power_cluster.get(percent_id) is None
+
+
+def test_aqara_fp300_battery_metadata(zigpy_device_from_v2_quirk):
+    """Test that the battery size and quantity match the device's two CR2450 cells."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    power_cluster = device.endpoints[1].power
+
+    assert power_cluster.get(PowerConfiguration.AttributeDefs.battery_quantity.id) == 2
+    assert (
+        power_cluster.get(PowerConfiguration.AttributeDefs.battery_size.id)
+        == BatterySize.CR2450
+    )
+
+
 async def test_aqara_fp300_no_battery_without_tlv(zigpy_device_from_v2_quirk):
     """Test that nothing is cached from standard reports before the first TLV report."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
@@ -173,15 +212,24 @@ async def test_aqara_fp300_configuration_reads_tlv_struct(zigpy_device_from_v2_q
         ),
     )
 
-    with mock.patch.object(
-        manu_cluster,
-        "read_attributes_raw",
-        new_callable=mock.AsyncMock,
-        return_value=[[record]],
-    ) as mock_read:
+    with (
+        mock.patch.object(
+            manu_cluster,
+            "read_attributes_raw",
+            new_callable=mock.AsyncMock,
+            return_value=[[record]],
+        ) as mock_read,
+        mock.patch.object(
+            power_cluster,
+            "battery_percent_reported",
+            wraps=power_cluster.battery_percent_reported,
+        ) as mock_percent,
+    ):
         await device.apply_custom_configuration()
 
     mock_read.assert_awaited_once()
+    # The read response is parsed exactly once
+    mock_percent.assert_called_once_with(91)
     assert mock_read.mock_calls[0].args[0] == [XIAOMI_AQARA_ATTRIBUTE_E1]
     assert mock_read.mock_calls[0].kwargs["manufacturer"] == 0x115F
     assert power_cluster.get(
