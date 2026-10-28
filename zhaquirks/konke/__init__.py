@@ -1,10 +1,11 @@
 """Konke sensors."""
 
-from typing import Any, Optional, Union
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 import zigpy.zcl.foundation
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
 from zhaquirks.const import (
@@ -53,20 +54,17 @@ class KonkeOnOffCluster(CustomCluster):
     cluster_id = OnOff.cluster_id
     ep_attribute = "konke_on_off"
 
-    attributes = OnOff.attributes.copy()
-    attributes[0x0000] = ("konke_button_event", KonkeButtonEvent)
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = OnOff.server_commands.copy()
-    client_commands = OnOff.client_commands.copy()
+        konke_button_event: Final = ZCLAttributeDef(id=0x0000, type=KonkeButtonEvent)
 
     def handle_cluster_general_request(
         self,
         header: zigpy.zcl.foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         self.info(
@@ -75,17 +73,30 @@ class KonkeOnOffCluster(CustomCluster):
             args,
         )
 
-        if header.command_id != zigpy.zcl.foundation.GeneralCommand.Report_Attributes:
-            return
+        if header.command_id == zigpy.zcl.foundation.GeneralCommand.Report_Attributes:
+            remaining_reports = []
 
-        attr = args[0][0]
+            for attr in args.attribute_reports:
+                if attr.attrid != self.AttributeDefs.konke_button_event.id:
+                    remaining_reports.append(attr)
+                    continue
 
-        if attr.attrid != self.attributes_by_name["konke_button_event"].id:
-            return
+                value = attr.value.value
+                press_type = PRESS_TYPES.get(value)
+                if press_type is None:
+                    self.debug("Unknown Konke button event: %s", value)
+                    continue
 
-        value = attr.value.value
-        event_args = {
-            PRESS_TYPE: PRESS_TYPES[value],
-            COMMAND_ID: value.value,  # to maintain backwards compatibility
-        }
-        self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
+                event_args = {
+                    PRESS_TYPE: press_type,
+                    COMMAND_ID: int(value),  # to maintain backwards compatibility
+                }
+                self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
+
+            # Button events aren't attribute updates, pass on everything else
+            args.attribute_reports = remaining_reports
+
+        # Always process the request, to send any requested default response
+        super().handle_cluster_general_request(
+            header, args, dst_addressing=dst_addressing
+        )

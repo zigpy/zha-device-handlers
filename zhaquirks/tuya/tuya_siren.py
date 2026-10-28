@@ -1,10 +1,15 @@
 """Tuya Siren."""
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -134,6 +139,7 @@ class NeoBatteryState(t.enum8):
 (
     TuyaQuirkBuilder("_TZE204_nlrfgpny", "TS0601")
     .applies_to("TZE200_nlrfgpny", "TS0601")
+    .applies_to("_TZE284_nlrfgpny", "TS0601")
     .tuya_enum(
         dp_id=1,
         attribute_name="alarm_state",

@@ -1,31 +1,13 @@
 """Innr SP 240 plug."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl import ReportingConfig
+from zigpy.zcl.clusters.general import LevelControl
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import Status, ZCLAttributeDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.innr import INNR, MeteringClusterInnr
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
 
 
 class InnrCluster(CustomCluster):
@@ -34,72 +16,72 @@ class InnrCluster(CustomCluster):
     cluster_id = 0xE001
 
 
-class SP240(CustomDevice):
-    """Innr SP 240  smart plug."""
+class ElectricalMeasurementClusterSP240(CustomCluster, ElectricalMeasurement):
+    """Electrical measurement cluster that does not report the AC scaling constants.
 
-    signature = {
-        MODELS_INFO: [(INNR, "SP 240")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    InnrCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+    The plug only has eight attribute reporting slots. Its AC multiplier and divisor
+    attributes are constants, but reporting them would take up to six of those slots
+    and leave none for energy, current and voltage. They are still read as usual.
+    """
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    MeteringClusterInnr,
-                    ElectricalMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    InnrCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+    _UNREPORTED_ATTRIBUTE_IDS = frozenset(
+        {
+            ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id,
+            ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id,
+            ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id,
+            ElectricalMeasurement.AttributeDefs.ac_current_divisor.id,
+            ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id,
+            ElectricalMeasurement.AttributeDefs.ac_power_divisor.id,
+        }
+    )
+
+    async def configure_reporting_multiple(
+        self, config: dict[ZCLAttributeDef, ReportingConfig]
+    ) -> dict[ZCLAttributeDef, Status]:
+        """Configure reporting, skipping the AC scaling constants."""
+        to_configure = {
+            attr_def: reporting_config
+            for attr_def, reporting_config in config.items()
+            if attr_def.id not in self._UNREPORTED_ATTRIBUTE_IDS
+        }
+        results = (
+            await super().configure_reporting_multiple(to_configure)
+            if to_configure
+            else {}
+        )
+        return {
+            attr_def: (
+                results[attr_def]
+                if attr_def in to_configure
+                else Status.UNREPORTABLE_ATTRIBUTE
+            )
+            for attr_def in config
+        }
+
+
+(
+    QuirkBuilder(manufacturer="innr", model="SP 240")
+    # Firmware version 421410437 fixed the divisor and multiplier bug,
+    # so only apply this quirk to versions older than that (max_version is exclusive).
+    .firmware_version_filter(max_version=0x191B3685, allow_missing=False)
+    # the plug cannot dim, so don't bind, configure reporting for or expose LevelControl
+    .removes(LevelControl.cluster_id, endpoint_id=1)
+    .replaces(MeteringClusterInnrOld, endpoint_id=1)
+    .replaces(ElectricalMeasurementClusterSP240, endpoint_id=1)
+    .replaces(InnrCluster, endpoint_id=1)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder(manufacturer="innr", model="SP 240")
+    # Firmware version 421410437 fixed the divisor and multiplier bug,
+    # so apply this quirk to that and newer versions to force correct new values,
+    # in case the old quirk persisted the old values into the database.
+    .firmware_version_filter(min_version=0x191B3685, allow_missing=True)
+    # the plug cannot dim, so don't bind, configure reporting for or expose LevelControl
+    .removes(LevelControl.cluster_id, endpoint_id=1)
+    .replaces(MeteringClusterInnrNew, endpoint_id=1)
+    .replaces(ElectricalMeasurementClusterSP240, endpoint_id=1)
+    .replaces(InnrCluster, endpoint_id=1)
+    .add_to_registry()
+)

@@ -1,7 +1,8 @@
 """Quirk for Philips motion sensors."""
 
+from typing import Final
+
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -19,7 +20,9 @@ from zigpy.zcl.clusters.measurement import (
     OccupancySensing,
     TemperatureMeasurement,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,14 +31,19 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsOccupancySensing
 
 
 class BasicCluster(CustomCluster, Basic):
     """Hue Motion Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes[0x0033] = ("trigger_indicator", t.Bool, True)
+    class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
+
+        trigger_indicator: Final = ZCLAttributeDef(
+            id=0x0033, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class PhilipsMotion(CustomDevice):

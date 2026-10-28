@@ -6,7 +6,8 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 import zhaquirks
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.const import BatterySize
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
@@ -44,7 +45,8 @@ zhaquirks.setup()
         ("_TZE200_eanjj2pa", "TS0601", 100, 10, False),
         ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
         ("_TZE284_locansqn", "TS0601", 100, 10, False),
-        ("_TZE200_vvmbj46n", "TS0601", 100, 10, True),
+        ("_TZE200_vvmbj46n", "TS0601", 100, 10, False),
+        ("_TZE284_9ern5sfh", "TS0601", 10, 10, True),
     ],
 )
 async def test_handle_get_data(
@@ -104,6 +106,7 @@ async def test_handle_get_data(
         ("_TZE204_yjjdcqsq", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE200_9yapgbuv", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_9yapgbuv", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE284_9yapgbuv", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE200_utkemkbs", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_utkemkbs", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_ksz749x8", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
@@ -112,6 +115,9 @@ async def test_handle_get_data(
         ("_TZE200_cirvgep4", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_cirvgep4", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
         ("_TZE204_jygvp6fk", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE284_upagmta9", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE204_1wnh8bqp", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE284_1wnh8bqp", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
     ],
 )
 async def test_handle_get_data_enum_batt(
@@ -150,6 +156,48 @@ async def test_handle_get_data_enum_batt(
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+@pytest.mark.parametrize(
+    "raw_battery_state,expected_percent",
+    [(0, 40), (1, 120), (2, 200), (99, 0)],
+)
+async def test_soil_sensor_0ints6wl_battery(
+    zigpy_device_from_v2_quirk, raw_battery_state, expected_percent
+):
+    """Test _TZE284_0ints6wl enum battery (dp=14) conversion."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_0ints6wl", "TS0601")
+    ep = quirked.endpoints[1]
+
+    ep.tuya_manufacturer.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(14, TuyaData(raw_battery_state))],
+        )
+    )
+
+    assert ep.power.get("battery_percentage_remaining") == expected_percent
+
+
+async def test_soil_sensor_0ints6wl_humidity_and_battery_size(
+    zigpy_device_from_v2_quirk,
+):
+    """Test _TZE284_0ints6wl air humidity (dp=101) and 2x AAA battery."""
+    quirked = zigpy_device_from_v2_quirk("_TZE2841000000_0ints6wl", "TS0601")
+    ep = quirked.endpoints[1]
+
+    ep.tuya_manufacturer.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(101, TuyaData(79))],
+        )
+    )
+
+    assert ep.humidity.get("measured_value") == 7900
+    assert ep.power.get("battery_size") == BatterySize.AAA
+    assert ep.power.get("battery_quantity") == 2
 
 
 def test_valid_attributes(zigpy_device_from_v2_quirk):

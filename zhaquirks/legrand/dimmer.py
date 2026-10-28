@@ -1,7 +1,6 @@
 """Module for Legrand dimmers."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -17,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Ballast
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,10 +25,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.legrand import (
     LEGRAND,
     MANUFACTURER_SPECIFIC_CLUSTER_ID,
+    DeviceMode,
     LegrandCluster,
+    LegrandIdentify,
     LegrandPowerConfigurationCluster,
 )
 
@@ -278,108 +281,40 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
     }
 
 
-class DimmerWithNeutral(DimmerWithoutNeutral):
-    """Dimmer switch with neutral."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
-        # device_version=1
-        # input_clusters=[0, 3, 4, 8, 6, 5, 15, 64513]
-        # output_clusters=[0, 25, 64513]>
-        MODELS_INFO: [(f" {LEGRAND}", " Dimmer switch with neutral")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Scenes.cluster_id,
-                    BinaryInput.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
-class DimmerWithNeutral2(CustomDevice):
-    """Dimmer switch with neutral."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
-        # device_version=1
-        # input_clusters=[0, 3, 4, 8, 6, 5, 15, 64513]
-        # output_clusters=[0, 64513, 5, 25]>
-        MODELS_INFO: [(f" {LEGRAND}", " Dimmer switch with neutral")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Scenes.cluster_id,
-                    BinaryInput.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                    Scenes.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Scenes.cluster_id,
-                    BinaryInput.cluster_id,
-                    LegrandCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    LegrandCluster,
-                    Scenes.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(f" {LEGRAND}", " Dimmer switch with neutral")
+    .replaces(LegrandCluster)
+    .replaces(LegrandIdentify)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
+    )
+    .switch(
+        attribute_name=LegrandCluster.AttributeDefs.device_mode.name,
+        cluster_id=LegrandCluster.cluster_id,
+        on_value=DeviceMode.Dimmer_On,
+        off_value=DeviceMode.Dimmer_Off,
+        translation_key="dimmer_mode",
+        fallback_name="Dimmer mode",
+    )
+    .switch(
+        attribute_name=LegrandCluster.AttributeDefs.led_dark.name,
+        cluster_id=LegrandCluster.cluster_id,
+        translation_key="turn_on_led_when_off",
+        fallback_name="Turn on LED when off",
+    )
+    .switch(
+        attribute_name=LegrandCluster.AttributeDefs.led_on.name,
+        cluster_id=LegrandCluster.cluster_id,
+        translation_key="turn_on_led_when_on",
+        fallback_name="Turn on LED when on",
+    )
+    .add_to_registry()
+)
 
 
 class RemoteDimmer(CustomDevice):

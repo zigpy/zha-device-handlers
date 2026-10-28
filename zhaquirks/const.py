@@ -1,6 +1,8 @@
 """Common constants for zhaquirks."""
 
-from zigpy.quirks import (
+import zigpy.types as t
+
+from zhaquirks.legacy import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
     SIG_EP_OUTPUT,
@@ -12,7 +14,6 @@ from zigpy.quirks import (
     SIG_NODE_DESC,
     SIG_SKIP_CONFIG,
 )
-import zigpy.types as t
 
 ARGS = "args"
 ATTR_ID = "attr_id"
@@ -25,6 +26,9 @@ BUTTON_3 = "button_3"
 BUTTON_4 = "button_4"
 BUTTON_5 = "button_5"
 BUTTON_6 = "button_6"
+BUTTON_CENTRE = "button_centre"
+BUTTON_7 = "button_7"
+BUTTON_8 = "button_8"
 CLICK_TYPE = "click_type"
 CLOSE = "close"
 CLUSTER_COMMAND = "cluster_command"
@@ -49,6 +53,9 @@ COMMAND_M_SWLATCHED = "switch_latched"
 COMMAND_MOVE = "move"
 COMMAND_MOVE_COLOR_TEMP = "move_color_temp"
 COMMAND_MOVE_ON_OFF = "move_with_on_off"
+# Synthesized by LevelControlWithMoveDirection for remotes whose dim buttons share one stop
+COMMAND_MOVE_UP_RELEASE = "move_up_release"
+COMMAND_MOVE_DOWN_RELEASE = "move_down_release"
 COMMAND_MOVE_SATURATION = "move_saturation"
 COMMAND_MOVE_TO_SATURATION = "move_to_saturation"
 COMMAND_MOVE_TO_LEVEL_ON_OFF = "move_to_level_with_on_off"
@@ -73,6 +80,9 @@ COMMAND_STORE = "store"
 COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
+COMMAND_STARTED_ROTATING = "started_rotating"
+COMMAND_CONTINUED_ROTATING = "continued_rotating"
+COMMAND_STOPPED_ROTATING = "stopped_rotating"
 DESCRIPTION = "description"
 DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"
@@ -126,6 +136,11 @@ ZONE_STATUS_CHANGE_COMMAND = 0x0000
 ZONE_STATE = 0x0000
 ZONE_TYPE = 0x0001
 ZONE_STATUS = 0x0002
+ROTARY_KNOB = "rotary_knob"
+STARTED_ROTATING = "rotary_knob_started_rotating"
+CONTINUED_ROTATING = "rotary_knob_continued_rotating"
+STOPPED_ROTATING = "rotary_knob_stopped_rotating"
+STOPPED_ROTATING_WITH_DIRECTION = "rotary_knob_stopped_rotating_with_direction"
 
 
 class BatterySize(t.enum8):

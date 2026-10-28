@@ -1,16 +1,20 @@
 """Module for Elko quirks implementations."""
 
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.legacy import CustomDevice
 
 ELKO = "ELKO"
 
 
 class ElkoThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster for Elko Thermostats."""
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Cluster attributes."""
 
     def __init__(self, *args, **kwargs):
         """Init thermostat cluster."""

@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
+from zigpy.zcl import AttributeUpdatedEvent
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -18,20 +19,25 @@ async def test_button_ias(zigpy_device_from_quirk):
     device = zigpy_device_from_quirk(zhaquirks.linxura.button.LinxuraButton)
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
     cluster = device.endpoints[1].ias_zone
-    listener = mock.MagicMock()
-    cluster.add_listener(listener)
+
+    attribute_event_listener = mock.Mock()
+    cluster.on_event(AttributeUpdatedEvent.event_type, attribute_event_listener)
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
 
     for i in range(0, 24):
         # button press
         cluster.update_attribute(ias_zone_status_attr_id, i)
 
         # update_attribute on the IasZone cluster is always called
-        assert listener.attribute_updated.call_args[0][0] == ias_zone_status_attr_id
-        assert listener.attribute_updated.call_args[0][1] == i
+        event = attribute_event_listener.mock_calls[-1].args[0]
+        assert event.attribute_id == ias_zone_status_attr_id
+        assert event.value == i
 
+    # we get 24 attribute updates
+    assert len(attribute_event_listener.mock_calls) == 24
     # we get 20 events, 4 are discarded as invalid (0, 6, 12, 18)
-    assert listener.attribute_updated.call_count == 24
-    assert listener.zha_send_event.call_count == 20
+    assert zha_listener.zha_send_event.call_count == 20
 
 
 @pytest.mark.parametrize(

@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.const import (
     ALT_SHORT_PRESS,
     BUTTON,
@@ -27,7 +28,9 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_SATURATION,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STEP,
@@ -78,6 +81,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             ("_TZ3000_qja6nq5z", "TS004F"),
             ("_TZ3000_csflgqj2", "TS004F"),
             ("_TZ3000_abrsvsou", "TS004F"),
+            ("_TZ3000_gwkzibhs", "TS004F"),
         ],
         ENDPOINTS: {
             1: {
@@ -241,7 +245,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaSmartRemoteOnOffCluster,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Color.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -300,8 +304,13 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
             ENDPOINT_ID: 1,
             PARAMS: {"move_mode": 1},
         },
+        (LONG_RELEASE, DIM_UP): {
+            COMMAND: COMMAND_MOVE_UP_RELEASE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+        },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_MOVE_DOWN_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -491,7 +500,7 @@ class TuyaSmartRemote004F(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaSmartRemoteOnOffCluster,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     LightLink.cluster_id,
                 ],
             },
@@ -525,8 +534,13 @@ class TuyaSmartRemote004F(EnchantedDevice):
             ENDPOINT_ID: 1,
             PARAMS: {"move_mode": 1},
         },
+        (LONG_RELEASE, DIM_UP): {
+            COMMAND: COMMAND_MOVE_UP_RELEASE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+        },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_MOVE_DOWN_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },

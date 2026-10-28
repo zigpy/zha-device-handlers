@@ -3,10 +3,17 @@
 from unittest import mock
 
 import pytest
-from zigpy.quirks import CustomEndpoint
+from zha.application.platforms.event import EntityEventTriggeredEvent
+from zha.application.platforms.event.const import ButtonEventType
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.device import (
+    GreenPowerCommandReceived,
+    GreenPowerDevice as ZigpyGreenPowerDevice,
+)
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
+from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -34,8 +41,16 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.device import CustomEndpoint
 import zhaquirks.philips
-from zhaquirks.philips import Button, ButtonPressQueue, PhilipsRemoteCluster, PressType
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    Button,
+    ButtonPressQueue,
+    PhilipsRemoteCluster,
+    PressType,
+)
 from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
 from zhaquirks.philips.rwl022 import PhilipsRWL022
@@ -818,7 +833,7 @@ def listen_to_all(device) -> mock.MagicMock:
     return listener
 
 
-def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
+async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     """Button long-presses shouldn't trigger LevelControl events."""
 
     device = zigpy_device_from_quirk(PhilipsRDM002)
@@ -865,7 +880,7 @@ def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     assert listener.cluster_command.call_count == 3
 
 
-def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
+async def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
     """Dial rotary events shouldn't be muted by PhilipsRdm002LevelControl."""
 
     device = zigpy_device_from_quirk(PhilipsRDM002)
@@ -894,3 +909,81 @@ def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
     # These call counts is the same, regardless of whether PhilipsRdm002LevelControl is used or not.
     assert listener.zha_send_event.call_count == 0
     assert listener.cluster_command.call_count == 2
+
+
+@pytest.mark.parametrize(
+    "manufacturer, model",
+    (
+        (PHILIPS, "ROM001"),
+        (SIGNIFY, "ROM001"),
+        (SIGNIFY, "RDM003"),
+        (SIGNIFY, "RDM005"),
+    ),
+)
+def test_rom001_signature(assert_signature_matches_quirk, manufacturer, model):
+    """Test ROM001 signature matching."""
+    signature = {
+        "ieee": "00:17:88:01:0f:bc:68:0b",
+        "manufacturer": manufacturer,
+        "model": model,
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0830",
+                "in_clusters": ["0x0000", "0x0001", "0x0003", "0x1000", "0xfc00"],
+                "out_clusters": [
+                    "0x0000",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x0019",
+                    "0x1000",
+                ],
+            }
+        },
+    }
+    assert_signature_matches_quirk(PhilipsROM001, signature)
+
+
+@pytest.mark.parametrize(
+    ("command_id", "suffix"),
+    [
+        (GPDCommandID.Toggle, "button_1"),
+        (GPDCommandID.RecallScene0, "button_2"),
+        (GPDCommandID.RecallScene1, "button_3"),
+        (GPDCommandID.RecallScene2, "button_4"),
+    ],
+)
+def test_hue_tap_buttons(MockAppController, command_id, suffix):
+    """Test that each Hue Tap command only fires its own button."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(0x0042EEE5),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
+    zha_device = entry.zha_device_factory(gpd, mock.MagicMock())
+
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in zha_device.discover_entities():
+        entity.on_add()
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    gpd.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(gpd.ieee),
+            endpoint_id=None,
+            command_id=command_id,
+            command=None,
+        ),
+    )
+
+    assert [
+        (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+        for event in events
+    ] == [(suffix, ButtonEventType.PRESS_START)]

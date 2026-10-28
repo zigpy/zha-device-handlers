@@ -1,10 +1,14 @@
 """Tuya Ultrasonic Level Sensors."""
 
-from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfLength
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfLength,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -127,6 +131,37 @@ base_level_quirk = (
         unit=UnitOfLength.MILLIMETERS,
         min_value=10,
         max_value=4000,
+        step=1,
+        translation_key="liquid_depth_max",
+        fallback_name="Height from sensor to liquid level",
+    )
+    .add_to_registry()
+)
+
+
+(
+    base_level_quirk.clone()
+    .applies_to("_TZE204_7yyuo8sr", "TS0601")
+    .tuya_number(
+        dp_id=19,
+        attribute_name="installation_height",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=10,
+        max_value=500,
+        step=1,
+        translation_key="installation_height",
+        fallback_name="Height from sensor to tank bottom",
+    )
+    .tuya_number(
+        dp_id=21,
+        attribute_name="liquid_depth_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=10,
+        max_value=500,
         step=1,
         translation_key="liquid_depth_max",
         fallback_name="Height from sensor to liquid level",

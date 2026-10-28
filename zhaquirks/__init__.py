@@ -12,22 +12,46 @@ import sys
 import typing
 from typing import Any
 
+from zha.quirks import (
+    DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
+    DeviceMatch,
+    ModelInfo,
+    QuirkRegistryEntry,
+    QuirkSource,
+    ReplaceZigpyDevice,
+)
+from zigpy.const import SIG_MANUFACTURER, SIG_MODEL, SIG_MODELS_INFO
 import zigpy.device
 import zigpy.endpoint
-from zigpy.quirks import DEVICE_REGISTRY, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.util import ListenableMixin
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUnsupportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
+
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.legacy import (
+    DEVICE_REGISTRY,
+    PENDING_LEGACY_QUIRKS,
+    CustomDevice,
+    signature_matches,
+)
 
 from .const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -64,14 +88,27 @@ class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls.
 
     Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _DEFAULT_VALUES to provide default values for attribute ids. These are
+    returned when no value is cached yet, but are overridden by any cached value.
     Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
-    async def bind(self):
+    def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
+        """Get cached attribute, falling back to _DEFAULT_VALUES then default."""
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return default
+        result = super().get(key)
+        if result is not None:
+            return result
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
+
+    async def bind(self, **kwargs):
         """Prevent bind."""
         self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
@@ -97,10 +134,9 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(record.attrid)
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
@@ -108,7 +144,24 @@ class LocalDataCluster(CustomCluster):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 
-    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+    def _write_attr_records(self, attributes: dict) -> list[foundation.Attribute]:
+        """Convert attributes dict to list of Attribute records."""
+        records = []
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            record = foundation.Attribute(
+                attrid=attr_def.id, value=foundation.TypeValue()
+            )
+            record.value.value = attr_def.type(value)
+            records.append(record)
+        return records
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Prevent remote writes."""
         msg = "writing attributes for LocalDataCluster"
         self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
@@ -119,19 +172,24 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_report)
 
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: None
-        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Send cluster requests as events."""
         if (
@@ -144,23 +202,71 @@ class EventableCluster(CustomCluster):
                 args,
             )
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid in self.attributes:
-            attribute_name = self.attributes[attrid].name
-        else:
-            attribute_name = UNKNOWN
-
+    def _handle_attribute_report(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report or update event."""
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
             {
-                ATTRIBUTE_ID: attrid,
-                ATTRIBUTE_NAME: attribute_name,
-                VALUE: value,
+                ATTRIBUTE_ID: event.attribute_id,
+                ATTRIBUTE_NAME: event.attribute_name or UNKNOWN,
+                VALUE: event.value,
             },
         )
+
+
+class LevelControlWithMoveDirection(CustomCluster, LevelControl):
+    """LevelControl cluster that tells the release of a dim button hold apart.
+
+    Several remotes send the same stop command for both dim buttons, so the stop alone
+    does not say which button was released. This tracks the direction of the move that
+    started the hold and emits a `move_up_release` or `move_down_release` event for the
+    stop, which a quirk's long release triggers can match. No event is emitted for a
+    stop that follows no move, for instance after a restart in the middle of a hold.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction: int | None = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands.
+        """
+        if hdr.command_id in (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+        ):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif (
+            hdr.command_id
+            in (
+                LevelControl.ServerCommandDefs.stop.id,
+                LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            )
+            and self._last_move_direction is not None
+        ):
+            event = (
+                COMMAND_MOVE_UP_RELEASE
+                if self._last_move_direction == LevelControl.MoveMode.Up
+                else COMMAND_MOVE_DOWN_RELEASE
+            )
+            self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class GroupBoundCluster(CustomCluster):
@@ -226,6 +332,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self._calculate_battery_percentage(value),
             )
 
+    def emit(self, event_name: str, data=None) -> None:
+        """Suppress unsupported event for battery percentage remaining.
+
+        This attribute is computed from battery voltage by this quirk, so
+        an unsupported response from the device should not clear the cache.
+        """
+        if (
+            event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id == self.BATTERY_PERCENTAGE_REMAINING
+        ):
+            return
+        super().emit(event_name, data)
+
     def _calculate_battery_percentage(self, raw_value):
         volts = raw_value / 10
         volts = max(volts, self.MIN_VOLTS)
@@ -257,6 +377,11 @@ class _Motion(CustomCluster, IasZone):
         self._loop = asyncio.get_running_loop()
         self._timer_handle = None
 
+    @property
+    def reset_after(self) -> int:
+        """Seconds before resetting motion; override to derive from an attribute."""
+        return self.reset_s
+
     def _turn_off(self):
         self._timer_handle = None
         self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
@@ -278,15 +403,14 @@ class MotionWithReset(_Motion):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: None
-        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         # check if the command is for a zone status change of ZoneStatus.Alarm_1 or ZoneStatus.Alarm_2
         if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
             if self.send_occupancy_event:
                 self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
 
@@ -312,7 +436,7 @@ class MotionOnEvent(_Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
 
 class _Occupancy(CustomCluster, OccupancySensing):
@@ -352,10 +476,17 @@ class OccupancyOnEvent(_Occupancy):
 class OccupancyWithReset(_Occupancy):
     """Self reset Occupancy cluster and send event on motion bus."""
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
-        if attrid == OCCUPANCY_STATE and value == ON:
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Handle attribute report/update event."""
+        if event.attribute_id == OCCUPANCY_STATE and event.value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
@@ -446,11 +577,60 @@ class NoReplyMixin:
         return rsp
 
 
-def setup(custom_quirks_path: str | None = None) -> None:
-    """Register all quirks with zigpy, including optional custom quirks."""
+def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEntry:
+    """Compile a legacy v1 `CustomDevice` subclass into a ZHA registry entry."""
+    signature = cls.signature
+    models_info = signature.get(SIG_MODELS_INFO)
 
+    if models_info:
+        applies_to = tuple(
+            ModelInfo(manufacturer=manuf, model=model) for manuf, model in models_info
+        )
+    else:
+        manufacturer = signature.get(SIG_MANUFACTURER)
+        model = signature.get(SIG_MODEL)
+
+        # A v1 quirk with neither manufacturer nor model matches on endpoint
+        # signature alone; an empty `applies_to` makes it a wildcard entry.
+        if manufacturer is None and model is None:
+            applies_to = ()
+        else:
+            applies_to = (ModelInfo(manufacturer=manufacturer, model=model),)
+
+    return QuirkRegistryEntry(
+        device_match=DeviceMatch(
+            applies_to=applies_to,
+            filters=(signature_matches(signature),),
+        ),
+        zigpy_transforms=(ReplaceZigpyDevice(cls),),
+        zha_device_factory=None,
+        source=QuirkSource.from_class(cls),
+    )
+
+
+def _register_pending_quirks() -> None:
+    """Drain legacy v1 quirks queued by imports into ZHA's unified registry."""
+
+    for cls in PENDING_LEGACY_QUIRKS:
+        ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+
+    PENDING_LEGACY_QUIRKS.clear()
+
+
+def setup(custom_quirks_path: str | None = None) -> None:
+    """Register all quirks with zigpy and ZHA, including optional custom quirks.
+
+    Imports every `zhaquirks` module (firing the registration side effects of v1
+    `CustomDevice` subclasses into zigpy's registry and v2 `QuirkBuilder`
+    definitions into ZHA's) and loads custom quirks from `custom_quirks_path`.
+    Owned here (rather than ZHA's gateway) so ZHA never imports zhaquirks.
+    """
     if custom_quirks_path is not None:
-        DEVICE_REGISTRY.purge_custom_quirks(custom_quirks_path)
+        path = pathlib.Path(custom_quirks_path)
+        # Remove stale custom quirks from both the v1 (zigpy) and v2 (ZHA)
+        # registries before re-importing.
+        DEVICE_REGISTRY.purge_custom_quirks(path)
+        ZHA_DEVICE_REGISTRY.purge_custom_quirks(path)
 
     # Import all quirks in the `zhaquirks` package first
     for _importer, modname, _ispkg in pkgutil.walk_packages(
@@ -459,6 +639,9 @@ def setup(custom_quirks_path: str | None = None) -> None:
     ):
         _LOGGER.debug("Loading quirks module %r", modname)
         importlib.import_module(modname)
+
+    # Drain the quirks queued by the imports above into ZHA's registry.
+    _register_pending_quirks()
 
     if custom_quirks_path is None:
         return
@@ -481,6 +664,10 @@ def setup(custom_quirks_path: str | None = None) -> None:
             _LOGGER.exception("Unexpected exception importing custom quirk %r", modname)
         else:
             loaded = True
+
+    # Custom quirks queued new v1/v2 registrations during the import above; drain
+    # them too, or they never reach ZHA's registry and silently fail to resolve.
+    _register_pending_quirks()
 
     if loaded:
         _LOGGER.warning(

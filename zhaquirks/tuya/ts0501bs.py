@@ -1,7 +1,6 @@
 """Tuya dimmable led controller single channel."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -24,6 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import TuyaManufCluster
 
 
@@ -40,6 +40,8 @@ class DimmableLedController(CustomDevice):
             ("_TZ3210_dbilpfqk", "TS0501B"),
             ("_TZ3210_agjx0pxt", "TS0501B"),
             ("_TZ3210_d062rv7j", "TS0501B"),
+            ("_TZ3210_syh4kuef", "TS0501B"),
+            ("_TZB210_rkgngb5o", "TS0501B"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257

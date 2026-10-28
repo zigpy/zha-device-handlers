@@ -1,11 +1,17 @@
 """Tuya Gas Sensor."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import (
+    CONCENTRATION_PARTS_PER_MILLION,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTime,
+)
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -81,14 +87,44 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
 )
 
 
+# NOUS E9 gas detector - simple gas alarm with preheat, fault, and lifecycle
+(
+    TuyaQuirkBuilder("_TZE204_qvxrkeif", "TS0601")
+    .tuya_gas(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="preheat",
+        fallback_name="Preheat",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=12,
+        attribute_name="lifecycle",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="lifecycle",
+        fallback_name="Lifecycle",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 tuya_gas_alarm_base = (
     TuyaQuirkBuilder()
     .tuya_ias(
         dp_id=1,
         ias_cfg=TuyaIasGasLEL,
-        converter=lambda x: IasZone.ZoneStatus.Alarm_1
-        if x == TuyaGasState.Present
-        else 0,
+        converter=lambda x: (
+            IasZone.ZoneStatus.Alarm_1 if x == TuyaGasState.Present else 0
+        ),
     )  # Reports as enum, not bool
     .tuya_switch(
         dp_id=8,
@@ -124,6 +160,8 @@ tuya_gas_alarm_base = (
     .applies_to("_TZE200_yojqa8xn", "TS0601")
     .applies_to("_TZE204_zougpkpy", "TS0601")
     .applies_to("_TZE204_chbyv06x", "TS0601")
+    .applies_to("_TZE284_chbyv06x", "TS0601")
+    .applies_to("_TZE28C1000000_chbyv06x", "TS0601")
     .applies_to("_TZE204_yojqa8xn", "TS0601")
     .tuya_sensor(
         dp_id=2,
@@ -177,6 +215,33 @@ tuya_gas_alarm_base = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="fault_alarm",
         fallback_name="Fault alarm",
+    )
+    .add_to_registry()
+)
+
+(
+    tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
+    .applies_to("_TZE204_uo8qcagc", "TS0601")
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat_active",
+        entity_type=EntityType.STANDARD,
+        translation_key="preheat_active",
+        fallback_name="Preheat active",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_switch(
+        dp_id=13,
+        attribute_name="alarm_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="alarm_switch",
+        fallback_name="Alarm switch",
     )
     .add_to_registry()
 )

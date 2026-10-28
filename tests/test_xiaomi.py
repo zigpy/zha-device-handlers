@@ -3,12 +3,20 @@
 import asyncio
 import logging
 import math
+from typing import Any
 from unittest import mock
 
 import pytest
 import zigpy.device
+from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    ClusterType,
+    foundation,
+)
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -22,6 +30,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
     IlluminanceMeasurement,
     OccupancySensing,
     PressureMeasurement,
@@ -30,13 +39,17 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
+    ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MANUFACTURER,
@@ -45,17 +58,24 @@ from zhaquirks.const import (
     OFF,
     ON,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    VALUE,
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
 )
 from zhaquirks.xiaomi import (
+    AQARA,
     LUMI,
     XIAOMI_AQARA_ATTRIBUTE,
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
@@ -75,9 +95,11 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
-    AqaraFeederAcn001,
+    FeedingMode,
+    FeedingSource,
     OppleCluster,
 )
+from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
@@ -88,9 +110,11 @@ import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+from zhaquirks.xiaomi.aqara.opple_remote import STATUS_TYPE_ATTR, MultistateInputCluster
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
+import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
@@ -347,7 +371,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -379,7 +403,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -427,79 +451,468 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
 
 
 @pytest.mark.parametrize(
-    "raw_report",
+    ("raw_report_hex", "attributes"),
     (
         # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
-        "02FF4C0600100121BA0B21A813240100000000215D062058",
-        "02FF4C0600100021EC0B21A8012400000000002182002063",
-        "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
-        "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
-        "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
-        "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
-        "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+        (
+            "02FF4C0600100121BA0B21A813240100000000215D062058",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3002)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1629)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(88)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100021EC0B21A8012400000000002182002063",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.false),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3052)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(130)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(99)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121110D0328130421A8430521F60006240600030000082108140A21E51F")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B03281C0421A84305212B01062403000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328190421A8430521100106240400040000082109140A2120CB")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328180421A8430521100106240600050000082109140A213C50")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281D0421A84305212F01062407000300000A2120CB")),
+                    ),
+                ),
+            ],
+        ),
         # https://community.hubitat.com/t/xiaomi-aqara-zigbee-device-drivers-possibly-may-no-longer-be-maintained/631/print
-        "01FF42090421A8130A212759",
         (
-            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923"
-            "000000009B210000"
+            "01FF42090421A8130A212759",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0421A8130A212759")),
+                    ),
+                ),
+            ],
         ),
-        "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
-        "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
         (
-            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000"
-            "962300000000"
+            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("6410006510016E20006F20010121E40C03281E05210500082116260A2100009923000000009B210000")),
+                    ),
+                ),
+            ],
         ),
         (
-            "01FF42270328240521170007270000000000000000082117010921000A0A2130C064200065"
-            "20336621FA00"
+            "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C0600100121B30B21A8012400000000002195002056",
-        "02FF4C0600100121B30B21A8012400000000002195002057",
+        (
+            "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B03281C0421A81305213A0006240000000000082104020A210367641001")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121B70C0328200421A81305211E00062402000000000A21E18C08210410642000962300000000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42270328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0328240521170007270000000000000000082117010921000A0A2130C06420006520336621FA00")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002056",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(86)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C0600100121B30B21A8012400000000002195002057",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(2995)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(149)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(87)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
         # puddly's logs
-        "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
-        "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
-        "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
-        "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
         (
-            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F0100"
-            "0A2157DE"
+            "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B03280C0421A84305215401062401000000000A2178E0")),
+                    ),
+                ),
+            ],
         ),
-        "02FF4C06001001213C0C21A81324010000000021D1052061",
         (
-            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B032816"
-            "0421A83105214400062401000000000A217CBE6410000B210900"
+            "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03280A0421A8330521E801062401000000000A214444641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328170421A8130521500006240100000000082105140A214761")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328130421A81305214400062401000000000A217CBE6410000B210400")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121630B0421A81305217D2F06240100000000642905006521631D662B4D7F01000A2157DE")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "02FF4C06001001213C0C21A81324010000000021D1052061",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3132)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(5032)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(1)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(1489)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(97)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B0328160421A83105214400062401000000000A217CBE6410000B210900",
+            [
+                Attribute(
+                    attrid=0x0005,
+                    value=TypeValue(
+                        type=DataTypeId.string,
+                        value=t.CharacterString('lumi.sensor_motion.aq2'),
+                    ),
+                ),
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121950B0328160421A83105214400062401000000000A217CBE6410000B210900")),
+                    ),
+                ),
+            ],
         ),
         # GH Issue #811
         (
-            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A"
-            "078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000"
+            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03282305212E0008212E12092100106410006510006E20006F200094200295390A078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1491#issuecomment-489032272
         (
-            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A216535982128"
-            "00992125009A252900FFFFDC04"
+            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B03281A0421A8430521470106240100010000082108030A21653598212800992125009A252900FFFFDC04")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1411#issuecomment-485724957
         (
-            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20"
-            "006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000"
+            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03280005210F000727000000000000000008212312092100086410006510006E20006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1588
         (
-            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F3982128"
-            "00992100009A25AFFE5B016904"
+            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121770B0328230421A8010521250006240100000000082108030A2161F398212800992100009A25AFFE5B016904")),
+                    ),
+                ),
+            ],
         ),
         # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1069
-        "02FF4C0600100121D10B21A801240000000000216E002050",
-        "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
-        "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
-        "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
-        "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        (
+            "02FF4C0600100121D10B21A801240000000000216E002050",
+            [
+                Attribute(
+                    attrid=0xFF02,
+                    value=TypeValue(
+                        type=DataTypeId.struct,
+                        value=foundation.ZCLStructure([
+                            TypeValue(type=DataTypeId.bool_, value=t.Bool.true),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(3025)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(424)),
+                            TypeValue(type=DataTypeId.uint40, value=t.uint40_t(0)),
+                            TypeValue(type=DataTypeId.uint16, value=t.uint16_t(110)),
+                            TypeValue(type=DataTypeId.uint8, value=t.uint8_t(80)),
+                        ]),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121D10B0328150421A8130521A200062403000000000A210000641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121DB0B0328140421A84305219A00062401000000000A21C841641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121BD0B0328150421A83305213B00062401000000000A219FF8641000")),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121C70B0328130421A81305219200062401000000000A21C96B641000")),
+                    ),
+                ),
+            ],
+        ),
+        # https://github.com/home-assistant/core/issues/163692
+        (
+            "f700413703283b05210900092100010a219f580b20000c20010d23200e00001123010000006520416620806720236920026a21451e6b2000",
+            [
+                Attribute(
+                    attrid=0x00F7,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("03283B05210900092100010A219F580B20000C20010D23200E00001123010000006520416620806720236920026A21451E6B2000")),
+                    ),
+                ),
+            ],
+        ),
+        # https://github.com/home-assistant/core/issues/164251
+        (
+            "01ff42210121e50b0328180421a81305212000062401000000000a215b946410000b211c00",
+            [
+                Attribute(
+                    attrid=0xFF01,
+                    value=TypeValue(
+                        type=DataTypeId.octstr,
+                        value=t.LVBytes(bytes.fromhex("0121E50B0328180421A81305212000062401000000000A215B946410000B211C00")),
+                    ),
+                ),
+            ],
+        ),
     ),
-)
-def test_attribute_parsing(raw_report):
+)  # fmt: off
+def test_attribute_parsing(raw_report_hex, attributes):
     """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
-    raw_report = bytes.fromhex(raw_report)
+    orig_raw_report = raw_report = bytes.fromhex(raw_report_hex)
 
     hdr = foundation.ZCLHeader.general(
         manufacturer=4447,
@@ -513,7 +926,7 @@ def test_attribute_parsing(raw_report):
     # Keep track of all the data encoded in the attribute report
     parsed_chunks = []
 
-    for report in reports[0]:
+    for report in reports.attribute_reports:
         # This shouldn't throw an error
         cluster._update_attribute(report.attrid, report.value.value)
 
@@ -526,7 +939,14 @@ def test_attribute_parsing(raw_report):
 
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
-    assert len(raw_report) == 2 * len(reports[0])
+    assert len(raw_report) == 2 * len(reports.attribute_reports)
+
+    assert reports.attribute_reports == attributes
+
+    # Ensure the reports parse uniquely
+    assert list(cluster._interpret_attr_reports(orig_raw_report)) == [
+        tuple(reports.attribute_reports)
+    ]
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
@@ -599,8 +1019,7 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert em_listener.attribute_updates[1][0] == zcl_em_current_power
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
-    # Test total power consumption on ElectricalMeasurement cluster and SmartEnergy cluster
-    zcl_em_total_power = ElectricalMeasurement.AttributeDefs.total_active_power.id
+    # Test total power consumption on SmartEnergy cluster
     zcl_se_total_power = Metering.AttributeDefs.current_summ_delivered.id
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
@@ -608,10 +1027,6 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
-    # electrical measurement cluster
-    assert len(em_listener.attribute_updates) == 3
-    assert em_listener.attribute_updates[2][0] == zcl_em_total_power
-    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
 
     # smart energy cluster
     assert len(se_listener.attribute_updates) == 1
@@ -628,8 +1043,20 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert analog_input_listener.attribute_updates[0][0] == zcl_analog_input_value
     assert analog_input_listener.attribute_updates[0][1] == 40
 
-    assert em_listener.attribute_updates[3][0] == zcl_em_current_power
-    assert em_listener.attribute_updates[3][1] == 400  # multiplied by 10
+    assert em_listener.attribute_updates[2][0] == zcl_em_current_power
+    assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
+
+
+async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
+    """Tests that the total_active_power attribute is cleared during init."""
+
+    with mock.patch(
+        "zhaquirks.xiaomi.ElectricalMeasurementCluster._update_attribute"
+    ) as update_attribute_mock:
+        zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01)
+        update_attribute_mock.assert_called_with(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 @pytest.mark.parametrize(
@@ -641,12 +1068,12 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
         ("child_lock", 0, b"\x00\x02\x01\x04\x16\x00U\x01\x00"),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Manual,
+            FeedingMode.Manual,
             b"\x00\x02\x01\x04\x18\x00U\x01\x00",
         ),
         (
             "feeding_mode",
-            OppleCluster.FeedingMode.Schedule,
+            FeedingMode.Schedule,
             b"\x00\x02\x01\x04\x18\x00U\x01\x01",
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
@@ -654,13 +1081,26 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     ],
 )
 async def test_aqara_feeder_write_attrs(
-    zigpy_device_from_quirk, attribute, value, expected_bytes
+    zigpy_device_from_v2_quirk, attribute, value, expected_bytes
 ):
     """Test Aqara C1 pet feeder attr writing."""
 
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_cluster._write_attributes = mock.AsyncMock()
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
 
     expected_attr_def = opple_cluster.find_attribute(0xFFF1)
     expected = foundation.Attribute(0xFFF1, foundation.TypeValue())
@@ -669,12 +1109,12 @@ async def test_aqara_feeder_write_attrs(
     ).type_id
     expected.value.value = expected_attr_def.type(expected_bytes)
 
-    await opple_cluster.write_attributes({attribute: value}, manufacturer=0x115F)
+    await opple_cluster.write_attributes({attribute: value})
 
-    opple_cluster._write_attributes.assert_awaited_with(
-        [expected],
-        manufacturer=0x115F,
-    )
+    assert len(opple_cluster._write_attributes.mock_calls) == 1
+    call_args = opple_cluster._write_attributes.mock_calls[0]
+    assert call_args.args[0] == [expected]
+    assert call_args.kwargs["manufacturer"] == 0x115F
 
 
 @pytest.mark.parametrize(
@@ -694,7 +1134,7 @@ async def test_aqara_feeder_write_attrs(
             [
                 mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
                 mock.call(
-                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
+                    ZCL_LAST_FEEDING_SOURCE, FeedingSource.HomeAssistant, mock.ANY
                 ),
                 mock.call(
                     FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
@@ -747,9 +1187,7 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(
-                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
-                ),
+                mock.call(ZCL_FEEDING_MODE, FeedingMode.Schedule, mock.ANY),
                 mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
@@ -790,21 +1228,32 @@ async def test_aqara_feeder_write_attrs(
     ],
 )
 async def test_aqara_feeder_attr_reports(
-    zigpy_device_from_quirk, bytes_received, call_count, calls
+    zigpy_device_from_v2_quirk, bytes_received, call_count, calls
 ):
-    """Test Aqara C1 pet feeder attr writing."""
-
-    class Listener:
-        attribute_updated = mock.MagicMock()
-
-    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    """Test Aqara C1 pet feeder attr reports and parsing."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
     opple_cluster = device.endpoints[1].opple_cluster
-    cluster_listener = Listener()
-    opple_cluster.add_listener(cluster_listener)
+
+    attribute_updates: list[tuple[int, Any]] = []
+
+    def on_attribute_event(event: AttributeReportedEvent | AttributeUpdatedEvent):
+        attribute_updates.append((event.attribute_id, event.value))
+
+    opple_cluster.on_event(AttributeReportedEvent.event_type, on_attribute_event)
+    opple_cluster.on_event(AttributeUpdatedEvent.event_type, on_attribute_event)
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -812,9 +1261,161 @@ async def test_aqara_feeder_attr_reports(
         )
     )
 
-    assert cluster_listener.attribute_updated.call_count == call_count
-    for call in calls:
-        assert call in cluster_listener.attribute_updated.mock_calls
+    # Check the expected attribute updates occurred
+    expected_updates = [(c.args[0], c.args[1]) for c in calls]
+    assert len(attribute_updates) == call_count
+    for attr_id, value in expected_updates:
+        assert any(u[0] == attr_id and u[1] == value for u in attribute_updates), (
+            f"Expected ({attr_id}, {value}) in {attribute_updates}"
+        )
+
+
+async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_v2_quirk):
+    """Test Aqara C1 pet feeder passes the 0x00F7 struct to the Xiaomi parser."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        opple_cluster, "_parse_aqara_attributes", return_value={}
+    ) as parse_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=opple_cluster.cluster_id,
+                src_ep=opple_cluster.endpoint.endpoint_id,
+                dst_ep=opple_cluster.endpoint.endpoint_id,
+                data=t.SerializableBytes(
+                    b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"
+                ),
+            )
+        )
+
+    parse_mock.assert_called_once_with(b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03")
+
+
+def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
+    """Test feeder defaults are available after the v2 cluster replacement."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+
+    assert cluster.get(ZCL_DISABLE_LED_INDICATOR) is False
+    assert cluster.get(ZCL_CHILD_LOCK) is False
+    assert cluster.get(ZCL_FEEDING_MODE) == FeedingMode.Manual
+    assert cluster.get(ZCL_SERVING_SIZE) == 1
+    assert cluster.get(ZCL_PORTION_WEIGHT) == 8
+    assert cluster.get(ZCL_ERROR_DETECTED) is False
+    assert cluster.get(ZCL_PORTIONS_DISPENSED) == 0
+    assert cluster.get(ZCL_WEIGHT_DISPENSED) == 0
+
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    assert cluster.get(ZCL_SERVING_SIZE) == 3
+
+    missing_attribute_default = object()
+    assert (
+        cluster.get(ZCL_LAST_FEEDING_SIZE, missing_attribute_default)
+        is missing_attribute_default
+    )
+
+    with pytest.raises(KeyError, match="not_a_real_attribute"):
+        cluster.get("not_a_real_attribute", missing_attribute_default)
+
+
+async def test_aqara_feeder_read_attributes(zigpy_device_from_v2_quirk):
+    """Test the fake feeder attributes are never sent and never marked unsupported."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].opple_cluster
+    fake_attrs = [
+        OppleCluster.AttributeDefs.feeding,
+        OppleCluster.AttributeDefs.last_feeding_source,
+        OppleCluster.AttributeDefs.last_feeding_size,
+        OppleCluster.AttributeDefs.portions_dispensed,
+        OppleCluster.AttributeDefs.weight_dispensed,
+        OppleCluster.AttributeDefs.error_detected,
+        OppleCluster.AttributeDefs.disable_led_indicator,
+        OppleCluster.AttributeDefs.child_lock,
+        OppleCluster.AttributeDefs.feeding_mode,
+        OppleCluster.AttributeDefs.serving_size,
+        OppleCluster.AttributeDefs.portion_weight,
+    ]
+
+    # The device would answer UNSUPPORTED_ATTRIBUTE, so nothing may be sent
+    async def unsupported_read(*args, **kwargs):
+        raise AssertionError("fake attributes must not be sent")
+
+    cluster.request = mock.AsyncMock(side_effect=unsupported_read)
+
+    success, failure = await cluster.read_attributes(
+        fake_attrs, allow_cache=True, manufacturer=0x115F
+    )
+    assert not failure
+    assert success[OppleCluster.AttributeDefs.serving_size] == 1
+    assert success[OppleCluster.AttributeDefs.feeding_mode] == FeedingMode.Manual
+    # No default: left out instead of failing
+    assert OppleCluster.AttributeDefs.feeding not in success
+    assert OppleCluster.AttributeDefs.last_feeding_source not in success
+    cluster.request.assert_not_called()
+
+    # Reported values win over defaults
+    cluster.update_attribute(ZCL_SERVING_SIZE, 3)
+    success, _ = await cluster.read_attributes(["serving_size"], only_cache=True)
+    assert success["serving_size"] == 3
+
+    # Marks from earlier quirk versions are ignored
+    cluster.add_unsupported_attribute(ZCL_CHILD_LOCK, manufacturer_code=0x115F)
+    for attr in fake_attrs:
+        assert not cluster.is_attribute_unsupported(attr)
+    assert not cluster.is_attribute_unsupported(ZCL_CHILD_LOCK)
+
+    with pytest.raises(ValueError, match="same attribute twice"):
+        await cluster.read_attributes(["serving_size", ZCL_SERVING_SIZE])
+
+    # Unknown attributes are left to zigpy
+    with pytest.raises(KeyError):
+        await cluster.read_attributes(["not_a_real_attribute"])
+    assert not cluster.is_attribute_unsupported(OppleCluster.AttributeDefs.feeder_attr)
+    with pytest.raises(KeyError):
+        cluster.is_attribute_unsupported("not_a_real_attribute")
+
+    # The real attribute still goes to the device
+    cluster.request.reset_mock()
+    cluster.request.side_effect = None
+    cluster.request.return_value = [
+        [
+            foundation.ReadAttributeRecord(
+                FEEDER_ATTR, foundation.Status.UNSUPPORTED_ATTRIBUTE, None
+            )
+        ]
+    ]
+    _, failure = await cluster.read_attributes([FEEDER_ATTR], allow_cache=True)
+    cluster.request.assert_called_once()
+    assert FEEDER_ATTR in failure
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
@@ -882,7 +1483,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -920,8 +1521,6 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
 
     opple_cluster = device.endpoints[1].opple_cluster
-    opple_listener = ClusterListener(opple_cluster)
-
     thermostat_cluster = device.endpoints[1].thermostat
     thermostat_listener = ClusterListener(thermostat_cluster)
 
@@ -980,16 +1579,15 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
+        # check that attributes are correctly mapped and updated on ZCL thermostat cluster
         assert (
-            thermostat_listener.attribute_updates[0]
-            == (
-                Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.SystemMode.Heat,
-            )
-        )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.SystemMode.Heat,
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # check that other attribute reads are not redirected
         await thermostat_cluster.read_attributes([attr_no_redirect])
@@ -999,6 +1597,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
 
         thermostat_cluster._read_attributes.reset_mock()
         opple_cluster._read_attributes.reset_mock()
+        thermostat_listener.attribute_updates.clear()
 
         # test writes:
 
@@ -1010,12 +1609,11 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         # check that system_mode writes were directed to the Opple cluster
         assert len(thermostat_cluster._write_attributes.mock_calls) == 0
         assert len(opple_cluster._write_attributes.mock_calls) == 1
-        assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
-
-        assert thermostat_listener.attribute_updates[2] == (
+        # check ZCL attribute is updated on thermostat cluster
+        assert (
             Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
-        )  # check ZCL attribute is in correct mode
+        ) in thermostat_listener.attribute_updates
 
         thermostat_cluster._write_attributes.reset_mock()
         opple_cluster._write_attributes.reset_mock()
@@ -1077,6 +1675,7 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon,tue,wed,thu,fri,sat,sun|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
         "mon|8:00,21.5|18:30,17.5|23:00,22.0|8:00,22.5",
+        "sat,sun|0:00,21.5|8:00,17.5|18:00,22.0|23:00,22.5",
     ],
 )
 async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
@@ -1102,6 +1701,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
         "mon,tue,wed,thu,fri|8:00.24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|-8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|25:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|24:00,22.0",
         "mon,tue,wed,thu,fri|8:00,03.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,tue,wed,thu,fri|8:00,31.0|18:00,17.0|23:00,22.0|9:00,22.0",
         "mon,mon|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
@@ -1246,6 +1846,144 @@ async def test_xiaomi_p1_t1_motion_sensor(
     assert len(illuminance_listener.attribute_updates) == 3
     assert illuminance_listener.attribute_updates[2][0] == zcl_iilluminance_id
     assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
+
+
+async def test_xiaomi_cluster_parses_attribute_read_response(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a read response of the Aqara struct is parsed like a report."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # battery voltage 3000 mV, battery percentage 50%
+    struct = create_aqara_attr_report({1: 3000, 101: 50})
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(DataTypeId.octstr, t.LVBytes(struct)),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    with mock.patch.object(
+        opple_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    ):
+        for read in range(1, 3):
+            success, failure = await opple_cluster.read_attributes(
+                [opple_cluster.AttributeDefs.aqara_attributes.name]
+            )
+            assert not failure
+
+            # each read is parsed exactly once, a repeated value included
+            assert len(power_listener.attribute_updates) == 2 * read
+
+    assert power_cluster.get("battery_voltage") == 30
+    assert power_cluster.get("battery_percentage_remaining") == 100
+
+
+async def test_xiaomi_cluster_model_read_no_event(zigpy_device_from_v2_quirk):
+    """Test that reading the model doesn't fire the reset button event."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    basic_cluster = device.endpoints[1].basic
+    zha_listener = mock.MagicMock()
+    basic_cluster.add_listener(zha_listener)
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(
+                    DataTypeId.string, t.CharacterString("lumi.curtain.acn002")
+                ),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    with mock.patch.object(
+        basic_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    ):
+        success, failure = await basic_cluster.read_attributes(
+            [basic_cluster.AttributeDefs.model.name]
+        )
+
+    assert success == {basic_cluster.AttributeDefs.model.name: "lumi.curtain.acn002"}
+    assert zha_listener.zha_send_event.mock_calls == []
+
+    # a model report from a reset button press still fires it
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=basic_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x18\x01\x0a\x05\x00\x42\x13lumi.curtain.acn002"
+            ),
+        )
+    )
+    assert len(zha_listener.zha_send_event.mock_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "quirk, default_reset_s",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 30),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, 60),
+    ),
+)
+async def test_aqara_motion_reset_after_detection_interval(
+    zigpy_device_from_quirk, quirk, default_reset_s
+):
+    """Test that the motion reset interval follows `detection_interval`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    # without a cached detection_interval, fall back to the static reset_s
+    assert opple_cluster.get(detection_interval) is None
+    assert motion_cluster.reset_after == default_reset_s
+
+    # once detection_interval is known, reset_after follows it
+    opple_cluster.update_attribute(detection_interval, 90)
+    assert motion_cluster.reset_after == 90
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,
+        zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04,
+    ),
+)
+async def test_aqara_motion_timer_uses_reset_after(zigpy_device_from_quirk, quirk):
+    """Test that the motion timer is scheduled with the current `reset_after`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster.update_attribute(detection_interval, 90)
+
+    with mock.patch.object(motion_cluster._loop, "call_later") as call_later:
+        motion_cluster.motion_event()
+        assert call_later.mock_calls == [
+            mock.call(90, motion_cluster._turn_off),
+        ]
+
+        # a changed interval is picked up by the next event, no restart needed
+        opple_cluster.update_attribute(detection_interval, 15)
+        motion_cluster.motion_event()
+        assert call_later.mock_calls[-1] == mock.call(15, motion_cluster._turn_off)
 
 
 @pytest.mark.parametrize(
@@ -1434,15 +2172,45 @@ async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, qu
     )
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ,)
-)
-async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,))
+async def test_xiaomi_battery_voltage_without_power_cluster(
+    zigpy_device_from_quirk, caplog, quirk
+):
+    """Test a battery voltage is ignored on an endpoint without a power cluster.
+
+    The rest of the Aqara struct must still be applied.
+    """
+    caplog.set_level(logging.DEBUG)  # relevant message is currently DEBUG level
+
+    device = zigpy_device_from_quirk(quirk)
+    assert not hasattr(device.endpoints[1], "power")
+    basic_cluster = device.endpoints[1].basic
+
+    electrical_listener = ClusterListener(device.endpoints[1].electrical_measurement)
+
+    # battery voltage (key 1) followed by power (key 152)
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2300, 152: 12.5})
+    )
+
+    # confirm that the power after the battery voltage was still applied
+    assert electrical_listener.attribute_updates == [
+        (ElectricalMeasurement.AttributeDefs.active_power.id, 125)
+    ]
+
+    # confirm that a debug message was logged
+    assert (
+        "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
+        in caplog.text
+    )
+
+
+def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
     """Test Aqara E1 roller curtain battery reporting."""
     # Ideally, get a real Xiaomi "heartbeat" message to test.
     # For now, fake the heartbeat message and check if battery parsing works.
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     basic_cluster = device.endpoints[1].basic
     ClusterListener(basic_cluster)
@@ -1471,6 +2239,140 @@ async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
     assert power_listener.attribute_updates[0][1] == 28.9
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == 120
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_percentage"),
+    [
+        (76, 152),
+        (0, 0),
+        (100, 200),
+        (0xFF, None),  # uint8 non-value
+        (101, None),
+    ],
+)
+async def test_xiaomi_e1_roller_battery_percentage_report(
+    zigpy_device_from_v2_quirk, value, expected_percentage
+):
+    """Test Aqara E1 roller forwards Aqara battery percentage reports."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # manufacturer-specific report of 0x040A (uint8) with Lumi's manufacturer code
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x1c\x5f\x11\x01\x0a\x0a\x04\x20" + bytes([value])
+            ),
+        )
+    )
+
+    assert opple_cluster.get("battery_percentage") == value
+
+    if expected_percentage is None:
+        assert power_listener.attribute_updates == []
+        return
+
+    assert power_listener.attribute_updates == [
+        (
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
+            expected_percentage,
+        )
+    ]
+
+
+async def test_xiaomi_e1_roller_battery_percentage_read_redirection(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller reads the battery percentage from the Aqara cluster."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+    battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
+
+    opple_read = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    0x040A,
+                    foundation.Status.SUCCESS,
+                    foundation.TypeValue(DataTypeId.uint8, t.uint8_t(76)),
+                )
+            ],
+        )
+    )
+
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        # same calls as ZHA's startup reads, by name and by id
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name, PowerConfiguration.AttributeDefs.battery_voltage.name],
+            allow_cache=False,
+            only_cache=False,
+        )
+        assert success == {battery_attr.name: 152}
+        assert failure == {
+            PowerConfiguration.AttributeDefs.battery_voltage.name: (
+                foundation.Status.UNSUPPORTED_ATTRIBUTE
+            )
+        }
+
+        success, failure = await power_cluster.read_attributes([battery_attr.id])
+        assert success == {battery_attr.id: 152}
+        assert failure == {}
+
+    # the device was asked for the Aqara attribute, with Lumi's manufacturer code
+    assert opple_read.call_count == 2
+    assert opple_read.mock_calls[0].args[0] == [0x040A]
+    assert opple_read.mock_calls[0].kwargs["manufacturer"] == 0x115F
+
+    # the read responses updated the power cluster through the Aqara cluster
+    assert power_listener.attribute_updates == [
+        (battery_attr.id, 152),
+        (battery_attr.id, 152),
+    ]
+    assert power_cluster.get(battery_attr.id) == 152
+
+    # with an empty Aqara cache, a cache-only read uses the power cluster's cache
+    opple_cluster._attr_cache.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name], allow_cache=True, only_cache=True
+        )
+    assert opple_read.call_count == 2
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
+    # also when the Aqara attribute is cached as unsupported
+    opple_cluster.add_unsupported_attribute(0x040A)
+    success, failure = await power_cluster.read_attributes(
+        [battery_attr.name], allow_cache=True, only_cache=True
+    )
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
+    # an invalid battery percentage is read as the ZCL invalid value
+    opple_read.return_value = (
+        [
+            foundation.ReadAttributeRecord(
+                0x040A,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(DataTypeId.uint8, t.uint8_t(0xFF)),
+            )
+        ],
+    )
+    power_listener.attribute_updates.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes([battery_attr.name])
+    assert success == {battery_attr.name: 0xFF}
+    assert power_listener.attribute_updates == []
+    assert power_cluster.get(battery_attr.id) == 152
 
 
 @pytest.mark.parametrize(
@@ -1640,62 +2542,414 @@ async def test_xiaomi_e1_driver_light_level(
 
 
 @pytest.mark.parametrize(
-    "command, value",
+    "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.up_open.id, 1),
-        (WindowCovering.ServerCommandDefs.down_close.id, 0),
-        (WindowCovering.ServerCommandDefs.stop.id, 2),
+        (WindowCovering.ServerCommandDefs.up_open.id, 1, True),
+        (WindowCovering.ServerCommandDefs.down_close.id, 0, True),
+        (WindowCovering.ServerCommandDefs.stop.id, 2, True),
     ],
 )
-async def test_xiaomi_e1_roller_commands_1(zigpy_device_from_quirk, command, value):
+async def test_xiaomi_e1_roller_commands_1(
+    zigpy_device_from_v2_quirk, command, value, read_current_position
+):
     """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
-    device = zigpy_device_from_quirk(
-        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.curtain.acn002",
+        cluster_ids={1: {MultistateOutput.cluster_id: ClusterType.Server}},
     )
 
     window_covering_cluster = device.endpoints[1].window_covering
-    multistate_cluster = device.endpoints[1].multistate_output
-    multistate_cluster._write_attributes = mock.AsyncMock(
-        return_value=(
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-        )
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
     )
-    attr_id = MultistateOutput.AttributeDefs.present_value.id
 
-    # test command
-    await window_covering_cluster.command(command)
-    assert multistate_cluster._write_attributes.call_count == 1
-    assert multistate_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
-    assert multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    multistate_cluster = device.endpoints[1].multistate_output
+    multistate_attr_id = MultistateOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    # patch write commands
+    patch_multistate_write = mock.patch.object(
+        multistate_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_multistate_write as mock_writes,
+    ):
+        # test command
+        await window_covering_cluster.command(command)
+        assert multistate_cluster._write_attributes.call_count == 1
+        assert (
+            multistate_cluster._write_attributes.call_args[0][0][0].attrid
+            == multistate_attr_id
+        )
+        assert (
+            multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+        )
+        if read_current_position:
+            # confirm the window covering cluster read was redirected
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the analog output read occurs
+            assert len(analog_cluster._read_attributes.mock_calls) == 1
+            assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
+                analog_attr_id
+            ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster
+            assert len(window_covering_listener.attribute_updates) == 1
+            assert window_covering_listener.attribute_updates[0] == (
+                window_covering_attr_id,
+                100 - 1,
+            )
+        else:
+            # confirm the command did not read the current position
+            assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+        assert len(mock_writes.mock_calls) == 1
+        assert mock_writes.mock_calls[0].args[0] == [
+            foundation.Attribute(
+                attrid=MultistateOutput.AttributeDefs.present_value.id,
+                value=foundation.TypeValue(
+                    type=foundation.DataTypeId.uint16, value=value
+                ),
+            )
+        ]
 
 
 @pytest.mark.parametrize(
-    "command, value",
+    "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60, True),
     ],
 )
-async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, value):
+async def test_xiaomi_e1_roller_commands_2(
+    zigpy_device_from_v2_quirk, command, value, read_current_position
+):
     """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
-    device = zigpy_device_from_quirk(
-        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
-    )
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
+
     analog_cluster = device.endpoints[1].analog_output
-    analog_cluster._write_attributes = mock.AsyncMock(
-        return_value=(
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    # patch write commands
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_analog_write,
+    ):
+        # test go to lift percentage command
+        await window_covering_cluster.go_to_lift_percentage(value)
+        assert analog_cluster._write_attributes.call_count == 1
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].attrid == analog_attr_id
+        )
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].value.value
+            == 100 - value
+        )
+
+        # confirm the AnalogOutput present_value was updated
+        assert analog_listener.attribute_updates[0] == (
+            analog_attr_id,
+            100 - value,
+        )
+        if read_current_position:
+            # confirm the window covering cluster read was redirected
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the analog output read occurs
+            assert len(analog_cluster._read_attributes.mock_calls) == 1
+            assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
+                analog_attr_id
+            ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster with the read value
+            assert len(window_covering_listener.attribute_updates) == 1
+            assert window_covering_listener.attribute_updates[0] == (
+                window_covering_attr_id,
+                100 - 1,
+            )
+        else:
+            # confirm the command did not read the current position
+            assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the AnalogOutput write did not update the current WindowCovering position
+            assert len(window_covering_listener.attribute_updates) == 0
+
+    # confirm non-mapped commands return status UNSUP_CLUSTER_COMMAND
+    _, status = await window_covering_cluster.go_to_tilt_percentage(value)
+    assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "attr, expected_value, target_attr, target_cluster",
+    [
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            99,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read success
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            None,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read failure
+        (
+            WindowCovering.AttributeDefs.config_status,
+            1,
+            None,
+            None,
+        ),  # Regular read success
+        (
+            WindowCovering.AttributeDefs.config_status,
+            None,
+            None,
+            None,
+        ),  # Regular read failure
+    ],
+)
+async def test_xiaomi_e1_roller_window_covering_read_redirection(
+    zigpy_device_from_v2_quirk,
+    attr: foundation.ZCLAttributeDef,
+    expected_value: int | None,
+    target_attr: foundation.ZCLAttributeDef | None,
+    target_cluster: Cluster | None,
+):
+    """Test Aqara E1 roller WindowCovering attribute read redirection."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    redirect = False
+    if target_attr and target_cluster:
+        target_cluster = getattr(device.endpoints[1], target_cluster.ep_attribute)
+        redirect = True
+
+    # fake read response for attributes, a value of 1 is returned if expected_value is not None
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS
+                if expected_value
+                else foundation.Status.FAILURE,
+                foundation.TypeValue(None, 1),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch window covering read command
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=(mock_read)),
+    )
+
+    if redirect:
+        # patch target cluster read command
+        patch_target_read = mock.patch.object(
+            target_cluster,
+            "_read_attributes",
+            mock.AsyncMock(side_effect=(mock_read)),
+        )
+        with (
+            patch_window_covering_read,
+            patch_target_read,
+        ):
+            # read attribute from WindowCovering cluster using id and name
+            await window_covering_cluster.read_attributes([attr.id])
+            await window_covering_cluster.read_attributes([attr.name])
+
+            # confirm the reads were redirected to the target cluster
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+            assert len(target_cluster._read_attributes.mock_calls) == 2
+            assert target_cluster._read_attributes.mock_calls[0][1][0] == [
+                target_attr.id
+            ]
+            assert target_cluster._read_attributes.mock_calls[1][1][0] == [
+                target_attr.id
+            ]
+    else:
+        with (
+            patch_window_covering_read,
+        ):
+            # read attribute from WindowCovering cluster using id and name
+            await window_covering_cluster.read_attributes([attr.id])
+            await window_covering_cluster.read_attributes([attr.name])
+
+            # confirm the reads occurred normally
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 2
+            assert window_covering_cluster._read_attributes.mock_calls[0][1][0] == [
+                attr.id
+            ]
+            assert window_covering_cluster._read_attributes.mock_calls[1][1][0] == [
+                attr.id
+            ]
+
+    if not expected_value:
+        # check read fails do not trigger an attribute update
+        assert len(window_covering_listener.attribute_updates) == 0
+        return
+
+    # check the WindowCovering attribute was updated by the reads
+    assert len(window_covering_listener.attribute_updates) == 2
+    assert window_covering_listener.attribute_updates[0] == (
+        attr.id,
+        expected_value,
+    )
+    assert window_covering_listener.attribute_updates[1] == (
+        attr.id,
+        expected_value,
+    )
+
+
+async def test_xiaomi_e1_roller_position_updates(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller lift position updates on read/report only."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr = AnalogOutput.AttributeDefs.present_value
+
+    # patch read command for a success response
+    patch_analog_read = mock.patch.object(
+        analog_cluster,
+        "_read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        analog_attr.id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(None, 40),
+                    )
+                ],
+            )
+        ),
+    )
+
+    with patch_analog_read:
+        analog_listener.attribute_updates.clear()
+        window_covering_listener.attribute_updates.clear()
+
+        await analog_cluster.read_attributes([analog_attr.id])
+
+        # read events should update the WindowCovering position
+        assert len(window_covering_listener.attribute_updates) == 1
+        assert window_covering_listener.attribute_updates[0] == (
+            WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+            60,
+        )
+
+    # report events should update the WindowCovering position
+    attr = foundation.Attribute(
+        attrid=analog_attr.id,
+        value=foundation.TypeValue(0x39, t.Single(25.0)),
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    window_covering_listener.attribute_updates.clear()
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=analog_cluster.cluster_id,
+            src_ep=analog_cluster.endpoint.endpoint_id,
+            dst_ep=analog_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(hdr + cmd),
         )
     )
-    attr_id = AnalogOutput.AttributeDefs.present_value.id
 
-    # test go to lift percentage command
-    await window_covering_cluster.go_to_lift_percentage(value)
-    assert analog_cluster._write_attributes.call_count == 1
-    assert analog_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
-    assert (
-        analog_cluster._write_attributes.call_args[0][0][0].value.value == 100 - value
+    assert len(window_covering_listener.attribute_updates) == 1
+    assert window_covering_listener.attribute_updates[0] == (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+        75,
     )
 
 
@@ -1706,16 +2960,31 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay)
     mi_cluster = device.endpoints[endpoint].multistate_input
     mi_listener = ClusterListener(mi_cluster)
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
 
     buttons = {1: BUTTON_1, 2: BUTTON_2}
 
+    # Button press triggers zha_send_event
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
-    assert len(mi_listener.attribute_updates) == 1
-    assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == buttons[endpoint]
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            buttons[endpoint],
+            {
+                PRESS_TYPE: buttons[endpoint],
+                ATTR_ID: MultistateInput.AttributeDefs.present_value.id,
+                VALUE: 1,
+                ENDPOINT_ID: endpoint,
+            },
+        )
+    ]
 
+    # Regular attribute updates still work
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
     assert len(mi_listener.attribute_updates) == 2
+    # First update is the legacy cache update for fake attribute 0 (button state)
+    assert mi_listener.attribute_updates[0] == (0, buttons[endpoint])
+    # Second update is the state_text attribute
     assert (
         mi_listener.attribute_updates[1][0]
         == MultistateInput.AttributeDefs.state_text.id
@@ -1826,11 +3095,11 @@ async def test_aqara_fp1e_sensor(
     expected_motion_status,
 ):
     """Test Aqara FP1E sensor."""
-    quirk = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
+    device = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
 
-    opple_cluster = quirk.endpoints[1].opple_cluster
-    ias_cluster = quirk.endpoints[1].ias_zone
-    occupancy_cluster = quirk.endpoints[1].occupancy
+    opple_cluster = device.endpoints[1].opple_cluster
+    ias_cluster = device.endpoints[1].ias_zone
+    occupancy_cluster = device.endpoints[1].occupancy
 
     opple_listener = ClusterListener(opple_cluster)
     ias_listener = ClusterListener(ias_cluster)
@@ -1861,15 +3130,219 @@ async def test_aqara_fp1e_sensor(
 def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
     """Test Aqara H1 wireless remote quirk adds missing endpoints."""
     # create device with endpoint 1 only and verify we don't get a KeyError
-    quirk = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
 
     # verify the quirk adds endpoints 2 and 3
-    assert 2 in quirk.endpoints
-    assert 3 in quirk.endpoints
+    assert 2 in device.endpoints
+    assert 3 in device.endpoints
 
     # verify the quirk adds the correct clusters to the new endpoints
-    assert OnOff.cluster_id in quirk.endpoints[2].out_clusters
-    assert OnOff.cluster_id in quirk.endpoints[3].out_clusters
+    assert OnOff.cluster_id in device.endpoints[2].out_clusters
+    assert OnOff.cluster_id in device.endpoints[3].out_clusters
 
-    assert MultistateInput.cluster_id in quirk.endpoints[2].in_clusters
-    assert MultistateInput.cluster_id in quirk.endpoints[3].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize("endpoint", [(1), (2)])
+def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
+    """Test Aqara T1M ceiling light quirk adds missing endpoints."""
+
+    # create the device with 2 endpoints (one for each light on the T1M)
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032", endpoint_ids=[1, 2])
+    assert AqaraLightT1M.cluster_id in device.endpoints[endpoint].in_clusters
+
+    aqara_cluster = device.endpoints[endpoint].opple_cluster
+    cluster_listener = ClusterListener(aqara_cluster)
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.LastState
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
+
+
+async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, caplog):
+    """Test Aqara Magnet Sensor AQ2 quirk dealing with bad ZCL command direction."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2)
+    listener = ClusterListener(device.endpoints[1].out_clusters[OnOff.cluster_id])
+
+    # The device has a bad ZCL header and reports the incorrect direction for commands
+    with caplog.at_level(logging.WARNING):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=6,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(bytes.fromhex("18930A00001001")),
+            )
+        )
+
+    # No warning gets logged
+    assert not caplog.text
+
+    # Our matching logic should be forgiving
+    assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
+    """Test Aqara air monitor CO2 and temperature attribute scaling."""
+    device = zigpy_device_from_v2_quirk("LUMI", "lumi.airm.fhac01")
+
+    co2 = device.endpoints[1].carbon_dioxide_concentration
+    co2._update_attribute(
+        CarbonDioxideConcentration.AttributeDefs.measured_value.id, 400_000_000
+    )
+    assert co2.get("measured_value") == 400.0
+
+    temp = device.endpoints[1].device_temperature
+    temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
+    assert temp.get("current_temperature") == 2500
+
+
+def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
+    """W100 quirk matches and swaps in its custom clusters on all endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+
+    ep1 = device.endpoints[1]
+    assert isinstance(ep1.temperature, TemperatureMeasurementCluster)
+    assert isinstance(ep1.humidity, RelativeHumidityCluster)
+    assert isinstance(ep1.power, XiaomiPowerConfiguration)
+    assert isinstance(ep1.opple_cluster, XiaomiAqaraE1Cluster)
+
+    # the three buttons live on endpoints 1/2/3
+    for ep_id in (1, 2, 3):
+        assert isinstance(
+            device.endpoints[ep_id].multistate_input, MultistateInputCluster
+        )
+
+
+@pytest.mark.parametrize(
+    "endpoint, value, expected_action, expected_press",
+    [
+        (1, 1, "1_single", "single"),
+        (2, 2, "2_double", "double"),
+        (3, 0, "3_hold", "hold"),
+        (1, 255, "1_release", "release"),
+    ],
+)
+def test_w100_button_events(
+    zigpy_device_from_v2_quirk, endpoint, value, expected_action, expected_press
+):
+    """A button press on any endpoint fires the expected zha_send_event."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    mi_cluster = device.endpoints[endpoint].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(STATUS_TYPE_ATTR, value)
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            expected_action,
+            {
+                BUTTON: endpoint,
+                PRESS_TYPE: expected_press,
+                ATTR_ID: STATUS_TYPE_ATTR,
+                VALUE: value,
+            },
+        )
+    ]
+
+
+def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
+    """The 0xFCC0 heartbeat tag 102 feeds battery percent into the power cluster."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    # heartbeat carrying 87 % battery percent in tag 102 (uint8, as on the device —
+    # the W100 sends no tag-1 voltage)
+    report = bytes([102]) + foundation.TypeValue(0x20, t.uint8_t(87)).serialize()
+    opple_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, report)
+
+    assert (percent_id, 87 * 2) in power_listener.attribute_updates
+
+
+async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
+    """ZCL battery reports (always 0 on the W100) don't overwrite the heartbeat value."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    attr = foundation.Attribute(
+        attrid=percent_id, value=foundation.TypeValue(0x20, t.uint8_t(0))
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=power_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    assert power_listener.attribute_updates == []
+
+    # other general commands still reach the base handler: a device-initiated
+    # read gets a Read_Attributes_rsp task
+    hdr = foundation.ZCLHeader.general(
+        2,
+        foundation.GeneralCommand.Read_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Read_Attributes]
+        .schema([percent_id])
+        .serialize()
+    )
+
+    with mock.patch.object(power_cluster, "create_catching_task") as task_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=power_cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr + cmd),
+            )
+        )
+
+    assert len(task_mock.mock_calls) == 1
+    task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine

@@ -1,10 +1,12 @@
 """Third Reality vibrate devices."""
 
+from typing import Final
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -15,6 +17,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.thirdreality import THIRD_REALITY
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1
@@ -24,11 +27,19 @@ class ThirdRealityAccelCluster(CustomCluster):
     """ThirdReality Acceleration Cluster."""
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
-    attributes = {
-        0x0001: ("x_axis", t.int16s, True),
-        0x0002: ("y_axis", t.int16s, True),
-        0x0003: ("z_axis", t.int16s, True),
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        x_axis: Final = ZCLAttributeDef(
+            id=0x0001, type=t.int16s, is_manufacturer_specific=True
+        )
+        y_axis: Final = ZCLAttributeDef(
+            id=0x0002, type=t.int16s, is_manufacturer_specific=True
+        )
+        z_axis: Final = ZCLAttributeDef(
+            id=0x0003, type=t.int16s, is_manufacturer_specific=True
+        )
 
 
 class Vibrate(CustomDevice):

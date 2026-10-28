@@ -1,7 +1,8 @@
 """Device handler for loratap TS130F smart curtain switch."""
 
+from typing import Final
+
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -14,16 +15,21 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
@@ -32,8 +38,10 @@ CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
 
 
 class MotorMode(t.enum8):
@@ -46,12 +54,14 @@ class MotorMode(t.enum8):
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
     """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
 
-    attributes = WindowCovering.attributes.copy()
-    attributes.update({0x8000: ("motor_mode", MotorMode)})
-    attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
-    attributes.update({0xF001: ("calibration", t.enum8)})
-    attributes.update({0xF002: ("motor_reversal", t.enum8)})
-    attributes.update({0xF003: ("calibration_time", t.uint16_t)})
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        motor_mode: Final = ZCLAttributeDef(id=0x8000, type=MotorMode)
+        tuya_moving_state: Final = ZCLAttributeDef(id=0xF000, type=t.enum8)
+        calibration: Final = ZCLAttributeDef(id=0xF001, type=t.enum8)
+        motor_reversal: Final = ZCLAttributeDef(id=0xF002, type=t.enum8)
+        calibration_time: Final = ZCLAttributeDef(id=0xF003, type=t.uint16_t)
 
     def _update_attribute(self, attrid, value):
         if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
@@ -668,6 +678,54 @@ class TuyaTS130Double_GP_ESTC(CustomDevice):
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class TuyaTS130F_EST_MCU(CustomDevice):
+    """Tuya TS130F variant with OnOff, Tuya External Switch Type and MCU clusters."""
+
+    # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=514, device_version=1, input_clusters=[0, 4, 5, 6, 258, 57345, 61184], output_clusters=[25, 10])
+    signature = {
+        MODELS_INFO: [
+            ("_TZ3210_mldzab8w", "TS130F"),  # MOES ZM-108-M
+        ],
+        ENDPOINTS: {
+            1: {
+                # "profile_id": 260, "device_type": 514,
+                # "input_clusters": [0, 4, 5, 6, 258, 57345, 61184],
+                # "output_clusters": [25, 10]
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    TuyaMCUCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                    TuyaMCUCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
     }

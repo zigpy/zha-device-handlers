@@ -1,8 +1,11 @@
 """Map from manufacturer to standard clusters for electric heating thermostats."""
 
+from typing import Final
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -34,15 +37,30 @@ MOESBHT_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
 class MoesBHTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some electric heating thermostats."""
 
-    attributes = {
-        MOESBHT_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-        MOESBHT_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-        MOESBHT_SCHEDULE_MODE_ATTR: ("schedule_mode", t.uint8_t, True),
-        MOESBHT_MANUAL_MODE_ATTR: ("manual_mode", t.uint8_t, True),
-        MOESBHT_ENABLED_ATTR: ("enabled", t.uint8_t, True),
-        MOESBHT_RUNNING_MODE_ATTR: ("running_mode", t.uint8_t, True),
-        MOESBHT_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-    }
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        target_temperature: Final = ZCLAttributeDef(
+            id=MOESBHT_TARGET_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        temperature: Final = ZCLAttributeDef(
+            id=MOESBHT_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        schedule_mode: Final = ZCLAttributeDef(
+            id=MOESBHT_SCHEDULE_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        manual_mode: Final = ZCLAttributeDef(
+            id=MOESBHT_MANUAL_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        enabled: Final = ZCLAttributeDef(
+            id=MOESBHT_ENABLED_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        running_mode: Final = ZCLAttributeDef(
+            id=MOESBHT_RUNNING_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        child_lock: Final = ZCLAttributeDef(
+            id=MOESBHT_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

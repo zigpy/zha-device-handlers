@@ -14,6 +14,7 @@ from zhaquirks.tuya import (
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
+    TuyaDPType,
     TuyaNewManufCluster,
 )
 
@@ -207,6 +208,55 @@ def test_tuya_data_unknown():
 
 
 @pytest.mark.parametrize(
+    "data, expected",
+    (
+        (
+            b"\x02\x00\x04\x00\x00\x00\xd2",
+            "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, "
+            "raw=b'\\x00\\x00\\x00\\xd2', *payload=210)",
+        ),
+        (
+            b"\x03\x00\x04Tuya",
+            "TuyaData(dp_type=<TuyaDPType.STRING: 3>, function=0, "
+            "raw=b'Tuya', *payload='Tuya')",
+        ),
+        # a RAW payload is the raw bytes, so it is not repeated
+        (
+            b"\x00\x00\x03\x02ab",
+            "TuyaData(dp_type=<TuyaDPType.RAW: 0>, function=0, raw=b'\\x02ab')",
+        ),
+        # invalid payloads are left out
+        (
+            b"\x02\x00\x01\x00",
+            "TuyaData(dp_type=<TuyaDPType.VALUE: 2>, function=0, raw=b'\\x00')",
+        ),
+        (
+            b"\x06\x00\x01\x00",
+            "TuyaData(dp_type=<TuyaDPType.undefined_0x06: 6>, function=0, "
+            "raw=b'\\x00')",
+        ),
+    ),
+)
+def test_tuya_data_repr(data, expected):
+    """Test the TuyaData repr shows the datapoint, also when it is invalid."""
+
+    r, _ = TuyaData.deserialize(data)
+    assert repr(r) == expected
+    assert repr(TuyaDatapointData(2, r)) == f"TuyaDatapointData(dp=2, data={expected})"
+
+
+def test_tuya_data_repr_empty():
+    """Test the repr of an empty TuyaData."""
+
+    data = TuyaData()
+    assert repr(data) == "TuyaData(dp_type=None, function=0, raw=None)"
+
+    for dp_type in TuyaDPType:
+        data.dp_type = dp_type
+        assert repr(data) == f"TuyaData(dp_type={dp_type!r}, function=0, raw=None)"
+
+
+@pytest.mark.parametrize(
     "cmd_id, handler_name, args",
     (
         (
@@ -252,7 +302,7 @@ def test_tuya_cluster_request(
     """Test cluster specific request."""
 
     hdr = zcl_f.ZCLHeader.general(1, cmd_id, direction=zcl_f.Direction.Server_to_Client)
-    hdr.frame_control.disable_default_response = False
+    hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
 
     with mock.patch.object(TuyaCluster, handler_name) as handler:
         handler.return_value = mock.sentinel.status
@@ -267,7 +317,7 @@ def test_tuya_cluster_request_unk_command(default_rsp_mock, TuyaCluster):
     """Test cluster specific request handler -- no handler."""
 
     hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Server_to_Client)
-    hdr.frame_control.disable_default_response = False
+    hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
 
     TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
     assert default_rsp_mock.call_count == 1
@@ -279,7 +329,7 @@ def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
     """Test cluster specific request handler -- no handler."""
 
     hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Server_to_Client)
-    hdr.frame_control.disable_default_response = False
+    hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
 
     new_client_commands = TuyaCluster.client_commands.copy()
     new_client_commands[0xFE] = zcl_f.ZCLCommandDef(

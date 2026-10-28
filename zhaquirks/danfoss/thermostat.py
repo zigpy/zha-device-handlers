@@ -33,9 +33,11 @@ from datetime import UTC, datetime
 import time
 from typing import Any
 
+from zha.quirks import DANFOSS_ALLY_THERMOSTAT
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -48,6 +50,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -56,7 +59,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
+from zhaquirks.legacy import CustomDevice
 
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
@@ -337,7 +340,12 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             id=0x4051, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """There are 2 types of setpoint changes: Fast and Slow.
 
         Fast is used for immediate changes; this is done using a command (setpoint_command).
@@ -362,7 +370,9 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
         # Attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
-            attributes, manufacturer=manufacturer
+            attributes,
+            manufacturer=manufacturer,
+            **kwargs,
         )
 
         if fast_setpoint_change is not None:

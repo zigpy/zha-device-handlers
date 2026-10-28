@@ -1,7 +1,7 @@
 """Xiaomi Aqara wall switch devices. Also see switch_h1 files for similar H1 rocker switches."""
 
-import copy
 from enum import Enum
+from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     ARGS,
@@ -92,19 +93,33 @@ class OppleIndicatorLight(t.uint8_t, Enum):
 class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
-    attributes = copy.deepcopy(OppleCluster.attributes)
-    attributes.update(
-        {
-            0x0002: ("power_outage_count", t.uint8_t, True),
-            0x000A: ("switch_type", OppleSwitchType, True),
-            0x00F0: ("reverse_indicator_light", OppleIndicatorLight, True),
-            0x0125: ("switch_mode", OppleSwitchMode, True),
-            0x0200: ("operation_mode", OppleOperationMode, True),
-            0x0201: ("power_outage_memory", t.Bool, True),
-            0x0202: ("auto_off", t.Bool, True),
-            0x0203: ("do_not_disturb", t.Bool, True),
-        }
-    )
+    class AttributeDefs(OppleCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        power_outage_count: Final = ZCLAttributeDef(
+            id=0x0002, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        switch_type: Final = ZCLAttributeDef(
+            id=0x000A, type=OppleSwitchType, is_manufacturer_specific=True
+        )
+        reverse_indicator_light: Final = ZCLAttributeDef(
+            id=0x00F0, type=OppleIndicatorLight, is_manufacturer_specific=True
+        )
+        switch_mode: Final = ZCLAttributeDef(
+            id=0x0125, type=OppleSwitchMode, is_manufacturer_specific=True
+        )
+        operation_mode: Final = ZCLAttributeDef(
+            id=0x0200, type=OppleOperationMode, is_manufacturer_specific=True
+        )
+        power_outage_memory: Final = ZCLAttributeDef(
+            id=0x0201, type=t.Bool, is_manufacturer_specific=True
+        )
+        auto_off: Final = ZCLAttributeDef(
+            id=0x0202, type=t.Bool, is_manufacturer_specific=True
+        )
+        do_not_disturb: Final = ZCLAttributeDef(
+            id=0x0203, type=t.Bool, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

@@ -1,9 +1,12 @@
 """Xiaomi aqara P1 contact sensor device."""
 
+from typing import Final
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, OnOff, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -33,9 +36,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         TwentyMillimeters = 0x02
         ThirtyMillimeters = 0x03
 
-    attributes = {
-        0x010C: ("detection_distance", t.uint8_t, True),
-    }
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        detection_distance: Final = ZCLAttributeDef(
+            id=0x010C, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class LumiMagnetAC01(XiaomiCustomDevice):
