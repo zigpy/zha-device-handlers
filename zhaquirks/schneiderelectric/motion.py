@@ -49,15 +49,13 @@ class SEOccupancySensitivity(t.enum8):
 class SEOccupancySensing(CustomCluster, OccupancySensing):
     """Occupancy sensing cluster with the Schneider Electric sensitivity attribute."""
 
-    manufacturer_id_override = SE_MANUF_ID
-
     class AttributeDefs(OccupancySensing.AttributeDefs):
         """Attribute definitions."""
 
         se_sensitivity: Final = ZCLAttributeDef(
             id=0xE003,
             type=t.uint8_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=SE_MANUF_ID,
         )
 
 
@@ -67,7 +65,6 @@ class SEOccupancyConfiguration(CustomCluster):
     name = "Schneider Electric Manufacturer Specific Occupancy Configuration"
     ep_attribute = "occupancy_configuration"
     cluster_id = 0xFF19
-    manufacturer_id_override = SE_MANUF_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -77,7 +74,7 @@ class SEOccupancyConfiguration(CustomCluster):
         ambience_light_threshold: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint16_t,
-            is_manufacturer_specific=True,
+            manufacturer_code=SE_MANUF_ID,
         )
 
 
