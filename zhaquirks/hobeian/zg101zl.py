@@ -1,5 +1,7 @@
 """Quirk for the HOBEIAN ZG-101ZL Zigbee button."""
 
+from zigpy.zcl.clusters.general import OnOff
+
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     BUTTON,
@@ -15,6 +17,7 @@ from zhaquirks.const import (
 
 (
     QuirkBuilder("HOBEIAN", "ZG-101ZL")
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .device_automation_triggers(
         {
             (SHORT_PRESS, BUTTON): {
