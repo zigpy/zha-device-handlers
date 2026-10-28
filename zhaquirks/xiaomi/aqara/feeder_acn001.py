@@ -7,7 +7,12 @@ from typing import Any, Final
 
 from zigpy import types
 from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -232,14 +237,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
 
-        # Subscribe to attribute events to parse feeder_attr
-        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
-
     def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
     ) -> None:
-        """Handle attribute report/update event to parse feeder attribute."""
+        """Handle attribute events: Xiaomi parsing first, then the feeder attribute."""
+        super()._handle_attribute_event(event)
+
         if event.attribute_id == FEEDER_ATTR:
             self._parse_feeder_attribute(event.value)
 

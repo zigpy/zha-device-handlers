@@ -16,7 +16,7 @@ from zha.application.helpers import (
     ZHAData,
 )
 from zha.quirks import DeviceRegistry
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.application
 import zigpy.config
 import zigpy.device
@@ -167,7 +167,7 @@ def _patch_cluster(cluster: zigpy.zcl.Cluster, values: dict[int, Any]) -> None:
 
 async def join_device_from_diagnostics(
     gateway: Gateway, name: str, registry: DeviceRegistry
-) -> Device:
+) -> ZigbeeDevice:
     """Join the device from a diagnostics file, quirked by `registry`."""
     data = json.loads((DEVICES_DIR / name).read_text())
 

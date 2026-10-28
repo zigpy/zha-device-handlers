@@ -17,7 +17,7 @@ from zha.application import Platform
 from zha.application.platforms import (
     AttrConfig,
     ClusterConfig,
-    PlatformEntity,
+    ZclPlatformEntity,
     binary_sensor,
     button,
     number,
@@ -39,13 +39,13 @@ from zhaquirks.builder.metadata import (
 )
 
 if TYPE_CHECKING:
-    from zha.zigbee.device import Device
+    from zha.zigbee.device import ZigbeeDevice
     from zha.zigbee.endpoint import Endpoint
 
 _LOGGER = logging.getLogger(__name__)
 
 QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
-    tuple[Platform, type], type[PlatformEntity]
+    tuple[Platform, type], type[ZclPlatformEntity]
 ] = {
     (Platform.BUTTON, WriteAttributeButtonMetadata): button.WriteAttributeButton,
     (Platform.BUTTON, ZCLCommandButtonMetadata): button.Button,
@@ -58,7 +58,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
 }
 
 
-def quirk_unique_id_base(device: Device, endpoint: Endpoint) -> str:
+def quirk_unique_id_base(device: ZigbeeDevice, endpoint: Endpoint) -> str:
     """Return the unique ID base of quirk entities, which omits the cluster ID."""
     return f"{device.ieee}-{endpoint.id}"
 
@@ -134,7 +134,7 @@ def _platform_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     return {}
 
 
-def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
+def discover_quirks_v2_entities(device: ZigbeeDevice) -> Iterator[ZclPlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
     if quirk_metadata is None or not quirk_metadata.entity_metadata:

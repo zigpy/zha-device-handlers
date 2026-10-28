@@ -45,6 +45,7 @@ from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
     DEVICE_TYPE,
@@ -70,7 +71,11 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
@@ -105,9 +110,11 @@ import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+from zhaquirks.xiaomi.aqara.opple_remote import STATUS_TYPE_ATTR, MultistateInputCluster
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
+import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
@@ -1256,12 +1263,43 @@ async def test_aqara_feeder_attr_reports(
 
     # Check the expected attribute updates occurred
     expected_updates = [(c.args[0], c.args[1]) for c in calls]
-    actual_updates = attribute_updates[-call_count:]
-    assert len(actual_updates) == call_count
+    assert len(attribute_updates) == call_count
     for attr_id, value in expected_updates:
-        assert any(u[0] == attr_id and u[1] == value for u in actual_updates), (
-            f"Expected ({attr_id}, {value}) in {actual_updates}"
+        assert any(u[0] == attr_id and u[1] == value for u in attribute_updates), (
+            f"Expected ({attr_id}, {value}) in {attribute_updates}"
         )
+
+
+async def test_aqara_feeder_xiaomi_struct_report(zigpy_device_from_v2_quirk):
+    """Test Aqara C1 pet feeder passes the 0x00F7 struct to the Xiaomi parser."""
+    device = zigpy_device_from_v2_quirk(
+        None,
+        "aqara.feeder.acn001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                OppleCluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        opple_cluster, "_parse_aqara_attributes", return_value={}
+    ) as parse_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=opple_cluster.cluster_id,
+                src_ep=opple_cluster.endpoint.endpoint_id,
+                dst_ep=opple_cluster.endpoint.endpoint_id,
+                data=t.SerializableBytes(
+                    b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"
+                ),
+            )
+        )
+
+    parse_mock.assert_called_once_with(b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03")
 
 
 def test_aqara_feeder_default_values(zigpy_device_from_v2_quirk):
@@ -1895,6 +1933,60 @@ async def test_xiaomi_cluster_model_read_no_event(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
+    "quirk, default_reset_s",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 30),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, 60),
+    ),
+)
+async def test_aqara_motion_reset_after_detection_interval(
+    zigpy_device_from_quirk, quirk, default_reset_s
+):
+    """Test that the motion reset interval follows `detection_interval`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    # without a cached detection_interval, fall back to the static reset_s
+    assert opple_cluster.get(detection_interval) is None
+    assert motion_cluster.reset_after == default_reset_s
+
+    # once detection_interval is known, reset_after follows it
+    opple_cluster.update_attribute(detection_interval, 90)
+    assert motion_cluster.reset_after == 90
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,
+        zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04,
+    ),
+)
+async def test_aqara_motion_timer_uses_reset_after(zigpy_device_from_quirk, quirk):
+    """Test that the motion timer is scheduled with the current `reset_after`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster.update_attribute(detection_interval, 90)
+
+    with mock.patch.object(motion_cluster._loop, "call_later") as call_later:
+        motion_cluster.motion_event()
+        assert call_later.mock_calls == [
+            mock.call(90, motion_cluster._turn_off),
+        ]
+
+        # a changed interval is picked up by the next event, no restart needed
+        opple_cluster.update_attribute(detection_interval, 15)
+        motion_cluster.motion_event()
+        assert call_later.mock_calls[-1] == mock.call(15, motion_cluster._turn_off)
+
+
+@pytest.mark.parametrize(
     "quirk, cluster_name, raw_report, expected_results",
     (
         (
@@ -2080,6 +2172,39 @@ async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, qu
     )
 
 
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,))
+async def test_xiaomi_battery_voltage_without_power_cluster(
+    zigpy_device_from_quirk, caplog, quirk
+):
+    """Test a battery voltage is ignored on an endpoint without a power cluster.
+
+    The rest of the Aqara struct must still be applied.
+    """
+    caplog.set_level(logging.DEBUG)  # relevant message is currently DEBUG level
+
+    device = zigpy_device_from_quirk(quirk)
+    assert not hasattr(device.endpoints[1], "power")
+    basic_cluster = device.endpoints[1].basic
+
+    electrical_listener = ClusterListener(device.endpoints[1].electrical_measurement)
+
+    # battery voltage (key 1) followed by power (key 152)
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2300, 152: 12.5})
+    )
+
+    # confirm that the power after the battery voltage was still applied
+    assert electrical_listener.attribute_updates == [
+        (ElectricalMeasurement.AttributeDefs.active_power.id, 125)
+    ]
+
+    # confirm that a debug message was logged
+    assert (
+        "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
+        in caplog.text
+    )
+
+
 def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
     """Test Aqara E1 roller curtain battery reporting."""
     # Ideally, get a real Xiaomi "heartbeat" message to test.
@@ -2114,6 +2239,140 @@ def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
     assert power_listener.attribute_updates[0][1] == 28.9
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == 120
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_percentage"),
+    [
+        (76, 152),
+        (0, 0),
+        (100, 200),
+        (0xFF, None),  # uint8 non-value
+        (101, None),
+    ],
+)
+async def test_xiaomi_e1_roller_battery_percentage_report(
+    zigpy_device_from_v2_quirk, value, expected_percentage
+):
+    """Test Aqara E1 roller forwards Aqara battery percentage reports."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # manufacturer-specific report of 0x040A (uint8) with Lumi's manufacturer code
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                b"\x1c\x5f\x11\x01\x0a\x0a\x04\x20" + bytes([value])
+            ),
+        )
+    )
+
+    assert opple_cluster.get("battery_percentage") == value
+
+    if expected_percentage is None:
+        assert power_listener.attribute_updates == []
+        return
+
+    assert power_listener.attribute_updates == [
+        (
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
+            expected_percentage,
+        )
+    ]
+
+
+async def test_xiaomi_e1_roller_battery_percentage_read_redirection(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller reads the battery percentage from the Aqara cluster."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+    battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
+
+    opple_read = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    0x040A,
+                    foundation.Status.SUCCESS,
+                    foundation.TypeValue(DataTypeId.uint8, t.uint8_t(76)),
+                )
+            ],
+        )
+    )
+
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        # same calls as ZHA's startup reads, by name and by id
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name, PowerConfiguration.AttributeDefs.battery_voltage.name],
+            allow_cache=False,
+            only_cache=False,
+        )
+        assert success == {battery_attr.name: 152}
+        assert failure == {
+            PowerConfiguration.AttributeDefs.battery_voltage.name: (
+                foundation.Status.UNSUPPORTED_ATTRIBUTE
+            )
+        }
+
+        success, failure = await power_cluster.read_attributes([battery_attr.id])
+        assert success == {battery_attr.id: 152}
+        assert failure == {}
+
+    # the device was asked for the Aqara attribute, with Lumi's manufacturer code
+    assert opple_read.call_count == 2
+    assert opple_read.mock_calls[0].args[0] == [0x040A]
+    assert opple_read.mock_calls[0].kwargs["manufacturer"] == 0x115F
+
+    # the read responses updated the power cluster through the Aqara cluster
+    assert power_listener.attribute_updates == [
+        (battery_attr.id, 152),
+        (battery_attr.id, 152),
+    ]
+    assert power_cluster.get(battery_attr.id) == 152
+
+    # with an empty Aqara cache, a cache-only read uses the power cluster's cache
+    opple_cluster._attr_cache.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes(
+            [battery_attr.name], allow_cache=True, only_cache=True
+        )
+    assert opple_read.call_count == 2
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
+    # also when the Aqara attribute is cached as unsupported
+    opple_cluster.add_unsupported_attribute(0x040A)
+    success, failure = await power_cluster.read_attributes(
+        [battery_attr.name], allow_cache=True, only_cache=True
+    )
+    assert success == {battery_attr.name: 152}
+    assert failure == {}
+
+    # an invalid battery percentage is read as the ZCL invalid value
+    opple_read.return_value = (
+        [
+            foundation.ReadAttributeRecord(
+                0x040A,
+                foundation.Status.SUCCESS,
+                foundation.TypeValue(DataTypeId.uint8, t.uint8_t(0xFF)),
+            )
+        ],
+    )
+    power_listener.attribute_updates.clear()
+    with mock.patch.object(opple_cluster, "_read_attributes", opple_read):
+        success, failure = await power_cluster.read_attributes([battery_attr.name])
+    assert success == {battery_attr.name: 0xFF}
+    assert power_listener.attribute_updates == []
+    assert power_cluster.get(battery_attr.id) == 152
 
 
 @pytest.mark.parametrize(
@@ -2951,3 +3210,139 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
+    """W100 quirk matches and swaps in its custom clusters on all endpoints."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+
+    ep1 = device.endpoints[1]
+    assert isinstance(ep1.temperature, TemperatureMeasurementCluster)
+    assert isinstance(ep1.humidity, RelativeHumidityCluster)
+    assert isinstance(ep1.power, XiaomiPowerConfiguration)
+    assert isinstance(ep1.opple_cluster, XiaomiAqaraE1Cluster)
+
+    # the three buttons live on endpoints 1/2/3
+    for ep_id in (1, 2, 3):
+        assert isinstance(
+            device.endpoints[ep_id].multistate_input, MultistateInputCluster
+        )
+
+
+@pytest.mark.parametrize(
+    "endpoint, value, expected_action, expected_press",
+    [
+        (1, 1, "1_single", "single"),
+        (2, 2, "2_double", "double"),
+        (3, 0, "3_hold", "hold"),
+        (1, 255, "1_release", "release"),
+    ],
+)
+def test_w100_button_events(
+    zigpy_device_from_v2_quirk, endpoint, value, expected_action, expected_press
+):
+    """A button press on any endpoint fires the expected zha_send_event."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    mi_cluster = device.endpoints[endpoint].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(STATUS_TYPE_ATTR, value)
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            expected_action,
+            {
+                BUTTON: endpoint,
+                PRESS_TYPE: expected_press,
+                ATTR_ID: STATUS_TYPE_ATTR,
+                VALUE: value,
+            },
+        )
+    ]
+
+
+def test_w100_battery_from_heartbeat(zigpy_device_from_v2_quirk):
+    """The 0xFCC0 heartbeat tag 102 feeds battery percent into the power cluster."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    # heartbeat carrying 87 % battery percent in tag 102 (uint8, as on the device —
+    # the W100 sends no tag-1 voltage)
+    report = bytes([102]) + foundation.TypeValue(0x20, t.uint8_t(87)).serialize()
+    opple_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, report)
+
+    assert (percent_id, 87 * 2) in power_listener.attribute_updates
+
+
+async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
+    """ZCL battery reports (always 0 on the W100) don't overwrite the heartbeat value."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    percent_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    attr = foundation.Attribute(
+        attrid=percent_id, value=foundation.TypeValue(0x20, t.uint8_t(0))
+    )
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema([attr])
+        .serialize()
+    )
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=power_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(hdr + cmd),
+        )
+    )
+
+    assert power_listener.attribute_updates == []
+
+    # other general commands still reach the base handler: a device-initiated
+    # read gets a Read_Attributes_rsp task
+    hdr = foundation.ZCLHeader.general(
+        2,
+        foundation.GeneralCommand.Read_Attributes,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    cmd = (
+        foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Read_Attributes]
+        .schema([percent_id])
+        .serialize()
+    )
+
+    with mock.patch.object(power_cluster, "create_catching_task") as task_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=power_cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr + cmd),
+            )
+        )
+
+    assert len(task_mock.mock_calls) == 1
+    task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine

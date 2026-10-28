@@ -39,7 +39,7 @@ from zha.quirks import (
     QuirkSource,
     ReplaceZigpyDevice,
 )
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -183,18 +183,31 @@ class ReplaceCluster:
             self.cluster.cluster_id if self.cluster_id is None else self.cluster_id
         )
 
-        if is_server:
-            old_cluster = endpoint.in_clusters.pop(removed_cluster_id, None)
-        else:
-            old_cluster = endpoint.out_clusters.pop(removed_cluster_id, None)
+        clusters = endpoint.in_clusters if is_server else endpoint.out_clusters
+        cluster_ids = list(clusters)
+        old_cluster = clusters.pop(removed_cluster_id, None)
 
         new_cluster = self.cluster(endpoint, is_server=is_server)
+        if old_cluster is not None:
+            # A replacement whose id is already used on the endpoint overwrites
+            # that cluster: drop it so the replacement takes the replaced slot
+            clusters.pop(new_cluster.cluster_id, None)
+
         if is_server:
             endpoint.add_input_cluster(new_cluster.cluster_id, new_cluster)
         else:
             endpoint.add_output_cluster(new_cluster.cluster_id, new_cluster)
 
         if old_cluster is not None:
+            # Keep the replacement at the replaced cluster's position: ZHA binds
+            # clusters and configures reporting in this order, which matters on
+            # devices with a small reporting table. Re-append the clusters that
+            # followed the replaced one so they end up behind the replacement.
+            index = cluster_ids.index(removed_cluster_id)
+            for cluster_id in cluster_ids[index + 1 :]:
+                if cluster_id != new_cluster.cluster_id:
+                    clusters[cluster_id] = clusters.pop(cluster_id)
+
             new_cluster._attr_cache_internal = old_cluster._attr_cache.clone(
                 new_cluster
             )
@@ -331,7 +344,7 @@ class SetDeviceAutomationTriggers:
 
 
 class QuirkBuilder:
-    """Builder compiling a declarative quirk into a registered `Device` subclass."""
+    """Builder compiling a declarative quirk into a registered `ZigbeeDevice` subclass."""
 
     def __init__(
         self,
@@ -351,7 +364,7 @@ class QuirkBuilder:
         self.firmware_version_min: int | None = None
         self.firmware_version_max: int | None = None
         self.firmware_version_allow_missing: bool = True
-        self.custom_device_class: type[Device] | None = None
+        self.custom_device_class: type[ZigbeeDevice] | None = None
         self.custom_zigpy_device_class: type[BaseCustomDevice] = CustomZigpyDevice
         self.device_node_descriptor: NodeDescriptor | None = None
         self.skip_device_configuration: bool = False
@@ -443,16 +456,16 @@ class QuirkBuilder:
         return self
 
     def device_class(
-        self, custom_device_class: type[Device] | type[BaseCustomDevice]
+        self, custom_device_class: type[ZigbeeDevice] | type[BaseCustomDevice]
     ) -> Self:
         """Use `zha_device_class` or `zigpy_device_class` instead (legacy compatibility)."""
-        if issubclass(custom_device_class, Device):
+        if issubclass(custom_device_class, ZigbeeDevice):
             return self.zha_device_class(custom_device_class)
         else:
             return self.zigpy_device_class(custom_device_class)
 
-    def zha_device_class(self, custom_device_class: type[Device]) -> Self:
-        """Set the ZHA `Device` subclass used as the base of this quirk's class."""
+    def zha_device_class(self, custom_device_class: type[ZigbeeDevice]) -> Self:
+        """Set the ZHA `ZigbeeDevice` subclass used as the base of this quirk's class."""
         self.custom_device_class = custom_device_class
         return self
 
