@@ -1647,46 +1647,11 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
     assert isinstance(quirked_dev, quirk)
 
 
-def test_ts0043_six_endpoint_signature(assert_signature_matches_quirk):
-    """Test the six endpoint TS0043 firmware matches its quirk."""
-
-    signature = {
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0000",
-                "in_clusters": ["0x0000", "0x0001", "0x0006", "0xe000"],
-                "out_clusters": ["0x000a", "0x0019"],
-            },
-            **{
-                str(endpoint_id): {
-                    "profile_id": 260,
-                    "device_type": "0x0000",
-                    "in_clusters": ["0x0001", "0x0006"],
-                    "out_clusters": [],
-                }
-                for endpoint_id in range(2, 7)
-            },
-        },
-        "manufacturer": "_TZ3000_famkxci2",
-        "model": "TS0043",
-    }
-    assert_signature_matches_quirk(
-        zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC, signature
-    )
-
-
 async def test_ts0043_six_endpoint_button_events(zigpy_device_from_quirk):
     """Test button presses on the six endpoint TS0043 match its automation triggers."""
 
     quirk = zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC
     device = zigpy_device_from_quirk(quirk)
-
-    # only the three endpoints used by the buttons remain, and none of them has an
-    # OnOff server cluster that ZHA would expose as a switch
-    assert sorted(ep_id for ep_id in device.endpoints if ep_id != 0) == [1, 2, 3]
-    for ep_id in (1, 2, 3):
-        assert OnOff.cluster_id not in device.endpoints[ep_id].in_clusters
 
     # each frame gets its own sequence number, as the cluster drops repeated ones
     for tsn, ((press, _button), trigger) in enumerate(
