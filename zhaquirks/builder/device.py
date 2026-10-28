@@ -11,19 +11,63 @@ from typing import TYPE_CHECKING, Any
 # it loads participate in an import cycle with the device module and cannot be
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
-from zha.application.platforms import BaseEntity, PlatformEntity
-from zha.zigbee.device import Device
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
+from zha.zigbee.device import BaseDevice, ZigbeeDevice
 import zigpy.device
 import zigpy.zcl
+from zigpy.zcl import ClusterType
 
-from zhaquirks.builder.discovery import discover_quirks_v2_entities
-from zhaquirks.builder.metadata import QuirkDefinition
+from zhaquirks.builder.discovery import (
+    discover_quirks_v2_entities,
+    quirk_unique_id_base,
+)
+from zhaquirks.builder.metadata import AddedEntityMetadata, QuirkDefinition
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
 
 
-class QuirkV2Device(Device):
+def create_added_entities(
+    device: BaseDevice, added_entities: Iterable[AddedEntityMetadata]
+) -> Iterator[PlatformEntity]:
+    """Create the quirk's added entities for the device."""
+    # An exception would end this generator, so one failing entity is skipped
+    for added in added_entities:
+        try:
+            entity = _create_added_entity(device, added)
+        except Exception:  # noqa: BLE001
+            device.error("Failed to create added entity %r", added, exc_info=True)
+            continue
+
+        yield entity
+
+
+def _create_added_entity(
+    device: BaseDevice, added: AddedEntityMetadata
+) -> PlatformEntity:
+    if not issubclass(added.entity_cls, ZclPlatformEntity):
+        return added.entity_cls(device, unique_id=str(device.ieee), **added.kwargs)
+
+    # Only Zigbee devices have endpoints and clusters
+    assert isinstance(device, ZigbeeDevice)
+
+    endpoint = device.endpoints[added.endpoint_id]
+    clusters = (
+        endpoint.zigpy_endpoint.in_clusters
+        if added.cluster_type is ClusterType.Server
+        else endpoint.zigpy_endpoint.out_clusters
+    )
+
+    return added.entity_cls(
+        endpoint=endpoint,
+        device=device,
+        cluster=clusters[added.cluster_id],
+        unique_id=quirk_unique_id_base(device, endpoint),
+        **added.kwargs,
+    )
+
+
+class QuirkV2Device(ZigbeeDevice):
     """Base ZHA device for QuirkBuilder."""
 
     def __init__(
@@ -42,10 +86,74 @@ class QuirkV2Device(Device):
         """Return the ZHA-level quirk metadata for this device."""
         return self._quirk_definition
 
-    def discover_entities(self) -> Iterator[BaseEntity]:
-        """Yield the default entities plus the quirk's exposed v2 entities."""
-        yield from super().discover_entities()
+    def discover_entities(self) -> Iterator[PlatformEntity]:
+        """Yield the default entities plus the quirk's exposed and added entities."""
+        entities: list[PlatformEntity] = []
+
+        try:
+            for entity in super().discover_entities():
+                entities.append(entity)
+        except Exception:
+            # Keep the entities discovered before the failure, as ZHA does
+            yield from self._replace_entities(entities)
+            raise
+
+        yield from self._replace_entities(entities)
         yield from discover_quirks_v2_entities(self)
+        yield from create_added_entities(self, self._quirk_definition.added_entities)
+
+    def _replace_entities(self, entities: list[PlatformEntity]) -> list[PlatformEntity]:
+        """Replace the default entities matched by the quirk's replacements."""
+        for replaced in self._quirk_definition.replaced_entities:
+            indices = [
+                index
+                for index, entity in enumerate(entities)
+                if type(entity) is replaced.base_cls and replaced.filter.matches(entity)
+            ]
+
+            # Discovery yields an entity twice for a cluster that is both an input and
+            # an output cluster. ZHA keeps the first one, so it is the one replaced.
+            matched = {(entities[i].PLATFORM, entities[i].unique_id) for i in indices}
+
+            if len(matched) != 1:
+                self.error(
+                    "Replacement %r must match one entity, matched %d",
+                    replaced,
+                    len(matched),
+                )
+                continue
+
+            index = indices[0]
+            entity = entities[index]
+
+            kwargs = dict(replaced.kwargs)
+
+            if isinstance(entity, ZclPlatformEntity):
+                kwargs["endpoint"] = entity.endpoint
+                kwargs["cluster"] = entity.cluster
+
+            try:
+                new_entity = replaced.entity_cls(
+                    device=self,
+                    unique_id=entity.unique_id_base,
+                    **kwargs,
+                )
+            except Exception:  # noqa: BLE001
+                self.error("Failed to create replacement %r", replaced, exc_info=True)
+                continue
+
+            if new_entity.unique_id != entity.unique_id:
+                self.error(
+                    "Replacement %r changes the unique ID from %s to %s",
+                    replaced,
+                    entity.unique_id,
+                    new_entity.unique_id,
+                )
+                continue
+
+            entities[index] = new_entity
+
+        return entities
 
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
@@ -77,39 +185,17 @@ class QuirkV2Device(Device):
         if entity.PLATFORM == Platform.VIRTUAL:
             return False
 
-        for meta in self._quirk_definition.disabled_default_entities:
-            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
-                meta.unique_id_suffix
-            ):
-                continue
-            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
-                continue
-            if meta.cluster_id is not None and not entity.targets_cluster(
-                meta.cluster_id
-            ):
-                continue
-            if meta.function is not None and not meta.function(entity):
-                continue
-            return True
-
-        return False
+        return any(
+            entity_filter.matches(entity)
+            for entity_filter in self._quirk_definition.disabled_default_entities
+        )
 
     def _apply_entity_metadata_changes(self, entity: PlatformEntity) -> None:
         if entity.PLATFORM == Platform.VIRTUAL:
             return
 
         for meta in self._quirk_definition.changed_entity_metadata:
-            if meta.unique_id_suffix is not None and not entity.unique_id.endswith(
-                meta.unique_id_suffix
-            ):
-                continue
-            if meta.endpoint_id is not None and entity.endpoint.id != meta.endpoint_id:
-                continue
-            if meta.cluster_id is not None and not entity.targets_cluster(
-                meta.cluster_id, cluster_type=meta.cluster_type
-            ):
-                continue
-            if meta.function is not None and not meta.function(entity):
+            if not meta.filter.matches(entity):
                 continue
 
             if meta.new_primary is not None:

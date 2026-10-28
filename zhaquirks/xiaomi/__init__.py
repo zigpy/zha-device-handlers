@@ -215,10 +215,9 @@ class XiaomiCluster(CustomCluster):
         )
 
         if BATTERY_VOLTAGE_MV in attributes:
-            if hasattr(self.endpoint.power, "battery_reported") and callable(
-                self.endpoint.power.battery_reported
-            ):
-                self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
+            power = getattr(self.endpoint, "power", None)
+            if callable(getattr(power, "battery_reported", None)):
+                power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
             else:
                 _LOGGER.debug(
                     "%s - Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used",

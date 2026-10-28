@@ -412,13 +412,14 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 for attr in args.attribute_reports
                 if attr.attrid != SYSTEM_MODE_ATTR.id
             ]
-            if len(update_attributes) > 0:
-                msg = foundation.GENERAL_COMMANDS[
-                    foundation.GeneralCommand.Report_Attributes
-                ].schema(attribute_reports=update_attributes)
-                return super().handle_cluster_general_request(
-                    hdr, msg, dst_addressing=dst_addressing
-                )
+            # Process even when no attributes remain, to send any requested
+            # default response
+            msg = foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Report_Attributes
+            ].schema(attribute_reports=update_attributes)
+            return super().handle_cluster_general_request(
+                hdr, msg, dst_addressing=dst_addressing
+            )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):
