@@ -1,9 +1,15 @@
 """CTM Lyng AX Valve Controller."""
 
+from zha.application.platforms.binary_sensor import IASZone
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityFilter,
+    EntityType,
+    QuirkBuilder,
+)
 from zhaquirks.ctm import CTM_MANUF_NAME
 
 (
@@ -11,10 +17,12 @@ from zhaquirks.ctm import CTM_MANUF_NAME
     # The valve endpoint reports an undefined device type (0xffff).
     .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_OUTPUT)
     # Replace the default ZHA IAS Zone entity to rename it to "Water leak".
-    .prevent_default_entity_creation(
-        endpoint_id=2,
-        cluster_id=IasZone.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "IASZone",
+    .removes_entity(
+        EntityFilter(
+            entity_cls=IASZone,
+            endpoint_id=2,
+            cluster_id=IasZone.cluster_id,
+        )
     )
     .binary_sensor(
         attribute_name=IasZone.AttributeDefs.zone_status.name,

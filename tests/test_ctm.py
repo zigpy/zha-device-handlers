@@ -2,7 +2,7 @@
 
 import pytest
 from zha.application import EntityType
-from zha.application.platforms.binary_sensor import BinarySensor, IASZone
+from zha.application.platforms.binary_sensor import IASZone
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.profiles import zha
@@ -106,8 +106,7 @@ def test_valve_default_ias_zone_entity_replaced(definition):
     assert rule.endpoint_id == 2
     assert rule.cluster_id == IasZone.cluster_id
 
-    assert rule.function(object.__new__(IASZone))
-    assert not rule.function(object.__new__(BinarySensor))
+    assert rule.entity_cls is IASZone
 
 
 @pytest.mark.parametrize(
