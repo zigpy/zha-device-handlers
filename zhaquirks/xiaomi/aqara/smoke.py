@@ -29,6 +29,7 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
 )
 
+MODE = 0x0009
 BUZZER_MANUAL_MUTE = 0x0126
 SELF_TEST = 0x0127
 SMOKE = 0x013A
@@ -59,6 +60,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
     attributes = {
+        MODE: ("mode", types.uint8_t, True),
         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
         SELF_TEST: ("self_test", types.Bool, True),
         SMOKE: ("smoke", types.uint8_t, True),
@@ -70,6 +72,21 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         LINKAGE_ALARM_STATE: ("linkage_alarm_state", types.uint8_t, True),
         SMOKE_DENSITY_DBM: ("smoke_density_dbm", types.Single, True),
     }
+
+    # Until this is written, firmware 0x13 sends no manufacturer-specific reports at
+    # all, including the smoke attribute, and never sends an IAS zone status change
+    # for smoke. Reporting can't be configured for the smoke attribute
+    # (UNREPORTABLE_ATTRIBUTE), the device pushes it on its own once this is set.
+    attr_config = {MODE: 0x01}
+
+    async def bind(self):
+        """Bind cluster and enable manufacturer-specific reporting."""
+        result = await super().bind()
+        # This is a sleepy device, so the write frequently times out even when the
+        # device applies it. Best effort only: a failure must not break binding,
+        # enrollment or the battery path.
+        self.create_catching_task(self.write_attributes(self.attr_config))
+        return result
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Pass attribute update to another cluster if necessary."""
@@ -84,12 +101,12 @@ class SmokeIasZone(CustomCluster, IasZone):
     """IAS Zone cluster of the smoke detector.
 
     This is a real (remote) cluster, so ZHA writes the CIE address, binds the
-    cluster and enrolls the device. Firmware 0x13 only sends zone status
-    notifications once it is actually enrolled, which never happened while this
-    was a `LocalDataCluster` (both the CIE address write and the bind were
-    local no-ops there). `zone_type` is still served from the quirk, as the
-    binary sensor's device class must not depend on a sleepy device answering a
-    read.
+    cluster and enrolls the device, which never happened while this was a
+    `LocalDataCluster` (both the CIE address write and the bind were local no-ops
+    there). The smoke state itself does not arrive as an IAS zone status change,
+    it is forwarded here from the Opple cluster's smoke attribute. `zone_type` is
+    still served from the quirk, as the binary sensor's device class must not
+    depend on a sleepy device answering a read.
     """
 
     _CONSTANT_ATTRIBUTES = {
@@ -101,14 +118,15 @@ class XiaomiSmokePowerConfiguration(PowerConfigurationCluster):
     """Power configuration cluster of the smoke detector.
 
     This is a real (remote) cluster, so ZHA binds it and configures reporting.
-    Firmware 0x13 accepts reporting on `battery_voltage` and then reports it,
-    while it never sends the Xiaomi attribute report blob older firmware uses.
+    Firmware 0x13 accepts reporting on `battery_voltage` and then reports it.
     `battery_percentage_remaining` is derived from the voltage, as the device
-    rejects reporting configuration for it.
+    rejects reporting configuration for it and answers reads of it with
+    `UNSUPPORTED_ATTRIBUTE` (which `PowerConfigurationCluster` keeps from
+    clearing the derived value).
 
-    Firmware 0x11 sends the Xiaomi blob instead, which still lands here through
-    `battery_reported()` / `battery_percent_reported()`, so it keeps working
-    even if the device answers standard reads with `UNSUPPORTED_ATTRIBUTE`.
+    The Xiaomi attribute report blob (firmware 0x11, and 0x13 once the Opple
+    cluster's mode is set) still lands here through `battery_reported()` /
+    `battery_percent_reported()`.
     """
 
     MIN_VOLTS = 2.475
