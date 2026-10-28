@@ -280,6 +280,7 @@ class ZosungIRTransmit(CustomCluster):
         super().__init__(*args, **kwargs)
         self.msg_length = 0
         self.msg_part_retries = 0
+        self.learn_seq = 0
         self.ir_msg: list[int] = []
         self.seq = 0
         # The ZS06 handles one transfer at a time, so each send waits its turn.
@@ -390,6 +391,18 @@ class ZosungIRTransmit(CustomCluster):
             )
         )
 
+    def confirm_learned_code(self, seq: int) -> None:
+        """Tell the device we have the whole learned IR code (frame 0x04)."""
+        self.create_catching_task(
+            super().command(
+                self.ServerCommandDefs.receive_ir_frame_04.id,
+                zero0=0,
+                seq=seq,
+                zero1=0,
+                expect_reply=False,
+            )
+        )
+
     def stop_learning(self) -> None:
         """Drop any partly learned code and take the device out of learning mode."""
         self.ir_msg.clear()
@@ -423,6 +436,7 @@ class ZosungIRTransmit(CustomCluster):
             self.ir_msg.clear()
             self.msg_length = args.length
             self.msg_part_retries = 0
+            self.learn_seq = args.seq
 
             cmd_01_args = {
                 "zero": 0,
@@ -513,14 +527,29 @@ class ZosungIRTransmit(CustomCluster):
                 args.position,
                 position,
             )
-            if not self.msg_length:
+            if not self.msg_length or args.seq != self.learn_seq:
                 _LOGGER.debug(
-                    "Ignoring IR frame 0x03 from %s, no IR code is being received",
+                    "Ignoring IR frame 0x03 from %s for seq %s, "
+                    "not the IR code being received",
                     self.endpoint.device.ieee,
+                    args.seq,
                 )
                 return
+            end = args.position + len(args.msgpart)
             if (
-                args.position != position
+                args.msgpart
+                and args.msgpartcrc == calculated_crc
+                and end <= position
+                and bytes(self.ir_msg[args.position : end]) == args.msgpart
+            ):
+                # A repeat of bytes we already have: nothing to add, not a bad part.
+                if position == self.msg_length:
+                    # The device missed our 0x04 and sent the last part again.
+                    self.confirm_learned_code(args.seq)
+                return
+            if (
+                not args.msgpart
+                or args.position != position
                 or args.msgpartcrc != calculated_crc
                 or position + len(args.msgpart) > self.msg_length
             ):
@@ -549,14 +578,7 @@ class ZosungIRTransmit(CustomCluster):
                 _LOGGER.debug(
                     "IR message completely received from %s", self.endpoint.device.ieee
                 )
-                cmd_04_args = {"zero0": 0, "seq": args.seq, "zero1": 0}
-                self.create_catching_task(
-                    super().command(
-                        self.ServerCommandDefs.receive_ir_frame_04.id,
-                        **cmd_04_args,
-                        expect_reply=False,
-                    )
-                )
+                self.confirm_learned_code(args.seq)
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_04.id:
             seq = args.seq
             pending = self.pending_send
@@ -579,7 +601,16 @@ class ZosungIRTransmit(CustomCluster):
             # confirmation was lost.
             self.create_catching_task(self.acknowledge_sent(seq, pending))
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_05.id:
-            if self.msg_length and len(self.ir_msg) == self.msg_length:
+            if not self.msg_length or args.seq != self.learn_seq:
+                # A repeat after the code was stored, or one from an earlier learn.
+                _LOGGER.debug(
+                    "Ignoring IR frame 0x05 from %s for seq %s, "
+                    "not the IR code being received",
+                    self.endpoint.device.ieee,
+                    args.seq,
+                )
+                return
+            if len(self.ir_msg) == self.msg_length:
                 self.endpoint.device.last_learned_ir_code = base64.b64encode(
                     bytes(self.ir_msg)
                 ).decode()
