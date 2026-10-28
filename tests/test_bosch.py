@@ -881,3 +881,48 @@ def test_bosch_radiator_thermostat_II_temperature_offset(zigpy_device_from_v2_qu
     assert _bosch_trv_prevented(
         device, Thermostat.cluster_id, "BoschThermostatLocalTempCalibration"
     )
+
+
+async def test_bosch_radiator_thermostat_II_system_mode_report_ignored(
+    zigpy_device_from_v2_quirk,
+):
+    """Test system_mode reports are ignored but still acknowledged."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+    bosch_thermostat_cluster = device.endpoints[1].thermostat
+
+    def receive(data: bytes) -> None:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=Thermostat.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(data),
+            )
+        )
+
+    with mock.patch.object(
+        bosch_thermostat_cluster, "send_default_rsp"
+    ) as default_rsp_mock:
+        # Frame control 0x08: default response requested, system_mode=Heat
+        receive(b"\x08\x01\x0a\x1c\x00\x30\x04")
+        assert default_rsp_mock.call_count == 1
+        assert (
+            bosch_thermostat_cluster.get(Thermostat.AttributeDefs.system_mode.name)
+            is None
+        )
+
+        # system_mode=Heat and local_temperature=21.50 °C
+        receive(b"\x08\x02\x0a\x1c\x00\x30\x04\x00\x00\x29\x66\x08")
+        assert default_rsp_mock.call_count == 2
+        assert (
+            bosch_thermostat_cluster.get(Thermostat.AttributeDefs.system_mode.name)
+            is None
+        )
+        assert (
+            bosch_thermostat_cluster.get(
+                Thermostat.AttributeDefs.local_temperature.name
+            )
+            == 2150
+        )
