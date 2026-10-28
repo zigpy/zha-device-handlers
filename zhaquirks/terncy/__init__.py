@@ -98,7 +98,7 @@ class MotionCluster(LocalDataCluster, _Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
         if self.send_occupancy_event:
             self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)

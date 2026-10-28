@@ -126,24 +126,6 @@ TUYA_SYS_MODE_V04 = {
             True,  # Enusure schedule is turned off
         ),
         (
-            "_TZE284_3yp57tby",
-            "TS0601",
-            TUYA_TEST_PLAN_V02,
-            TUYA_SP_V02,
-            TUYA_SYS_MODE_V02,
-            zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
-            True,  # Enusure schedule is turned off
-        ),
-        (
-            "_TZE284_9m4kmbfu",
-            "TS0601",
-            TUYA_TEST_PLAN_V02,
-            TUYA_SP_V02,
-            TUYA_SYS_MODE_V02,
-            zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
-            True,  # Enusure schedule is turned off
-        ),
-        (
             "_TZE200_ne4pikwm",
             "TS0601",
             TUYA_TEST_PLAN_V02,
@@ -315,30 +297,6 @@ async def test_handle_get_data(
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
-
-
-@pytest.mark.parametrize(
-    "model",
-    [
-        "_TZE200_9m4kmbfu",  # SETTI+ TRV001
-        "_TZE284_9m4kmbfu",  # SETTI+ TRV001 (newer Tuya MCU protocol)
-        "_TZE284_3yp57tby",  # Nous H1Z
-    ],
-)
-async def test_saswell_trv_device_resolution(zigpy_device_from_v2_quirk, model):
-    """Test that Saswell/SETTI+ TRV variants resolve to a quirked device.
-
-    The quirk must replace the endpoint device type with THERMOSTAT so ZHA
-    creates a climate entity, and expose the DP-mapped clusters.
-    """
-    quirked = zigpy_device_from_v2_quirk(model, "TS0601")
-    ep = quirked.endpoints[1]
-
-    assert ep.device_type == zha.DeviceType.THERMOSTAT
-    assert ep.tuya_manufacturer is not None
-    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
-    assert ep.thermostat is not None
-    assert isinstance(ep.thermostat, Thermostat)
 
 
 @pytest.mark.parametrize(

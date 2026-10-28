@@ -260,3 +260,96 @@ async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
         val = config.get("args", {}).get("value")
         if val is not None:
             assert type(val) is int, type(val)
+
+
+@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
+@pytest.mark.parametrize(
+    "actions_before,actions_after",
+    (
+        ((ButtonAction.Pressed_on,), ()),
+        ((), (ButtonAction.Pressed_on,)),
+        ((ButtonAction.Pressed_on,), (ButtonAction.Released_on,)),
+    ),
+)
+async def test_sinope_light_switch_action_report_with_other_attribute(
+    zigpy_device_from_quirk, quirk, actions_before, actions_after
+):
+    """Test every action report is handled wherever it is in a report and acknowledged."""
+    device: Device = zigpy_device_from_quirk(quirk)
+    cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
+    zha_listener = mock.MagicMock()
+    cluster.add_listener(zha_listener)
+    cluster_listener = ClusterListener(cluster)
+
+    def action_attr(action: t.enum8) -> foundation.Attribute:
+        return foundation.Attribute(
+            attrid=cluster.AttributeDefs.action_report.id,
+            value=foundation.TypeValue(type=0x30, value=action),
+        )
+
+    intensity_attr = foundation.Attribute(
+        attrid=cluster.AttributeDefs.on_intensity.id,
+        value=foundation.TypeValue(type=0x29, value=t.int16s(50)),
+    )
+    attrs = [
+        *(action_attr(action) for action in actions_before),
+        intensity_attr,
+        *(action_attr(action) for action in actions_after),
+    ]
+
+    hdr = foundation.ZCLHeader.general(
+        1,
+        foundation.GeneralCommand.Report_Attributes,
+        SINOPE_MANUFACTURER_ID,
+        foundation.Direction.Server_to_Client,
+    )
+    hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
+    data = (
+        hdr.serialize()
+        + foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+        .schema(attrs)
+        .serialize()
+    )
+
+    with mock.patch.object(cluster, "send_default_rsp") as default_rsp_mock:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(data),
+            )
+        )
+
+    default_rsp_mock.assert_called_once_with(mock.ANY, foundation.Status.SUCCESS)
+
+    # a button event per action, in order, plus the attribute_updated event for
+    # on_intensity
+    expected_commands = {
+        ButtonAction.Pressed_on: COMMAND_M_INITIAL_PRESS,
+        ButtonAction.Released_on: COMMAND_M_SHORT_RELEASE,
+    }
+    button_events = [
+        c
+        for c in zha_listener.zha_send_event.mock_calls
+        if c.args[0] != "attribute_updated"
+    ]
+    assert button_events == [
+        mock.call(
+            expected_commands[action],
+            {
+                "attribute_id": 84,
+                "attribute_name": "action_report",
+                "button": TURN_ON,
+                "description": action.name,
+                "value": action.value,
+            },
+        )
+        for action in (*actions_before, *actions_after)
+    ]
+    assert len(zha_listener.zha_send_event.mock_calls) == len(button_events) + 1
+    assert cluster_listener.attribute_updates == [
+        (cluster.AttributeDefs.on_intensity.id, 50)
+    ]
+    assert cluster.get(cluster.AttributeDefs.on_intensity.name) == 50
