@@ -1,29 +1,20 @@
-"""Sonoff SNZB-06 - Zigbee presence sensor."""
+"""Sonoff SNZB-06P - Zigbee presence sensor."""
 
-from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import KeepAlive
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legacy import CustomDevice
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
-SONOFF_CLUSTER_FC57_ID = 0xFC57
 ATTR_SONOFF_ILLUMINATION_STATUS = 0x2001
 
 
 class IlluminationStatus(t.enum8):
-    """Last measureed state of illumination enum."""
+    """Last measured state of illumination enum."""
 
     Dark = 0x00
     Light = 0x01
@@ -34,57 +25,23 @@ class SonoffFC11Cluster(CustomCluster):
 
     cluster_id = SONOFF_CLUSTER_FC11_ID
     ep_attribute = "sonoff_manufacturer"
-    attributes = {
-        ATTR_SONOFF_ILLUMINATION_STATUS: ("last_illumination_state", IlluminationStatus)
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        last_illumination_state = ZCLAttributeDef(
+            id=ATTR_SONOFF_ILLUMINATION_STATUS,
+            type=IlluminationStatus,
+        )
 
 
-class SonoffPresenceSenorSNZB06P(CustomDevice):
-    """Sonoff human presence senor - model SNZB-06P."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1, profile=260, device_type=263
-        # device_version=1
-        # input_clusters=[0, 3, 1030, 1280, 64599, 64529]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            ("SONOFF", "SNZB-06P"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OccupancySensing.cluster_id,
-                    IasZone.cluster_id,
-                    SONOFF_CLUSTER_FC11_ID,
-                    SONOFF_CLUSTER_FC57_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OccupancySensing.cluster_id,
-                    SonoffFC11Cluster,
-                    SONOFF_CLUSTER_FC57_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder("SONOFF", "SNZB-06P")
+    .removes(IasZone.cluster_id)
+    .replaces(SonoffFC11Cluster)
+    # The device reads the coordinator's KeepAlive server but does not advertise the
+    # client side of the cluster. Unanswered reads make the device reboot itself
+    # roughly every 8 minutes, resetting its settings.
+    .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
+    .add_to_registry()
+)
