@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import contextlib
 import struct
 from unittest import mock
 
@@ -741,25 +742,34 @@ async def test_ts1201_slow_final_ack_is_not_a_timeout(zs06):
     control = zs06.endpoints[1].zosung_ircontrol
     transmit = zs06.endpoints[1].zosung_irtransmit
     ack_sent = asyncio.Event()
+    windows = []
+    real_timeout = asyncio.timeout
 
     async def request(*args, **kwargs):
         if kwargs["cluster"] == transmit.cluster_id and kwargs["command_id"] == 0x05:
             await ack_sent.wait()
         return foundation.Status.SUCCESS
 
+    def timeout(delay):
+        # The send's window gets no deadline; the test ends it on demand instead.
+        window = real_timeout(None)
+        windows.append(window)
+        return window
+
     zs06.endpoints[1].request.side_effect = request
-    with mock.patch.object(
-        type(transmit),
-        "send_timeout",
-        new_callable=mock.PropertyMock,
-        return_value=0.01,
-    ):
+    with mock.patch.object(zhaquirks.tuya.ts1201.asyncio, "timeout", timeout):
         task = await start_ir_send(control, code="AAAA")
         seq = last_announced_seq(transmit)
         await pull_ir_msg(transmit, seq, len(ir_msg("AAAA")))
         confirm_sent(transmit, seq)
+        await asyncio.sleep(0)
+
         # The window runs out while the 0x05 is still going out.
-        await asyncio.sleep(0.02)
+        loop = asyncio.get_running_loop()
+        for window in windows:
+            with contextlib.suppress(RuntimeError):  # already left
+                window.reschedule(loop.time())
+        await asyncio.sleep(0)
         assert not task.done()
         assert transmit.send_lock.locked()
 
