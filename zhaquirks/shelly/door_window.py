@@ -1,4 +1,4 @@
-"""Device handler for Shelly BLU DoorWindow ZB."""
+"""Device handler for Shelly BLU DoorWindow ZB and BLU DoorWindow Mini ZB."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
 
 (
     QuirkBuilder("Shelly", "BLU DoorWindow ZB")
+    .applies_to("Shelly", "BLU DoorWindow Mini ZB")
     .replaces(ShellyLightLevelCluster)
     .enum(
         attribute_name=ShellyLightLevelCluster.AttributeDefs.light_level.name,
