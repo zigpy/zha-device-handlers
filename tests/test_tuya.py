@@ -7,7 +7,6 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -19,21 +18,14 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks import LevelControlWithMoveDirection
-from zhaquirks.builder.metadata import EntityFilter
 from zhaquirks.const import (
     COMMAND,
-    COMMAND_MOVE_DOWN_RELEASE,
-    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
-    DIM_DOWN,
-    DIM_UP,
     DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
-    LONG_RELEASE,
     MODELS_INFO,
     OFF,
     ON,
