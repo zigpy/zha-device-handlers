@@ -155,6 +155,22 @@ class QuirkV2Device(Device):
 
         return entities
 
+    async def async_initialize(self, *args: Any, **kwargs: Any) -> None:
+        """Device initialize override."""
+        app = self.gateway.application_controller
+
+        # Subscribe to groups before we hand off to zigpy, in case downstream init
+        # requires group membership
+        for group_id in self._quirk_definition.multicast_groups:
+            try:
+                await app.subscribe_to_multicast_group(group_id)
+            except Exception:
+                self.warning(
+                    "Failed to subscribe to group 0x%04X", group_id, exc_info=True
+                )
+
+        await super().async_initialize(*args, **kwargs)
+
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
 

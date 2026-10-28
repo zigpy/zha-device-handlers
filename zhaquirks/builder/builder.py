@@ -368,6 +368,7 @@ class QuirkBuilder:
         self.device_automation_triggers_metadata: dict[
             tuple[str, str], dict[str, str]
         ] = {}
+        self.multicast_groups: list[int] = []
 
         current_frame: FrameType = inspect.currentframe()
         caller: FrameType = current_frame.f_back
@@ -956,6 +957,13 @@ class QuirkBuilder:
         self.device_automation_triggers_metadata.update(device_automation_triggers)
         return self
 
+    def subscribes_to_multicast_group(self, group_id: int) -> Self:
+        """Register a group ID the coordinator must subscribe to."""
+        if group_id not in self.multicast_groups:
+            self.multicast_groups.append(group_id)
+
+        return self
+
     def friendly_name(self, *, model: str, manufacturer: str) -> Self:
         """Rename the device."""
         self.friendly_name_metadata = FriendlyNameMetadata(
@@ -1190,6 +1198,7 @@ class QuirkBuilder:
             replaced_entities=tuple(self.replaced_entities),
             device_automation_triggers=self.device_automation_triggers_metadata,
             skip_configuration=self.skip_device_configuration,
+            multicast_groups=tuple(self.multicast_groups),
         )
 
         # Shared QuirkV2Device (or custom subclass) bound to this definition; no subclass minted.
