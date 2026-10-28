@@ -1895,6 +1895,60 @@ async def test_xiaomi_cluster_model_read_no_event(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
+    "quirk, default_reset_s",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 30),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, 60),
+    ),
+)
+async def test_aqara_motion_reset_after_detection_interval(
+    zigpy_device_from_quirk, quirk, default_reset_s
+):
+    """Test that the motion reset interval follows `detection_interval`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    # without a cached detection_interval, fall back to the static reset_s
+    assert opple_cluster.get(detection_interval) is None
+    assert motion_cluster.reset_after == default_reset_s
+
+    # once detection_interval is known, reset_after follows it
+    opple_cluster.update_attribute(detection_interval, 90)
+    assert motion_cluster.reset_after == 90
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,
+        zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04,
+    ),
+)
+async def test_aqara_motion_timer_uses_reset_after(zigpy_device_from_quirk, quirk):
+    """Test that the motion timer is scheduled with the current `reset_after`."""
+    detection_interval = zhaquirks.xiaomi.aqara.motion_ac02.DETECTION_INTERVAL
+    device = zigpy_device_from_quirk(quirk)
+
+    motion_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster.update_attribute(detection_interval, 90)
+
+    with mock.patch.object(motion_cluster._loop, "call_later") as call_later:
+        motion_cluster.motion_event()
+        assert call_later.mock_calls == [
+            mock.call(90, motion_cluster._turn_off),
+        ]
+
+        # a changed interval is picked up by the next event, no restart needed
+        opple_cluster.update_attribute(detection_interval, 15)
+        motion_cluster.motion_event()
+        assert call_later.mock_calls[-1] == mock.call(15, motion_cluster._turn_off)
+
+
+@pytest.mark.parametrize(
     "quirk, cluster_name, raw_report, expected_results",
     (
         (
