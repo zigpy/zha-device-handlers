@@ -10,7 +10,6 @@ from zhaquirks.builder import (
     PERCENTAGE,
     NumberDeviceClass,
     QuirkBuilder,
-    SensorDeviceClass,
     UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
@@ -47,10 +46,10 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RSM0147Z")
     .applies_to("Third Reality, Inc", "3RSM0347Z")
     .replaces(ThirdRealitySoilMoistureCluster)
-    .change_entity_metadata(
+    .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=RelativeHumidity.cluster_id,
-        new_device_class=SensorDeviceClass.MOISTURE,
+        function=lambda entity: entity.__class__.__name__ == "Humidity",
     )
     .number(
         attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_offset_celsius.name,
