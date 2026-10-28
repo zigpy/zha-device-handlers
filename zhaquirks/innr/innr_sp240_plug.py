@@ -1,4 +1,8 @@
-"""Innr SP 240 plug."""
+"""Innr SP 240 and SP 242 plugs.
+
+The SP 242 is the UK version of the SP 240, with the same clusters and firmware
+versions.
+"""
 
 from zigpy.zcl import ReportingConfig
 from zigpy.zcl.clusters.general import LevelControl
@@ -61,6 +65,7 @@ class ElectricalMeasurementClusterSP240(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="innr", model="SP 240")
+    .applies_to(manufacturer="innr", model="SP 242")
     # Firmware version 421410437 fixed the divisor and multiplier bug,
     # so only apply this quirk to versions older than that (max_version is exclusive).
     .firmware_version_filter(max_version=0x191B3685, allow_missing=False)
@@ -74,6 +79,7 @@ class ElectricalMeasurementClusterSP240(CustomCluster, ElectricalMeasurement):
 
 (
     QuirkBuilder(manufacturer="innr", model="SP 240")
+    .applies_to(manufacturer="innr", model="SP 242")
     # Firmware version 421410437 fixed the divisor and multiplier bug,
     # so apply this quirk to that and newer versions to force correct new values,
     # in case the old quirk persisted the old values into the database.

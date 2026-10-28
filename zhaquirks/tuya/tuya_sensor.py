@@ -11,7 +11,6 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
-    SensorDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -41,9 +40,11 @@ class TuyaSoilWaterWarning(t.enum8):
 class TuyaSoilLightLevel(t.enum8):
     """Tuya soil sensor light level enum."""
 
-    Low = 0x00
+    Lowest = 0x00
+    Low = 0x01
     Normal = 0x02
-    High = 0x04
+    High = 0x03
+    Highest = 0x04
 
 
 class TuyaNousTempHumiAlarm(t.enum8):
@@ -147,7 +148,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=17,
         attribute_name="temperature_report_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=5,
         max_value=120,
@@ -160,7 +161,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=18,
         attribute_name="humidity_report_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=5,
         max_value=120,

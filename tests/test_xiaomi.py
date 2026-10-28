@@ -1,6 +1,7 @@
 """Tests for xiaomi."""
 
 import asyncio
+import itertools
 import logging
 import math
 from typing import Any
@@ -105,6 +106,7 @@ import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.magnet_aq2
+import zhaquirks.xiaomi.aqara.motion_ac01
 import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
@@ -207,6 +209,76 @@ async def test_xiaomi_motion(zigpy_device_from_quirk, quirk):
     assert len(occupancy_listener.attribute_updates) == 2
     assert occupancy_listener.attribute_updates[1][0] == 0x0000
     assert occupancy_listener.attribute_updates[1][1] == 0
+
+
+@pytest.mark.parametrize("presence", [0, 1, 0xFF, 2, None])
+@pytest.mark.parametrize("initial", [0, 1])
+async def test_aqara_fp1_heartbeat(zigpy_device_from_quirk, presence, initial):
+    """Reconcile FP1 occupancy from heartbeat reports without replaying events."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.motion_ac01.AqaraLumiMotionAc01
+    )
+    opple = device.endpoints[1].opple_cluster
+    occupancy = device.endpoints[1].occupancy
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, initial)
+
+    # Heartbeat captured from an FP1 running firmware 0x36. Tag 102 is
+    # sensitivity on this firmware and must not be emitted as a presence event.
+    payload = bytes.fromhex(
+        "0328190521cf00082136010a21348e0c2014102001122000"
+        "6620026720006820006920016a20016b2003"
+    )
+    if presence is not None:
+        payload += bytes([101, 0x20, presence])
+    report = (
+        b"\x1c\x34\x12\x01\x0a"
+        + t.uint16_t(XIAOMI_AQARA_ATTRIBUTE_E1).serialize()
+        + b"\x41"
+        + t.LVBytes(payload).serialize()
+    )
+    expected = presence if presence in (0, 1) else initial
+    listener = mock.Mock()
+    opple.add_listener(listener)
+    for tsn in (1, 2):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=opple.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(report[:3] + bytes([tsn]) + report[4:]),
+            )
+        )
+        assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == expected
+    listener.zha_send_event.assert_not_called()
+
+    assert (
+        device.endpoints[1].device_temperature.get(
+            DeviceTemperature.AttributeDefs.current_temperature.id
+        )
+        == 2500
+    )
+
+
+async def test_aqara_fp1_presence_reports(zigpy_device_from_quirk):
+    """Keep independent presence reports and Leave events working as before."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.motion_ac01.AqaraLumiMotionAc01
+    )
+    opple = device.endpoints[1].opple_cluster
+    occupancy = device.endpoints[1].occupancy
+
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 1)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    listener = mock.Mock()
+    opple.add_listener(listener)
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE_EVENT, 1)
+    listener.zha_send_event.assert_called_once_with("Leave", {})
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 0xFF)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 1
+    opple.update_attribute(zhaquirks.xiaomi.aqara.motion_ac01.PRESENCE, 0)
+    assert occupancy.get(zhaquirks.xiaomi.aqara.motion_ac01.OCCUPANCY) == 0
 
 
 @pytest.fixture
@@ -2953,6 +3025,69 @@ async def test_xiaomi_e1_roller_position_updates(
         WindowCovering.AttributeDefs.current_position_lift_percentage.id,
         75,
     )
+
+
+async def test_xiaomi_e1_roller_device_lift_position_reports_ignored(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller ignores lift position reports sent by the device itself."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    analog_cluster = device.endpoints[1].analog_output
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    lift_attr = WindowCovering.AttributeDefs.current_position_lift_percentage
+
+    tsn = itertools.count(1)
+
+    def report(cluster, attr_id: int, data_type: DataTypeId, value) -> None:
+        """Send an attribute report from the device to the given cluster."""
+        hdr = foundation.ZCLHeader.general(
+            next(tsn),
+            foundation.GeneralCommand.Report_Attributes,
+            direction=foundation.Direction.Server_to_Client,
+        ).serialize()
+        cmd = (
+            foundation.GENERAL_COMMANDS[foundation.GeneralCommand.Report_Attributes]
+            .schema([Attribute(attrid=attr_id, value=TypeValue(data_type, value))])
+            .serialize()
+        )
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=zha.PROFILE_ID,
+                cluster_id=cluster.cluster_id,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(hdr + cmd),
+            )
+        )
+
+    # the position is derived from the AnalogOutput `present_value`: 40% open
+    report(
+        analog_cluster,
+        AnalogOutput.AttributeDefs.present_value.id,
+        DataTypeId.single,
+        t.Single(40.0),
+    )
+    assert window_covering_cluster.get(lift_attr.name) == 60
+    assert window_covering_listener.attribute_updates == [(lift_attr.id, 60)]
+
+    # the device also reports the lift percentage itself, with a value that does not
+    # track the actual position: it must not overwrite the AnalogOutput based position,
+    # and it must not reach the cover entity as an attribute update either
+    report(window_covering_cluster, lift_attr.id, DataTypeId.uint8, t.uint8_t(0))
+    assert window_covering_cluster.get(lift_attr.name) == 60
+    assert window_covering_listener.attribute_updates == [(lift_attr.id, 60)]
+
+    # other attributes reported by the device are still handled normally
+    config_status_attr = WindowCovering.AttributeDefs.config_status
+    report(
+        window_covering_cluster,
+        config_status_attr.id,
+        DataTypeId.map8,
+        t.bitmap8(0b0000_1011),
+    )
+    assert window_covering_cluster.get(config_status_attr.name) == 0b0000_1011
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])

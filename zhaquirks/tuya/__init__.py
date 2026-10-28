@@ -1724,6 +1724,12 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle get_data response (report)."""
         dp_error = False
         for record in command.datapoints:
+            self.debug(
+                "Received datapoint %s (%s, raw %s)",
+                record.dp,
+                record.data.dp_type,
+                record.data.raw,
+            )
             try:
                 dp_handler = self.data_point_handlers[record.dp]
                 getattr(self, dp_handler)(record)
@@ -1731,15 +1737,16 @@ class TuyaNewManufCluster(CustomCluster):
                 self.debug("No datapoint handler for %s", record)
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-        _LOGGER.debug(
-            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
-            self.endpoint.device.nwk,
-            self.endpoint.endpoint_id,
-            self.cluster_id,
-            record.data.payload,
-            record.dp,
-        )
+            except ValueError as exc:
+                # Some devices send malformed datapoints, e.g. a VALUE with 1 byte.
+                # Skip them, so the command is still acknowledged.
+                self.warning(
+                    "Ignoring invalid datapoint %s (%s, raw %s): %s",
+                    record.dp,
+                    record.data.dp_type,
+                    record.data.raw.hex(),
+                    exc,
+                )
 
         return (
             foundation.Status.SUCCESS
