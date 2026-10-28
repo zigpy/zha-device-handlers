@@ -50,7 +50,7 @@ from zhaquirks.ctm import CTM_MANUF_NAME
         endpoint_id=2,
         entity_type=EntityType.DIAGNOSTIC,
         device_class=BinarySensorDeviceClass.POWER,
-        attribute_converter=lambda value: not value & IasZone.ZoneStatus.AC_mains,
+        attribute_converter=lambda value: not (value & IasZone.ZoneStatus.AC_mains),
         unique_id_suffix="mains_power",
         fallback_name="Power",
     )
