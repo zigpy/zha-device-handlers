@@ -1,0 +1,75 @@
+from zigpy.quirks.v2 import EntityType
+import zigpy.types as t
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya import TuyaPowerConfigurationCluster4AA
+from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.const import UnitOfTime
+
+class RestoreMode(t.enum8):
+    """Restore Mode Enum."""
+    Off = 0x00
+    On = 0x01
+    Restore = 0x02
+
+class LightMode(t.enum8):
+    """Light Mode Enum."""
+    none = 0x00
+    relay = 0x01
+    pos = 0x02
+
+(
+    TuyaQuirkBuilder("_TZE284_z5jz7wpo", "TS0601")
+    # Add a switch based on Data Point 1 (e.g., valve mode)
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="fan_on_off",
+        entity_type=EntityType.STANDARD,
+        translation_key="fan_on_off",
+        fallback_name="Fan On/Off",
+    )
+
+    .tuya_number(
+        dp_id=2,
+        attribute_name="countdown_hours",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.HOURS,
+        min_value=0,
+        max_value=24,
+        step=0.1,
+        translation_key="countdown_hours",
+        fallback_name="Run Time Countdown",
+    )
+
+    .tuya_number(
+        dp_id=3,
+        attribute_name="speed",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=5,
+        step=1,
+        translation_key="speed",
+        fallback_name="Fan Speed",
+    )
+
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="power_on_behavior",
+        enum_class=RestoreMode,
+        translation_key="power_on_behavior",
+        fallback_name="Power On Behavior",
+        entity_type=EntityType.STANDARD,
+    )
+
+    .tuya_enum(
+        dp_id=12,
+        attribute_name="light_mode",
+        enum_class=LightMode,
+        translation_key="light_mode",
+        fallback_name="Light Mode",
+        entity_type=EntityType.STANDARD,
+    )
+
+    .skip_configuration()
+    .add_to_registry()
+)
