@@ -1882,7 +1882,7 @@ async def test_ts0601_fan_light_write_custom_fan_speed(
         assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 3
         assert mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload == tuya_speed
         assert mock_cmd.call_args_list[1][0][1].datapoints[0].dp == 1
-        assert mock_cmd.call_args_list[1][0][1].datapoints[0].data.payload is True
+        assert mock_cmd.call_args_list[1][0][1].datapoints[0].data.payload == t.Bool.true
         assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == expected_fan_mode
 
 
@@ -1911,7 +1911,7 @@ async def test_ts0601_fan_light_write_custom_fan_switch(
         assert mock_cmd.call_count == 1
         assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 1
         assert (
-            mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload is switch_state
+            mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload == switch_state
         )
         assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == expected_fan_mode
 
@@ -1942,7 +1942,7 @@ async def test_ts0601_fan_light_dp_reports(zigpy_device_from_v2_quirk):
         )
     )
     assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == Fan.FanMode.High
-    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) is True
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) == t.Bool.true
     assert fan_cluster.get(fan_cluster.AttributeDefs.fan_speed.id) == speed_enum.high
 
     # Device reports DP 1 = False (Off)
@@ -1954,7 +1954,7 @@ async def test_ts0601_fan_light_dp_reports(zigpy_device_from_v2_quirk):
         )
     )
     assert fan_cluster.get(Fan.AttributeDefs.fan_mode.id) == Fan.FanMode.Off
-    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) is False
+    assert fan_cluster.get(fan_cluster.AttributeDefs.fan_switch.id) == t.Bool.false
 
     # Device reports DP 3 = Low while fan_switch is False (fan_mode remains Off)
     tuya_cluster.handle_get_data(
@@ -1975,14 +1975,14 @@ async def test_ts0601_fan_light_dp_reports(zigpy_device_from_v2_quirk):
             datapoints=[TuyaDatapointData(dp=5, data=TuyaData(True))],
         )
     )
-    assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) is True
+    assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) == t.Bool.true
 
     with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
         await on_off_cluster.command(OnOff.ServerCommandDefs.off.id)
         assert mock_cmd.call_count == 1
         assert mock_cmd.call_args_list[0][0][1].datapoints[0].dp == 5
-        assert mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload is False
-        assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) is False
+        assert mock_cmd.call_args_list[0][0][1].datapoints[0].data.payload == t.Bool.false
+        assert on_off_cluster.get(OnOff.AttributeDefs.on_off.id) == t.Bool.false
 
 
 @pytest.mark.parametrize(
