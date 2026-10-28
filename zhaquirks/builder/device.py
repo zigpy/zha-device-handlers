@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 # loaded while `zha.zigbee.device` is only partially initialized.
 from zha.application import Platform, discovery  # noqa: F401
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
-from zha.zigbee.device import ZigbeeDevice
+from zha.zigbee.device import BaseDevice, ZigbeeDevice
 import zigpy.device
 import zigpy.zcl
 from zigpy.zcl import ClusterType
@@ -25,6 +25,46 @@ from zhaquirks.builder.metadata import AddedEntityMetadata, QuirkDefinition
 
 if TYPE_CHECKING:
     from zha.application.gateway import Gateway
+
+
+def create_added_entities(
+    device: BaseDevice, added_entities: Iterable[AddedEntityMetadata]
+) -> Iterator[PlatformEntity]:
+    """Create the quirk's added entities for the device."""
+    # An exception would end this generator, so one failing entity is skipped
+    for added in added_entities:
+        try:
+            entity = _create_added_entity(device, added)
+        except Exception:  # noqa: BLE001
+            device.error("Failed to create added entity %r", added, exc_info=True)
+            continue
+
+        yield entity
+
+
+def _create_added_entity(
+    device: BaseDevice, added: AddedEntityMetadata
+) -> PlatformEntity:
+    if not issubclass(added.entity_cls, ZclPlatformEntity):
+        return added.entity_cls(device, unique_id=str(device.ieee), **added.kwargs)
+
+    # Only Zigbee devices have endpoints and clusters
+    assert isinstance(device, ZigbeeDevice)
+
+    endpoint = device.endpoints[added.endpoint_id]
+    clusters = (
+        endpoint.zigpy_endpoint.in_clusters
+        if added.cluster_type is ClusterType.Server
+        else endpoint.zigpy_endpoint.out_clusters
+    )
+
+    return added.entity_cls(
+        endpoint=endpoint,
+        device=device,
+        cluster=clusters[added.cluster_id],
+        unique_id=quirk_unique_id_base(device, endpoint),
+        **added.kwargs,
+    )
 
 
 class QuirkV2Device(ZigbeeDevice):
@@ -60,16 +100,7 @@ class QuirkV2Device(ZigbeeDevice):
 
         yield from self._replace_entities(entities)
         yield from discover_quirks_v2_entities(self)
-
-        # An exception would end this generator, so one failing entity is skipped
-        for added in self._quirk_definition.added_entities:
-            try:
-                entity = self._create_added_entity(added)
-            except Exception:  # noqa: BLE001
-                self.error("Failed to create added entity %r", added, exc_info=True)
-                continue
-
-            yield entity
+        yield from create_added_entities(self, self._quirk_definition.added_entities)
 
     def _replace_entities(self, entities: list[PlatformEntity]) -> list[PlatformEntity]:
         """Replace the default entities matched by the quirk's replacements."""
@@ -123,25 +154,6 @@ class QuirkV2Device(ZigbeeDevice):
             entities[index] = new_entity
 
         return entities
-
-    def _create_added_entity(self, added: AddedEntityMetadata) -> PlatformEntity:
-        if not issubclass(added.entity_cls, ZclPlatformEntity):
-            return added.entity_cls(self, unique_id=str(self.ieee), **added.kwargs)
-
-        endpoint = self.endpoints[added.endpoint_id]
-        clusters = (
-            endpoint.zigpy_endpoint.in_clusters
-            if added.cluster_type is ClusterType.Server
-            else endpoint.zigpy_endpoint.out_clusters
-        )
-
-        return added.entity_cls(
-            endpoint=endpoint,
-            device=self,
-            cluster=clusters[added.cluster_id],
-            unique_id=quirk_unique_id_base(self, endpoint),
-            **added.kwargs,
-        )
 
     def _quirk_exposes_features(self) -> set[str]:
         return {f.feature for f in self._quirk_definition.exposes_features}
