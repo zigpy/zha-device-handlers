@@ -4,10 +4,7 @@ from unittest import mock
 
 import pytest
 
-from zhaquirks.tuya.moes_svl01_z import (
-    TUYA_QUERY_DATA,
-    PresenceSwitchCluster,
-)
+from zhaquirks.tuya.moes_svl01_z import TUYA_QUERY_DATA, PresenceSwitchCluster
 
 
 @pytest.mark.asyncio
