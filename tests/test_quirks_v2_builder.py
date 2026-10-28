@@ -277,7 +277,7 @@ async def test_quirks_v2_with_custom_device_class_raises(device_mock):
     registry = DeviceRegistry()
 
     class CustomTestDevice:
-        """Neither a ZHA `Device` nor a zigpy `BaseCustomDevice`."""
+        """Neither a ZHA `ZigbeeDevice` nor a zigpy `BaseCustomDevice`."""
 
     with pytest.raises(
         TypeError,
