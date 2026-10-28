@@ -1606,6 +1606,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3000_pwgcnkrh"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3400_leyjhapk"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB, "_TZ3000_fa9mlvja"),
+        (
+            zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB,
+            "another random manufacturer",
+        ),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3000_owgcnkrh"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3400_keyjhapk"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_some_random_manuf"),
