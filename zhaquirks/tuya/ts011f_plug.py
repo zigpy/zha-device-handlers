@@ -1531,7 +1531,12 @@ class Plug_2AC_var03(CustomDevice):
 
 
 class Plug_CB_Metering(EnchantedDevice):
-    """Circuit breaker with monitoring, e.g. Tongou TO-Q-SY1-JZT. First one using this definition was _TZ3000_qeuvnohg."""
+    """Circuit breaker with monitoring.
+
+    Written for the Tongou TO-Q-SY1-JZT (_TZ3000_qeuvnohg), which now has its own
+    v2 quirk at the end of this file that keeps TemperatureMeasurement so its reports
+    get acknowledged. Other TS011F breakers with this signature still use this one.
+    """
 
     quirk_id = TUYA_PLUG_ONOFF
 
