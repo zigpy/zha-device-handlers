@@ -2,17 +2,21 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import (
+import zigpy.types as t
+from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.builder import (
     PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    SensorDeviceClass,
+    SensorStateClass,
     UnitOfElectricPotential,
     UnitOfTime,
     UnitOfVolume,
 )
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-import zigpy.types as t
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
@@ -263,7 +267,7 @@ gx02_base_quirk = (
         dp_id=114,
         attribute_name="irrigation_duration",
         type=t.uint32_t,
-        converter=lambda x: giex_string_to_td(x),
+        converter=giex_string_to_td,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
@@ -274,7 +278,7 @@ gx02_base_quirk = (
         dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_dt(x),
+        converter=giex_string_to_dt,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation start time",
@@ -283,7 +287,7 @@ gx02_base_quirk = (
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_dt(x),
+        converter=giex_string_to_dt,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation end time",
@@ -384,7 +388,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=13,
         attribute_name="valve_countdown_1",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=0,
         max_value=1440,
@@ -396,7 +400,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=14,
         attribute_name="valve_countdown_2",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=0,
         max_value=1440,
@@ -521,7 +525,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=5,
         attribute_name="valve_countdown",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=240,
@@ -594,7 +598,7 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="quantitative_watering",
         type=t.uint16_t,
         unit=UnitOfVolume.LITERS,
-        device_class=SensorDeviceClass.VOLUME,
+        device_class=NumberDeviceClass.VOLUME,
         min_value=0,
         max_value=10000,
         step=1,
@@ -637,7 +641,6 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="single_watering_amount",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLUME,
         unit=UnitOfVolume.LITERS,
         translation_key="single_watering_amount",
         fallback_name="Single watering amount",

@@ -4,18 +4,7 @@ import asyncio
 import logging
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    DEGREE,
-    PERCENTAGE,
-    EntityPlatform,
-    EntityType,
-    UnitOfLength,
-    UnitOfPower,
-    UnitOfTime,
-)
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zha.quirks import SE_POLL_SUMMATION
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReportedEvent,
@@ -32,7 +21,18 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.quirk_ids import SE_POLL_SUMMATION
+from zhaquirks.builder import (
+    DEGREE,
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfLength,
+    UnitOfPower,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.ubisys import UbisysCluster, UbisysInputConfigCluster
 
 _LOGGER = logging.getLogger(__name__)

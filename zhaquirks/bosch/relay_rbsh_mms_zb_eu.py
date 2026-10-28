@@ -3,13 +3,12 @@
 from typing import Final
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.bosch import BOSCH
+from zhaquirks.builder import QuirkBuilder, UnitOfTime
 
 
 class BoschDeviceMode(t.enum8):

@@ -1,7 +1,6 @@
 """Tuya based cover and blinds."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
@@ -14,6 +13,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 TUYA_MANUFACTURER_GARAGE = "tuya_manufacturer_garage"
