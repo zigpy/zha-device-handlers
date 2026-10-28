@@ -139,8 +139,14 @@ class XiaomiSmokePowerConfiguration(PowerConfigurationCluster):
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Handle a battery voltage from a Xiaomi attribute report."""
-        # updating the voltage also updates the derived percentage
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
+        # The base class would derive the percentage from the rounded voltage, so
+        # derive it from the exact millivolts instead, as before.
+        base = super(PowerConfigurationCluster, self)
+        base._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
+        base._update_attribute(
+            self.BATTERY_PERCENTAGE_REMAINING,
+            self._calculate_battery_percentage(voltage_mv / 100),
+        )
 
     def battery_percent_reported(self, battery_percent: int) -> None:
         """Handle a battery percentage from a Xiaomi attribute report."""

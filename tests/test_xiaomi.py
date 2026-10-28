@@ -1549,6 +1549,12 @@ async def test_aqara_smoke_sensor_battery(zigpy_device_from_quirk):
     assert len(power_listener.attribute_updates) == 5
     assert power_listener.attribute_updates[4] == (zcl_power_percent_id, 100)
 
+    # the blob percentage follows the exact millivolts, not the rounded voltage
+    power_cluster.battery_reported(2486)
+    assert len(power_listener.attribute_updates) == 7
+    assert power_listener.attribute_updates[5] == (zcl_power_voltage_id, 24.9)
+    assert power_listener.attribute_updates[6] == (zcl_power_percent_id, 4)
+
     # battery size and quantity are still provided by the quirk
     assert (
         power_cluster.get(PowerConfiguration.AttributeDefs.battery_quantity.name) == 1
