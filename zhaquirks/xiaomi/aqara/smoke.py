@@ -113,6 +113,36 @@ class SmokeIasZone(CustomCluster, IasZone):
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Fire_Sensor
     }
 
+    async def read_attributes(self, attributes, *args, **kwargs):
+        """Read attributes, serving `zone_status` from the cache.
+
+        The device answers `zone_status` reads without the alarm bit even during
+        an alarm, as it only reports smoke through the Opple cluster. A read from
+        the device (e.g. when ZHA re-initializes a device that became available
+        again) would clear an active alarm, so `zone_status` is never read from
+        the device, as was the case while this was a `LocalDataCluster`.
+        """
+        zone_status = [attr for attr in attributes if self._is_zone_status(attr)]
+        others = [attr for attr in attributes if attr not in zone_status]
+
+        success, failure = {}, {}
+        if others:
+            success, failure = await super().read_attributes(others, *args, **kwargs)
+        if zone_status:
+            cached_success, cached_failure = await super().read_attributes(
+                zone_status, only_cache=True
+            )
+            success.update(cached_success)
+            failure.update(cached_failure)
+        return success, failure
+
+    def _is_zone_status(self, attr) -> bool:
+        """Return whether an attribute ID, name or definition is `zone_status`."""
+        try:
+            return self.find_attribute(attr).id == ZONE_STATUS
+        except KeyError:
+            return False
+
 
 class XiaomiSmokePowerConfiguration(PowerConfigurationCluster):
     """Power configuration cluster of the smoke detector.

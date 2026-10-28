@@ -1517,6 +1517,51 @@ async def test_aqara_smoke_sensor_ias_zone_cluster(zigpy_device_from_quirk):
     )
 
 
+async def test_aqara_smoke_sensor_zone_status_read_from_cache(zigpy_device_from_quirk):
+    """Test that zone_status reads never reach the device and can't clear an alarm."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    ias_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    zone_status = IasZone.AttributeDefs.zone_status
+    zone_state = IasZone.AttributeDefs.zone_state
+
+    # an alarm reported by the Opple cluster's smoke attribute
+    opple_cluster.update_attribute(0x013A, 1)
+    assert ias_cluster.get(zone_status.id) == 1
+
+    # the device itself would answer zone_status without the alarm bit
+    with mock.patch.object(
+        ias_cluster, "read_attributes_raw", mock.AsyncMock()
+    ) as read_mock:
+        read_mock.return_value = (
+            [
+                foundation.ReadAttributeRecord(
+                    zone_state.id,
+                    foundation.Status.SUCCESS,
+                    TypeValue(type=DataTypeId.enum8, value=1),
+                )
+            ],
+        )
+        for attr in (zone_status.id, zone_status.name, zone_status):
+            success, failure = await ias_cluster.read_attributes([attr])
+            assert success == {attr: 1}
+            assert failure == {}
+        assert read_mock.call_count == 0
+
+        # other attributes are still read from the device
+        success, failure = await ias_cluster.read_attributes(
+            [zone_status.name, zone_state.name]
+        )
+        assert success == {zone_status.name: 1, zone_state.name: 1}
+        assert failure == {}
+        assert read_mock.call_count == 1
+        assert read_mock.call_args[0][0] == [zone_state.id]
+
+    # the alarm is still active
+    assert ias_cluster.get(zone_status.id) == 1
+
+
 async def test_aqara_smoke_sensor_battery(zigpy_device_from_quirk):
     """Test both battery paths of the Aqara smoke sensor."""
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
