@@ -1,37 +1,14 @@
-"""MOES SVL01-Z DP refresh after initialization/re-interview."""
+"""MOES SVL01-Z mmWave Radar Detection Smart Wall Light Switch."""
 
-import asyncio
-
-from zha.application import EntityType
-from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
-
-# =========================================================
-# TUYA MCU
-# =========================================================
-
-TUYA_QUERY_DATA = 0x03
-
-
-# =========================================================
-# ENUMS
-# =========================================================
-
-
-class PowerOnBehavior(t.enum8):
-    """Power-on behavior."""
-
-    off = 0x00
-    on = 0x01
-    restore = 0x02
+from zhaquirks.builder import NumberDeviceClass
+from zhaquirks.tuya import PowerOnState
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class AutoOnMode(t.enum8):
-    """Auto-on mode."""
+    """Automatic-on channel selection."""
 
     off = 0x00
     all = 0x01
@@ -44,7 +21,7 @@ class AutoOnMode(t.enum8):
 
 
 class AutoOffMode(t.enum8):
-    """Auto-off mode."""
+    """Automatic-off channel selection."""
 
     off = 0x00
     all = 0x01
@@ -56,242 +33,66 @@ class AutoOffMode(t.enum8):
     ch1_and_ch3 = 0x07
 
 
-# =========================================================
-# TUYA MCU CLUSTER
-# =========================================================
-
-
-class PresenceSwitchCluster(TuyaMCUCluster):
-    """MOES SVL01-Z Tuya MCU cluster."""
-
-    def __init__(self, endpoint, is_server=True):
-        """Initialize the cluster and schedule a delayed DP refresh."""
-        super().__init__(endpoint, is_server=is_server)
-
-        self.create_catching_task(
-            self._delayed_query_data(),
-            name="moes_tuya_query_data",
-        )
-
-    async def _delayed_query_data(self):
-        """Request the current DP values from the Tuya MCU."""
-        await asyncio.sleep(2)
-
-        if self.endpoint.in_clusters.get(self.cluster_id) is not self:
-            self.debug("MOES SVL01-Z: skipping query_data for stale cluster")
-            return
-
-        await self.command(TUYA_QUERY_DATA)
-
-        self.debug("MOES SVL01-Z: Tuya query_data (0x03) sent successfully")
-
-    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
-        """MOES-specific DP attributes."""
-
-        # DP101 - Presence
-        presence = ZCLAttributeDef(
-            id=0x0065,
-            type=t.Bool,
-            access="rp",
-            is_manufacturer_specific=True,
-        )
-
-        # DP102 - Sensitivity
-        sensitivity = ZCLAttributeDef(
-            id=0x0066,
-            type=t.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-        # DP103 - Trigger Hold
-        trigger_hold = ZCLAttributeDef(
-            id=0x0067,
-            type=t.uint16_t,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-        # DP14 - Power-on behavior
-        power_outage_memory = ZCLAttributeDef(
-            id=0x000E,
-            type=PowerOnBehavior,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-        # DP16 - Backlight
-        backlight = ZCLAttributeDef(
-            id=0x0010,
-            type=t.Bool,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-        # DP104 - Auto On
-        auto_on = ZCLAttributeDef(
-            id=0x0068,
-            type=AutoOnMode,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-        # DP105 - Auto Off
-        auto_off = ZCLAttributeDef(
-            id=0x0069,
-            type=AutoOffMode,
-            access="rw",
-            is_manufacturer_specific=True,
-        )
-
-    # =====================================================
-    # DP → ATTRIBUTE
-    # =====================================================
-
-    dp_to_attribute = {
-        101: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "presence",
-            converter=bool,
-        ),
-        102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "sensitivity",
-        ),
-        103: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "trigger_hold",
-        ),
-        14: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "power_outage_memory",
-            converter=PowerOnBehavior,
-        ),
-        16: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "backlight",
-            converter=bool,
-        ),
-        104: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "auto_on",
-            converter=AutoOnMode,
-        ),
-        105: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "auto_off",
-            converter=AutoOffMode,
-        ),
-    }
-
-    # =====================================================
-    # DP HANDLERS
-    # =====================================================
-
-    data_point_handlers = {
-        14: "_dp_2_attr_update",
-        16: "_dp_2_attr_update",
-        101: "_dp_2_attr_update",
-        102: "_dp_2_attr_update",
-        103: "_dp_2_attr_update",
-        104: "_dp_2_attr_update",
-        105: "_dp_2_attr_update",
-    }
-
-
-# =========================================================
-# QUIRK
-# =========================================================
-
-
 (
-    QuirkBuilder("_TZE200_llvwkkde", "TS0601")
-    .replaces(PresenceSwitchCluster)
-    .skip_configuration()
-    # =====================================================
-    # PRESENCE
-    # =====================================================
-    .binary_sensor(
-        PresenceSwitchCluster.AttributeDefs.presence.name,
-        PresenceSwitchCluster.cluster_id,
-        endpoint_id=1,
-        device_class=BinarySensorDeviceClass.OCCUPANCY,
-        entity_type=EntityType.STANDARD,
-        fallback_name="Presence",
+    TuyaQuirkBuilder("_TZE200_llvwkkde", "TS0601")
+    .tuya_enchantment(data_query_spell=True)
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="presence",
+        device_class="occupancy",
+        entity_type="standard",
         translation_key="presence",
+        fallback_name="Presence",
     )
-    # =====================================================
-    # SENSITIVITY
-    # =====================================================
-    .number(
-        PresenceSwitchCluster.AttributeDefs.sensitivity.name,
-        PresenceSwitchCluster.cluster_id,
+    .tuya_number(
+        dp_id=102,
+        type=t.uint8_t,
+        attribute_name="sensitivity",
         min_value=0,
         max_value=19,
         step=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Sensitivity",
         translation_key="sensitivity",
+        fallback_name="Sensitivity",
     )
-    # =====================================================
-    # TRIGGER HOLD
-    # =====================================================
-    .number(
-        PresenceSwitchCluster.AttributeDefs.trigger_hold.name,
-        PresenceSwitchCluster.cluster_id,
+    .tuya_number(
+        dp_id=103,
+        type=t.uint16_t,
+        attribute_name="trigger_hold",
         min_value=5,
         max_value=28800,
         step=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Trigger Hold",
+        unit="s",
+        device_class=NumberDeviceClass.DURATION,
         translation_key="trigger_hold",
+        fallback_name="Trigger hold",
     )
-    # =====================================================
-    # POWER-ON BEHAVIOUR
-    # =====================================================
-    .enum(
-        PresenceSwitchCluster.AttributeDefs.power_outage_memory.name,
-        PowerOnBehavior,
-        PresenceSwitchCluster.cluster_id,
-        endpoint_id=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Power-on Behaviour",
-        translation_key="power_on_behavior",
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="power_on_state",
+        enum_class=PowerOnState,
+        translation_key="power_on_state",
+        fallback_name="Power on state",
     )
-    # =====================================================
-    # BACKLIGHT
-    # =====================================================
-    .switch(
-        PresenceSwitchCluster.AttributeDefs.backlight.name,
-        PresenceSwitchCluster.cluster_id,
-        endpoint_id=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Backlight",
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="backlight",
         translation_key="backlight",
+        fallback_name="Backlight",
     )
-    # =====================================================
-    # AUTO ON
-    # =====================================================
-    .enum(
-        PresenceSwitchCluster.AttributeDefs.auto_on.name,
-        AutoOnMode,
-        PresenceSwitchCluster.cluster_id,
-        endpoint_id=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Auto On",
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="auto_on",
+        enum_class=AutoOnMode,
         translation_key="auto_on",
+        fallback_name="Auto on",
     )
-    # =====================================================
-    # AUTO OFF
-    # =====================================================
-    .enum(
-        PresenceSwitchCluster.AttributeDefs.auto_off.name,
-        AutoOffMode,
-        PresenceSwitchCluster.cluster_id,
-        endpoint_id=1,
-        entity_type=EntityType.CONFIG,
-        fallback_name="Auto Off",
+    .tuya_enum(
+        dp_id=105,
+        attribute_name="auto_off",
+        enum_class=AutoOffMode,
         translation_key="auto_off",
+        fallback_name="Auto off",
     )
+    .skip_configuration()
     .add_to_registry()
 )
