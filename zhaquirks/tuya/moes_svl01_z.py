@@ -60,7 +60,6 @@ class AutoOffMode(t.enum8):
 # TUYA MCU CLUSTER
 # =========================================================
 
-
 class PresenceSwitchCluster(TuyaMCUCluster):
     """MOES SVL01-Z Tuya MCU cluster."""
 
@@ -68,10 +67,7 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         """Initialize the cluster and schedule a delayed DP refresh."""
         super().__init__(endpoint, is_server=is_server)
 
-        # Request the current DP values after a short delay.
-        # The delay gives the Tuya MCU time to complete initialization
-        # before the refresh is sent.
-        self.endpoint.device.create_task(
+        self.create_catching_task(
             self._delayed_query_data(),
             name="moes_tuya_query_data",
         )
@@ -80,16 +76,17 @@ class PresenceSwitchCluster(TuyaMCUCluster):
         """Request the current DP values from the Tuya MCU."""
         await asyncio.sleep(2)
 
-        try:
-            await self.command(TUYA_QUERY_DATA)
-
-            self.debug("MOES SVL01-Z: Tuya query_data (0x03) sent successfully")
-
-        except Exception:
+        if self.endpoint.in_clusters.get(self.cluster_id) is not self:
             self.debug(
-                "MOES SVL01-Z: query_data (0x03) failed",
-                exc_info=True,
+                "MOES SVL01-Z: skipping query_data for stale cluster"
             )
+            return
+
+        await self.command(TUYA_QUERY_DATA)
+
+        self.debug(
+            "MOES SVL01-Z: Tuya query_data (0x03) sent successfully"
+        )
 
     class AttributeDefs(TuyaMCUCluster.AttributeDefs):
         """MOES-specific DP attributes."""
