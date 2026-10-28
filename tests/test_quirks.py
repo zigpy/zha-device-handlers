@@ -880,6 +880,7 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,
             zhaquirks.tuya.ts0042.TuyaSmartRemote0042TOPlusA,
             zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusB,
+            zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC,
             zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusB,
             zhaquirks.tuya.ts0046.TuyaSmartRemote0046,
             # swap TuyaZBExternalSwitchTypeCluster input to output cluster (Tuya plug):
