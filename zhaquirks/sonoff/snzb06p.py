@@ -1,5 +1,7 @@
 """Sonoff SNZB-06P - Zigbee presence sensor."""
 
+from types import MappingProxyType
+
 from zha.application.platforms import ZclPlatformEntity
 from zha.application.platforms.sensor import SonoffPresenceSenorIlluminationStatus
 from zha.application.platforms.virtual import SonoffPresenceSensorInit
@@ -58,7 +60,7 @@ class SonoffPresenceSensorInitWithoutRead(SonoffPresenceSensorInit):
     detected, so the value is only taken from its reports.
     """
 
-    _server_cluster_config = {}
+    _server_cluster_config = MappingProxyType({})
 
 
 (

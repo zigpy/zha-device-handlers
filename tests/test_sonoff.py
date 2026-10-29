@@ -5,6 +5,9 @@ from unittest import mock
 
 import pytest
 from zha.application import Platform
+from zha.application.platforms import AttrConfig, ClusterConfig
+from zha.application.platforms.virtual import SonoffPresenceSensorInit
+from zha.const import STATE_CHANGED
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
@@ -358,7 +361,7 @@ async def test_snzb06p_illumination_read_without_manufacturer_code(
 
 SNZB06P_DIAGNOSTICS = "sonoff-snzb-06p-0x00001006.json"
 SNZB06P_ILLUMINATION_UNIQUE_ID = "ab:cd:ef:12:dd:23:ca:15-1-64529-last_illumination"
-ILLUMINATION_ATTR = SonoffFC11Cluster.AttributeDefs.last_illumination_state
+SNZB06P_ILLUMINATION_ATTR = SonoffFC11Cluster.AttributeDefs.last_illumination_state
 
 
 def _snzb06p_diagnostics(tmp_path, monkeypatch, fc11_attributes: list) -> None:
@@ -377,7 +380,7 @@ def _snzb06p_diagnostics(tmp_path, monkeypatch, fc11_attributes: list) -> None:
 def _illumination_reads(cluster) -> int:
     """Count the reads of 0x2001 sent to the device."""
     return sum(
-        ILLUMINATION_ATTR.id in call.args[0]
+        SNZB06P_ILLUMINATION_ATTR.id in call.args[0]
         for call in cluster.read_attributes_raw.await_args_list
     )
 
@@ -426,13 +429,19 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
             return_value=(
                 [
                     foundation.ReadAttributeRecord(
-                        ILLUMINATION_ATTR.id, foundation.Status.UNSUPPORTED_ATTRIBUTE
+                        SNZB06P_ILLUMINATION_ATTR.id,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
                     )
                 ],
             )
         )
+        state_listener = mock.Mock()
+        entity.on_event(STATE_CHANGED, state_listener)
         await cluster.read_attributes(["last_illumination_state"], allow_cache=False)
         assert cluster.read_attributes_raw.await_count == 1
+
+        # No state change is published, HA keeps showing the last value until then
+        assert state_listener.call_count == 0
         assert cluster.is_attribute_unsupported("last_illumination_state")
         assert entity.is_supported()
         assert (
@@ -445,6 +454,23 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
 
         cluster.handle_message(hdr, args)
         assert entity.native_value == IlluminationStatus.Light.name
+
+        # The published state was `Light` all along
+        assert state_listener.call_count == 0
+
+
+def test_snzb06p_zha_init_only_reads_illumination_state():
+    """ZHA's SNZB-06P init entity does nothing but read the illumination state.
+
+    The quirk replaces it with one without any cluster config, so anything ZHA adds
+    to it later would be silently dropped as well.
+    """
+    assert SonoffPresenceSensorInit._server_cluster_config == {
+        SonoffFC11Cluster.cluster_id: ClusterConfig(
+            attributes={"last_illumination_state": AttrConfig(read_on_startup=False)}
+        )
+    }
+    assert not SonoffPresenceSensorInit._client_cluster_config
 
 
 async def test_snzb06p_illumination_state_not_read(tmp_path, monkeypatch):
