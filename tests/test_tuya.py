@@ -18,9 +18,11 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -41,8 +43,6 @@ from zhaquirks.const import (
     LONG_PRESS,
     LONG_RELEASE,
     MODELS_INFO,
-    OFF,
-    ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
@@ -51,6 +51,9 @@ from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import (
     Data,
     PowerOnState,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
@@ -59,6 +62,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.mcu import MoesBacklight, TuyaMCUCluster, TuyaOnOffNM
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
@@ -70,6 +74,7 @@ import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_haozee
+import zhaquirks.tuya.ts0601_switch
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.tuya_motion
 import zhaquirks.tuya.tuya_valve
@@ -127,30 +132,6 @@ ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
-async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
-    """Test tuya single switch."""
-
-    switch_dev = zigpy_device_from_quirk(quirk)
-
-    switch_cluster = switch_dev.endpoints[1].on_off
-    switch_listener = ClusterListener(switch_cluster)
-
-    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
-
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_ON)
-    tuya_cluster.handle_message(hdr, args)
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_OFF)
-    tuya_cluster.handle_message(hdr, args)
-
-    assert len(switch_listener.cluster_commands) == 0
-    assert len(switch_listener.attribute_updates) == 2
-    assert switch_listener.attribute_updates[0][0] == 0x0000
-    assert switch_listener.attribute_updates[0][1] == ON
-    assert switch_listener.attribute_updates[1][0] == 0x0000
-    assert switch_listener.attribute_updates[1][1] == OFF
-
-
 @pytest.mark.parametrize(
     "raw_event,expected_attr_name,expected_attr_value",
     (
@@ -190,133 +171,6 @@ async def test_ts0021_remote(
             "value": expected_attr_value,
         },
     )
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
-async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
-    """Test tuya double switch."""
-
-    ZCL_TUYA_SWITCH_COMMAND_03 = b"\tQ\x03\x006\x01\x01\x00\x01\x01"
-    ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
-    ZCL_TUYA_SWITCH_EP2_OFF = b"\tQ\x02\x006\x02\x01\x00\x01\x00"
-
-    switch_dev = zigpy_device_from_quirk(quirk)
-
-    switch1_cluster = switch_dev.endpoints[1].on_off
-    switch1_listener = ClusterListener(switch1_cluster)
-
-    switch2_cluster = switch_dev.endpoints[2].on_off
-    switch2_listener = ClusterListener(switch2_cluster)
-
-    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
-
-    assert len(switch1_listener.cluster_commands) == 0
-    assert len(switch1_listener.attribute_updates) == 0
-    assert len(switch2_listener.cluster_commands) == 0
-    assert len(switch2_listener.attribute_updates) == 0
-
-    # events from channel 1 updates only EP 1
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_ON)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.attribute_updates) == 1
-    assert len(switch2_listener.attribute_updates) == 0
-    assert switch1_listener.attribute_updates[0][0] == 0x0000
-    assert switch1_listener.attribute_updates[0][1] == ON
-
-    # events from channel 2 updates only EP 2
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_ON)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.attribute_updates) == 1
-    assert len(switch2_listener.attribute_updates) == 1
-    assert switch2_listener.attribute_updates[0][0] == 0x0000
-    assert switch2_listener.attribute_updates[0][1] == ON
-
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_OFF)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.attribute_updates) == 2
-    assert len(switch2_listener.attribute_updates) == 1
-    assert switch1_listener.attribute_updates[1][0] == 0x0000
-    assert switch1_listener.attribute_updates[1][1] == OFF
-
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_OFF)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.attribute_updates) == 2
-    assert len(switch2_listener.attribute_updates) == 2
-    assert switch2_listener.attribute_updates[1][0] == 0x0000
-    assert switch2_listener.attribute_updates[1][1] == OFF
-
-    assert len(switch1_listener.cluster_commands) == 0
-    assert len(switch2_listener.cluster_commands) == 0
-
-    # command_id = 0x0003
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_COMMAND_03)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.cluster_commands) == 0
-    assert len(switch2_listener.cluster_commands) == 0
-    # no switch attribute updated (Unsupported command)
-    assert len(switch1_listener.attribute_updates) == 2
-    assert len(switch2_listener.attribute_updates) == 2
-
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
-    tuya_cluster.handle_message(hdr, args)
-    assert len(switch1_listener.cluster_commands) == 0
-    assert len(switch2_listener.cluster_commands) == 0
-    # no switch attribute updated (TUYA_SET_TIME command)
-    assert len(switch1_listener.attribute_updates) == 2
-    assert len(switch2_listener.attribute_updates) == 2
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
-async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
-    """Test tuya single switch."""
-
-    switch_dev = zigpy_device_from_quirk(quirk)
-
-    switch_cluster = switch_dev.endpoints[1].on_off
-    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
-
-    with mock.patch.object(
-        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
-    ) as m1:
-        rsp = await switch_cluster.command(0x0000)
-        await wait_for_zigpy_tasks()
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x00",
-            command_id=0x00,
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
-            retries=None,
-            retry_delay=None,
-            aps_encryption=False,
-        )
-        assert rsp.status == 0
-
-        rsp = await switch_cluster.command(0x0001)
-        await wait_for_zigpy_tasks()
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=2,
-            data=b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x01",
-            command_id=0x00,
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
-            retries=None,
-            retry_delay=None,
-            aps_encryption=False,
-        )
-        assert rsp.status == 0
-
-    rsp = await switch_cluster.command(0x0002)
-    await wait_for_zigpy_tasks()
-    assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 def test_ts0121_signature(assert_signature_matches_quirk):
@@ -2118,3 +1972,242 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+@pytest.mark.parametrize(
+    ("manufacturer", "num_gangs"),
+    [
+        ("_TZE200_gbagoilo", 1),
+        ("_TZE284_xnwxmj8z", 1),
+        ("_TZE200_nh9m9emk", 2),
+        ("_TZE204_2imwyigp", 3),
+        ("_TZE200_2imwyigp", 3),
+        ("_TZE200_go3tvswy", 3),
+        ("_TZE204_mexisfik", 4),
+    ],
+)
+async def test_ts0601_switch_power_meter_matching(
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+    num_gangs,
+):
+    """Test matching, gang count, and electrical measurement initialization for power meter switches."""
+    device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+
+    # Verify endpoint 1 has OnOff and TuyaMCUCluster
+    assert 1 in device.endpoints
+    ep1 = device.endpoints[1]
+    assert OnOff.cluster_id in ep1.in_clusters
+    assert isinstance(ep1.on_off, TuyaOnOffNM)
+
+    tuya_cluster = ep1.in_clusters[TuyaMCUCluster.cluster_id]
+
+    # Verify each gang (DP 1..num_gangs) is registered in DP-to-attribute mappings on endpoint 1
+    for dp_id in range(1, num_gangs + 1):
+        assert dp_id in tuya_cluster.dp_to_attribute
+        mapping = tuya_cluster.dp_to_attribute[dp_id][0]
+        assert mapping.attribute_name == "on_off"
+        assert mapping.endpoint_id == 1
+
+    # Verify endpoint 1 has ElectricalMeasurement cluster and no smartenergy Metering
+    assert ElectricalMeasurement.cluster_id in ep1.in_clusters
+    em = ep1.electrical_measurement
+    assert Metering.cluster_id not in ep1.in_clusters
+    assert not hasattr(ep1, "smartenergy_metering") or ep1.smartenergy_metering is None
+
+    # Check constant configuration attributes on ElectricalMeasurement
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id) == 10
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_current_divisor.id) == 1000
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_power_divisor.id) == 10
+
+    # Verify unsupported attributes are marked so ZHA does not create unavailable entities
+    assert em.is_attribute_unsupported(
+        ElectricalMeasurement.AttributeDefs.ac_frequency.id
+    )
+    assert em.is_attribute_unsupported(
+        ElectricalMeasurement.AttributeDefs.power_factor.id
+    )
+    assert em.is_attribute_unsupported(
+        ElectricalMeasurement.AttributeDefs.apparent_power.id
+    )
+
+
+@pytest.mark.parametrize(
+    "manufacturer",
+    [
+        "_TZE200_gbagoilo",
+        "_TZE200_nh9m9emk",
+        "_TZE204_2imwyigp",
+        "_TZE204_mexisfik",
+    ],
+)
+async def test_ts0601_switch_electrical_measurement_reports(
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+):
+    """Test DP 21 (current), DP 22 (power), and DP 23 (voltage) reports on power meter switches."""
+    device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    ep1 = device.endpoints[1]
+    em = ep1.electrical_measurement
+    tuya_cluster = ep1.in_clusters[TuyaMCUCluster.cluster_id]
+
+    # Device reports DP 21 = 1500 (current: 1.500 A with divisor 1000)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=21, data=TuyaData(1500))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.rms_current.id) == 1500
+
+    # Device reports DP 22 = 250 (power: 25.0 W with divisor 10)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(dp=22, data=TuyaData(250))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.active_power.id) == 250
+
+    # Device reports DP 23 = 2300 (voltage: 230.0 V with divisor 10)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=3,
+            datapoints=[TuyaDatapointData(dp=23, data=TuyaData(2300))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.rms_voltage.id) == 2300
+
+
+async def test_ts0601_multigang_switch_control(zigpy_device_from_v2_quirk):
+    """Test OnOff control and DP reports across multiple gangs on a 4-gang power switch."""
+    device = zigpy_device_from_v2_quirk("_TZE204_mexisfik", "TS0601")
+    ep1 = device.endpoints[1]
+    tuya_cluster = ep1.in_clusters[TuyaMCUCluster.cluster_id]
+    on_off = ep1.on_off
+    listener = ClusterListener(on_off)
+
+    # Test incoming state reports for DP 1 (ON / OFF)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(t.Bool.true))],
+        )
+    )
+    assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.true
+    assert len(listener.attribute_updates) == 1
+    assert listener.attribute_updates[0] == (
+        OnOff.AttributeDefs.on_off.id,
+        t.Bool.true,
+    )
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(t.Bool.false))],
+        )
+    )
+    assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.false
+    assert len(listener.attribute_updates) == 2
+    assert listener.attribute_updates[1] == (
+        OnOff.AttributeDefs.on_off.id,
+        t.Bool.false,
+    )
+
+    # Test outgoing cluster command sends corresponding Tuya DP commands across all 4 gangs
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await on_off.command(0x0001)
+        await wait_for_zigpy_tasks()
+
+        assert mock_cmd.call_count == 4
+        sent_dps = [mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)]
+        assert set(sent_dps) == {1, 2, 3, 4}
+        for i in range(4):
+            assert (
+                mock_cmd.call_args_list[i][0][1].datapoints[0].data.payload
+                == t.Bool.true
+            )
+
+    with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
+        await on_off.command(0x0000)
+        await wait_for_zigpy_tasks()
+
+        assert mock_cmd.call_count == 4
+        sent_dps = [mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)]
+        assert set(sent_dps) == {1, 2, 3, 4}
+        for i in range(4):
+            assert (
+                mock_cmd.call_args_list[i][0][1].datapoints[0].data.payload
+                == t.Bool.false
+            )
+
+    # Test incoming state reports for gangs 2..4 (DPs 2..4)
+    for dp_id in (2, 3, 4):
+        tuya_cluster.handle_get_data(
+            TuyaCommand(
+                status=0,
+                tsn=dp_id * 2,
+                datapoints=[TuyaDatapointData(dp=dp_id, data=TuyaData(t.Bool.true))],
+            )
+        )
+        assert dp_id in tuya_cluster.dp_to_attribute
+        assert tuya_cluster.dp_to_attribute[dp_id][0].attribute_name == "on_off"
+
+
+@pytest.mark.parametrize(
+    ("dp_id", "dp_val", "attr_name", "expected_val"),
+    [
+        (14, PowerOnState.LastState, "power_on_state", PowerOnState.LastState),
+        (14, PowerOnState.On, "power_on_state", PowerOnState.On),
+        (15, MoesBacklight.off, "backlight_mode", MoesBacklight.off),
+        (
+            15,
+            MoesBacklight.light_when_on,
+            "backlight_mode",
+            MoesBacklight.light_when_on,
+        ),
+        (
+            15,
+            MoesBacklight.light_when_off,
+            "backlight_mode",
+            MoesBacklight.light_when_off,
+        ),
+        (
+            15,
+            MoesBacklight.freeze,
+            "backlight_mode",
+            MoesBacklight.freeze,
+        ),
+        (16, True, "backlight_switch", True),
+        (16, False, "backlight_switch", False),
+    ],
+)
+async def test_ts0601_switch_configuration_datapoints(
+    zigpy_device_from_v2_quirk,
+    dp_id,
+    dp_val,
+    attr_name,
+    expected_val,
+):
+    """Test configuration datapoint reports (power_on_state, backlight_mode, backlight_switch)."""
+    device = zigpy_device_from_v2_quirk("_TZE200_gbagoilo", "TS0601")
+    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=dp_id, data=TuyaData(dp_val))],
+        )
+    )
+
+    attr_id = getattr(tuya_cluster.AttributeDefs, attr_name).id
+    assert tuya_cluster.get(attr_id) == expected_val
