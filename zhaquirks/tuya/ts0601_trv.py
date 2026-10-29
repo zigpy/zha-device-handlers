@@ -4,6 +4,7 @@ import datetime
 import logging
 from typing import Any, Final, Union
 
+import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -22,6 +23,7 @@ from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,6 +32,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
     TuyaPowerConfigurationCluster2AA,
@@ -1739,67 +1742,6 @@ class SiterwellGS361_Type2(TuyaThermostat):
     }
 
 
-class MoesHY368_Type1(TuyaThermostat):
-    """MoesHY368 Thermostatic radiator valve."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.window_detection_bus = Bus()
-        super().__init__(*args, **kwargs)
-
-    signature = {
-        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
-        #  output_clusters=[10, 25]>
-        MODELS_INFO: [
-            ("_TZE200_ckud7u2l", "TS0601"),
-            ("_TZE200_ywdxldoj", "TS0601"),
-            ("_TZE200_cwnjrr72", "TS0601"),
-            ("_TZE200_2atgpdho", "TS0601"),
-            ("_TZE200_pvvbommb", "TS0601"),
-            ("_TZE200_4eeyebrt", "TS0601"),  # Immax NEO Smart (v1)
-            ("_TZE200_rufdtfyv", "TS0601"),  # Immax NEO Smart (v2)
-            ("_TZE200_cpmgn2cf", "TS0601"),
-            ("_TZE200_9sfg7gm0", "TS0601"),
-            ("_TZE200_8whxpsiw", "TS0601"),
-            ("_TZE200_8thwkzxl", "TS0601"),  # Tervix Pro Line EVA 2
-            ("_TZE200_xby0s3ta", "TS0601"),  # Sandy Beach HY367
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaManufClusterAttributes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    MoesManufCluster,
-                    MoesThermostat,
-                    MoesUserInterface,
-                    MoesWindowDetection,
-                    TuyaPowerConfigurationCluster2AA,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
-
-
 # for Moes TRV _TZE200_b6wax7g0
 class MoesHY368_Type1new(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
@@ -1851,58 +1793,26 @@ class MoesHY368_Type1new(TuyaThermostat):
     }
 
 
-class MoesHY368_Type2(TuyaThermostat):
-    """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
+class MoesHY368Device(CustomZigpyDevice):
+    """Moes HY368 thermostatic radiator valve."""
 
     def __init__(self, *args, **kwargs):
         """Init device."""
+        self.thermostat_bus = Bus()
+        self.ui_bus = Bus()
+        self.battery_bus = Bus()
         self.window_detection_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
-        #  output_clusters=[3, 25]>
-        MODELS_INFO: [
-            ("_TYST11_ckud7u2l", "kud7u2l"),
-            ("_TYST11_ywdxldoj", "wdxldoj"),
-            ("_TYST11_cwnjrr72", "wnjrr72"),
-            ("_TYST11_2atgpdho", "atgpdho"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [Basic.cluster_id, Identify.cluster_id],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    MoesManufCluster,
-                    MoesThermostat,
-                    MoesUserInterface,
-                    MoesWindowDetection,
-                    TuyaPowerConfigurationCluster2AA,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
-
-
-class ZonnsmartTV01_ZG(TuyaThermostat):
-    """ZONNSMART TV01-ZG Thermostatic radiator valve."""
+class ZonnsmartTV01Device(CustomZigpyDevice):
+    """ZONNSMART TV01-ZG thermostatic radiator valve."""
 
     def __init__(self, *args, **kwargs):
         """Init device."""
+        self.thermostat_bus = Bus()
+        self.ui_bus = Bus()
+        self.battery_bus = Bus()
         self.boost_bus = Bus()
         self.child_lock_bus = Bus()
         self.online_mode_bus = Bus()
@@ -1911,73 +1821,75 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         self.window_temperature_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
-        #  output_clusters=[10, 25]>
-        MODELS_INFO: [
-            ("_TZE200_7yoranx2", "TS0601"),  # MOES TV01 ZTRV-ZX-TV01-MS
-            ("_TZE200_e9ba97vf", "TS0601"),  # Zonnsmart TV01-ZG
-            ("_TZE200_hue3yfsn", "TS0601"),  # Zonnsmart TV02-ZG
-            ("_TZE200_husqqvux", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
-            ("_TZE200_kly8gjlz", "TS0601"),  # EARU TV05-ZG
-            ("_TZE200_lnbfnyxd", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
-            ("_TZE200_mudxchsu", "TS0601"),  # Foluu TV05
-            ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
-            ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
-            ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
-            ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
-            ("_TZE200_py4cm3he", "TS0601"),  # GIEX Smart TRV TV06
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaManufClusterAttributes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    ZONNSMARTBoost,
-                    ZONNSMARTManufCluster,
-                    ZONNSMARTTemperatureOffset,
-                    ZONNSMARTThermostat,
-                    ZONNSMARTUserInterface,
-                    ZONNSMARTWindowDetection,
-                    TuyaPowerConfigurationCluster2AA,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    ZONNSMARTChildLock,
-                    ZONNSMARTWindowOpenedTemp,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    ZONNSMARTOnlineMode,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        }
-    }
+def has_no_zcl_thermostat(device: zigpy.device.Device) -> bool:
+    """Return whether the device has no ZCL thermostat of its own.
+
+    The datapoint clusters are only added to Tuya MCU devices, which the v1 quirks
+    ensured by matching their exact signature.
+    """
+    endpoint = device.endpoints.get(1)
+    return endpoint is not None and Thermostat.cluster_id not in endpoint.in_clusters
+
+
+# Moes HY368 thermostatic radiator valve
+(
+    QuirkBuilder("_TZE200_ckud7u2l", "TS0601")
+    .applies_to("_TZE200_ywdxldoj", "TS0601")
+    .applies_to("_TZE200_cwnjrr72", "TS0601")
+    .applies_to("_TZE200_2atgpdho", "TS0601")
+    .applies_to("_TZE200_pvvbommb", "TS0601")
+    .applies_to("_TZE200_4eeyebrt", "TS0601")  # Immax NEO Smart (v1)
+    .applies_to("_TZE200_rufdtfyv", "TS0601")  # Immax NEO Smart (v2)
+    .applies_to("_TZE200_cpmgn2cf", "TS0601")
+    .applies_to("_TZE200_9sfg7gm0", "TS0601")
+    .applies_to("_TZE200_8whxpsiw", "TS0601")
+    .applies_to("_TZE200_8thwkzxl", "TS0601")  # Tervix Pro Line EVA 2
+    .applies_to("_TZE200_xby0s3ta", "TS0601")  # Sandy Beach HY367
+    # 2nd cluster signature
+    .applies_to("_TYST11_ckud7u2l", "kud7u2l")
+    .applies_to("_TYST11_ywdxldoj", "wdxldoj")
+    .applies_to("_TYST11_cwnjrr72", "wnjrr72")
+    .applies_to("_TYST11_2atgpdho", "atgpdho")
+    .filter(has_no_zcl_thermostat)
+    .zigpy_device_class(MoesHY368Device)
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
+    .replaces(MoesManufCluster)
+    .adds(MoesThermostat)
+    .adds(MoesUserInterface)
+    .adds(MoesWindowDetection)
+    .adds(TuyaPowerConfigurationCluster2AA)
+    .add_to_registry()
+)
+
+# ZONNSMART TV01-ZG thermostatic radiator valve
+(
+    QuirkBuilder("_TZE200_7yoranx2", "TS0601")  # MOES TV01 ZTRV-ZX-TV01-MS
+    .applies_to("_TZE200_e9ba97vf", "TS0601")  # Zonnsmart TV01-ZG
+    .applies_to("_TZE200_hue3yfsn", "TS0601")  # Zonnsmart TV02-ZG
+    .applies_to("_TZE200_husqqvux", "TS0601")  # Tesla Smart TSL-TRV-TV01ZG
+    .applies_to("_TZE200_kly8gjlz", "TS0601")  # EARU TV05-ZG
+    .applies_to("_TZE200_lnbfnyxd", "TS0601")  # Tesla Smart TSL-TRV-TV01ZG
+    .applies_to("_TZE200_mudxchsu", "TS0601")  # Foluu TV05
+    .applies_to("_TZE200_kds0pmmv", "TS0601")  # MOES TV02
+    .applies_to("_TZE200_sur6q7ko", "TS0601")  # LSC Smart Connect 3012732
+    .applies_to("_TZE200_lllliz3p", "TS0601")  # tuya TV02-Zigbee2
+    .applies_to("_TZE200_fsow0qsk", "TS0601")  # Tesla Smart TV500
+    .applies_to("_TZE200_py4cm3he", "TS0601")  # GIEX Smart TRV TV06
+    .filter(has_no_zcl_thermostat)
+    .zigpy_device_class(ZonnsmartTV01Device)
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
+    .replaces(ZONNSMARTManufCluster)
+    .adds(ZONNSMARTBoost)
+    .adds(ZONNSMARTTemperatureOffset)
+    .adds(ZONNSMARTThermostat)
+    .adds(ZONNSMARTUserInterface)
+    .adds(ZONNSMARTWindowDetection)
+    .adds(TuyaPowerConfigurationCluster2AA)
+    .adds_endpoint(2, device_type=zha.DeviceType.COMBINED_INTERFACE)
+    .adds(ZONNSMARTChildLock, endpoint_id=2)
+    .adds(ZONNSMARTWindowOpenedTemp, endpoint_id=2)
+    .adds_endpoint(3, device_type=zha.DeviceType.COMBINED_INTERFACE)
+    .adds(ZONNSMARTOnlineMode, endpoint_id=3)
+    .add_to_registry()
+)
