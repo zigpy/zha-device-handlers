@@ -21,8 +21,8 @@ class CustomCluster(zigpy.zcl.Cluster):
     _skip_registry = True
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] | None = None
 
-    # IDs of attributes the device reports, but may answer reads of with
-    # UNSUPPORTED_ATTRIBUTE. They are never marked unsupported.
+    # Attribute IDs (any manufacturer code) the device reports, but may answer reads
+    # of with UNSUPPORTED_ATTRIBUTE. They are never marked unsupported.
     _REPORT_ONLY_ATTRIBUTES: frozenset[int] | None = None
 
     async def read_attributes(
