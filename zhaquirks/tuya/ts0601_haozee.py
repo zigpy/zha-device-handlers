@@ -156,10 +156,8 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
             "unoccupied_heating_setpoint",
             lambda value: value * 100,
         ),
-        HAOZEE_TEMP_CALIBRATION_ATTR: (
-            "local_temperature_calibration",
-            lambda value: value * 10,
-        ),
+        # Both the DP and the ZCL attribute are in 0.1 °C
+        HAOZEE_TEMP_CALIBRATION_ATTR: ("local_temperature_calibration", None),
         HAOZEE_MIN_TEMP_LIMIT_ATTR: (
             "min_heat_setpoint_limit",
             lambda value: value * 100,
@@ -213,10 +211,8 @@ class HY08WEThermostat(TuyaThermostatCluster):
             HAOZEE_MAX_TEMP_LIMIT_ATTR,
             lambda value: round(value / 100),
         ),
-        "local_temperature_calibration": (
-            HAOZEE_TEMP_CALIBRATION_ATTR,
-            lambda value: round(value / 10),
-        ),
+        # Both the DP and the ZCL attribute are in 0.1 °C
+        "local_temperature_calibration": (HAOZEE_TEMP_CALIBRATION_ATTR, None),
     }
 
     def map_attribute(self, attribute, value):

@@ -531,6 +531,72 @@ async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
     ]
 
 
+@pytest.mark.parametrize(
+    ("dp_value", "calibration"),
+    (
+        (b"\x00\x00\x00\x5f", 95),  # 9.5 °C
+        (b"\xff\xff\xff\xf1", -15),  # -1.5 °C
+    ),
+)
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
+async def test_haozee_temperature_calibration_report(
+    zigpy_device_from_quirk, quirk, dp_value, calibration
+):
+    """Test Haozee calibration reports map 1:1, both being in 0.1 °C."""
+
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = thermostat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    hdr, args = tuya_cluster.deserialize(
+        b"\x09\x71\x02\x00\x03\x6d\x02\x00\x04" + dp_value
+    )
+    tuya_cluster.handle_message(hdr, args)
+
+    assert thermostat_listener.attribute_updates == [
+        (Thermostat.AttributeDefs.local_temperature_calibration.id, calibration)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("calibration", "dp_value"),
+    (
+        (10, b"\x00\x00\x00\x0a"),  # 1.0 °C
+        (-15, b"\xff\xff\xff\xf1"),  # -1.5 °C
+    ),
+)
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
+async def test_haozee_temperature_calibration_write(
+    zigpy_device_from_quirk, quirk, calibration, dp_value
+):
+    """Test Haozee calibration writes map 1:1, both being in 0.1 °C."""
+
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = thermostat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                Thermostat.AttributeDefs.local_temperature_calibration.name: calibration,
+            }
+        )
+        m1.assert_called_once()
+        assert m1.call_args.kwargs["data"] == (
+            b"\x01\x01\x00\x00\x01\x6d\x02\x00\x04" + dp_value
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
 async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
