@@ -5,11 +5,13 @@ from unittest import mock
 import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
+from zhaquirks.sonoff.snzb06p import IlluminationStatus, SonoffFC11Cluster
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
     SonoffDetachedRelayMask,
@@ -272,3 +274,73 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
 
     cluster.update_attribute(0x0001, 1)
     assert listener.zha_send_event.call_count == 0
+
+
+def _snzb06p_fc11_cluster(zigpy_device_from_v2_quirk):
+    """Return the quirked 0xFC11 cluster of an SNZB-06P."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-06P",
+        cluster_ids={
+            1: {
+                IasZone.cluster_id: ClusterType.Server,
+                SonoffFC11Cluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    cluster = device.endpoints[1].sonoff_manufacturer
+    assert isinstance(cluster, SonoffFC11Cluster)
+    return cluster
+
+
+# Report Attributes, server to client, no manufacturer code:
+# last_illumination_state (0x2001, enum8) = Light
+SNZB06P_ILLUMINATION_REPORT = bytes.fromhex("18010a01203001")
+
+
+async def test_snzb06p_illumination_report_without_manufacturer_code(
+    zigpy_device_from_v2_quirk,
+):
+    """The device reports 0x2001 without a manufacturer code, it must be cached."""
+    cluster = _snzb06p_fc11_cluster(zigpy_device_from_v2_quirk)
+    listener = ClusterListener(cluster)
+
+    hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+    assert not hdr.frame_control.is_manufacturer_specific
+    cluster.handle_message(hdr, args)
+
+    attr_id = SonoffFC11Cluster.AttributeDefs.last_illumination_state.id
+    assert listener.attribute_updates == [(attr_id, IlluminationStatus.Light)]
+    assert cluster.get("last_illumination_state") == IlluminationStatus.Light
+
+
+async def test_snzb06p_illumination_read_without_manufacturer_code(
+    zigpy_device_from_v2_quirk,
+):
+    """0x2001 is read without a manufacturer code, and a report clears its unsupported mark."""
+    cluster = _snzb06p_fc11_cluster(zigpy_device_from_v2_quirk)
+    attr_id = SonoffFC11Cluster.AttributeDefs.last_illumination_state.id
+
+    # Without presence, the device answers reads of 0x2001 with UNSUPPORTED_ATTRIBUTE
+    read_mock = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    attr_id, foundation.Status.UNSUPPORTED_ATTRIBUTE
+                )
+            ],
+        )
+    )
+    with mock.patch.object(cluster, "_read_attributes", read_mock):
+        await cluster.read_attributes(["last_illumination_state"])
+
+    assert read_mock.await_count == 1
+    assert read_mock.await_args.kwargs["manufacturer"] is None
+    assert cluster.is_attribute_unsupported("last_illumination_state")
+
+    # The next report from the device stores the value and clears the mark
+    hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+    cluster.handle_message(hdr, args)
+
+    assert not cluster.is_attribute_unsupported("last_illumination_state")
+    assert cluster.get("last_illumination_state") == IlluminationStatus.Light
