@@ -1,4 +1,4 @@
-"""Tests for Sonoff ZBM5 quirks."""
+"""Tests for Sonoff quirks."""
 
 import json
 from unittest import mock
@@ -6,7 +6,6 @@ from unittest import mock
 import pytest
 from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
-import zigpy.zcl
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.security import IasZone
@@ -21,6 +20,7 @@ from zhaquirks.sonoff.snzb06p import (
     IlluminationStatus,
     SonoffFC11Cluster,
     SonoffLastIlluminationStateSensor,
+    SonoffPresenceSensorInitWithoutRead,
 )
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
@@ -358,35 +358,45 @@ async def test_snzb06p_illumination_read_without_manufacturer_code(
 
 SNZB06P_DIAGNOSTICS = "sonoff-snzb-06p-0x00001006.json"
 SNZB06P_ILLUMINATION_UNIQUE_ID = "ab:cd:ef:12:dd:23:ca:15-1-64529-last_illumination"
+ILLUMINATION_ATTR = SonoffFC11Cluster.AttributeDefs.last_illumination_state
 
 
-async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monkeypatch):
-    """The illumination sensor is kept when an earlier read marked 0x2001 unsupported."""
-    # Diagnostics of a device whose read of 0x2001 was answered with
-    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in #5473
+def _snzb06p_diagnostics(tmp_path, monkeypatch, fc11_attributes: list) -> None:
+    """Use the SNZB-06P diagnostics with the given 0xFC11 attributes."""
     data = json.loads((zha_helpers.DEVICES_DIR / SNZB06P_DIAGNOSTICS).read_text())
     (fc11,) = (
         cluster
         for cluster in data["endpoints"]["1"]["in_clusters"]
         if cluster["cluster_id"] == "0xfc11"
     )
-    fc11["attributes"] = [
-        {
-            "id": "0x2001",
-            "name": "last_illumination_state",
-            "zcl_type": "enum8",
-            "unsupported": True,
-        }
-    ]
+    fc11["attributes"] = fc11_attributes
     (tmp_path / SNZB06P_DIAGNOSTICS).write_text(json.dumps(data))
     monkeypatch.setattr(zha_helpers, "DEVICES_DIR", tmp_path)
 
-    # zigpy's database restores the persisted mark into the cache without an event
-    def restore_unsupported_attribute(self, attr, **kwargs):
-        self._attr_cache.mark_unsupported(self.find_attribute(attr))
 
-    monkeypatch.setattr(
-        zigpy.zcl.Cluster, "add_unsupported_attribute", restore_unsupported_attribute
+def _illumination_reads(cluster) -> int:
+    """Count the reads of 0x2001 sent to the device."""
+    return sum(
+        ILLUMINATION_ATTR.id in call.args[0]
+        for call in cluster.read_attributes_raw.await_args_list
+    )
+
+
+async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monkeypatch):
+    """The illumination sensor is kept when a read marked 0x2001 unsupported."""
+    # Diagnostics of a device whose read of 0x2001 was answered with
+    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in #5473
+    _snzb06p_diagnostics(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "id": "0x2001",
+                "name": "last_illumination_state",
+                "zcl_type": "enum8",
+                "unsupported": True,
+            }
+        ],
     )
 
     async with zha_gateway() as gateway:
@@ -408,4 +418,63 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
         hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
         cluster.handle_message(hdr, args)
         assert not cluster.is_attribute_unsupported("last_illumination_state")
+        assert entity.native_value == IlluminationStatus.Light.name
+
+        # A manual read answered with UNSUPPORTED_ATTRIBUTE still marks the attribute,
+        # the sensor stays but is unknown until the next report
+        cluster.read_attributes_raw = mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        ILLUMINATION_ATTR.id, foundation.Status.UNSUPPORTED_ATTRIBUTE
+                    )
+                ],
+            )
+        )
+        await cluster.read_attributes(["last_illumination_state"], allow_cache=False)
+        assert cluster.read_attributes_raw.await_count == 1
+        assert cluster.is_attribute_unsupported("last_illumination_state")
+        assert entity.is_supported()
+        assert (
+            device.get_platform_entity(
+                Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+            )
+            is entity
+        )
+        assert entity.native_value is None
+
+        cluster.handle_message(hdr, args)
+        assert entity.native_value == IlluminationStatus.Light.name
+
+
+async def test_snzb06p_illumination_state_not_read(tmp_path, monkeypatch):
+    """ZHA doesn't read 0x2001 when nothing is cached for it."""
+    _snzb06p_diagnostics(tmp_path, monkeypatch, [])
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, SNZB06P_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        cluster = device.device.endpoints[1].sonoff_manufacturer
+        assert cluster.get("last_illumination_state") is None
+
+        # ZHA still binds the cluster, so the device keeps reporting
+        assert cluster.bind.await_count == 1
+
+        # Not read when joining, nor when initializing from the device (mains startup)
+        assert _illumination_reads(cluster) == 0
+        await device.async_initialize(from_cache=False)
+        assert _illumination_reads(cluster) == 0
+        assert any(
+            type(entity) is SonoffPresenceSensorInitWithoutRead
+            for entity in device._discovered_entities
+        )
+
+        # The sensor exists and gets its value from the next report
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+        )
+        assert entity.native_value is None
+        hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+        cluster.handle_message(hdr, args)
         assert entity.native_value == IlluminationStatus.Light.name
