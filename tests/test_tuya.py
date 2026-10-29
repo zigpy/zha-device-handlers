@@ -1994,15 +1994,22 @@ async def test_ts0601_switch_power_meter_matching(
     """Test matching, gang count, and electrical measurement initialization for power meter switches."""
     device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
 
-    # Verify each gang endpoint has OnOff cluster
-    for ep_id in range(1, num_gangs + 1):
-        assert ep_id in device.endpoints
-        ep = device.endpoints[ep_id]
-        assert OnOff.cluster_id in ep.in_clusters
-        assert isinstance(ep.on_off, TuyaOnOffNM)
+    # Verify endpoint 1 has OnOff and TuyaMCUCluster
+    assert 1 in device.endpoints
+    ep1 = device.endpoints[1]
+    assert OnOff.cluster_id in ep1.in_clusters
+    assert isinstance(ep1.on_off, TuyaOnOffNM)
+
+    tuya_cluster = ep1.in_clusters[TuyaMCUCluster.cluster_id]
+
+    # Verify each gang (DP 1..num_gangs) is registered in DP-to-attribute mappings on endpoint 1
+    for dp_id in range(1, num_gangs + 1):
+        assert dp_id in tuya_cluster.dp_to_attribute
+        mapping = tuya_cluster.dp_to_attribute[dp_id][0]
+        assert mapping.attribute_name == "on_off"
+        assert mapping.endpoint_id == 1
 
     # Verify endpoint 1 has ElectricalMeasurement cluster and no smartenergy Metering
-    ep1 = device.endpoints[1]
     assert ElectricalMeasurement.cluster_id in ep1.in_clusters
     em = ep1.electrical_measurement
     assert Metering.cluster_id not in ep1.in_clusters
@@ -2081,54 +2088,60 @@ async def test_ts0601_switch_electrical_measurement_reports(
 async def test_ts0601_multigang_switch_control(zigpy_device_from_v2_quirk):
     """Test OnOff control and DP reports across multiple gangs on a 4-gang power switch."""
     device = zigpy_device_from_v2_quirk("_TZE204_mexisfik", "TS0601")
-    tuya_cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    ep1 = device.endpoints[1]
+    tuya_cluster = ep1.in_clusters[TuyaMCUCluster.cluster_id]
+    on_off = ep1.on_off
+    listener = ClusterListener(on_off)
 
-    # Test incoming state reports for gangs 1..4 (DPs 1..4)
-    for gang in range(1, 5):
-        ep = device.endpoints[gang]
-        on_off = ep.on_off
-        listener = ClusterListener(on_off)
+    # Test incoming state reports for DP 1 (ON / OFF)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(t.Bool.true))],
+        )
+    )
+    assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.true
+    assert len(listener.attribute_updates) == 1
+    assert listener.attribute_updates[0] == (
+        OnOff.AttributeDefs.on_off.id,
+        t.Bool.true,
+    )
 
-        # Turn ON via DP report
-        tuya_cluster.handle_get_data(
-            TuyaCommand(
-                status=0,
-                tsn=gang * 2,
-                datapoints=[TuyaDatapointData(dp=gang, data=TuyaData(t.Bool.true))],
-            )
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(dp=1, data=TuyaData(t.Bool.false))],
         )
-        assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.true
-        assert len(listener.attribute_updates) == 1
-        assert listener.attribute_updates[0] == (
-            OnOff.AttributeDefs.on_off.id,
-            t.Bool.true,
-        )
+    )
+    assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.false
+    assert len(listener.attribute_updates) == 2
+    assert listener.attribute_updates[1] == (
+        OnOff.AttributeDefs.on_off.id,
+        t.Bool.false,
+    )
 
-        # Turn OFF via DP report
-        tuya_cluster.handle_get_data(
-            TuyaCommand(
-                status=0,
-                tsn=gang * 2 + 1,
-                datapoints=[TuyaDatapointData(dp=gang, data=TuyaData(t.Bool.false))],
-            )
-        )
-        assert on_off.get(OnOff.AttributeDefs.on_off.id) == t.Bool.false
-        assert len(listener.attribute_updates) == 2
-        assert listener.attribute_updates[1] == (
-            OnOff.AttributeDefs.on_off.id,
-            t.Bool.false,
-        )
-
-    # Test outgoing write_attributes command sends corresponding Tuya DP command
+    # Test outgoing write_attributes command sends corresponding Tuya DP 1 command
     with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
-        for gang in range(1, 5):
-            ep = device.endpoints[gang]
-            await ep.on_off.write_attributes({OnOff.AttributeDefs.on_off.id: True})
+        await on_off.write_attributes({OnOff.AttributeDefs.on_off.id: True})
 
-            call_args = mock_cmd.call_args[0][1]
-            assert isinstance(call_args, TuyaCommand)
-            assert call_args.datapoints[0].dp == gang
-            assert call_args.datapoints[0].data.payload == t.Bool.true
+        call_args = mock_cmd.call_args[0][1]
+        assert isinstance(call_args, TuyaCommand)
+        assert call_args.datapoints[0].dp == 1
+        assert call_args.datapoints[0].data.payload == t.Bool.true
+
+    # Test incoming state reports for gangs 2..4 (DPs 2..4)
+    for dp_id in (2, 3, 4):
+        tuya_cluster.handle_get_data(
+            TuyaCommand(
+                status=0,
+                tsn=dp_id * 2,
+                datapoints=[TuyaDatapointData(dp=dp_id, data=TuyaData(t.Bool.true))],
+            )
+        )
+        assert dp_id in tuya_cluster.dp_to_attribute
+        assert tuya_cluster.dp_to_attribute[dp_id][0].attribute_name == "on_off"
 
 
 @pytest.mark.parametrize(
