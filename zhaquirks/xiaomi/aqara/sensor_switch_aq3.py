@@ -109,7 +109,7 @@ class AqaraT1MiniSwitchCluster(XiaomiAqaraE1Cluster):
     async def apply_custom_configuration(self, *args, **kwargs):
         """Put the switch in event mode, so it reports the press type."""
         try:
-            await self.write_attributes(
+            result = await self.write_attributes(
                 {
                     self.AttributeDefs.operation_mode.name: (
                         AqaraSwitchOperationMode.Event
@@ -118,6 +118,9 @@ class AqaraT1MiniSwitchCluster(XiaomiAqaraE1Cluster):
             )
         except (ZigbeeException, TimeoutError) as exc:
             _LOGGER.debug("Failed to write operation mode: %s", exc)
+        else:
+            # A rejected write is returned as a status record, not raised
+            _LOGGER.debug("Wrote operation mode, response: %s", result)
 
 
 class SwitchAQ3(XiaomiCustomDevice):
