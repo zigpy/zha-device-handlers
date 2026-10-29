@@ -111,21 +111,19 @@ class CustomCluster(zigpy.zcl.Cluster):
         self, attr: int | str | foundation.ZCLAttributeDef
     ) -> bool:
         """Return whether an attribute is unsupported."""
+        attr_def = self.find_attribute(attr)
+
         # Constant attributes are always supported, even if the device was marked as
         # not supporting them before the quirk was applied
-        if self._CONSTANT_ATTRIBUTES and (
-            self.find_attribute(attr).id in self._CONSTANT_ATTRIBUTES
-        ):
+        if self._CONSTANT_ATTRIBUTES and attr_def.id in self._CONSTANT_ATTRIBUTES:
             return False
 
         # Report-only attributes are always supported, also when a mark from before
         # the quirk set `_REPORT_ONLY_ATTRIBUTES` is restored from the database
-        if self._REPORT_ONLY_ATTRIBUTES and (
-            self.find_attribute(attr).id in self._REPORT_ONLY_ATTRIBUTES
-        ):
+        if self._REPORT_ONLY_ATTRIBUTES and attr_def.id in self._REPORT_ONLY_ATTRIBUTES:
             return False
 
-        return super().is_attribute_unsupported(attr)
+        return super().is_attribute_unsupported(attr_def)
 
     def emit(self, event_name: str, data: typing.Any = None) -> None:
         """Emit an event, unless it marks a report-only attribute unsupported.
