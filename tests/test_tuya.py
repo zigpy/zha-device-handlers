@@ -2122,27 +2122,36 @@ async def test_ts0601_multigang_switch_control(zigpy_device_from_v2_quirk):
         t.Bool.false,
     )
 
-    # Test outgoing cluster command sends corresponding Tuya DP 1 command (ON)
+    # Test outgoing cluster command sends corresponding Tuya DP commands across all 4 gangs
     with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
         await on_off.command(0x0001)
         await wait_for_zigpy_tasks()
 
-        assert mock_cmd.call_count == 1
-        call_args = mock_cmd.call_args[0][1]
-        assert isinstance(call_args, TuyaCommand)
-        assert call_args.datapoints[0].dp == 1
-        assert call_args.datapoints[0].data.payload == t.Bool.true
+        assert mock_cmd.call_count == 4
+        sent_dps = [
+            mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)
+        ]
+        assert set(sent_dps) == {1, 2, 3, 4}
+        for i in range(4):
+            assert (
+                mock_cmd.call_args_list[i][0][1].datapoints[0].data.payload
+                == t.Bool.true
+            )
 
-    # Test outgoing cluster command sends corresponding Tuya DP 1 command (OFF)
     with mock.patch.object(tuya_cluster, "command", mock.AsyncMock()) as mock_cmd:
         await on_off.command(0x0000)
         await wait_for_zigpy_tasks()
 
-        assert mock_cmd.call_count == 1
-        call_args = mock_cmd.call_args[0][1]
-        assert isinstance(call_args, TuyaCommand)
-        assert call_args.datapoints[0].dp == 1
-        assert call_args.datapoints[0].data.payload == t.Bool.false
+        assert mock_cmd.call_count == 4
+        sent_dps = [
+            mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)
+        ]
+        assert set(sent_dps) == {1, 2, 3, 4}
+        for i in range(4):
+            assert (
+                mock_cmd.call_args_list[i][0][1].datapoints[0].data.payload
+                == t.Bool.false
+            )
 
     # Test incoming state reports for gangs 2..4 (DPs 2..4)
     for dp_id in (2, 3, 4):
