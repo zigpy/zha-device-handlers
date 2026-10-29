@@ -10,7 +10,7 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import ClickControl, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -223,3 +223,26 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+async def test_zemismart_zm25r3_click_control(zigpy_device_from_v2_quirk):
+    """Test that ZM25R3 click control writes DP 20 and is not added to ZM16B."""
+
+    zm16b = zigpy_device_from_v2_quirk("_TZE284_3mzb0sdz", "TS0601")
+    assert (
+        "click_control" not in zm16b.endpoints[1].tuya_manufacturer.attributes_by_name
+    )
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_sq6affpe", "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await tuya_cluster.write_attributes({"click_control": ClickControl.Down})
+        await wait_for_zigpy_tasks()
+
+        req_mock.assert_called_once()
+        call_data = req_mock.call_args[1]["data"]
+        # DP 20, enum type, length 1, value Down (1)
+        assert call_data.endswith(b"\x14\x04\x00\x01\x01")
