@@ -513,6 +513,37 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[10][1] == 4
 
 
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_quirk_values_survive_cache_clear(
+    zigpy_device_from_quirk, quirk
+):
+    """Test quirk-defined values are kept when zigpy clears the cache on startup."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+
+    # zigpy's appdb clears the attribute cache of every cluster after applying quirks
+    for ep in valve_dev.non_zdo_endpoints:
+        for cluster in (*ep.in_clusters.values(), *ep.out_clusters.values()):
+            cluster._attr_cache.clear()
+
+    thermostat = valve_dev.endpoints[1].thermostat
+    for attr, value in (
+        (Thermostat.AttributeDefs.min_heat_setpoint_limit, 500),
+        (Thermostat.AttributeDefs.max_heat_setpoint_limit, 3000),
+        (
+            Thermostat.AttributeDefs.ctrl_sequence_of_oper,
+            Thermostat.ControlSequenceOfOperation.Heating_Only,
+        ),
+    ):
+        assert thermostat.get(attr.name) == value
+        assert not thermostat.is_attribute_unsupported(attr)
+
+    temperature_offset = valve_dev.endpoints[1].analog_output
+    assert temperature_offset.get("description") == "Temperature Offset"
+    assert temperature_offset.get("min_present_value") == -5
+    assert temperature_offset.get("max_present_value") == 5
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
 async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
     """Test Haozee thermostat reports the current room temperature."""
