@@ -1,10 +1,10 @@
 """Tuya 1 gang switch with power monitoring.
 
-The v1 ``ts000x.Switch_1G_Metering`` quirk matches the same hardware by endpoint
-signature, but these manufacturers also ship layouts without the Green Power
-endpoint or the 0xE000 cluster, which that signature misses. This v2 quirk matches
-them by manufacturer and takes precedence over the v1 quirk, so it carries the same
-Tuya plug features and spell.
+The signature-matched ``ts000x`` quirk for the 1 gang metering module matches the same
+hardware by endpoint signature, but these manufacturers also ship layouts without the
+Green Power endpoint or the 0xE000 cluster, which that signature misses. This quirk
+matches them by manufacturer and takes precedence over the signature-matched one, so it
+carries the same Tuya plug features and spell.
 """
 
 from zha.quirks import TUYA_PLUG_ONOFF

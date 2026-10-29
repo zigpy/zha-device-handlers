@@ -1,8 +1,7 @@
 """Tuya TS000X Switches.
 
-The modules report the On/Off light device type, which makes ZHA create a light. The
-quirks keep that device type, so existing installations keep their light entity, add a
-switch and disable the light by default (only used for new installations).
+The 1 to 4 gang relay modules are matched by their endpoint signature (model only, any
+manufacturer), so the same devices match as with the former v1 quirks.
 """
 
 from zha.quirks import TUYA_PLUG_ONOFF
