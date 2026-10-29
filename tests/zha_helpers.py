@@ -8,6 +8,7 @@ import pathlib
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+from zha.application import Platform
 from zha.application.gateway import Gateway
 from zha.application.helpers import (
     CoordinatorConfiguration,
@@ -15,6 +16,7 @@ from zha.application.helpers import (
     ZHAConfiguration,
     ZHAData,
 )
+from zha.application.platforms import PlatformEntity
 from zha.quirks import DeviceRegistry
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.application
@@ -229,3 +231,64 @@ async def join_device_from_diagnostics(
     await gateway.async_block_till_done()
 
     return gateway.get_device(device.ieee)
+
+
+async def join_device_from_signature(
+    gateway: Gateway,
+    manufacturer: str,
+    model: str,
+    endpoints: dict[int, tuple[int, list[int], list[int]]],
+    registry: DeviceRegistry,
+) -> ZigbeeDevice:
+    """Join a device with the given signature, quirked by `registry`.
+
+    `endpoints` maps each endpoint id to its device type, input and output clusters.
+    """
+    device = zigpy.device.Device(
+        application=gateway.application_controller,
+        ieee=t.EUI64.convert("00:11:22:33:44:55:66:77"),
+        nwk=t.NWK(0x1234),
+    )
+    device.manufacturer = manufacturer
+    device.model = model
+    device.node_desc = zdo_t.NodeDescriptor(
+        logical_type=zdo_t.LogicalType.EndDevice, manufacturer_code=0x1002
+    )
+
+    for ep_id, (device_type, input_clusters, output_clusters) in endpoints.items():
+        ep = device.add_endpoint(ep_id)
+        ep.profile_id = ZHA_PROFILE_ID
+        ep.device_type = device_type
+
+        for cluster_id in input_clusters:
+            ep.add_input_cluster(cluster_id)
+
+        for cluster_id in output_clusters:
+            ep.add_output_cluster(cluster_id)
+
+    device = registry.resolve(device)
+
+    for ep_id, ep in device.endpoints.items():
+        if ep_id == 0:
+            continue
+
+        ep.request = AsyncMock(return_value=[0])
+
+        for cluster in (*ep.in_clusters.values(), *ep.out_clusters.values()):
+            _patch_cluster(cluster, {})
+
+    gateway.application_controller.devices[device.ieee] = device
+    await gateway.async_device_initialized(device)
+    await gateway.async_block_till_done()
+
+    return gateway.get_device(device.ieee)
+
+
+def get_climate(device: ZigbeeDevice) -> PlatformEntity:
+    """Return the one climate entity of the device."""
+    (entity,) = (
+        entity
+        for (platform, _), entity in device.platform_entities.items()
+        if platform == Platform.CLIMATE
+    )
+    return entity
