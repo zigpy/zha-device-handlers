@@ -1,5 +1,10 @@
 """Sonoff SNZB-06P - Zigbee presence sensor."""
 
+from types import MappingProxyType
+
+from zha.application.platforms import ZclPlatformEntity
+from zha.application.platforms.sensor import SonoffPresenceSenorIlluminationStatus
+from zha.application.platforms.virtual import SonoffPresenceSensorInit
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import KeepAlive
@@ -36,6 +41,26 @@ class SonoffFC11Cluster(CustomCluster):
         )
 
 
+class SonoffLastIlluminationStateSensor(SonoffPresenceSenorIlluminationStatus):
+    """Last illumination state, also when a read marked it unsupported."""
+
+    def _is_supported(self) -> bool:
+        # The device only measures the illumination when it detects presence, and
+        # answers reads of it with UNSUPPORTED_ATTRIBUTE otherwise. The quirk's
+        # SonoffFC11Cluster always defines the attribute, so skip all Sensor checks.
+        return ZclPlatformEntity._is_supported(self)
+
+
+class SonoffPresenceSensorInitWithoutRead(SonoffPresenceSensorInit):
+    """ZHA's SNZB-06P cluster setup, without reading the last illumination state.
+
+    The device answers that read with UNSUPPORTED_ATTRIBUTE unless presence was just
+    detected, so the value is only taken from its reports.
+    """
+
+    _server_cluster_config = MappingProxyType({})
+
+
 (
     QuirkBuilder("SONOFF", "SNZB-06P")
     .removes(IasZone.cluster_id)
@@ -44,5 +69,17 @@ class SonoffFC11Cluster(CustomCluster):
     # client side of the cluster. Unanswered reads make the device reboot itself
     # roughly every 8 minutes, resetting its settings.
     .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
+    .replaces_entity(
+        SonoffPresenceSensorInit,
+        SonoffPresenceSensorInitWithoutRead,
+        endpoint_id=1,
+        cluster_id=SonoffFC11Cluster.cluster_id,
+    )
+    .replaces_entity(
+        SonoffPresenceSenorIlluminationStatus,
+        SonoffLastIlluminationStateSensor,
+        endpoint_id=1,
+        cluster_id=SonoffFC11Cluster.cluster_id,
+    )
     .add_to_registry()
 )

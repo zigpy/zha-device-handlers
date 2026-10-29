@@ -1,0 +1,384 @@
+{
+  "version": 3,
+  "ieee": "ab:cd:ef:12:dd:23:ca:15",
+  "nwk": "0xB334",
+  "manufacturer": "SONOFF",
+  "model": "SNZB-06P",
+  "friendly_manufacturer": "SONOFF",
+  "friendly_model": "SNZB-06P",
+  "name": "SONOFF SNZB-06P",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.sonoff.snzb06p:SonoffPresenceSenorSNZB06P",
+  "exposes_features": [],
+  "manufacturer_code": 4742,
+  "power_source": "Mains",
+  "lqi": 240,
+  "rssi": -51,
+  "last_seen": "2025-09-18T10:27:28.172559+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4742,
+    "maximum_buffer_size": 82,
+    "maximum_incoming_transfer_size": 82,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 82,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "OCCUPANCY_SENSOR",
+        "id": 263
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "SONOFF"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "SNZB-06P"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0406",
+          "endpoint_attribute": "occupancy",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "occupancy",
+              "zcl_type": "map8",
+              "value": 0
+            },
+            {
+              "id": "0x0020",
+              "name": "ultrasonic_o_to_u_delay",
+              "zcl_type": "uint16",
+              "value": 15
+            },
+            {
+              "id": "0x0022",
+              "name": "ultrasonic_u_to_o_threshold",
+              "zcl_type": "uint8",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfc11",
+          "endpoint_attribute": "sonoff_manufacturer",
+          "attributes": [
+            {
+              "id": "0x2001",
+              "name": "last_illumination_state",
+              "zcl_type": "enum8",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfc57",
+          "endpoint_attribute": "works_with_all_hubs",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 4102
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "SONOFF",
+    "model": "SNZB-06P",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4742,
+      "maximum_buffer_size": 82,
+      "maximum_incoming_transfer_size": 82,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 82,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0107",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0406",
+          "0x0500",
+          "0xfc11",
+          "0xfc57"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0019"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "binary_sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-1030",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "Occupancy",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "occupancy",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "occupancy"
+      }
+    ],
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-3",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-1030-presence_detection_timeout",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "SonoffPresenceSenorTimeout",
+        "translation_key": "presence_detection_timeout",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 15,
+        "mode": "box",
+        "native_max_value": 60,
+        "native_min_value": 15,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      }
+    ],
+    "select": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-1030-detection_sensitivity",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "SonoffPresenceDetectionSensitivity",
+        "translation_key": "detection_sensitivity",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_option": "Low",
+        "enum": "SonoffPresenceDetectionSensitivityEnum",
+        "options": [
+          "Low",
+          "Medium",
+          "High"
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": 240,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": -51,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-64529-last_illumination",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "SonoffPresenceSenorIlluminationStatus",
+        "translation_key": "last_illumination_state",
+        "translation_placeholders": null,
+        "device_class": "enum",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "Light",
+        "suggested_display_precision": null,
+        "unit": null,
+        "options": [
+          "Dark",
+          "Light"
+        ]
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:dd:23:ca:15-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:dd:23:ca:15",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x00001006",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}

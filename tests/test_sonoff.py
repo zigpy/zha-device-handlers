@@ -1,17 +1,30 @@
-"""Tests for Sonoff ZBM5 quirks."""
+"""Tests for Sonoff quirks."""
 
+import json
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms import AttrConfig, ClusterConfig
+from zha.application.platforms.virtual import SonoffPresenceSensorInit
+from zha.const import STATE_CHANGED
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.security import IasZone
 
+from tests import zha_helpers
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
-from zhaquirks.sonoff.snzb06p import IlluminationStatus, SonoffFC11Cluster
+from zhaquirks.sonoff.snzb06p import (
+    IlluminationStatus,
+    SonoffFC11Cluster,
+    SonoffLastIlluminationStateSensor,
+    SonoffPresenceSensorInitWithoutRead,
+)
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
     SonoffDetachedRelayMask,
@@ -344,3 +357,150 @@ async def test_snzb06p_illumination_read_without_manufacturer_code(
 
     assert not cluster.is_attribute_unsupported("last_illumination_state")
     assert cluster.get("last_illumination_state") == IlluminationStatus.Light
+
+
+SNZB06P_DIAGNOSTICS = "sonoff-snzb-06p-0x00001006.json"
+SNZB06P_ILLUMINATION_UNIQUE_ID = "ab:cd:ef:12:dd:23:ca:15-1-64529-last_illumination"
+SNZB06P_ILLUMINATION_ATTR = SonoffFC11Cluster.AttributeDefs.last_illumination_state
+
+
+def _snzb06p_diagnostics(tmp_path, monkeypatch, fc11_attributes: list) -> None:
+    """Use the SNZB-06P diagnostics with the given 0xFC11 attributes."""
+    data = json.loads((zha_helpers.DEVICES_DIR / SNZB06P_DIAGNOSTICS).read_text())
+    (fc11,) = (
+        cluster
+        for cluster in data["endpoints"]["1"]["in_clusters"]
+        if cluster["cluster_id"] == "0xfc11"
+    )
+    fc11["attributes"] = fc11_attributes
+    (tmp_path / SNZB06P_DIAGNOSTICS).write_text(json.dumps(data))
+    monkeypatch.setattr(zha_helpers, "DEVICES_DIR", tmp_path)
+
+
+def _illumination_reads(cluster) -> int:
+    """Count the reads of 0x2001 sent to the device."""
+    return sum(
+        SNZB06P_ILLUMINATION_ATTR.id in call.args[0]
+        for call in cluster.read_attributes_raw.await_args_list
+    )
+
+
+async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monkeypatch):
+    """The illumination sensor is kept when a read marked 0x2001 unsupported."""
+    # Diagnostics of a device whose read of 0x2001 was answered with
+    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in #5473
+    _snzb06p_diagnostics(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "id": "0x2001",
+                "name": "last_illumination_state",
+                "zcl_type": "enum8",
+                "unsupported": True,
+            }
+        ],
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, SNZB06P_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        cluster = device.device.endpoints[1].sonoff_manufacturer
+        assert isinstance(cluster, SonoffFC11Cluster)
+        assert cluster.is_attribute_unsupported("last_illumination_state")
+
+        # The quirk's sensor replaces ZHA's, with the same unique ID, and has no value
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+        )
+        assert type(entity) is SonoffLastIlluminationStateSensor
+        assert entity.native_value is None
+
+        # The device reports the illumination after detecting presence
+        hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+        cluster.handle_message(hdr, args)
+        assert not cluster.is_attribute_unsupported("last_illumination_state")
+        assert entity.native_value == IlluminationStatus.Light.name
+
+        # A manual read answered with UNSUPPORTED_ATTRIBUTE still marks the attribute,
+        # the sensor stays but is unknown until the next report
+        cluster.read_attributes_raw = mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        SNZB06P_ILLUMINATION_ATTR.id,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                    )
+                ],
+            )
+        )
+        state_listener = mock.Mock()
+        entity.on_event(STATE_CHANGED, state_listener)
+        await cluster.read_attributes(["last_illumination_state"], allow_cache=False)
+        assert cluster.read_attributes_raw.await_count == 1
+
+        # No state change is published, HA keeps showing the last value until then
+        assert state_listener.call_count == 0
+        assert cluster.is_attribute_unsupported("last_illumination_state")
+        assert entity.is_supported()
+        assert (
+            device.get_platform_entity(
+                Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+            )
+            is entity
+        )
+        assert entity.native_value is None
+
+        cluster.handle_message(hdr, args)
+        assert entity.native_value == IlluminationStatus.Light.name
+
+        # The published state was `Light` all along
+        assert state_listener.call_count == 0
+
+
+def test_snzb06p_zha_init_only_reads_illumination_state():
+    """ZHA's SNZB-06P init entity does nothing but read the illumination state.
+
+    The quirk replaces it with one without any cluster config, so anything ZHA adds
+    to it later would be silently dropped as well.
+    """
+    assert SonoffPresenceSensorInit._server_cluster_config == {
+        SonoffFC11Cluster.cluster_id: ClusterConfig(
+            attributes={"last_illumination_state": AttrConfig(read_on_startup=False)}
+        )
+    }
+    assert not SonoffPresenceSensorInit._client_cluster_config
+
+
+async def test_snzb06p_illumination_state_not_read(tmp_path, monkeypatch):
+    """ZHA doesn't read 0x2001 when nothing is cached for it."""
+    _snzb06p_diagnostics(tmp_path, monkeypatch, [])
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, SNZB06P_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        cluster = device.device.endpoints[1].sonoff_manufacturer
+        assert cluster.get("last_illumination_state") is None
+
+        # ZHA still binds the cluster, so the device keeps reporting
+        assert cluster.bind.await_count == 1
+
+        # Not read when joining, nor when initializing from the device (mains startup)
+        assert _illumination_reads(cluster) == 0
+        await device.async_initialize(from_cache=False)
+        assert _illumination_reads(cluster) == 0
+        assert any(
+            type(entity) is SonoffPresenceSensorInitWithoutRead
+            for entity in device._discovered_entities
+        )
+
+        # The sensor exists and gets its value from the next report
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+        )
+        assert entity.native_value is None
+        hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+        cluster.handle_message(hdr, args)
+        assert entity.native_value == IlluminationStatus.Light.name
