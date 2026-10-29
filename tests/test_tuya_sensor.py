@@ -200,6 +200,28 @@ async def test_soil_sensor_0ints6wl_humidity_and_battery_size(
     assert ep.power.get("battery_quantity") == 2
 
 
+@pytest.mark.parametrize(
+    "raw_battery_state,expected_percent",
+    [(0, 20), (1, 100), (2, 200), (99, 100)],
+)
+async def test_soil_sensor_o9ofysmo_battery(
+    zigpy_device_from_v2_quirk, raw_battery_state, expected_percent
+):
+    """Test _TZE284_o9ofysmo enum battery (dp=14) conversion."""
+    quirked = zigpy_device_from_v2_quirk("_TZE284_o9ofysmo", "TS0601")
+    ep = quirked.endpoints[1]
+
+    ep.tuya_manufacturer.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(14, TuyaData(raw_battery_state))],
+        )
+    )
+
+    assert ep.power.get("battery_percentage_remaining") == expected_percent
+
+
 def test_valid_attributes(zigpy_device_from_v2_quirk):
     """Test that valid attributes on virtual clusters are populated by Tuya datapoints mappings."""
     quirked = zigpy_device_from_v2_quirk("_TZE200_bjawzodf", "TS0601")
