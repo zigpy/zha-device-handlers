@@ -106,12 +106,14 @@ class TuyaHysteresis(t.enum8):
 
 
 class TuyaPresetMode(t.enum8):
-    """Tuya preset mode."""
+    """Moes TRV602Z / TRV801Z preset mode (DP 2)."""
 
-    Eco = 0x00
-    Auto = 0x01
-    Off = 0x02
-    Heat = 0x03
+    Off = 0x00
+    Antifrost = 0x01
+    Eco = 0x02
+    Comfort = 0x03
+    Auto = 0x04
+    Manual = 0x05
 
 
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
@@ -164,6 +166,51 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
             await tuya_cluster.write_attributes({"schedule_enable": False})
 
         return results
+
+
+class MoesTrv602zThermostat(TuyaThermostatV2):
+    """Thermostat whose system mode is sent as the preset on DP 2."""
+
+    SYSTEM_MODE_TO_PRESET = {
+        Thermostat.SystemMode.Off: TuyaPresetMode.Off,
+        Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
+        Thermostat.SystemMode.Heat: TuyaPresetMode.Manual,
+    }
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Write system_mode as the matching preset_mode on the Tuya cluster."""
+        system_mode_attr = Thermostat.AttributeDefs.system_mode
+        attributes = dict(attributes)
+        system_mode = None
+        for key in list(attributes):
+            if key in (system_mode_attr, system_mode_attr.id, system_mode_attr.name):
+                system_mode = attributes.pop(key)
+
+        if attributes:
+            await super().write_attributes(attributes, **kwargs)
+
+        if system_mode is not None:
+            system_mode = Thermostat.SystemMode(system_mode)
+            preset = self.SYSTEM_MODE_TO_PRESET.get(system_mode)
+            if preset is None:
+                self.warning("Unsupported system mode: %s", system_mode)
+                return [
+                    [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.INVALID_VALUE, system_mode_attr.id
+                        )
+                    ]
+                ]
+            self._update_attribute(system_mode_attr.id, system_mode)
+            await self.endpoint.tuya_manufacturer.write_attributes(
+                {"preset_mode": preset}, **kwargs
+            )
+
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 (
@@ -707,34 +754,29 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
+    # DP 2 is the preset; the system mode follows it. System mode writes are sent
+    # as a preset by MoesTrv602zThermostat, so preset writes go out unchanged.
     .tuya_dp_multi(
         dp_id=2,
         attribute_mapping=[
             DPToAttributeMapping(
-                ep_attribute=TuyaThermostatV2.ep_attribute,
-                attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+                ep_attribute=MoesTrv602zThermostat.ep_attribute,
+                attribute_name=MoesTrv602zThermostat.AttributeDefs.system_mode.name,
                 converter=lambda x: {
-                    TuyaPresetMode.Auto: Thermostat.SystemMode.Auto,
-                    TuyaPresetMode.Eco: Thermostat.SystemMode.Auto,
-                    TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
                     TuyaPresetMode.Off: Thermostat.SystemMode.Off,
-                }[x],
+                    TuyaPresetMode.Auto: Thermostat.SystemMode.Auto,
+                }.get(x, Thermostat.SystemMode.Heat),
             ),
             DPToAttributeMapping(
                 ep_attribute=TuyaMCUCluster.ep_attribute,
                 attribute_name="preset_mode",
             ),
         ],
-        dp_converter=lambda x, _: {
-            Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
-            Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
-            Thermostat.SystemMode.Off: TuyaPresetMode.Off,
-        }[x],
     )
     .tuya_attribute(
         dp_id=2,
         attribute_name="preset_mode",
-        type=t.uint16_t,
+        type=TuyaPresetMode,
         is_manufacturer_specific=True,
     )
     .enum(
@@ -861,7 +903,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="hysteresis_mode",
         fallback_name="Hysteresis mode",
     )
-    .adds(TuyaThermostatV2)
+    .adds(MoesTrv602zThermostat)
     .skip_configuration()
     .add_to_registry()
 )

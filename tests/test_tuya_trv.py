@@ -53,23 +53,33 @@ TUYA_TEST_PLAN_V03 = (
     (
         b"\t\xc2\x02\x00q\x02\x04\x00\x01\x00",
         Thermostat.AttributeDefs.system_mode,
-        Thermostat.SystemMode.Auto,
-    ),  # Set to Auto (0x00), dp 2
+        Thermostat.SystemMode.Off,
+    ),  # Preset Off (0x00), dp 2
     (
         b"\t\xc2\x02\x00q\x02\x04\x00\x01\x01",
         Thermostat.AttributeDefs.system_mode,
-        Thermostat.SystemMode.Auto,
-    ),  # Set to Auto (0x01), dp 2
+        Thermostat.SystemMode.Heat,
+    ),  # Preset Antifrost (0x01), dp 2
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x02",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Heat,
+    ),  # Preset Eco (0x02), dp 2
     (
         b"\t\xc3\x02\x00r\x02\x04\x00\x01\x03",
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Heat,
-    ),  # Set to Heat (0x03), dp 2
+    ),  # Preset Comfort (0x03), dp 2
     (
-        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x02",
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x04",
         Thermostat.AttributeDefs.system_mode,
-        Thermostat.SystemMode.Off,
-    ),  # Set to Off (0x02), dp 2
+        Thermostat.SystemMode.Auto,
+    ),  # Preset Auto (0x04), dp 2
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x05",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Heat,
+    ),  # Preset Manual (0x05), dp 2
 )
 
 TUYA_SYS_MODE_V01 = {
@@ -98,9 +108,8 @@ TUYA_SYS_MODE_V03 = {
 }
 
 TUYA_SYS_MODE_V04 = {
-    Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x03"],
-    Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02"],
-    Thermostat.SystemMode.Auto: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x01"],
+    Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x05"],
+    Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x00"],
 }
 
 
@@ -378,3 +387,131 @@ def test_handle_get_data_invalid_datapoint(zigpy_device_from_v2_quirk):
         (Thermostat.AttributeDefs.occupied_heating_setpoint.id, 2100),
         (Thermostat.AttributeDefs.local_temperature.id, 2050),
     ]
+
+
+def _dp2_enum_frames(m: mock.MagicMock) -> list[int]:
+    """Return the enum values sent on DP 2 by the mocked endpoint request."""
+
+    values = []
+    for call in m.call_args_list:
+        data = call.kwargs["data"]
+        # ZCL header (3 bytes), status, tsn, then dp, dp type, length (2 bytes), value
+        if data[5] == 2:
+            assert data[6] == 0x04  # enum datapoint type
+            values.append(data[-1])
+    return values
+
+
+@pytest.mark.parametrize("manuf", ["_TZE204_qyr2m29i", "_TZE204_ltwbm23f"])
+@pytest.mark.parametrize("reported", [None, 0x00, 0x03, 0x05])
+@pytest.mark.parametrize("preset", list(range(6)))
+async def test_moes_trv602z_preset_mode_write(
+    zigpy_device_from_v2_quirk, manuf, reported, preset
+):
+    """Writing the preset sends that preset on DP 2, whatever the cached mode."""
+
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
+    ep = quirked.endpoints[1]
+
+    if reported is not None:
+        hdr, data = ep.tuya_manufacturer.deserialize(
+            b"\t\x01\x02\x00\x01\x02\x04\x00\x01" + bytes([reported])
+        )
+        ep.tuya_manufacturer.handle_get_data(data.data)
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        await ep.tuya_manufacturer.write_attributes({"preset_mode": preset})
+        await wait_for_zigpy_tasks()
+
+    assert _dp2_enum_frames(m1) == [preset]
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        Thermostat.AttributeDefs.system_mode.name,
+        Thermostat.AttributeDefs.system_mode.id,
+        Thermostat.AttributeDefs.system_mode,
+    ],
+)
+@pytest.mark.parametrize(
+    "system_mode, preset",
+    [
+        (Thermostat.SystemMode.Off, 0x00),
+        (Thermostat.SystemMode.Auto, 0x04),
+        (Thermostat.SystemMode.Heat, 0x05),
+    ],
+)
+async def test_moes_trv602z_system_mode_write(
+    zigpy_device_from_v2_quirk, key, system_mode, preset
+):
+    """Writing the system mode sends the matching preset on DP 2."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
+    ep = quirked.endpoints[1]
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {key: system_mode, "occupied_heating_setpoint": 2100}
+        )
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    assert _dp2_enum_frames(m1) == [preset]
+    # the setpoint is still sent on DP 4
+    assert [call.kwargs["data"][5] for call in m1.call_args_list] == [4, 2]
+    assert ep.thermostat.get("system_mode") == system_mode
+    assert ep.tuya_manufacturer.get("preset_mode") == preset
+
+
+async def test_moes_trv602z_unsupported_system_mode(zigpy_device_from_v2_quirk):
+    """A system mode the TRV has no preset for is not sent."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
+    ep = quirked.endpoints[1]
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {"system_mode": Thermostat.SystemMode.Cool}
+        )
+        await wait_for_zigpy_tasks()
+
+    assert status == [
+        foundation.WriteAttributesStatusRecord(
+            foundation.Status.INVALID_VALUE,
+            Thermostat.AttributeDefs.system_mode.id,
+        )
+    ]
+    assert m1.call_count == 0
+    assert ep.thermostat.get("system_mode") is None
+
+
+@pytest.mark.parametrize("preset", list(range(6)))
+def test_moes_trv602z_preset_mode_report(zigpy_device_from_v2_quirk, preset):
+    """A DP 2 report updates the preset and the system mode."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
+    ep = quirked.endpoints[1]
+
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\t\x01\x02\x00\x01\x02\x04\x00\x01" + bytes([preset])
+    )
+    ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert ep.tuya_manufacturer.get("preset_mode") == preset
+    assert ep.thermostat.get("system_mode") == {
+        0x00: Thermostat.SystemMode.Off,
+        0x04: Thermostat.SystemMode.Auto,
+    }.get(preset, Thermostat.SystemMode.Heat)
