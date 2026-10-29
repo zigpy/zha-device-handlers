@@ -81,12 +81,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     async def bind(self):
         """Bind cluster and enable manufacturer-specific reporting."""
-        result = await super().bind()
-        # This is a sleepy device, so the write frequently times out even when the
-        # device applies it. Best effort only: a failure must not break binding,
-        # enrollment or the battery path.
-        self.create_catching_task(self.write_attributes(self.attr_config))
-        return result
+        try:
+            return await super().bind()
+        finally:
+            # This is a sleepy device, so requests frequently time out even when the
+            # device applies them. The write is therefore also sent when the bind
+            # itself failed. Best effort only: a failure must not break binding,
+            # enrollment or the battery path.
+            self.create_catching_task(self.write_attributes(self.attr_config))
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Pass attribute update to another cluster if necessary."""

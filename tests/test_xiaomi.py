@@ -1664,6 +1664,25 @@ async def test_aqara_smoke_sensor_binding_mode_write_failure(zigpy_device_from_q
     assert write_mock.mock_calls == [mock.call({0x0009: 0x01})]
 
 
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock(side_effect=asyncio.TimeoutError))
+async def test_aqara_smoke_sensor_binding_failure_writes_mode(zigpy_device_from_quirk):
+    """Test the Aqara smoke sensor's mode write is also sent when the bind fails."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    write_mock = mock.AsyncMock(return_value=[[]])
+
+    with mock.patch.object(opple_cluster, "write_attributes", write_mock):
+        # the bind error is still raised, ZHA handles it
+        with pytest.raises(asyncio.TimeoutError):
+            await opple_cluster.bind()
+
+        # the write runs as a background task
+        await asyncio.sleep(0)
+
+    assert write_mock.mock_calls == [mock.call({0x0009: 0x01})]
+
+
 @pytest.mark.parametrize(
     "attr_redirect, attr_no_redirect",
     [
