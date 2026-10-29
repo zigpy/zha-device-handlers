@@ -100,6 +100,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FeedingSource,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.illumination
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
@@ -493,6 +494,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
         (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.illumination.Illumination, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
         (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
         (zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1, BatterySize.CR1632),
