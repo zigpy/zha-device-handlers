@@ -164,6 +164,7 @@ class TuyaFanCluster(TuyaAttributesCluster, Fan):
                     TUYA_SPEED_TO_FAN_MODE.get(TuyaSpeedFan(value), Fan.FanMode.Medium),
                 )
 
+
 class TuyaElectricalMeasurement(TuyaAttributesCluster, ElectricalMeasurement):
     """Tuya custom Electrical Measurement cluster using TuyaAttributesCluster."""
 
@@ -188,6 +189,7 @@ class TuyaElectricalMeasurement(TuyaAttributesCluster, ElectricalMeasurement):
         self.add_unsupported_attribute(
             ElectricalMeasurement.AttributeDefs.apparent_power.id
         )
+
 
 # Fan and Light Switch Quirk
 (
