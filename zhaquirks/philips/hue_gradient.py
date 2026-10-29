@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from zha.application import Platform
 from zha.application.helpers import safe_read
 from zha.application.platforms import ZclPlatformEntity
 from zha.application.platforms.light import HueLight
@@ -194,6 +193,16 @@ def decode_effect(frame: bytes) -> int | None:
     return frame[position] if position < len(frame) else None
 
 
+def find_endpoint_entity[T: ZclPlatformEntity](
+    entity: ZclPlatformEntity, entity_cls: type[T]
+) -> T | None:
+    """Return the entity of `entity_cls` on the same endpoint as `entity`."""
+    for other in entity.device.platform_entities.values():
+        if isinstance(other, entity_cls) and other.endpoint.id == entity.endpoint.id:
+            return other
+    return None
+
+
 class HueEffectsLight(HueLight):
     """Hue light that adds the native Hue effects to the effect list."""
 
@@ -216,15 +225,8 @@ class HueEffectsLight(HueLight):
 
     def _gradient_ended(self) -> None:
         """Tell the gradient scene select that the gradient was replaced."""
-        try:
-            select = self.device.get_entity(
-                Platform.SELECT,
-                endpoint_id=self.endpoint.id,
-                cluster_id=PhilipsHueLightCluster.cluster_id,
-            )
-        except LookupError:
-            return
-        if isinstance(select, HueGradientSceneSelect):
+        select = find_endpoint_entity(self, HueGradientSceneSelect)
+        if select is not None:
             select.set_gradient_off()
 
     async def async_turn_on(
@@ -352,15 +354,6 @@ class HueGradientSceneSelect(BaseSelectEntity, ZclPlatformEntity):
         """Return the active gradient scene, or off."""
         return self._current_option
 
-    def _light(self) -> HueEffectsLight | None:
-        try:
-            light = self.device.get_entity(
-                Platform.LIGHT, endpoint_id=self.endpoint.id, pick_first=True
-            )
-        except LookupError:
-            return None
-        return light if isinstance(light, HueEffectsLight) else None
-
     def set_gradient_off(self) -> None:
         """Mark the gradient as replaced by a single color or an effect."""
         if self._current_option != GRADIENT_OFF:
@@ -369,7 +362,7 @@ class HueGradientSceneSelect(BaseSelectEntity, ZclPlatformEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Apply a gradient scene, or return to a single color."""
-        light = self._light()
+        light = find_endpoint_entity(self, HueEffectsLight)
 
         if option == GRADIENT_OFF:
             # Re-applying the light's own color makes the whole light uniform

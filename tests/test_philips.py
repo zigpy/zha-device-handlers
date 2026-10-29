@@ -7,6 +7,7 @@ from zha.application import Platform
 from zha.application.platforms.event import EntityEventTriggeredEvent
 from zha.application.platforms.event.const import ButtonEventType
 from zha.application.platforms.light.const import EFFECT_OFF
+from zha.application.platforms.select import DefaultToneSelectEntity
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import (
     GreenPowerCommandReceived,
@@ -66,6 +67,7 @@ from zhaquirks.philips.hue_gradient import (
     decode_effect,
     decode_flags,
     effect_frame,
+    find_endpoint_entity,
     scene_frame,
 )
 from zhaquirks.philips.rdm002 import PhilipsRDM002
@@ -1150,3 +1152,68 @@ async def test_hue_flux_polling() -> None:
         report_state("0700011a7801")
         await light.async_update()
         assert select.state.current_option == GRADIENT_OFF
+
+        # Nothing is read while polling is disabled
+        gateway.config.allow_polling = False
+        report_state("230001fe0e")
+        await light.async_update()
+        assert light.state.effect == EFFECT_OFF
+
+        # An effect is not shown while the light is off
+        gateway.config.allow_polling = True
+        on_off_cluster = device.endpoints[11].zigpy_endpoint.in_clusters[
+            OnOff.cluster_id
+        ]
+        _patch_cluster(on_off_cluster, {OnOff.AttributeDefs.on_off.id: 0})
+        report_state("2100000e")
+        await light.async_update()
+        assert not light.state.on
+        assert light.state.effect == EFFECT_OFF
+
+
+async def test_hue_flux_effect_color_and_gradient_off() -> None:
+    """Test an effect with a color, turning the gradient off and restoring it."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, FLUX_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        hue_cluster = _accept_light_commands(device)
+        light = device.get_platform_entity(Platform.LIGHT, f"{FLUX_IEEE}-11")
+        select = device.get_platform_entity(
+            Platform.SELECT, f"{FLUX_IEEE}-11-gradient_scene"
+        )
+
+        # The color is set before the effect starts
+        await light.async_turn_on(effect="candle", xy_color=(0.5, 0.4))
+        assert _sent_frames(hue_cluster) == [effect_frame(HUE_EFFECTS["candle"]).hex()]
+        assert light.state.xy_color == (0.5, 0.4)
+        assert light.state.effect == "candle"
+
+        # Turning the gradient off re-applies the color of the light
+        for color in ({"color_temp": 370}, {"xy_color": (0.3, 0.3)}):
+            await light.async_turn_on(**color)
+            await select.async_select_option("blossom")
+            with mock.patch.object(
+                light, "async_turn_on", wraps=light.async_turn_on
+            ) as turn_on:
+                await select.async_select_option(GRADIENT_OFF)
+            turn_on.assert_awaited_once_with(**color)
+            assert select.state.current_option == GRADIENT_OFF
+
+        # Turning the gradient off while the light is off leaves the light off
+        await select.async_select_option("blossom")
+        await light.async_turn_off()
+        with mock.patch.object(light, "async_turn_on") as turn_on:
+            await select.async_select_option(GRADIENT_OFF)
+        turn_on.assert_not_called()
+        assert select.state.current_option == GRADIENT_OFF
+
+        # Only known options are restored
+        select.restore_external_state_attributes(state="crocus")
+        assert select.state.current_option == "crocus"
+        select.restore_external_state_attributes(state="unknown")
+        assert select.state.current_option == "crocus"
+
+        # Entities are looked up on the same endpoint
+        assert find_endpoint_entity(light, HueGradientSceneSelect) is select
+        assert find_endpoint_entity(light, DefaultToneSelectEntity) is None
