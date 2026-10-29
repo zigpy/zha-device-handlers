@@ -1,17 +1,37 @@
 """Tuya DP-based switches."""
 
-import zigpy.types as t
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from zhaquirks.builder import (
-    SensorDeviceClass,
-    SensorStateClass,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfPower,
-)
 from zhaquirks.tuya import PowerOnState
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import MoesBacklight
+from zhaquirks.tuya.mcu import MoesBacklight, TuyaAttributesCluster
+
+
+class TuyaElectricalMeasurement(TuyaAttributesCluster, ElectricalMeasurement):
+    """Tuya custom Electrical Measurement cluster using TuyaAttributesCluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init cluster and mark unused attributes as unsupported."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.ac_frequency.id
+        )
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.power_factor.id
+        )
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.apparent_power.id
+        )
+
 
 # 1 Gang Moes Switch
 (
@@ -71,38 +91,21 @@ from zhaquirks.tuya.mcu import MoesBacklight
         translation_key="backlight_switch",
         fallback_name="Backlight switch",
     )
-    .tuya_sensor(
+    .adds(TuyaElectricalMeasurement)
+    .tuya_dp(
         dp_id=21,
-        attribute_name="current",
-        type=t.uint32_t,
-        divisor=1000,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-        unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
-        fallback_name="Current",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_current",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=22,
-        attribute_name="power",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-        unit=UnitOfPower.WATT,
-        translation_key="power",
-        fallback_name="Power",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="active_power",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=23,
-        attribute_name="voltage",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
-        fallback_name="Voltage",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
     )
     .skip_configuration()
     .add_to_registry()
@@ -162,38 +165,21 @@ from zhaquirks.tuya.mcu import MoesBacklight
         translation_key="backlight_switch",
         fallback_name="Backlight switch",
     )
-    .tuya_sensor(
+    .adds(TuyaElectricalMeasurement)
+    .tuya_dp(
         dp_id=21,
-        attribute_name="current",
-        type=t.uint32_t,
-        divisor=1000,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-        unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
-        fallback_name="Current",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_current",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=22,
-        attribute_name="power",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-        unit=UnitOfPower.WATT,
-        translation_key="power",
-        fallback_name="Power",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="active_power",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=23,
-        attribute_name="voltage",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
-        fallback_name="Voltage",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
     )
     .skip_configuration()
     .add_to_registry()
@@ -254,38 +240,21 @@ from zhaquirks.tuya.mcu import MoesBacklight
         translation_key="backlight_switch",
         fallback_name="Backlight switch",
     )
-    .tuya_sensor(
+    .adds(TuyaElectricalMeasurement)
+    .tuya_dp(
         dp_id=21,
-        attribute_name="current",
-        type=t.uint32_t,
-        divisor=1000,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-        unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
-        fallback_name="Current",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_current",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=22,
-        attribute_name="power",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-        unit=UnitOfPower.WATT,
-        translation_key="power",
-        fallback_name="Power",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="active_power",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=23,
-        attribute_name="voltage",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
-        fallback_name="Voltage",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
     )
     .skip_configuration()
     .add_to_registry()
@@ -348,38 +317,21 @@ from zhaquirks.tuya.mcu import MoesBacklight
         translation_key="backlight_switch",
         fallback_name="Backlight switch",
     )
-    .tuya_sensor(
+    .adds(TuyaElectricalMeasurement)
+    .tuya_dp(
         dp_id=21,
-        attribute_name="current",
-        type=t.uint32_t,
-        divisor=1000,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-        unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
-        fallback_name="Current",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_current",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=22,
-        attribute_name="power",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-        unit=UnitOfPower.WATT,
-        translation_key="power",
-        fallback_name="Power",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="active_power",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=23,
-        attribute_name="voltage",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
-        fallback_name="Voltage",
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
     )
     .skip_configuration()
     .add_to_registry()
