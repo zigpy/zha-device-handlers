@@ -11,12 +11,17 @@ from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
+    Groups,
+    Identify,
     LevelControl,
     OnOff,
+    Ota,
     PowerConfiguration,
+    Scenes,
+    Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -104,6 +109,17 @@ ZCL_TUYA_VALVE_CHILD_LOCK_ON = b"\t2\x01\x03\x04\x07\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_AUTO_LOCK_ON = b"\t2\x01\x03\x04\x74\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_BATTERY_LOW = b"\t2\x01\x03\x04\x6e\x01\x00\x01\x01"
 
+
+# Input clusters of the Tuya TS0601 TRV signature, on top of Basic
+TUYA_TRV_SIGNATURE_CLUSTERS = {
+    1: {
+        Groups.cluster_id: ClusterType.Server,
+        Scenes.cluster_id: ClusterType.Server,
+        TuyaManufClusterAttributes.cluster_id: ClusterType.Server,
+        Time.cluster_id: ClusterType.Client,
+        Ota.cluster_id: ClusterType.Client,
+    }
+}
 
 ZCL_TUYA_VALVE_ZONNSMART_TEMPERATURE = (
     b"\tp\x01\x00\x02\x18\x02\x00\x04\x00\x00\x00\xd3"
@@ -469,11 +485,12 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
         ]
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
-async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
+async def test_zonnsmart_state_report(zigpy_device_from_v2_quirk):
     """Test thermostatic valves standard reporting from incoming commands."""
 
-    valve_dev = zigpy_device_from_quirk(quirk)
+    valve_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_e9ba97vf", "TS0601", cluster_ids=TUYA_TRV_SIGNATURE_CLUSTERS
+    )
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
 
     thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
@@ -531,11 +548,12 @@ async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
     ]
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
-async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
+async def test_zonnsmart_send_attribute(zigpy_device_from_v2_quirk):
     """Test thermostatic valve outgoing commands."""
 
-    valve_dev = zigpy_device_from_quirk(quirk)
+    valve_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_e9ba97vf", "TS0601", cluster_ids=TUYA_TRV_SIGNATURE_CLUSTERS
+    )
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
     thermostat_cluster = valve_dev.endpoints[1].thermostat
 
@@ -819,11 +837,12 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
 
 
 @time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.MoesHY368_Type1,))
-async def test_moes(zigpy_device_from_quirk, quirk):
+async def test_moes(zigpy_device_from_v2_quirk):
     """Test thermostatic valve outgoing commands."""
 
-    valve_dev = zigpy_device_from_quirk(quirk)
+    valve_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_ckud7u2l", "TS0601", cluster_ids=TUYA_TRV_SIGNATURE_CLUSTERS
+    )
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
     thermostat_cluster = valve_dev.endpoints[1].thermostat
     onoff_cluster = valve_dev.endpoints[1].on_off
@@ -2118,3 +2137,57 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+@pytest.mark.parametrize(
+    ("manufacturer", "model", "cluster_ids", "device_cls"),
+    [
+        (
+            "_TZE200_ckud7u2l",
+            "TS0601",
+            TUYA_TRV_SIGNATURE_CLUSTERS,
+            zhaquirks.tuya.ts0601_trv.MoesHY368Device,
+        ),
+        (
+            # This signature has no Tuya cluster, the quirk adds it
+            "_TYST11_ckud7u2l",
+            "kud7u2l",
+            {1: {Identify.cluster_id: ClusterType.Server}},
+            zhaquirks.tuya.ts0601_trv.MoesHY368Device,
+        ),
+        (
+            "_TZE200_e9ba97vf",
+            "TS0601",
+            TUYA_TRV_SIGNATURE_CLUSTERS,
+            zhaquirks.tuya.ts0601_trv.ZonnsmartTV01Device,
+        ),
+    ],
+)
+def test_tuya_trv_skips_zcl_thermostat_firmware(
+    zigpy_device_from_v2_quirk, manufacturer, model, cluster_ids, device_cls
+):
+    """Test the Tuya TRV quirks only apply to firmware without a ZCL thermostat."""
+
+    quirked = zigpy_device_from_v2_quirk(manufacturer, model, cluster_ids=cluster_ids)
+    assert isinstance(quirked, device_cls)
+    assert isinstance(
+        quirked.endpoints[1].thermostat, zhaquirks.tuya.TuyaThermostatCluster
+    )
+    assert isinstance(
+        quirked.endpoints[1].tuya_manufacturer,
+        zhaquirks.tuya.TuyaManufClusterAttributes,
+    )
+
+    # A device with a ZCL thermostat of its own is left alone
+    native = zigpy_device_from_v2_quirk(
+        manufacturer,
+        model,
+        cluster_ids={
+            1: {
+                Thermostat.cluster_id: ClusterType.Server,
+                TuyaManufClusterAttributes.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    assert not isinstance(native, device_cls)
+    assert type(native.endpoints[1].thermostat) is Thermostat
