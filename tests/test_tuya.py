@@ -2128,9 +2128,7 @@ async def test_ts0601_multigang_switch_control(zigpy_device_from_v2_quirk):
         await wait_for_zigpy_tasks()
 
         assert mock_cmd.call_count == 4
-        sent_dps = [
-            mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)
-        ]
+        sent_dps = [mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)]
         assert set(sent_dps) == {1, 2, 3, 4}
         for i in range(4):
             assert (
@@ -2143,9 +2141,7 @@ async def test_ts0601_multigang_switch_control(zigpy_device_from_v2_quirk):
         await wait_for_zigpy_tasks()
 
         assert mock_cmd.call_count == 4
-        sent_dps = [
-            mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)
-        ]
+        sent_dps = [mock_cmd.call_args_list[i][0][1].datapoints[0].dp for i in range(4)]
         assert set(sent_dps) == {1, 2, 3, 4}
         for i in range(4):
             assert (
