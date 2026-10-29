@@ -2347,15 +2347,14 @@ async def test_ts0601_fan_light_electrical_measurement(zigpy_device_from_v2_quir
     tuya_cluster = ep.in_clusters[TuyaMCUCluster.cluster_id]
 
     # Verify unsupported attributes are marked so ZHA does not create unavailable entities
-    assert (
-        ElectricalMeasurement.AttributeDefs.ac_frequency.id in em.unsupported_attributes
+    assert em.is_attribute_unsupported(
+        ElectricalMeasurement.AttributeDefs.ac_frequency.id
     )
-    assert (
-        ElectricalMeasurement.AttributeDefs.power_factor.id in em.unsupported_attributes
+    assert em.is_attribute_unsupported(
+        ElectricalMeasurement.AttributeDefs.power_factor.id
     )
-    assert (
+    assert em.is_attribute_unsupported(
         ElectricalMeasurement.AttributeDefs.apparent_power.id
-        in em.unsupported_attributes
     )
 
     # Verify constant configuration attributes on ElectricalMeasurement
