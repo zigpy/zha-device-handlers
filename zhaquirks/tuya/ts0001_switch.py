@@ -57,6 +57,7 @@ class CustomMetering(Metering, CustomCluster):
     .replaces(TuyaZBOnOffAttributeCluster)
     .replaces(TuyaZBExternalSwitchTypeCluster)
     .exposes_feature(TUYA_PLUG_ONOFF)
+    .light_as_switch()
     .tuya_enchantment()
     .add_to_registry()
 )
