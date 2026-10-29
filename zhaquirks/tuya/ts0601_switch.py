@@ -1,5 +1,7 @@
 """Tuya DP-based switches."""
 
+from typing import Any
+
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.tuya import PowerOnState
@@ -19,7 +21,7 @@ class TuyaElectricalMeasurement(TuyaAttributesCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init cluster and mark unused attributes as unsupported."""
         super().__init__(*args, **kwargs)
         self.add_unsupported_attribute(
