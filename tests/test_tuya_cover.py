@@ -2,15 +2,18 @@
 
 from unittest import mock
 
+import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import BorderSetting, ClickControl, TuyaMoesCover0601
 
 zhaquirks.setup()
 
@@ -225,22 +228,32 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     assert power_cluster.get("battery_percentage_remaining") == 170
 
 
-async def test_zemismart_zm25el_quirk(zigpy_device_from_v2_quirk):
+ZM25EL_MODELS = ["_TZE200_68nvbio9", "_TZE200_pw7mji0l"]
+
+
+def _sent_datapoints(req_mock) -> list[tuple[int, object]]:
+    """Decode the Tuya datapoints sent through a mocked endpoint request."""
+
+    datapoints = []
+    for call in req_mock.call_args_list:
+        _, payload = foundation.ZCLHeader.deserialize(call[1]["data"])
+        command, _ = TuyaCommand.deserialize(payload)
+        datapoints.extend((dp.dp, dp.data.payload) for dp in command.datapoints)
+    return datapoints
+
+
+@pytest.mark.parametrize("manufacturer", ZM25EL_MODELS)
+async def test_zemismart_zm25el_quirk(zigpy_device_from_v2_quirk, manufacturer):
     """Test Zemismart ZM25EL cover motor v2 quirk."""
 
-    quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
+    quirked = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
     assert isinstance(quirked, CustomZigpyDevice)
 
     ep = quirked.endpoints[1]
-
-    # Verify clusters are present
-    cover_cluster = ep.window_covering
-    assert cover_cluster is not None
-    assert isinstance(cover_cluster, TuyaWindowCovering)
-
-    tuya_cluster = ep.tuya_manufacturer
-    assert tuya_cluster is not None
-    assert isinstance(tuya_cluster, TuyaMCUCluster)
+    assert isinstance(ep.window_covering, TuyaWindowCovering)
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    assert ep.power.get("battery_size") == BatterySize.Built_in
+    assert ep.power.get("battery_quantity") == 1
 
 
 async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
@@ -254,9 +267,7 @@ async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
 
     tuya_cluster = ep.tuya_manufacturer
 
-    # Simulate device reporting position 75 (75% open) via DP 2
-    # ZM25EL inverts: Tuya 0=closed / 100=open → ZCL 100%=closed / 0%=open
-    # So Tuya 75 (open) → ZCL 25 (25% closed = 75% open)
+    # Tuya 0=closed / 100=open, ZCL 0=open / 100=closed: Tuya 75 -> ZCL 25
     tuya_cluster.handle_get_data(
         TuyaCommand(
             status=0,
@@ -271,8 +282,6 @@ async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
         )
         == 25
     )
-
-    # Verify attribute update event was fired
     assert len(cover_listener.attribute_updates) == 1
     assert (
         cover_listener.attribute_updates[0][0]
@@ -280,7 +289,7 @@ async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
     )
     assert cover_listener.attribute_updates[0][1] == 25
 
-    # Test DP 3 also updates position (position control echo)
+    # DP 3 (position control echo) also updates the position
     tuya_cluster.handle_get_data(
         TuyaCommand(
             status=0,
@@ -297,49 +306,50 @@ async def test_zemismart_zm25el_position_report(zigpy_device_from_v2_quirk):
     )
 
 
-async def test_zemismart_zm25el_open_command(zigpy_device_from_v2_quirk):
-    """Test that the open command sends the correct inverted DP value."""
+@pytest.mark.parametrize(
+    ("command_id", "expected_value"),
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, 0),
+        (WindowCovering.ServerCommandDefs.stop.id, 1),
+        (WindowCovering.ServerCommandDefs.down_close.id, 2),
+    ],
+)
+async def test_zemismart_zm25el_control_command(
+    zigpy_device_from_v2_quirk, command_id, expected_value
+):
+    """Test that open/stop/close send the matching DP 1 value."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
     ep = quirked.endpoints[1]
 
-    cover_cluster = ep.window_covering
-    tuya_cluster = ep.tuya_manufacturer
-
     with mock.patch.object(
-        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ep.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
     ) as req_mock:
-        await cover_cluster.command(WindowCovering.ServerCommandDefs.up_open.id)
+        await ep.window_covering.command(command_id)
         await wait_for_zigpy_tasks()
 
-        req_mock.assert_called_once()
-        # Verify the DP 1 command was sent with Open=0
-        call_data = req_mock.call_args[1]["data"]
-        # The payload contains DP 1 with value 0 (Open)
-        assert b"\x01" in call_data  # DP ID 1
-        assert call_data[-1:] == b"\x00"  # Value = Open (0)
+    assert _sent_datapoints(req_mock) == [(1, expected_value)]
 
 
-async def test_zemismart_zm25el_close_command(zigpy_device_from_v2_quirk):
-    """Test that the close command sends the correct inverted DP value."""
+async def test_zemismart_zm25el_go_to_lift_percentage(zigpy_device_from_v2_quirk):
+    """Test that go_to_lift_percentage sends the inverted position on DP 3."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
     ep = quirked.endpoints[1]
 
-    cover_cluster = ep.window_covering
-    tuya_cluster = ep.tuya_manufacturer
-
     with mock.patch.object(
-        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ep.tuya_manufacturer.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
     ) as req_mock:
-        await cover_cluster.command(WindowCovering.ServerCommandDefs.down_close.id)
+        await ep.window_covering.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 25
+        )
         await wait_for_zigpy_tasks()
 
-        req_mock.assert_called_once()
-        call_data = req_mock.call_args[1]["data"]
-        # The payload contains DP 1 with value 2 (Close)
-        assert b"\x01" in call_data  # DP ID 1
-        assert call_data[-1:] == b"\x02"  # Value = Close (2)
+    assert (3, 75) in _sent_datapoints(req_mock)
 
 
 async def test_zemismart_zm25el_battery_report(zigpy_device_from_v2_quirk):
@@ -348,10 +358,7 @@ async def test_zemismart_zm25el_battery_report(zigpy_device_from_v2_quirk):
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
     ep = quirked.endpoints[1]
 
-    tuya_cluster = ep.tuya_manufacturer
-
-    # Simulate device reporting battery 85% via DP 13
-    tuya_cluster.handle_get_data(
+    ep.tuya_manufacturer.handle_get_data(
         TuyaCommand(
             status=0,
             tsn=3,
@@ -359,20 +366,16 @@ async def test_zemismart_zm25el_battery_report(zigpy_device_from_v2_quirk):
         )
     )
 
-    # Battery percentage should be scaled by 2 (default tuya_battery scale)
-    power_cluster = ep.power
-    assert power_cluster.get("battery_percentage_remaining") == 170
+    # ZCL battery percentage is in half-percent units
+    assert ep.power.get("battery_percentage_remaining") == 170
 
 
 async def test_zemismart_zm25el_motor_fault_report(zigpy_device_from_v2_quirk):
     """Test that motor fault DP reports update the diagnostic binary sensor."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
-    ep = quirked.endpoints[1]
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
 
-    tuya_cluster = ep.tuya_manufacturer
-
-    # Simulate device reporting motor fault = false (no fault) via DP 12
     tuya_cluster.handle_get_data(
         TuyaCommand(
             status=0,
@@ -380,12 +383,8 @@ async def test_zemismart_zm25el_motor_fault_report(zigpy_device_from_v2_quirk):
             datapoints=[TuyaDatapointData(12, TuyaData(False))],
         )
     )
+    assert tuya_cluster.get("motor_fault") == t.Bool.false
 
-    # The quirk should have a tuya_dp_attribute for motor_fault
-    # This will be stored in the tuya cluster
-    assert not tuya_cluster.get("motor_fault")
-
-    # Simulate device reporting motor fault = true (fault detected)
     tuya_cluster.handle_get_data(
         TuyaCommand(
             status=0,
@@ -393,5 +392,34 @@ async def test_zemismart_zm25el_motor_fault_report(zigpy_device_from_v2_quirk):
             datapoints=[TuyaDatapointData(12, TuyaData(True))],
         )
     )
+    assert tuya_cluster.get("motor_fault") == t.Bool.true
 
-    assert tuya_cluster.get("motor_fault")
+
+@pytest.mark.parametrize(
+    ("attribute_name", "value", "dp_id"),
+    [
+        ("click_control", ClickControl.Up, 20),
+        ("click_control", ClickControl.Down, 20),
+        ("border", BorderSetting.Up, 16),
+        ("border", BorderSetting.Down, 16),
+        ("border", BorderSetting.Up_delete, 16),
+        ("border", BorderSetting.Down_delete, 16),
+        ("border", BorderSetting.Remove_top_bottom, 16),
+    ],
+)
+async def test_zemismart_zm25el_button_writes(
+    zigpy_device_from_v2_quirk, attribute_name, value, dp_id
+):
+    """Test that the click and limit buttons write the matching DP value."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_68nvbio9", "TS0601")
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        (status,) = await tuya_cluster.write_attributes({attribute_name: value})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    assert _sent_datapoints(req_mock) == [(dp_id, value)]

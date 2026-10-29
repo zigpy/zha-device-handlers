@@ -12,6 +12,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    BatterySize,
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
@@ -21,7 +22,6 @@ from zhaquirks.tuya import (
     TuyaWindowCoverControl,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import TuyaWindowCovering
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -179,7 +179,6 @@ class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
         MODELS_INFO: [
             ("_TZE200_fzo2pocs", "TS0601"),
             ("_TZE200_iossyxra", "TS0601"),
-            ("_TZE200_pw7mji0l", "TS0601"),
             ("_TZE200_9vpe3fl1", "TS0601"),
             ("_TZE200_sq6affpe", "TS0601"),
         ],
@@ -718,17 +717,10 @@ class ClickControl(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE200_68nvbio9", "TS0601")
-    # Core cover behaviour (DP1/2/3), Tuya 0=closed / 100=open so invert=True.
-    .tuya_cover(
-        control_dp=1,
-        position_state_dp=2,
-        position_control_dp=3,
-        invert=True,
-        cover_cfg=TuyaWindowCovering,
-    )
-    # Battery (DP13, raw 0–100).
-    .tuya_battery(dp_id=13)
-    # Reverse direction (DP5).
+    .applies_to("_TZE200_pw7mji0l", "TS0601")
+    # Tuya reports 0=closed / 100=open, so keep the default inversion.
+    .tuya_cover(control_dp=1, position_state_dp=2, position_control_dp=3)
+    .tuya_battery(dp_id=13, battery_type=BatterySize.Built_in, battery_qty=1)
     .tuya_enum(
         dp_id=5,
         attribute_name="motor_direction",
@@ -736,21 +728,14 @@ class ClickControl(t.enum8):
         translation_key="motor_direction",
         fallback_name="Motor direction",
     )
-    # Motor fault (DP12).
-    .tuya_dp_attribute(
+    .tuya_binary_sensor(
         dp_id=12,
         attribute_name="motor_fault",
-        type=bool,
-    )
-    .binary_sensor(
-        attribute_name="motor_fault",
-        cluster_id=TUYA_CLUSTER_ID,
         entity_type=EntityType.DIAGNOSTIC,
         device_class=BinarySensorDeviceClass.PROBLEM,
-        translation_key="motor_fault",
-        fallback_name="Motor fault",
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
     )
-    # Click control (DP20).
     .tuya_dp_attribute(
         dp_id=20,
         attribute_name="click_control",
@@ -761,7 +746,6 @@ class ClickControl(t.enum8):
         attribute_value=ClickControl.Up,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="click_up",
-        entity_type=EntityType.CONFIG,
         translation_key="click_up",
         fallback_name="Click up",
     )
@@ -770,11 +754,9 @@ class ClickControl(t.enum8):
         attribute_value=ClickControl.Down,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="click_down",
-        entity_type=EntityType.CONFIG,
         translation_key="click_down",
         fallback_name="Click down",
     )
-    # Border / limit calibration (DP16).
     .tuya_dp_attribute(
         dp_id=16,
         attribute_name="border",
@@ -785,7 +767,6 @@ class ClickControl(t.enum8):
         attribute_value=BorderSetting.Up,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_up",
-        entity_type=EntityType.CONFIG,
         translation_key="set_upper_limit",
         fallback_name="Set upper limit",
     )
@@ -794,7 +775,6 @@ class ClickControl(t.enum8):
         attribute_value=BorderSetting.Down,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_down",
-        entity_type=EntityType.CONFIG,
         translation_key="set_lower_limit",
         fallback_name="Set lower limit",
     )
@@ -803,7 +783,6 @@ class ClickControl(t.enum8):
         attribute_value=BorderSetting.Up_delete,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_up_delete",
-        entity_type=EntityType.CONFIG,
         translation_key="delete_upper_limit",
         fallback_name="Delete upper limit",
     )
@@ -812,7 +791,6 @@ class ClickControl(t.enum8):
         attribute_value=BorderSetting.Down_delete,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_down_delete",
-        entity_type=EntityType.CONFIG,
         translation_key="delete_lower_limit",
         fallback_name="Delete lower limit",
     )
@@ -821,7 +799,6 @@ class ClickControl(t.enum8):
         attribute_value=BorderSetting.Remove_top_bottom,
         cluster_id=TUYA_CLUSTER_ID,
         unique_id_suffix="border_remove_all",
-        entity_type=EntityType.CONFIG,
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
     )
