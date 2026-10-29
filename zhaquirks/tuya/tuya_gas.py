@@ -1,6 +1,7 @@
 """Tuya Gas Sensor."""
 
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.builder import (
@@ -13,7 +14,7 @@ from zhaquirks.builder import (
     UnitOfTime,
 )
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -105,9 +106,19 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         translation_key="fault_alarm",
         fallback_name="Fault alarm",
     )
-    .tuya_binary_sensor(
+    # DP 12 is True while the sensor is within its service life, so the PROBLEM
+    # entity inverts it. The attribute keeps the device's own value.
+    .tuya_dp_attribute(
         dp_id=12,
         attribute_name="lifecycle",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .binary_sensor(
+        attribute_name="lifecycle",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_converter=lambda x: not x,
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="lifecycle",
         fallback_name="Lifecycle",
