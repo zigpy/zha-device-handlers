@@ -168,6 +168,69 @@ def test_quirks_v2_number():
     assert number_metadata.unit == "s"
     assert number_metadata.mode is None
     assert number_metadata.multiplier is None
+    assert number_metadata.attribute_converter is None
+    assert number_metadata.value_converter is None
+
+
+def test_quirks_v2_number_converters():
+    """Test adding a quirk that defines a number with converters."""
+    registry = DeviceRegistry()
+
+    entry = (
+        QuirkBuilder("manufacturer", "model")
+        .adds(OnOff.cluster_id)
+        .number(
+            OnOff.AttributeDefs.on_time.name,
+            OnOff.cluster_id,
+            min_value=0,
+            max_value=5,
+            attribute_converter=lambda x: 5 - x,
+            value_converter=lambda x: 5 - int(x),
+            translation_key="on_time",
+            fallback_name="On time",
+        )
+        .add_to_registry(registry)
+    )
+
+    (number_metadata,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert isinstance(number_metadata, NumberMetadata)
+    assert number_metadata.attribute_converter is not None
+    assert number_metadata.value_converter is not None
+    # the converters invert a 0..5 scale in both directions
+    assert number_metadata.attribute_converter(1) == 4
+    assert number_metadata.value_converter(4) == 1
+
+
+@pytest.mark.parametrize(
+    ("attribute_converter", "value_converter"),
+    (
+        (lambda x: 5 - x, None),
+        (None, lambda x: 5 - int(x)),
+    ),
+)
+def test_quirks_v2_number_validation_failure_one_converter(
+    attribute_converter, value_converter
+):
+    """Test that a number requires both converters or neither."""
+    registry = DeviceRegistry()
+
+    with pytest.raises(
+        ValueError,
+        match="must have both attribute_converter and value_converter, or neither",
+    ):
+        (
+            QuirkBuilder("manufacturer", "model")
+            .adds(OnOff.cluster_id)
+            .number(
+                OnOff.AttributeDefs.on_time.name,
+                OnOff.cluster_id,
+                attribute_converter=attribute_converter,
+                value_converter=value_converter,
+                translation_key="on_time",
+                fallback_name="On time",
+            )
+            .add_to_registry(registry)
+        )
 
 
 def test_quirks_v2_binary_sensor():
