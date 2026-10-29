@@ -9,6 +9,7 @@ import zigpy.zcl.foundation as zcl_f
 
 from zhaquirks.tuya import (
     TUYA_ACTIVE_STATUS_RPT,
+    TUYA_ACTIVE_STATUS_RPT_ALT,
     TUYA_GET_DATA,
     TUYA_SET_DATA_RESPONSE,
     TUYA_SET_TIME,
@@ -285,6 +286,17 @@ def test_tuya_data_repr_empty():
         (
             TUYA_ACTIVE_STATUS_RPT,
             "handle_active_status_report",
+            (
+                TuyaCommand(
+                    status=0,
+                    tsn=2,
+                    datapoints=[TuyaDatapointData(2, TuyaData(1, 0, b"\x01\x01"))],
+                ),
+            ),
+        ),
+        (
+            TUYA_ACTIVE_STATUS_RPT_ALT,
+            "handle_active_status_report_alt",
             (
                 TuyaCommand(
                     status=0,
