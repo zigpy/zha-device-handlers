@@ -158,7 +158,7 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
         ),
         HAOZEE_TEMP_CALIBRATION_ATTR: (
             "local_temperature_calibration",
-            lambda value: value * 10,
+            None,  # the DP and the ZCL attribute are both in 0.1 °C
         ),
         HAOZEE_MIN_TEMP_LIMIT_ATTR: (
             "min_heat_setpoint_limit",
@@ -215,7 +215,7 @@ class HY08WEThermostat(TuyaThermostatCluster):
         ),
         "local_temperature_calibration": (
             HAOZEE_TEMP_CALIBRATION_ATTR,
-            lambda value: round(value / 10),
+            None,  # the DP and the ZCL attribute are both in 0.1 °C
         ),
     }
 
