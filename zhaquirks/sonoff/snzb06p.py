@@ -32,6 +32,7 @@ class SonoffFC11Cluster(CustomCluster):
         last_illumination_state = ZCLAttributeDef(
             id=ATTR_SONOFF_ILLUMINATION_STATUS,
             type=IlluminationStatus,
+            manufacturer_code=None,
         )
 
 
