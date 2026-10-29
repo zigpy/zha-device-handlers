@@ -9,6 +9,7 @@ from unittest import mock
 
 import pytest
 import zigpy.device
+import zigpy.exceptions
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
@@ -1571,6 +1572,203 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     assert len(ias_listener.attribute_updates) == 1
     assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
+
+
+async def test_aqara_smoke_sensor_ias_zone_cluster(zigpy_device_from_quirk):
+    """Test that the Aqara smoke sensor keeps the device's real IAS Zone cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+
+    ias_cluster = device.endpoints[1].ias_zone
+
+    # the cluster must not be local, or ZHA can't write the CIE address, bind and enroll
+    assert not isinstance(ias_cluster, zhaquirks.LocalDataCluster)
+
+    # zone_type is still provided by the quirk, so the device class never depends on a read
+    assert (
+        ias_cluster.get(IasZone.AttributeDefs.zone_type.name)
+        == IasZone.ZoneType.Fire_Sensor
+    )
+
+
+async def test_aqara_smoke_sensor_zone_status_read_from_cache(zigpy_device_from_quirk):
+    """Test that zone_status reads never reach the device and can't clear an alarm."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    ias_cluster = device.endpoints[1].ias_zone
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    zone_status = IasZone.AttributeDefs.zone_status
+    zone_state = IasZone.AttributeDefs.zone_state
+
+    # an alarm reported by the Opple cluster's smoke attribute
+    opple_cluster.update_attribute(0x013A, 1)
+    assert ias_cluster.get(zone_status.id) == 1
+
+    # the device itself would answer zone_status without the alarm bit
+    device_values = {
+        zone_state.id: TypeValue(type=DataTypeId.enum8, value=1),
+        zone_status.id: TypeValue(type=DataTypeId.map16, value=0x0020),
+    }
+
+    async def read_attributes_raw(attr_ids, **kwargs):
+        return (
+            [
+                foundation.ReadAttributeRecord(
+                    attr_id, foundation.Status.SUCCESS, device_values[attr_id]
+                )
+                for attr_id in attr_ids
+            ],
+        )
+
+    with mock.patch.object(
+        ias_cluster, "read_attributes_raw", side_effect=read_attributes_raw
+    ) as read_mock:
+        for attr in (zone_status.id, zone_status.name, zone_status):
+            success, failure = await ias_cluster.read_attributes([attr])
+            assert success == {attr: 1}
+            assert failure == {}
+        assert read_mock.call_count == 0
+
+        # other attributes are still read from the device
+        success, failure = await ias_cluster.read_attributes(
+            [zone_status.name, zone_state.name]
+        )
+        assert success == {zone_status.name: 1, zone_state.name: 1}
+        assert failure == {}
+        assert read_mock.call_count == 1
+        assert read_mock.call_args[0][0] == [zone_state.id]
+
+    # the alarm is still active
+    assert ias_cluster.get(zone_status.id) == 1
+
+
+async def test_aqara_smoke_sensor_battery(zigpy_device_from_quirk):
+    """Test both battery paths of the Aqara smoke sensor."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # the cluster must not be local, or ZHA can't bind it and configure reporting
+    assert not isinstance(power_cluster, zhaquirks.LocalDataCluster)
+
+    # standard battery voltage report (firmware 0x13): 2.9V within 2.475V-3.0V
+    power_cluster.update_attribute(zcl_power_voltage_id, 29)
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0] == (zcl_power_voltage_id, 29)
+    assert power_listener.attribute_updates[1] == (zcl_power_percent_id, 162)
+
+    # Xiaomi attribute report blob path (firmware 0x11) still works
+    power_cluster.battery_reported(2900)
+    assert len(power_listener.attribute_updates) == 4
+    assert power_listener.attribute_updates[2] == (zcl_power_voltage_id, 29.0)
+    assert power_listener.attribute_updates[3] == (zcl_power_percent_id, 162)
+
+    # ... as does a Xiaomi battery percentage report
+    power_cluster.battery_percent_reported(50)
+    assert len(power_listener.attribute_updates) == 5
+    assert power_listener.attribute_updates[4] == (zcl_power_percent_id, 100)
+
+    # the blob percentage follows the exact millivolts, not the rounded voltage
+    power_cluster.battery_reported(2486)
+    assert len(power_listener.attribute_updates) == 7
+    assert power_listener.attribute_updates[5] == (zcl_power_voltage_id, 24.9)
+    assert power_listener.attribute_updates[6] == (zcl_power_percent_id, 4)
+
+    # battery size and quantity are still provided by the quirk
+    assert (
+        power_cluster.get(PowerConfiguration.AttributeDefs.battery_quantity.name) == 1
+    )
+    assert (
+        power_cluster.get(PowerConfiguration.AttributeDefs.battery_size.name)
+        == BatterySize.Unknown
+    )
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+async def test_aqara_smoke_sensor_binding_writes_mode(zigpy_device_from_quirk):
+    """Test binding the Aqara smoke sensor enables manufacturer-specific reporting."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    p1 = mock.patch.object(opple_cluster, "create_catching_task")
+    p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
+
+    with p1 as mock_task, p2 as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await opple_cluster.bind()
+
+        # the mode write is deferred to a task, so nothing has gone out yet
+        assert len(request_mock.mock_calls) == 0
+        assert mock_task.call_count == 1
+
+        await mock_task.call_args[0][0]
+
+        assert len(request_mock.mock_calls) == 1
+        assert request_mock.mock_calls[0].kwargs["cluster"] == 0xFCC0
+        # manufacturer specific write of 0x0009 (uint8) = 1, manufacturer code 0x115F
+        assert (
+            request_mock.mock_calls[0].kwargs["data"] == b"\x04_\x11\x01\x02\t\x00 \x01"
+        )
+
+
+@mock.patch(
+    "zigpy.zcl.Cluster.bind", mock.AsyncMock(return_value=mock.sentinel.bind_result)
+)
+async def test_aqara_smoke_sensor_binding_mode_write_failure(zigpy_device_from_quirk):
+    """Test binding the Aqara smoke sensor survives a failing mode write."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    write_mock = mock.AsyncMock(side_effect=asyncio.TimeoutError)
+
+    with mock.patch.object(opple_cluster, "write_attributes", write_mock):
+        result = await opple_cluster.bind()
+
+        # the write runs as a background task, let it fail and be swallowed
+        await asyncio.sleep(0)
+
+    assert result is mock.sentinel.bind_result
+    assert write_mock.mock_calls == [mock.call({0x0009: 0x01})]
+
+
+@pytest.mark.parametrize(
+    "bind_error, expected_writes",
+    [
+        # a failed bind still sends the write, ZHA handles the error
+        (TimeoutError(), [mock.call({0x0009: 0x01})]),
+        (zigpy.exceptions.DeliveryError("failed"), [mock.call({0x0009: 0x01})]),
+        # a cancelled bind (e.g. shutdown or a re-join) doesn't
+        (asyncio.CancelledError(), []),
+    ],
+)
+async def test_aqara_smoke_sensor_binding_failure_writes_mode(
+    zigpy_device_from_quirk, bind_error, expected_writes
+):
+    """Test the Aqara smoke sensor's mode write is also sent when the bind fails."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    write_mock = mock.AsyncMock(return_value=[[]])
+    bind_mock = mock.AsyncMock(side_effect=bind_error)
+
+    with (
+        mock.patch("zigpy.zcl.Cluster.bind", bind_mock),
+        mock.patch.object(opple_cluster, "write_attributes", write_mock),
+    ):
+        # the bind error is still raised
+        with pytest.raises(type(bind_error)):
+            await opple_cluster.bind()
+
+        # the write runs as a background task
+        await asyncio.sleep(0)
+
+    assert write_mock.mock_calls == expected_writes
 
 
 @pytest.mark.parametrize(
