@@ -1,4 +1,4 @@
-"""Tests for Sonoff ZBM5 quirks."""
+"""Tests for Sonoff quirks."""
 
 import json
 from unittest import mock
@@ -380,7 +380,9 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
     (tmp_path / SNZB06P_DIAGNOSTICS).write_text(json.dumps(data))
     monkeypatch.setattr(zha_helpers, "DEVICES_DIR", tmp_path)
 
-    # zigpy's database restores the persisted mark into the cache without an event
+    # zigpy's database restores the persisted mark into the cache without an event.
+    # The helper restores it with `add_unsupported_attribute()`, which emits one, and
+    # that is now ignored for report-only attributes.
     def restore_unsupported_attribute(self, attr, **kwargs):
         self._attr_cache.mark_unsupported(self.find_attribute(attr))
 
