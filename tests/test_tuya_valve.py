@@ -1,14 +1,16 @@
 """Tests for Tuya quirks."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 import pytest
 import time_machine
+from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
@@ -198,11 +200,50 @@ async def test_giex_functions():
     """Test various Giex Valve functions."""
     assert zhaquirks.tuya.tuya_valve.giex_string_to_td("12:01:05,3") == 43265
     assert zhaquirks.tuya.tuya_valve.giex_string_to_dt("--:--:--") is None
+    assert zhaquirks.tuya.tuya_valve.giex_string_to_iso("--:--:--") is None
 
     with time_machine.travel("2024-10-02 12:10:23 +0100"):
         assert zhaquirks.tuya.tuya_valve.giex_string_to_dt(
             "20:12:01"
         ) == datetime.fromisoformat("2024-10-02T20:12:01+04:00")
+
+
+async def test_giex_02_timestamp_sensors():
+    """Test the Giex GX02 start/end time sensors return timezone-aware datetimes."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-7ytb3h8u-ts0601-0x00000048.json", DEVICE_REGISTRY
+        )
+        tuya_cluster = device.device.endpoints[1].tuya_manufacturer
+        start_time = tuya_cluster.AttributeDefs.irrigation_start_time
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=f"{device.ieee}-1-irrigation_start_time"
+        )
+
+        # A device report is cached as an ISO 8601 string, which persists unchanged
+        with time_machine.travel("2024-10-02 12:10:23 +0100", tick=False):
+            hdr, data = tuya_cluster.deserialize(
+                b"\x09\x5d\x02\x00\x4c\x65\x03\x00\x0821:40:15"
+            )
+            assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+        assert tuya_cluster.get(start_time.name) == "2024-10-02T21:40:15+04:00"
+        assert entity.native_value == datetime(
+            2024, 10, 2, 21, 40, 15, tzinfo=timezone(timedelta(hours=4))
+        )
+
+        # Values persisted by earlier quirk versions are restored as strings or ints
+        tuya_cluster._attr_cache.set_value(
+            start_time, "2026-08-26 21:40:15.955856+04:00"
+        )
+        assert entity.native_value == datetime(
+            2026, 8, 26, 21, 40, 15, 955856, tzinfo=timezone(timedelta(hours=4))
+        )
+
+        # Neither a pre-#4047 ZCL epoch timestamp nor a bare device time string
+        for value in (781134015, "05:36:38"):
+            tuya_cluster._attr_cache.set_value(start_time, value)
+            assert entity.native_value is None
 
 
 @pytest.mark.parametrize(
