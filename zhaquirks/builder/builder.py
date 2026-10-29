@@ -1156,7 +1156,7 @@ class QuirkBuilder:
         )
         return self
 
-    def light_as_switch(self, endpoint_id: int = 1) -> Self:
+    def light_as_switch(self, endpoint_id: int) -> Self:
         """Expose the On/Off light of an endpoint as a switch, and disable the light.
 
         For devices that are no lights (e.g. relay modules) but report an On/Off

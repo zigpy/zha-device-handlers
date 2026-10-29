@@ -29,7 +29,7 @@ def _tuya_ts0001_quirk(registry: DeviceRegistry, *, light_as_switch: bool):
     )
 
     if light_as_switch:
-        builder = builder.light_as_switch()
+        builder = builder.light_as_switch(endpoint_id=1)
 
     builder.add_to_registry(registry)
 
