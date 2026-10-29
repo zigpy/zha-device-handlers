@@ -26,6 +26,10 @@ class SonoffFC11Cluster(CustomCluster):
     cluster_id = SONOFF_CLUSTER_FC11_ID
     ep_attribute = "sonoff_manufacturer"
 
+    # The device only measures the illumination when it detects presence, and answers
+    # reads of it with UNSUPPORTED_ATTRIBUTE otherwise
+    _REPORT_ONLY_ATTRIBUTES = frozenset({ATTR_SONOFF_ILLUMINATION_STATUS})
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 

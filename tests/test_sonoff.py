@@ -1,13 +1,20 @@
-"""Tests for Sonoff ZBM5 quirks."""
+"""Tests for Sonoff quirks."""
 
+import json
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms.sensor import SonoffPresenceSenorIlluminationStatus
+from zha.quirks import DEVICE_REGISTRY
+import zigpy.zcl
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.security import IasZone
 
+from tests import zha_helpers
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
@@ -317,7 +324,7 @@ async def test_snzb06p_illumination_report_without_manufacturer_code(
 async def test_snzb06p_illumination_read_without_manufacturer_code(
     zigpy_device_from_v2_quirk,
 ):
-    """0x2001 is read without a manufacturer code, and a report clears its unsupported mark."""
+    """0x2001 is read without a manufacturer code, and a failed read doesn't mark it."""
     cluster = _snzb06p_fc11_cluster(zigpy_device_from_v2_quirk)
     attr_id = SonoffFC11Cluster.AttributeDefs.last_illumination_state.id
 
@@ -336,11 +343,88 @@ async def test_snzb06p_illumination_read_without_manufacturer_code(
 
     assert read_mock.await_count == 1
     assert read_mock.await_args.kwargs["manufacturer"] is None
-    assert cluster.is_attribute_unsupported("last_illumination_state")
+    assert not cluster.is_attribute_unsupported("last_illumination_state")
+    assert not cluster._attr_cache.is_unsupported(
+        SonoffFC11Cluster.AttributeDefs.last_illumination_state
+    )
 
-    # The next report from the device stores the value and clears the mark
+    # The next report from the device stores the value
     hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
     cluster.handle_message(hdr, args)
 
-    assert not cluster.is_attribute_unsupported("last_illumination_state")
     assert cluster.get("last_illumination_state") == IlluminationStatus.Light
+
+
+SNZB06P_DIAGNOSTICS = "sonoff-snzb-06p-0x00001006.json"
+SNZB06P_ILLUMINATION_UNIQUE_ID = "ab:cd:ef:12:dd:23:ca:15-1-64529-last_illumination"
+
+
+async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monkeypatch):
+    """The illumination sensor is kept when an earlier read marked 0x2001 unsupported."""
+    # Diagnostics of a device whose read of 0x2001 was answered with
+    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in #5473
+    data = json.loads((zha_helpers.DEVICES_DIR / SNZB06P_DIAGNOSTICS).read_text())
+    (fc11,) = (
+        cluster
+        for cluster in data["endpoints"]["1"]["in_clusters"]
+        if cluster["cluster_id"] == "0xfc11"
+    )
+    fc11["attributes"] = [
+        {
+            "id": "0x2001",
+            "name": "last_illumination_state",
+            "zcl_type": "enum8",
+            "unsupported": True,
+        }
+    ]
+    (tmp_path / SNZB06P_DIAGNOSTICS).write_text(json.dumps(data))
+    monkeypatch.setattr(zha_helpers, "DEVICES_DIR", tmp_path)
+
+    # zigpy's database restores the persisted mark into the cache without an event.
+    # The helper restores it with `add_unsupported_attribute()`, which emits one, and
+    # that is now ignored for report-only attributes.
+    def restore_unsupported_attribute(self, attr, **kwargs):
+        self._attr_cache.mark_unsupported(self.find_attribute(attr))
+
+    monkeypatch.setattr(
+        zigpy.zcl.Cluster, "add_unsupported_attribute", restore_unsupported_attribute
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, SNZB06P_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        cluster = device.device.endpoints[1].sonoff_manufacturer
+        assert isinstance(cluster, SonoffFC11Cluster)
+        assert cluster._attr_cache.is_unsupported(
+            SonoffFC11Cluster.AttributeDefs.last_illumination_state
+        )
+
+        # ZHA's own sensor is created, with its unique ID, but has no value yet
+        entity = device.get_platform_entity(
+            Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+        )
+        assert type(entity) is SonoffPresenceSenorIlluminationStatus
+        assert entity.native_value is None
+
+        # The device reports the illumination after detecting presence
+        hdr, args = cluster.deserialize(SNZB06P_ILLUMINATION_REPORT)
+        cluster.handle_message(hdr, args)
+        assert entity.native_value == IlluminationStatus.Light.name
+
+        # A later read answered with UNSUPPORTED_ATTRIBUTE keeps the value
+        cluster.read_attributes_raw = mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.ReadAttributeRecord(
+                        SonoffFC11Cluster.AttributeDefs.last_illumination_state.id,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                    )
+                ],
+            )
+        )
+        await cluster.read_attributes(["last_illumination_state"])
+
+        assert cluster.read_attributes_raw.await_count == 1
+        assert not cluster.is_attribute_unsupported("last_illumination_state")
+        assert entity.native_value == IlluminationStatus.Light.name

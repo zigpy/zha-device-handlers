@@ -1075,6 +1075,89 @@ async def test_custom_cluster_constant_attributes_supported(
         cluster.is_attribute_unsupported("unknown_attr")
 
 
+async def test_custom_cluster_report_only_attributes(device_mock) -> None:
+    """Ensure report-only attributes are never marked unsupported."""
+    registry = DeviceRegistry()
+
+    class TestCluster(CustomCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+        _REPORT_ONLY_ATTRIBUTES = frozenset({1})
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            """Attribute definitions."""
+
+            report_only_attr = foundation.ZCLAttributeDef(id=1, type=t.uint8_t)
+            device_attr = foundation.ZCLAttributeDef(id=2, type=t.uint8_t)
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds(TestCluster)
+        .add_to_registry(registry)
+    )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].in_clusters[TestCluster.cluster_id]
+    assert isinstance(cluster, TestCluster)
+
+    report_only_attr = TestCluster.AttributeDefs.report_only_attr
+    device_attr = TestCluster.AttributeDefs.device_attr
+
+    unsupported_listener = mock.Mock()
+    cluster.on_event(zcl.AttributeUnsupportedEvent.event_type, unsupported_listener)
+
+    # the database restores a mark from before the quirk without emitting an event
+    cluster._attr_cache.mark_unsupported(report_only_attr)
+    for attr in (report_only_attr, report_only_attr.id, report_only_attr.name):
+        assert not cluster.is_attribute_unsupported(attr)
+    assert cluster.get(report_only_attr.name) is None
+
+    # a report stores the value and clears the restored mark
+    cluster.update_attribute(report_only_attr.id, 5)
+    assert not cluster._attr_cache.is_unsupported(report_only_attr)
+    assert cluster.get(report_only_attr.name) == 5
+
+    # the device answers reads of both attributes with UNSUPPORTED_ATTRIBUTE
+    read_mock = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    attr.id, foundation.Status.UNSUPPORTED_ATTRIBUTE
+                )
+                for attr in (report_only_attr, device_attr)
+            ],
+        )
+    )
+    with mock.patch.object(cluster, "_read_attributes", read_mock):
+        success, failure = await cluster.read_attributes(
+            [report_only_attr.name, device_attr.name]
+        )
+
+    assert success == {}
+    assert failure == {
+        report_only_attr.name: foundation.Status.UNSUPPORTED_ATTRIBUTE,
+        device_attr.name: foundation.Status.UNSUPPORTED_ATTRIBUTE,
+    }
+
+    # the report-only attribute is neither marked in the cache nor in the database
+    # (the event is what persists the mark), and keeps its last reported value
+    assert not cluster._attr_cache.is_unsupported(report_only_attr)
+    assert not cluster.is_attribute_unsupported(report_only_attr)
+    assert cluster.get(report_only_attr.name) == 5
+
+    # other attributes still follow the device
+    assert cluster.is_attribute_unsupported(device_attr)
+    assert [
+        call.args[0].attribute_id for call in unsupported_listener.call_args_list
+    ] == [device_attr.id]
+
+    # explicitly adding an unsupported attribute is ignored the same way
+    cluster.add_unsupported_attribute(report_only_attr.id)
+    assert not cluster._attr_cache.is_unsupported(report_only_attr)
+    assert unsupported_listener.call_count == 1
+
+
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
     registry = DeviceRegistry()
