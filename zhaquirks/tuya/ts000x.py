@@ -35,8 +35,6 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
-GREEN_POWER_ENDPOINT = 242
-
 # Tuya 1 gang switch module with restore power state support.
 SWITCH_1G_GPP_SIGNATURE = {
     MODEL: "TS0001",
@@ -667,9 +665,9 @@ SWITCH_4G_GPP_VAR2_SIGNATURE = {
 }
 
 
-def _add_quirk(signature: dict, *, removes_green_power: bool = False) -> None:
+def _add_quirk(signature: dict) -> None:
     """Add the quirk for the signature of a TS000X switch module."""
-    builder = (
+    (
         TuyaQuirkBuilder(None, signature[MODEL])
         .filter(signature_matches(signature))
         .replace_cluster_occurrences(
@@ -687,16 +685,12 @@ def _add_quirk(signature: dict, *, removes_green_power: bool = False) -> None:
         )
         .exposes_feature(TUYA_PLUG_ONOFF)
         .tuya_enchantment()
+        .add_to_registry()
     )
 
-    if removes_green_power:
-        builder = builder.removes_endpoint(GREEN_POWER_ENDPOINT)
 
-    builder.add_to_registry()
-
-
-_add_quirk(SWITCH_1G_GPP_SIGNATURE, removes_green_power=True)
-_add_quirk(SWITCH_1G_METERING_SIGNATURE, removes_green_power=True)
+_add_quirk(SWITCH_1G_GPP_SIGNATURE)
+_add_quirk(SWITCH_1G_METERING_SIGNATURE)
 _add_quirk(SWITCH_2G_GPP_SIGNATURE)
 _add_quirk(SWITCH_2G_METERING_SIGNATURE)
 _add_quirk(SWITCH_2G_VAR03_SIGNATURE)
