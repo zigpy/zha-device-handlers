@@ -2,6 +2,10 @@
 
 from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zigpy.types import enum8
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -29,6 +33,26 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
+
+
+class BacklightMode(enum8):
+    """Backlight mode."""
+
+    Off = 0x00
+    On = 0x01
+
+
+class TuyaZBOnOffAttributeClusterBacklight(TuyaZBOnOffAttributeCluster):
+    """Tuya OnOff cluster with backlight mode support."""
+
+    class AttributeDefs(TuyaZBOnOffAttributeCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode = foundation.ZCLAttributeDef(
+            id=0x5000,
+            type=BacklightMode,
+            access="rw",
+        )
 
 
 class Switch_1G_GPP(EnchantedDevice):
@@ -1185,3 +1209,27 @@ class Switch_4G_GPP_Var2(EnchantedDevice):
             },
         },
     }
+
+
+BACKLIGHT_MODELS = (
+    ("_TZ3000_n1h5w253", "TS0001"),
+    ("_TZ3000_c7xsiexw", "TS0002"),
+    ("_TZ3000_6bbk8rmq", "TS0004"),
+)
+
+for manufacturer, model in BACKLIGHT_MODELS:
+    (
+        QuirkBuilder(manufacturer, model)
+        .replaces(TuyaZBOnOffAttributeClusterBacklight, endpoint_id=1)
+        .enum(
+            TuyaZBOnOffAttributeClusterBacklight.AttributeDefs.backlight_mode.name,
+            BacklightMode,
+            TuyaZBOnOffAttributeClusterBacklight.cluster_id,
+            endpoint_id=1,
+            entity_platform=EntityPlatform.SELECT,
+            entity_type=EntityType.CONFIG,
+            translation_key="backlight_mode",
+            fallback_name="Backlight mode",
+        )
+        .add_to_registry()
+    )
