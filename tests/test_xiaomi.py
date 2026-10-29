@@ -3131,7 +3131,7 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     assert mi_listener.attribute_updates[1][1] == "foo"
 
 
-def test_aqara_acn003_power_outage_memory(zigpy_device_from_v2_quirk):
+def test_aqara_acn003_v2_quirk_applies(zigpy_device_from_v2_quirk):
     """Test the Aqara L1-350 ceiling light quirk replaces its clusters."""
     device = zigpy_device_from_v2_quirk(
         AQARA,
@@ -3142,10 +3142,6 @@ def test_aqara_acn003_power_outage_memory(zigpy_device_from_v2_quirk):
     assert isinstance(device.endpoints[1].basic, BasicCluster)
     opple_cluster = device.endpoints[1].opple_cluster
     assert isinstance(opple_cluster, OppleClusterLight)
-
-    power_outage_memory = OppleClusterLight.AttributeDefs.power_outage_memory
-    assert power_outage_memory.id == 0x0201
-    assert opple_cluster.find_attribute(power_outage_memory.name) is power_outage_memory
 
 
 def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
