@@ -46,10 +46,8 @@ class SonoffLastIlluminationStateSensor(SonoffPresenceSenorIlluminationStatus):
 
     def _is_supported(self) -> bool:
         # The device only measures the illumination when it detects presence, and
-        # answers reads of it with UNSUPPORTED_ATTRIBUTE otherwise
-        if self._attribute_name not in self._cluster.attributes_by_name:
-            return False
-
+        # answers reads of it with UNSUPPORTED_ATTRIBUTE otherwise. The quirk's
+        # SonoffFC11Cluster always defines the attribute, so skip all Sensor checks.
         return ZclPlatformEntity._is_supported(self)
 
 
