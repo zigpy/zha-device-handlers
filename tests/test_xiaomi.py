@@ -118,6 +118,11 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
+from zhaquirks.xiaomi.aqara.sensor_switch_aq3 import (
+    AqaraSwitchOperationMode,
+    AqaraT1MiniSwitchCluster,
+    SwitchAQ3B2,
+)
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
@@ -3481,3 +3486,94 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+def test_aqara_t1_mini_switch_signature(assert_signature_matches_quirk):
+    """Test the signature of the Aqara T1 wireless mini switch matches SwitchAQ3B2."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4447, maximum_buffer_size=127, maximum_incoming_transfer_size=100, server_mask=11264, maximum_outgoing_transfer_size=100, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0103",
+                "in_clusters": ["0x0000", "0x0001", "0x0003"],
+                "out_clusters": ["0x0003", "0x0006", "0x0019"],
+            }
+        },
+        "manufacturer": "LUMI",
+        "model": "lumi.remote.b1acn02",
+        "class": "zigpy.device.Device",
+    }
+    assert_signature_matches_quirk(SwitchAQ3B2, signature)
+
+
+async def test_aqara_t1_mini_switch_sets_event_mode(zigpy_device_from_quirk):
+    """Test configuring the Aqara T1 mini switch puts it in event mode."""
+    device = zigpy_device_from_quirk(SwitchAQ3B2)
+    cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+    assert isinstance(cluster, AqaraT1MiniSwitchCluster)
+    assert XiaomiAqaraE1Cluster.cluster_id not in device.endpoints[1].out_clusters
+
+    with mock.patch.object(
+        cluster.endpoint, "request", mock.AsyncMock()
+    ) as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        await device.apply_custom_configuration()
+
+    assert len(request_mock.mock_calls) == 1
+    call = request_mock.mock_calls[0]
+    assert call.kwargs["cluster"] == XiaomiAqaraE1Cluster.cluster_id
+    hdr, data = foundation.ZCLHeader.deserialize(call.kwargs["data"])
+    assert hdr.manufacturer == 0x115F
+    assert hdr.command_id == foundation.GeneralCommand.Write_Attributes
+    assert hdr.direction == foundation.Direction.Client_to_Server
+    # attribute 0x0009, type uint8, value 1 (event mode)
+    assert data == b"\x09\x00\x20\x01"
+    assert AqaraSwitchOperationMode.Event == 0x01
+
+
+async def test_aqara_t1_mini_switch_event_mode_write_failure(zigpy_device_from_quirk):
+    """Test a failing operation mode write doesn't fail the configuration."""
+    device = zigpy_device_from_quirk(SwitchAQ3B2)
+    cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+
+    with mock.patch.object(
+        cluster.endpoint, "request", mock.AsyncMock(side_effect=TimeoutError)
+    ):
+        await device.apply_custom_configuration()
+
+
+@pytest.mark.parametrize(
+    "present_value, command",
+    [(0, "hold"), (1, "single"), (2, "double"), (255, "release")],
+)
+async def test_aqara_t1_mini_switch_press_events(
+    zigpy_device_from_quirk, present_value, command
+):
+    """Test the event mode reports of the T1 mini switch fire the press events."""
+    device = zigpy_device_from_quirk(SwitchAQ3B2)
+    multistate_cluster = device.endpoints[1].multistate_input
+    listener = mock.MagicMock()
+    multistate_cluster.add_listener(listener)
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=MultistateInput.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                foundation.ZCLHeader.general(
+                    tsn=1,
+                    command_id=foundation.GeneralCommand.Report_Attributes,
+                    direction=foundation.Direction.Server_to_Client,
+                ).serialize()
+                + b"\x55\x00\x21"
+                + present_value.to_bytes(2, "little")
+            ),
+        )
+    )
+
+    assert listener.zha_send_event.mock_calls == [
+        mock.call(command, {VALUE: present_value})
+    ]

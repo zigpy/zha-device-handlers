@@ -1,7 +1,13 @@
 """Xiaomi aqara button sensor."""
 
+import logging
+from typing import Final
+
+from zigpy import types as t
+from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -46,6 +52,8 @@ SHAKE = 18
 SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
+_LOGGER = logging.getLogger(__name__)
+
 MOVEMENT_TYPE = {
     B1ACN01_HOLD: COMMAND_HOLD,
     SINGLE: COMMAND_SINGLE,
@@ -75,6 +83,41 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class AqaraSwitchOperationMode(t.enum8):
+    """Operation mode of the Aqara T1 wireless mini switch."""
+
+    Command = 0x00  # sends OnOff commands (toggle / off)
+    Event = 0x01  # reports multistate input present_value (single / double / hold)
+
+
+class AqaraT1MiniSwitchCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer cluster that switches the T1 mini switch to event mode."""
+
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Manufacturer specific attributes."""
+
+        operation_mode: Final = ZCLAttributeDef(
+            id=0x0009,
+            type=AqaraSwitchOperationMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            manufacturer_code=0x115F,
+        )
+
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Put the switch in event mode, so it reports the press type."""
+        try:
+            await self.write_attributes(
+                {
+                    self.AttributeDefs.operation_mode.name: (
+                        AqaraSwitchOperationMode.Event
+                    )
+                }
+            )
+        except (ZigbeeException, TimeoutError) as exc:
+            _LOGGER.debug("Failed to write operation mode: %s", exc)
 
 
 class SwitchAQ3(XiaomiCustomDevice):
@@ -205,12 +248,12 @@ class SwitchAQ3B2(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     MultistateInputCluster,
+                    AqaraT1MiniSwitchCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    XiaomiAqaraE1Cluster,
                 ],
             }
         },
