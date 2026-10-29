@@ -18,8 +18,10 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Fan, Thermostat
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -2306,9 +2308,6 @@ async def test_ts0601_fan_light_dp_reports(zigpy_device_from_v2_quirk):
         (11, PowerOnState.LastState, "power_on_state", PowerOnState.LastState),
         (12, MoesBacklight.off, "backlight_mode", MoesBacklight.off),
         (13, True, "backlight_switch", True),
-        (102, 150, "current", 150),
-        (103, 2300, "voltage", 2300),
-        (104, 650, "power", 650),
     ],
 )
 async def test_ts0601_fan_light_mcu_datapoints(
@@ -2333,3 +2332,66 @@ async def test_ts0601_fan_light_mcu_datapoints(
 
     attr_id = getattr(tuya_cluster.AttributeDefs, attr_name).id
     assert tuya_cluster.get(attr_id) == expected_val
+
+
+async def test_ts0601_fan_light_electrical_measurement(zigpy_device_from_v2_quirk):
+    """Test custom ElectricalMeasurement cluster for TS0601 fan/light controller."""
+    device = zigpy_device_from_v2_quirk("_TZE204_ft3laxaa", "TS0601")
+    ep = device.endpoints[1]
+
+    assert ElectricalMeasurement.cluster_id in ep.in_clusters
+    em = ep.electrical_measurement
+    assert Metering.cluster_id not in ep.in_clusters
+    assert not hasattr(ep, "smartenergy_metering") or ep.smartenergy_metering is None
+
+    tuya_cluster = ep.in_clusters[TuyaMCUCluster.cluster_id]
+
+    # Verify unsupported attributes are marked so ZHA does not create unavailable entities
+    assert (
+        ElectricalMeasurement.AttributeDefs.ac_frequency.id in em.unsupported_attributes
+    )
+    assert (
+        ElectricalMeasurement.AttributeDefs.power_factor.id in em.unsupported_attributes
+    )
+    assert (
+        ElectricalMeasurement.AttributeDefs.apparent_power.id
+        in em.unsupported_attributes
+    )
+
+    # Verify constant configuration attributes on ElectricalMeasurement
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id) == 10
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_current_divisor.id) == 1000
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id) == 1
+    assert em.get(ElectricalMeasurement.AttributeDefs.ac_power_divisor.id) == 10
+
+    # Device reports DP 102 = 1500 (current: 1.50 A)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(dp=102, data=TuyaData(1500))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.rms_current.id) == 1500
+
+    # Device reports DP 103 = 2300 (voltage: 230.0 V)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(dp=103, data=TuyaData(2300))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.rms_voltage.id) == 2300
+
+    # Device reports DP 104 = 650 (power: 65.0 W)
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=3,
+            datapoints=[TuyaDatapointData(dp=104, data=TuyaData(650))],
+        )
+    )
+    assert em.get(ElectricalMeasurement.AttributeDefs.active_power.id) == 650

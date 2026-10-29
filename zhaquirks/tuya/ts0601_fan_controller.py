@@ -7,18 +7,11 @@ from typing import Any
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Fan
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import (
-    EntityType,
-    SensorDeviceClass,
-    SensorStateClass,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfPower,
-    UnitOfTime,
-)
+from zhaquirks.builder import EntityType, UnitOfTime
 from zhaquirks.tuya import TUYA_MCU_COMMAND, PowerOnState
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import MoesBacklight, TuyaAttributesCluster, TuyaClusterData
@@ -171,6 +164,30 @@ class TuyaFanCluster(TuyaAttributesCluster, Fan):
                     TUYA_SPEED_TO_FAN_MODE.get(TuyaSpeedFan(value), Fan.FanMode.Medium),
                 )
 
+class TuyaElectricalMeasurement(TuyaAttributesCluster, ElectricalMeasurement):
+    """Tuya custom Electrical Measurement cluster using TuyaAttributesCluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
+    }
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Init cluster and mark unused attributes as unsupported."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.ac_frequency.id
+        )
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.power_factor.id
+        )
+        self.add_unsupported_attribute(
+            ElectricalMeasurement.AttributeDefs.apparent_power.id
+        )
 
 # Fan and Light Switch Quirk
 (
@@ -245,41 +262,21 @@ class TuyaFanCluster(TuyaAttributesCluster, Fan):
         fallback_name="Backlight switch",
         entity_type=EntityType.CONFIG,
     )
-    .tuya_sensor(
+    .adds(TuyaElectricalMeasurement)
+    .tuya_dp(
         dp_id=102,
-        attribute_name="current",
-        type=t.uint32_t,
-        divisor=100,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.CURRENT,
-        unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
-        fallback_name="Current",
-        entity_type=EntityType.DIAGNOSTIC,
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_current",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=103,
-        attribute_name="voltage",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
-        fallback_name="Voltage",
-        entity_type=EntityType.DIAGNOSTIC,
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="rms_voltage",
     )
-    .tuya_sensor(
+    .tuya_dp(
         dp_id=104,
-        attribute_name="power",
-        type=t.uint32_t,
-        divisor=10,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.POWER,
-        unit=UnitOfPower.WATT,
-        translation_key="power",
-        fallback_name="Power",
-        entity_type=EntityType.DIAGNOSTIC,
+        ep_attribute=TuyaElectricalMeasurement.ep_attribute,
+        attribute_name="active_power",
     )
     .skip_configuration()
     .add_to_registry()
