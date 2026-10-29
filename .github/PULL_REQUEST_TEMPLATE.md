@@ -21,7 +21,8 @@
 
   You can find the diagnostics information by going to the device page, clicking the
   three dots, and then by clicking on "Download diagnostics". Drag-and-drop the
-  downloaded file into this section.
+  downloaded file into this section. Attach the unmodified file; don't paste its
+  content or offer to provide it later.
 -->
 
 
@@ -32,6 +33,6 @@
 -->
 
 - [ ] The changes are tested and work correctly
-- [ ] `pre-commit` checks pass / the code has been formatted using Black
+- [ ] `pre-commit` checks pass
 - [ ] Tests have been added to verify that the new code works
 - [ ] Device diagnostics data has been attached
