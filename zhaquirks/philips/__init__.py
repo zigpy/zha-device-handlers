@@ -10,7 +10,12 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    BaseCommandDefs,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+)
 
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
@@ -347,6 +352,14 @@ class PhilipsHueLightCluster(CustomCluster):
     cluster_id: Final[t.uint16_t] = 0xFC03
     ep_attribute: Final[str] = "philips_hue_light_cluster"
     name: Final[str] = "PhilipsHueLightCluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        # Current light state, in the same format as the `multicolor` frame
+        state: Final = ZCLAttributeDef(
+            id=0x0002, type=t.LVBytes, manufacturer_code=0x100B
+        )
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""

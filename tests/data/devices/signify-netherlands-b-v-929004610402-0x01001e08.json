@@ -1,0 +1,1095 @@
+{
+  "version": 3,
+  "ieee": "00:17:88:01:0a:bc:de:f0",
+  "nwk": "0x6DDA",
+  "manufacturer": "Signify Netherlands B.V.",
+  "model": "929004610402",
+  "friendly_manufacturer": "Philips",
+  "friendly_model": "Hue Flux gradient lightstrip",
+  "name": "Philips Hue Flux gradient lightstrip",
+  "quirk_applied": true,
+  "quirk_class": "hue_flux_gradient:(Signify Netherlands B.V. / 929004610401)",
+  "exposes_features": [
+    "philips_hue_gradient_scenes",
+    "philips_hue_native_effects"
+  ],
+  "manufacturer_code": 4107,
+  "power_source": "Mains",
+  "lqi": 64,
+  "rssi": -95,
+  "last_seen": "2026-10-29T09:44:49.717966+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4107,
+    "maximum_buffer_size": 82,
+    "maximum_incoming_transfer_size": 128,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 128,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "11": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "EXTENDED_COLOR_LIGHT",
+        "id": 269
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0001",
+              "name": "app_version",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 3
+            },
+            {
+              "id": "0x0006",
+              "name": "date_code",
+              "zcl_type": "string",
+              "value": "20250507"
+            },
+            {
+              "id": "0x0008",
+              "name": "generic_device_class",
+              "zcl_type": "enum8",
+              "value": 0
+            },
+            {
+              "id": "0x0009",
+              "name": "generic_device_type",
+              "zcl_type": "enum8",
+              "value": 255
+            },
+            {
+              "id": "0x0003",
+              "name": "hw_version",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "Signify Netherlands B.V."
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "929004610402"
+            },
+            {
+              "id": "0x0007",
+              "name": "power_source",
+              "zcl_type": "enum8",
+              "value": 1
+            },
+            {
+              "id": "0x000b",
+              "name": "product_url",
+              "zcl_type": "string",
+              "value": "www.philips-hue.com"
+            },
+            {
+              "id": "0x0002",
+              "name": "stack_version",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0x4000",
+              "name": "sw_build_id",
+              "zcl_type": "string",
+              "value": "1.129.2"
+            },
+            {
+              "id": "0x0000",
+              "name": "zcl_version",
+              "zcl_type": "uint8",
+              "value": 8
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 2
+            },
+            {
+              "id": "0x0000",
+              "name": "identify_time",
+              "zcl_type": "uint16",
+              "value": 11
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 3
+            },
+            {
+              "id": "0x0000",
+              "name": "name_support",
+              "zcl_type": "map8",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 3
+            },
+            {
+              "id": "0x0000",
+              "name": "count",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0002",
+              "name": "current_group",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0001",
+              "name": "current_scene",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0005",
+              "name": "last_configured_by",
+              "zcl_type": "EUI64",
+              "unsupported": true
+            },
+            {
+              "id": "0x0004",
+              "name": "name_support",
+              "zcl_type": "map8",
+              "value": 0
+            },
+            {
+              "id": "0xfffe",
+              "name": "reporting_status",
+              "zcl_type": "enum8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0003",
+              "name": "scene_valid",
+              "zcl_type": "bool",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 2
+            },
+            {
+              "id": "0x4000",
+              "name": "global_scene_control",
+              "zcl_type": "bool",
+              "value": 1
+            },
+            {
+              "id": "0x4002",
+              "name": "off_wait_time",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
+              "value": 1
+            },
+            {
+              "id": "0x4001",
+              "name": "on_time",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x4003",
+              "name": "start_up_on_off",
+              "zcl_type": "enum8",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 2
+            },
+            {
+              "id": "0x0000",
+              "name": "current_level",
+              "zcl_type": "uint8",
+              "value": 254
+            },
+            {
+              "id": "0x0014",
+              "name": "default_move_rate",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0003",
+              "name": "max_level",
+              "zcl_type": "uint8",
+              "value": 200
+            },
+            {
+              "id": "0x0013",
+              "name": "off_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0011",
+              "name": "on_level",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0010",
+              "name": "on_off_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0012",
+              "name": "on_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x000f",
+              "name": "options",
+              "zcl_type": "map8",
+              "value": 0
+            },
+            {
+              "id": "0x0001",
+              "name": "remaining_time",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x4000",
+              "name": "start_up_current_level",
+              "zcl_type": "uint8",
+              "value": 254
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0300",
+          "endpoint_attribute": "light_color",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 3
+            },
+            {
+              "id": "0x400a",
+              "name": "color_capabilities",
+              "zcl_type": "map16",
+              "value": 31
+            },
+            {
+              "id": "0x4002",
+              "name": "color_loop_active",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x4003",
+              "name": "color_loop_direction",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x4005",
+              "name": "color_loop_start_enhanced_hue",
+              "zcl_type": "uint16",
+              "value": 8960
+            },
+            {
+              "id": "0x4006",
+              "name": "color_loop_stored_enhanced_hue",
+              "zcl_type": "uint16",
+              "value": 8329
+            },
+            {
+              "id": "0x4004",
+              "name": "color_loop_time",
+              "zcl_type": "uint16",
+              "value": 25
+            },
+            {
+              "id": "0x0008",
+              "name": "color_mode",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0x003c",
+              "name": "color_point_b_intensity",
+              "zcl_type": "uint8",
+              "value": 11
+            },
+            {
+              "id": "0x003a",
+              "name": "color_point_b_x",
+              "zcl_type": "uint16",
+              "value": 10040
+            },
+            {
+              "id": "0x003b",
+              "name": "color_point_b_y",
+              "zcl_type": "uint16",
+              "value": 3116
+            },
+            {
+              "id": "0x0038",
+              "name": "color_point_g_intensity",
+              "zcl_type": "uint8",
+              "value": 254
+            },
+            {
+              "id": "0x0036",
+              "name": "color_point_g_x",
+              "zcl_type": "uint16",
+              "value": 11141
+            },
+            {
+              "id": "0x0037",
+              "name": "color_point_g_y",
+              "zcl_type": "uint16",
+              "value": 45875
+            },
+            {
+              "id": "0x0034",
+              "name": "color_point_r_intensity",
+              "zcl_type": "uint8",
+              "value": 64
+            },
+            {
+              "id": "0x0032",
+              "name": "color_point_r_x",
+              "zcl_type": "uint16",
+              "value": 45317
+            },
+            {
+              "id": "0x0033",
+              "name": "color_point_r_y",
+              "zcl_type": "uint16",
+              "value": 20204
+            },
+            {
+              "id": "0x400c",
+              "name": "color_temp_physical_max",
+              "zcl_type": "uint16",
+              "value": 1000
+            },
+            {
+              "id": "0x400b",
+              "name": "color_temp_physical_min",
+              "zcl_type": "uint16",
+              "value": 50
+            },
+            {
+              "id": "0x0007",
+              "name": "color_temperature",
+              "zcl_type": "uint16",
+              "value": 400
+            },
+            {
+              "id": "0x400d",
+              "name": "couple_color_temp_to_level_min",
+              "zcl_type": "uint16",
+              "value": 250
+            },
+            {
+              "id": "0x0000",
+              "name": "current_hue",
+              "zcl_type": "uint8",
+              "value": 31
+            },
+            {
+              "id": "0x0001",
+              "name": "current_saturation",
+              "zcl_type": "uint8",
+              "value": 168
+            },
+            {
+              "id": "0x0003",
+              "name": "current_x",
+              "zcl_type": "uint16",
+              "value": 31261
+            },
+            {
+              "id": "0x0004",
+              "name": "current_y",
+              "zcl_type": "uint16",
+              "value": 27111
+            },
+            {
+              "id": "0x4001",
+              "name": "enhanced_color_mode",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0x4000",
+              "name": "enhanced_current_hue",
+              "zcl_type": "uint16",
+              "value": 8329
+            },
+            {
+              "id": "0x0010",
+              "name": "num_primaries",
+              "zcl_type": "uint8",
+              "value": 3
+            },
+            {
+              "id": "0x000f",
+              "name": "options",
+              "zcl_type": "map8",
+              "value": 0
+            },
+            {
+              "id": "0x0013",
+              "name": "primary1_intensity",
+              "zcl_type": "uint8",
+              "value": 64
+            },
+            {
+              "id": "0x0011",
+              "name": "primary1_x",
+              "zcl_type": "uint16",
+              "value": 45317
+            },
+            {
+              "id": "0x0012",
+              "name": "primary1_y",
+              "zcl_type": "uint16",
+              "value": 20204
+            },
+            {
+              "id": "0x0017",
+              "name": "primary2_intensity",
+              "zcl_type": "uint8",
+              "value": 254
+            },
+            {
+              "id": "0x0015",
+              "name": "primary2_x",
+              "zcl_type": "uint16",
+              "value": 11141
+            },
+            {
+              "id": "0x0016",
+              "name": "primary2_y",
+              "zcl_type": "uint16",
+              "value": 45875
+            },
+            {
+              "id": "0x001b",
+              "name": "primary3_intensity",
+              "zcl_type": "uint8",
+              "value": 11
+            },
+            {
+              "id": "0x0019",
+              "name": "primary3_x",
+              "zcl_type": "uint16",
+              "value": 10040
+            },
+            {
+              "id": "0x001a",
+              "name": "primary3_y",
+              "zcl_type": "uint16",
+              "value": 3116
+            },
+            {
+              "id": "0x0002",
+              "name": "remaining_time",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x4010",
+              "name": "start_up_color_temperature",
+              "zcl_type": "uint16",
+              "value": 400
+            },
+            {
+              "id": "0x0030",
+              "name": "white_point_x",
+              "zcl_type": "uint16",
+              "value": 24929
+            },
+            {
+              "id": "0x0031",
+              "name": "white_point_y",
+              "zcl_type": "uint16",
+              "value": 24693
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x1000",
+          "endpoint_attribute": "lightlink",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc01",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc03",
+          "endpoint_attribute": "philips_hue_light_cluster",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc04",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0xfffd",
+              "name": "cluster_revision",
+              "zcl_type": "uint16",
+              "value": 4
+            },
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 16784904
+            },
+            {
+              "id": "0x0003",
+              "name": "current_zigbee_stack_version",
+              "zcl_type": "uint16",
+              "value": 33751564
+            },
+            {
+              "id": "0x0001",
+              "name": "file_offset",
+              "zcl_type": "uint32",
+              "value": 254
+            },
+            {
+              "id": "0x0008",
+              "name": "image_type_id",
+              "zcl_type": "uint16",
+              "value": 65535
+            },
+            {
+              "id": "0x0006",
+              "name": "image_upgrade_status",
+              "zcl_type": "enum8",
+              "value": 0
+            },
+            {
+              "id": "0x0007",
+              "name": "manufacturer_id",
+              "zcl_type": "uint16",
+              "value": 4107
+            },
+            {
+              "id": "0x0009",
+              "name": "minimum_block_req_delay",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0000",
+              "name": "upgrade_server_id",
+              "zcl_type": "EUI64",
+              "value": "e0:79:8d:ff:fe:0e:4e:03"
+            }
+          ],
+          "last_query_cmd": {
+            "manufacturer_code": 4107,
+            "image_type": 280,
+            "current_file_version": 16784904,
+            "hardware_version": null
+          }
+        }
+      ]
+    },
+    "242": {
+      "profile_id": 41440,
+      "device_type": {
+        "name": "PROXY_BASIC",
+        "id": 97
+      },
+      "in_clusters": [],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "Signify Netherlands B.V.",
+    "model": "929004610402",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4107,
+      "maximum_buffer_size": 82,
+      "maximum_incoming_transfer_size": 128,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 128,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "11": {
+        "profile_id": "0x0104",
+        "device_type": "0x010d",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0004",
+          "0x0005",
+          "0x0006",
+          "0x0008",
+          "0x1000",
+          "0xfc03",
+          "0x0300",
+          "0xfc01",
+          "0xfc04"
+        ],
+        "output_clusters": [
+          "0x0019"
+        ]
+      },
+      "242": {
+        "profile_id": "0xa1e0",
+        "device_type": "0x0061",
+        "input_clusters": [],
+        "output_clusters": [
+          "0x0021"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "light": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "light",
+        "class_name": "HueNativeEffectsLight",
+        "translation_key": "light",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "on": true,
+        "brightness": 254,
+        "xy_color": null,
+        "color_temp": 400,
+        "effect_list": [
+          "off",
+          "colorloop",
+          "candle",
+          "fireplace",
+          "prism",
+          "sunrise",
+          "sparkle",
+          "opal",
+          "glisten",
+          "sunset",
+          "underwater",
+          "cosmos",
+          "sunbeam",
+          "enchant"
+        ],
+        "effect": "off",
+        "supported_features": 44,
+        "color_mode": "color_temp",
+        "supported_color_modes": [
+          "brightness",
+          "xy",
+          "color_temp",
+          "onoff"
+        ],
+        "off_with_transition": false,
+        "off_brightness": null,
+        "min_mireds": 50,
+        "max_mireds": 1000
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "StartUpColorTemperatureConfigurationEntity",
+        "translation_key": "start_up_color_temperature",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "native_value": 400,
+        "mode": "auto",
+        "native_max_value": 1000,
+        "native_min_value": 50,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "StartUpCurrentLevelConfigurationEntity",
+        "translation_key": "start_up_current_level",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "native_value": 254,
+        "mode": "auto",
+        "native_max_value": 255,
+        "native_min_value": 0,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      }
+    ],
+    "select": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "StartupOnOffSelectEntity",
+        "translation_key": "start_up_on_off",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "current_option": "On",
+        "enum": "StartUpOnOff",
+        "options": [
+          "Off",
+          "On",
+          "Toggle",
+          "PreviousValue"
+        ]
+      },
+      {
+        "fallback_name": "Gradient scene",
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "HueGradientSceneSelect",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "current_option": "festive fun",
+        "enum": "HueGradientScene",
+        "options": [
+          "blossom",
+          "crocus",
+          "precious",
+          "narcissa",
+          "beginnings",
+          "first light",
+          "horizon",
+          "valley dawn",
+          "sunflare",
+          "emerald flutter",
+          "memento",
+          "resplendent",
+          "scarlet dream",
+          "lovebirds",
+          "smitten",
+          "glitz and glam",
+          "promise",
+          "ruby romance",
+          "city of love",
+          "honolulu",
+          "savanna sunset",
+          "golden pond",
+          "ruby glow",
+          "tropical twilight",
+          "miami",
+          "cancun",
+          "rio",
+          "chinatown",
+          "ibiza",
+          "osaka",
+          "tokyo",
+          "motown",
+          "fairfax",
+          "galaxy",
+          "starlight",
+          "blood moon",
+          "arctic aurora",
+          "moonlight",
+          "nebula",
+          "sundown",
+          "blue lagoon",
+          "palm beach",
+          "lake placid",
+          "mountain breeze",
+          "lake mist",
+          "ocean dawn",
+          "frosty dawn",
+          "sunday morning",
+          "emerald isle",
+          "spring blossom",
+          "midsummer sun",
+          "autumn gold",
+          "spring lake",
+          "winter mountain",
+          "midwinter",
+          "amber bloom",
+          "lily",
+          "painted sky",
+          "winter beauty",
+          "orange fields",
+          "forest adventure",
+          "blue planet",
+          "soho",
+          "vapor wave",
+          "magneto",
+          "tyrell",
+          "disturbia",
+          "hal",
+          "golden star",
+          "under the tree",
+          "silent night",
+          "rosy sparkle",
+          "festive fun",
+          "colour burst",
+          "crystalline"
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "native_value": 64,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "native_value": -95,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 11,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x01001e08",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}

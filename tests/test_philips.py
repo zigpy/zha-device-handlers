@@ -3,8 +3,10 @@
 from unittest import mock
 
 import pytest
+from zha.application import Platform
 from zha.application.platforms.event import EntityEventTriggeredEvent
 from zha.application.platforms.event.const import ButtonEventType
+from zha.application.platforms.light.const import EFFECT_OFF
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import (
     GreenPowerCommandReceived,
@@ -12,10 +14,11 @@ from zigpy.device import (
 )
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl.foundation import ZCLHeader
+from zigpy.zcl.foundation import Status, ZCLHeader
 from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 from tests.common import ClusterListener
+from tests.zha_helpers import _patch_cluster, join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import (
     BUTTON_1,
@@ -48,8 +51,22 @@ from zhaquirks.philips import (
     SIGNIFY,
     Button,
     ButtonPressQueue,
+    PhilipsHueLightCluster,
     PhilipsRemoteCluster,
     PressType,
+)
+from zhaquirks.philips.hue_gradient import (
+    FLAG_GRADIENT_COLORS,
+    GRADIENT_OFF,
+    GRADIENT_SCENES,
+    HUE_EFFECTS,
+    STOP_EFFECT_FRAME,
+    HueEffectsLight,
+    HueGradientSceneSelect,
+    decode_effect,
+    decode_flags,
+    effect_frame,
+    scene_frame,
 )
 from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
@@ -987,3 +1004,149 @@ def test_hue_tap_buttons(MockAppController, command_id, suffix):
         (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
         for event in events
     ] == [(suffix, ButtonEventType.PRESS_START)]
+
+
+FLUX_DIAGNOSTICS = "signify-netherlands-b-v-929004610402-0x01001e08.json"
+FLUX_IEEE = "00:17:88:01:0a:bc:de:f0"
+
+
+def _sent_frames(cluster: Cluster) -> list[str]:
+    """Return the frames sent with the `multicolor` command, as hex."""
+    return [
+        call.kwargs["data"].serialize().hex()
+        for call in cluster.multicolor.call_args_list
+    ]
+
+
+def _accept_light_commands(device) -> Cluster:
+    """Answer the light commands with success and return the Hue light cluster."""
+    in_clusters = device.endpoints[11].zigpy_endpoint.in_clusters
+    for cluster in in_clusters.values():
+        cluster.request = mock.AsyncMock(return_value=[0x00, Status.SUCCESS])
+
+    hue_cluster = in_clusters[PhilipsHueLightCluster.cluster_id]
+    hue_cluster.multicolor = mock.AsyncMock(return_value=[0x00, Status.SUCCESS])
+    return hue_cluster
+
+
+def test_hue_gradient_frames() -> None:
+    """Test encoding and decoding of the Hue light frames."""
+    assert effect_frame(HUE_EFFECTS["candle"]).hex() == "21000101"
+    assert effect_frame(HUE_EFFECTS["opal"], brightness=200).hex() == "230001c80b"
+    assert STOP_EFFECT_FRAME.hex() == "200000"
+
+    # The scene frame gains on/off and a stopped effect around the fade speed
+    scene = GRADIENT_SCENES["blossom"]
+    frame = scene_frame("blossom")
+    assert frame.hex() == "7101" + "01" + scene[4:8] + "00" + scene[8:]
+    assert decode_effect(frame) == 0
+    assert (decode_flags(frame) or 0) & FLAG_GRADIENT_COLORS
+
+    # State frames reported by a Hue Flux gradient lightstrip
+    plain = bytes.fromhex("0700011a7801")
+    assert decode_effect(plain) == 0
+    assert not (decode_flags(plain) or 0) & FLAG_GRADIENT_COLORS
+
+    gradient = bytes.fromhex(
+        "4b0101fe683dae46135000000039d553d2955ba5287a9f697e25fb802800"
+    )
+    assert decode_effect(gradient) == 0
+    assert (decode_flags(gradient) or 0) & FLAG_GRADIENT_COLORS
+
+    # Effect after xy and fade speed, with and without the effect flag
+    assert decode_effect(bytes.fromhex("3900011111222204000f")) == 0x0F
+    assert decode_effect(bytes.fromhex("030001fe")) == 0
+    assert decode_effect(b"") is None
+
+
+async def test_hue_flux_effects_and_gradient_scenes() -> None:
+    """Test the Hue effects and gradient scenes of the Hue Flux gradient lightstrip."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, FLUX_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        assert device.model == "Hue Flux gradient lightstrip"
+
+        hue_cluster = _accept_light_commands(device)
+
+        # The light keeps the unique ID of the default light
+        light = device.get_platform_entity(Platform.LIGHT, f"{FLUX_IEEE}-11")
+        assert type(light) is HueEffectsLight
+        assert set(HUE_EFFECTS) <= set(light.state.effect_list)
+
+        select = device.get_platform_entity(
+            Platform.SELECT, f"{FLUX_IEEE}-11-gradient_scene"
+        )
+        assert type(select) is HueGradientSceneSelect
+        assert select.state.options == [GRADIENT_OFF, *GRADIENT_SCENES]
+        assert select.state.current_option == GRADIENT_OFF
+
+        # A gradient scene turns the light on and stops a running effect
+        await select.async_select_option("blossom")
+        assert _sent_frames(hue_cluster) == [scene_frame("blossom").hex()]
+        assert select.state.current_option == "blossom"
+        assert light.state.on
+
+        # A Hue effect replaces the gradient
+        hue_cluster.multicolor.reset_mock()
+        await light.async_turn_on(effect="candle", brightness=120)
+        assert _sent_frames(hue_cluster) == ["2300017801"]
+        assert light.state.effect == "candle"
+        assert select.state.current_option == GRADIENT_OFF
+
+        # Changing only the brightness keeps the effect
+        hue_cluster.multicolor.reset_mock()
+        await light.async_turn_on(brightness=200)
+        assert _sent_frames(hue_cluster) == []
+        assert light.state.effect == "candle"
+
+        # A new color stops the effect first
+        await light.async_turn_on(xy_color=(0.3, 0.3))
+        assert _sent_frames(hue_cluster) == [STOP_EFFECT_FRAME.hex()]
+        assert light.state.effect == EFFECT_OFF
+
+        # Turning the light off clears the effect
+        await light.async_turn_on(effect="opal")
+        await light.async_turn_off()
+        assert light.state.effect == EFFECT_OFF
+
+
+async def test_hue_flux_polling() -> None:
+    """Test that polling picks up effects and gradients set elsewhere."""
+    async with zha_gateway() as gateway:
+        gateway.config.allow_polling = True
+        device = await join_device_from_diagnostics(
+            gateway, FLUX_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        hue_cluster = _accept_light_commands(device)
+        light = device.get_platform_entity(Platform.LIGHT, f"{FLUX_IEEE}-11")
+        select = device.get_platform_entity(
+            Platform.SELECT, f"{FLUX_IEEE}-11-gradient_scene"
+        )
+        assert light.state.on
+
+        def report_state(frame: str) -> None:
+            _patch_cluster(
+                hue_cluster,
+                {PhilipsHueLightCluster.AttributeDefs.state.id: bytes.fromhex(frame)},
+            )
+
+        # An effect started with the Hue app or a Hue remote
+        report_state("230001fe0e")
+        await light.async_update()
+        assert light.state.effect == "underwater"
+
+        # The effect has ended
+        report_state("030001fe")
+        await light.async_update()
+        assert light.state.effect == EFFECT_OFF
+
+        # A gradient that is still shown keeps the scene, a single color ends it
+        await select.async_select_option("crocus")
+        report_state("4b0101fe683dae46135000000039d553d2955ba5287a9f697e25fb802800")
+        await light.async_update()
+        assert select.state.current_option == "crocus"
+
+        report_state("0700011a7801")
+        await light.async_update()
+        assert select.state.current_option == GRADIENT_OFF

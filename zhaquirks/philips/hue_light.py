@@ -1,7 +1,11 @@
 """Philips Hue devices."""
 
+from zha.application.platforms.light import HueLight
+from zigpy.zcl.clusters.general import OnOff
+
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
+from zhaquirks.philips.hue_gradient import HueEffectsLight, HueGradientSceneSelect
 
 (
     QuirkBuilder()
@@ -18,12 +22,34 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
+    .applies_to(SIGNIFY, "929004610401")
     .applies_to(SIGNIFY, "929004610402")
+    .applies_to(SIGNIFY, "929004610403")
+    .applies_to(SIGNIFY, "929004610502")
+    .applies_to(SIGNIFY, "929004610601")
+    .applies_to(SIGNIFY, "929004610602")
+    .applies_to(SIGNIFY, "929004610603")
+    .applies_to(SIGNIFY, "929004610702")
+    .applies_to(SIGNIFY, "929004610802")
     .friendly_name(
         model="Hue Flux gradient lightstrip",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .replaces_entity(
+        HueLight,
+        HueEffectsLight,
+        endpoint_id=11,
+        cluster_id=OnOff.cluster_id,
+    )
+    .adds_entity(
+        HueGradientSceneSelect,
+        endpoint_id=11,
+        cluster_id=PhilipsHueLightCluster.cluster_id,
+        unique_id_suffix="gradient_scene",
+        translation_key="gradient_scene",
+        fallback_name="Gradient scene",
+    )
     .add_to_registry()
 )
 
