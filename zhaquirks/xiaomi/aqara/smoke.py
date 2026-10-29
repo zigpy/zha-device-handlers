@@ -3,6 +3,7 @@
 from typing import Any
 
 from zigpy import types
+from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
@@ -82,13 +83,23 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     async def bind(self):
         """Bind cluster and enable manufacturer-specific reporting."""
         try:
-            return await super().bind()
-        finally:
+            result = await super().bind()
+        except (TimeoutError, ZigbeeException):
             # This is a sleepy device, so requests frequently time out even when the
             # device applies them. The write is therefore also sent when the bind
-            # itself failed. Best effort only: a failure must not break binding,
-            # enrollment or the battery path.
-            self.create_catching_task(self.write_attributes(self.attr_config))
+            # itself failed (ZHA handles the error), but not when it was cancelled.
+            self._write_mode()
+            raise
+        self._write_mode()
+        return result
+
+    def _write_mode(self) -> None:
+        """Write the mode in the background.
+
+        Best effort only: a failure must not break binding, enrollment or the battery
+        path.
+        """
+        self.create_catching_task(self.write_attributes(self.attr_config))
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Pass attribute update to another cluster if necessary."""

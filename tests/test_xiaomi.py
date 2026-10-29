@@ -8,6 +8,7 @@ from unittest import mock
 
 import pytest
 import zigpy.device
+import zigpy.exceptions
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
@@ -1664,23 +1665,38 @@ async def test_aqara_smoke_sensor_binding_mode_write_failure(zigpy_device_from_q
     assert write_mock.mock_calls == [mock.call({0x0009: 0x01})]
 
 
-@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock(side_effect=asyncio.TimeoutError))
-async def test_aqara_smoke_sensor_binding_failure_writes_mode(zigpy_device_from_quirk):
+@pytest.mark.parametrize(
+    "bind_error, expected_writes",
+    [
+        # a failed bind still sends the write, ZHA handles the error
+        (TimeoutError(), [mock.call({0x0009: 0x01})]),
+        (zigpy.exceptions.DeliveryError("failed"), [mock.call({0x0009: 0x01})]),
+        # a cancelled bind (e.g. shutdown or a re-join) doesn't
+        (asyncio.CancelledError(), []),
+    ],
+)
+async def test_aqara_smoke_sensor_binding_failure_writes_mode(
+    zigpy_device_from_quirk, bind_error, expected_writes
+):
     """Test the Aqara smoke sensor's mode write is also sent when the bind fails."""
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
     opple_cluster = device.endpoints[1].opple_cluster
 
     write_mock = mock.AsyncMock(return_value=[[]])
+    bind_mock = mock.AsyncMock(side_effect=bind_error)
 
-    with mock.patch.object(opple_cluster, "write_attributes", write_mock):
-        # the bind error is still raised, ZHA handles it
-        with pytest.raises(asyncio.TimeoutError):
+    with (
+        mock.patch("zigpy.zcl.Cluster.bind", bind_mock),
+        mock.patch.object(opple_cluster, "write_attributes", write_mock),
+    ):
+        # the bind error is still raised
+        with pytest.raises(type(bind_error)):
             await opple_cluster.bind()
 
         # the write runs as a background task
         await asyncio.sleep(0)
 
-    assert write_mock.mock_calls == [mock.call({0x0009: 0x01})]
+    assert write_mock.mock_calls == expected_writes
 
 
 @pytest.mark.parametrize(
