@@ -69,7 +69,11 @@ class TuyaClusterData(t.Struct):
     endpoint_id: int
     cluster_name: str
     cluster_attr: str
-    attr_value: int  # Maybe also others types?
+    # Not restricted to int: Tuya datapoints can also carry strings, bools,
+    # enums and raw bytes. `object` keeps zigpy's Struct conversion a no-op
+    # (isinstance(value, object) is always True) so the value reaches
+    # TuyaData unchanged, which already infers the correct TuyaDPType.
+    attr_value: object
     expect_reply: bool
     manufacturer: int | UndefinedType | None
 
