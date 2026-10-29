@@ -652,10 +652,8 @@ class ClickControl(t.enum8):
     Down = 0x01
 
 
-(
-    TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
-    .applies_to("_TZE2841000000_3mzb0sdz", "TS0601")
-    .applies_to("_TZE200_sq6affpe", "TS0601")
+base_zemismart_tubular_motor = (
+    TuyaQuirkBuilder()
     .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
     .tuya_battery(dp_id=13)
     .tuya_enum(
@@ -710,6 +708,23 @@ class ClickControl(t.enum8):
         translation_key="delete_all_limits",
         fallback_name="Delete all limits",
     )
+    .skip_configuration()
+)
+
+
+(
+    # Zemismart ZM16B
+    base_zemismart_tubular_motor.clone()
+    .applies_to("_TZE284_3mzb0sdz", "TS0601")
+    .applies_to("_TZE2841000000_3mzb0sdz", "TS0601")
+    .add_to_registry()
+)
+
+
+(
+    # Zemismart ZM25R3
+    base_zemismart_tubular_motor.clone()
+    .applies_to("_TZE200_sq6affpe", "TS0601")
     .tuya_dp_attribute(
         dp_id=20,
         attribute_name="click_control",
@@ -731,6 +746,5 @@ class ClickControl(t.enum8):
         translation_key="step_down",
         fallback_name="Step down",
     )
-    .skip_configuration()
     .add_to_registry()
 )
