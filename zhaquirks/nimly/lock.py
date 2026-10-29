@@ -3,6 +3,7 @@
 from typing import Final
 
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
@@ -12,6 +13,8 @@ from zhaquirks.builder import QuirkBuilder, SensorDeviceClass
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.nimly import NIMLY
 
+NIMLY_MANUFACTURER_CODE: Final = 0x1234
+
 # clears the mains powered mac capability flag
 NIMLY_LOCK_NODE_DESCRIPTOR = NodeDescriptor(
     logical_type=2,
@@ -20,7 +23,7 @@ NIMLY_LOCK_NODE_DESCRIPTOR = NodeDescriptor(
     reserved=0,
     aps_flags=0,
     frequency_band=8,
-    manufacturer_code=4660,
+    manufacturer_code=NIMLY_MANUFACTURER_CODE,
     maximum_buffer_size=108,
     maximum_incoming_transfer_size=127,
     server_mask=11264,
@@ -41,14 +44,78 @@ class NimlyDoorLock(CustomCluster, DoorLock):
             id=0x100,
             type=t.bitmap32,
             access="r",
-            is_manufacturer_specific=True,
+            manufacturer_code=NIMLY_MANUFACTURER_CODE,
         )
         nimly_last_pin_code: Final = ZCLAttributeDef(
             id=0x101,
             type=t.LVBytes,
             access="r",
-            is_manufacturer_specific=True,
+            manufacturer_code=NIMLY_MANUFACTURER_CODE,
         )
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Match reports of the Nimly attributes sent without a manufacturer code.
+
+        The lock answers reads of these attributes only with its manufacturer code
+        but reports them without one, so zigpy would not match the reports to the
+        attribute definitions and the sensors would never update.
+        """
+        if (
+            hdr.command_id == foundation.GeneralCommand.Report_Attributes
+            and hdr.manufacturer is None
+            and any(
+                attr.attrid in NIMLY_REPORTED_ATTRIBUTE_IDS
+                for attr in args.attribute_reports
+            )
+        ):
+            report_schema = foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Report_Attributes
+            ].schema
+
+            # Handle the Nimly attributes as if the manufacturer code was set,
+            # without sending a second default response
+            super().handle_cluster_general_request(
+                hdr.replace(
+                    frame_control=hdr.frame_control.replace(
+                        disable_default_response=True
+                    ),
+                    manufacturer=NIMLY_MANUFACTURER_CODE,
+                ),
+                report_schema(
+                    attribute_reports=[
+                        attr
+                        for attr in args.attribute_reports
+                        if attr.attrid in NIMLY_REPORTED_ATTRIBUTE_IDS
+                    ]
+                ),
+                dst_addressing=dst_addressing,
+            )
+
+            # The other attributes are handled normally, which also sends the
+            # default response if one was requested
+            args = report_schema(
+                attribute_reports=[
+                    attr
+                    for attr in args.attribute_reports
+                    if attr.attrid not in NIMLY_REPORTED_ATTRIBUTE_IDS
+                ]
+            )
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
+
+NIMLY_REPORTED_ATTRIBUTE_IDS: Final = frozenset(
+    {
+        NimlyDoorLock.AttributeDefs.nimly_last_lock_unlock_source.id,
+        NimlyDoorLock.AttributeDefs.nimly_last_pin_code.id,
+    }
+)
 
 
 def last_action_source_converter(value: int) -> str:
@@ -86,6 +153,7 @@ def last_action_user_converter(value: int) -> int:
     .applies_to(NIMLY, "EasyCodeTouch")
     .applies_to(NIMLY, "easyCodeTouch_v1")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
+    .replaces(NimlyDoorLock, endpoint_id=11)
     .sensor(
         endpoint_id=11,
         cluster_id=NimlyDoorLock.cluster_id,
