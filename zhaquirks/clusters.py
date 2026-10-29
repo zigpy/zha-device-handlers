@@ -3,7 +3,7 @@
 `CustomCluster` is the primitive every custom cluster subclasses (in both legacy
 and builder quirks). It is a plain `zigpy.zcl.Cluster` that skips the global
 cluster registry and can serve constant attribute values without a device
-round-trip.
+round-trip, and can keep report-only attributes from being marked unsupported.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import typing
 
 from zigpy.typing import UNDEFINED, UndefinedType
 import zigpy.zcl
-from zigpy.zcl import foundation
+from zigpy.zcl import AttributeUnsupportedEvent, foundation
 
 
 class CustomCluster(zigpy.zcl.Cluster):
@@ -20,6 +20,10 @@ class CustomCluster(zigpy.zcl.Cluster):
 
     _skip_registry = True
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] | None = None
+
+    # IDs of attributes the device reports, but may answer reads of with
+    # UNSUPPORTED_ATTRIBUTE. They are never marked unsupported.
+    _REPORT_ONLY_ATTRIBUTES: frozenset[int] | None = None
 
     async def read_attributes(
         self,
@@ -114,7 +118,34 @@ class CustomCluster(zigpy.zcl.Cluster):
         ):
             return False
 
+        # Report-only attributes are always supported, also when a mark from before
+        # the quirk set `_REPORT_ONLY_ATTRIBUTES` is restored from the database
+        if self._REPORT_ONLY_ATTRIBUTES and (
+            self.find_attribute(attr).id in self._REPORT_ONLY_ATTRIBUTES
+        ):
+            return False
+
         return super().is_attribute_unsupported(attr)
+
+    def emit(self, event_name: str, data: typing.Any = None) -> None:
+        """Emit an event, unless it marks a report-only attribute unsupported.
+
+        Dropping the event keeps the mark out of the attribute cache and the database,
+        so a failed read neither hides the last reported value nor its entity.
+        """
+        if (
+            self._REPORT_ONLY_ATTRIBUTES
+            and event_name == AttributeUnsupportedEvent.event_type
+            and data is not None
+            and data.attribute_id in self._REPORT_ONLY_ATTRIBUTES
+        ):
+            self.debug(
+                "Ignoring unsupported status of report-only attribute %s",
+                data.attribute_name,
+            )
+            return
+
+        super().emit(event_name, data)
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Apply custom configuration; overridden by clusters that need it."""
