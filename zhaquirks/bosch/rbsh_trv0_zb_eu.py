@@ -2,6 +2,9 @@
 
 from typing import Any, Final
 
+from zha.application.platforms.number import BoschThermostatLocalTempCalibration
+from zha.application.platforms.select import KeypadLockout
+from zha.application.platforms.sensor import SetpointChangeSource
 from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -15,6 +18,7 @@ from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
+    EntityFilter,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
@@ -636,12 +640,12 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     )
     # Local temperature offset: replaces the default ZHA entity, which is not
     # created as long as the attribute was never read.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=Thermostat.cluster_id,
-        function=lambda entity: (
-            entity.__class__.__name__ == "BoschThermostatLocalTempCalibration"
-        ),
+    .removes_entity(
+        EntityFilter(
+            entity_cls=BoschThermostatLocalTempCalibration,
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+        )
     )
     .number(
         Thermostat.AttributeDefs.local_temperature_calibration.name,
@@ -659,10 +663,12 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     )
     # Setpoint change source: replaces the default ZHA sensor, which does not
     # configure reporting.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=Thermostat.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "SetpointChangeSource",
+    .removes_entity(
+        EntityFilter(
+            entity_cls=SetpointChangeSource,
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+        )
     )
     .enum(
         Thermostat.AttributeDefs.setpoint_change_source.name,
@@ -705,10 +711,12 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         fallback_name="Battery low",
     )
     # Child lock: an on/off switch instead of the multi-level default select.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=UserInterface.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "KeypadLockout",
+    .removes_entity(
+        EntityFilter(
+            entity_cls=KeypadLockout,
+            endpoint_id=1,
+            cluster_id=UserInterface.cluster_id,
+        )
     )
     .switch(
         UserInterface.AttributeDefs.keypad_lockout.name,
