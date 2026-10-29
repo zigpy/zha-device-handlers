@@ -185,16 +185,12 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         """Write system_mode as the matching preset_mode on the Tuya cluster."""
         system_mode_attr = Thermostat.AttributeDefs.system_mode
         attributes = dict(attributes)
-        system_mode = None
+        system_mode = preset = None
         for key in list(attributes):
             if key in (system_mode_attr, system_mode_attr.id, system_mode_attr.name):
-                system_mode = attributes.pop(key)
-
-        if attributes:
-            await super().write_attributes(attributes, **kwargs)
+                system_mode = Thermostat.SystemMode(attributes.pop(key))
 
         if system_mode is not None:
-            system_mode = Thermostat.SystemMode(system_mode)
             preset = self.SYSTEM_MODE_TO_PRESET.get(system_mode)
             if preset is None:
                 self.warning("Unsupported system mode: %s", system_mode)
@@ -205,6 +201,11 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
                         )
                     ]
                 ]
+
+        if attributes:
+            await super().write_attributes(attributes, **kwargs)
+
+        if preset is not None:
             self._update_attribute(system_mode_attr.id, system_mode)
             await self.endpoint.tuya_manufacturer.write_attributes(
                 {"preset_mode": preset}, **kwargs

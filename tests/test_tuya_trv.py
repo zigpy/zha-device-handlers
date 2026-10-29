@@ -473,7 +473,7 @@ async def test_moes_trv602z_system_mode_write(
 
 
 async def test_moes_trv602z_unsupported_system_mode(zigpy_device_from_v2_quirk):
-    """A system mode the TRV has no preset for is not sent."""
+    """A system mode the TRV has no preset for fails the whole write."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
     ep = quirked.endpoints[1]
@@ -484,7 +484,10 @@ async def test_moes_trv602z_unsupported_system_mode(zigpy_device_from_v2_quirk):
         return_value=foundation.Status.SUCCESS,
     ) as m1:
         (status,) = await ep.thermostat.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Cool}
+            {
+                "system_mode": Thermostat.SystemMode.Cool,
+                "occupied_heating_setpoint": 2100,
+            }
         )
         await wait_for_zigpy_tasks()
 
