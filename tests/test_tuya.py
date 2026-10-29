@@ -513,24 +513,6 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[10][1] == 4
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
-async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
-    """Test Haozee thermostat reports the current room temperature."""
-
-    thermostat_dev = zigpy_device_from_quirk(quirk)
-    tuya_cluster = thermostat_dev.endpoints[1].tuya_manufacturer
-    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
-
-    thermostat_listener = ClusterListener(thermostat_cluster)
-
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_HAOZEE_TEMPERATURE)
-    tuya_cluster.handle_message(hdr, args)
-
-    assert thermostat_listener.attribute_updates == [
-        (Thermostat.AttributeDefs.local_temperature.id, 2100)
-    ]
-
-
 @pytest.mark.parametrize(
     ("dp_value", "calibration"),
     (
@@ -595,6 +577,24 @@ async def test_haozee_temperature_calibration_write(
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
+async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
+    """Test Haozee thermostat reports the current room temperature."""
+
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = thermostat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_HAOZEE_TEMPERATURE)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert thermostat_listener.attribute_updates == [
+        (Thermostat.AttributeDefs.local_temperature.id, 2100)
+    ]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
