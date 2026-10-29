@@ -29,6 +29,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.switch import Switch
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceMatch,
@@ -44,6 +45,7 @@ import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
@@ -1109,6 +1111,7 @@ class QuirkBuilder:
     def change_entity_metadata(
         self,
         *,
+        platform: EntityPlatform | None = None,
         endpoint_id: int | None = None,
         cluster_id: int | None = None,
         cluster_type: ClusterType | None = None,
@@ -1133,6 +1136,7 @@ class QuirkBuilder:
         self.changed_entity_metadata.append(
             ChangedEntityMetadata(
                 filter=EntityFilter(
+                    platform=platform,
                     endpoint_id=endpoint_id,
                     cluster_id=cluster_id,
                     cluster_type=cluster_type,
@@ -1151,6 +1155,28 @@ class QuirkBuilder:
             ),
         )
         return self
+
+    def light_as_switch(self, endpoint_id: int = 1) -> Self:
+        """Expose the On/Off light of an endpoint as a switch, and disable the light.
+
+        For devices that are no lights (e.g. relay modules) but report an On/Off
+        light device type, which makes ZHA create a light. The reported device type
+        is kept, so existing installations keep their light entity unchanged: the
+        light is only disabled by default when it is first registered, and the
+        switch is added next to it.
+        """
+        return self.adds_entity(
+            Switch,
+            endpoint_id=endpoint_id,
+            cluster_id=OnOff.cluster_id,
+            unique_id_suffix="switch",
+        ).change_entity_metadata(
+            platform=Platform.LIGHT,
+            endpoint_id=endpoint_id,
+            cluster_id=OnOff.cluster_id,
+            new_primary=False,
+            new_entity_registry_enabled_default=False,
+        )
 
     def _compile_transformations(self) -> tuple[DeviceOp, ...]:
         """Compile the accumulated cluster/endpoint operations, in v2 order."""
