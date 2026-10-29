@@ -1,13 +1,27 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
 import datetime
+import functools
 import logging
 from typing import Any, Final, Union
 
+from zha.application.helpers import write_attributes_safe
+from zha.application.platforms.climate import Thermostat as ThermostatEntity
+from zha.application.platforms.climate.const import (
+    ClimateEntityFeature,
+    HVACMode,
+    Preset as ClimatePreset,
+)
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import (
     AnalogOutput,
     Basic,
@@ -1822,6 +1836,99 @@ class ZonnsmartTV01Device(CustomZigpyDevice):
         super().__init__(*args, **kwargs)
 
 
+class OperationPresetThermostat(ThermostatEntity):
+    """Thermostat with the `operation_preset` modes of the cluster as presets."""
+
+    # Preset for each `operation_preset` value
+    _value_presets: dict[int, str]
+    # `operation_preset` value written for each preset, including `ClimatePreset.NONE`
+    _preset_values: dict[str, int]
+
+    def recompute_capabilities(self) -> None:
+        """Recompute capabilities and feature flags."""
+        super().recompute_capabilities()
+        self._presets = list(self._preset_values)
+        self._supported_features |= ClimateEntityFeature.PRESET_MODE
+
+    def handle_attribute_updated(
+        self,
+        event: AttributeReadEvent
+        | AttributeReportedEvent
+        | AttributeUpdatedEvent
+        | AttributeWrittenEvent,
+    ) -> None:
+        """Handle attribute update from device."""
+        if event.attribute_name == self._cluster.AttributeDefs.operation_preset.name:
+            preset = self._value_presets.get(event.value)
+            if preset is not None:
+                self._preset = preset
+        super().handle_attribute_updated(event)
+
+    async def async_preset_handler(self, preset: str, enable: bool = False) -> None:
+        """Set the preset mode."""
+        await write_attributes_safe(
+            self._cluster,
+            {
+                self._cluster.AttributeDefs.operation_preset.name: (
+                    self._preset_values[preset if enable else ClimatePreset.NONE]
+                )
+            },
+            manufacturer=self._device.manufacturer_code,
+        )
+
+
+class MoesHY368Climate(OperationPresetThermostat):
+    """Moes HY368 thermostat."""
+
+    _value_presets = {
+        Preset.Away: ClimatePreset.AWAY,
+        Preset.Schedule: ClimatePreset.SCHEDULE,
+        Preset.Manual: ClimatePreset.NONE,
+        Preset.Comfort: ClimatePreset.COMFORT,
+        Preset.Eco: ClimatePreset.ECO,
+        Preset.Boost: ClimatePreset.BOOST,
+        Preset.Complex: ClimatePreset.COMPLEX,
+    }
+    _preset_values = {
+        ClimatePreset.NONE: Preset.Manual,
+        ClimatePreset.AWAY: Preset.Away,
+        ClimatePreset.SCHEDULE: Preset.Schedule,
+        ClimatePreset.COMFORT: Preset.Comfort,
+        ClimatePreset.ECO: Preset.Eco,
+        ClimatePreset.BOOST: Preset.Boost,
+        ClimatePreset.COMPLEX: Preset.Complex,
+    }
+
+    @functools.cached_property
+    def hvac_modes(self) -> list[HVACMode]:
+        """Return only the heat mode, because the device can't be turned off."""
+        return [HVACMode.HEAT]
+
+
+class ZonnsmartTV01Climate(OperationPresetThermostat):
+    """ZONNSMART TV01-ZG thermostat.
+
+    The two holiday modes are shown as one preset, which sets `HolidayTemp`.
+    """
+
+    PRESET_HOLIDAY = "holiday"
+    PRESET_FROST = "frost protect"
+
+    _value_presets = {
+        ZONNSMARTThermostat.Preset.Schedule: ClimatePreset.SCHEDULE,
+        ZONNSMARTThermostat.Preset.Manual: ClimatePreset.NONE,
+        ZONNSMARTThermostat.Preset.Holiday: PRESET_HOLIDAY,
+        ZONNSMARTThermostat.Preset.HolidayTemp: PRESET_HOLIDAY,
+        ZONNSMARTThermostat.Preset.FrostProtect: PRESET_FROST,
+    }
+    _preset_values = {
+        ClimatePreset.NONE: ZONNSMARTThermostat.Preset.Manual,
+        PRESET_HOLIDAY: ZONNSMARTThermostat.Preset.HolidayTemp,
+        ClimatePreset.SCHEDULE: ZONNSMARTThermostat.Preset.Schedule,
+        PRESET_FROST: ZONNSMARTThermostat.Preset.FrostProtect,
+    }
+
+
 def has_no_zcl_thermostat(device: zigpy.device.Device) -> bool:
     """Return whether the device has no ZCL thermostat of its own.
 
@@ -1859,6 +1966,12 @@ def has_no_zcl_thermostat(device: zigpy.device.Device) -> bool:
     .adds(MoesUserInterface)
     .adds(MoesWindowDetection)
     .adds(TuyaPowerConfigurationCluster2AA)
+    .replaces_entity(
+        ThermostatEntity,
+        MoesHY368Climate,
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+    )
     .add_to_registry()
 )
 
@@ -1891,5 +2004,11 @@ def has_no_zcl_thermostat(device: zigpy.device.Device) -> bool:
     .adds(ZONNSMARTWindowOpenedTemp, endpoint_id=2)
     .adds_endpoint(3, device_type=zha.DeviceType.COMBINED_INTERFACE)
     .adds(ZONNSMARTOnlineMode, endpoint_id=3)
+    .replaces_entity(
+        ThermostatEntity,
+        ZonnsmartTV01Climate,
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+    )
     .add_to_registry()
 )
