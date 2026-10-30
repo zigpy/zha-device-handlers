@@ -8,6 +8,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -18,15 +19,20 @@ from zigpy.zcl import (
     ClusterType,
     foundation,
 )
-from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.closures import DoorLock, WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
+    Basic,
     DeviceTemperature,
+    Groups,
+    Identify,
     MultistateInput,
     MultistateOutput,
     OnOff,
+    Ota,
     PowerConfiguration,
+    Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -80,6 +86,7 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+from zhaquirks.xiaomi.aqara import vibration_aq1
 import zhaquirks.xiaomi.aqara.cube
 import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
@@ -432,7 +439,7 @@ def test_xiaomi_quick_init(raw_device):
         (2600, 0),
     ),
 )
-async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
+async def test_xiaomi_battery(vibration_aq1_device, voltage, bpr):
     """Test xiaomi batter voltage to % battery left."""
     data_1 = b'\x1c_\x11I\n\x01\xffB"\x01!'
     data_2 = (
@@ -440,7 +447,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
         b"\x00\x00d\x10\x00"
     )
 
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
+    device = vibration_aq1_device()
     device.packet_received(
         t.ZigbeePacket(
             profile_id=zha.PROFILE_ID,
@@ -489,7 +496,6 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
 @pytest.mark.parametrize(
     "quirk, batt_size",
     (
-        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
         (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
@@ -3345,6 +3351,153 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.fixture
+def vibration_aq1_device(zigpy_device_mock):
+    """Create an Aqara vibration sensor with the clusters it reports on pairing."""
+
+    def _dev():
+        device = zigpy_device_mock()
+        device.manufacturer = LUMI
+        device.model = "lumi.vibration.aq1"
+        device.node_desc = XIAOMI_NODE_DESC
+
+        ep1 = device.add_endpoint(1)
+        ep1.profile_id = zha.PROFILE_ID
+        ep1.device_type = zha.DeviceType.DOOR_LOCK
+        for cluster_id in (Basic, Identify, Ota, DoorLock):
+            ep1.add_input_cluster(cluster_id.cluster_id)
+        for cluster_id in (Basic, Identify, Groups, Scenes, Ota, DoorLock):
+            ep1.add_output_cluster(cluster_id.cluster_id)
+
+        ep2 = device.add_endpoint(2)
+        ep2.profile_id = zha.PROFILE_ID
+        ep2.device_type = 0x5F02
+        for cluster_id in (Identify, MultistateInput):
+            ep2.add_input_cluster(cluster_id.cluster_id)
+        for cluster_id in (Identify, Groups, Scenes, MultistateInput):
+            ep2.add_output_cluster(cluster_id.cluster_id)
+
+        return DEVICE_REGISTRY.resolve(device)
+
+    return _dev
+
+
+async def test_vibration_aq1_signature(vibration_aq1_device):
+    """Test the Aqara vibration sensor quirk replaces the right clusters."""
+    device = vibration_aq1_device()
+    assert isinstance(device, vibration_aq1.VibrationAQ1)
+
+    ep1 = device.endpoints[1]
+    assert isinstance(ep1.basic, vibration_aq1.VibrationBasicCluster)
+    assert isinstance(
+        ep1.in_clusters[DoorLock.cluster_id], vibration_aq1.MultistateInputCluster
+    )
+    assert isinstance(ep1.ias_zone, vibration_aq1.MotionCluster)
+    assert PowerConfiguration.cluster_id in ep1.in_clusters
+    assert DeviceTemperature.cluster_id in ep1.in_clusters
+    assert DoorLock.cluster_id not in ep1.out_clusters
+    assert MultistateInput.cluster_id not in device.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[2].out_clusters
+    entry = DEVICE_REGISTRY.match_entry(device)
+    assert entry.zha_device_factory.quirk_definition.skip_configuration is True
+
+
+async def test_vibration_aq1_battery_size(vibration_aq1_device):
+    """Test the Aqara vibration sensor battery size override."""
+    device = vibration_aq1_device()
+    cluster = device.endpoints[1].power
+    succ, _ = await cluster.read_attributes(("battery_size", "battery_quantity"))
+    assert succ["battery_quantity"] == 1
+    assert succ["battery_size"] == BatterySize.CR2032
+
+
+async def test_vibration_aq1_sensitivity_entity(vibration_aq1_device):
+    """Test the Aqara vibration sensor exposes a sensitivity select."""
+    device = vibration_aq1_device()
+    definition = DEVICE_REGISTRY.match_entry(device).zha_device_factory.quirk_definition
+    (entity,) = [
+        em for em in definition.entity_metadata if em.attribute_name == "sensitivity"
+    ]
+    assert entity.cluster_id == Basic.cluster_id
+    assert entity.endpoint_id == 1
+    assert entity.enum is vibration_aq1.VibrationSensitivity
+
+
+@pytest.mark.parametrize(
+    "sensitivity, raw",
+    [
+        (vibration_aq1.VibrationSensitivity.Low, 0x15),
+        (vibration_aq1.VibrationSensitivity.Medium, 0x0B),
+        (vibration_aq1.VibrationSensitivity.High, 0x01),
+    ],
+)
+async def test_vibration_aq1_sensitivity_write(vibration_aq1_device, sensitivity, raw):
+    """Test writing sensitivity uses a manufacturer specific uint8 write."""
+    device = vibration_aq1_device()
+    basic = device.endpoints[1].basic
+    basic._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    await basic.write_attributes({"sensitivity": sensitivity})
+
+    assert len(basic._write_attributes.mock_calls) == 1
+    call = basic._write_attributes.mock_calls[0]
+    (attr,) = call.args[0]
+    assert attr.attrid == 0xFF0D
+    assert attr.value.type == DataTypeId.uint8
+    assert attr.value.value == raw
+    assert call.kwargs["manufacturer"] == 0x115F
+
+
+async def test_vibration_aq1_events(vibration_aq1_device):
+    """Test vibration, drop and tilt reports still reach ZHA."""
+    device = vibration_aq1_device()
+    ep1 = device.endpoints[1]
+    multistate = ep1.in_clusters[DoorLock.cluster_id]
+    ias_listener = ClusterListener(ep1.ias_zone)
+
+    multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 1)
+    assert ias_listener.cluster_commands[-1][1] == 0  # zone status change
+
+    zha_events = []
+    ep1.ias_zone.add_listener(
+        mock.Mock(zha_send_event=lambda *args: zha_events.append(args))
+    )
+
+    multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 3)
+    assert zha_events[-1] == ("Drop", {})
+
+    multistate.update_attribute(vibration_aq1.STATUS_TYPE_ATTR, 2)
+    multistate.update_attribute(vibration_aq1.ROTATION_DEGREES_ATTR, 42)
+    assert zha_events[-1] == ("Tilt", {"degrees": 42})
+
+
+async def test_vibration_aq1_orientation_and_strength_events(vibration_aq1_device):
+    """Test orientation and vibration strength reports become ZHA events."""
+    device = vibration_aq1_device()
+    ep1 = device.endpoints[1]
+    multistate = ep1.in_clusters[DoorLock.cluster_id]
+    zha_events = []
+    ep1.ias_zone.add_listener(
+        mock.Mock(zha_send_event=lambda *args: zha_events.append(args))
+    )
+
+    multistate.update_attribute(
+        vibration_aq1.ORIENTATION_ATTR, 1 | (1 << 16) | (1 << 32)
+    )
+    assert zha_events[-1] == (
+        "current_orientation",
+        {"rawValueX": 1, "rawValueY": 1, "rawValueZ": 1, "X": 35, "Y": 35, "Z": 35},
+    )
+
+    # The strength arrives byte swapped in bits 8 to 23.
+    multistate.update_attribute(vibration_aq1.RECENT_ACTIVITY_LEVEL_ATTR, 0x1234 << 8)
+    assert zha_events[-1] == ("vibration_strength", {"strength": 0x3412})
 
 
 def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):

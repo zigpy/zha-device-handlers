@@ -61,7 +61,6 @@ import zhaquirks.legacy as zq
 from zhaquirks.legacy import CustomDevice
 import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
-import zhaquirks.xiaomi.aqara.vibration_aq1
 
 zhaquirks.setup()
 
@@ -794,10 +793,7 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 )
 
                 # A few are expected to fail and are handled by ZHA
-                if cluster not in (
-                    zhaquirks.konke.KonkeOnOffCluster,
-                    zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1.MultistateInputCluster,
-                ):
+                if cluster not in (zhaquirks.konke.KonkeOnOffCluster,):
                     pytest.fail(
                         f"Cluster {cluster} with endpoint ID 0x{cluster.cluster_id:04X}"
                         f" does not contain all named attributes: {missing_attrs}"
@@ -916,9 +912,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.keenhome.weather.TemperatureHumidtyPressureSensor,
             # this just exposed all ZCL clusters, remove a lot (Aqara light):
             zhaquirks.xiaomi.aqara.light_aqcn2.LightAqcn02,
-            # DoorLock cluster that's actually a MultistateInput cluster
-            # removed as output cluster (Aqara vibration sensor):
-            zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1,
             #
             # -- IKEA devices --
             # swap PM25 cluster from output to input cluster (IKEA Starkvind):
