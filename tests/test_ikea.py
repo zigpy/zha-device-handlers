@@ -1,10 +1,11 @@
 """Tests for Ikea Starkvind quirks."""
 
+import asyncio
 from unittest import mock
 
 import pytest
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, LevelControl, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
@@ -19,6 +20,7 @@ from zhaquirks.const import (
     LONG_RELEASE,
 )
 from zhaquirks.ikea import IKEA
+import zhaquirks.ikea.blinds
 from zhaquirks.ikea.fivebtnremote import (
     IkeaTradfriRemote1,
     IkeaTradfriRemote2,
@@ -273,6 +275,213 @@ async def test_double_power_config_firmware(
         # check log output if we expect a warning
         if expect_log_warning:
             assert f"sw_build_id is not a number: {firmware} for device" in caplog.text
+
+
+def _mock_sw_build_id_read(firmware):
+    """Return a fake _read_attributes that answers every read with firmware."""
+
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, firmware)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    return mock_read
+
+
+@pytest.mark.parametrize(
+    "cached_fw, read_fw, pct_device, pct_before_read, pct_after_read",
+    (
+        ("2.3.079", "24.4.13", 180, 360, 180),  # updated over the air, no doubling
+        ("2.3.079", "2.3.079", 50, 100, 100),  # still old firmware, doubling
+        ("24.4.13", "24.4.13", 180, 180, 180),  # still new firmware, no doubling
+        ("24.4.13", "2.3.079", 50, 50, 100),  # downgraded, doubling
+    ),
+)
+async def test_double_power_config_outdated_firmware(
+    zigpy_device_from_quirk,
+    cached_fw,
+    read_fw,
+    pct_device,
+    pct_before_read,
+    pct_after_read,
+):
+    """Test a cached sw_build_id is read again once per run and after an OTA update."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    sw_build_id = Basic.AttributeDefs.sw_build_id.id
+    ota_cluster = device.endpoints[1].out_clusters[Ota.cluster_id]
+    current_file_version = Ota.AttributeDefs.current_file_version.id
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    # sw_build_id and the OTA file version are cached from before this run
+    basic_cluster.update_attribute(sw_build_id, cached_fw)
+    ota_cluster.update_attribute(current_file_version, 0x24040013)
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=_mock_sw_build_id_read(read_fw)),
+    )
+
+    with p1 as mock_task, p2 as request_mock:
+        # first battery report of the run: doubled based on the cached firmware,
+        # and sw_build_id is read again in the background
+        power_listener = ClusterListener(power_cluster)
+        power_cluster.update_attribute(battery_pct_id, pct_device)
+        assert power_listener.attribute_updates == [(battery_pct_id, pct_before_read)]
+        assert mock_task.call_count == 1
+
+        await mock_task.call_args[0][0]
+        assert request_mock.call_count == 1
+        assert request_mock.mock_calls[0][1][0][0] == sw_build_id
+
+        # the percentage is only updated again if the read firmware changed the doubling
+        assert power_cluster.get(battery_pct_id) == pct_after_read
+        expected_updates = [(battery_pct_id, pct_before_read)]
+        if pct_after_read != pct_before_read:
+            expected_updates.append((battery_pct_id, pct_after_read))
+        assert power_listener.attribute_updates == expected_updates
+        assert mock_task.call_count == 1  # no new read started by that update
+
+        # no further reads while the OTA file version stays the same
+        mock_task.reset_mock()
+        request_mock.reset_mock()
+        power_cluster.update_attribute(battery_pct_id, pct_device)
+        assert power_cluster.get(battery_pct_id) == pct_after_read
+        assert mock_task.call_count == 0
+
+        # the device reports another OTA file version after an update: read again
+        ota_cluster.update_attribute(current_file_version, 0x24040014)
+        power_cluster.update_attribute(battery_pct_id, pct_device)
+        assert mock_task.call_count == 1
+        await mock_task.call_args[0][0]
+        assert request_mock.call_count == 1
+
+        # bind() reads sw_build_id and records the OTA file version as well
+        mock_task.reset_mock()
+        request_mock.reset_mock()
+        ota_cluster.update_attribute(current_file_version, 0x24040015)
+        with mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock()):
+            await power_cluster.bind()
+        assert request_mock.call_count == 1
+        power_cluster.update_attribute(battery_pct_id, pct_device)
+        assert mock_task.call_count == 0
+
+
+async def test_double_power_config_reports_during_read(zigpy_device_from_quirk):
+    """Test reports arriving before the sw_build_id read returns keep the newest value."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=_mock_sw_build_id_read("24.4.13")),
+    )
+
+    with p1 as mock_task, p2:
+        # two reports, each starting a read, before the first read returns
+        power_cluster.update_attribute(battery_pct_id, 180)
+        power_cluster.update_attribute(battery_pct_id, 178)
+        assert power_cluster.get(battery_pct_id) == 356
+        assert mock_task.call_count == 2
+
+        # the first read corrects the newest cached value, not the one it started with
+        await mock_task.call_args_list[0][0][0]
+        assert power_cluster.get(battery_pct_id) == 178
+
+        # a report after the read is not doubled, the second read changes nothing
+        power_cluster.update_attribute(battery_pct_id, 176)
+        await mock_task.call_args_list[1][0][0]
+        assert power_cluster.get(battery_pct_id) == 176
+        assert mock_task.call_count == 2
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+async def test_double_power_config_bind_corrects_pct(zigpy_device_from_quirk):
+    """Test the sw_build_id read in bind() corrects a percentage doubled in this run."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=_mock_sw_build_id_read("24.4.13")),
+    )
+
+    with p1 as mock_task, p2:
+        # restored from the database: no correction without a report in this run
+        power_cluster._attr_cache.set_value(
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining, 200
+        )
+        await power_cluster.bind()
+        assert power_cluster.get(battery_pct_id) == 200
+
+        # sw_build_id changed back without a read: a report is doubled again
+        # and corrected by the read in the next bind()
+        basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+        power_cluster.update_attribute(battery_pct_id, 90)
+        assert power_cluster.get(battery_pct_id) == 180
+        assert mock_task.call_count == 0
+        await power_cluster.bind()
+        assert power_cluster.get(battery_pct_id) == 90
+
+
+async def test_double_power_config_firmware_read_fails(zigpy_device_from_quirk):
+    """Test a failed sw_build_id read is tried again on the next battery report."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=asyncio.TimeoutError),
+    )
+
+    with p1 as mock_task, p2 as request_mock:
+        power_cluster.update_attribute(battery_pct_id, 50)
+        assert power_cluster.get(battery_pct_id) == 100
+        assert mock_task.call_count == 1
+        with pytest.raises(asyncio.TimeoutError):
+            await mock_task.call_args[0][0]
+        assert request_mock.call_count == 1
+
+        # the cached firmware is still used, and the read is tried again
+        mock_task.reset_mock()
+        power_cluster.update_attribute(battery_pct_id, 50)
+        assert power_cluster.get(battery_pct_id) == 100
+        assert mock_task.call_count == 1
+        mock_task.call_args[0][0].close()
 
 
 @pytest.mark.parametrize(
