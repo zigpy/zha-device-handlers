@@ -960,6 +960,60 @@ async def test_tp_wgzba_multi_remote_source_write(tp_wgzba_device):
     assert private_cluster.get(defs.remote_temperature_source2.name) == 2150
 
 
+@pytest.mark.parametrize(
+    ("build_id", "expected"),
+    [
+        ("1.0.5", False),
+        ("1.0.6", True),
+        (b"1.0.7\x00", True),
+        ("invalid", False),
+    ],
+)
+async def test_tp_wgzba_multi_remote_firmware_from_cache(
+    tp_wgzba_device, build_id, expected
+):
+    """Select the remote-temperature protocol from the cached build ID."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    basic_cluster = endpoint.basic
+    basic_cluster._update_attribute(Basic.AttributeDefs.sw_build_id.id, build_id)
+
+    # A cached version must not trigger an unnecessary device read.
+    with mock.patch.object(basic_cluster, "read_attributes", mock.AsyncMock()) as read:
+        assert (
+            await endpoint.sonoff_private._supports_multi_remote_temperature()
+            is expected
+        )
+    read.assert_not_awaited()
+
+
+async def test_tp_wgzba_multi_remote_firmware_read_fallbacks(tp_wgzba_device):
+    """Use the build ID read result and fail closed when it is unavailable."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    basic_cluster = endpoint.basic
+    build_id = Basic.AttributeDefs.sw_build_id.id
+
+    # A successful uncached read enables the multi-source protocol.
+    with (
+        mock.patch.object(basic_cluster, "get", side_effect=[None, "1.0.6"]),
+        mock.patch.object(basic_cluster, "read_attributes", mock.AsyncMock()) as read,
+    ):
+        assert await endpoint.sonoff_private._supports_multi_remote_temperature()
+    read.assert_awaited_once_with([build_id])
+
+    # A failed read and a missing Basic cluster both retain the legacy protocol.
+    with (
+        mock.patch.object(basic_cluster, "get", return_value=None),
+        mock.patch.object(
+            basic_cluster,
+            "read_attributes",
+            mock.AsyncMock(side_effect=RuntimeError("read failed")),
+        ),
+    ):
+        assert not await endpoint.sonoff_private._supports_multi_remote_temperature()
+    with mock.patch.object(endpoint, "basic", None):
+        assert not await endpoint.sonoff_private._supports_multi_remote_temperature()
+
+
 async def test_tp_wgzba_old_firmware_rejects_second_remote_source(tp_wgzba_device):
     """Reject source two on firmware that supports only one remote sensor."""
     private_cluster = tp_wgzba_device.endpoints[1].sonoff_private
