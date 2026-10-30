@@ -1,13 +1,14 @@
 """Sonoff SNZB-03P – stable ZHA quirk (practical version)."""
 
-import zigpy.types as t
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.number.device_class import NumberDeviceClass
-from zhaquirks.builder import QuirkBuilder, UnitOfTime
-from zhaquirks.clusters import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
+
+from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
