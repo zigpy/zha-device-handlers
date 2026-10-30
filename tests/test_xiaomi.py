@@ -44,6 +44,7 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks import const
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
@@ -118,6 +119,7 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
+import zhaquirks.xiaomi.aqara.sensor_switch_aq3 as aq3
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
@@ -3345,6 +3347,31 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+@pytest.mark.parametrize(
+    ("value", "command"),
+    [(1, "single"), (2, "double"), (3, "triple"), (4, "quadruple")],
+)
+async def test_aqara_b1acn01_multi_press(zigpy_device_from_quirk, value, command):
+    """Test the lumi.remote.b1acn01 button sends single to quadruple press events."""
+    device = zigpy_device_from_quirk(aq3.SwitchAQ3B)
+    multistate = device.endpoints[1].multistate_input
+    events = []
+    multistate.add_listener(mock.Mock(zha_send_event=lambda *args: events.append(args)))
+    multistate.update_attribute(aq3.STATUS_TYPE_ATTR, value)
+    assert events == [(command, {"value": value})]
+
+
+def test_aqara_b1acn01_multi_press_triggers():
+    """Test triple and quadruple presses are offered as device triggers."""
+    triggers = aq3.SwitchAQ3B.device_automation_triggers
+    assert triggers[(const.TRIPLE_PRESS, const.TRIPLE_PRESS)] == {
+        const.COMMAND: "triple"
+    }
+    assert triggers[(const.QUADRUPLE_PRESS, const.QUADRUPLE_PRESS)] == {
+        const.COMMAND: "quadruple"
+    }
 
 
 def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
