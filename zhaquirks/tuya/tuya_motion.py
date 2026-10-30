@@ -14,6 +14,7 @@ from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
@@ -184,6 +185,14 @@ class TuyaMotionFadeTime(t.enum8):
     _120_seconds = 0x03
 
 
+class TuyaMotionFadeTime3Step(t.enum8):
+    """Tuya motion 3 step fade time enum."""
+
+    _15_seconds = 0x00
+    _30_seconds = 0x01
+    _60_seconds = 0x02
+
+
 class TuyaSensitivityMode(t.enum8):
     """Tuya sensitivity mode enum."""
 
@@ -217,7 +226,7 @@ base_tuya_motion = (
         dp_id=3,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=8.25,
@@ -230,7 +239,7 @@ base_tuya_motion = (
         dp_id=4,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0.75,
         max_value=9.0,
@@ -290,7 +299,7 @@ base_tuya_motion = (
         dp_id=105,
         attribute_name="presence_timeout",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=15000,
@@ -375,7 +384,7 @@ base_tuya_motion = (
         dp_id=101,
         attribute_name="detection_delay",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=10,
@@ -388,7 +397,7 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=1500,
@@ -417,7 +426,7 @@ base_tuya_motion = (
         dp_id=104,
         attribute_name="interval_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=3600,
@@ -429,7 +438,7 @@ base_tuya_motion = (
         dp_id=105,
         attribute_name="detection_delay",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=10,
@@ -442,7 +451,7 @@ base_tuya_motion = (
         dp_id=106,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=5,
         max_value=1500,
@@ -512,7 +521,7 @@ base_tuya_motion = (
         dp_id=103,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=59,
@@ -531,7 +540,7 @@ base_tuya_motion = (
         dp_id=107,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0,
         max_value=840,
@@ -543,7 +552,7 @@ base_tuya_motion = (
         dp_id=108,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0.75,
         max_value=840,
@@ -736,7 +745,7 @@ base_tuya_motion = (
         dp_id=101,
         attribute_name="detection_delay",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=10,
@@ -749,7 +758,7 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=600,
@@ -773,7 +782,7 @@ base_tuya_motion = (
         dp_id=106,
         attribute_name="entry_distance_indentation",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=9,
@@ -807,7 +816,7 @@ base_tuya_motion = (
         dp_id=110,
         attribute_name="illuminance_threshold",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.ILLUMINANCE,
+        device_class=NumberDeviceClass.ILLUMINANCE,
         unit=LIGHT_LUX,
         min_value=0,
         max_value=420,
@@ -827,7 +836,7 @@ base_tuya_motion = (
         dp_id=112,
         attribute_name="block_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=10,
@@ -862,7 +871,7 @@ base_tuya_motion = (
         dp_id=13,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=1.5,
         max_value=6.0,
@@ -904,7 +913,7 @@ base_tuya_motion = (
         dp_id=103,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=3,
         max_value=1799,
@@ -939,7 +948,7 @@ base_tuya_motion = (
         dp_id=12,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=3,
         max_value=600,
@@ -951,7 +960,7 @@ base_tuya_motion = (
         dp_id=13,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=150,
         max_value=600,
@@ -1034,7 +1043,7 @@ base_tuya_motion = (
         dp_id=105,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=30,
@@ -1079,7 +1088,7 @@ base_tuya_motion = (
     .number(
         attribute_name="fading_time",
         cluster_id=TUYA_CLUSTER_ID,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=3,
         max_value=600,
@@ -1091,7 +1100,7 @@ base_tuya_motion = (
         dp_id=13,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=150,
         max_value=600,
@@ -1208,7 +1217,7 @@ base_tuya_motion = (
         dp_id=105,
         attribute_name="illuminance_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=720,
@@ -1217,6 +1226,46 @@ base_tuya_motion = (
         fallback_name="Illuminance interval",
     )
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya PIR motion + illuminance sensor, HOBEIAN ZG-204ZL
+(
+    TuyaQuirkBuilder("HOBEIAN", "ZG-204ZL")
+    # Occupancy (DP 1), battery (DP 4) and illuminance (DP 12) intentionally stay
+    # on the native IasZone (0x0500), PowerConfiguration (0x0001) and
+    # IlluminanceMeasurement (0x0400) clusters this device also exposes: mapping
+    # the datapoints as well would create duplicate entities.
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="presence_sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="fading_time",
+        enum_class=TuyaMotionFadeTime,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    # No skip_configuration(): unlike the pure-datapoint variants, this quirk
+    # keeps relying on the native IasZone / PowerConfiguration /
+    # IlluminanceMeasurement clusters, so ZHA must keep configuring them.
     .add_to_registry()
 )
 
@@ -1247,7 +1296,7 @@ base_tuya_motion = (
         dp_id=107,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0,
         max_value=950,
@@ -1259,7 +1308,7 @@ base_tuya_motion = (
         dp_id=108,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0,
         max_value=950,
@@ -1282,7 +1331,7 @@ base_tuya_motion = (
         dp_id=110,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=1500,
@@ -1295,7 +1344,7 @@ base_tuya_motion = (
         dp_id=111,
         attribute_name="detection_delay",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=10,
@@ -1332,7 +1381,7 @@ base_tuya_motion = (
         dp_id=101,
         attribute_name="illuminance_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=720,
@@ -1344,11 +1393,42 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="fading_time",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=5,
         max_value=3600,
         step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# iHseno Tuya Human Presence Sensor
+(
+    TuyaQuirkBuilder("_TZE284_debczeci", "TS0601")
+    .applies_to("_TZE204_debczeci", "TS0601")
+    .applies_to("_TZE284_1lvln0x6", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_battery(dp_id=4, battery_qty=2)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="presence_sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="fading_time",
+        enum_class=TuyaMotionFadeTime3Step,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -1383,7 +1463,7 @@ base_tuya_motion = (
         dp_id=4,
         attribute_name="large_motion_detection_distance",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=10,
@@ -1403,7 +1483,7 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="presence_timeout",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=28800,
@@ -1415,7 +1495,7 @@ base_tuya_motion = (
         dp_id=104,
         attribute_name="medium_motion_detection_distance",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=6,
@@ -1446,7 +1526,7 @@ base_tuya_motion = (
         dp_id=108,
         attribute_name="small_motion_detection_distance",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=6,
@@ -1497,7 +1577,7 @@ base_tuya_motion = (
         dp_id=4,
         attribute_name="static_detection_distance",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0,
         max_value=10,
@@ -1519,7 +1599,7 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="presence_timeout",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=0,
         max_value=28800,
@@ -1573,7 +1653,7 @@ base_tuya_motion = (
         dp_id=104,
         attribute_name="presence_timeout",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         min_value=1,
         max_value=180,
@@ -1605,7 +1685,7 @@ base_tuya_motion = (
         dp_id=109,
         attribute_name="detection_distance_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0,
         max_value=600,
@@ -1617,7 +1697,7 @@ base_tuya_motion = (
         dp_id=110,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=0,
         max_value=600,
@@ -1654,8 +1734,32 @@ base_tuya_motion = (
 # Tuya PIR motion sensor, SNZB-03
 (
     TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
-    .applies_to("_TZ3040_bb6xaihh", "TS0202")
     .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR & luminance sensor, TS0601
+(
+    TuyaQuirkBuilder("_TZE200_f1pvdgoh", "TS0601")
+    .tuya_ias(
+        dp_id=1,
+        ias_cfg=TuyaMotionWithReset,
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+    )
+    .tuya_illuminance(dp_id=101)
+    .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR motion sensor, TS0202
+# Sends its own IAS zone clear after its hold time, so no software reset:
+# a fixed reset would clear motion while the sensor is still occupied.
+(
+    TuyaQuirkBuilder("_TZ3040_bb6xaihh", "TS0202")
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
     .skip_configuration()
