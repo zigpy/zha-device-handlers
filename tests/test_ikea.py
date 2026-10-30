@@ -377,6 +377,79 @@ async def test_double_power_config_outdated_firmware(
         assert mock_task.call_count == 0
 
 
+async def test_double_power_config_reports_during_read(zigpy_device_from_quirk):
+    """Test reports arriving before the sw_build_id read returns keep the newest value."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=_mock_sw_build_id_read("24.4.13")),
+    )
+
+    with p1 as mock_task, p2:
+        # two reports, each starting a read, before the first read returns
+        power_cluster.update_attribute(battery_pct_id, 180)
+        power_cluster.update_attribute(battery_pct_id, 178)
+        assert power_cluster.get(battery_pct_id) == 356
+        assert mock_task.call_count == 2
+
+        # the first read corrects the newest cached value, not the one it started with
+        await mock_task.call_args_list[0][0][0]
+        assert power_cluster.get(battery_pct_id) == 178
+
+        # a report after the read is not doubled, the second read changes nothing
+        power_cluster.update_attribute(battery_pct_id, 176)
+        await mock_task.call_args_list[1][0][0]
+        assert power_cluster.get(battery_pct_id) == 176
+        assert mock_task.call_count == 2
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+async def test_double_power_config_bind_corrects_pct(zigpy_device_from_quirk):
+    """Test the sw_build_id read in bind() corrects a percentage doubled in this run."""
+
+    device = zigpy_device_from_quirk(zhaquirks.ikea.blinds.IkeaTradfriRollerBlinds)
+
+    basic_cluster = device.endpoints[1].basic
+    basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+
+    power_cluster = device.endpoints[1].power
+    battery_pct_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    p1 = mock.patch.object(power_cluster, "create_catching_task")
+    p2 = mock.patch.object(
+        basic_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=_mock_sw_build_id_read("24.4.13")),
+    )
+
+    with p1 as mock_task, p2:
+        # restored from the database: no correction without a report in this run
+        power_cluster._attr_cache.set_value(
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining, 200
+        )
+        await power_cluster.bind()
+        assert power_cluster.get(battery_pct_id) == 200
+
+        # sw_build_id changed back without a read: a report is doubled again
+        # and corrected by the read in the next bind()
+        basic_cluster.update_attribute(Basic.AttributeDefs.sw_build_id.id, "2.3.079")
+        power_cluster.update_attribute(battery_pct_id, 90)
+        assert power_cluster.get(battery_pct_id) == 180
+        assert mock_task.call_count == 0
+        await power_cluster.bind()
+        assert power_cluster.get(battery_pct_id) == 90
+
+
 async def test_double_power_config_firmware_read_fails(zigpy_device_from_quirk):
     """Test a failed sw_build_id read is tried again on the next battery report."""
 

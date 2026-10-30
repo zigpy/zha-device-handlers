@@ -205,6 +205,8 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         super().__init__(*args, **kwargs)
         # OTA file version at the last successful sw_build_id read in this run
         self._sw_build_id_ota_version = _SW_BUILD_ID_NOT_READ
+        # whether the cached battery percentage was doubled, None if not set in this run
+        self._battery_pct_doubled = None
 
     async def bind(self):
         """Bind cluster and read the sw_build_id for later use."""
@@ -227,13 +229,31 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         return self._sw_build_id_ota_version != self._ota_file_version()
 
     async def _read_sw_build_id(self):
-        """Read sw_build_id from the device and remember the OTA file version."""
+        """Read sw_build_id from the device and remember the OTA file version.
+
+        If the firmware read changed whether the cached battery percentage must be
+        doubled, the cached percentage is doubled or halved accordingly.
+        """
         ota_version = self._ota_file_version()
         success, _ = await self.endpoint.basic.read_attributes(
             [Basic.AttributeDefs.sw_build_id.id]
         )
         if Basic.AttributeDefs.sw_build_id.id in success:
             self._sw_build_id_ota_version = ota_version
+
+        double = not self._is_firmware_new()
+        if self._battery_pct_doubled is None or self._battery_pct_doubled == double:
+            return
+
+        battery_pct_id = (
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+        )
+        value = self.get(battery_pct_id)
+        if value is None:
+            return
+
+        self._battery_pct_doubled = double
+        super()._update_attribute(battery_pct_id, value * 2 if double else value // 2)
 
     def _is_firmware_new(self):
         """Check if new firmware is installed that does not require battery doubling."""
@@ -267,26 +287,13 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         # unknown formatting of sw_build_id, so it must be new firmware
         return True
 
-    async def _read_fw_and_update_battery_pct(self, reported_battery_pct, doubled):
-        """Read firmware version and update battery percentage remaining if necessary."""
-        await self._read_sw_build_id()
-
-        # if the firmware read changed whether the reported percentage must be doubled,
-        # update the cache with the reported battery percentage again,
-        # _update_attribute doubles it or not based on the firmware known now
-        if (not self._is_firmware_new()) != doubled:
-            self._update_attribute(
-                PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
-                reported_battery_pct,
-            )
-
     def _update_attribute(self, attrid, value):
         """Update attribute to double battery percentage if firmware is old.
 
         If the firmware version is unknown or may be outdated, a background task to read
         the firmware version is also started. The percentage is doubled based on the firmware
-        known now, as that task happens asynchronously. It updates the percentage later
-        if the firmware read changed that.
+        known now, as that task happens asynchronously. It corrects the cached percentage
+        later if the firmware read changed that.
         """
         if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
             # double percentage if the firmware is confirmed old
@@ -295,12 +302,11 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
             # if sw_build_id is not known to be current, create task to read it from
             # the device, since it should be awake now
             if self._sw_build_id_outdated():
-                self.create_catching_task(
-                    self._read_fw_and_update_battery_pct(value, double)
-                )
+                self.create_catching_task(self._read_sw_build_id())
 
             if double:
                 value = value * 2
+            self._battery_pct_doubled = double
         super()._update_attribute(attrid, value)
 
 
