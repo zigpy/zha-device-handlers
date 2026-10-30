@@ -1,13 +1,24 @@
 """Tests for Tuya Sensor quirks."""
 
+import asyncio
+from unittest import mock
+
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zdo.types import ZDOCmd
 
 import zhaquirks
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, TuyaLocalCluster
+from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
+    TuyaLocalCluster,
+)
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
@@ -221,3 +232,51 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+@pytest.mark.parametrize(
+    "manufacturer",
+    ["_TZE200_upagmta9", "_TZE204_upagmta9", "_TZE284_upagmta9"],
+)
+async def test_zth05_data_query_on_device_announce(
+    zigpy_device_from_v2_quirk, manufacturer
+):
+    """Test the ZTH05 is sent the data query again when it re-announces itself.
+
+    After a reboot (e.g. a battery change), the device rejoins and announces
+    itself, usually with the same NWK address. That runs no configuration, but
+    the device needs the data query again, or it stays awake and drains its
+    battery (#4260).
+    """
+    quirked = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+
+    # a Device_annce from the device, with its unchanged NWK address
+    packet = t.ZigbeePacket(
+        src=t.AddrModeAddress(addr_mode=t.AddrMode.NWK, address=quirked.nwk),
+        src_ep=0,
+        dst=t.AddrModeAddress(addr_mode=t.AddrMode.Broadcast, address=0xFFFD),
+        dst_ep=0,
+        tsn=0x81,
+        profile_id=0,
+        cluster_id=ZDOCmd.Device_annce,
+        data=t.SerializableBytes(
+            t.uint8_t(0x81).serialize()
+            + quirked.nwk.serialize()
+            + quirked.ieee.serialize()
+            + t.uint8_t(0x80).serialize()
+        ),
+    )
+
+    with mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock()) as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        quirked.packet_received(packet)
+        await asyncio.gather(*quirked._tasks)
+
+    query_calls = [
+        c
+        for c in request_mock.call_args_list
+        if len(c.args) > 1 and c.args[1] == TUYA_QUERY_DATA
+    ]
+    assert len(query_calls) == 1
+    assert request_mock.call_count == 1

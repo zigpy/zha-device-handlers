@@ -491,7 +491,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         fallback_name="Display unit",
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
-    .tuya_enchantment(data_query_spell=True)
+    .tuya_enchantment(data_query_spell=True, data_query_on_announce=True)
     .skip_configuration()
     .add_to_registry()
 )
