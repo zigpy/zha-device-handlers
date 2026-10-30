@@ -3,7 +3,6 @@
 from typing import Any, Final
 
 from zha.application.platforms.number import BoschThermostatLocalTempCalibration
-from zha.application.platforms.select import KeypadLockout
 from zha.application.platforms.sensor import SetpointChangeSource
 from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
@@ -710,18 +709,13 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="battery_low",
         fallback_name="Battery low",
     )
-    # Child lock: an on/off switch instead of the multi-level default select.
-    .removes_entity(
-        EntityFilter(
-            entity_cls=KeypadLockout,
-            endpoint_id=1,
-            cluster_id=UserInterface.cluster_id,
-        )
-    )
+    # Child lock: an on/off switch next to the multi-level default select,
+    # disabled by default so existing setups keep using the select.
     .switch(
         UserInterface.AttributeDefs.keypad_lockout.name,
         BoschUserInterfaceCluster.cluster_id,
         reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        initially_disabled=True,
         translation_key="child_lock",
         fallback_name="Child lock",
     )
