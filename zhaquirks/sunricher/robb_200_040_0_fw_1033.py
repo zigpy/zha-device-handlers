@@ -1,5 +1,4 @@
-"""
-ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A.
+"""ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A.
 
 ===============================================================================
 VERSION & HARDWARE TRACKING
@@ -14,56 +13,56 @@ Manufacturer  : 0x1224 (Sunricher / ROBB smarrt)
 PREREQUISITES & INSTALLATION GUIDE:
 1. System & Hardware Prerequisites:
    - Home Assistant Core with ZHA (Zigbee Home Automation) enabled.
-   - Target Hardware: ROBB smarrt / Sunricher SR-ZG9092A Floor Heating Thermostat 
+   - Target Hardware: ROBB smarrt / Sunricher SR-ZG9092A Floor Heating Thermostat
      (ROB_200-040-0) running CoreVer V1.033 and ZigbeeVer V23.00.
-   - External NTC Floor Sensor Cable: A physically wired, compatible NTC floor probe 
-     must be connected to the thermostat's probe terminals, as this code is explicitly 
+   - External NTC Floor Sensor Cable: A physically wired, compatible NTC floor probe
+     must be connected to the thermostat's probe terminals, as this code is explicitly
      built to regulate heating based on the physical floor temperature.
 2. Installation Steps:
-   - Place this file into your Home Assistant configuration directory under 
+   - Place this file into your Home Assistant configuration directory under
      /config/custom_zha_quirks/robb_200_040_0_fw1033.py.
    - Ensure your configuration.yaml includes:
      zha:
        custom_quirks_path: /config/custom_zha_quirks/
    - Restart Home Assistant via Developer Tools > YAML > Restart.
-   - Navigate to Settings > Devices & Services > ZHA, select your thermostat, 
+   - Navigate to Settings > Devices & Services > ZHA, select your thermostat,
      and click Re-interview (or Reconfigure) to bind the quirk.
-   - Post-Installation Cleanup Note: After re-interviewing or reconfiguring the 
-     device, you may want to clean up the ZHA thermostat integration interface by 
-     removing any leftover standard ZHA attributes, sensors, or controls that 
+   - Post-Installation Cleanup Note: After re-interviewing or reconfiguring the
+     device, you may want to clean up the ZHA thermostat integration interface by
+     removing any leftover standard ZHA attributes, sensors, or controls that
      display 'unknown' or unmapped values due to standard profile changes.
 
 PURPOSE & CORRUPTION MITIGATION:
-This custom quirk is strictly required because the default ZHA adaptation 
-corrupts the device's internal memory registers during standard cluster polling 
-and attribute writes. Specifically, this code was written because the thermostat 
-is intended to regulate specifically on the external floor probe cable. This 
+This custom quirk is strictly required because the default ZHA adaptation
+corrupts the device's internal memory registers during standard cluster polling
+and attribute writes. Specifically, this code was written because the thermostat
+is intended to regulate specifically on the external floor probe cable. This
 quirk is built to correct and overcome:
-  1. Register Corruption: Blocks ZHA write access to volatile memory addresses 
-     (0x1000 LCD Brightness, 0x1001 Button Vibration, 0x100B Display Auto-Off) 
+  1. Register Corruption: Blocks ZHA write access to volatile memory addresses
+     (0x1000 LCD Brightness, 0x1001 Button Vibration, 0x100B Display Auto-Off)
      that cause the thermostat firmware to lock up or enter fault states.
-  2. Floor Sensor Regulation & Routing: Intercepts external floor probe readings 
-     from cluster 0x0402 and attribute 0x0001, routing them directly into 
-     local_temperature (0x0000) when Floor Sensor control is active so Home 
+  2. Floor Sensor Regulation & Routing: Intercepts external floor probe readings
+     from cluster 0x0402 and attribute 0x0001, routing them directly into
+     local_temperature (0x0000) when Floor Sensor control is active so Home
      Assistant regulates floor heating accurately based on the physical floor probe.
-  3. Calibration Drift: Enforces strict [-3.0°C, +3.0°C] boundary clamping on 
+  3. Calibration Drift: Enforces strict [-3.0°C, +3.0°C] boundary clamping on
      sensor calibration registers (0x0010, 0x1005) to prevent registry spikes.
-  4. UI Command Sanitization: Protects UserInterface (0x0204) writes, maps 
-     Child Lock Active ('No'=0x00, 'Yes'=0x01), proxies Operation Mode via 
-     virtual attribute 0xFF03 to standard ZCL SystemMode (0x001C) without 
-     manufacturer code injection, cleans up unneeded standard ZHA attributes 
-     for interface decluttering, and formats read-only status sensors into 
+  4. UI Command Sanitization: Protects UserInterface (0x0204) writes, maps
+     Child Lock Active ('No'=0x00, 'Yes'=0x01), proxies Operation Mode via
+     virtual attribute 0xFF03 to standard ZCL SystemMode (0x001C) without
+     manufacturer code injection, cleans up unneeded standard ZHA attributes
+     for interface decluttering, and formats read-only status sensors into
      clean descriptive text strings matching the user Excel translation table.
 
 DEVELOPMENT STATUS & LIMITATIONS (BETA):
 - Published as v1.5.2-beta for extended field testing.
-- Note: Not all advanced firmware features or secondary proprietary registers 
-  have been fully programmed or exposed for practical reasons (e.g., internal weekly 
-  schedule table editing and advanced dry-time setup remain unmapped to prevent 
+- Note: Not all advanced firmware features or secondary proprietary registers
+  have been fully programmed or exposed for practical reasons (e.g., internal weekly
+  schedule table editing and advanced dry-time setup remain unmapped to prevent
   unnecessary UI clutter and maintain a clean everyday user experience).
 
 CHANGELOG:
-- v1.5.2-beta (2026-10-30): Synchronized active __version__ variable across code 
+- v1.5.2-beta (2026-10-30): Synchronized active __version__ variable across code
   and headers to fix Quirk Version entity reporting, added NTC cable prerequisites.
 - v1.5.1-beta (2026-10-30): Cleaned up unused standard ZHA attributes.
 - v1.5.0-beta (2026-10-30): Added Floor Temperature Offset (0x1005) number control.
@@ -74,6 +73,7 @@ CHANGELOG:
 
 import asyncio
 import logging
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
@@ -175,6 +175,7 @@ TEMP_UNIT_LABELS = {
 
 class ControlTypeEnum(t.enum8):
     """Heating control sensor source (0x1003)."""
+
     Room_Sensor = 0x00
     Floor_Sensor = 0x01
     Room_and_Floor_Sensor = 0x02
@@ -182,12 +183,14 @@ class ControlTypeEnum(t.enum8):
 
 class TempDisplayEnum(t.enum8):
     """Physical LCD screen temperature display mode (0x1008)."""
+
     Room_Temp = 0x00
     Floor_Temp = 0x01
 
 
 class FloorSensorTypeEnum(t.enum8):
     """External NTC floor sensor resistance curve (0x1002), B(25/50°C)=3950."""
+
     NTC_10k_Ohm = 0x01
     NTC_15k_Ohm = 0x02
     NTC_50k_Ohm = 0x03
@@ -197,12 +200,14 @@ class FloorSensorTypeEnum(t.enum8):
 
 class ChildLockEnum(t.enum8):
     """Child Lock Active states ('No' = Unlocked, 'Yes' = Locked)."""
+
     No = 0x00
     Yes = 0x01
 
 
 class OperationModeEnum(t.enum8):
     """Operation Mode states mapped to standard ZCL SystemMode (0x001C)."""
+
     Off = 0x00
     Heat = 0x04
 
@@ -239,7 +244,9 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._attr_cache[ATTR_CONTROL_SEQUENCE] = Thermostat.ControlSequenceOfOperation.Heating_Only
+        self._attr_cache[ATTR_CONTROL_SEQUENCE] = (
+            Thermostat.ControlSequenceOfOperation.Heating_Only
+        )
         self._attr_cache[ATTR_QUIRK_VERSION] = __version__
         self._attr_cache[ATTR_OPERATION_MODE] = OperationModeEnum.Heat
         self._attr_cache[ATTR_VIBRATION_TEXT] = VIBRATION_LABELS[0]
@@ -313,14 +320,18 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
 
         if attrid == ATTR_OUTDOOR_TEMP:
             super()._update_attribute(ATTR_OUTDOOR_TEMP, value)
-            current_mode = self._attr_cache.get(ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor)
+            current_mode = self._attr_cache.get(
+                ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor
+            )
             if current_mode == ControlTypeEnum.Floor_Sensor:
                 super()._update_attribute(ATTR_LOCAL_TEMP, value)
             return
 
         if attrid == ATTR_LOCAL_TEMP:
             self._attr_cache[0xFF00] = value
-            current_mode = self._attr_cache.get(ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor)
+            current_mode = self._attr_cache.get(
+                ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor
+            )
             if current_mode == ControlTypeEnum.Floor_Sensor:
                 floor_val = self._get_current_floor_temp()
                 if floor_val is not None:
@@ -368,19 +379,33 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             ):
                 continue
 
-            if attrid in (ATTR_OPERATION_MODE, "operation_mode", ATTR_SYSTEM_MODE, "system_mode"):
+            if attrid in (
+                ATTR_OPERATION_MODE,
+                "operation_mode",
+                ATTR_SYSTEM_MODE,
+                "system_mode",
+            ):
                 mode_int = 0x04 if int(value) > 0 else 0x00
                 std_attrs[ATTR_SYSTEM_MODE] = Thermostat.SystemMode(mode_int)
-                super()._update_attribute(ATTR_OPERATION_MODE, OperationModeEnum(mode_int))
-                super()._update_attribute(ATTR_SYSTEM_MODE, Thermostat.SystemMode(mode_int))
+                super()._update_attribute(
+                    ATTR_OPERATION_MODE, OperationModeEnum(mode_int)
+                )
+                super()._update_attribute(
+                    ATTR_SYSTEM_MODE, Thermostat.SystemMode(mode_int)
+                )
             elif attrid in PROPRIETARY_ATTRS:
                 if attrid in (ATTR_FLOOR_SENSOR_TYPE, "floor_sensor_type"):
-                    mfg_attrs[attrid] = int(value) if int(value) in (1, 2, 3, 4, 5) else 5
+                    mfg_attrs[attrid] = (
+                        int(value) if int(value) in (1, 2, 3, 4, 5) else 5
+                    )
                 elif attrid in (ATTR_CONTROL_TYPE, "control_type"):
                     mfg_attrs[attrid] = int(value) if int(value) in (0, 1, 2) else 1
                 elif attrid in (ATTR_TEMPERATURE_DISPLAY, "temperature_display"):
                     mfg_attrs[attrid] = int(value) if int(value) in (0, 1) else 1
-                elif attrid in (ATTR_FLOOR_SENSOR_CALIBRATION, "floor_sensor_calibration"):
+                elif attrid in (
+                    ATTR_FLOOR_SENSOR_CALIBRATION,
+                    "floor_sensor_calibration",
+                ):
                     scaled = int(round(float(value) * 10))
                     mfg_attrs[attrid] = max(-30, min(30, scaled))
                 else:
@@ -389,12 +414,16 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 std_attrs[attrid] = value
 
         if mfg_attrs and not std_attrs:
-            return super().write_attributes(mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE)
+            return super().write_attributes(
+                mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
+            )
         if std_attrs and not mfg_attrs:
             return super().write_attributes(std_attrs, manufacturer=None)
         if mfg_attrs and std_attrs:
             asyncio.create_task(
-                super().write_attributes(mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE)
+                super().write_attributes(
+                    mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
+                )
             )
             return super().write_attributes(std_attrs, manufacturer=None)
 
@@ -423,7 +452,9 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             elif a == ATTR_TEMP_UNIT_TEXT:
                 ui_cluster = self.endpoint.in_clusters.get(UserInterface.cluster_id)
                 if ui_cluster:
-                    res_ui = await ui_cluster.read_attributes_raw([0x0000], manufacturer=manufacturer)
+                    res_ui = await ui_cluster.read_attributes_raw(
+                        [0x0000], manufacturer=manufacturer
+                    )
                     if res_ui and 0x0000 in res_ui[0]:
                         val_unit = int(res_ui[0][0x0000])
                         label = TEMP_UNIT_LABELS.get(val_unit, TEMP_UNIT_LABELS[0])
@@ -443,7 +474,9 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         if std_remapped:
             res = await super().read_attributes_raw(std_remapped, manufacturer=None)
 
-        current_mode = self._attr_cache.get(ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor)
+        current_mode = self._attr_cache.get(
+            ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor
+        )
         if current_mode == ControlTypeEnum.Floor_Sensor:
             floor_val = self._get_current_floor_temp()
             if floor_val is not None and ATTR_LOCAL_TEMP in self._attr_cache:
@@ -482,7 +515,12 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             )
             await self.read_attributes([ATTR_SYSTEM_MODE], manufacturer=None)
             await self.read_attributes(
-                [ATTR_OPERATE_BRIGHTNESS, ATTR_BUTTON_VIBRATION, ATTR_MODE_AFTER_DRY, ATTR_FLOOR_SENSOR_CALIBRATION],
+                [
+                    ATTR_OPERATE_BRIGHTNESS,
+                    ATTR_BUTTON_VIBRATION,
+                    ATTR_MODE_AFTER_DRY,
+                    ATTR_FLOOR_SENSOR_CALIBRATION,
+                ],
                 manufacturer=SUNRICHER_MANUFACTURER_CODE,
             )
             ui_cluster = self.endpoint.in_clusters.get(UserInterface.cluster_id)
@@ -561,7 +599,9 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
             elif attrid in (ATTR_CHILD_LOCK_ACTIVE, "child_lock_active"):
                 val_int = 1 if int(value) >= 1 else 0
                 sanitized[0x0001] = t.enum8(val_int)
-                super()._update_attribute(ATTR_CHILD_LOCK_ACTIVE, ChildLockEnum(val_int))
+                super()._update_attribute(
+                    ATTR_CHILD_LOCK_ACTIVE, ChildLockEnum(val_int)
+                )
             elif attrid == 0x0001:
                 continue
             else:
