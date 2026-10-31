@@ -940,7 +940,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.zhongxing.motion.SN10ZW,
             # remove Tuya clusters from input and output clusters (ZLinky):
             zhaquirks.lixee.zlinky.ZLinkyTICFWV14,
-            zhaquirks.lixee.zlinky.ZLinkyTICFWV15,
         )
     ],
 )
