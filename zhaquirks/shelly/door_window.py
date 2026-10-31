@@ -1,11 +1,13 @@
-"""Device handler for Shelly BLU DoorWindow ZB."""
+"""Device handler for Shelly BLU DoorWindow ZB and BLU DoorWindow Mini ZB."""
 
 from __future__ import annotations
 
+from zha.application.platforms.binary_sensor import IASZone
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
+    EntityFilter,
     EntityPlatform,
     EntityType,
     QuirkBuilder,
@@ -15,6 +17,7 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
 
 (
     QuirkBuilder("Shelly", "BLU DoorWindow ZB")
+    .applies_to("Shelly", "BLU DoorWindow Mini ZB")
     .replaces(ShellyLightLevelCluster)
     .enum(
         attribute_name=ShellyLightLevelCluster.AttributeDefs.light_level.name,
@@ -29,12 +32,14 @@ from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
         fallback_name="Light level",
     )
     # Remove the default ZHA IAS Zone entity, so the Door sensor below can take over
-    # its unique id. The function filter is required: the rule would otherwise also
-    # match the Door sensor itself, since that now ends in the same suffix.
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=IasZone.cluster_id,
-        function=lambda entity: entity.__class__.__name__ == "IASZone",
+    # its unique id. The entity class filter is required: the rule would otherwise
+    # also match the Door sensor itself, since that now ends in the same suffix.
+    .removes_entity(
+        EntityFilter(
+            entity_cls=IASZone,
+            endpoint_id=1,
+            cluster_id=IasZone.cluster_id,
+        )
     )
     .binary_sensor(
         attribute_name=IasZone.AttributeDefs.zone_status.name,
