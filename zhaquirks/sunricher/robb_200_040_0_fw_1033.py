@@ -654,7 +654,7 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
         translation_key="control_type",
-        fallback_name="Control Sensor",
+        fallback_name="Control type",
     )
     .enum(
         attribute_name="temperature_display",
