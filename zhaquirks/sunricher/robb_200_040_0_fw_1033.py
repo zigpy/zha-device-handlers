@@ -421,11 +421,11 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         if std_attrs and not mfg_attrs:
             return super().write_attributes(std_attrs, manufacturer=None)
         if mfg_attrs and std_attrs:
-            asyncio.create_task(
+            _ = asyncio.create_task(
                 super().write_attributes(
                     mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
                 )
-            )  # noqa: RUF006
+            ) 
             return super().write_attributes(std_attrs, manufacturer=None)
 
         return []
@@ -492,7 +492,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             ATTR_CONTROL_SEQUENCE,
             Thermostat.ControlSequenceOfOperation.Heating_Only,
         )
-        asyncio.create_task(self.write_config_registers())  # noqa: RUF006
+        _ = asyncio.create_task(self.write_config_registers())
         return res
 
     async def write_config_registers(self):
