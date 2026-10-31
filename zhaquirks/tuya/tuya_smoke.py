@@ -4,7 +4,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeAccess, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
@@ -13,7 +13,7 @@ from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
     TuyaPowerConfigurationCluster2AAA,
 )
-from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TUYA_CLUSTER_ID, TuyaIasFire, TuyaQuirkBuilder
 
 
 class TuyaSensitivityMode(t.enum8):
@@ -89,9 +89,18 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     TuyaQuirkBuilder("TZE200_0zaf1cr8", "TS0601")
     .applies_to("_TZE284_0zaf1cr8", "TS0601")
     .tuya_smoke(dp_id=1)
-    .tuya_binary_sensor(
+    # DP 14 is a battery state enum (0: low, 1: middle, 2: high),
+    # not a boolean: only 0 means the battery is actually low
+    .tuya_dp_attribute(
         dp_id=14,
         attribute_name="battery_low",
+        type=t.Bool,
+        access=ZCLAttributeAccess.Read | ZCLAttributeAccess.Report,
+        converter=lambda x: x == 0,
+    )
+    .binary_sensor(
+        attribute_name="battery_low",
+        cluster_id=TUYA_CLUSTER_ID,
         device_class=BinarySensorDeviceClass.BATTERY,
         entity_type=EntityType.DIAGNOSTIC,
         fallback_name="Battery low",
