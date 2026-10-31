@@ -1,4 +1,4 @@
-"""ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A.
+"""ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A on FW V1.033
 
 ===============================================================================
 VERSION & HARDWARE TRACKING
@@ -243,6 +243,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize the cluster."""
         super().__init__(*args, **kwargs)
         self._attr_cache[ATTR_CONTROL_SEQUENCE] = (
             Thermostat.ControlSequenceOfOperation.Heating_Only
@@ -423,7 +424,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             asyncio.create_task(
                 super().write_attributes(
                     mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
-                )
+                )  # noqa: RUF006
             )
             return super().write_attributes(std_attrs, manufacturer=None)
 
@@ -484,13 +485,14 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         return res
 
     async def bind(self):
+        """Bind the cluster and apply hardware defaults.""" 
         res = await super().bind()
         self._update_attribute(ATTR_QUIRK_VERSION, __version__)
         self._update_attribute(
             ATTR_CONTROL_SEQUENCE,
             Thermostat.ControlSequenceOfOperation.Heating_Only,
         )
-        asyncio.create_task(self.write_config_registers())
+        asyncio.create_task(self.write_config_registers())   # noqa: RUF006
         return res
 
     async def write_config_registers(self):
