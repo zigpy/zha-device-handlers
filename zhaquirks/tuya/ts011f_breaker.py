@@ -5,7 +5,7 @@ brand names (Tongou, EARU, TOMZN, UNSH, Chayo). It is a contactor rated at up to
 and while it offers software protection settings, suitable for secondary protection.
 
 Matches the following DIN rail smart circuit breakers:
-- _TZ3000_cayepv1a TS011F (Tongou TO-Q-SY2-163JZT / TO-Q-SY1-JZT)
+- _TZ3000_cayepv1a TS011F (Tongou TO-Q-SY2-163JZT)
 - _TZ3000_lepzuhto TS011F (EARU EAKCB-T-M-Z 1P 63A)
 - _TZ3000_zrm3oxsh TS011F (EARU EAYCBM 2P)
 - _TZ3000_303avxxt TS011F (TOMZN TOB9Z-VAP)
@@ -374,15 +374,30 @@ class TongouProtectionCluster(LocalDataCluster):
         return [records]
 
 
-builder = (
-    TuyaQuirkBuilder("_TZ3000_cayepv1a", "TS011F")
-    .applies_to("_TZ3000_lepzuhto", "TS011F")
-    .applies_to("_TZ3000_zrm3oxsh", "TS011F")
-    .applies_to("_TZ3000_303avxxt", "TS011F")
-    .applies_to("_TZ3000_ibefeicf", "TS011F")
-    .applies_to("_TZ3000_qystbcjg", "TS011F")
-    .applies_to("_TZ3000_zjchz7pd", "TS011F")
-    .applies_to("_TZ3000_zv6x8bt2", "TS011F")
+def _add_setting_entities(
+    quirk_builder: TuyaQuirkBuilder, setting: Setting
+) -> TuyaQuirkBuilder:
+    """Attach threshold number and breaker switch entities for one setting."""
+    return quirk_builder.number(
+        attribute_name=f"{setting.name}_threshold",
+        cluster_id=TongouProtectionCluster.cluster_id,
+        min_value=setting.min_value,
+        max_value=setting.max_value,
+        step=1,
+        unit=setting.unit,
+        device_class=setting.device_class,
+        translation_key=f"{setting.name}_threshold",
+        fallback_name=f"{setting.label} threshold",
+    ).switch(
+        attribute_name=f"{setting.name}_enabled",
+        cluster_id=TongouProtectionCluster.cluster_id,
+        translation_key=f"{setting.name}_breaker",
+        fallback_name=f"{setting.label} breaker",
+    )
+
+
+base_breaker = (
+    TuyaQuirkBuilder()
     .tuya_enchantment()
     .replaces(TuyaZBOnOffAttributeCluster)
     .replaces(TuyaZBMeteringCluster)
@@ -394,21 +409,25 @@ builder = (
 )
 
 for _setting in SETTINGS:
-    builder = builder.number(
-        f"{_setting.name}_threshold",
-        TongouProtectionCluster.cluster_id,
-        min_value=_setting.min_value,
-        max_value=_setting.max_value,
-        step=1,
-        unit=_setting.unit,
-        device_class=_setting.device_class,
-        translation_key=f"{_setting.name}_threshold",
-        fallback_name=f"{_setting.label} threshold",
-    ).switch(
-        f"{_setting.name}_enabled",
-        TongouProtectionCluster.cluster_id,
-        translation_key=f"{_setting.name}_breaker",
-        fallback_name=f"{_setting.label} breaker",
-    )
+    if _setting.name != "temperature":
+        base_breaker = _add_setting_entities(base_breaker, _setting)
 
-builder.add_to_registry()
+# TOMZN TOB9Z-VAP variants without temperature sensing
+(
+    base_breaker.clone()
+    .applies_to("_TZ3000_303avxxt", "TS011F")
+    .applies_to("_TZ3000_ibefeicf", "TS011F")
+    .add_to_registry()
+)
+
+# Breakers with full protection settings including temperature
+(
+    _add_setting_entities(base_breaker.clone(), SETTINGS_BY_NAME["temperature"])
+    .applies_to("_TZ3000_cayepv1a", "TS011F")
+    .applies_to("_TZ3000_lepzuhto", "TS011F")
+    .applies_to("_TZ3000_zrm3oxsh", "TS011F")
+    .applies_to("_TZ3000_qystbcjg", "TS011F")
+    .applies_to("_TZ3000_zjchz7pd", "TS011F")
+    .applies_to("_TZ3000_zv6x8bt2", "TS011F")
+    .add_to_registry()
+)
