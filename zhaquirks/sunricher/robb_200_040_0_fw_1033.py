@@ -1,4 +1,4 @@
-"""ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A on FW V1.033
+"""ZHA Quirk for ROBB smarrt ROB_200-040-0 / Sunricher SR-ZG9092A on FW V1.033.
 
 ===============================================================================
 VERSION & HARDWARE TRACKING
@@ -424,8 +424,8 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             asyncio.create_task(
                 super().write_attributes(
                     mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
-                )  # noqa: RUF006
-            )
+                )  
+            )  # noqa: RUF006
             return super().write_attributes(std_attrs, manufacturer=None)
 
         return []
