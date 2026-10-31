@@ -1,7 +1,11 @@
 """Tuya based cover and blinds."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -13,7 +17,11 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    COVER_EVENT,
     TUYA_CLUSTER_ID,
+    TUYA_GET_DATA,
+    TUYA_SET_DATA,
+    TUYA_SET_DATA_RESPONSE,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
@@ -626,6 +634,181 @@ class TuyaCloneCover0601(TuyaWindowCover):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
+    }
+
+
+class TuyaDreamBlindsCluster(TuyaManufacturerWindowCover):
+    """Handle DP 21 continuous angle tilt and ACK incoming reports."""
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Any = None,
+    ) -> None:
+        """Handle incoming Tuya cluster requests and ACK reports."""
+        if hdr.command_id in (TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE):
+            tuya_payload = args[0]
+            dp_id = tuya_payload.command_id & 0xFF
+            dp_type = tuya_payload.command_id >> 8
+
+            # DP 21: Tilt angle in degrees (0 - 180) -> map to 0 - 100%
+            if dp_id == 21 and dp_type == 2:
+                try:
+                    angle = tuya_payload.data[4]
+                    tilt_pct = max(0, min(100, round(angle / 1.8)))
+                    self.endpoint.device.cover_bus.listener_event(
+                        COVER_EVENT,
+                        WindowCovering.AttributeDefs.current_position_tilt_percentage.id,
+                        tilt_pct,
+                    )
+                except Exception as e:
+                    self.warning("Error parsing DP 21 angle: %s", e)
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+
+        # ACK to prevent motor retransmit storms
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, foundation.Status.SUCCESS)
+
+
+class TuyaDreamBlindsControl(TuyaWindowCoverControl):
+    """Window covering control cluster with 0-180 degree tilt/dimming support."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster and override window covering type."""
+        super().__init__(*args, **kwargs)
+        self._update_attribute(
+            WindowCovering.AttributeDefs.window_covering_type.id,
+            WindowCovering.WindowCoveringType.Tilt_blind_tilt_and_lift,
+        )
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Get attribute value with tilt capabilities override."""
+        attr_def = self.find_attribute(key)
+        if (
+            attr_def
+            and attr_def.id == WindowCovering.AttributeDefs.window_covering_type.id
+        ):
+            return WindowCovering.WindowCoveringType.Tilt_blind_tilt_and_lift
+        if (
+            attr_def
+            and attr_def.id
+            == WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        ):
+            val = super().get(key, default)
+            return 50 if val is None else val
+        return super().get(key, default)
+
+    def cover_event(self, attribute, value):
+        """Handle internal cover bus event."""
+        if (
+            attribute
+            == WindowCovering.AttributeDefs.current_position_tilt_percentage.id
+        ):
+            self._update_attribute(attribute, value)
+        else:
+            super().cover_event(attribute, value)
+
+    def command(
+        self,
+        command_id: foundation.GeneralCommand | int | Any,
+        *args,
+        manufacturer: int | Any = None,
+        expect_reply: bool = True,
+        tsn: int | Any = None,
+        **kwargs: Any,
+    ):
+        """Intercept go_to_tilt_percentage and send Tuya DP 21 angle command."""
+        # 0x0008 = go_to_tilt_percentage
+        if command_id == 8:
+            target_pct = args[0]
+            # Map 0-100% to 0-180 degrees
+            angle = max(0, min(180, round(target_pct * 1.8)))
+
+            tuya_payload = TuyaManufCluster.Command()
+            tuya_payload.status = 0
+            tuya_payload.tsn = tsn if tsn else 0
+            tuya_payload.command_id = (2 << 8) + 21  # DP 21 (0x0215, Type 2 VALUE)
+            tuya_payload.function = 0
+            tuya_payload.data = [4, 0, 0, 0, angle]
+
+            self._update_attribute(
+                WindowCovering.AttributeDefs.current_position_tilt_percentage.id,
+                target_pct,
+            )
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, tuya_payload, expect_reply=True
+            )
+
+        return super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn,
+            **kwargs,
+        )
+
+
+class TuyaDreamBlindsCover0601(TuyaWindowCover):
+    """Quirk for Tuya Vertical Dream Blinds (_TZE204_wzre8hu2 TS0601)."""
+
+    tuya_cover_inverted_by_default = True
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_wzre8hu2", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0051,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [0x0021],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaDreamBlindsCluster,
+                    TuyaDreamBlindsControl,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [0x0021],
+            },
+        },
     }
 
 
