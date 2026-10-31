@@ -424,7 +424,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             asyncio.create_task(
                 super().write_attributes(
                     mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
-                )  
+                )
             )  # noqa: RUF006
             return super().write_attributes(std_attrs, manufacturer=None)
 
