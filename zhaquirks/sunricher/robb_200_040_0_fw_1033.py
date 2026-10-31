@@ -425,7 +425,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 super().write_attributes(
                     mfg_attrs, manufacturer=SUNRICHER_MANUFACTURER_CODE
                 )
-            ) 
+            )
             return super().write_attributes(std_attrs, manufacturer=None)
 
         return []
