@@ -678,7 +678,7 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
         translation_key="operation_mode",
-        fallback_name="Operation Mode",
+        fallback_name="Operation mode",
     )
     .enum(
         attribute_name="child_lock_active",
