@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta, timezone
 
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.builder import (
@@ -21,6 +22,10 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+# 1 imperial gallon = 4.54609 litres.
+# The Nous L14 / NEO NAS-WV05B2 reports water volume in thousandths of an imperial gallon.
+IMPERIAL_GALLON_TO_LITRE = 0.00454609
 
 
 class TuyaValveWeatherDelay(t.enum8):
@@ -644,6 +649,184 @@ class GiexIrrigationStatus(t.enum8):
         unit=UnitOfVolume.LITERS,
         translation_key="single_watering_amount",
         fallback_name="Single watering amount",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Nous L14 / NEO NAS-WV05B2 smart water valve (imperial gallon variant)
+(
+    TuyaQuirkBuilder("_TZE284_nnhwcvbk", "TS0601")
+    .applies_to("_TZE204_nnhwcvbk", "TS0601")
+    .tuya_onoff(dp_id=1)
+    .tuya_enum(
+        dp_id=3,
+        attribute_name="valve_status",
+        enum_class=TuyaValveStatus,
+        entity_type=EntityType.STANDARD,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="valve_status",
+        fallback_name="Valve status",
+    )
+    .tuya_number(
+        dp_id=5,
+        attribute_name="valve_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=240,
+        step=1,
+        translation_key="valve_countdown",
+        fallback_name="Irrigation time",
+    )
+    .tuya_sensor(
+        dp_id=6,
+        attribute_name="valve_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_duration",
+        fallback_name="Irrigation duration",
+    )
+    .tuya_dp(
+        dp_id=9,
+        ep_attribute=TuyaValveWaterConsumed.ep_attribute,
+        attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
+        converter=lambda x: round(x * IMPERIAL_GALLON_TO_LITRE, 1),
+    )
+    .tuya_metering(
+        dp_id=15,
+        metering_cfg=TuyaValveWaterConsumed,
+        scale=IMPERIAL_GALLON_TO_LITRE,
+    )
+    .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_binary_sensor(
+        dp_id=19,
+        attribute_name="valve_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="valve_alarm",
+        fallback_name="Valve alarm",
+    )
+    .tuya_enum(
+        dp_id=37,
+        attribute_name="weather_delay",
+        enum_class=TuyaValveWeatherDelayVar02,
+        translation_key="weather_delay",
+        fallback_name="Weather delay",
+        initially_disabled=True,
+    )
+    .tuya_dp_attribute(
+        dp_id=38,
+        attribute_name="normal_timer",
+        type=t.CharacterString,
+    )
+    .tuya_switch(
+        dp_id=42,
+        attribute_name="switch_enabled",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_enabled",
+        fallback_name="Switch enabled",
+    )
+    .tuya_sensor(
+        dp_id=47,
+        attribute_name="smart_irrigation",
+        type=t.uint16_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="smart_irrigation",
+        fallback_name="Smart irrigation",
+    )
+    .tuya_switch(
+        dp_id=101,
+        attribute_name="total_flow_reset_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="total_flow_reset_switch",
+        fallback_name="Total flow reset switch",
+    )
+    .tuya_dp_attribute(
+        dp_id=102,
+        attribute_name="quantitative_watering",
+        type=t.uint16_t,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+        converter=lambda x: round(x * IMPERIAL_GALLON_TO_LITRE, 1),
+        dp_converter=lambda x: round(x / IMPERIAL_GALLON_TO_LITRE),
+    )
+    .number(
+        attribute_name="quantitative_watering",
+        cluster_id=TUYA_CLUSTER_ID,
+        min_value=0,
+        max_value=300,
+        step=1,
+        unit=UnitOfVolume.LITERS,
+        device_class=NumberDeviceClass.VOLUME,
+        entity_type=EntityType.CONFIG,
+        translation_key="quantitative_watering",
+        fallback_name="Quantitative watering",
+    )
+    .tuya_binary_sensor(
+        dp_id=103,
+        attribute_name="flow_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="flow_switch",
+        fallback_name="Flow switch",
+    )
+    .tuya_switch(
+        dp_id=104,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_sensor(
+        dp_id=105,
+        attribute_name="surplus_flow",
+        type=t.uint16_t,
+        converter=lambda x: round(x * IMPERIAL_GALLON_TO_LITRE, 1),
+        dp_converter=lambda x: round(x / IMPERIAL_GALLON_TO_LITRE),
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="surplus_flow",
+        fallback_name="Surplus flow",
+    )
+    .tuya_sensor(
+        dp_id=106,
+        attribute_name="single_watering_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="single_watering_duration",
+        fallback_name="Single watering duration",
+    )
+    .tuya_dp_attribute(
+        dp_id=107,
+        attribute_name="refresh",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+        converter=bool,
+        dp_converter=lambda x: 1 if x else 0,
+    )
+    .tuya_sensor(
+        dp_id=108,
+        attribute_name="single_watering_amount",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfVolume.LITERS,
+        converter=lambda x: round(x * IMPERIAL_GALLON_TO_LITRE, 1),
+        translation_key="single_watering_amount",
+        fallback_name="Single watering amount",
+    )
+    .tuya_dp_attribute(
+        dp_id=109,
+        attribute_name="on_with_countdown",
+        type=t.uint32_t,
+    )
+    .tuya_switch(
+        dp_id=110,
+        attribute_name="quantitative_water_linkage",
+        translation_key="quantitative_water_linkage",
+        fallback_name="Quantitative water linkage",
     )
     .skip_configuration()
     .add_to_registry()
