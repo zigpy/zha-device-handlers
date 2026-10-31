@@ -485,14 +485,14 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         return res
 
     async def bind(self):
-        """Bind the cluster and apply hardware defaults.""" 
+        """Bind the cluster and apply hardware defaults."""
         res = await super().bind()
         self._update_attribute(ATTR_QUIRK_VERSION, __version__)
         self._update_attribute(
             ATTR_CONTROL_SEQUENCE,
             Thermostat.ControlSequenceOfOperation.Heating_Only,
         )
-        asyncio.create_task(self.write_config_registers())   # noqa: RUF006
+        asyncio.create_task(self.write_config_registers())  # noqa: RUF006
         return res
 
     async def write_config_registers(self):
