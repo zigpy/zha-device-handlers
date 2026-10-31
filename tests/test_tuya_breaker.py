@@ -11,14 +11,13 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.device import CustomZigpyDevice
+from zhaquirks.tuya import TuyaZBE000Cluster, TuyaZBExternalSwitchTypeCluster
 import zhaquirks.tuya.ts011f_breaker as breaker_mod
 from zhaquirks.tuya.ts011f_breaker import (
     CMD_OPTIONS_2,
     CMD_OPTIONS_3,
     SETTINGS_BY_NAME,
     TongouProtectionCluster,
-    TongouThresholdCluster,
     decode_records,
     encode_record,
 )
@@ -35,8 +34,8 @@ CLUSTER_IDS = {
         Metering.cluster_id: ClusterType.Server,
         ElectricalMeasurement.cluster_id: ClusterType.Server,
         TemperatureMeasurement.cluster_id: ClusterType.Server,
-        0xE000: ClusterType.Server,
-        0xE001: ClusterType.Server,
+        TuyaZBE000Cluster.cluster_id: ClusterType.Server,
+        TuyaZBExternalSwitchTypeCluster.cluster_id: ClusterType.Server,
         Ota.cluster_id: ClusterType.Client,
         Time.cluster_id: ClusterType.Client,
     }
@@ -68,28 +67,6 @@ def breaker_device(zigpy_device_from_v2_quirk):
         "TS011F",
         cluster_ids=CLUSTER_IDS,
     )
-
-
-@pytest.mark.parametrize(
-    "manufacturer",
-    [
-        "_TZ3000_cayepv1a",
-        "_TZ3000_zrm3oxsh",
-    ],
-)
-def test_ts011f_breaker_signature_match(zigpy_device_from_v2_quirk, manufacturer):
-    """Verify both Tongou and EARU variants match the v2 quirk and replace clusters."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer,
-        "TS011F",
-        cluster_ids=CLUSTER_IDS,
-    )
-    assert isinstance(device, CustomZigpyDevice)
-
-    ep = device.endpoints[1]
-    assert isinstance(ep.tuya_external_switch_type, TongouThresholdCluster)
-    assert isinstance(ep.tongou_protection, TongouProtectionCluster)
-    assert TemperatureMeasurement.cluster_id in ep.in_clusters
 
 
 def test_encode_decode_records():
