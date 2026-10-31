@@ -45,14 +45,7 @@ import logging
 import time
 from typing import Any, Final
 
-from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.quirks import TUYA_PLUG_ONOFF
-from zha.units import (
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfPower,
-    UnitOfTemperature,
-)
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import (
@@ -63,6 +56,13 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks import LocalDataCluster
+from zhaquirks.builder import (
+    NumberDeviceClass,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfPower,
+    UnitOfTemperature,
+)
 from zhaquirks.tuya import (
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
@@ -206,8 +206,7 @@ class TongouThresholdCluster(TuyaZBExternalSwitchTypeCluster):
 
     def _deliver_report(self, command_id: int, data: bytes) -> None:
         """Hand a report's payload to the protection cluster."""
-        protection = self.endpoint.in_clusters[PROTECTION_CLUSTER_ID]
-        protection.report_received(command_id, bytes(data))
+        self.endpoint.tongou_protection.report_received(command_id, bytes(data))
 
 
 class TongouProtectionCluster(LocalDataCluster):
@@ -286,8 +285,7 @@ class TongouProtectionCluster(LocalDataCluster):
         """
         arrived = self._report_arrived[command_id]
         arrived.clear()
-        thresholds = self.endpoint.in_clusters[TongouThresholdCluster.cluster_id]
-        await thresholds.send_options(command_id, payload)
+        await self.endpoint.tuya_external_switch_type.send_options(command_id, payload)
         try:
             await asyncio.wait_for(arrived.wait(), REPORT_TIMEOUT)
         except TimeoutError:
