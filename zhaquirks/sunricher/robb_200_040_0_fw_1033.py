@@ -3,8 +3,8 @@
 ===============================================================================
 VERSION & HARDWARE TRACKING
 ===============================================================================
-Quirk Version : 1.5.2-beta
-Last Updated  : 2026-10-30
+Quirk Version : 1.5.17-beta
+Last Updated  : 2026-11-01
 Target Device : Sunricher SR-ZG9092A / ROBB smarrt ROB_200-040-0
 CoreVer       : V1.033
 ZigbeeVer     : V23.00 (0x00000017)
@@ -19,68 +19,64 @@ PREREQUISITES & INSTALLATION GUIDE:
      must be connected to the thermostat's probe terminals, as this code is explicitly
      built to regulate heating based on the physical floor temperature.
 2. Installation Steps:
-   - Place this file into your Home Assistant configuration directory under
-     /config/custom_zha_quirks/robb_200_040_0_fw1033.py.
+   - Place this file into your Home Assistant configuration directory as
+     /config/custom_zha_quirks/robb_200_040_0_fw_1033.py.
    - Ensure your configuration.yaml includes:
      zha:
        custom_quirks_path: /config/custom_zha_quirks/
    - Restart Home Assistant via Developer Tools > YAML > Restart.
    - Navigate to Settings > Devices & Services > ZHA, select your thermostat,
      and click Re-interview (or Reconfigure) to bind the quirk.
-   - Post-Installation Cleanup Note: After re-interviewing or reconfiguring the
-     device, you may want to clean up the ZHA thermostat integration interface by
-     removing any leftover standard ZHA attributes, sensors, or controls that
-     display 'unknown' or unmapped values due to standard profile changes.
+   - After reconfiguring the device, check its entity list for obsolete entities
+     left by an earlier quirk version. Remove only stale entities that are no
+     longer provided by this quirk.
 
 PURPOSE & CORRUPTION MITIGATION:
 This custom quirk is strictly required because the default ZHA adaptation
 corrupts the device's internal memory registers during standard cluster polling
-and attribute writes. Specifically, this code was written because the thermostat
-is intended to regulate specifically on the external floor probe cable. This
-quirk is built to correct and overcome:
-  1. Register Corruption: Blocks ZHA write access to volatile memory addresses
-     (0x1000 LCD Brightness, 0x1001 Button Vibration, 0x100B Display Auto-Off)
-     that cause the thermostat firmware to lock up or enter fault states.
+and attribute writes. This quirk was written because the thermostat is intended
+to regulate using the external floor probe cable. It addresses:
+  1. Register Corruption: Blocks writes to volatile memory addresses (0x1000,
+     0x1001, 0x100B) that can cause the thermostat firmware to lock up.
   2. Floor Sensor Regulation & Routing: Intercepts external floor probe readings
      from cluster 0x0402 and attribute 0x0001, routing them directly into
      local_temperature (0x0000) when Floor Sensor control is active so Home
      Assistant regulates floor heating accurately based on the physical floor probe.
   3. Calibration Drift: Enforces strict [-3.0°C, +3.0°C] boundary clamping on
      sensor calibration registers (0x0010, 0x1005) to prevent registry spikes.
-  4. UI Command Sanitization: Protects UserInterface (0x0204) writes, maps
-     Child Lock Active ('No'=0x00, 'Yes'=0x01), proxies Operation Mode via
-     virtual attribute 0xFF03 to standard ZCL SystemMode (0x001C) without
-     manufacturer code injection, cleans up unneeded standard ZHA attributes
-     for interface decluttering, and formats read-only status sensors into
-     clean descriptive text strings matching the user Excel translation table.
-
-DEVELOPMENT STATUS & LIMITATIONS (BETA):
-- Published as v1.5.2-beta for extended field testing.
-- Note: Not all advanced firmware features or secondary proprietary registers
-  have been fully programmed or exposed for practical reasons (e.g., internal weekly
-  schedule table editing and advanced dry-time setup remain unmapped to prevent
-  unnecessary UI clutter and maintain a clean everyday user experience).
+  4. UI Command Sanitization: Validates UserInterface (0x0204) writes and
+     exposes operation mode and readable status labels directly from their
+     underlying ZCL attributes.
 
 CHANGELOG:
-- v1.5.2-beta (2026-10-30): Synchronized active __version__ variable across code
-  and headers to fix Quirk Version entity reporting, added NTC cable prerequisites.
-- v1.5.1-beta (2026-10-30): Cleaned up unused standard ZHA attributes.
-- v1.5.0-beta (2026-10-30): Added Floor Temperature Offset (0x1005) number control.
-- v1.4.9 (2026-10-30): Added temperature unit text string mapping.
-- v1.4.0 - 1.4.8 (2026-10-30): Baseline optimizations for sensors, modes, and child lock.
+- v1.5.17-beta (2026-11-01): Expose the Basic-cluster application version
+  (attribute 0x0001) as a sensor; remove the unrelated OTA version read.
+- v1.5.15-beta (2026-11-01): Categorize temperature scale and keypad lock as config
+  controls so read-only sensors are grouped before the controls in Home Assistant.
+- v1.5.14-beta (2026-11-01): Use the public default-entity suppression helper's
+  unique-ID filter instead of importing EntityFilter from the builder facade.
+- v1.5.13-beta (2026-11-01): Expose editable temperature-scale and binary keypad-lock
+  controls by limiting UI entity suppression to ZHA's built-in keypad-lockout entity.
+  Mark the aliased standard UI attributes as non-manufacturer-specific.
+- v1.5.12-beta (2026-11-01): Fixed fatal ImportError that was crashing the quirk.
+  Removed invalid standard TemperatureDisplayMode import and replaced with a safely
+  defined custom TempUnitEnum[cite: 1, 3].
 ===============================================================================
 """
 
 import asyncio
 import logging
+from typing import Any
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-__version__ = "1.5.2-beta"
+from zhaquirks.builder import QuirkBuilder, UnitOfTemperature
+from zhaquirks.clusters import CustomCluster
+
+__version__ = "1.5.17-beta"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -102,7 +98,7 @@ ATTR_POWER_UP_STATUS = 0x1004
 ATTR_FLOOR_SENSOR_CALIBRATION = 0x1005
 ATTR_DRY_TIME = 0x1006
 ATTR_MODE_AFTER_DRY = 0x1007
-ATTR_TEMPERATURE_DISPLAY = 0x1008
+ATTR_LCD_DISPLAY_SOURCE = 0x1008
 ATTR_WINDOW_OPEN_CHECK = 0x1009
 ATTR_HYSTERESIS = 0x100A
 ATTR_DISPLAY_AUTO_OFF = 0x100B
@@ -118,7 +114,7 @@ PROPRIETARY_ATTRS = {
     ATTR_FLOOR_SENSOR_CALIBRATION,
     ATTR_DRY_TIME,
     ATTR_MODE_AFTER_DRY,
-    ATTR_TEMPERATURE_DISPLAY,
+    ATTR_LCD_DISPLAY_SOURCE,
     ATTR_WINDOW_OPEN_CHECK,
     ATTR_HYSTERESIS,
     ATTR_MAX_FLOOR_TEMP,
@@ -131,21 +127,21 @@ PROPRIETARY_ATTRS = {
     "floor_sensor_calibration",
     "dry_time",
     "mode_after_dry",
-    "temperature_display",
+    "lcd_display_source",
     "window_open_check",
     "hysteresis",
     "max_floor_temp",
     "away_mode_set",
 }
 
-# Virtual attributes for clean ZHA UI entities
-ATTR_CHILD_LOCK_ACTIVE = 0xFF01
-ATTR_QUIRK_VERSION = 0xFF02
-ATTR_OPERATION_MODE = 0xFF03
-ATTR_VIBRATION_TEXT = 0xFF04
-ATTR_BRIGHTNESS_TEXT = 0xFF05
-ATTR_MODE_AFTER_DRY_TEXT = 0xFF06
-ATTR_TEMP_UNIT_TEXT = 0xFF07
+BLOCKED_WRITE_ATTRS = {
+    ATTR_OPERATE_BRIGHTNESS,
+    ATTR_BUTTON_VIBRATION,
+    ATTR_DISPLAY_AUTO_OFF,
+    "operate_display_brightness",
+    "button_vibration_level",
+    "display_auto_off",
+}
 
 # Exact descriptive display mappings from the uploaded Excel table
 VIBRATION_LABELS = {
@@ -167,14 +163,16 @@ MODE_AFTER_DRY_LABELS = {
     3: "Away mode",
 }
 
-TEMP_UNIT_LABELS = {
-    0: "Celsius",
-    1: "Fahrenheit",
-}
+
+def _mapped_label(value: Any, labels: dict[int, str], default: str) -> str | None:
+    """Return a display label for a value reported by a real ZCL attribute."""
+    if value is None:
+        return None
+    return labels.get(int(value), default)
 
 
 class ControlTypeEnum(t.enum8):
-    """Heating control sensor source (0x1003)."""
+    """Heating control  (0x1003)."""
 
     Room_Sensor = 0x00
     Floor_Sensor = 0x01
@@ -182,7 +180,7 @@ class ControlTypeEnum(t.enum8):
 
 
 class TempDisplayEnum(t.enum8):
-    """Physical LCD screen temperature display mode (0x1008)."""
+    """What sensor temperature to display on LCD ? (0x1008)."""
 
     Room_Temp = 0x00
     Floor_Temp = 0x01
@@ -203,6 +201,13 @@ class ChildLockEnum(t.enum8):
 
     No = 0x00
     Yes = 0x01
+
+
+class TempUnitEnum(t.enum8):
+    """Temperature display unit (0x0000)."""
+
+    Celsius = 0x00
+    Fahrenheit = 0x01
 
 
 class OperationModeEnum(t.enum8):
@@ -228,32 +233,21 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             ATTR_FLOOR_SENSOR_CALIBRATION: ("floor_sensor_calibration", t.int8s, True),
             ATTR_DRY_TIME: ("dry_time", t.uint8_t, True),
             ATTR_MODE_AFTER_DRY: ("mode_after_dry", t.enum8, True),
-            ATTR_TEMPERATURE_DISPLAY: ("temperature_display", TempDisplayEnum, True),
+            ATTR_LCD_DISPLAY_SOURCE: ("lcd_display_source", TempDisplayEnum, True),
             ATTR_WINDOW_OPEN_CHECK: ("window_open_check", t.uint8_t, True),
             ATTR_HYSTERESIS: ("hysteresis", t.uint8_t, True),
             ATTR_MAX_FLOOR_TEMP: ("max_floor_temp", t.uint8_t, True),
             ATTR_AWAY_MODE_SET: ("away_mode_set", t.enum8, True),
-            ATTR_QUIRK_VERSION: ("quirk_version", t.CharacterString, False),
-            ATTR_OPERATION_MODE: ("operation_mode", OperationModeEnum, False),
-            ATTR_VIBRATION_TEXT: ("vibration_level_text", t.CharacterString, False),
-            ATTR_BRIGHTNESS_TEXT: ("operate_brightness_text", t.CharacterString, False),
-            ATTR_MODE_AFTER_DRY_TEXT: ("mode_after_dry_text", t.CharacterString, False),
-            ATTR_TEMP_UNIT_TEXT: ("temperature_unit_text", t.CharacterString, False),
         }
     )
 
     def __init__(self, *args, **kwargs):
         """Initialize the cluster."""
         super().__init__(*args, **kwargs)
+        self._air_temp = None
         self._attr_cache[ATTR_CONTROL_SEQUENCE] = (
             Thermostat.ControlSequenceOfOperation.Heating_Only
         )
-        self._attr_cache[ATTR_QUIRK_VERSION] = __version__
-        self._attr_cache[ATTR_OPERATION_MODE] = OperationModeEnum.Heat
-        self._attr_cache[ATTR_VIBRATION_TEXT] = VIBRATION_LABELS[0]
-        self._attr_cache[ATTR_BRIGHTNESS_TEXT] = BRIGHTNESS_LABELS[1]
-        self._attr_cache[ATTR_MODE_AFTER_DRY_TEXT] = MODE_AFTER_DRY_LABELS[2]
-        self._attr_cache[ATTR_TEMP_UNIT_TEXT] = TEMP_UNIT_LABELS[0]
 
     def _get_current_floor_temp(self):
         """Retrieve latest known floor temperature from outdoor_temp or cluster 0x0402."""
@@ -267,30 +261,6 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
     def _update_attribute(self, attrid, value):
         """Intercept and remediate data tracking before passing to ZHA."""
         if attrid == ATTR_DISPLAY_AUTO_OFF:
-            return
-
-        if attrid == ATTR_OPERATE_BRIGHTNESS:
-            if value is None:
-                return
-            label = BRIGHTNESS_LABELS.get(int(value), BRIGHTNESS_LABELS[1])
-            super()._update_attribute(ATTR_BRIGHTNESS_TEXT, label)
-            super()._update_attribute(attrid, int(value))
-            return
-
-        if attrid == ATTR_BUTTON_VIBRATION:
-            if value is None:
-                return
-            label = VIBRATION_LABELS.get(int(value), VIBRATION_LABELS[0])
-            super()._update_attribute(ATTR_VIBRATION_TEXT, label)
-            super()._update_attribute(attrid, int(value))
-            return
-
-        if attrid == ATTR_MODE_AFTER_DRY:
-            if value is None:
-                return
-            label = MODE_AFTER_DRY_LABELS.get(int(value), MODE_AFTER_DRY_LABELS[2])
-            super()._update_attribute(ATTR_MODE_AFTER_DRY_TEXT, label)
-            super()._update_attribute(attrid, int(value))
             return
 
         if attrid == ATTR_CONTROL_SEQUENCE:
@@ -312,10 +282,8 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 value = FloorSensorTypeEnum(int(value))
             except ValueError:
                 value = FloorSensorTypeEnum.NTC_12k_Ohm
-
         if attrid == ATTR_SYSTEM_MODE and value is not None:
             mode_int = 0x04 if int(value) > 0 else 0x00
-            super()._update_attribute(ATTR_OPERATION_MODE, OperationModeEnum(mode_int))
             super()._update_attribute(ATTR_SYSTEM_MODE, Thermostat.SystemMode(mode_int))
             return
 
@@ -329,7 +297,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
             return
 
         if attrid == ATTR_LOCAL_TEMP:
-            self._attr_cache[0xFF00] = value
+            self._air_temp = value
             current_mode = self._attr_cache.get(
                 ATTR_CONTROL_TYPE, ControlTypeEnum.Floor_Sensor
             )
@@ -348,10 +316,8 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 floor_val = self._get_current_floor_temp()
                 if floor_val is not None:
                     super()._update_attribute(ATTR_LOCAL_TEMP, floor_val)
-            else:
-                air_val = self._attr_cache.get(0xFF00)
-                if air_val is not None:
-                    super()._update_attribute(ATTR_LOCAL_TEMP, air_val)
+            elif self._air_temp is not None:
+                super()._update_attribute(ATTR_LOCAL_TEMP, self._air_temp)
             return
 
         super()._update_attribute(attrid, value)
@@ -362,35 +328,12 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         mfg_attrs = {}
 
         for attrid, value in attributes.items():
-            if attrid in (
-                ATTR_OPERATE_BRIGHTNESS,
-                ATTR_BUTTON_VIBRATION,
-                ATTR_MODE_AFTER_DRY,
-                ATTR_VIBRATION_TEXT,
-                ATTR_BRIGHTNESS_TEXT,
-                ATTR_MODE_AFTER_DRY_TEXT,
-                ATTR_TEMP_UNIT_TEXT,
-                "operate_display_brightness",
-                "button_vibration_level",
-                "mode_after_dry",
-                "vibration_level_text",
-                "operate_brightness_text",
-                "mode_after_dry_text",
-                "temperature_unit_text",
-            ):
+            if attrid in BLOCKED_WRITE_ATTRS:
                 continue
 
-            if attrid in (
-                ATTR_OPERATION_MODE,
-                "operation_mode",
-                ATTR_SYSTEM_MODE,
-                "system_mode",
-            ):
+            if attrid in (ATTR_SYSTEM_MODE, "system_mode"):
                 mode_int = 0x04 if int(value) > 0 else 0x00
                 std_attrs[ATTR_SYSTEM_MODE] = Thermostat.SystemMode(mode_int)
-                super()._update_attribute(
-                    ATTR_OPERATION_MODE, OperationModeEnum(mode_int)
-                )
                 super()._update_attribute(
                     ATTR_SYSTEM_MODE, Thermostat.SystemMode(mode_int)
                 )
@@ -401,7 +344,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                     )
                 elif attrid in (ATTR_CONTROL_TYPE, "control_type"):
                     mfg_attrs[attrid] = int(value) if int(value) in (0, 1, 2) else 1
-                elif attrid in (ATTR_TEMPERATURE_DISPLAY, "temperature_display"):
+                elif attrid in (ATTR_LCD_DISPLAY_SOURCE, "lcd_display_source"):
                     mfg_attrs[attrid] = int(value) if int(value) in (0, 1) else 1
                 elif attrid in (
                     ATTR_FLOOR_SENSOR_CALIBRATION,
@@ -431,36 +374,12 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
         return []
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Remap virtual text attributes to their underlying hardware registers on poll."""
-        if ATTR_QUIRK_VERSION in attributes:
-            self._attr_cache[ATTR_QUIRK_VERSION] = __version__
-            super()._update_attribute(ATTR_QUIRK_VERSION, __version__)
-
+        """Read standard and manufacturer-specific attributes without unsafe ones."""
         std_remapped = []
         mfg_remapped = []
 
         for a in attributes:
-            if a == ATTR_QUIRK_VERSION:
-                continue
-            elif a == ATTR_OPERATION_MODE:
-                std_remapped.append(ATTR_SYSTEM_MODE)
-            elif a == ATTR_VIBRATION_TEXT:
-                mfg_remapped.append(ATTR_BUTTON_VIBRATION)
-            elif a == ATTR_BRIGHTNESS_TEXT:
-                mfg_remapped.append(ATTR_OPERATE_BRIGHTNESS)
-            elif a == ATTR_MODE_AFTER_DRY_TEXT:
-                mfg_remapped.append(ATTR_MODE_AFTER_DRY)
-            elif a == ATTR_TEMP_UNIT_TEXT:
-                ui_cluster = self.endpoint.in_clusters.get(UserInterface.cluster_id)
-                if ui_cluster:
-                    res_ui = await ui_cluster.read_attributes_raw(
-                        [0x0000], manufacturer=manufacturer
-                    )
-                    if res_ui and 0x0000 in res_ui[0]:
-                        val_unit = int(res_ui[0][0x0000])
-                        label = TEMP_UNIT_LABELS.get(val_unit, TEMP_UNIT_LABELS[0])
-                        self._attr_cache[ATTR_TEMP_UNIT_TEXT] = label
-                        super()._update_attribute(ATTR_TEMP_UNIT_TEXT, label)
+            if a in (ATTR_DISPLAY_AUTO_OFF, "display_auto_off"):
                 continue
             elif a in PROPRIETARY_ATTRS:
                 mfg_remapped.append(a)
@@ -487,16 +406,15 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
     async def bind(self):
         """Bind the cluster and apply hardware defaults."""
         res = await super().bind()
-        self._update_attribute(ATTR_QUIRK_VERSION, __version__)
         self._update_attribute(
             ATTR_CONTROL_SEQUENCE,
             Thermostat.ControlSequenceOfOperation.Heating_Only,
         )
-        self.bg_task = asyncio.create_task(self.write_config_registers())
+        self._bg_task = asyncio.create_task(self.write_config_registers())
         return res
 
     async def write_config_registers(self):
-        """Write hardware defaults and poll read-only status registers to populate UI."""
+        """Apply hardware defaults and read device attributes needed by the UI."""
         try:
             await asyncio.sleep(3)
             await self.write_attributes(
@@ -512,7 +430,7 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 manufacturer=SUNRICHER_MANUFACTURER_CODE,
             )
             await self.write_attributes(
-                {ATTR_TEMPERATURE_DISPLAY: 1},
+                {ATTR_LCD_DISPLAY_SOURCE: 1},
                 manufacturer=SUNRICHER_MANUFACTURER_CODE,
             )
             await self.read_attributes([ATTR_SYSTEM_MODE], manufacturer=None)
@@ -525,13 +443,15 @@ class SunricherThermostatCluster(CustomCluster, Thermostat):
                 ],
                 manufacturer=SUNRICHER_MANUFACTURER_CODE,
             )
-            ui_cluster = self.endpoint.in_clusters.get(UserInterface.cluster_id)
-            if ui_cluster:
-                res_ui = await ui_cluster.read_attributes([0x0000])
-                if res_ui and 0x0000 in res_ui:
-                    val_unit = int(res_ui[0x0000])
-                    label = TEMP_UNIT_LABELS.get(val_unit, TEMP_UNIT_LABELS[0])
-                    self._update_attribute(ATTR_TEMP_UNIT_TEXT, label)
+            user_interface = self.endpoint.in_clusters.get(UserInterface.cluster_id)
+            if user_interface is not None:
+                await user_interface.read_attributes(
+                    [
+                        0x0000,
+                        0x0001,
+                    ],
+                    manufacturer=None,
+                )
 
             _LOGGER.info(
                 "ROB_200-040-0 (Quirk v%s): Applied hardware registers successfully",
@@ -559,53 +479,38 @@ class SunricherFloorProbeCluster(CustomCluster, TemperatureMeasurement):
 
 
 class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
-    """Sanitizes writes, maps Child Lock Active, and syncs temperature unit text."""
+    """Sanitize writes to the thermostat user interface attributes."""
 
     cluster_id = UserInterface.cluster_id
 
     attributes = UserInterface.attributes.copy()
     attributes.update(
         {
-            ATTR_CHILD_LOCK_ACTIVE: ("child_lock_active", ChildLockEnum, False),
+            0x0000: ("temperature_unit_scale", TempUnitEnum, False),
+            0x0001: ("keypad_lock_active", ChildLockEnum, False),
         }
     )
 
     def _update_attribute(self, attrid, value):
-        """Synchronize 0x0000 (Temp Unit) and 0x0001 (Child Lock)."""
+        """Normalize temperature units and the binary child-lock setting."""
         if attrid == 0x0000 and value is not None:
-            val_int = int(value)
-            label = TEMP_UNIT_LABELS.get(val_int, TEMP_UNIT_LABELS[0])
-            thermostat = self.endpoint.in_clusters.get(Thermostat.cluster_id)
-            if thermostat:
-                thermostat._update_attribute(ATTR_TEMP_UNIT_TEXT, label)
-            super()._update_attribute(0x0000, val_int)
+            super()._update_attribute(attrid, TempUnitEnum(int(value)))
             return
         if attrid == 0x0001 and value is not None:
             locked = ChildLockEnum.Yes if int(value) >= 1 else ChildLockEnum.No
-            super()._update_attribute(ATTR_CHILD_LOCK_ACTIVE, locked)
-            super()._update_attribute(0x0001, int(locked))
+            super()._update_attribute(attrid, locked)
             return
         super()._update_attribute(attrid, value)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Redirect reads of virtual 0xFF01 -> 0x0001."""
-        remapped = [0x0001 if a == ATTR_CHILD_LOCK_ACTIVE else a for a in attributes]
-        return await super().read_attributes_raw(remapped, manufacturer=manufacturer)
-
     def write_attributes(self, attributes, manufacturer=None):
-        """Translate Child Lock Active ('No'/'Yes') into hardware register 0x0001."""
+        """Validate and write standard user interface attributes."""
         sanitized = {}
         for attrid, value in attributes.items():
-            if attrid in (0x0000, "temperature_display_mode", "temperature_unit"):
-                continue
-            elif attrid in (ATTR_CHILD_LOCK_ACTIVE, "child_lock_active"):
+            if attrid in (0x0000, "temperature_unit_scale", "temperature_display_mode"):
+                sanitized[0x0000] = TempUnitEnum(int(value))
+            elif attrid in (0x0001, "keypad_lock_active", "keypad_lockout"):
                 val_int = 1 if int(value) >= 1 else 0
-                sanitized[0x0001] = t.enum8(val_int)
-                super()._update_attribute(
-                    ATTR_CHILD_LOCK_ACTIVE, ChildLockEnum(val_int)
-                )
-            elif attrid == 0x0001:
-                continue
+                sanitized[0x0001] = val_int
             else:
                 sanitized[attrid] = value
 
@@ -625,6 +530,11 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
     .replaces(SunricherThermostatCluster, endpoint_id=1)
     .replaces(SunricherFloorProbeCluster, endpoint_id=1)
     .replaces(SunricherUserInterfaceCluster, endpoint_id=1)
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=UserInterface.cluster_id,
+        unique_id_suffix="keypad_lockout",
+    )
     # Editable Controls
     .number(
         attribute_name="hysteresis",
@@ -633,8 +543,8 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=0.5,
         max_value=2.0,
         step=0.5,
-        unit="°C",
         multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
         translation_key="hysteresis",
         fallback_name="Hysteresis",
     )
@@ -645,86 +555,101 @@ class SunricherUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=-3.0,
         max_value=3.0,
         step=0.1,
-        unit="°C",
         multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
         translation_key="floor_sensor_calibration",
         fallback_name="Floor Temperature Offset",
     )
     .enum(
         attribute_name="control_type",
-        enum_class=ControlTypeEnum,
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
+        enum_class=ControlTypeEnum,
         translation_key="control_type",
         fallback_name="Control type",
     )
     .enum(
-        attribute_name="temperature_display",
-        enum_class=TempDisplayEnum,
+        attribute_name="lcd_display_source",
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
-        translation_key="temperature_display",
-        fallback_name="Display Temperature",
+        enum_class=TempDisplayEnum,
+        translation_key="lcd_display_source",
+        fallback_name="LCD Sensor Source",
     )
     .enum(
         attribute_name="floor_sensor_type",
-        enum_class=FloorSensorTypeEnum,
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
+        enum_class=FloorSensorTypeEnum,
         translation_key="floor_sensor_type",
         fallback_name="Floor Sensor Type",
     )
     .enum(
-        attribute_name="operation_mode",
-        enum_class=OperationModeEnum,
+        attribute_name=Thermostat.AttributeDefs.system_mode.name,
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
+        enum_class=OperationModeEnum,
+        unique_id_suffix="operation_mode",
         translation_key="operation_mode",
         fallback_name="Operation mode",
     )
     .enum(
-        attribute_name="child_lock_active",
-        enum_class=ChildLockEnum,
+        attribute_name="keypad_lock_active",
         cluster_id=UserInterface.cluster_id,
         endpoint_id=1,
-        translation_key="child_lock_active",
+        enum_class=ChildLockEnum,
+        translation_key="keypad_lock_active",
         fallback_name="Child Lock Active",
     )
-    # Read-Only Status Sensors (Exact Excel Table Descriptive Text)
+    .enum(
+        attribute_name="temperature_unit_scale",
+        cluster_id=UserInterface.cluster_id,
+        endpoint_id=1,
+        enum_class=TempUnitEnum,
+        translation_key="temperature_unit_scale",
+        fallback_name="Temperature Scale",
+    )
+    # Read-Only Status Sensors
     .sensor(
-        attribute_name="vibration_level_text",
+        attribute_name=Basic.AttributeDefs.app_version.name,
+        cluster_id=Basic.cluster_id,
+        endpoint_id=1,
+        attribute_initialized_from_cache=False,
+        translation_key="application_version",
+        fallback_name="Application version",
+    )
+    .sensor(
+        attribute_name="button_vibration_level",
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
+        attribute_converter=lambda value: _mapped_label(
+            value, VIBRATION_LABELS, VIBRATION_LABELS[0]
+        ),
+        unique_id_suffix="vibration_level_text",
         translation_key="vibration_level_text",
         fallback_name="Vibration Level",
     )
     .sensor(
-        attribute_name="operate_brightness_text",
+        attribute_name="operate_display_brightness",
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
+        attribute_converter=lambda value: _mapped_label(
+            value, BRIGHTNESS_LABELS, BRIGHTNESS_LABELS[1]
+        ),
+        unique_id_suffix="operate_brightness_text",
         translation_key="operate_brightness_text",
         fallback_name="Operate Brightness",
     )
     .sensor(
-        attribute_name="temperature_unit_text",
+        attribute_name="mode_after_dry",
         cluster_id=Thermostat.cluster_id,
         endpoint_id=1,
-        translation_key="temperature_unit_text",
-        fallback_name="Temperature Unit",
-    )
-    .sensor(
-        attribute_name="mode_after_dry_text",
-        cluster_id=Thermostat.cluster_id,
-        endpoint_id=1,
+        attribute_converter=lambda value: _mapped_label(
+            value, MODE_AFTER_DRY_LABELS, MODE_AFTER_DRY_LABELS[2]
+        ),
+        unique_id_suffix="mode_after_dry_text",
         translation_key="mode_after_dry_text",
         fallback_name="ModeAfterDry",
-    )
-    .sensor(
-        attribute_name="quirk_version",
-        cluster_id=Thermostat.cluster_id,
-        endpoint_id=1,
-        translation_key="quirk_version",
-        fallback_name="Quirk Version",
     )
     .add_to_registry()
 )
