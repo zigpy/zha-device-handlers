@@ -39,6 +39,8 @@ PRESS_TYPES = {
 class LinxuraIASCluster(CustomCluster, IasZone):
     """IAS cluster used for Linxura button."""
 
+    button_count = 4
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -51,22 +53,13 @@ class LinxuraIASCluster(CustomCluster, IasZone):
         """Handle attribute report/update event."""
         if event.attribute_id == self.AttributeDefs.zone_status.id:
             value = event.value
-            if 0 < value < 24:
-                if 0 < value < 6:
-                    button = BUTTON_1
-                    press_type = PRESS_TYPES[value // 2 + 1]
-                elif 6 < value < 12:
-                    button = BUTTON_2
-                    press_type = PRESS_TYPES[value // 2 - 3 + 1]
-                elif 12 < value < 18:
-                    button = BUTTON_3
-                    press_type = PRESS_TYPES[value // 2 - 6 + 1]
-                elif 18 < value < 24:
-                    button = BUTTON_4
-                    press_type = PRESS_TYPES[value // 2 - 9 + 1]
-                else:
-                    # discard invalid values: 0, 6, 12, 18
+            if 0 < value < self.button_count * 6:
+                button_index, press_code = divmod(value, 6)
+                if press_code == 0:
+                    # Multiples of six do not represent a button action.
                     return
+                button = f"button_{button_index + 1}"
+                press_type = PRESS_TYPES[press_code // 2 + 1]
 
                 action = f"{button}_{press_type}"
                 event_args = {
