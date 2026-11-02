@@ -3,9 +3,17 @@
 from unittest import mock
 
 import pytest
+from zha.application.platforms.event import EntityEventTriggeredEvent
+from zha.application.platforms.event.const import ButtonEventType
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.device import (
+    GreenPowerCommandReceived,
+    GreenPowerDevice as ZigpyGreenPowerDevice,
+)
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
+from zigpy.zgp.types import ApplicationID, DeviceID, GPDCommandID, SrcID
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -937,3 +945,45 @@ def test_rom001_signature(assert_signature_matches_quirk, manufacturer, model):
         },
     }
     assert_signature_matches_quirk(PhilipsROM001, signature)
+
+
+@pytest.mark.parametrize(
+    ("command_id", "suffix"),
+    [
+        (GPDCommandID.Toggle, "button_1"),
+        (GPDCommandID.RecallScene0, "button_2"),
+        (GPDCommandID.RecallScene1, "button_3"),
+        (GPDCommandID.RecallScene2, "button_4"),
+    ],
+)
+def test_hue_tap_buttons(MockAppController, command_id, suffix):
+    """Test that each Hue Tap command only fires its own button."""
+    gpd = ZigpyGreenPowerDevice(
+        MockAppController,
+        application_id=ApplicationID.SrcID,
+        src_id=SrcID(0x0042EEE5),
+    )
+    gpd.device_id = DeviceID.OnOffSwitch
+
+    entry = DEVICE_REGISTRY.match_green_power_entry(gpd)
+    zha_device = entry.zha_device_factory(gpd, mock.MagicMock())
+
+    events: list[EntityEventTriggeredEvent] = []
+    for entity in zha_device.discover_entities():
+        entity.on_add()
+        entity.on_event(EntityEventTriggeredEvent.event, events.append)
+
+    gpd.emit(
+        GreenPowerCommandReceived.event_type,
+        GreenPowerCommandReceived(
+            device_ieee=str(gpd.ieee),
+            endpoint_id=None,
+            command_id=command_id,
+            command=None,
+        ),
+    )
+
+    assert [
+        (event.unique_id.rsplit("-", 1)[-1], event.triggered.event_type)
+        for event in events
+    ] == [(suffix, ButtonEventType.PRESS_START)]
