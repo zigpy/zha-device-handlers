@@ -40,7 +40,7 @@ class ThirdRealityRadarCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        tvoc_alert_threshold: Final = ZCLAttributeDef(
+        air_threshold: Final = ZCLAttributeDef(
             id=0xF003,
             type=t.uint16_t,
             is_manufacturer_specific=True,
@@ -103,7 +103,7 @@ class ThirdRealityRadarCluster(CustomCluster):
         fallback_name="Presence sensor detect distance level",
     )
     .number(
-        attribute_name=ThirdRealityRadarCluster.AttributeDefs.tvoc_alert_threshold.name,
+        attribute_name=ThirdRealityRadarCluster.AttributeDefs.air_threshold.name,
         cluster_id=ThirdRealityRadarCluster.cluster_id,
         min_value=3000,
         max_value=50000,
