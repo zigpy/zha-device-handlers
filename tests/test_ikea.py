@@ -9,9 +9,31 @@ from zigpy.zcl.clusters.measurement import PM25
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.ikea import IKEA, IkeaBilresaLevelControl
+from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.const import (
+    COMMAND,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
+    DIM_DOWN,
+    DIM_UP,
+    LONG_RELEASE,
+)
+from zhaquirks.ikea import IKEA
+from zhaquirks.ikea.fivebtnremote import (
+    IkeaTradfriRemote1,
+    IkeaTradfriRemote2,
+    IkeaTradfriRemote3,
+    IkeaTradfriRemote4,
+    IkeaTradfriRemote5,
+)
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
+from zhaquirks.ikea.twobtnremote import (
+    IkeaRodretRemote2Btn,
+    IkeaRodretRemote2BtnNew,
+    IkeaTradfriRemote2Btn,
+    IkeaTradfriRemote2BtnZLL,
+)
 
 zhaquirks.setup()
 
@@ -222,10 +244,10 @@ async def test_double_power_config_firmware(
         assert request_mock.call_count == 1  # verify request to read sw_build_id
         assert request_mock.mock_calls[0][1][0][0] == sw_build_id
 
-        # battery pct might be updated again when the attribute read returned new firmware, check pct not doubled then
-        # if firmware turned out to be old or still unknown, do not update battery pct again, as we doubled it already
+        # battery pct is updated again when the attribute read returned old firmware, check pct doubled only once then
+        # if firmware turned out to be new or still unknown, do not update battery pct again, as it's correct already
         assert len(power_listener.attribute_updates) == expected_pct_updates
-        if expected_pct_updates > 2:
+        if expected_pct_updates > 1:
             assert power_listener.attribute_updates[1] == (battery_pct_id, pct_correct)
 
         # reset mocks for testing when sw_build_id is known next
@@ -266,32 +288,32 @@ async def test_double_power_config_firmware(
             LevelControl.ServerCommandDefs.move_with_on_off.id,
             0,
             LevelControl.ServerCommandDefs.stop_with_on_off.id,
-            "move_up_release",
+            COMMAND_MOVE_UP_RELEASE,
         ),  # move up + stop_with_on_off (0x07)
         (
             LevelControl.ServerCommandDefs.move_with_on_off.id,
             0,
             LevelControl.ServerCommandDefs.stop.id,
-            "move_up_release",
+            COMMAND_MOVE_UP_RELEASE,
         ),  # move up + stop (0x03)
         (
             LevelControl.ServerCommandDefs.move.id,
             1,
             LevelControl.ServerCommandDefs.stop.id,
-            "move_down_release",
+            COMMAND_MOVE_DOWN_RELEASE,
         ),  # move down + stop (0x03)
         (
             LevelControl.ServerCommandDefs.move.id,
             1,
             LevelControl.ServerCommandDefs.stop_with_on_off.id,
-            "move_down_release",
+            COMMAND_MOVE_DOWN_RELEASE,
         ),  # move down + stop_with_on_off (0x07)
     ],
 )
-async def test_bilresa_direction_tracking(
+async def test_ikea_level_control_direction_tracking(
     zigpy_device_from_v2_quirk, move_cmd, move_mode, stop_cmd, expected_event
 ):
-    """Test Bilresa remote direction tracking for long press releases."""
+    """Test that a dim hold release is attributed to the button that was held."""
     device = zigpy_device_from_v2_quirk(
         IKEA,
         "09B9",
@@ -299,7 +321,7 @@ async def test_bilresa_direction_tracking(
     )
 
     level_cluster = device.endpoints[1].in_clusters[LevelControl.cluster_id]
-    assert isinstance(level_cluster, IkeaBilresaLevelControl)
+    assert isinstance(level_cluster, LevelControlWithMoveDirection)
 
     listener = mock.MagicMock()
     level_cluster.add_listener(listener)
@@ -324,3 +346,92 @@ async def test_bilresa_direction_tracking(
             if c == mock.call(expected_event, [])
         ]
         assert len(release_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "quirk,v2_model",
+    [
+        (IkeaTradfriRemote2Btn, None),
+        (IkeaTradfriRemote2BtnZLL, None),
+        (IkeaRodretRemote2Btn, None),
+        (IkeaRodretRemote2BtnNew, None),
+        (IkeaTradfriRemote1, None),
+        (IkeaTradfriRemote2, None),
+        (IkeaTradfriRemote3, None),
+        (IkeaTradfriRemote4, None),
+        (IkeaTradfriRemote5, None),
+        (None, "Remote Control N2"),  # STYRBAR
+        (None, "09B9"),  # BILRESA 2 button
+    ],
+)
+@pytest.mark.parametrize(
+    "move_cmd,move_mode,expected_event",
+    [
+        (
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+            LevelControl.MoveMode.Up,
+            COMMAND_MOVE_UP_RELEASE,
+        ),
+        (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.MoveMode.Down,
+            COMMAND_MOVE_DOWN_RELEASE,
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "stop_cmd",
+    [
+        LevelControl.ServerCommandDefs.stop.id,
+        LevelControl.ServerCommandDefs.stop_with_on_off.id,
+    ],
+)
+async def test_ikea_dim_release_direction(
+    zigpy_device_from_quirk,
+    zigpy_device_from_v2_quirk,
+    quirk,
+    v2_model,
+    move_cmd,
+    move_mode,
+    expected_event,
+    stop_cmd,
+):
+    """Test that every IKEA dim remote reports which dim button ended its hold.
+
+    The remotes send the same stop for both dim buttons on most firmware, so either
+    stop has to end the hold of the button that was held.
+    """
+    if quirk is not None:
+        device = zigpy_device_from_quirk(quirk)
+        level_cluster = device.endpoints[1].out_clusters[LevelControl.cluster_id]
+    else:
+        device = zigpy_device_from_v2_quirk(
+            IKEA,
+            v2_model,
+            cluster_ids={1: {LevelControl.cluster_id: ClusterType.Client}},
+        )
+        level_cluster = device.endpoints[1].out_clusters[LevelControl.cluster_id]
+
+    assert isinstance(level_cluster, LevelControlWithMoveDirection)
+
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
+
+    hdr_move = foundation.ZCLHeader.cluster(tsn=1, command_id=move_cmd)
+    level_cluster.handle_cluster_request(hdr_move, [move_mode, 83])
+    hdr_stop = foundation.ZCLHeader.cluster(tsn=2, command_id=stop_cmd)
+    level_cluster.handle_cluster_request(hdr_stop, [])
+
+    other_event = (
+        COMMAND_MOVE_DOWN_RELEASE
+        if expected_event == COMMAND_MOVE_UP_RELEASE
+        else COMMAND_MOVE_UP_RELEASE
+    )
+    events = listener.zha_send_event.call_args_list
+    assert events.count(mock.call(expected_event, [])) == 1
+    assert mock.call(other_event, []) not in events
+
+    # the long release triggers of the quirk fire on these events, not on the stop
+    triggers = device.device_automation_triggers
+    assert triggers[(LONG_RELEASE, DIM_UP)][COMMAND] == COMMAND_MOVE_UP_RELEASE
+    assert triggers[(LONG_RELEASE, DIM_DOWN)][COMMAND] == COMMAND_MOVE_DOWN_RELEASE
