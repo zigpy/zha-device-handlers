@@ -6,7 +6,6 @@ from collections.abc import Callable
 from typing import Any
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
@@ -14,6 +13,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.xiaomi import LUMI
 
 
