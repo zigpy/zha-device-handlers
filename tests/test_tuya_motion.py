@@ -1,16 +1,21 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import EntityPlatform
+from zhaquirks.builder.metadata import ZCLEnumMetadata
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_motion import TuyaMotionIlluminanceThreshold
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
@@ -54,6 +59,8 @@ zhaquirks.setup()
         ("_TZE204_kyhbrfyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZ6210_duv6fhwt", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_1youk3hj", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE284_1youk3hj", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE28C1000000_1youk3hj", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_3towulqd", "TS0601", ZCL_TUYA_MOTION_V7),
         ("_TZE200_1ibpyhdc", "TS0601", ZCL_TUYA_MOTION_V7),
         ("_TZE200_bh3n6gk8", "TS0601", ZCL_TUYA_MOTION_V7),
@@ -144,36 +151,104 @@ async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, o
 
 
 @pytest.mark.parametrize(
-    "model,manuf,illum_msg,exp_value",
-    [
-        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x00", 10),
-        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x01", 20),
-        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x02", 50),
-        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x03", 100),
-    ],
+    "manufacturer",
+    ["_TZE204_1youk3hj", "_TZE284_1youk3hj", "_TZE28C1000000_1youk3hj"],
 )
-async def test_tuya_motion_quirk_enum_illum(
-    zigpy_device_from_v2_quirk, model, manuf, illum_msg, exp_value
+@pytest.mark.parametrize("threshold", list(TuyaMotionIlluminanceThreshold))
+async def test_tuya_motion_illuminance_threshold(
+    zigpy_device_from_v2_quirk, manufacturer, threshold
 ):
-    """Test Tuya Motion Quirks using enum illumination."""
-    quirked_device = zigpy_device_from_v2_quirk(model, manuf)
+    """Test the NAS-PS10B2 illuminance threshold setting (DP 102)."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
     ep = quirked_device.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    attr_id = tuya_cluster.attributes_by_name["illuminance_threshold"].id
 
-    assert ep.illuminance is not None
-    assert isinstance(ep.illuminance, IlluminanceMeasurement)
+    # DP 102 is a setting, no illuminance cluster is added for it
+    assert IlluminanceMeasurement.cluster_id not in ep.in_clusters
 
-    illum_listener = ClusterListener(ep.illuminance)
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    metadata = {
+        m.resolved_unique_id_suffix: m
+        for m in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    select = metadata["illuminance_threshold"]
+    assert isinstance(select, ZCLEnumMetadata)
+    assert select.entity_platform == EntityPlatform.SELECT
+    assert select.enum is TuyaMotionIlluminanceThreshold
 
-    hdr, data = ep.tuya_manufacturer.deserialize(illum_msg)
-    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    tuya_listener = ClusterListener(tuya_cluster)
+
+    msg = b"\tL\x01\x00\x05\x66\x04\x00\x01" + bytes([threshold.value])
+    hdr, data = tuya_cluster.deserialize(msg)
+    status = tuya_cluster.handle_get_data(data.data)
 
     assert status == foundation.Status.SUCCESS
+    assert tuya_listener.attribute_updates == [(attr_id, threshold)]
 
-    zcl_illum_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes(
+            {"illuminance_threshold": threshold}
+        )
+        await wait_for_zigpy_tasks()
 
-    assert len(illum_listener.attribute_updates) == 1
-    assert illum_listener.attribute_updates[0][0] == zcl_illum_id
-    assert illum_listener.attribute_updates[0][1] == exp_value
+        assert m1.call_args.kwargs["data"] == (
+            b"\x01\x01\x00\x00\x01\x66\x04\x00\x01" + bytes([threshold.value])
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+
+@pytest.mark.parametrize(
+    "manufacturer",
+    ["_TZE204_1youk3hj", "_TZE284_1youk3hj", "_TZE28C1000000_1youk3hj"],
+)
+async def test_tuya_motion_fading_time_unset(zigpy_device_from_v2_quirk, manufacturer):
+    """Test the NAS-PS10B2 fading time (DP 12) ignores the unset value."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    metadata = {
+        m.resolved_unique_id_suffix: m
+        for m in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    number = metadata["fading_time"]
+    assert number.entity_platform == EntityPlatform.NUMBER
+    assert (number.min, number.max) == (3, 600)
+    assert tuya_cluster.attributes_by_name["fading_time"].access == (
+        foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write
+    )
+
+    def receive(raw: bytes) -> None:
+        msg = b"\tL\x01\x00\x05\x0c\x02\x00\x04" + raw
+        hdr, data = tuya_cluster.deserialize(msg)
+        assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    receive(b"\x00\x00\x00\x05")
+    assert tuya_cluster.get("fading_time") == 5
+
+    # Sent by a device whose fading time was never set
+    receive(b"\xff\xff\xff\x08")
+    assert tuya_cluster.get("fading_time") is None
+
+    for value in (3, 600):
+        with mock.patch.object(
+            tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+        ) as m1:
+            (status,) = await tuya_cluster.write_attributes({"fading_time": value})
+            await wait_for_zigpy_tasks()
+
+            # ZCL header and Tuya status/tsn first, then DP 12 as a 4 byte value
+            assert m1.call_args.kwargs["data"][5:] == (
+                b"\x0c\x02\x00\x04" + value.to_bytes(4, "big")
+            )
+            assert status == [
+                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            ]
 
 
 @pytest.mark.asyncio
