@@ -29,6 +29,7 @@ from zhaquirks.ikea import IKEA, ScenesCluster
 
 (
     QuirkBuilder(IKEA, "09B9")
+    .subscribes_to_multicast_group(0x549A)
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
     .replace_cluster_occurrences(LevelControlWithMoveDirection)
     .device_automation_triggers(
