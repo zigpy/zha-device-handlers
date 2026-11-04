@@ -97,11 +97,15 @@ async def test_tp_wgzba_external_temperature_mode_sensor(tp_wgzba_device):
     assert mode.entity_platform.value == "sensor"
     assert mode.entity_type.value == "diagnostic"
     assert not mode.initially_disabled
-    assert (switch.endpoint_id, switch.cluster_id, switch.attribute_name) == (
-        mode.endpoint_id,
-        mode.cluster_id,
-        mode.attribute_name,
-    ) == (1, SONOFF_PRIVATE_CLUSTER_ID, "external_temperature_sensor")
+    assert (
+        (switch.endpoint_id, switch.cluster_id, switch.attribute_name)
+        == (
+            mode.endpoint_id,
+            mode.cluster_id,
+            mode.attribute_name,
+        )
+        == (1, SONOFF_PRIVATE_CLUSTER_ID, "external_temperature_sensor")
+    )
 
     zha_device = entry.zha_device_factory(tp_wgzba_device, mock.MagicMock())
     (sensor,) = (
