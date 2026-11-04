@@ -419,6 +419,13 @@ class WeeklyScheduleUiDay(t.enum8):
     Saturday = 0x06
 
 
+class ExternalTemperatureMode(t.enum8):
+    """Report whether the thermostat uses external temperature readings."""
+
+    internal_sensor = 0
+    external_sensor = 1
+
+
 class TemperatureSensorSelect(t.enum8):
     """Temperature source used for the thermostat local temperature."""
 
@@ -3358,6 +3365,16 @@ _BUILDER = (
         translation_key="external_temperature_sensor",
         fallback_name="External temperature sensor",
     )
+    .enum(
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.external_temperature_sensor.name,
+        ExternalTemperatureMode,
+        SonoffTPWGZBAPrivateCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="temperature_source_mode",
+        translation_key="temperature_source_mode",
+        fallback_name="Temperature source mode",
+    )
     .number(
         SonoffTPWGZBAPrivateCluster.AttributeDefs.external_temperature_input.name,
         SonoffTPWGZBAPrivateCluster.cluster_id,
@@ -3556,7 +3573,7 @@ for attr_name, enum_type, translation_key, fallback_name in (
         "radar_do_not_disturb_end_minute",
         TimeOfDay30Min,
         "radar_do_not_disturb_end_time",
-        "Radar do not disturb end time",
+        "Radar do not disturb stop time",
     ),
     (
         "screen_night_mode_start_minute",
@@ -3568,7 +3585,7 @@ for attr_name, enum_type, translation_key, fallback_name in (
         "screen_night_mode_end_minute",
         TimeOfDay30Min,
         "display_night_mode_end_time",
-        "Display night mode end time",
+        "Display night mode stop time",
     ),
     (
         "relay_output_type_relay1",

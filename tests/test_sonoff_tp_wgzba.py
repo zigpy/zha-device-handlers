@@ -84,6 +84,45 @@ def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_qu
     )
 
 
+async def test_tp_wgzba_external_temperature_mode_sensor(tp_wgzba_device):
+    """Expose the switch and report the mode before a remote source is bound."""
+    entry = DEVICE_REGISTRY.match_entry(tp_wgzba_device)
+    metadata = {
+        item.resolved_unique_id_suffix: item
+        for item in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    switch = metadata["external_temperature_sensor"]
+    mode = metadata["temperature_source_mode"]
+    assert switch.entity_platform.value == "switch"
+    assert mode.entity_platform.value == "sensor"
+    assert mode.entity_type.value == "diagnostic"
+    assert not mode.initially_disabled
+    assert (switch.endpoint_id, switch.cluster_id, switch.attribute_name) == (
+        mode.endpoint_id,
+        mode.cluster_id,
+        mode.attribute_name,
+    ) == (1, SONOFF_PRIVATE_CLUSTER_ID, "external_temperature_sensor")
+
+    zha_device = entry.zha_device_factory(tp_wgzba_device, mock.MagicMock())
+    (sensor,) = (
+        entity
+        for entity in zha_device.discover_entities()
+        if entity.translation_key == "temperature_source_mode"
+    )
+    assert sensor.state.device_class.value == "enum"
+
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    linkage = cluster.AttributeDefs.remote_attribute_linkage.id
+    # Pending bind enables external mode before the blueprint sends its first reading.
+    for payload, expected in (
+        (tp_wgzba.REMOTE_TEMPERATURE_UNBIND_PAYLOAD, "internal_sensor"),
+        (tp_wgzba.REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD, "external_sensor"),
+        (tp_wgzba.REMOTE_TEMPERATURE_UNBIND_PAYLOAD, "internal_sensor"),
+    ):
+        cluster.update_attribute(linkage, payload)
+        assert sensor.state.native_value == expected
+
+
 def test_tp_wgzba_system_mode_mapping():
     """Test the device schedule/manual modes map to HA thermostat modes."""
     assert (
