@@ -2,6 +2,10 @@
 
 Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
+
+The blaster is exposed as an infrared emitter. Learning stays on the IRLearn command
+and the `last_learned_ir_code` attribute, and IRSend keeps working for existing
+automations.
 """
 
 import asyncio
@@ -10,31 +14,14 @@ import json
 import logging
 from typing import Any, Final, NamedTuple, Union
 
-from zigpy.profiles import zgp, zha
+from zha.application.platforms import ZclPlatformEntity
+from zha.application.platforms.infrared import BaseInfraredEmitter, InfraredSignal
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.tuya.ir_codec import encode_timings
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -120,6 +107,11 @@ class ZosungIRControl(CustomCluster):
             manufacturer_code=None,
         )
 
+    def __init__(self, *args, **kwargs):
+        """Init cluster and the learned code it serves."""
+        super().__init__(*args, **kwargs)
+        self.last_learned_ir_code = ""
+
     async def read_attributes(
         self,
         attributes: list[int | str | foundation.ZCLAttributeDef],
@@ -131,7 +123,7 @@ class ZosungIRControl(CustomCluster):
         failure: dict[Any, foundation.Status] = {}
         for attribute in attributes:
             if attribute in (learned_ir_code.id, learned_ir_code.name, learned_ir_code):
-                success[learned_ir_code.id] = self.endpoint.device.last_learned_ir_code
+                success[learned_ir_code.id] = self.last_learned_ir_code
             else:
                 failure[attribute] = foundation.Status.UNSUPPORTED_ATTRIBUTE
         return success, failure
@@ -606,12 +598,12 @@ class ZosungIRTransmit(CustomCluster):
                 )
                 return
             if len(self.ir_msg) == self.msg_length:
-                self.endpoint.device.last_learned_ir_code = base64.b64encode(
+                self.endpoint.zosung_ircontrol.last_learned_ir_code = base64.b64encode(
                     bytes(self.ir_msg)
                 ).decode()
                 _LOGGER.info(
                     "IR message really totally received: %s, from %s",
-                    self.endpoint.device.last_learned_ir_code,
+                    self.endpoint.zosung_ircontrol.last_learned_ir_code,
                     self.endpoint.device.ieee,
                 )
             else:
@@ -630,154 +622,43 @@ class ZosungIRTransmit(CustomCluster):
             )
 
 
-class ZosungIRBlaster(CustomDevice):
-    """Zosung IR Blaster."""
+class ZosungIREmitter(BaseInfraredEmitter, ZclPlatformEntity):
+    """Infrared emitter that sends through the blaster's IR transmit cluster."""
 
-    last_learned_ir_code = t.CharacterString("")
+    _unique_id_suffix = "infrared_emitter"
 
-    signature = {
-        # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>,
-        # complex_descriptor_available=0, user_descriptor_available=0, reserved=0,
-        # aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>,
-        # mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>,
-        # manufacturer_code=4098, maximum_buffer_size=82,
-        # maximum_incoming_transfer_size=82, server_mask=11264,
-        # maximum_outgoing_transfer_size=82,
-        # descriptor_capability_field=<DescriptorCapability.NONE: 0>,
-        # *allocate_address=True, *is_alternate_pan_coordinator=False,
-        # *is_coordinator=False, *is_end_device=True, *is_full_function_device=False,
-        # *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False,
-        # *is_security_capable=False)",
-        # input_clusters=[0x0000, 0x0001, 0x0003, 0x0004, 0x0005, 0x0006,
-        #                 0xe004, 0xed00]
-        # output_clusters=[0x000a, 0x0019]
-        #  <SimpleDescriptor endpoint=1, profile=260, device_type=61440
-        #  device_version=1
-        #  input_clusters=[0, 1, 3, 4, 5, 6, 57348, 60672]
-        #  output_clusters=[10, 25]>
-        MODELS_INFO: [
-            ("_TZ3290_ot6ewjvmejq5ekhl", "TS1201"),
-            ("_TZ3290_j37rooaxrcdcqo5n", "TS1201"),
-            ("_TZ3290_u9xac5rv", "TS1201"),
-            ("_TZ3290_qazgdsae", "TS1201"),
-            ("_TZ3290_yyax9ajf", "TS1201"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0xF000,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    ZosungIRTransmit.cluster_id,
-                    ZosungIRControl.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Scenes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    ZosungIRTransmit,
-                    ZosungIRControl,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Scenes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
+    async def async_send_command(self, signal: InfraredSignal) -> None:
+        """Transmit an infrared signal and wait until the device has all of it."""
+        # Repeats are already part of the waveform a signal carries, so the device
+        # sends it once.
+        ir_msg = ir_msg_for_code(
+            encode_timings(signal.timings),
+            freq=signal.modulation or DEFAULT_IR_FREQUENCY,
+        )
+        await self._cluster.send_ir_msg(ir_msg)
 
 
-class ZosungIRBlaster_ZS06(ZosungIRBlaster):
-    """Zosung IR Blaster ZS06."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1, profile=260, device_type=61440
-        #  device_version=1
-        #  input_clusters=[0, 3, 4, 5, 6, 57348, 60672]
-        #  output_clusters=[10, 25]>
-        #  <SimpleDescriptor endpoint=242, profile=41440, device_type=97
-        #  device_version=1
-        #  input_clusters=[]
-        #  output_clusters=[33]>
-        MODELS_INFO: [
-            ("_TZ3290_7v1k4vufotpowp9z", "TS1201"),
-            ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
-            ("_TZ3290_gnl5a6a5xvql7c2a", "TS1201"),
-            ("_TZ3290_rlkmy85q4pzoxobl", "TS1201"),
-            ("_TZ3290_nba3knpsarkawgnt", "TS1201"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0xF000,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    ZosungIRTransmit.cluster_id,
-                    ZosungIRControl.cluster_id,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    ZosungIRTransmit,
-                    ZosungIRControl,
-                    Groups.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+# The TS1201 and ZS06 variants share both clusters. The ZS06 also has a Green
+# Power proxy endpoint (242), which is left as it is.
+(
+    QuirkBuilder("_TZ3290_ot6ewjvmejq5ekhl", "TS1201")
+    .applies_to("_TZ3290_j37rooaxrcdcqo5n", "TS1201")
+    .applies_to("_TZ3290_u9xac5rv", "TS1201")
+    .applies_to("_TZ3290_qazgdsae", "TS1201")
+    .applies_to("_TZ3290_yyax9ajf", "TS1201")
+    # ZS06
+    .applies_to("_TZ3290_7v1k4vufotpowp9z", "TS1201")
+    .applies_to("_TZ3290_acv1iuslxi3shaaj", "TS1201")
+    .applies_to("_TZ3290_gnl5a6a5xvql7c2a", "TS1201")
+    .applies_to("_TZ3290_rlkmy85q4pzoxobl", "TS1201")
+    .applies_to("_TZ3290_nba3knpsarkawgnt", "TS1201")
+    .replaces(ZosungIRControl)
+    .replaces(ZosungIRTransmit)
+    .adds_entity(
+        ZosungIREmitter,
+        endpoint_id=1,
+        cluster_id=ZosungIRTransmit.cluster_id,
+        fallback_name="Infrared emitter",
+    )
+    .add_to_registry()
+)
