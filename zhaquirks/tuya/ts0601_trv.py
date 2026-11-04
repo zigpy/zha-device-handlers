@@ -1094,21 +1094,6 @@ ZONNSMART_MAX_TEMPERATURE_VAL = 3000
 ZONNSMART_MIN_TEMPERATURE_VAL = 500
 
 
-def _zonnsmart_manufacturer_cluster(
-    cluster: Cluster,
-) -> "ZONNSMARTManufCluster | None":
-    """Return the Tuya manufacturer cluster of the same device.
-
-    Helper clusters can live on other endpoints than the manufacturer
-    cluster, so resolve it through the device instead of a module global.
-    """
-    for endpoint in cluster.endpoint.device.endpoints.values():
-        manufacturer = getattr(endpoint, "tuya_manufacturer", None)
-        if isinstance(manufacturer, ZONNSMARTManufCluster):
-            return manufacturer
-    return None
-
-
 class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
@@ -1426,6 +1411,15 @@ class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
         self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
 
+def _zonnsmart_manufacturer_cluster(cluster: Cluster) -> ZONNSMARTManufCluster:
+    """Return the Tuya manufacturer cluster of the same device.
+
+    Helper clusters can live on other endpoints than the manufacturer
+    cluster, so resolve it through the device instead of a module global.
+    """
+    return cluster.endpoint.device.endpoints[1].tuya_manufacturer
+
+
 class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
     """Helper OnOff cluster for various functions controlled by switch."""
 
@@ -1456,8 +1450,8 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
 
         if has_change:
             attr_val = self.get_attr_val_to_write(value)
-            manufacturer_cluster = _zonnsmart_manufacturer_cluster(self)
-            if attr_val is not None and manufacturer_cluster is not None:
+            if attr_val is not None:
+                manufacturer_cluster = _zonnsmart_manufacturer_cluster(self)
                 return await manufacturer_cluster.write_attributes(attr_val, **kwargs)
 
         return [
@@ -1637,10 +1631,9 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
 
             # different Endpoint for compatibility issue
             manufacturer_cluster = _zonnsmart_manufacturer_cluster(self)
-            if manufacturer_cluster is not None:
-                await manufacturer_cluster.write_attributes(
-                    {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
-                )
+            await manufacturer_cluster.write_attributes(
+                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
+            )
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
