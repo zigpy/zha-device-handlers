@@ -3481,3 +3481,51 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+@pytest.mark.parametrize(
+    ("voltage", "expected_percentage"),
+    (
+        (31, 200),
+        (30, 200),
+        (29, 178),
+        (25, 89),
+        (21, 0),
+        (20, 0),
+        (0, None),
+        (0xFF, None),
+    ),
+)
+async def test_xiaomi_illumination_zcl_battery_voltage(
+    zigpy_device_from_quirk, voltage, expected_percentage
+):
+    """Test lumi.sen_ill.mgl01 battery percentage from ZCL battery voltage reports."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.illumination.Illumination)
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # ZCL "report attributes" for battery_voltage (0x0020, uint8)
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=power_cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(
+                bytes([0x18, 0x01, 0x0A, 0x20, 0x00, 0x20, voltage])
+            ),
+        )
+    )
+
+    updates = dict(power_listener.attribute_updates)
+    assert updates[zcl_power_voltage_id] == voltage
+    if expected_percentage is None:
+        assert len(power_listener.attribute_updates) == 1
+    else:
+        assert len(power_listener.attribute_updates) == 2
+        assert updates[zcl_power_percent_id] == expected_percentage

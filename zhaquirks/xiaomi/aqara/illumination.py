@@ -24,6 +24,25 @@ from zhaquirks.xiaomi import (
 )
 
 
+class VoltagePowerConfiguration(XiaomiPowerConfiguration):
+    """Power cluster that also maps ZCL battery voltage reports to a percentage.
+
+    lumi.sen_ill.mgl01 reports its battery voltage as the standard ZCL attribute
+    instead of the Xiaomi attribute report, so XiaomiPowerConfiguration alone never
+    sets the battery percentage for it.
+    """
+
+    # one CR2450 cell, reported in 100 mV steps
+    MAX_VOLTS_MV = 3000
+    MIN_VOLTS_MV = 2100
+
+    def _update_attribute(self, attrid, value):
+        """Update the battery percentage when the battery voltage is reported."""
+        super()._update_attribute(attrid, value)
+        if attrid == self.BATTERY_VOLTAGE_ATTR and value not in (0, 0xFF, None):
+            self._update_battery_percentage(round(value * 100))
+
+
 class Illumination(XiaomiCustomDevice):
     """Aqara LUMI lumi.sen_ill.mgl01 illumination sensor."""
 
@@ -60,7 +79,7 @@ class Illumination(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    XiaomiPowerConfiguration,
+                    VoltagePowerConfiguration,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             }
