@@ -1,0 +1,44 @@
+"""Third Reality air quality sensor devices."""
+
+from typing import Final
+
+from zha.application.platforms.sensor.device_class import (
+    SensorDeviceClass,
+    SensorStateClass,
+)
+import zigpy.types as t
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
+
+
+class ThirdRealityAirQualityCluster(CustomCluster):
+    """Third Reality's air quality sensor private cluster."""
+
+    cluster_id = 0x042E
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Define the attributes of a private cluster."""
+
+        voc_index: Final = ZCLAttributeDef(
+            id=0x0100,
+            type=t.Single,
+            manufacturer_code=0x1407,
+        )
+
+
+(
+    QuirkBuilder("Third Reality, Inc", "3RAQ1096Z")
+    .replaces(ThirdRealityAirQualityCluster)
+    .sensor(
+        endpoint_id=1,
+        attribute_name=ThirdRealityAirQualityCluster.AttributeDefs.voc_index.name,
+        cluster_id=ThirdRealityAirQualityCluster.cluster_id,
+        device_class=SensorDeviceClass.AQI,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="voc_index",
+        fallback_name="VOC index",
+    )
+    .add_to_registry()
+)
