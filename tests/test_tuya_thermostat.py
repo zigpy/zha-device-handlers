@@ -1,13 +1,16 @@
 """Tests for Tuya Thermostat."""
 
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP
-from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_QUERY_DATA, TuyaDPType
+from zhaquirks.tuya.mcu import TuyaClusterData, TuyaMCUCluster
+from zhaquirks.tuya.ts0601_zxkwaztm import TuyaThermostatSchedule
 
 zhaquirks.setup()
 
@@ -224,3 +227,85 @@ async def test_handle_get_data_tmcu(
     assert tmcu_listener.attribute_updates[0][1] == value
 
     assert ep.tuya_manufacturer.get(attr_id) == value
+
+
+async def test_zxkwaztm_schedule_dp_round_trip(zigpy_device_from_v2_quirk):
+    """Test decoding and writing six weekday and two weekend schedule slots."""
+    schedule = bytes.fromhex(
+        "063700af093700eb0c3700eb113700af133700af163700af0a0000f0150000b4"
+    )
+    quirked = zigpy_device_from_v2_quirk("_TZE204_zxkwaztm", "TS0601")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+    thermostat = ep.thermostat
+
+    assert tuya_cluster is not None
+    assert thermostat is not None
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x01\x02\x00\x02\x43\x00\x00\x20" + schedule
+    )
+    assert hdr.command_id == 2
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    expected_slots = [
+        (6, 55, 175),
+        (9, 55, 235),
+        (12, 55, 235),
+        (17, 55, 175),
+        (19, 55, 175),
+        (22, 55, 175),
+    ]
+    for slot, (hour, minute, temperature) in enumerate(expected_slots, start=1):
+        assert thermostat.get(f"schedule_slot_{slot}_hour") == hour
+        assert thermostat.get(f"schedule_slot_{slot}_minute") == minute
+        assert thermostat.get(f"schedule_slot_{slot}_temperature") == temperature
+
+    expected_weekend_slots = [(10, 0, 240), (21, 0, 180)]
+    for slot, (hour, minute, temperature) in enumerate(expected_weekend_slots, start=1):
+        assert thermostat.get(f"weekend_schedule_slot_{slot}_hour") == hour
+        assert thermostat.get(f"weekend_schedule_slot_{slot}_minute") == minute
+        assert (
+            thermostat.get(f"weekend_schedule_slot_{slot}_temperature") == temperature
+        )
+
+    result = tuya_cluster.from_cluster_data(
+        TuyaClusterData(
+            endpoint_id=1,
+            cluster_name=TuyaThermostatSchedule.ep_attribute,
+            cluster_attr="schedule_slot_1_temperature",
+            attr_value=180,
+        )
+    )
+    datapoint = result[0].datapoints[0]
+    assert datapoint.dp == 67
+    assert datapoint.data.dp_type == TuyaDPType.RAW
+    assert bytes(datapoint.data.raw) == schedule[:2] + b"\x00\xb4" + schedule[4:]
+
+    result = tuya_cluster.from_cluster_data(
+        TuyaClusterData(
+            endpoint_id=1,
+            cluster_name=TuyaThermostatSchedule.ep_attribute,
+            cluster_attr="weekend_schedule_slot_2_temperature",
+            attr_value=190,
+        )
+    )
+    datapoint = result[0].datapoints[0]
+    assert datapoint.dp == 67
+    assert datapoint.data.dp_type == TuyaDPType.RAW
+    assert bytes(datapoint.data.raw) == schedule[:-2] + b"\x00\xbe"
+
+
+async def test_zxkwaztm_queries_data_on_configuration(zigpy_device_from_v2_quirk):
+    """Test that the thermostat is queried for its current datapoints."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_zxkwaztm", "TS0601")
+
+    with mock.patch(
+        "zigpy.zcl.Cluster.request",
+        mock.AsyncMock(return_value=(foundation.Status.SUCCESS, "done")),
+    ) as request_mock:
+        await quirked.apply_custom_configuration()
+
+    query_calls = [
+        call for call in request_mock.mock_calls if call.args[1] == TUYA_QUERY_DATA
+    ]
+    assert len(query_calls) == 1
