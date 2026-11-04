@@ -281,7 +281,37 @@ class SEWindowCovering(CustomCluster, WindowCovering):
         if attrid == WindowCovering.AttributeDefs.current_position_lift_percentage.id:
             # Invert the percentage value
             value = 100 - value
+        elif attrid == WindowCovering.AttributeDefs.config_status.id:
+            value = self._with_reversed_flag(value)
+
         super()._update_attribute(attrid, value)
+
+        if attrid == WindowCovering.AttributeDefs.window_covering_mode.id:
+            config_status = self.get(WindowCovering.AttributeDefs.config_status.id)
+            if config_status is not None:
+                super()._update_attribute(
+                    WindowCovering.AttributeDefs.config_status.id,
+                    self._with_reversed_flag(config_status),
+                )
+
+    def _with_reversed_flag(self, config_status: Any) -> Any:
+        """Mirror the motor direction bit of window_covering_mode into config_status.
+
+        The device stores the reversed setting in window_covering_mode bit 0, which
+        is what ZHA's inversion switch writes. That switch reads its state from
+        config_status bit 2, which the device is not known to update. Keep the two
+        in sync so the switch shows the real setting.
+        """
+        mode = self.get(WindowCovering.AttributeDefs.window_covering_mode.id)
+        if config_status is None or mode is None:
+            return config_status
+
+        config_status = WindowCovering.ConfigStatus(config_status)
+        if WindowCovering.WindowCoveringMode.Motor_direction_reversed in (
+            WindowCovering.WindowCoveringMode(mode)
+        ):
+            return config_status | WindowCovering.ConfigStatus.Open_up_commands_reversed
+        return config_status & ~WindowCovering.ConfigStatus.Open_up_commands_reversed
 
     async def command(
         self,
