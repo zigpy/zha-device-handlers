@@ -2149,3 +2149,54 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_writes_go_to_own_device(zigpy_device_from_quirk, quirk):
+    """Writes on helper clusters are sent to the device they belong to.
+
+    Regression test for https://github.com/zigpy/zha-device-handlers/issues/5639:
+    a module-level reference to the last instantiated manufacturer cluster
+    routed writes to whichever device was added last.
+    """
+
+    valve_dev_1 = zigpy_device_from_quirk(quirk, nwk=t.NWK(0x1234))
+    valve_dev_2 = zigpy_device_from_quirk(quirk, nwk=t.NWK(0x5678))
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    request_1 = mock.patch.object(
+        valve_dev_1.endpoints[1].tuya_manufacturer.endpoint,
+        "request",
+        side_effect=async_success,
+    )
+    request_2 = mock.patch.object(
+        valve_dev_2.endpoints[1].tuya_manufacturer.endpoint,
+        "request",
+        side_effect=async_success,
+    )
+
+    with request_1 as m1, request_2 as m2:
+        # child lock switch lives on endpoint 2
+        (status,) = await valve_dev_1.endpoints[2].on_off.write_attributes(
+            {"on_off": 1}
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+        m1.assert_called_once()
+        m2.assert_not_called()
+
+        m1.reset_mock()
+        m2.reset_mock()
+
+        # online mode switch lives on endpoint 3
+        (status,) = await valve_dev_2.endpoints[3].on_off.write_attributes(
+            {"on_off": 0}
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+        m2.assert_called_once()
+        m1.assert_not_called()
