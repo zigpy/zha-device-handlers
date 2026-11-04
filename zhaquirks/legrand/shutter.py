@@ -2,7 +2,7 @@
 
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
 from zhaquirks.legrand import (
     LEGRAND,
     LegrandCluster,
@@ -17,10 +17,12 @@ from zhaquirks.legrand import (
     .replaces(LegrandIdentify)
     .replaces(LegrandShutterCluster)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.device_class == "opening",
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
     )
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.led_dark.name,
