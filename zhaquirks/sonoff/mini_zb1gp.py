@@ -1,0 +1,1117 @@
+"""SONOFF MINI-ZB1GP power monitoring sensor."""
+
+from __future__ import annotations
+
+import asyncio
+from contextlib import suppress
+from dataclasses import dataclass, replace
+from typing import Any, Final
+
+import zigpy.types as t
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    ClusterType,
+    foundation,
+)
+from zigpy.zcl.clusters.general import KeepAlive, OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
+
+from zhaquirks import LocalDataCluster
+from zhaquirks.builder import (
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    UnitOfPower,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_SINGLE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    LONG_PRESS,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
+    ZHA_SEND_EVENT,
+)
+
+FAST_SCENE_PACKET_MODIFY = 0x00
+FAST_SCENE_PROTECTION_TYPE = 0x02
+FAST_SCENE_PROTECTION_LENGTH = 20
+FAST_SCENE_VOLTAGE_ENABLE_BIT = 0x80000000
+FAST_SCENE_VOLTAGE_VALUE_MASK = 0x7FFFFFFF
+PROTECTION_CURRENT_MIN_MA = 100
+PROTECTION_CURRENT_MAX_MA = 16000
+PROTECTION_POWER_MIN_MW = 2000
+PROTECTION_POWER_MAX_MW = 3840000
+PROTECTION_VOLTAGE_MIN_MV = 85000
+PROTECTION_VOLTAGE_MAX_MV = 277000
+
+
+@dataclass(frozen=True)
+class SonoffProtectionState:
+    """Decoded SONOFF electrical protection configuration."""
+
+    scene_switch: int
+    over_current_ma: int
+    overload_mw: int
+    external_switch_only_recovery: bool
+    over_voltage_mv: int
+    over_voltage_enabled: bool
+    under_voltage_mv: int
+    under_voltage_enabled: bool
+    auto_recovery: bool
+    notification: bool
+
+
+class SonoffExternalSwitchTriggerType(t.enum8):
+    """External switch trigger type."""
+
+    Edge_trigger = 0x00
+    Pulse_trigger = 0x01
+    Normally_off_follow_trigger = 0x02
+    Normally_on_follow_trigger = 0x82
+
+
+class SonoffExternalTriggerEvent(t.enum8):
+    """External switch action reported by the MINI-ZB1GSP."""
+
+    Single_click = 0x01
+    Double_click = 0x02
+    Long_press = 0x03
+    Switch_on = 0x04
+    Switch_off = 0x05
+
+
+EXTERNAL_SWITCH = "external_switch"
+
+EXTERNAL_TRIGGER_EVENT_MAP = {
+    SonoffExternalTriggerEvent.Single_click: COMMAND_SINGLE,
+    SonoffExternalTriggerEvent.Double_click: COMMAND_DOUBLE,
+    SonoffExternalTriggerEvent.Long_press: COMMAND_HOLD,
+    SonoffExternalTriggerEvent.Switch_on: COMMAND_ON,
+    SonoffExternalTriggerEvent.Switch_off: COMMAND_OFF,
+}
+
+EXTERNAL_TRIGGER_AUTOMATION_MAP = {
+    COMMAND_SINGLE: SHORT_PRESS,
+    COMMAND_DOUBLE: DOUBLE_PRESS,
+    COMMAND_HOLD: LONG_PRESS,
+    COMMAND_ON: TURN_ON,
+    COMMAND_OFF: TURN_OFF,
+}
+
+
+class SonoffMiniZb1gpCluster(CustomCluster):
+    """SONOFF/eWeLink manufacturer cluster for MINI-ZB1GP measurements."""
+
+    cluster_id = 0xFC11
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        fault_code = ZCLAttributeDef(
+            id=0x0010,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        turbo_mode = ZCLAttributeDef(
+            id=0x0012,
+            type=t.int16s,
+            manufacturer_code=None,
+        )
+        external_trigger_mode = ZCLAttributeDef(
+            id=0x0016,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=foundation.DataTypeId.uint8,
+            manufacturer_code=None,
+        )
+        detach_relay = ZCLAttributeDef(
+            id=0x0019,
+            type=t.bitmap8,
+            manufacturer_code=None,
+        )
+        external_trigger_event = ZCLAttributeDef(
+            id=0x0028,
+            type=SonoffExternalTriggerEvent,
+            manufacturer_code=None,
+        )
+        current = ZCLAttributeDef(
+            id=0x7004,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        voltage = ZCLAttributeDef(
+            id=0x7005,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        power = ZCLAttributeDef(
+            id=0x7006,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        energy_today = ZCLAttributeDef(
+            id=0x7009,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        energy_month = ZCLAttributeDef(
+            id=0x700A,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        energy_yesterday = ZCLAttributeDef(
+            id=0x700B,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        protection_configuration = ZCLAttributeDef(
+            id=0x7016,
+            type=foundation.Array,
+            manufacturer_code=None,
+        )
+        output_energy_today = ZCLAttributeDef(
+            id=0x7018,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        output_energy_month = ZCLAttributeDef(
+            id=0x7019,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        daily_run_time = ZCLAttributeDef(
+            id=0x701C,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        total_run_time = ZCLAttributeDef(
+            id=0x701D,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        total_energy = ZCLAttributeDef(
+            id=0x701E,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        total_output_energy = ZCLAttributeDef(
+            id=0x701F,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        voltage_frequency = ZCLAttributeDef(
+            id=0x7029,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+
+    energy_attribute_ids = frozenset(
+        (
+            AttributeDefs.energy_today.id,
+            AttributeDefs.energy_month.id,
+            AttributeDefs.output_energy_today.id,
+            AttributeDefs.output_energy_month.id,
+            AttributeDefs.total_energy.id,
+            AttributeDefs.total_output_energy.id,
+        )
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Listen for protection reads and external switch reports."""
+
+        super().__init__(*args, **kwargs)
+        self._protection_state: SonoffProtectionState | None = None
+        self._protection_read_revision = 0
+        self.on_event(AttributeReadEvent.event_type, self._handle_protection_change)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_protection_change)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_protection_change)
+        self.on_event(AttributeWrittenEvent.event_type, self._handle_protection_change)
+        self.on_event(
+            AttributeReportedEvent.event_type, self._handle_external_trigger_event
+        )
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Any,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Discard the known all-zero startup energy report."""
+
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            reported_energy = {
+                report.attrid: report.value.value
+                for report in args.attribute_reports
+                if report.attrid in self.energy_attribute_ids
+            }
+            has_cached_nonzero_energy = any(
+                self._attr_cache.get(attrid, 0) != 0
+                for attrid in self.energy_attribute_ids
+            )
+
+            if (
+                reported_energy.keys() == self.energy_attribute_ids
+                and all(value == 0 for value in reported_energy.values())
+                and has_cached_nonzero_energy
+            ):
+                args = args.replace(
+                    attribute_reports=[
+                        report
+                        for report in args.attribute_reports
+                        if report.attrid not in self.energy_attribute_ids
+                    ]
+                )
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
+    def _handle_protection_change(
+        self,
+        event: AttributeReadEvent
+        | AttributeReportedEvent
+        | AttributeUpdatedEvent
+        | AttributeWrittenEvent,
+    ) -> None:
+        """Decode protection changes and synchronize the local config cluster."""
+
+        if event.attribute_id != self.AttributeDefs.protection_configuration.id:
+            return
+        if isinstance(event, AttributeWrittenEvent) and event.status != Status.SUCCESS:
+            return
+
+        values = [event.value]
+        if isinstance(event, AttributeReadEvent):
+            values.append(event.raw_value)
+
+        for value in values:
+            state = decode_protection_state(value)
+            if state is None:
+                continue
+
+            if isinstance(event, AttributeReadEvent) and value is event.raw_value:
+                payload = fast_scene_payload(value)
+                if payload is not None:
+                    # Zigpy's app database cannot persist Array or LVList values.
+                    self._update_attribute(event.attribute_id, payload)
+
+            self._update_protection_state(state)
+            if isinstance(event, AttributeReadEvent):
+                self._protection_read_revision += 1
+            return
+
+    def _update_protection_state(self, state: SonoffProtectionState) -> None:
+        """Store decoded protection state and update the local cluster if present."""
+
+        self._protection_state = state
+        if hasattr(self.endpoint, "sonoff_protection_config"):
+            self.endpoint.sonoff_protection_config.update_protection_state(state)
+
+    def _handle_external_trigger_event(self, event: AttributeReportedEvent) -> None:
+        """Emit a ZHA event for an external switch action report."""
+
+        if event.attribute_id != self.AttributeDefs.external_trigger_event.id:
+            return
+
+        action = EXTERNAL_TRIGGER_EVENT_MAP.get(event.value)
+        if action is not None:
+            self.listener_event(ZHA_SEND_EVENT, action, {"value": int(event.value)})
+
+    async def apply_custom_configuration(self, *args, **kwargs) -> None:
+        """Read the composite protection configuration during setup."""
+
+        attribute = self.AttributeDefs.protection_configuration
+        success = {}
+        with suppress(Exception):  # pylint: disable=broad-exception-caught
+            success, _ = await self.read_attributes([attribute.id], allow_cache=False)
+
+        state = decode_protection_state(success.get(attribute.id))
+        if state is None:
+            state = decode_protection_state(self.get(attribute.id))
+        if state is not None:
+            self._update_protection_state(state)
+
+
+def signed_int32_milli_to_value(value: int) -> float:
+    """Convert SONOFF signed 32-bit millivalue encoded in a uint32."""
+
+    if value & 0x80000000:
+        value -= 0x100000000
+    return value / 1000
+
+
+def milli_to_value(value: int) -> float:
+    """Convert SONOFF unsigned millivalue to a native unit."""
+
+    return value / 1000
+
+
+def centi_to_value(value: int) -> float:
+    """Convert a SONOFF centivalue to its native unit."""
+
+    return value / 100
+
+
+def fast_scene_payload(value: Any) -> bytes | None:
+    """Extract a SONOFF fast-scene payload from its ZCL array representation."""
+
+    if isinstance(value, foundation.Array):
+        if value.value is None:
+            return None
+        payload = bytes(value.value)
+    elif isinstance(value, (bytes, bytearray, list, t.LVList)):
+        payload = bytes(value)
+        if len(payload) >= 3 and payload[0] == foundation.DataTypeId.uint8:
+            length = int.from_bytes(payload[1:3], "little")
+            payload = payload[3 : 3 + length]
+    else:
+        return None
+
+    if len(payload) < 3:
+        return None
+
+    return payload
+
+
+def _protection_data(value: Any) -> bytes | None:
+    """Extract the protection TLV from a SONOFF fast-scene array."""
+
+    payload = fast_scene_payload(value)
+    if payload is None:
+        return None
+
+    index = 3
+    while index + 2 <= len(payload):
+        scene_type = payload[index]
+        scene_length = payload[index + 1]
+        index += 2
+        if index + scene_length > len(payload):
+            return None
+        scene_data = payload[index : index + scene_length]
+        index += scene_length
+        if scene_type == 0x02:
+            return scene_data if scene_length == 20 else None
+
+    return None
+
+
+def decode_protection_state(value: Any) -> SonoffProtectionState | None:
+    """Decode the electrical protection TLV from a fast-scene payload."""
+
+    data = _protection_data(value)
+    if data is None:
+        return None
+
+    over_voltage = int.from_bytes(data[10:14], "little")
+    under_voltage = int.from_bytes(data[14:18], "little")
+    return SonoffProtectionState(
+        scene_switch=data[0],
+        over_current_ma=int.from_bytes(data[1:5], "little"),
+        overload_mw=int.from_bytes(data[5:9], "little"),
+        external_switch_only_recovery=bool(data[9]),
+        over_voltage_mv=over_voltage & FAST_SCENE_VOLTAGE_VALUE_MASK,
+        over_voltage_enabled=bool(over_voltage & FAST_SCENE_VOLTAGE_ENABLE_BIT),
+        under_voltage_mv=under_voltage & FAST_SCENE_VOLTAGE_VALUE_MASK,
+        under_voltage_enabled=bool(under_voltage & FAST_SCENE_VOLTAGE_ENABLE_BIT),
+        auto_recovery=bool(data[18]),
+        notification=bool(data[19]),
+    )
+
+
+def encode_protection_modify_array(
+    state: SonoffProtectionState,
+) -> foundation.Array:
+    """Encode a type-2 fast-scene modify packet for electrical protection."""
+
+    over_voltage = state.over_voltage_mv & FAST_SCENE_VOLTAGE_VALUE_MASK
+    if state.over_voltage_enabled:
+        over_voltage |= FAST_SCENE_VOLTAGE_ENABLE_BIT
+    under_voltage = state.under_voltage_mv & FAST_SCENE_VOLTAGE_VALUE_MASK
+    if state.under_voltage_enabled:
+        under_voltage |= FAST_SCENE_VOLTAGE_ENABLE_BIT
+
+    protection = bytes(
+        [state.scene_switch]
+        + list(state.over_current_ma.to_bytes(4, "little"))
+        + list(state.overload_mw.to_bytes(4, "little"))
+        + [int(state.external_switch_only_recovery)]
+        + list(over_voltage.to_bytes(4, "little"))
+        + list(under_voltage.to_bytes(4, "little"))
+        + [int(state.auto_recovery), int(state.notification)]
+    )
+    payload = (
+        bytes(
+            [
+                FAST_SCENE_PACKET_MODIFY,
+                0x01,
+                0x01,
+                FAST_SCENE_PROTECTION_TYPE,
+                FAST_SCENE_PROTECTION_LENGTH,
+            ]
+        )
+        + protection
+    )
+    return foundation.Array(
+        type=foundation.DataTypeId.uint8,
+        value=t.LVList[t.uint8_t, t.uint16_t](payload),
+    )
+
+
+class SonoffProtectionConfigCluster(LocalDataCluster):
+    """Local attributes which proxy the composite protection configuration."""
+
+    cluster_id = 0xFBFD
+    ep_attribute = "sonoff_protection_config"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Local protection configuration attributes."""
+
+        protection_over_current: Final = ZCLAttributeDef(id=0x0010, type=t.uint32_t)
+        protection_overload: Final = ZCLAttributeDef(id=0x0011, type=t.uint32_t)
+        protection_external_switch_restore: Final = ZCLAttributeDef(
+            id=0x0012, type=t.Bool
+        )
+        protection_over_voltage: Final = ZCLAttributeDef(id=0x0013, type=t.uint32_t)
+        protection_over_voltage_enabled: Final = ZCLAttributeDef(id=0x0014, type=t.Bool)
+        protection_under_voltage: Final = ZCLAttributeDef(id=0x0015, type=t.uint32_t)
+        protection_under_voltage_enabled: Final = ZCLAttributeDef(
+            id=0x0016, type=t.Bool
+        )
+        protection_auto_recover: Final = ZCLAttributeDef(id=0x0017, type=t.Bool)
+        protection_notification: Final = ZCLAttributeDef(id=0x0018, type=t.Bool)
+
+    _STATE_FIELDS = {
+        AttributeDefs.protection_over_current.id: "over_current_ma",
+        AttributeDefs.protection_overload.id: "overload_mw",
+        AttributeDefs.protection_external_switch_restore.id: (
+            "external_switch_only_recovery"
+        ),
+        AttributeDefs.protection_over_voltage.id: "over_voltage_mv",
+        AttributeDefs.protection_over_voltage_enabled.id: "over_voltage_enabled",
+        AttributeDefs.protection_under_voltage.id: "under_voltage_mv",
+        AttributeDefs.protection_under_voltage_enabled.id: "under_voltage_enabled",
+        AttributeDefs.protection_auto_recover.id: "auto_recovery",
+    }
+    _NUMERIC_RANGES = {
+        AttributeDefs.protection_over_current.id: (
+            PROTECTION_CURRENT_MIN_MA,
+            PROTECTION_CURRENT_MAX_MA,
+        ),
+        AttributeDefs.protection_overload.id: (
+            PROTECTION_POWER_MIN_MW,
+            PROTECTION_POWER_MAX_MW,
+        ),
+        AttributeDefs.protection_over_voltage.id: (
+            PROTECTION_VOLTAGE_MIN_MV,
+            PROTECTION_VOLTAGE_MAX_MV,
+        ),
+        AttributeDefs.protection_under_voltage.id: (
+            PROTECTION_VOLTAGE_MIN_MV,
+            PROTECTION_VOLTAGE_MAX_MV,
+        ),
+    }
+    _BOOLEAN_ATTRIBUTES = frozenset(_STATE_FIELDS) - frozenset(_NUMERIC_RANGES)
+    _GSP_ONLY_ATTRIBUTES = frozenset(
+        (
+            AttributeDefs.protection_external_switch_restore.id,
+            AttributeDefs.protection_auto_recover.id,
+        )
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Initialize an empty state and serialize writes to the aggregate."""
+
+        super().__init__(*args, **kwargs)
+        self._protection_state: SonoffProtectionState | None = None
+        self._write_lock = asyncio.Lock()
+
+    def update_protection_state(self, state: SonoffProtectionState) -> None:
+        """Update local attributes from a decoded protection state."""
+
+        self._protection_state = state
+        updates = {
+            self.AttributeDefs.protection_over_current.id: state.over_current_ma,
+            self.AttributeDefs.protection_overload.id: state.overload_mw,
+            self.AttributeDefs.protection_external_switch_restore.id: (
+                state.external_switch_only_recovery
+            ),
+            self.AttributeDefs.protection_over_voltage.id: state.over_voltage_mv,
+            self.AttributeDefs.protection_over_voltage_enabled.id: (
+                state.over_voltage_enabled
+            ),
+            self.AttributeDefs.protection_under_voltage.id: state.under_voltage_mv,
+            self.AttributeDefs.protection_under_voltage_enabled.id: (
+                state.under_voltage_enabled
+            ),
+            self.AttributeDefs.protection_auto_recover.id: state.auto_recovery,
+            self.AttributeDefs.protection_notification.id: state.notification,
+        }
+        for attr_id, value in updates.items():
+            self._update_attribute(attr_id, value)
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Get a local value, initializing it from the parent cluster cache."""
+
+        sentinel = object()
+        value = super().get(key, sentinel)
+        if value is not sentinel:
+            return value
+
+        real_cluster = self.endpoint.in_clusters.get(SonoffMiniZb1gpCluster.cluster_id)
+        if real_cluster is not None:
+            attribute = SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration
+            state = real_cluster._protection_state or decode_protection_state(
+                real_cluster.get(attribute.id)
+            )
+            if state is not None:
+                real_cluster._update_protection_state(state)
+
+        return super().get(key, default)
+
+    @staticmethod
+    def _write_result(
+        status: Status, attribute_ids: list[int]
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Build a local write response for the requested attributes."""
+
+        return [
+            [
+                foundation.WriteAttributesStatusRecord(status=status, attrid=attr_id)
+                for attr_id in attribute_ids
+            ]
+        ]
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Merge local writes into a fresh type-2 protection modify packet."""
+
+        attribute_values = {
+            self.find_attribute(attribute).id: value
+            for attribute, value in attributes.items()
+        }
+        attribute_ids = list(attribute_values)
+        if not attribute_ids:
+            return [[]]
+
+        if any(attr_id not in self._STATE_FIELDS for attr_id in attribute_ids):
+            return self._write_result(Status.READ_ONLY, attribute_ids)
+        if (
+            self.endpoint.device.model != "MINI-ZB1GSP"
+            and self._GSP_ONLY_ATTRIBUTES.intersection(attribute_ids)
+        ):
+            return self._write_result(Status.READ_ONLY, attribute_ids)
+
+        changes: dict[str, int | bool] = {}
+        for attr_id, value in attribute_values.items():
+            field = self._STATE_FIELDS[attr_id]
+            if attr_id in self._NUMERIC_RANGES:
+                value = int(value)
+                minimum, maximum = self._NUMERIC_RANGES[attr_id]
+                if not minimum <= value <= maximum:
+                    return self._write_result(Status.INVALID_VALUE, attribute_ids)
+            elif attr_id in self._BOOLEAN_ATTRIBUTES:
+                if value not in (False, True, 0, 1):
+                    return self._write_result(Status.INVALID_VALUE, attribute_ids)
+                value = bool(value)
+            changes[field] = value
+
+        async with self._write_lock:
+            real_cluster = self.endpoint.in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+            protection_attr = (
+                SonoffMiniZb1gpCluster.AttributeDefs.protection_configuration
+            )
+            read_revision = real_cluster._protection_read_revision
+            try:
+                success, _ = await real_cluster.read_attributes(
+                    [protection_attr.id], allow_cache=False
+                )
+            except Exception:  # pylint: disable=broad-except
+                return self._write_result(Status.FAILURE, attribute_ids)
+
+            if protection_attr.id not in success:
+                return self._write_result(Status.FAILURE, attribute_ids)
+            state = decode_protection_state(success[protection_attr.id])
+            if state is None and real_cluster._protection_read_revision > read_revision:
+                state = real_cluster._protection_state
+            if state is None:
+                return self._write_result(Status.FAILURE, attribute_ids)
+
+            new_state = replace(state, **changes)
+            try:
+                result = await real_cluster.write_attributes(
+                    {protection_attr.id: encode_protection_modify_array(new_state)},
+                    **kwargs,
+                )
+            except Exception:  # pylint: disable=broad-except
+                return self._write_result(Status.FAILURE, attribute_ids)
+            if not _write_succeeded(result):
+                return result
+
+            self.update_protection_state(new_state)
+            with suppress(Exception):  # pylint: disable=broad-exception-caught
+                await real_cluster.read_attributes(
+                    [protection_attr.id], allow_cache=False
+                )
+            return result
+
+
+def _write_succeeded(result: list) -> bool:
+    """Return whether every record in a Zigpy write response succeeded."""
+
+    try:
+        records = result[0]
+    except (IndexError, TypeError):
+        return False
+    return bool(records) and all(record.status == Status.SUCCESS for record in records)
+
+
+def fault_code_bit_is_set(value: int, bit: int) -> bool:
+    """Return whether a MINI-ZB1GP fault bit is set."""
+
+    fault_type = (value >> 24) & 0xFF
+    fault_length = (value >> 16) & 0xFF
+    if fault_type != 0x07 or fault_length != 0x02:
+        return False
+
+    return bool((value & 0xFFFF) & bit)
+
+
+def metering_communication_error(value: int) -> bool:
+    """Return whether the metering communication error fault bit is set."""
+
+    return fault_code_bit_is_set(value, 0b010)
+
+
+def overheat_protection(value: int) -> bool:
+    """Return whether the overheat protection fault bit is set."""
+
+    return fault_code_bit_is_set(value, 0b001)
+
+
+def overload_protection(value: int) -> bool:
+    """Return whether the overload protection fault bit is set."""
+
+    return fault_code_bit_is_set(value, 0b100)
+
+
+power_reporting = ReportingConfig(
+    min_interval=5,
+    max_interval=900,
+    reportable_change=100,
+)
+
+current_reporting = ReportingConfig(
+    min_interval=5,
+    max_interval=900,
+    reportable_change=10,
+)
+
+voltage_reporting = ReportingConfig(
+    min_interval=5,
+    max_interval=900,
+    reportable_change=100,
+)
+
+energy_reporting = ReportingConfig(
+    min_interval=60,
+    max_interval=3600,
+    reportable_change=1,
+)
+
+fault_reporting = ReportingConfig(
+    min_interval=5,
+    max_interval=900,
+    reportable_change=1,
+)
+
+
+common_quirk = (
+    QuirkBuilder()
+    .replaces(SonoffMiniZb1gpCluster)
+    # The devices read the coordinator's KeepAlive server without advertising the
+    # client cluster. Unanswered reads can make them rejoin or leave the network.
+    .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
+    # The standard metering clusters expose sentinel values; the real
+    # measurements are in the eWeLink manufacturer cluster 0xFC11 below.
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=Metering.cluster_id)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=ElectricalMeasurement.cluster_id
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.power.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=signed_int32_milli_to_value,
+        suggested_display_precision=1,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfPower.WATT,
+        reporting_config=power_reporting,
+        unique_id_suffix="2820-active_power",
+        translation_key="power",
+        fallback_name="Power",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.current.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        reporting_config=current_reporting,
+        unique_id_suffix="2820-rms_current",
+        translation_key="current",
+        fallback_name="Current",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.voltage.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=1,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        reporting_config=voltage_reporting,
+        unique_id_suffix="2820-rms_voltage",
+        translation_key="voltage",
+        fallback_name="Voltage",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.energy_today.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="energy_today",
+        translation_key="energy_today",
+        fallback_name="Energy today",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.energy_month.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="energy_month",
+        translation_key="energy_month",
+        fallback_name="Energy this month",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.output_energy_today.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="output_energy_today",
+        translation_key="output_energy_today",
+        fallback_name="Export energy today",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.output_energy_month.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="output_energy_month",
+        translation_key="output_energy_month",
+        fallback_name="Export energy this month",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.total_energy.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="1794-summation_delivered",
+        translation_key="total_energy",
+        fallback_name="Total energy",
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.total_output_energy.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=milli_to_value,
+        suggested_display_precision=3,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        reporting_config=energy_reporting,
+        unique_id_suffix="total_output_energy",
+        translation_key="total_output_energy",
+        fallback_name="Total export energy",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.daily_run_time.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfTime.SECONDS,
+        reporting_config=energy_reporting,
+        translation_key="daily_run_time",
+        fallback_name="Daily run time",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.total_run_time.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfTime.SECONDS,
+        reporting_config=energy_reporting,
+        translation_key="total_run_time",
+        fallback_name="Total run time",
+        initially_disabled=True,
+    )
+    .sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.voltage_frequency.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=centi_to_value,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfFrequency.HERTZ,
+        reporting_config=voltage_reporting,
+        translation_key="voltage_frequency",
+        fallback_name="Voltage frequency",
+        initially_disabled=True,
+    )
+    .binary_sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.fault_code.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=metering_communication_error,
+        reporting_config=fault_reporting,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="metering_communication_error",
+        translation_key="metering_communication_error",
+        fallback_name="Metering communication error",
+    )
+    .binary_sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.fault_code.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=overheat_protection,
+        reporting_config=fault_reporting,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="overheat_protection",
+        translation_key="overheat_protection",
+        fallback_name="Overheat protection error",
+    )
+    .binary_sensor(
+        SonoffMiniZb1gpCluster.AttributeDefs.fault_code.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        attribute_converter=overload_protection,
+        reporting_config=fault_reporting,
+        entity_type=EntityType.DIAGNOSTIC,
+        unique_id_suffix="overload_protection",
+        translation_key="overload_protection",
+        fallback_name="Overload protection error",
+    )
+    .switch(
+        SonoffMiniZb1gpCluster.AttributeDefs.network_led.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        translation_key="network_led",
+        fallback_name="Network LED",
+    )
+    .switch(
+        SonoffMiniZb1gpCluster.AttributeDefs.turbo_mode.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        off_value=9,
+        on_value=20,
+        translation_key="turbo_mode",
+        fallback_name="Turbo mode",
+    )
+)
+
+
+protection_quirk = (
+    common_quirk.clone()
+    .adds(SonoffProtectionConfigCluster)
+    .number(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_over_current.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        min_value=PROTECTION_CURRENT_MIN_MA / 1000,
+        max_value=PROTECTION_CURRENT_MAX_MA / 1000,
+        step=0.001,
+        multiplier=0.001,
+        unit=UnitOfElectricCurrent.AMPERE,
+        mode="box",
+        device_class=NumberDeviceClass.CURRENT,
+        translation_key="protection_over_current",
+        fallback_name="Protection over-current threshold",
+    )
+    .number(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_overload.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        min_value=PROTECTION_POWER_MIN_MW / 1000,
+        max_value=PROTECTION_POWER_MAX_MW / 1000,
+        step=0.001,
+        multiplier=0.001,
+        unit=UnitOfPower.WATT,
+        mode="box",
+        device_class=NumberDeviceClass.POWER,
+        translation_key="protection_overload",
+        fallback_name="Protection overload threshold",
+    )
+    .number(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_over_voltage.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        min_value=PROTECTION_VOLTAGE_MIN_MV / 1000,
+        max_value=PROTECTION_VOLTAGE_MAX_MV / 1000,
+        step=0.001,
+        multiplier=0.001,
+        unit=UnitOfElectricPotential.VOLT,
+        mode="box",
+        device_class=NumberDeviceClass.VOLTAGE,
+        translation_key="protection_over_voltage",
+        fallback_name="Protection over-voltage threshold",
+    )
+    .number(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_under_voltage.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        min_value=PROTECTION_VOLTAGE_MIN_MV / 1000,
+        max_value=PROTECTION_VOLTAGE_MAX_MV / 1000,
+        step=0.001,
+        multiplier=0.001,
+        unit=UnitOfElectricPotential.VOLT,
+        mode="box",
+        device_class=NumberDeviceClass.VOLTAGE,
+        translation_key="protection_under_voltage",
+        fallback_name="Protection under-voltage threshold",
+    )
+    .switch(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_over_voltage_enabled.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="protection_over_voltage_enabled",
+        fallback_name="Over-voltage protection enabled",
+    )
+    .switch(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_under_voltage_enabled.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="protection_under_voltage_enabled",
+        fallback_name="Under-voltage protection enabled",
+    )
+    .binary_sensor(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_notification.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="protection_notification",
+        fallback_name="Protection notification",
+        initially_disabled=True,
+    )
+)
+
+(
+    protection_quirk.clone()
+    .applies_to("SONOFF", "MINI-ZB1GP")
+    # This model is a monitor, so its OnOff cluster is not a relay entity.
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
+    .binary_sensor(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_external_switch_restore.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="protection_external_switch_restore",
+        fallback_name="Protection external switch restore",
+        initially_disabled=True,
+    )
+    .binary_sensor(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_auto_recover.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="protection_auto_recover",
+        fallback_name="Protection auto recover",
+        initially_disabled=True,
+    )
+    .add_to_registry()
+)
+
+(
+    protection_quirk.clone()
+    .applies_to("SONOFF", "MINI-ZB1GSP")
+    .enum(
+        SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_mode.name,
+        SonoffExternalSwitchTriggerType,
+        SonoffMiniZb1gpCluster.cluster_id,
+        translation_key="external_trigger_mode",
+        fallback_name="External trigger mode",
+    )
+    .switch(
+        SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        off_value=0,
+        on_value=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="detach_relay",
+        fallback_name="Detach relay",
+    )
+    .switch(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_external_switch_restore.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="protection_external_switch_restore",
+        fallback_name="Protection external switch restore",
+    )
+    .switch(
+        SonoffProtectionConfigCluster.AttributeDefs.protection_auto_recover.name,
+        SonoffProtectionConfigCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="protection_auto_recover",
+        fallback_name="Protection auto recover",
+    )
+    .device_automation_triggers(
+        {
+            (trigger, EXTERNAL_SWITCH): {
+                COMMAND: command,
+                ENDPOINT_ID: 1,
+                CLUSTER_ID: SonoffMiniZb1gpCluster.cluster_id,
+            }
+            for command, trigger in EXTERNAL_TRIGGER_AUTOMATION_MAP.items()
+        }
+    )
+    .add_to_registry()
+)
