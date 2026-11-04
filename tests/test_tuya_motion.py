@@ -1,16 +1,20 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import EntityPlatform
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_motion import TuyaPresenceStateV03
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
@@ -20,7 +24,6 @@ ZCL_TUYA_MOTION_V5 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x04"  # DP 1, motion is 0
 ZCL_TUYA_MOTION_V6 = b"\tL\x01\x00\x05\x01\x04\x00\x01\x02"  # DP 1, enum
 ZCL_TUYA_MOTION_V7 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x00"  # DP 1, Inv
 ZCL_TUYA_MOTION_V8 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x00"  # DP 101, Inv
-ZCL_TUYA_MOTION_V9 = b"\tL\x01\x00\x05\x68\x01\x00\x01\x01"  # DP 104
 
 
 zhaquirks.setup()
@@ -65,10 +68,13 @@ zhaquirks.setup()
         ("_TZE204_uxllnywp", "TS0601", ZCL_TUYA_MOTION_V5),
         ("_TZE200_gjldowol", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_2aaelwxk", "TS0225", ZCL_TUYA_MOTION),
+        ("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)", ZCL_TUYA_MOTION),
+        ("HOBEIAN", "CK-BL702-MWS-01(7016)", ZCL_TUYA_MOTION),
         ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),
-        ("_TZE204_gkfbdvyx", "TS0601", ZCL_TUYA_MOTION_V9),
+        ("_TZE204_gkfbdvyx", "TS0601", ZCL_TUYA_MOTION_V6),
+        ("_TZE200_gkfbdvyx", "TS0601", ZCL_TUYA_MOTION_V6),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
@@ -174,3 +180,93 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+def _entity_metadata(quirked_device):
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    return {
+        m.resolved_unique_id_suffix: m
+        for m in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+
+
+@pytest.mark.parametrize("manufacturer", ["_TZE200_gkfbdvyx", "_TZE204_gkfbdvyx"])
+@pytest.mark.parametrize(
+    "raw,occupied,state",
+    [
+        (0, False, TuyaPresenceStateV03.Unoccupied),
+        (1, True, TuyaPresenceStateV03.Presence),
+        (2, True, TuyaPresenceStateV03.Movement),
+    ],
+)
+async def test_tuya_zy_m100_24gv3_presence(
+    zigpy_device_from_v2_quirk, manufacturer, raw, occupied, state
+):
+    """Test the ZY-M100-24GV3 occupancy and presence state (DP 1)."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    ep = quirked_device.endpoints[1]
+
+    msg = b"\tL\x01\x00\x05\x01\x04\x00\x01" + bytes([raw])
+    hdr, data = ep.tuya_manufacturer.deserialize(msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+    assert ep.occupancy.get("occupancy") == occupied
+    assert ep.tuya_manufacturer.get("presence") is state
+
+    # DP 104 (timed states) leaves occupancy alone
+    msg = b"\tL\x01\x00\x05\x68\x04\x00\x01\x07"
+    hdr, data = ep.tuya_manufacturer.deserialize(msg)
+    ep.tuya_manufacturer.handle_get_data(data.data)
+    assert ep.occupancy.get("occupancy") == occupied
+
+
+@pytest.mark.parametrize("manufacturer", ["_TZE200_gkfbdvyx", "_TZE204_gkfbdvyx"])
+async def test_tuya_zy_m100_24gv3_entities(zigpy_device_from_v2_quirk, manufacturer):
+    """Test the ZY-M100-24GV3 scaling and ranges."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+    metadata = _entity_metadata(quirked_device)
+
+    # Devices that used to match the ya4ft0w4 quirk keep their entities
+    ya4ft0w4 = _entity_metadata(
+        zigpy_device_from_v2_quirk("_TZE200_ya4ft0w4", "TS0601")
+    )
+    assert set(metadata) == set(ya4ft0w4) | {"presence"}
+    assert metadata["presence"].entity_platform == EntityPlatform.SENSOR
+    assert metadata["presence"].enum is TuyaPresenceStateV03
+
+    # DP 9 is in decimetres
+    assert metadata["distance"].multiplier == 0.1
+
+    numbers = {
+        name: (m.min, m.max, m.step, m.multiplier)
+        for name, m in metadata.items()
+        if m.entity_platform == EntityPlatform.NUMBER
+    }
+    assert numbers == {
+        "move_sensitivity": (1, 10, 1, None),
+        "detection_distance_min": (0, 6, 0.5, 0.01),
+        "detection_distance_max": (0.5, 9, 0.5, 0.01),
+        "presence_sensitivity": (1, 10, 1, None),
+        "presence_timeout": (5, 15000, 5, None),
+    }
+
+    # The factory maximum range of 5 m is a valid step
+    msg = b"\tL\x01\x00\x05\x04\x02\x00\x04\x00\x00\x01\xf4"
+    hdr, data = tuya_cluster.deserialize(msg)
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert tuya_cluster.get("detection_distance_max") == 500
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"detection_distance_max": 550})
+        await wait_for_zigpy_tasks()
+
+        assert m1.call_args.kwargs["data"] == (
+            b"\x01\x01\x00\x00\x01\x04\x02\x00\x04\x00\x00\x02\x26"
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]

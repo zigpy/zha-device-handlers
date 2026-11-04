@@ -2,7 +2,6 @@
 
 from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -25,6 +24,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.innr import INNR
+from zhaquirks.legacy import CustomDevice
 
 
 class RS228T(CustomDevice):

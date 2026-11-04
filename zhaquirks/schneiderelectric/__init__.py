@@ -4,12 +4,13 @@ from collections.abc import Coroutine
 from typing import Any, Final, Union
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, OnOff
 from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.clusters import CustomCluster
 
 SE_MANUF_NAME = "Schneider Electric"
 SE_MANUF_ID = 4190

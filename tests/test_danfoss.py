@@ -1,14 +1,15 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
 
+from typing import cast
 from unittest import mock
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
 import zhaquirks
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
 zhaquirks.setup()
@@ -108,20 +109,16 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
     with patch_danfoss_trv_write:
         # data should be written to trv, but reach thermostat
-        success, fail = await danfoss_thermostat_cluster.write_attributes(
+        await danfoss_thermostat_cluster.write_attributes(
             {"external_open_window_detected": False}
         )
-        assert success
-        assert not fail
         assert not danfoss_thermostat_cluster._attr_cache[0x4003]
 
         with patch_danfoss_setpoint:
             # data should be received from danfoss_trv
-            success, fail = await danfoss_thermostat_cluster.write_attributes(
+            await danfoss_thermostat_cluster.write_attributes(
                 {"occupied_heating_setpoint": 6}
             )
-            assert success
-            assert not fail
             assert danfoss_thermostat_cluster._attr_cache[0x0012] == 6
             assert operation == 0x01
             assert setting == 6
@@ -130,11 +127,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
                 5  # min_limit is present normally
             )
 
-            success, fail = await danfoss_thermostat_cluster.write_attributes(
-                {"system_mode": 0x00}
-            )
-            assert success
-            assert not fail
+            await danfoss_thermostat_cluster.write_attributes({"system_mode": 0x00})
             assert danfoss_thermostat_cluster._attr_cache[0x001C] == 0x04
 
             # setpoint to min_limit, when system_mode to off
@@ -197,7 +190,10 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
         await danfoss_thermostat_cluster._configure_reporting([one, two])
         assert reports == [two]
 
-    reports = None
+    # typed wide so mypy doesn't narrow to None (the mocked _read_attributes
+    # side effect reassigns this to a list), which would flag the assert below
+    # as comparing an always-None value and mark later code unreachable
+    reports = cast(list | None, None)
 
     def mock_read_attributes(attrs, *args, **kwargs):
         nonlocal reports

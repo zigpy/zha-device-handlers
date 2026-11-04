@@ -6,7 +6,6 @@ from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -21,6 +20,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 
@@ -60,7 +60,7 @@ class Illumination(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             }
@@ -94,7 +94,7 @@ class IlluminationT1(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],

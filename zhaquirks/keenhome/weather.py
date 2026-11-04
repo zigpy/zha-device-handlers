@@ -2,7 +2,6 @@
 
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,6 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import LUMI
 
 

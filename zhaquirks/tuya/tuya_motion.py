@@ -3,16 +3,28 @@
 import asyncio
 from typing import Any
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, UnitOfLength, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks import MotionWithReset
+from zhaquirks.builder import (
+    LIGHT_LUX,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfLength,
+    UnitOfTime,
+)
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -391,7 +403,6 @@ base_tuya_motion = (
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_laokfqwu", "TS0601")
-    .applies_to("_TZE200_clrdrnya", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -417,9 +428,10 @@ base_tuya_motion = (
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        min_value=0.1,
+        min_value=0,
         max_value=10,
         step=0.1,
+        multiplier=0.1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
     )
@@ -432,6 +444,7 @@ base_tuya_motion = (
         min_value=5,
         max_value=1500,
         step=5,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -700,6 +713,7 @@ base_tuya_motion = (
     base_tuya_motion.clone()
     .applies_to("_TZE204_sbyx0lm6", "TS0601")
     .applies_to("_TZE204_clrdrnya", "TS0601")
+    .applies_to("_TZE200_clrdrnya", "TS0601")
     .applies_to("_TZE204_dtzziy1e", "TS0601")
     .applies_to("_TZE204_iaeejhvf", "TS0601")
     .applies_to("_TZE204_mtoaryre", "TS0601")
@@ -1258,6 +1272,7 @@ base_tuya_motion = (
         min_value=1,
         max_value=1500,
         step=1,
+        multiplier=0.1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
@@ -1330,6 +1345,8 @@ base_tuya_motion = (
 # Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
+    .applies_to("_TZE200_crq3r3la", "CK-BL702-MWS-01(7016)")
+    .applies_to("HOBEIAN", "CK-BL702-MWS-01(7016)")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -1619,6 +1636,17 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+# Tuya PIR motion sensor, SNZB-03
+(
+    TuyaQuirkBuilder("_TZ3000_bb6xaihh", "SNZB-03")
+    .applies_to("_TZ3040_bb6xaihh", "TS0202")
+    .replaces(MotionWithReset)
+    .replaces(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
 
 # Tuya mmWave radar 24GHz, _TZE204_gkfbdvyx
 # Loginovo Smart Human Presence Sensor M100, Model C3007
@@ -1629,25 +1657,41 @@ base_tuya_motion = (
     # 0: presence="none", state=false
     # 1: presence="presence" state=true triggers only with presence sensitivity on low
     # 2: presence="move" state=true
-    .tuya_enum(
+    # DP 104 is not occupancy: it holds timed states (nobody for 5 min, ...)
+    .tuya_dp_multi(
+        dp_id=1,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=TuyaOccupancySensing.ep_attribute,
+                attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+                converter=lambda x: x in (1, 2),
+            ),
+            DPToAttributeMapping(
+                ep_attribute=TuyaMCUCluster.ep_attribute,
+                attribute_name="presence",
+                converter=TuyaPresenceStateV03,
+            ),
+        ],
+    )
+    .tuya_attribute(
         dp_id=1,
         attribute_name="presence",
+        type=TuyaPresenceStateV03,
+    )
+    .enum(
+        attribute_name="presence",
         enum_class=TuyaPresenceStateV03,
+        cluster_id=TUYA_CLUSTER_ID,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="presence_state",
         fallback_name="Presence state",
     )
-    .tuya_dp(
-        dp_id=104,
-        ep_attribute=TuyaOccupancySensing.ep_attribute,
-        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: x == 1,
-    )
     .adds(TuyaOccupancySensing)
+    # Attribute names of the ya4ft0w4 quirk that matched this device before
     .tuya_number(
         dp_id=2,
-        attribute_name="motion_sensitivity",
+        attribute_name="move_sensitivity",
         type=t.uint16_t,
         min_value=1,
         max_value=10,
@@ -1714,7 +1758,7 @@ base_tuya_motion = (
     .tuya_illuminance(dp_id=103)
     .tuya_number(
         dp_id=105,
-        attribute_name="fading_time",
+        attribute_name="presence_timeout",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,

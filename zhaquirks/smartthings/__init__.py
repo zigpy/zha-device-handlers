@@ -1,9 +1,10 @@
 """Module for smartthings quirks."""
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+
+from zhaquirks.clusters import CustomCluster
 
 SMART_THINGS = "SmartThings"
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514

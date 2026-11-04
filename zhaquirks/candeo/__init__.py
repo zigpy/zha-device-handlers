@@ -2,13 +2,14 @@
 
 import math
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import ZONE_TYPE
 
 CANDEO = "Candeo"
@@ -77,3 +78,30 @@ class CandeoIasZoneWaterCluster(IasZone, CustomCluster):
     """Candeo IasZone Water Cluster."""
 
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Water_Sensor}
+
+
+class CandeoRGBColorCluster(Color, CustomCluster):
+    """Candeo RGB Color Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes,
+        Color.AttributeDefs.color_temperature.id: None,
+        Color.AttributeDefs.start_up_color_temperature.id: None,
+    }
+
+
+class CandeoCCTColorCluster(Color, CustomCluster):
+    """Candeo CCT Color Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature
+    }
+
+
+class CandeoRGBCCTColorCluster(Color, CustomCluster):
+    """Candeo RGBCCT Color Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes
+        + Color.ColorCapabilities.Color_temperature
+    }

@@ -1,5 +1,6 @@
 """tuya TS000X Switches."""
 
+from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -20,7 +21,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaZBE000Cluster,

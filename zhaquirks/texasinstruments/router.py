@@ -3,7 +3,6 @@
 from typing import Final
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -16,6 +15,8 @@ from zhaquirks import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.legacy import CustomDevice
 
 
 class BasicCluster(CustomCluster, Basic):

@@ -1,8 +1,6 @@
 """Module for Legrand dimmers."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -18,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Ballast
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,6 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.legrand import (
     LEGRAND,
     MANUFACTURER_SPECIFIC_CLUSTER_ID,
