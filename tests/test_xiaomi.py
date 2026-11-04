@@ -1697,6 +1697,115 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert len(opple_cluster._write_attributes.mock_calls) == 0
 
 
+@pytest.mark.parametrize(
+    "write_response, write_value, kwargs, expected_mode, expected_xiaomi",
+    [
+        # accepted: both caches follow the write
+        (
+            [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]],
+            Thermostat.SystemMode.Off,
+            {},
+            Thermostat.SystemMode.Off,
+            0,
+        ),
+        # accepted: the thermostat cache gets the mapped value, not the requested one
+        (
+            [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]],
+            Thermostat.SystemMode.Auto,
+            {},
+            Thermostat.SystemMode.Heat,
+            1,
+        ),
+        # rejected: both caches keep the device's state
+        (
+            [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, 0x0271
+                    )
+                ]
+            ],
+            Thermostat.SystemMode.Off,
+            {},
+            Thermostat.SystemMode.Heat,
+            1,
+        ),
+        (
+            [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.READ_ONLY, 0x0271
+                    )
+                ]
+            ],
+            Thermostat.SystemMode.Off,
+            {},
+            Thermostat.SystemMode.Heat,
+            1,
+        ),
+        # rejected with a default response
+        (
+            [foundation.GeneralCommand.Write_Attributes, foundation.Status.FAILURE],
+            Thermostat.SystemMode.Off,
+            {},
+            Thermostat.SystemMode.Heat,
+            1,
+        ),
+        # accepted, but the caller asked not to update the cache
+        (
+            [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]],
+            Thermostat.SystemMode.Off,
+            {"update_cache": False},
+            Thermostat.SystemMode.Heat,
+            1,
+        ),
+    ],
+)
+async def test_xiaomi_e1_thermostat_system_mode_write_status(
+    zigpy_device_from_quirk,
+    write_response,
+    write_value,
+    kwargs,
+    expected_mode,
+    expected_xiaomi,
+):
+    """Test that a system_mode write only updates the thermostat cache if accepted."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    thermostat_cluster = device.endpoints[1].thermostat
+
+    # device is heating
+    opple_cluster.update_attribute(0x0271, 1)
+    assert thermostat_cluster.get("system_mode") == Thermostat.SystemMode.Heat
+
+    with mock.patch.object(
+        opple_cluster, "_write_attributes", mock.AsyncMock(return_value=write_response)
+    ) as write_mock:
+        result = await thermostat_cluster.write_attributes(
+            {"system_mode": write_value}, **kwargs
+        )
+
+    # the write is redirected to the Xiaomi cluster with the Xiaomi value
+    assert write_mock.call_count == 1
+    [written_attr] = write_mock.mock_calls[0].args[0]
+    assert written_attr.attrid == 0x0271
+    assert written_attr.value.value == min(int(write_value), 1)
+    # the write status is passed on to the caller
+    assert len(result) == 1
+    assert len(result[0]) == 1
+    assert result[0][0].attrid == 0x0271
+    accepted = (
+        isinstance(write_response[0], list)
+        and write_response[0][0].status == foundation.Status.SUCCESS
+    )
+    assert (result[0][0].status == foundation.Status.SUCCESS) is accepted
+
+    assert thermostat_cluster.get("system_mode") == expected_mode
+    assert opple_cluster.get(0x0271) == expected_xiaomi
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
 async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
     """Test update_attribute on Xiaomi E1 thermostat."""

@@ -132,11 +132,20 @@ class ThermostatCluster(CustomCluster, Thermostat):
         # write system_mode to Xiaomi cluster if applicable
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
-            result += await self.endpoint.opple_cluster.write_attributes(
-                {SYSTEM_MODE: min(int(system_mode_value), 1)}, **kwargs
+            xiaomi_value = min(int(system_mode_value), 1)
+            write_result = await self.endpoint.opple_cluster.write_attributes(
+                {SYSTEM_MODE: xiaomi_value}, **kwargs
             )
-            # Update the thermostat cluster's cache
-            self._update_attribute(ZCL_SYSTEM_MODE, system_mode_value)
+            result += write_result
+            # zigpy doesn't call `_update_attribute` on a successful write, so the
+            # Xiaomi cluster can't mirror it: update the thermostat cluster's cache
+            # here, but only if the device accepted the write
+            if kwargs.get("update_cache", True) and all(
+                record.status == foundation.Status.SUCCESS for record in write_result[0]
+            ):
+                self._update_attribute(
+                    ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[xiaomi_value]
+                )
 
         # write remaining attributes to thermostat cluster
         if remaining_attributes:
