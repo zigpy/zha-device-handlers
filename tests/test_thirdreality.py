@@ -79,15 +79,11 @@ async def test_third_reality_nightlight_entities():
         assert switch.is_on is False
 
         multistate_input = device.device.endpoints[1].multistate_input
-        multistate_input.update_attribute(
-            MultistateInput.AttributeDefs.present_value.id, LOCAL_ROUTINE_ON
-        )
-        assert switch.is_on is True
-
-        multistate_input.update_attribute(
-            MultistateInput.AttributeDefs.present_value.id, LOCAL_ROUTINE_OFF
-        )
-        assert switch.is_on is False
+        for value, expected in ((LOCAL_ROUTINE_ON, True), (LOCAL_ROUTINE_OFF, False)):
+            multistate_input.update_attribute(
+                MultistateInput.AttributeDefs.present_value.id, value
+            )
+            assert switch.is_on is expected
 
         multistate_input._write_attributes = mock.AsyncMock(
             return_value=[
