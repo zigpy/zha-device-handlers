@@ -8,14 +8,21 @@ OpenTherm message ID 5. All temperatures are in hundredths of a degree.
 External heat demand overrides the boiler water setpoint until the timeout
 expires. The two maximum setpoints read 0 until the boiler has reported them
 over OpenTherm, and writing them requires the boiler to allow external control.
+
+Firmware version 10 is the first version officially supported by ZHA. It rejects
+ConfigureReporting requests outside the bounds it enforces instead of applying
+values it can honour, so the clusters registered for it clamp what ZHA asks for.
+Firmware below that version accepts ZHA's defaults and keeps them.
 """
 
 from typing import Final
 
 import zigpy.types as t
+from zigpy.zcl import ReportingConfig
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.foundation import Status, ZCLAttributeDef
 
 from zhaquirks.builder import (
     EntityType,
@@ -29,6 +36,10 @@ from zhaquirks.clusters import CustomCluster
 
 PLUGWISE: Final = "Plugwise"
 PLUGWISE_MFG_CODE: Final = 0x1172
+
+#: First firmware version officially supported by ZHA, and the first that
+#: enforces the reporting bounds the clamping clusters below work around.
+EMMA_ZHA_SUPPORT_FW_VERSION: Final = 10
 
 
 class EmmaBatteryType(t.enum8):
@@ -125,11 +136,129 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         )
 
 
-(
+class ClampedReportingCluster(CustomCluster):
+    """Clamp ConfigureReporting parameters into the range the firmware accepts.
+
+    Subclasses narrow a single reporting config in `clamp_reporting`.
+    """
+
+    def clamp_reporting(
+        self, attr_def: ZCLAttributeDef, config: ReportingConfig
+    ) -> ReportingConfig:
+        """Return the reporting config to send for `attr_def`."""
+        raise NotImplementedError
+
+    async def configure_reporting_multiple(
+        self, config: dict[ZCLAttributeDef, ReportingConfig]
+    ) -> dict[ZCLAttributeDef, Status]:
+        """Configure reporting with every config clamped to the firmware bounds."""
+        return await super().configure_reporting_multiple(
+            {
+                attr_def: self.clamp_reporting(attr_def, attr_config)
+                for attr_def, attr_config in config.items()
+            }
+        )
+
+
+class EmmaThermostatClusterClamped(ClampedReportingCluster, EmmaThermostatCluster):
+    """Thermostat cluster that clamps reporting to the firmware bounds."""
+
+    #: Attributes the firmware only accepts at a minimum interval of at most 1 second
+    #: and a maximum interval of at most 870 seconds.
+    RESTRICTED_ATTRIBUTE_IDS = frozenset(
+        {
+            Thermostat.AttributeDefs.local_temperature.id,
+            Thermostat.AttributeDefs.pi_cooling_demand.id,
+            Thermostat.AttributeDefs.pi_heating_demand.id,
+            Thermostat.AttributeDefs.local_temperature_calibration.id,
+            Thermostat.AttributeDefs.occupied_cooling_setpoint.id,
+            Thermostat.AttributeDefs.occupied_heating_setpoint.id,
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.AttributeDefs.running_state.id,
+        }
+    )
+
+    def clamp_reporting(
+        self, attr_def: ZCLAttributeDef, config: ReportingConfig
+    ) -> ReportingConfig:
+        """Narrow the intervals on the restricted attributes and the local temperature change."""
+        restricted = attr_def.id in self.RESTRICTED_ATTRIBUTE_IDS
+        local_temperature = attr_def.id == Thermostat.AttributeDefs.local_temperature.id
+        if not restricted and not local_temperature:
+            return config
+        return ReportingConfig(
+            min_interval=min(config.min_interval, 1)
+            if restricted
+            else config.min_interval,
+            max_interval=min(config.max_interval, 870)
+            if restricted
+            else config.max_interval,
+            # hundredths of a degree
+            reportable_change=min(max(config.reportable_change, 1), 10)
+            if local_temperature
+            else config.reportable_change,
+        )
+
+
+class ClampedMeasurementCluster(ClampedReportingCluster):
+    """Measurement cluster whose measured value the firmware reports on fixed intervals."""
+
+    #: Inclusive reportable change range the firmware accepts, in hundredths of a unit.
+    CHANGE_RANGE: tuple[int, int]
+
+    def clamp_reporting(
+        self, attr_def: ZCLAttributeDef, config: ReportingConfig
+    ) -> ReportingConfig:
+        """Pin the intervals the firmware demands and clamp the change to its range."""
+        if attr_def.id != self.AttributeDefs.measured_value.id:
+            return config
+        low, high = self.CHANGE_RANGE
+        return ReportingConfig(
+            min_interval=1,
+            max_interval=870,
+            reportable_change=min(max(config.reportable_change, low), high),
+        )
+
+
+class EmmaTemperatureClusterClamped(ClampedMeasurementCluster, TemperatureMeasurement):
+    """Temperature Measurement cluster that clamps reporting to the firmware bounds."""
+
+    CHANGE_RANGE = (1, 10)
+
+
+class EmmaHumidityClusterClamped(ClampedMeasurementCluster, RelativeHumidity):
+    """Relative Humidity cluster that clamps reporting to the firmware bounds."""
+
+    CHANGE_RANGE = (10, 300)
+
+
+class EmmaPowerConfigClusterClamped(ClampedReportingCluster, EmmaPowerConfigCluster):
+    """Power Configuration cluster that clamps reporting to the firmware bounds."""
+
+    #: Lowest maximum interval the firmware accepts, per attribute.
+    MAX_INTERVAL_FLOORS = {
+        PowerConfiguration.AttributeDefs.battery_voltage.id: 65534,
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id: 43200,
+    }
+
+    def clamp_reporting(
+        self, attr_def: ZCLAttributeDef, config: ReportingConfig
+    ) -> ReportingConfig:
+        """Raise the maximum interval to the floor the firmware accepts."""
+        floor = self.MAX_INTERVAL_FLOORS.get(attr_def.id)
+        if floor is None:
+            return config
+        return ReportingConfig(
+            min_interval=config.min_interval,
+            max_interval=max(config.max_interval, floor),
+            reportable_change=config.reportable_change,
+        )
+
+
+# base for both firmware variants below; never added to the registry itself.
+emma_base_quirk = (
     QuirkBuilder(PLUGWISE, "170-01")
     .friendly_name(manufacturer=PLUGWISE, model="Emma thermostat")
-    .replaces(EmmaThermostatCluster)
-    .replaces(EmmaPowerConfigCluster)
     .sensor(
         attribute_name=EmmaThermostatCluster.AttributeDefs.boiler_water_temperature.name,
         cluster_id=EmmaThermostatCluster.cluster_id,
@@ -227,5 +356,29 @@ class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
         translation_key="battery_type",
         fallback_name="Battery type",
     )
+)
+
+(
+    # version 10 and newer enforce the reporting bounds, as do devices that have
+    # not reported a firmware version yet
+    emma_base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(
+        min_version=EMMA_ZHA_SUPPORT_FW_VERSION, allow_missing=True
+    )
+    .replaces(EmmaThermostatClusterClamped)
+    .replaces(EmmaPowerConfigClusterClamped)
+    .replaces(EmmaTemperatureClusterClamped)
+    .replaces(EmmaHumidityClusterClamped)
+    .add_to_registry()
+)
+
+(
+    # firmware below that version accepts ZHA's default reporting configuration
+    emma_base_quirk.clone(omit_man_model_data=False)
+    .firmware_version_filter(
+        max_version=EMMA_ZHA_SUPPORT_FW_VERSION, allow_missing=False
+    )
+    .replaces(EmmaThermostatCluster)
+    .replaces(EmmaPowerConfigCluster)
     .add_to_registry()
 )
