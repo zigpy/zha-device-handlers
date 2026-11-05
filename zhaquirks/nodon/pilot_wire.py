@@ -3,7 +3,6 @@
 import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import RelativeHumidity
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
@@ -84,16 +83,9 @@ fps = (
     # The humidity cluster is declared, but the firmware always reports an
     # invalid measured value (0xFFFF)
     .removes(RelativeHumidity.cluster_id)
-    # Device temperature is reported in degrees Celsius, not in hundredths
+    # Internal device temperature, only meant for diagnostics
     .prevent_default_entity_creation(
         endpoint_id=1, cluster_id=DeviceTemperature.cluster_id
-    )
-    .change_entity_metadata(
-        endpoint_id=1,
-        cluster_id=Metering.cluster_id,
-        unique_id_suffix=f"1-{Metering.cluster_id}",
-        new_translation_key="power",
-        new_fallback_name="Power",
     )
     .enum(
         attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,

@@ -4,7 +4,6 @@ from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import RelativeHumidity
-from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 from zhaquirks.nodon.pilot_wire import NodOnPilotWireCluster, NodOnPilotWireMode
@@ -28,18 +27,6 @@ async def test_nodon_fps_4_1_00_entities():
             Platform.SELECT, unique_id=f"{device.ieee}-1-pilot_wire_mode"
         )
         assert pilot_wire_mode.current_option == NodOnPilotWireMode.FrostProtection.name
-
-        power = device.get_platform_entity(
-            Platform.SENSOR, unique_id=f"{device.ieee}-1-{Metering.cluster_id}"
-        )
-        assert power.translation_key == "power"
-        assert power.fallback_name == "Power"
-
-        energy = device.get_platform_entity(
-            Platform.SENSOR,
-            unique_id=f"{device.ieee}-1-{Metering.cluster_id}-summation_delivered",
-        )
-        assert energy.translation_key != "power"
 
         unique_ids = {entity.unique_id for entity in device.platform_entities.values()}
         assert f"{device.ieee}-1-{RelativeHumidity.cluster_id}" not in unique_ids
