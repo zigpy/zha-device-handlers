@@ -1,9 +1,10 @@
 """Sonoff Mini ZB RBS - Zigbee Cover."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
+
+from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffCoverCalibrationStatus(t.enum8):

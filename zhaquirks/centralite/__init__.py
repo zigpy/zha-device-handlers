@@ -2,9 +2,10 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.clusters import CustomCluster
 
 CENTRALITE = "CentraLite"
 

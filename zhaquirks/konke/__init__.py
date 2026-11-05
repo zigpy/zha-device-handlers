@@ -1,6 +1,6 @@
 """Konke sensors."""
 
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
@@ -64,9 +64,7 @@ class KonkeOnOffCluster(CustomCluster):
         header: zigpy.zcl.foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle the cluster command."""
         self.info(
@@ -75,17 +73,30 @@ class KonkeOnOffCluster(CustomCluster):
             args,
         )
 
-        if header.command_id != zigpy.zcl.foundation.GeneralCommand.Report_Attributes:
-            return
+        if header.command_id == zigpy.zcl.foundation.GeneralCommand.Report_Attributes:
+            remaining_reports = []
 
-        attr = args[0][0]
+            for attr in args.attribute_reports:
+                if attr.attrid != self.AttributeDefs.konke_button_event.id:
+                    remaining_reports.append(attr)
+                    continue
 
-        if attr.attrid != self.attributes_by_name["konke_button_event"].id:
-            return
+                value = attr.value.value
+                press_type = PRESS_TYPES.get(value)
+                if press_type is None:
+                    self.debug("Unknown Konke button event: %s", value)
+                    continue
 
-        value = attr.value.value
-        event_args = {
-            PRESS_TYPE: PRESS_TYPES[value],
-            COMMAND_ID: value.value,  # to maintain backwards compatibility
-        }
-        self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
+                event_args = {
+                    PRESS_TYPE: press_type,
+                    COMMAND_ID: int(value),  # to maintain backwards compatibility
+                }
+                self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
+
+            # Button events aren't attribute updates, pass on everything else
+            args.attribute_reports = remaining_reports
+
+        # Always process the request, to send any requested default response
+        super().handle_cluster_general_request(
+            header, args, dst_addressing=dst_addressing
+        )

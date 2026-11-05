@@ -1,10 +1,15 @@
 """Tuya Ultrasonic Level Sensors."""
 
-from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfLength
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityType,
+    NumberDeviceClass,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfLength,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -80,7 +85,7 @@ base_level_quirk = (
         dp_id=19,
         attribute_name="installation_height",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=10,
         max_value=400,
@@ -92,7 +97,7 @@ base_level_quirk = (
         dp_id=21,
         attribute_name="liquid_depth_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=10,
         max_value=400,
@@ -111,7 +116,7 @@ base_level_quirk = (
         dp_id=19,
         attribute_name="installation_height",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.MILLIMETERS,
         min_value=10,
         max_value=4000,
@@ -123,7 +128,7 @@ base_level_quirk = (
         dp_id=21,
         attribute_name="liquid_depth_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.MILLIMETERS,
         min_value=10,
         max_value=4000,
@@ -142,7 +147,7 @@ base_level_quirk = (
         dp_id=19,
         attribute_name="installation_height",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=10,
         max_value=500,
@@ -154,7 +159,7 @@ base_level_quirk = (
         dp_id=21,
         attribute_name="liquid_depth_max",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
+        device_class=NumberDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         min_value=10,
         max_value=500,

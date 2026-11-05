@@ -3,11 +3,12 @@
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.clusters import CustomCluster
 
 EUROTRONIC = "Eurotronic"
 
@@ -117,11 +118,13 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         attributes = list(
             filter(
-                lambda x: x
-                not in (
-                    CTRL_SEQ_OF_OPER_ATTR,
-                    SYSTEM_MODE_ATTR,
-                    OCCUPIED_HEATING_SETPOINT_ATTR,
+                lambda x: (
+                    x
+                    not in (
+                        CTRL_SEQ_OF_OPER_ATTR,
+                        SYSTEM_MODE_ATTR,
+                        OCCUPIED_HEATING_SETPOINT_ATTR,
+                    )
                 ),
                 attributes,
             )

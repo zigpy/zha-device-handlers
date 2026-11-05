@@ -1,8 +1,8 @@
 """Module for Legrand remote wireless shutter switches."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.legrand import LEGRAND, LegrandPowerConfigurationCluster
 
 (
