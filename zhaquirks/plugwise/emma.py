@@ -3,7 +3,11 @@
 The thermostat carries OpenTherm boiler telemetry in manufacturer-specific
 attributes on the Thermostat cluster (0x0201), gated by manufacturer code
 0x1172. The application and OEM fault codes are the high and low byte of
-OpenTherm message ID 5.
+OpenTherm message ID 5. All temperatures are in hundredths of a degree.
+
+External heat demand overrides the boiler water setpoint until the timeout
+expires. The two maximum setpoints read 0 until the boiler has reported them
+over OpenTherm, and writing them requires the boiler to allow external control.
 """
 
 from typing import Final
@@ -18,6 +22,7 @@ from zhaquirks.builder import (
     SensorDeviceClass,
     SensorStateClass,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from zhaquirks.clusters import CustomCluster
 
@@ -72,6 +77,30 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
             access="rp",
             manufacturer_code=PLUGWISE_MFG_CODE,
         )
+        external_heat_demand: Final = ZCLAttributeDef(
+            id=0xF000,
+            type=t.uint16_t,
+            access="rwp",
+            manufacturer_code=PLUGWISE_MFG_CODE,
+        )
+        external_heat_demand_timeout: Final = ZCLAttributeDef(
+            id=0xF001,
+            type=t.uint16_t,
+            access="rwp",
+            manufacturer_code=PLUGWISE_MFG_CODE,
+        )
+        max_dhw_setpoint: Final = ZCLAttributeDef(
+            id=0xF007,
+            type=t.int16s,
+            access="rwp",
+            manufacturer_code=PLUGWISE_MFG_CODE,
+        )
+        max_boiler_setpoint: Final = ZCLAttributeDef(
+            id=0xF008,
+            type=t.int16s,
+            access="rwp",
+            manufacturer_code=PLUGWISE_MFG_CODE,
+        )
 
 
 (
@@ -124,6 +153,49 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="oem_fault_code",
         fallback_name="OEM fault code",
+    )
+    .number(
+        attribute_name=EmmaThermostatCluster.AttributeDefs.external_heat_demand.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
+        min_value=0.0,
+        max_value=90.0,
+        step=0.5,
+        multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="external_heat_demand",
+        fallback_name="External heat demand",
+    )
+    .number(
+        attribute_name=EmmaThermostatCluster.AttributeDefs.external_heat_demand_timeout.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
+        min_value=300,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="external_heat_demand_timeout",
+        fallback_name="External heat demand timeout",
+    )
+    .number(
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_dhw_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
+        min_value=0.0,
+        max_value=100.0,
+        step=0.5,
+        multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="max_dhw_setpoint",
+        fallback_name="Max DHW setpoint",
+    )
+    .number(
+        attribute_name=EmmaThermostatCluster.AttributeDefs.max_boiler_setpoint.name,
+        cluster_id=EmmaThermostatCluster.cluster_id,
+        min_value=0.0,
+        max_value=100.0,
+        step=0.5,
+        multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="max_boiler_setpoint",
+        fallback_name="Max boiler setpoint",
     )
     .add_to_registry()
 )
