@@ -173,6 +173,20 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             ENDPOINT_ID: 1,
             PARAMS: {"step_mode": 1, "step_size": 37},
         },
+        # The slow and fast triggers above only match one exact step size, but the
+        # knob sends whatever step size the rotation produced. These match any.
+        (ROTATED, DIM_UP): {
+            COMMAND: COMMAND_STEP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0},
+        },
+        (ROTATED, DIM_DOWN): {
+            COMMAND: COMMAND_STEP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1},
+        },
         (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
