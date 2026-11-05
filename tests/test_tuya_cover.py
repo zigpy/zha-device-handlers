@@ -4,6 +4,7 @@ from unittest import mock
 
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
@@ -223,3 +224,85 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+async def test_hiladuo_quirk(zigpy_device_from_v2_quirk):
+    """Test Hiladuo B09M3R35GC cover motor v2 quirk."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_9p5xmj5r", "TS0601")
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    assert cover_cluster is not None
+    assert isinstance(cover_cluster, TuyaWindowCovering)
+
+    tuya_cluster = ep.tuya_manufacturer
+    assert tuya_cluster is not None
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+
+async def test_hiladuo_position_report(zigpy_device_from_v2_quirk):
+    """Test that position DP reports pass through without inversion."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_9p5xmj5r", "TS0601")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    # This model reports ZCL-convention lift already (100=closed), so the
+    # quirk uses invert=False and DP 3 value 97 maps straight to ZCL 97.
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(3, TuyaData(97))],
+        )
+    )
+
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 97
+    )
+
+
+async def test_hiladuo_battery_pinned_100_filter(zigpy_device_from_v2_quirk):
+    """Test that pinned battery=100 dump reports are discarded."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE200_9p5xmj5r", "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_cluster = ep.tuya_manufacturer
+    power_cluster = ep.power
+    battery_attr = PowerConfiguration.AttributeDefs.battery_percentage_remaining
+
+    def report_battery(tsn, value):
+        tuya_cluster.handle_get_data(
+            TuyaCommand(
+                status=0,
+                tsn=tsn,
+                datapoints=[TuyaDatapointData(13, TuyaData(value))],
+            )
+        )
+
+    # A fresh device with no cached level accepts 100% (raw 200)
+    report_battery(1, 100)
+    assert power_cluster.get(battery_attr.id) == 200
+
+    # A genuine measured level replaces it
+    report_battery(2, 31)
+    assert power_cluster.get(battery_attr.id) == 62
+
+    # The firmware's pinned 100 from a DP dump is now discarded
+    report_battery(3, 100)
+    assert power_cluster.get(battery_attr.id) == 62
+
+    # Other measured levels still update in both directions
+    report_battery(4, 45)
+    assert power_cluster.get(battery_attr.id) == 90
+    report_battery(5, 29)
+    assert power_cluster.get(battery_attr.id) == 58
