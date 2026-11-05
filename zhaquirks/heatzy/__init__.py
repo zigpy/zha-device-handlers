@@ -1,0 +1,1 @@
+"""Heatzy device quirks."""
