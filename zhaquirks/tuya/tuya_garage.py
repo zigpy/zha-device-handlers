@@ -1,10 +1,14 @@
 """Tuya garage relays."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-import zigpy.types as t
+from zigpy.types import t
 
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    UnitOfTime,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
