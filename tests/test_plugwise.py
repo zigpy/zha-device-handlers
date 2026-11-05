@@ -155,3 +155,25 @@ def test_emma_clamping_follows_firmware_version(
         endpoint.in_clusters[RelativeHumidity.cluster_id],
         EmmaHumidityClusterClamped,
     ) is (firmware_version >= EMMA_ZHA_SUPPORT_FW_VERSION)
+
+
+@pytest.mark.parametrize(
+    ("cluster_id", "attr_def"),
+    [
+        (RelativeHumidity.cluster_id, RelativeHumidity.AttributeDefs.tolerance),
+        (
+            TemperatureMeasurement.cluster_id,
+            TemperatureMeasurement.AttributeDefs.tolerance,
+        ),
+        (PowerConfiguration.cluster_id, PowerConfiguration.AttributeDefs.battery_size),
+    ],
+)
+async def test_emma_unrestricted_attributes_untouched(
+    emma, cluster_id, attr_def
+) -> None:
+    """Test attributes the firmware does not restrict keep ZHA's configuration."""
+    cluster = emma.endpoints[1].in_clusters[cluster_id]
+
+    sent = await configured_reporting(cluster, {attr_def: ZHA_CLIMATE_CONFIG})
+
+    assert sent[attr_def] == ZHA_CLIMATE_CONFIG

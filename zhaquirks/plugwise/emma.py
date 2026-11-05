@@ -15,6 +15,7 @@ values it can honour, so the clusters registered for it clamp what ZHA asks for.
 Firmware below that version accepts ZHA's defaults and keeps them.
 """
 
+from collections.abc import Callable
 from typing import Final
 
 import zigpy.types as t
@@ -142,11 +143,7 @@ class ClampedReportingCluster(CustomCluster):
     Subclasses narrow a single reporting config in `clamp_reporting`.
     """
 
-    def clamp_reporting(
-        self, attr_def: ZCLAttributeDef, config: ReportingConfig
-    ) -> ReportingConfig:
-        """Return the reporting config to send for `attr_def`."""
-        raise NotImplementedError
+    clamp_reporting: Callable[[ZCLAttributeDef, ReportingConfig], ReportingConfig]
 
     async def configure_reporting_multiple(
         self, config: dict[ZCLAttributeDef, ReportingConfig]
