@@ -13,6 +13,7 @@ over OpenTherm, and writing them requires the boiler to allow external control.
 from typing import Final
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -28,6 +29,13 @@ from zhaquirks.clusters import CustomCluster
 
 PLUGWISE: Final = "Plugwise"
 PLUGWISE_MFG_CODE: Final = 0x1172
+
+
+class EmmaBatteryType(t.enum8):
+    """Battery chemistry the thermostat is running on."""
+
+    Alkaline = 0x00
+    NiMH = 0x01
 
 
 class EmmaApplicationFaultCode(t.bitmap8):
@@ -103,10 +111,25 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
         )
 
 
+class EmmaPowerConfigCluster(CustomCluster, PowerConfiguration):
+    """Power Configuration cluster with the Emma battery type attribute."""
+
+    class AttributeDefs(PowerConfiguration.AttributeDefs):
+        """Power Configuration attributes plus the Emma battery type."""
+
+        battery_type: Final = ZCLAttributeDef(
+            id=0x007F,
+            type=EmmaBatteryType,
+            access="rwp",
+            manufacturer_code=PLUGWISE_MFG_CODE,
+        )
+
+
 (
     QuirkBuilder(PLUGWISE, "170-01")
     .friendly_name(manufacturer=PLUGWISE, model="Emma thermostat")
     .replaces(EmmaThermostatCluster)
+    .replaces(EmmaPowerConfigCluster)
     .sensor(
         attribute_name=EmmaThermostatCluster.AttributeDefs.boiler_water_temperature.name,
         cluster_id=EmmaThermostatCluster.cluster_id,
@@ -196,6 +219,13 @@ class EmmaThermostatCluster(CustomCluster, Thermostat):
         unit=UnitOfTemperature.CELSIUS,
         translation_key="max_boiler_setpoint",
         fallback_name="Max boiler setpoint",
+    )
+    .enum(
+        attribute_name=EmmaPowerConfigCluster.AttributeDefs.battery_type.name,
+        enum_class=EmmaBatteryType,
+        cluster_id=EmmaPowerConfigCluster.cluster_id,
+        translation_key="battery_type",
+        fallback_name="Battery type",
     )
     .add_to_registry()
 )
