@@ -104,8 +104,10 @@ def test_manufacturer_model_metadata_unique() -> None:
         if (
             match.firmware_version_min is not None
             or match.firmware_version_max is not None
+            or match.filters
         ):
-            # skip quirks with firmware filter, as they can share manufacturer/model
+            # skip quirks with firmware or signature filter, as they can share
+            # manufacturer/model
             continue
         for model_info in match.applies_to:
             man_model_quirk_map[(model_info.manufacturer, model_info.model)].append(
