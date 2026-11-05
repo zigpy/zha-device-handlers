@@ -1,6 +1,6 @@
 """Run quirked devices through a ZHA gateway, adapted from ZHA's test helpers."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 import contextlib
 from datetime import datetime
 import json
@@ -16,7 +16,7 @@ from zha.application.helpers import (
     ZHAConfiguration,
     ZHAData,
 )
-from zha.application.platforms import PlatformEntity
+from zha.application.platforms import ENTITY_REGISTRY, PlatformEntity
 from zha.quirks import DeviceRegistry
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.application
@@ -292,3 +292,16 @@ def get_climate(device: ZigbeeDevice) -> PlatformEntity:
         if platform == Platform.CLIMATE
     )
     return entity
+
+
+@contextlib.contextmanager
+def without_zha_entities(cluster_id: int, *names: str) -> Iterator[None]:
+    """Hide the named ZHA entity classes from discovery.
+
+    This simulates ZHA without entity classes that moved into quirks.
+    """
+    registry = ENTITY_REGISTRY[cluster_id]
+    classes = [cls for cls in registry if cls.__name__ not in names]
+
+    with patch.dict(ENTITY_REGISTRY, {cluster_id: classes}):
+        yield
