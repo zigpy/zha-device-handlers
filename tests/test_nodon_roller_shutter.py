@@ -106,6 +106,13 @@ async def test_nodon_sin_4_rs_20_start_calibration():
             | WindowCovering.WindowCoveringMode.Run_in_calibration_mode
         }
 
+        # Writing False doesn't start a calibration
+        calibration = device.device.endpoints[1].nodon_calibration
+        with mock.patch.object(window_covering, "write_attributes") as write_attributes:
+            await calibration.write_attributes({"start_calibration": False})
+
+        write_attributes.assert_not_called()
+
 
 async def test_nodon_sin_4_rs_20_factory_reset():
     """Test that the factory reset button sends the Basic reset command."""

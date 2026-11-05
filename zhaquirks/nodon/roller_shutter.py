@@ -151,8 +151,11 @@ class NodOnCalibrationCluster(LocalDataCluster):
 
     async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Translate the start_calibration write into a window_covering_mode write."""
-        for attr in attributes:
-            if self.find_attribute(attr) == self.AttributeDefs.start_calibration:
+        for attr, value in attributes.items():
+            if (
+                self.find_attribute(attr) == self.AttributeDefs.start_calibration
+                and value
+            ):
                 return await self._start_calibration()
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
