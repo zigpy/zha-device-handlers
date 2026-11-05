@@ -5,10 +5,47 @@
 
 # Identify Tuya Data Points
 
-The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs) for the device. There are two ways ways to do this.
+The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs) for the device. There are three ways to do this.
 
 1. If the device is supported by Zigbee2MQTT, the DPs can be captured from the [herdsman converter](https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/src/devices/tuya.ts).
 2. Using a Tuya hub, the DPs can be captured from the Tuya developer's console. See [Zigbee2MQTT Documentation](https://www.zigbee2mqtt.io/advanced/support-new-devices/03_find_tuya_data_points.html)
+3. If the device is in neither, capture the DPs from the device itself. See below.
+
+> [!WARNING]
+> DPs from a *similar* device are a hypothesis, not an answer. Measurement DPs are often shared across a product family, but DPs above 100 are product-specific and frequently mean different things on devices that are otherwise identical. Scaling also varies: two CO2 sensors sharing DPs 2/18/19 may report humidity in tenths of a percent and in whole percent respectively. Always confirm against the device's own display or app.
+
+## Capturing datapoints from the device
+
+Register a minimal quirk so that zigpy parses the Tuya cluster at all. `force_add_cluster` is required because no DPs are mapped yet:
+
+```python
+(
+    TuyaQuirkBuilder("_TZE204_xxxxxxxx", "TS0601")
+    .skip_configuration()
+    .add_to_registry(force_add_cluster=True)
+)
+```
+
+Enable ZCL debug logging (`zigpy.zcl`) and every frame is logged as raw hex:
+
+```
+[0x5099:1:0xef00] Received ZCL frame: '09 3b 02 00 31 02 02 00 04 00 00 02 68'
+```
+
+After the 3 byte ZCL header the payload is `status(1)`, `tsn(1)`, then one or more datapoints of `dp(1)`, `datatype(1)`, `length(2, big endian)`, `payload(length)`. Datatypes are `0` raw, `1` bool, `2` value, `3` string, `4` enum, `5` bitmap. The frame above is DP 2, type value, 4 bytes, `0x00000268` = 616.
+
+Unmapped DPs are also logged by the Tuya cluster itself at debug level:
+
+```
+[0x5099:1:0xef00] No datapoint handler for TuyaDatapointData(dp=102, ...)
+```
+
+To identify a configuration DP, change one setting on the device and note which DP value changes.
+
+> [!IMPORTANT]
+> If the device produces **no** `0xEF00` traffic at all, it has not been given the Tuya spell. Add `.tuya_enchantment(data_query_spell=True)` and reconfigure the device. The spell is only cast during device configuration, so a Home Assistant restart is not enough; reconfigure the device from its device page.
+>
+> Some devices also return to that silent state after a power cycle. Always power cycle the device before considering a quirk finished.
 
 # Using the datapoints to develop a Tuya Quirk
 
