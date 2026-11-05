@@ -3,24 +3,34 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import ClusterType
+from zha.application import Platform
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.thirdreality.button import MultistateInputCluster
-import zhaquirks.thirdreality.night_light
+from zhaquirks.thirdreality.night_light import (
+    LOCAL_ROUTINE_OFF,
+    LOCAL_ROUTINE_ON,
+    ThirdRealitySpecificCluster,
+)
 import zhaquirks.thirdreality.three_button
 
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.thirdreality.night_light.Nightlight,))
-async def test_third_reality_nightlight(zigpy_device_from_quirk, quirk):
+async def test_third_reality_nightlight(zigpy_device_from_v2_quirk):
     """Test Third Reality night light forwarding motion attribute to IasZone cluster."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSNL02043Z",
+        cluster_ids={1: {ThirdRealitySpecificCluster.cluster_id: ClusterType.Server}},
+    )
 
     ias_zone_cluster = device.endpoints[1].ias_zone
     ias_zone_listener = ClusterListener(ias_zone_cluster)
@@ -42,6 +52,57 @@ async def test_third_reality_nightlight(zigpy_device_from_quirk, quirk):
     assert len(ias_zone_listener.attribute_updates) == 2
     assert ias_zone_listener.attribute_updates[1][0] == ias_zone_status_id
     assert ias_zone_listener.attribute_updates[1][1] == 0
+
+
+async def test_third_reality_nightlight_entities():
+    """Test the local routine switch and numbers on the Third Reality night light."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "third-reality-inc-3rsnl02043z-0x00000056.json", DEVICE_REGISTRY
+        )
+        ieee = str(device.ieee)
+
+        switch = device.get_platform_entity(
+            Platform.SWITCH, unique_id=f"{ieee}-1-present_value"
+        )
+        routine_time = device.get_platform_entity(
+            Platform.NUMBER, unique_id=f"{ieee}-1-local_routine_time"
+        )
+        lux_threshold = device.get_platform_entity(
+            Platform.NUMBER, unique_id=f"{ieee}-1-lux_threshold"
+        )
+
+        assert routine_time.native_value == 120
+        assert lux_threshold.native_value == 5
+
+        # the routine was disabled when the diagnostics were taken
+        assert switch.is_on is False
+
+        multistate_input = device.device.endpoints[1].multistate_input
+        multistate_input.update_attribute(
+            MultistateInput.AttributeDefs.present_value.id, LOCAL_ROUTINE_ON
+        )
+        assert switch.is_on is True
+
+        multistate_input.update_attribute(
+            MultistateInput.AttributeDefs.present_value.id, LOCAL_ROUTINE_OFF
+        )
+        assert switch.is_on is False
+
+        multistate_input._write_attributes = mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        )
+
+        await switch.async_turn_on()
+        await switch.async_turn_off()
+
+        written = [
+            call.args[0][0].value.value
+            for call in multistate_input._write_attributes.mock_calls
+        ]
+        assert written == [LOCAL_ROUTINE_ON, LOCAL_ROUTINE_OFF]
 
 
 @pytest.mark.parametrize(
