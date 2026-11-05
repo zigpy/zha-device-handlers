@@ -104,6 +104,7 @@ class TuyaDoorAlarm(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE200_wfxuhoea", "TS0601")
+    .applies_to("_TZE204_wfxuhoea", "TS0601")
     .applies_to("_TZE608_c75zqghm", "TS0603")
     .applies_to("_TZE608_fmemczv1", "TS0603")
     .tuya_dp_attribute(

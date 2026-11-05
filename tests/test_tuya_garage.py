@@ -35,6 +35,13 @@ zhaquirks.setup()
             1,
         ),  # Set 1, dp 1
         (
+            "_TZE204_wfxuhoea",
+            "TS0601",
+            b"\x09\x9c\x02\x00\x6b\x01\x01\x00\x01\x01",
+            "garage_door_trigger",
+            1,
+        ),  # Set 1, dp 1
+        (
             "_TZE608_c75zqghm",
             "TS0603",
             b"\x09\x9c\x02\x00\x6b\x01\x01\x00\x01\x01",
