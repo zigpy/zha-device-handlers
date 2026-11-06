@@ -294,8 +294,8 @@ BASE_TRVZB_QUIRK = (
         fallback_name="Display orientation",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.regular_heating_setpoint.name,
-        CustomSonoffCluster.cluster_id,
+        attribute_name=CustomSonoffCluster.AttributeDefs.regular_heating_setpoint.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
         min_value=4.0,
         max_value=35.0,
         step=0.5,
@@ -307,8 +307,8 @@ BASE_TRVZB_QUIRK = (
         initially_disabled=True,
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.automode_heating_setpoint.name,
-        CustomSonoffCluster.cluster_id,
+        attribute_name=CustomSonoffCluster.AttributeDefs.automode_heating_setpoint.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
         min_value=4.0,
         max_value=35.0,
         step=0.5,
