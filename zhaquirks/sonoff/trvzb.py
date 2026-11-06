@@ -24,7 +24,7 @@ SONOFF_CHILD_LOCK_ATTR_ID = 0x0000
 SONOFF_DISPLAY_ORIENTATION_ATTR_ID = 0x0021
 # 0x00=Horizontal (default) - 0° rotate, named horizontal in eWeLink
 # 0x01=Rotate 90° - 90° rotate, on TRV-ZBT
-# 0x02=Vertikal (flipped) - 180° rotate, named vertical in eWeLink
+# 0x02=Vertical (flipped) - 180° rotate, named vertical in eWeLink
 # 0x03=Rotate 270° - 270° rotate, on TRV-ZBT
 
 # Open Window Detection, Attribute 0x6000, Bool
@@ -91,7 +91,7 @@ SONOFF_TEMPORARY_ACTIVATION_MODE_ATTR_ID = 0x6014
 # 0x00=Boost (set 0x6015 activation time first)
 # 0x01=Scheduled (set 0x6015 activation time and 0x6016 temperature first)
 
-# Temporary Activation Duration, Attibute ID 0x6015, uint32
+# Temporary Activation Duration, Attribute ID 0x6015, uint32
 SONOFF_TEMPORARY_ACTIVATION_DURATION_ATTR_ID = 0x6015
 # activation duration in seconds (900=15 minutes)
 
