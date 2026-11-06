@@ -105,20 +105,14 @@ SONOFF_SMART_TEMPERATURE_CONTROL_ATTR_ID = 0x6017
 # 0x02=Active (Valve opening based on target temperature and temperature changes)
 
 
-class SonoffDisplayOrientation_TRVZB(t.enum8):
+class SonoffDisplayOrientation(t.enum8):
     """Rotation of display orientation."""
 
-    Horizontal  = 0x00  # Rotate 0°, default orientation, named Horizontal in eWeLink
-    Vertical    = 0x02  # Rotate 180°, named Vertical in eWeLink
-
-
-class SonoffDisplayOrientation_TRVZBT(t.enum8):
-    """Rotation of display orientation."""
-
+    # 4-way rotation values for TRV-ZBT, TRVZB only has 2-way flipp
     Rotate_0    = 0x00  # Rotate 0°, default orientation, named Horizontal in eWeLink
-    Rotate_90   = 0x01  # Rotate 90°
+    Rotate_90   = 0x01  # Rotate 90°, on TRVZB reports back 0°
     Rotate_180  = 0x02  # Rotate 180°, named Vertical in eWeLink
-    Rotate_270  = 0x03  # Rotate 270°
+    Rotate_270  = 0x03  # Rotate 270°, on TRVZB reports back 180°
 
 
 class CustomSonoffCluster(CustomCluster):
@@ -134,17 +128,9 @@ class CustomSonoffCluster(CustomCluster):
             type=t.Bool,
             manufacturer_code=None,
         )
-        display_orientation_TRVZB = ZCLAttributeDef(
-            name='display_orientation'
+        display_orientation = ZCLAttributeDef(
             id=SONOFF_DISPLAY_ORIENTATION_ATTR_ID,
-            type=SonoffDisplayOrientation_TRVZB,
-            zcl_type=DataTypeId.uint8,
-            manufacturer_code=None,
-        )
-        display_orientation_TRVZBT = ZCLAttributeDef(
-            name='display_orientation'
-            id=SONOFF_DISPLAY_ORIENTATION_ATTR_ID,
-            type=SonoffDisplayOrientation_TRVZBT,
+            type=SonoffDisplayOrientation,
             zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
@@ -344,6 +330,13 @@ BASE_TRVZB_QUIRK = (
         translation_key="external_temperature_sensor_value",
         fallback_name="External temperature sensor value",
     )
+    .enum(
+        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation.name,
+        enum_class=SonoffDisplayOrientation,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        translation_key="display_orientation",
+        fallback_name="Display Orientation",
+    )
     .number(
         CustomSonoffCluster.AttributeDefs.regular_heating_setpoint.name,
         CustomSonoffCluster.cluster_id,
@@ -408,13 +401,6 @@ BASE_TRVZB_QUIRK = (
         translation_key="adaptive_mode",
         fallback_name="Adaptive mode",
     )
-    .enum(
-        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation_TRVZB.name,
-        enum_class=SonoffDisplayOrientation_TRVZB,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        translation_key="display_orientation",
-        fallback_name="Display Orientation",
-    )
     .add_to_registry()
 )
 
@@ -458,13 +444,6 @@ BASE_TRVZB_QUIRK = (
         off_value=1,
         translation_key="adaptive_mode",
         fallback_name="Adaptive mode",
-    )
-    .enum(
-        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation_TRVZBT.name,
-        enum_class=SonoffDisplayOrientation_TRVZBT,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        translation_key="display_orientation",
-        fallback_name="Display Orientation",
     )
     .add_to_registry()
 )
