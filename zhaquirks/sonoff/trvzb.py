@@ -50,13 +50,6 @@ SONOFF_CLOSING_LIMIT_VOLTAGE_ATTR_ID = 0x6006
 
 # Valve Motor Running Voltage, Attribute ID 0x6007, int16
 SONOFF_VALVE_RUNNING_VOLTAGE_ATTR_ID = 0x6007
-# 1336=???  reported after starting Boost mode
-# 1149=???  reported after starting boost
-# 1334=???  reported after stopping boost
-
-# ???, Attribute ID 0x6008, uint8
-SONOFF_SCHEDULER_UNKNOWN_ATTR_ID = 0x6008
-# 0x7f=127=???  reported after saving scheduler
 
 # Normal Mode Heating Set Point, Attribute ID 0x6009, int16
 SONOFF_REGULAR_HEATING_SETPOINT_ATTR_ID = 0x6009
@@ -74,7 +67,7 @@ SONOFF_VALVE_CLOSING_PERCENTAGE_ATTR_ID = 0x600C
 SONOFF_EXTERNAL_TEMP_SENSOR_VALUE_ATTR_ID = 0x600D
 # temperature in 1/100th °C degree celsius
 # ONLY used if External Temperature Sensor Enable is active
-# ONLY valid for 120 minutes after writing, then becomes ignored if not changed or written again
+# ONLY valid for 120 minutes after writing, then becomes ignored if not changed
 
 # External Temperature Sensor Enable, Attribute ID 0x600e, uint8
 SONOFF_EXTERNAL_TEMP_SENSOR_ENABLE_ATTR_ID = 0x600E
