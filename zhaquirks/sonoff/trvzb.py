@@ -23,7 +23,9 @@ SONOFF_CHILD_LOCK_ATTR_ID = 0x0000
 # Display Orientation, Screen Rotation, Attribute ID 0x0021, uint8
 SONOFF_DISPLAY_ORIENTATION_ATTR_ID = 0x0021
 # 0x00=Horizontal (default) - 0° rotate, named horizontal in eWeLink
+# 0x01=Rotate 90° - 90° rotate, on TRV-ZBT
 # 0x02=Vertikal (flipped) - 180° rotate, named vertical in eWeLink
+# 0x03=Rotate 270° - 270° rotate, on TRV-ZBT
 
 # Open Window Detection, Attribute 0x6000, Bool
 SONOFF_OPEN_WINDOW_DETECTION_ATTR_ID = 0x6000
@@ -70,7 +72,7 @@ SONOFF_VALVE_CLOSING_PERCENTAGE_ATTR_ID = 0x600C
 
 # External Temperature Sensor Value, Attribute ID 0x600D, int16
 SONOFF_EXTERNAL_TEMP_SENSOR_VALUE_ATTR_ID = 0x600D
-# temperature in °C degree celsius
+# temperature in 1/100th °C degree celsius
 # ONLY used if External Temperature Sensor Enable is active
 # ONLY valid for 120 minutes after writing, then becomes ignored if not changed or written again
 
@@ -106,7 +108,14 @@ SONOFF_SMART_TEMPERATURE_CONTROL_ATTR_ID = 0x6017
 # 0x02=Active (Valve opening based on target temperature and temperature changes)
 
 
-class SonoffDisplayOrientation(t.enum8):
+class SonoffDisplayOrientation_TRVZB(t.enum8):
+    """Rotation of display orientation."""
+
+    Horizontal  = 0x00  # Rotate 0°, default orientation, named Horizontal in eWeLink
+    Vertical    = 0x02  # Rotate 180°, named Vertical in eWeLink
+
+
+class SonoffDisplayOrientation_TRVZBT(t.enum8):
     """Rotation of display orientation."""
 
     Rotate_0    = 0x00  # Rotate 0°, default orientation, named Horizontal in eWeLink
@@ -128,9 +137,17 @@ class CustomSonoffCluster(CustomCluster):
             type=t.Bool,
             manufacturer_code=None,
         )
-        display_orientation = ZCLAttributeDef(
+        display_orientation_TRVZB = ZCLAttributeDef(
+            name='display_orientation'
             id=SONOFF_DISPLAY_ORIENTATION_ATTR_ID,
-            type=SonoffDisplayOrientation,
+            type=SonoffDisplayOrientation_TRVZB,
+            zcl_type=DataTypeId.uint8,
+            manufacturer_code=None,
+        )
+        display_orientation_TRVZBT = ZCLAttributeDef(
+            name='display_orientation'
+            id=SONOFF_DISPLAY_ORIENTATION_ATTR_ID,
+            type=SonoffDisplayOrientation_TRVZBT,
             zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
@@ -338,13 +355,6 @@ BASE_TRVZB_QUIRK = (
         fallback_name="Regular heating setpoint",
         initially_disabled=True,
     )
-    .enum(
-        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation.name,
-        enum_class=SonoffDisplayOrientation,
-        cluster_id=CustomSonoffCluster.cluster_id,
-        translation_key="display_orientation",
-        fallback_name="Display Orientation",
-    )
 )
 
 (
@@ -383,6 +393,13 @@ BASE_TRVZB_QUIRK = (
         translation_key="adaptive_mode",
         fallback_name="Adaptive mode",
     )
+    .enum(
+        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation_TRVZB.name,
+        enum_class=SonoffDisplayOrientation_TRVZB,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        translation_key="display_orientation",
+        fallback_name="Display Orientation",
+    )
     .add_to_registry()
 )
 
@@ -392,6 +409,7 @@ BASE_TRVZB_QUIRK = (
     # 2 = adaptive); 0x6017 is unsupported on this model. It also only
     # accepts frost protection from 5 to 15 °C and a timer mode target
     # temperature from 5 to 30 °C; other values are rejected.
+    # Further it has 4-way display rotation.
     BASE_TRVZB_QUIRK.clone()
     .applies_to("SONOFF", "TRV-ZBT")
     .number(
@@ -425,6 +443,13 @@ BASE_TRVZB_QUIRK = (
         off_value=1,
         translation_key="adaptive_mode",
         fallback_name="Adaptive mode",
+    )
+    .enum(
+        attribute_name=CustomSonoffCluster.AttributeDefs.display_orientation_TRVZBT.name,
+        enum_class=SonoffDisplayOrientation_TRVZBT,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        translation_key="display_orientation",
+        fallback_name="Display Orientation",
     )
     .add_to_registry()
 )
