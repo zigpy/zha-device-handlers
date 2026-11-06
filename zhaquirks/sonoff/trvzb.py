@@ -108,10 +108,10 @@ class SonoffDisplayOrientation(t.enum8):
     """Rotation of display orientation."""
 
     # 4-way rotation values for TRV-ZBT, TRVZB only has 2-way flipp
-    Rotate_0 = 0x00  # Rotate 0°, default orientation, named Horizontal in eWeLink
-    Rotate_90 = 0x01  # Rotate 90°, on TRVZB reports back 0°
-    Rotate_180 = 0x02  # Rotate 180°, named Vertical in eWeLink
-    Rotate_270 = 0x03  # Rotate 270°, on TRVZB reports back 180°
+    Rotate_0 = 0x00 # Rotate 0°, default orientation, named Horizontal in eWeLink
+    Rotate_90 = 0x01 # Rotate 90°, on TRVZB reports back 180°
+    Rotate_180 = 0x02 # Rotate 180°, named Vertical in eWeLink
+    Rotate_270 = 0x03 # Rotate 270°, on TRVZB reports back 180°
 
 
 class CustomSonoffCluster(CustomCluster):
