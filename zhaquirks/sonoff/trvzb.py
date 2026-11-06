@@ -55,6 +55,10 @@ SONOFF_VALVE_RUNNING_VOLTAGE_ATTR_ID = 0x6007
 SONOFF_REGULAR_HEATING_SETPOINT_ATTR_ID = 0x6009
 # in 1/100th degree celsius (1550=15.5°C, 2000=20.0°C)
 
+# Auto Mode Heating Set Point, Attribute ID 0x600a, int16
+SONOFF_AUTOMODE_HEATING_SETPOINT_ATTR_ID = 0x600A
+# in 1/100th degree celsius (1550=15.5°C, 2000=20.0°C)
+
 # Valve Opening Percentage, Attribute ID 0x600b, uint8
 SONOFF_VALVE_OPENING_PERCENTAGE_ATTR_ID = 0x600B
 # in percent 0x64=100=100%
@@ -186,6 +190,11 @@ class CustomSonoffCluster(CustomCluster):
         )
         regular_heating_setpoint = ZCLAttributeDef(
             id=SONOFF_REGULAR_HEATING_SETPOINT_ATTR_ID,
+            type=t.int16s,
+            manufacturer_code=None,
+        )
+        automode_heating_setpoint = ZCLAttributeDef(
+            id=SONOFF_AUTOMODE_HEATING_SETPOINT_ATTR_ID,
             type=t.int16s,
             manufacturer_code=None,
         )
@@ -346,6 +355,19 @@ BASE_TRVZB_QUIRK = (
         multiplier=0.01,
         translation_key="regular_heating_setpoint",
         fallback_name="Regular heating setpoint",
+        initially_disabled=True,
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.automode_heating_setpoint.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=4.0,
+        max_value=35.0,
+        step=0.5,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="automode_heating_setpoint",
+        fallback_name="Auto mode heating setpoint",
         initially_disabled=True,
     )
 )
