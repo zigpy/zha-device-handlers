@@ -84,6 +84,9 @@ KNOCK_6_VALUE = 517  # aqara facing me upright
 KNOCKED = "device_knocked"
 LEFT = "left"
 MOVED_AFTER_INACTIVITY = "device_moved_after_inactivity"
+OPERATION_MODE_ENDPOINT_ID = 1
+OPERATION_MODE_TAG = 155
+PENDING_OPERATION_MODE_ATTR = "pending_cube_t1_operation_mode"
 RELATIVE_DEGREES = "relative_degrees"
 RIGHT = "right"
 ROTATE_LEFT = "rotate_left"
@@ -91,9 +94,6 @@ ROTATE_RIGHT = "rotate_right"
 ROTATED = "device_rotated"
 SHAKE = "shake"
 SHAKE_VALUE = 0
-OPERATION_MODE_ENDPOINT_ID = 1
-OPERATION_MODE_TAG = 155
-PENDING_OPERATION_MODE_ATTR = "pending_cube_t1_operation_mode"
 SIDE_UP = "side_up"
 SIDE_UPPED = "device_side_up"
 SLID = "device_slid"
@@ -110,6 +110,7 @@ SLIDE_VALUE = 261
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 XIAOMI_ANALOG = 0x5F03  # decimal = 24323 ? analog input
 XIAOMI_ANALOG_REPLACEMENT = 0x6F03
+XIAOMI_MANUFACTURER_CODE = 0x115F
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
 XIAOMI_MEASUREMENTS_REPLACEMENT = 0x6F02
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
@@ -117,7 +118,6 @@ XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 
 MOVEMENT_TYPE = {
     SHAKE_VALUE: SHAKE,
-    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: SLIDE,
     SLIDE_2_VALUE: SLIDE,
@@ -135,7 +135,6 @@ MOVEMENT_TYPE = {
 
 MOVEMENT_TYPE_DESCRIPTION = {
     SHAKE_VALUE: SHAKE,
-    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
@@ -234,10 +233,14 @@ class CubeT1MultistateInputCluster(MultistateInputCluster):
 
     Raw value 2 means the cube was moved after standing still for a minute,
     unlike the older cube (CubeAQGL01), where the same raw value means
-    "wakeup" instead.
+    "wakeup" instead. Raw value 4 (hold) is also specific to the T1.
     """
 
-    MOVEMENT_TYPE = {**MOVEMENT_TYPE, INACTIVITY_VALUE: INACTIVITY}
+    MOVEMENT_TYPE = {
+        **MOVEMENT_TYPE,
+        INACTIVITY_VALUE: INACTIVITY,
+        HOLD_VALUE: HOLD,
+    }
 
 
 class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
@@ -268,13 +271,13 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         battery_voltage_mv: Final = ZCLAttributeDef(
-            id=0x0001, type=t.uint16_t, is_manufacturer_specific=True
+            id=0x0001, type=t.uint16_t, manufacturer_code=XIAOMI_MANUFACTURER_CODE
         )
 
         # Reported only in scene_mode, when the cube is picked up, rotated to
         # a new face, and set back down without being flipped or dropped.
         side_up: Final = ZCLAttributeDef(
-            id=0x0149, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0149, type=t.uint8_t, manufacturer_code=XIAOMI_MANUFACTURER_CODE
         )
 
         # Local cache of the cube's operation mode, updated from the cube's
@@ -288,7 +291,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             id=0x0148,
             type=CubeT1OperationMode,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=XIAOMI_MANUFACTURER_CODE,
         )
 
     def _update_attribute(self, attrid, value):
@@ -306,7 +309,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
 
         mode = parse_operation_mode_tag(event.value)
         _LOGGER.debug(
-            "CUBE_T1_OPMODE: check-in endpoint=%s mode_tag=%s",
+            "Cube T1 check-in: endpoint=%s operation_mode tag=%s",
             self.endpoint.endpoint_id,
             mode,
         )
@@ -326,9 +329,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             sensor_cluster.update_attribute(self.AttributeDefs.operation_mode.id, mode)
             return
 
-        _LOGGER.debug(
-            "CUBE_T1_OPMODE: check-in applying pending operation_mode=%s", pending
-        )
+        _LOGGER.debug("Cube T1 check-in: applying pending operation_mode=%s", pending)
         self.create_catching_task(
             self._apply_pending_operation_mode(sensor_cluster, pending)
         )
@@ -345,7 +346,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
         current = self.get(self.AttributeDefs.operation_mode.name)
         if current is None:
             _LOGGER.debug(
-                "CUBE_T1_OPMODE: flip requested but current mode is unknown; ignoring"
+                "Cube T1 operation_mode flip requested but current mode is unknown; ignoring"
             )
             return
 
@@ -356,7 +357,7 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
         )
         setattr(self.endpoint.device, PENDING_OPERATION_MODE_ATTR, target)
         _LOGGER.debug(
-            "CUBE_T1_OPMODE: flip requested endpoint=%s current=%s target=%s",
+            "Cube T1 operation_mode flip requested: endpoint=%s current=%s target=%s",
             self.endpoint.endpoint_id,
             current,
             target,
@@ -373,12 +374,15 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             {self.AttributeDefs.operation_mode.id: value}
         )
         _LOGGER.debug(
-            "CUBE_T1_OPMODE: write_attributes result for mode=%s: %s", value, result
+            "Cube T1 operation_mode write result for mode=%s: %s", value, result
         )
         if result[0][0].status != Status.SUCCESS:
             return
         sensor_cluster.update_attribute(self.AttributeDefs.operation_mode.id, value)
-        delattr(self.endpoint.device, PENDING_OPERATION_MODE_ATTR)
+        # Check-ins may arrive on both endpoints at about the same time, each
+        # starting a write: the one finishing last must not fail on an
+        # already cleared value.
+        setattr(self.endpoint.device, PENDING_OPERATION_MODE_ATTR, None)
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -573,6 +577,8 @@ class CubeT1Device(CustomZigpyDevice):
     .replaces(BasicCluster, endpoint_id=1)
     .replaces(CubeT1PowerConfiguration, endpoint_id=1)
     .removes(OnOff.cluster_id, endpoint_id=1)
+    # The cube only has OTA as an output (client) cluster; also exposing it as an
+    # input (server) cluster is what this quirk has always done, so keep it.
     .adds(Ota.cluster_id, endpoint_id=1)
     .adds(CubeT1ManufacturerCluster, endpoint_id=1)
     .replaces_endpoint(2, device_type=XIAOMI_SENSORS_REPLACEMENT)
