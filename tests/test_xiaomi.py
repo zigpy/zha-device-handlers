@@ -3403,16 +3403,9 @@ def test_w100_button_events(
     ]
 
 
-@pytest.mark.parametrize(
-    "quirk",
-    (
-        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
-        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
-    ),
-)
-async def test_cube_hold(zigpy_device_from_quirk, quirk):
-    """Test cube hold movement event."""
-    device = zigpy_device_from_quirk(quirk)
+async def test_cube_t1_hold(zigpy_device_from_quirk):
+    """Test Aqara T1 cube hold movement event."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02)
     mi_cluster = device.endpoints[2].multistate_input
     zha_listener = mock.MagicMock()
     mi_cluster.add_listener(zha_listener)
@@ -3510,6 +3503,21 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+async def test_cube_aqgl01_hold_value_not_hold(zigpy_device_from_quirk):
+    """Test the older cube does not emit a hold event, which is T1 specific."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == []
 
 
 async def test_cube_t1_moved_after_inactivity(zigpy_device_from_quirk):

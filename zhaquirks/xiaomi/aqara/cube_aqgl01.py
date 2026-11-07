@@ -109,7 +109,6 @@ XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 
 MOVEMENT_TYPE = {
     SHAKE_VALUE: SHAKE,
-    HOLD_VALUE: HOLD,
     DROP_VALUE: DROP,
     SLIDE_1_VALUE: SLIDE,
     SLIDE_2_VALUE: SLIDE,
@@ -211,10 +210,14 @@ class CubeT1MultistateInputCluster(MultistateInputCluster):
 
     Raw value 2 means the cube was moved after standing still for a minute,
     unlike the older cube (CubeAQGL01), where the same raw value means
-    "wakeup" instead.
+    "wakeup" instead. Raw value 4 (hold) is also specific to the T1.
     """
 
-    MOVEMENT_TYPE = {**MOVEMENT_TYPE, INACTIVITY_VALUE: INACTIVITY}
+    MOVEMENT_TYPE = {
+        **MOVEMENT_TYPE,
+        INACTIVITY_VALUE: INACTIVITY,
+        HOLD_VALUE: HOLD,
+    }
 
 
 class CubeT1PowerConfiguration(XiaomiPowerConfiguration):
@@ -238,13 +241,13 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         battery_voltage_mv: Final = ZCLAttributeDef(
-            id=0x0001, type=t.uint16_t, is_manufacturer_specific=True
+            id=0x0001, type=t.uint16_t, manufacturer_code=0x115F
         )
 
         # Reported only in scene_mode, when the cube is picked up, rotated to
         # a new face, and set back down without being flipped or dropped.
         side_up: Final = ZCLAttributeDef(
-            id=0x0149, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0149, type=t.uint8_t, manufacturer_code=0x115F
         )
 
     def _update_attribute(self, attrid, value):
