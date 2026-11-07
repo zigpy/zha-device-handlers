@@ -102,10 +102,11 @@ def test_manufacturer_model_metadata_unique() -> None:
     for entry, _definition in ALL_QUIRK_V2:
         match = entry.device_match
         if (
-            match.firmware_version_min is not None
+            match.filters
+            or match.firmware_version_min is not None
             or match.firmware_version_max is not None
         ):
-            # skip quirks with firmware filter, as they can share manufacturer/model
+            # Filtered quirks can share a manufacturer/model with their fallback.
             continue
         for model_info in match.applies_to:
             man_model_quirk_map[(model_info.manufacturer, model_info.model)].append(
