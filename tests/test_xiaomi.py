@@ -3555,6 +3555,13 @@ def test_cube_t1_device_automation_triggers(zigpy_device_from_v2_quirk):
     assert triggers[(cube.MOVED_AFTER_INACTIVITY, "turn_on")] == {
         "command": cube.INACTIVITY
     }
+    assert triggers[(cube.FLIPPED_TO_SIDE, cube.FACE_ANY)] == {
+        "command": cube.FLIP_TO_SIDE
+    }
+    assert triggers[(cube.FLIPPED_TO_SIDE, cube.FACE_6)] == {
+        "command": cube.FLIP_TO_SIDE,
+        "args": {cube.ACTIVATED_FACE: 6},
+    }
     assert triggers[(cube.SIDE_UPPED, cube.FACE_ANY)] == {"command": cube.SIDE_UP}
     assert triggers[(cube.SIDE_UPPED, cube.FACE_3)] == {
         "command": cube.SIDE_UP,
@@ -3643,6 +3650,53 @@ async def test_cube_aqgl01_inactivity_value_not_moved_after_inactivity(
         zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
         zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE,
     )
+
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+@pytest.mark.parametrize("face", range(1, 7))
+async def test_cube_t1_flip_to_side(zigpy_device_from_v2_quirk, face):
+    """Test Aqara T1 cube scene mode flip to side event."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    value = cube.FLIP_TO_SIDE_BEGIN + face - 1
+    mi_cluster.update_attribute(cube.STATUS_TYPE_ATTR, value)
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(cube.FLIP_TO_SIDE, {VALUE: value, cube.ACTIVATED_FACE: face})
+    ]
+
+
+@pytest.mark.parametrize("value", (1023, 1030))
+async def test_cube_t1_flip_to_side_out_of_range(zigpy_device_from_v2_quirk, value):
+    """Test Aqara T1 cube ignores values around the flip to side range."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR, value
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+async def test_cube_aqgl01_flip_to_side_value_not_flip_to_side(
+    zigpy_device_from_quirk,
+):
+    """Test the older cube does not emit a flip to side event, which is T1 specific."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = zigpy_device_from_quirk(cube.CubeAQGL01)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(cube.STATUS_TYPE_ATTR, cube.FLIP_TO_SIDE_BEGIN)
 
     assert zha_listener.zha_send_event.mock_calls == []
 

@@ -66,7 +66,11 @@ FLIP = "flip"
 FLIP_BEGIN = 50
 FLIP_DEGREES = "flip_degrees"
 FLIP_END = 180
+FLIP_TO_SIDE = "flip_to_side"
+FLIP_TO_SIDE_BEGIN = 1024
+FLIP_TO_SIDE_END = 1030
 FLIPPED = "device_flipped"
+FLIPPED_TO_SIDE = "device_flipped_to_side"
 HELD = "device_held"
 HOLD = "hold"
 HOLD_VALUE = 4
@@ -222,6 +226,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
                         event_args[DEACTIVATED_FACE] = (value // 8) % 8 + 1
                     event_args[ACTIVATED_FACE] = int((value % 8) + 1)
 
+                if action == FLIP_TO_SIDE:
+                    event_args[ACTIVATED_FACE] = value - FLIP_TO_SIDE_BEGIN + 1
+
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
             # show something in the sensor in HA
@@ -233,13 +240,16 @@ class CubeT1MultistateInputCluster(MultistateInputCluster):
 
     Raw value 2 means the cube was moved after standing still for a minute,
     unlike the older cube (CubeAQGL01), where the same raw value means
-    "wakeup" instead. Raw value 4 (hold) is also specific to the T1.
+    "wakeup" instead. Raw value 4 (hold) is also specific to the T1, as are raw
+    values 1024 to 1029 (flip to side 1 to 6): reported in scene mode, when the
+    cube is picked up and put back, on the same face or on another one.
     """
 
     MOVEMENT_TYPE = {
         **MOVEMENT_TYPE,
         INACTIVITY_VALUE: INACTIVITY,
         HOLD_VALUE: HOLD,
+        **dict.fromkeys(range(FLIP_TO_SIDE_BEGIN, FLIP_TO_SIDE_END), FLIP_TO_SIDE),
     }
 
 
@@ -274,8 +284,9 @@ class CubeT1ManufacturerCluster(XiaomiAqaraE1Cluster):
             id=0x0001, type=t.uint16_t, manufacturer_code=XIAOMI_MANUFACTURER_CODE
         )
 
-        # Reported only in scene_mode, when the cube is picked up, rotated to
-        # a new face, and set back down without being flipped or dropped.
+        # Reported in scene_mode with the face currently facing up, e.g. when the
+        # cube wakes up after being bumped on the table. Not to be confused with
+        # flip_to_side, which is reported when the cube is picked up and put back.
         side_up: Final = ZCLAttributeDef(
             id=0x0149, type=t.uint8_t, manufacturer_code=XIAOMI_MANUFACTURER_CODE
         )
@@ -608,6 +619,31 @@ class CubeT1Device(CustomZigpyDevice):
             **CubeAQGL01.device_automation_triggers,
             (HELD, TURN_ON): {COMMAND: HOLD},
             (MOVED_AFTER_INACTIVITY, TURN_ON): {COMMAND: INACTIVITY},
+            (FLIPPED_TO_SIDE, FACE_ANY): {COMMAND: FLIP_TO_SIDE},
+            (FLIPPED_TO_SIDE, FACE_1): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 1},
+            },
+            (FLIPPED_TO_SIDE, FACE_2): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 2},
+            },
+            (FLIPPED_TO_SIDE, FACE_3): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 3},
+            },
+            (FLIPPED_TO_SIDE, FACE_4): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 4},
+            },
+            (FLIPPED_TO_SIDE, FACE_5): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 5},
+            },
+            (FLIPPED_TO_SIDE, FACE_6): {
+                COMMAND: FLIP_TO_SIDE,
+                ARGS: {ACTIVATED_FACE: 6},
+            },
             (SIDE_UPPED, FACE_ANY): {COMMAND: SIDE_UP},
             (SIDE_UPPED, FACE_1): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 1}},
             (SIDE_UPPED, FACE_2): {COMMAND: SIDE_UP, ARGS: {ACTIVATED_FACE: 2}},
