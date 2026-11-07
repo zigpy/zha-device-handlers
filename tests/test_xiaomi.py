@@ -8,6 +8,8 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms import EntityCategory
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
@@ -46,6 +48,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.builder import EntityPlatform, EntityType
 from zhaquirks.const import (
@@ -4011,3 +4014,38 @@ def test_cube_t1_entities(zigpy_device_from_v2_quirk):
     assert button.endpoint_id == cube.OPERATION_MODE_ENDPOINT_ID
     assert button.cluster_id == cube.CubeT1ManufacturerCluster.cluster_id
     assert button.command_name == "request_operation_mode_flip"
+
+
+async def test_cube_t1_end_to_end():
+    """Test the cube T1 quirk through a ZHA gateway, using real device diagnostics."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    ieee = "00:11:22:33:44:55:66:77"
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "lumi-lumi-remote-cagl02-0x0000001c.json", DEVICE_REGISTRY
+        )
+        assert device.quirk_applied
+
+        sensor = device.get_platform_entity(
+            Platform.SENSOR, unique_id=f"{ieee}-1-operation_mode"
+        )
+        button = device.get_platform_entity(
+            Platform.BUTTON, unique_id=f"{ieee}-1-request_operation_mode_flip"
+        )
+        assert sensor.entity_category == EntityCategory.DIAGNOSTIC
+        assert button.entity_category == EntityCategory.CONFIG
+        assert sensor.native_value is None
+
+        # the mode is learnt from a check-in, received on either endpoint
+        device.device.endpoints[2].opple_cluster.update_attribute(
+            XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(1)
+        )
+        assert sensor.native_value == cube.CubeT1OperationMode.scene_mode.name
+
+        # pressing the button queues the other mode, written on the next check-in
+        await button.async_press()
+        assert (
+            getattr(device.device, cube.PENDING_OPERATION_MODE_ATTR)
+            == cube.CubeT1OperationMode.action_mode
+        )
