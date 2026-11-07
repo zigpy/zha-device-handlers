@@ -8,6 +8,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -23,9 +24,11 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
     DeviceTemperature,
+    Identify,
     MultistateInput,
     MultistateOutput,
     OnOff,
+    Ota,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -44,6 +47,7 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks.builder import EntityPlatform, EntityType
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
@@ -493,7 +497,6 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
         (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
         (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
-        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.illumination.Illumination, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
         (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
@@ -3483,3 +3486,474 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+# Clusters reported by the real Aqara Cube T1 Pro (`lumi.remote.cagl02`), needed to
+# build a "before quirk" device that the v2 quirk ops (`.replaces()`, `.removes()`)
+# can operate on.
+CUBE_T1_CLUSTER_IDS = {
+    1: {
+        PowerConfiguration.cluster_id: ClusterType.Server,
+        Identify.cluster_id: ClusterType.Server,
+        OnOff.cluster_id: ClusterType.Server,
+        MultistateInput.cluster_id: ClusterType.Server,
+    },
+    2: {MultistateInput.cluster_id: ClusterType.Server},
+    3: {AnalogInput.cluster_id: ClusterType.Server},
+}
+
+
+def _cube_t1_device(zigpy_device_from_v2_quirk):
+    return zigpy_device_from_v2_quirk(
+        LUMI, "lumi.remote.cagl02", cluster_ids=CUBE_T1_CLUSTER_IDS
+    )
+
+
+def _cube_t1_checkin_blob(mode: int) -> bytes:
+    """Build a raw Xiaomi structured attribute blob reporting the cube's mode."""
+    return (
+        bytes([zhaquirks.xiaomi.aqara.cube_aqgl01.OPERATION_MODE_TAG])
+        + TypeValue(type=DataTypeId.uint8, value=t.uint8_t(mode)).serialize()
+    )
+
+
+def _cube_t1_write_response(status: foundation.Status) -> list:
+    return [[foundation.WriteAttributesStatusRecord(status=status)]]
+
+
+async def _let_tasks_run() -> None:
+    """Let tasks created by the quirk (`create_catching_task`) run."""
+    for _ in range(3):
+        await asyncio.sleep(0)
+
+
+def test_cube_t1_clusters(zigpy_device_from_v2_quirk):
+    """Test the cube T1 quirk swaps in its custom clusters."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+
+    assert isinstance(device.endpoints[1].power, cube.CubeT1PowerConfiguration)
+    assert OnOff.cluster_id not in device.endpoints[1].in_clusters
+    assert Ota.cluster_id in device.endpoints[1].in_clusters
+    assert isinstance(device.endpoints[1].opple_cluster, cube.CubeT1ManufacturerCluster)
+    assert isinstance(
+        device.endpoints[2].multistate_input, cube.CubeT1MultistateInputCluster
+    )
+    assert isinstance(device.endpoints[2].opple_cluster, cube.CubeT1ManufacturerCluster)
+    assert isinstance(device.endpoints[3].analog_input, cube.AnalogInputCluster)
+
+
+def test_cube_t1_device_automation_triggers(zigpy_device_from_v2_quirk):
+    """Test the cube T1 has the new triggers on top of the older cube's."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    triggers = _cube_t1_device(zigpy_device_from_v2_quirk).device_automation_triggers
+
+    for trigger, value in cube.CubeAQGL01.device_automation_triggers.items():
+        assert triggers[trigger] == value
+
+    assert triggers[(cube.HELD, "turn_on")] == {"command": cube.HOLD}
+    assert triggers[(cube.MOVED_AFTER_INACTIVITY, "turn_on")] == {
+        "command": cube.INACTIVITY
+    }
+    assert triggers[(cube.SIDE_UPPED, cube.FACE_ANY)] == {"command": cube.SIDE_UP}
+    assert triggers[(cube.SIDE_UPPED, cube.FACE_3)] == {
+        "command": cube.SIDE_UP,
+        "args": {cube.ACTIVATED_FACE: 3},
+    }
+
+
+async def test_cube_t1_battery_size(zigpy_device_from_v2_quirk):
+    """Test Aqara T1 cube battery size override."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[1].power
+    succ, fail = await cluster.read_attributes(("battery_size", "battery_quantity"))
+    assert succ["battery_quantity"] == 1
+    assert succ["battery_size"] == BatterySize.CR2450
+
+
+async def test_cube_t1_hold(zigpy_device_from_v2_quirk):
+    """Test Aqara T1 cube hold movement event."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD,
+            {VALUE: zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE},
+        )
+    ]
+
+
+async def test_cube_aqgl01_hold_value_not_hold(zigpy_device_from_quirk):
+    """Test the older cube does not emit a hold event, which is T1 specific."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.HOLD_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+async def test_cube_t1_moved_after_inactivity(zigpy_device_from_v2_quirk):
+    """Test Aqara T1 cube 1 minute inactivity movement event."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY,
+            {VALUE: zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE},
+        )
+    ]
+
+
+async def test_cube_aqgl01_inactivity_value_not_moved_after_inactivity(
+    zigpy_device_from_quirk,
+):
+    """Test the older cube does not treat raw value 2 as 1 minute inactivity movement.
+
+    Unlike the Aqara T1 cube, raw value 2 means "wakeup" on the older cube, so
+    it is not present in its movement type mapping and no event should fire.
+    """
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01)
+    mi_cluster = device.endpoints[2].multistate_input
+    zha_listener = mock.MagicMock()
+    mi_cluster.add_listener(zha_listener)
+
+    mi_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.STATUS_TYPE_ATTR,
+        zhaquirks.xiaomi.aqara.cube_aqgl01.INACTIVITY_VALUE,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == []
+
+
+async def test_cube_t1_side_up(zigpy_device_from_v2_quirk):
+    """Test Aqara T1 cube side_up event."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    manufacturer_cluster = device.endpoints[2].opple_cluster
+    zha_listener = mock.MagicMock()
+    manufacturer_cluster.add_listener(zha_listener)
+
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.side_up.id,
+        3,
+    )
+
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call(
+            zhaquirks.xiaomi.aqara.cube_aqgl01.SIDE_UP,
+            {zhaquirks.xiaomi.aqara.cube_aqgl01.ACTIVATED_FACE: 4},
+        )
+    ]
+
+
+async def test_cube_t1_manufacturer_cluster_battery_voltage(zigpy_device_from_v2_quirk):
+    """Test Aqara T1 cube battery voltage reporting on the manufacturer cluster."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    power_cluster = device.endpoints[1].power
+    manufacturer_cluster = device.endpoints[1].opple_cluster
+
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.battery_voltage_mv.id,
+        2950,
+    )
+
+    assert power_cluster["battery_voltage"] == 29.5
+
+
+async def test_cube_t1_manufacturer_cluster_battery_voltage_no_power_endpoint(
+    zigpy_device_from_v2_quirk,
+):
+    """Test the manufacturer cluster ignores battery voltage on an endpoint without a power cluster."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    manufacturer_cluster = device.endpoints[2].opple_cluster
+
+    # Should not raise, since endpoint 2 has no "power" cluster.
+    manufacturer_cluster.update_attribute(
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.battery_voltage_mv.id,
+        2950,
+    )
+
+
+def test_cube_t1_attributes_use_xiaomi_manufacturer_code():
+    """Test the manufacturer specific attributes are sent with Xiaomi's code."""
+    attributes = (
+        zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs
+    )
+    for attribute in (
+        attributes.battery_voltage_mv,
+        attributes.side_up,
+        attributes.operation_mode,
+    ):
+        assert attribute.manufacturer_code == 0x115F
+
+
+def test_cube_t1_operation_mode_wire_type_is_uint8():
+    """Test operation_mode is written as uint8, as the cube rejects enum8 writes."""
+    attribute = zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1ManufacturerCluster.AttributeDefs.operation_mode
+    assert attribute.zcl_type == DataTypeId.uint8
+
+
+@pytest.mark.parametrize(
+    "blob, expected",
+    (
+        (b"", None),
+        (b"\x00", None),
+        # a tag that is not the operation mode
+        (
+            bytes([1]) + TypeValue(DataTypeId.uint8, t.uint8_t(100)).serialize(),
+            None,
+        ),
+        (_cube_t1_checkin_blob(0), 0),
+        (_cube_t1_checkin_blob(1), 1),
+        # the operation mode tag is found after other tags
+        (
+            bytes([1])
+            + TypeValue(DataTypeId.uint16, t.uint16_t(2950)).serialize()
+            + _cube_t1_checkin_blob(1),
+            1,
+        ),
+    ),
+)
+def test_cube_t1_parse_operation_mode_tag(blob, expected):
+    """Test extracting the operation mode from a Xiaomi attribute blob."""
+    assert zhaquirks.xiaomi.aqara.cube_aqgl01.parse_operation_mode_tag(blob) == expected
+
+
+def test_cube_t1_operation_mode_sensor_starts_unknown(zigpy_device_from_v2_quirk):
+    """Test the operation_mode sensor has no value before the first check-in."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    manufacturer_cluster = device.endpoints[1].opple_cluster
+    assert manufacturer_cluster.get("operation_mode") is None
+
+
+@pytest.mark.parametrize("endpoint", [1, 2])
+@pytest.mark.parametrize(
+    "raw_mode, expected_mode",
+    (
+        (0, zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1OperationMode.action_mode),
+        (1, zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1OperationMode.scene_mode),
+    ),
+)
+def test_cube_t1_operation_mode_sensor_updates_from_checkin(
+    zigpy_device_from_v2_quirk, endpoint, raw_mode, expected_mode
+):
+    """Test the operation_mode sensor updates from either endpoint's check-in."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    manufacturer_cluster = device.endpoints[endpoint].opple_cluster
+    sensor_cluster = device.endpoints[1].opple_cluster
+
+    manufacturer_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(raw_mode)
+    )
+
+    assert sensor_cluster.get("operation_mode") == expected_mode
+
+
+def test_cube_t1_operation_mode_sensor_ignores_unrelated_checkin(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a check-in without the operation_mode tag doesn't update or crash."""
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    manufacturer_cluster = device.endpoints[1].opple_cluster
+
+    # Tag 1 (battery_voltage_mV) - a real tag, just not the one we care about.
+    blob = (
+        bytes([1]) + TypeValue(type=DataTypeId.uint8, value=t.uint8_t(100)).serialize()
+    )
+    manufacturer_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, blob)
+
+    assert manufacturer_cluster.get("operation_mode") is None
+
+
+async def test_cube_t1_flip_operation_mode_unknown_mode(zigpy_device_from_v2_quirk):
+    """Test flipping is ignored while the current operation mode is unknown."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[1].opple_cluster
+
+    await cluster.request_operation_mode_flip()
+
+    assert getattr(device, cube.PENDING_OPERATION_MODE_ATTR, None) is None
+
+
+@pytest.mark.parametrize(
+    "raw_mode, expected_target",
+    (
+        (0, zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1OperationMode.scene_mode),
+        (1, zhaquirks.xiaomi.aqara.cube_aqgl01.CubeT1OperationMode.action_mode),
+    ),
+)
+async def test_cube_t1_flip_operation_mode_queues_other_mode(
+    zigpy_device_from_v2_quirk, raw_mode, expected_target
+):
+    """Test flipping queues the other mode, without writing until the next check-in."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[1].opple_cluster
+    cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(raw_mode))
+
+    with mock.patch.object(cluster, "write_attributes", mock.AsyncMock()) as write:
+        await cluster.request_operation_mode_flip()
+
+    assert getattr(device, cube.PENDING_OPERATION_MODE_ATTR) == expected_target
+    assert write.mock_calls == []
+
+
+@pytest.mark.parametrize("endpoint", [1, 2])
+async def test_cube_t1_flip_operation_mode_applied_on_next_checkin(
+    zigpy_device_from_v2_quirk, endpoint
+):
+    """Test the queued mode is written on the next check-in, from either endpoint."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    sensor_cluster = device.endpoints[1].opple_cluster
+    checkin_cluster = device.endpoints[endpoint].opple_cluster
+    sensor_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0))
+    await sensor_cluster.request_operation_mode_flip()
+
+    with mock.patch.object(
+        checkin_cluster,
+        "write_attributes",
+        mock.AsyncMock(return_value=_cube_t1_write_response(foundation.Status.SUCCESS)),
+    ) as write:
+        checkin_cluster.update_attribute(
+            XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0)
+        )
+        await _let_tasks_run()
+
+    assert write.mock_calls == [
+        mock.call({cube.CubeT1ManufacturerCluster.AttributeDefs.operation_mode.id: 1})
+    ]
+    assert sensor_cluster.get("operation_mode") == cube.CubeT1OperationMode.scene_mode
+    assert getattr(device, cube.PENDING_OPERATION_MODE_ATTR) is None
+
+
+async def test_cube_t1_flip_operation_mode_retried_after_failed_write(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a failed write keeps the queued mode, which is retried on the next check-in."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[1].opple_cluster
+    cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0))
+    await cluster.request_operation_mode_flip()
+
+    with mock.patch.object(
+        cluster,
+        "write_attributes",
+        mock.AsyncMock(
+            return_value=_cube_t1_write_response(foundation.Status.INVALID_DATA_TYPE)
+        ),
+    ) as write:
+        cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0))
+        await _let_tasks_run()
+
+    assert len(write.mock_calls) == 1
+    assert cluster.get("operation_mode") == cube.CubeT1OperationMode.action_mode
+    assert (
+        getattr(device, cube.PENDING_OPERATION_MODE_ATTR)
+        == cube.CubeT1OperationMode.scene_mode
+    )
+
+    # the next check-in retries it
+    with mock.patch.object(
+        cluster,
+        "write_attributes",
+        mock.AsyncMock(return_value=_cube_t1_write_response(foundation.Status.SUCCESS)),
+    ) as write:
+        cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0))
+        await _let_tasks_run()
+
+    assert len(write.mock_calls) == 1
+    assert cluster.get("operation_mode") == cube.CubeT1OperationMode.scene_mode
+    assert getattr(device, cube.PENDING_OPERATION_MODE_ATTR) is None
+
+
+async def test_cube_t1_flip_operation_mode_concurrent_checkins(
+    zigpy_device_from_v2_quirk,
+):
+    """Test check-ins on both endpoints applying the same queued mode don't fail."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+    sensor_cluster = device.endpoints[1].opple_cluster
+    scene_mode = cube.CubeT1OperationMode.scene_mode
+    setattr(device, cube.PENDING_OPERATION_MODE_ATTR, scene_mode)
+
+    with (
+        mock.patch.object(
+            device.endpoints[1].opple_cluster,
+            "write_attributes",
+            mock.AsyncMock(
+                return_value=_cube_t1_write_response(foundation.Status.SUCCESS)
+            ),
+        ),
+        mock.patch.object(
+            device.endpoints[2].opple_cluster,
+            "write_attributes",
+            mock.AsyncMock(
+                return_value=_cube_t1_write_response(foundation.Status.SUCCESS)
+            ),
+        ),
+    ):
+        # Both writes were started before either of them finished: the second one
+        # to finish finds the queued mode already cleared, and must not raise.
+        await asyncio.gather(
+            *(
+                device.endpoints[ep].opple_cluster._apply_pending_operation_mode(
+                    sensor_cluster, scene_mode
+                )
+                for ep in (1, 2)
+            )
+        )
+
+    assert sensor_cluster.get("operation_mode") == scene_mode
+    assert getattr(device, cube.PENDING_OPERATION_MODE_ATTR) is None
+
+
+def test_cube_t1_entities(zigpy_device_from_v2_quirk):
+    """Test the cube T1 quirk creates the operation mode sensor and flip button."""
+    cube = zhaquirks.xiaomi.aqara.cube_aqgl01
+    device = _cube_t1_device(zigpy_device_from_v2_quirk)
+
+    entry = DEVICE_REGISTRY.match_entry(device)
+    entities = {
+        metadata.resolved_unique_id_suffix: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+    assert set(entities) == {"operation_mode", "request_operation_mode_flip"}
+
+    sensor = entities["operation_mode"]
+    assert sensor.entity_platform == EntityPlatform.SENSOR
+    assert sensor.entity_type == EntityType.DIAGNOSTIC
+    assert sensor.endpoint_id == cube.OPERATION_MODE_ENDPOINT_ID
+    assert sensor.cluster_id == cube.CubeT1ManufacturerCluster.cluster_id
+    assert sensor.attribute_name == "operation_mode"
+    assert sensor.enum == cube.CubeT1OperationMode
+
+    button = entities["request_operation_mode_flip"]
+    assert button.entity_platform == EntityPlatform.BUTTON
+    assert button.entity_type == EntityType.CONFIG
+    assert button.endpoint_id == cube.OPERATION_MODE_ENDPOINT_ID
+    assert button.cluster_id == cube.CubeT1ManufacturerCluster.cluster_id
+    assert button.command_name == "request_operation_mode_flip"

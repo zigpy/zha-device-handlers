@@ -896,8 +896,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             # remove MultistateInput output cluster (Xiaomi cube):
             zhaquirks.xiaomi.aqara.cube.Cube,
             zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
-            # also add OTA input cluster (Aqara cube):
-            zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
             # remove custom Xiaomi output cluster (E1 curtain driver):
             zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
             # remove random AnalogInput input cluster (Aqara remote + temp sensor):
