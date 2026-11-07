@@ -34,8 +34,8 @@ class SonoffIlluminationCluster(CustomCluster):
         last_illumination_state = ZCLAttributeDef(
             id=0x2001,
             type=LastIlluminationState,
-            access="rp",
-            is_manufacturer_specific=True,
+            access="p",
+            is_manufacturer_specific=False,
         )
 
 
