@@ -4035,17 +4035,18 @@ async def test_cube_t1_end_to_end():
         )
         assert sensor.entity_category == EntityCategory.DIAGNOSTIC
         assert button.entity_category == EntityCategory.CONFIG
-        assert sensor.native_value is None
-
-        # the mode is learnt from a check-in, received on either endpoint
-        device.device.endpoints[2].opple_cluster.update_attribute(
-            XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(1)
-        )
+        # the diagnostics have the mode the cube was in
         assert sensor.native_value == cube.CubeT1OperationMode.scene_mode.name
+
+        # it is updated from a check-in, received on either endpoint
+        device.device.endpoints[2].opple_cluster.update_attribute(
+            XIAOMI_AQARA_ATTRIBUTE_E1, _cube_t1_checkin_blob(0)
+        )
+        assert sensor.native_value == cube.CubeT1OperationMode.action_mode.name
 
         # pressing the button queues the other mode, written on the next check-in
         await button.async_press()
         assert (
             getattr(device.device, cube.PENDING_OPERATION_MODE_ATTR)
-            == cube.CubeT1OperationMode.action_mode
+            == cube.CubeT1OperationMode.scene_mode
         )
