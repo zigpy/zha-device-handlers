@@ -37,12 +37,16 @@ zhaquirks.setup()
 # firmware version that fixed the metering divisor bug (max_version is exclusive)
 SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
 
+# the SP 242 (UK) uses the SP 240 quirk
+SP240_MODELS = ["SP 240", "SP 242"]
 
+
+@pytest.mark.parametrize("model", SP240_MODELS)
 @pytest.mark.parametrize(
     "firmware_version",
     [SP240_DIVISOR_FIX_FW_VERSION - 1, SP240_DIVISOR_FIX_FW_VERSION],
 )
-def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version):
+def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version, model):
     """Test the SP 240 quirk keeps the device's cluster order.
 
     ZHA configures reporting in this order, and the plug only has a few
@@ -63,7 +67,7 @@ def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version):
     ]
     device = zigpy_device_from_v2_quirk(
         "innr",
-        "SP 240",
+        model,
         cluster_ids={1: dict.fromkeys(raw_cluster_ids, ClusterType.Server)},
         firmware_version=firmware_version,
     )
@@ -112,16 +116,18 @@ def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version):
         ),
     ],
 )
+@pytest.mark.parametrize("model", SP240_MODELS)
 def test_innr_sp240_firmware_version_metering(
     zigpy_device_from_v2_quirk,
     firmware_version,
     expected_cluster,
     expected_divisor,
+    model,
 ):
     """Test the correct Innr SP 240 quirk is selected based on firmware version."""
     device = zigpy_device_from_v2_quirk(
         "innr",
-        "SP 240",
+        model,
         cluster_ids={
             1: {
                 LevelControl.cluster_id: ClusterType.Server,
@@ -145,13 +151,14 @@ def test_innr_sp240_firmware_version_metering(
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == expected_divisor
 
 
+@pytest.mark.parametrize("model", SP240_MODELS)
 async def test_innr_sp240_skips_em_scaling_constant_reporting(
-    zigpy_device_from_v2_quirk,
+    zigpy_device_from_v2_quirk, model
 ):
     """The SP 240 does not configure reporting for the EM scaling constants."""
     device = zigpy_device_from_v2_quirk(
         "innr",
-        "SP 240",
+        model,
         cluster_ids={1: {ElectricalMeasurement.cluster_id: ClusterType.Server}},
     )
     em_cluster = device.endpoints[1].electrical_measurement

@@ -50,6 +50,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice, get_device
 from zhaquirks.tuya import (
     Data,
+    PowerOnState,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
@@ -59,6 +60,7 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts004f
 import zhaquirks.tuya.ts0041
@@ -509,6 +511,37 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[9][1] == 0
     assert thermostat_listener.attribute_updates[10][0] == 0x001C  # HEAT ON
     assert thermostat_listener.attribute_updates[10][1] == 4
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_quirk_values_survive_cache_clear(
+    zigpy_device_from_quirk, quirk
+):
+    """Test quirk-defined values are kept when zigpy clears the cache on startup."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+
+    # zigpy's appdb clears the attribute cache of every cluster after applying quirks
+    for ep in valve_dev.non_zdo_endpoints:
+        for cluster in (*ep.in_clusters.values(), *ep.out_clusters.values()):
+            cluster._attr_cache.clear()
+
+    thermostat = valve_dev.endpoints[1].thermostat
+    for attr, value in (
+        (Thermostat.AttributeDefs.min_heat_setpoint_limit, 500),
+        (Thermostat.AttributeDefs.max_heat_setpoint_limit, 3000),
+        (
+            Thermostat.AttributeDefs.ctrl_sequence_of_oper,
+            Thermostat.ControlSequenceOfOperation.Heating_Only,
+        ),
+    ):
+        assert thermostat.get(attr.name) == value
+        assert not thermostat.is_attribute_unsupported(attr)
+
+    temperature_offset = valve_dev.endpoints[1].analog_output
+    assert temperature_offset.get("description") == "Temperature Offset"
+    assert temperature_offset.get("min_present_value") == -5
+    assert temperature_offset.get("max_present_value") == 5
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_haozee.HY08WE,))
@@ -1620,9 +1653,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_TZ3000_awgcnkrh"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_TZ3400_deyjhapk"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TI, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TIIAS, "_TZ3000_ajsypttg"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3000_pwgcnkrh"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_TZ3400_leyjhapk"),
         (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TO, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB, "_TZ3000_fa9mlvja"),
+        (
+            zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB,
+            "another random manufacturer",
+        ),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3000_owgcnkrh"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3400_keyjhapk"),
         (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_some_random_manuf"),
@@ -2040,3 +2079,73 @@ async def test_ts011f_qeuvnohg_acknowledges_temperature_reports(
         reply.assert_called_once()
         assert reply.call_args.kwargs["cluster"] == TemperatureMeasurement.cluster_id
         assert bytes(reply.call_args.kwargs["data"]) == expected_response
+
+
+@pytest.mark.parametrize(
+    "attribute,value,expected_data",
+    [
+        (
+            "switch_type",
+            zhaquirks.tuya.ts000f.Ts000fExternalSwitchType.Toggle,
+            b"\x00\x01\x02" + b"\x01\x80\x30\x01",
+        ),
+        (
+            "power_on_state",
+            PowerOnState.LastState,
+            b"\x00\x01\x02" + b"\x02\x80\x30\x02",
+        ),
+    ],
+)
+async def test_ts000f_write_attribute(
+    zigpy_device_from_v2_quirk, attribute, value, expected_data
+):
+    """Test TS000F attributes are written without a manufacturer code.
+
+    Frame control 0x00, sequence 1, write attributes. The device accepts both
+    attributes with and without the Tuya manufacturer code.
+    """
+    device: Device = zigpy_device_from_v2_quirk("_TZ3218_hdc8bbha", "TS000F")
+    onoff_cluster = device.endpoints[1].on_off
+
+    async def async_success(*args, **kwargs):
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        onoff_cluster.endpoint, "request", side_effect=async_success
+    ) as request_mock:
+        (status,) = await onoff_cluster.write_attributes({attribute: value})
+
+    assert status[0].status == foundation.Status.SUCCESS
+
+    assert request_mock.mock_calls[0].kwargs["cluster"] == OnOff.cluster_id
+    assert request_mock.mock_calls[0].kwargs["data"] == expected_data
+
+
+@pytest.mark.parametrize(
+    "data,attribute,expected_value",
+    [
+        (
+            b"\x18\x01\x0a\x01\x80\x30\x00",
+            "switch_type",
+            zhaquirks.tuya.ts000f.Ts000fExternalSwitchType.Momentary,
+        ),
+        (
+            b"\x18\x01\x0a\x02\x80\x30\x02",
+            "power_on_state",
+            PowerOnState.LastState,
+        ),
+    ],
+)
+async def test_ts000f_attribute_report(
+    zigpy_device_from_v2_quirk, data, attribute, expected_value
+):
+    """Test TS000F attribute reports are deserialized into their enums."""
+    device: Device = zigpy_device_from_v2_quirk("_TZ3218_hdc8bbha", "TS000F")
+    onoff_cluster = device.endpoints[1].on_off
+    listener = ClusterListener(onoff_cluster)
+
+    onoff_cluster.handle_message(*onoff_cluster.deserialize(data))
+
+    attr_id = onoff_cluster.attributes_by_name[attribute].id
+    assert listener.attribute_updates == [(attr_id, expected_value)]
+    assert isinstance(listener.attribute_updates[0][1], type(expected_value))

@@ -1,5 +1,6 @@
 """Test units for new Tuya cluster framework."""
 
+import logging
 from unittest import mock
 
 import pytest
@@ -341,3 +342,51 @@ def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
 
     assert default_rsp_mock.call_count == 1
     assert default_rsp_mock.call_args[1]["status"] == zcl_f.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "data",
+    (
+        pytest.param(b"\x02\x00\x01\x00", id="value-1-byte"),
+        pytest.param(b"\x01\x00\x00", id="bool-empty"),
+        pytest.param(b"\x04\x00\x00", id="enum-empty"),
+        pytest.param(b"\x05\x00\x03\x01\x02\x03", id="bitmap-3-bytes"),
+        pytest.param(b"\x03\x00\x01\xff", id="string-not-utf8"),
+        pytest.param(b"\x06\x00\x04\x03\x02\x01\x00", id="unknown-type"),
+    ),
+)
+def test_tuya_get_data_invalid_datapoint(TuyaCluster, data, caplog):
+    """Test an invalid datapoint is skipped and the next one is still handled."""
+
+    invalid, _ = TuyaData.deserialize(data)
+    valid, _ = TuyaData.deserialize(b"\x02\x00\x04\x00\x00\x00\xd2")
+    command = TuyaCommand(
+        status=0,
+        tsn=2,
+        datapoints=[TuyaDatapointData(1, invalid), TuyaDatapointData(2, valid)],
+    )
+
+    payloads = []
+    handlers = {1: "_dp_2_attr_update", 2: "_dp_2_attr_update"}
+    with (
+        mock.patch.object(TuyaCluster, "data_point_handlers", handlers),
+        mock.patch.object(
+            TuyaCluster,
+            "_dp_2_attr_update",
+            lambda datapoint: payloads.append(datapoint.data.payload),
+        ),
+    ):
+        status = TuyaCluster.handle_get_data(command)
+
+    assert status == zcl_f.Status.SUCCESS
+    assert payloads == [210]
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "Ignoring invalid datapoint 1 " in warnings[0]
+
+
+def test_tuya_get_data_no_datapoints(TuyaCluster):
+    """Test a command without datapoints is acknowledged."""
+
+    command = TuyaCommand(status=0, tsn=2, datapoints=[])
+    assert TuyaCluster.handle_get_data(command) == zcl_f.Status.SUCCESS

@@ -11,10 +11,10 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
-    SensorDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
 )
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -41,9 +41,11 @@ class TuyaSoilWaterWarning(t.enum8):
 class TuyaSoilLightLevel(t.enum8):
     """Tuya soil sensor light level enum."""
 
-    Low = 0x00
+    Lowest = 0x00
+    Low = 0x01
     Normal = 0x02
-    High = 0x04
+    High = 0x03
+    Highest = 0x04
 
 
 class TuyaNousTempHumiAlarm(t.enum8):
@@ -147,7 +149,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=17,
         attribute_name="temperature_report_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=5,
         max_value=120,
@@ -160,7 +162,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=18,
         attribute_name="humidity_report_interval",
         type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=5,
         max_value=120,
@@ -279,10 +281,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .applies_to("_TZE284_sgabhwa6", "TS0601")
-    .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
-    .applies_to(
-        "_TZE2841000000_nhgdf6qr", "TS0601"
-    )  # Giex GX04, corrupted manufacturer ID
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
     .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
@@ -290,6 +288,20 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE2841000000_tgrzpqf4", "TS0601")
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
+    .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    # Same datapoints as the aao3yzhs group above, but powered by 2x AAA.
+    TuyaQuirkBuilder("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .applies_to(
+        "_TZE2841000000_nhgdf6qr", "TS0601"
+    )  # Giex GX04, corrupted manufacturer ID
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15, battery_type=BatterySize.AAA)
     .tuya_soil_moisture(dp_id=3)
     .skip_configuration()
     .add_to_registry()
