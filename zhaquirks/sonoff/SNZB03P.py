@@ -5,10 +5,11 @@ from zha.application.platforms.number.device_class import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLHeader
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import QuirkBuilder, UnitOfTime
 from zhaquirks.clusters import CustomCluster
+
 
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
@@ -16,17 +17,16 @@ from zhaquirks.clusters import CustomCluster
 
 
 class LastIlluminationState(t.enum8):
-    """Enum representing the last illumination state reported by SNZB‑03P."""
+    """Enum representing the last illumination state reported by SNZB-03P."""
 
     Dark = 0x00
     Light = 0x01
 
 
 class SonoffIlluminationCluster(CustomCluster):
-    """Vendor-specific illumination cluster used by SNZB‑03P."""
+    """Vendor-specific illumination cluster used by SNZB-03P."""
 
     cluster_id = 0xFC11
-    manufacturer_id_override = ZCLHeader.NO_MANUFACTURER_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for the illumination cluster."""
@@ -35,7 +35,7 @@ class SonoffIlluminationCluster(CustomCluster):
             id=0x2001,
             type=LastIlluminationState,
             access="p",
-            is_manufacturer_specific=False,
+            manufacturer_code=None,
         )
 
 
@@ -47,8 +47,11 @@ class SonoffIlluminationCluster(CustomCluster):
     QuirkBuilder("eWeLink", "SNZB-03P")
     # Vendor illumination cluster
     .replaces(SonoffIlluminationCluster)
-    # Remove IAS motion to avoid duplicate binary_sensor
-    .removes(IasZone.cluster_id)
+    # Prevent default IAS Zone entity creation
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=IasZone.cluster_id,
+    )
     # Motion timeout (mapped by Sonoff to OccupancySensing delay)
     .number(
         OccupancySensing.AttributeDefs.ultrasonic_o_to_u_delay.name,
