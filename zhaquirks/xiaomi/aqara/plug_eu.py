@@ -22,6 +22,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder, UnitOfPower, UnitOfTime
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,6 +31,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import signature_matches
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
@@ -320,47 +322,89 @@ class PlugMMEU01Alt3(PlugMMEU01):
     replacement = PlugMMEU01.replacement
 
 
-class PlugMAEU01(PlugMMEU01):
-    """lumi.plug.maeu01 plug."""
+class OppleClusterMAEU01(OppleCluster):
+    """Opple cluster of the MAEU01 plug with its configuration attributes."""
 
-    signature = {
-        MODELS_INFO: [
-            (LUMI, "lumi.plug.maeu01"),
-        ],
-        ENDPOINTS: PlugMMEU01.signature[ENDPOINTS],
-    }
+    class AttributeDefs(OppleCluster.AttributeDefs):
+        """Attribute definitions."""
 
-    replacement = PlugMMEU01.replacement
-
-
-class PlugMAEU01Alt1(PlugMAEU01):
-    """lumi.plug.maeu01 plug with alternative signature."""
-
-    signature = {
-        MODELS_INFO: PlugMAEU01.signature[MODELS_INFO],
-        ENDPOINTS: PlugMMEU01Alt1.signature[ENDPOINTS],
-    }
-
-    replacement = PlugMAEU01.replacement
-
-
-class PlugMAEU01Alt2(PlugMAEU01):
-    """lumi.plug.maeu01 plug with alternative signature."""
-
-    signature = {
-        MODELS_INFO: PlugMAEU01.signature[MODELS_INFO],
-        ENDPOINTS: PlugMMEU01Alt2.signature[ENDPOINTS],
-    }
-
-    replacement = PlugMAEU01.replacement
+        heartbeat_interval: Final = ZCLAttributeDef(
+            id=0x00F6, type=types.uint16_t, manufacturer_code=0x115F
+        )
+        button_lock: Final = ZCLAttributeDef(
+            id=0x0200, type=types.uint8_t, manufacturer_code=0x115F
+        )
+        auto_off: Final = ZCLAttributeDef(
+            id=0x0202, type=types.Bool, manufacturer_code=0x115F
+        )
+        led_disabled: Final = ZCLAttributeDef(
+            id=0x0203, type=types.Bool, manufacturer_code=0x115F
+        )
+        overload_protection: Final = ZCLAttributeDef(
+            id=0x020B, type=types.Single, manufacturer_code=0x115F
+        )
 
 
-class PlugMAEU01Alt3(PlugMAEU01):
-    """lumi.plug.maeu01 plug with alternative signature."""
+# The signatures the v1 quirk matched. ZHA has diagnostics of a MAEU01 with both
+# the Aqara and the metering clusters on endpoint 1, which was never quirked.
+MAEU01_SIGNATURES = tuple(
+    signature_matches(quirk.signature)
+    for quirk in (PlugMMEU01, PlugMMEU01Alt1, PlugMMEU01Alt2, PlugMMEU01Alt3)
+)
 
-    signature = {
-        MODELS_INFO: PlugMAEU01.signature[MODELS_INFO],
-        ENDPOINTS: PlugMMEU01Alt3.signature[ENDPOINTS],
-    }
-
-    replacement = PlugMAEU01.replacement
+(
+    QuirkBuilder(LUMI, "lumi.plug.maeu01")
+    .filter(lambda device: any(matches(device) for matches in MAEU01_SIGNATURES))
+    # Same device as the v1 quirk produced for all known signatures
+    .removes_endpoint(22)
+    .removes_endpoint(31)
+    .adds_endpoint(21, device_type=zha.DeviceType.SMART_PLUG)
+    .replaces(BasicCluster)
+    .replaces(MeteringCluster)
+    .replaces(ElectricalMeasurementCluster)
+    .replaces(OppleClusterMAEU01)
+    .replaces(AnalogInputCluster, endpoint_id=21)
+    .switch(
+        attribute_name=OppleClusterMAEU01.AttributeDefs.led_disabled.name,
+        cluster_id=OppleClusterMAEU01.cluster_id,
+        translation_key="led_disabled_night",
+        fallback_name="Disable LED at night",
+    )
+    .switch(
+        attribute_name=OppleClusterMAEU01.AttributeDefs.button_lock.name,
+        cluster_id=OppleClusterMAEU01.cluster_id,
+        on_value=0,
+        off_value=1,
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .switch(
+        # Turns the plug off when the load stays below 2 W for a while
+        attribute_name=OppleClusterMAEU01.AttributeDefs.auto_off.name,
+        cluster_id=OppleClusterMAEU01.cluster_id,
+        translation_key="auto_off_when_idle",
+        fallback_name="Auto off when idle",
+    )
+    .number(
+        attribute_name=OppleClusterMAEU01.AttributeDefs.overload_protection.name,
+        cluster_id=OppleClusterMAEU01.cluster_id,
+        min_value=100,
+        max_value=2300,
+        step=1,
+        unit=UnitOfPower.WATT,
+        translation_key="overload_protection",
+        fallback_name="Overload protection",
+    )
+    .number(
+        # How often the plug sends voltage, power and energy, 300 s by default
+        attribute_name=OppleClusterMAEU01.AttributeDefs.heartbeat_interval.name,
+        cluster_id=OppleClusterMAEU01.cluster_id,
+        min_value=5,
+        max_value=300,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="reporting_interval",
+        fallback_name="Reporting interval",
+    )
+    .add_to_registry()
+)
