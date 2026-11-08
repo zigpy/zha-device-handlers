@@ -6,14 +6,11 @@ from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-    RelativeHumidity,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
+from zhaquirks.builder import PERCENTAGE, EntityPlatform, EntityType, UnitOfTemperature
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -25,6 +22,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class ValueAlarm(t.enum8):
@@ -44,84 +42,16 @@ class TuyaTemperatureHumidityAlarmCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        # Alarm settings
-        alarm_temperature_max: Final = ZCLAttributeDef(
-            id=0xD00A, type=t.uint16_t, is_manufacturer_specific=True
-        )
-        alarm_temperature_min: Final = ZCLAttributeDef(
-            id=0xD00B, type=t.uint16_t, is_manufacturer_specific=True
-        )
-        alarm_humidity_max: Final = ZCLAttributeDef(
-            id=0xD00C, type=t.uint16_t, is_manufacturer_specific=True
-        )
-        alarm_humidity_min: Final = ZCLAttributeDef(
-            id=0xD00E, type=t.uint16_t, is_manufacturer_specific=True
-        )
-        # Alarm information
-        alarm_humidity: Final = ZCLAttributeDef(
-            id=0xD00F, type=ValueAlarm, is_manufacturer_specific=True
-        )
-        temperature_humidity: Final = ZCLAttributeDef(
-            id=0xD006, type=ValueAlarm, is_manufacturer_specific=True
-        )
+        # Alarm thresholds, whole °C and %, all int16
+        alarm_temperature_max: Final = ZCLAttributeDef(id=0xD00A, type=t.int16s)
+        alarm_temperature_min: Final = ZCLAttributeDef(id=0xD00B, type=t.int16s)
+        alarm_humidity_max: Final = ZCLAttributeDef(id=0xD00D, type=t.int16s)
+        alarm_humidity_min: Final = ZCLAttributeDef(id=0xD00E, type=t.int16s)
+        # Alarm states
+        alarm_humidity: Final = ZCLAttributeDef(id=0xD00F, type=ValueAlarm)
+        alarm_temperature: Final = ZCLAttributeDef(id=0xD006, type=ValueAlarm)
         # Unknown
-        unknown: Final = ZCLAttributeDef(
-            id=0xD010, type=t.uint8_t, is_manufacturer_specific=True
-        )
-
-
-class NeoTemperatureHumidtyIlluminanceSensor(CustomDevice):
-    """Neo temperature, humidity and illumination sensor."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1, profile=260, device_type=262
-        #  device_version=1
-        #  input_clusters=[0, 1, 1024, 57346]
-        #  output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZ3000_qaaysllp", "TS0201")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.LIGHT_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    TuyaTemperatureHumidityAlarmCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    TuyaTemperatureHumidityAlarmCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id,
-                ],
-            },
-        },
-    }
+        unknown: Final = ZCLAttributeDef(id=0xD010, type=t.uint8_t)
 
 
 class ZemismartTemperatureHumidtySensor(CustomDevice):
@@ -236,3 +166,75 @@ class MoesTemperatureHumidtySensorWithScreen(CustomDevice):
             },
         },
     }
+
+
+# Neo NAS-TH02B / LCZ030: temperature and humidity come from endpoint 2, which the
+# device does not announce. It only starts sending them after the Tuya spell, and
+# then only on a ~1 °C change or about hourly: it ignores Configure Reporting.
+(
+    TuyaQuirkBuilder("_TZ3000_qaaysllp", "TS0201")
+    .tuya_enchantment()
+    .replaces(TuyaTemperatureHumidityAlarmCluster)
+    .adds_endpoint(2, device_type=DeviceType.TEMPERATURE_SENSOR)
+    .adds(TemperatureMeasurement, endpoint_id=2)
+    .adds(RelativeHumidity, endpoint_id=2)
+    .number(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_temperature_max.name,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        min_value=-20,
+        max_value=80,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="alarm_temperature_max",
+        fallback_name="Alarm temperature max",
+    )
+    .number(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_temperature_min.name,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        min_value=-20,
+        max_value=80,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="alarm_temperature_min",
+        fallback_name="Alarm temperature min",
+    )
+    .number(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_humidity_max.name,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        min_value=0,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        translation_key="alarm_humidity_max",
+        fallback_name="Alarm humidity max",
+    )
+    .number(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_humidity_min.name,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        min_value=0,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        translation_key="alarm_humidity_min",
+        fallback_name="Alarm humidity min",
+    )
+    .enum(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_temperature.name,
+        enum_class=ValueAlarm,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_alarm",
+        fallback_name="Temperature alarm",
+    )
+    .enum(
+        attribute_name=TuyaTemperatureHumidityAlarmCluster.AttributeDefs.alarm_humidity.name,
+        enum_class=ValueAlarm,
+        cluster_id=TuyaTemperatureHumidityAlarmCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="humidity_alarm",
+        fallback_name="Humidity alarm",
+    )
+    .add_to_registry()
+)
