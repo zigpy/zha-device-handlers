@@ -87,6 +87,9 @@ class BasicClusterDecoupled(BasicCluster):
 class WallSwitchOnOffCluster(EventableCluster, OnOff):
     """WallSwitchOnOffCluster: fire events corresponding to press type."""
 
+    # on_off here reports press type, not relay state: don't create switch entities
+    ep_attribute = "wall_switch_button"
+
 
 class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single key switch device."""

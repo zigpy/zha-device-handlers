@@ -1,0 +1,264 @@
+{
+  "ieee": "00:15:8d:00:04:84:59:45",
+  "nwk": "0x1C6F",
+  "manufacturer": "LUMI",
+  "model": "lumi.ctrl_neutral2",
+  "last_seen": "2026-11-08T12:08:10.968484+00:00",
+  "node_descriptor": {
+    "logical_type": 1,
+    "complex_descriptor_available": 0,
+    "user_descriptor_available": 0,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 132,
+    "manufacturer_code": 4151,
+    "maximum_buffer_size": 127,
+    "maximum_incoming_transfer_size": 100,
+    "server_mask": 1,
+    "maximum_outgoing_transfer_size": 100,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "value": "LUMI"
+            },
+            {
+              "id": "0x0005",
+              "value": "lumi.ctrl_neutral2"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0001",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0002",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "value": 2700
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x000a",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x000a",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "value": 22
+            }
+          ]
+        }
+      ]
+    },
+    "2": {
+      "profile_id": 260,
+      "in_clusters": [
+        {
+          "cluster_id": "0x0004",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "value": 0
+            },
+            {
+              "id": "0xf000",
+              "value": 52195072
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0010",
+          "attributes": []
+        }
+      ],
+      "out_clusters": []
+    },
+    "3": {
+      "profile_id": 260,
+      "in_clusters": [
+        {
+          "cluster_id": "0x0004",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "value": 0
+            },
+            {
+              "id": "0xf000",
+              "value": 117440556
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0010",
+          "attributes": []
+        }
+      ],
+      "out_clusters": []
+    },
+    "4": {
+      "profile_id": 260,
+      "in_clusters": [
+        {
+          "cluster_id": "0x0006",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0012",
+          "attributes": []
+        }
+      ],
+      "out_clusters": []
+    },
+    "5": {
+      "profile_id": 260,
+      "in_clusters": [
+        {
+          "cluster_id": "0x0006",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0012",
+          "attributes": []
+        }
+      ],
+      "out_clusters": []
+    }
+  },
+  "original_signature": {
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0006",
+        "input_clusters": [
+          "0x0000",
+          "0x0001",
+          "0x0002",
+          "0x0003",
+          "0x000a",
+          "0x0019"
+        ],
+        "output_clusters": [
+          "0x0000",
+          "0x000a",
+          "0x0019"
+        ]
+      },
+      "2": {
+        "profile_id": "0x0104",
+        "device_type": "0x0100",
+        "input_clusters": [
+          "0x0004",
+          "0x0005",
+          "0x0006",
+          "0x0010"
+        ],
+        "output_clusters": []
+      },
+      "3": {
+        "profile_id": "0x0104",
+        "device_type": "0x0100",
+        "input_clusters": [
+          "0x0004",
+          "0x0005",
+          "0x0006",
+          "0x0010"
+        ],
+        "output_clusters": []
+      },
+      "4": {
+        "profile_id": "0x0104",
+        "device_type": "0x0000",
+        "input_clusters": [
+          "0x0006",
+          "0x0012"
+        ],
+        "output_clusters": []
+      },
+      "5": {
+        "profile_id": "0x0104",
+        "device_type": "0x0000",
+        "input_clusters": [
+          "0x0006",
+          "0x0012"
+        ],
+        "output_clusters": []
+      },
+      "6": {
+        "profile_id": "0x0104",
+        "device_type": "0x0000",
+        "input_clusters": [
+          "0x0006",
+          "0x0012"
+        ],
+        "output_clusters": []
+      },
+      "8": {
+        "profile_id": "0x0104",
+        "device_type": "0x0053",
+        "input_clusters": [
+          "0x000c"
+        ],
+        "output_clusters": []
+      }
+    }
+  }
+}
