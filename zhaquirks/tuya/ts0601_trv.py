@@ -294,10 +294,7 @@ class MoesManufCluster(TuyaManufClusterAttributes):
         MOES_AWAY_TEMP_ATTR: ("unoccupied_heating_setpoint", lambda value: value * 100),
         MOES_COMFORT_TEMP_ATTR: ("comfort_heating_setpoint", lambda value: value * 100),
         MOES_ECO_TEMP_ATTR: ("eco_heating_setpoint", lambda value: value * 100),
-        MOES_TEMP_CALIBRATION_ATTR: (
-            "local_temperature_calibration",
-            lambda value: value * 10,
-        ),
+        MOES_TEMP_CALIBRATION_ATTR: ("local_temperature_calibration", None),
         MOES_MIN_TEMPERATURE_ATTR: (
             "min_heat_setpoint_limit",
             lambda value: value * 100,
@@ -578,10 +575,7 @@ class MoesThermostat(TuyaThermostatCluster):
             MOES_MAX_TEMPERATURE_ATTR,
             lambda value: round(value / 100),
         ),
-        "local_temperature_calibration": (
-            MOES_TEMP_CALIBRATION_ATTR,
-            lambda value: round(value / 10),
-        ),
+        "local_temperature_calibration": (MOES_TEMP_CALIBRATION_ATTR, None),
         "work_days": (MOES_WEEK_FORMAT_ATTR, None),
         "operation_preset": (MOES_MODE_ATTR, None),
         "boost_duration_seconds": (MOES_BOOST_TIME_ATTR, None),
