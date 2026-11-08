@@ -10,7 +10,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.builder import QuirkBuilder, UnitOfTime
 from zhaquirks.clusters import CustomCluster
 
-
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
 # ---------------------------------------------------------------------
