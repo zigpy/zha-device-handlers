@@ -2,18 +2,19 @@
 
 from zigpy.zcl import ClusterType
 
+from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
-    COMMAND_STOP,
-    COMMAND_STOP_ON_OFF,
     DIM_DOWN,
     DIM_UP,
     ENDPOINT_ID,
@@ -32,6 +33,7 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
     QuirkBuilder(IKEA, "Remote Control N2")
     .replaces(DoublingPowerConfig2AAACluster)  # will only double for old firmware
     .replaces(ScenesCluster, cluster_type=ClusterType.Client)
+    .replaces(LevelControlWithMoveDirection, cluster_type=ClusterType.Client)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
@@ -46,7 +48,7 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
                 PARAMS: {"move_mode": 0},
             },
             (LONG_RELEASE, DIM_UP): {
-                COMMAND: COMMAND_STOP_ON_OFF,
+                COMMAND: COMMAND_MOVE_UP_RELEASE,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 1,
             },
@@ -62,7 +64,7 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
                 PARAMS: {"move_mode": 1},
             },
             (LONG_RELEASE, DIM_DOWN): {
-                COMMAND: COMMAND_STOP,
+                COMMAND: COMMAND_MOVE_DOWN_RELEASE,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 1,
             },
