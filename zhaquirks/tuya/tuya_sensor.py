@@ -10,9 +10,9 @@ from zhaquirks.builder import (
     PERCENTAGE,
     EntityPlatform,
     EntityType,
+    NumberDeviceClass,
     SensorDeviceClass,
     SensorStateClass,
-    NumberDeviceClass,
     UnitOfTemperature,
     UnitOfTime,
 )
