@@ -20,6 +20,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
@@ -48,6 +49,23 @@ class SonoffS60OnOff(CustomCluster, OnOff):
             )
 
         super()._update_attribute(attrid, value)
+
+
+class SonoffEwelinkCluster(CustomCluster):
+    """Sonoff/eWeLink cluster."""
+
+    cluster_id = 0xFC11
+    name = "SONOFF eWeLink cluster"
+    ep_attribute = "ewelink"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
 
 
 class SonoffS60ElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -80,6 +98,14 @@ S60_POWER_FIX_FW_VERSION = 0x00002003
 s60_base_quirk = (
     QuirkBuilder("SONOFF", "S60ZBTPF")
     .applies_to("SONOFF", "S60ZBTPG")
+    .replaces(SonoffEwelinkCluster, endpoint_id=1)
+    .switch(
+        attribute_name=SonoffEwelinkCluster.AttributeDefs.network_led.name,
+        cluster_id=SonoffEwelinkCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="network_led",
+        fallback_name="Network LED",
+    )
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=Metering.cluster_id,

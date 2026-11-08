@@ -1,4 +1,4 @@
-"""Quirk for Aqara aqara.feeder.acn001."""
+"""Quirk V2 for Aqara aqara.feeder.acn001."""
 
 from __future__ import annotations
 
@@ -6,30 +6,25 @@ import logging
 from typing import Any, Final
 
 from zigpy import types
-from zigpy.profiles import zgp, zha
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    foundation,
 )
+from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MANUFACTURER,
-    MODEL,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    QuirkBuilder,
+    SensorStateClass,
+    UnitOfMass,
 )
-from zhaquirks.xiaomi import XiaomiAqaraE1Cluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 # 32 bit signed integer values that are encoded in FEEDER_ATTR = 0xFFF1
 FEEDING = 0x04150055
@@ -60,6 +55,8 @@ ZCL_FEEDING_MODE = 0x1390
 ZCL_SERVING_SIZE = 0x1391
 ZCL_PORTION_WEIGHT = 0x1392
 
+FAKE_ATTRIBUTE_IDS: Final = frozenset(range(ZCL_FEEDING, ZCL_PORTION_WEIGHT + 1))
+
 AQARA_TO_ZCL: dict[int, int] = {
     FEEDING: ZCL_FEEDING,
     ERROR_DETECTED: ZCL_ERROR_DETECTED,
@@ -86,8 +83,9 @@ LOGGER = logging.getLogger(__name__)
 class FeedingSource(types.enum8):
     """Feeding source."""
 
+    Schedule = 0x00
     Feeder = 0x01
-    Remote = 0x02
+    HomeAssistant = 0x02
 
 
 class FeedingMode(types.enum8):
@@ -140,36 +138,111 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=FEEDER_ATTR, type=types.LVBytes, manufacturer_code=0x115F
         )
 
+    _DEFAULT_VALUES: dict[int, Any] = {
+        ZCL_DISABLE_LED_INDICATOR: False,
+        ZCL_CHILD_LOCK: False,
+        ZCL_FEEDING_MODE: FeedingMode.Manual,
+        ZCL_SERVING_SIZE: 1,
+        ZCL_PORTION_WEIGHT: 8,
+        ZCL_ERROR_DETECTED: False,
+        ZCL_PORTIONS_DISPENSED: 0,
+        ZCL_WEIGHT_DISPENSED: 0,
+    }
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Get cached attribute, falling back to feeder defaults."""
+        try:
+            attr_def = self.find_attribute(key)
+        except KeyError:
+            return super().get(key, default)
+
+        value = super().get(key)
+        if value is not None:
+            return value
+        return self._DEFAULT_VALUES.get(attr_def.id, default)
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> Any:
+        """Read attributes, answering the quirk-defined ones without sending them.
+
+        The device does not know the fake attribute ids and answers
+        UNSUPPORTED_ATTRIBUTE, which would be persisted and make ZHA drop the
+        entities. They are answered from the cache or `_DEFAULT_VALUES` instead,
+        and those without either are left out of the result, so no mark is recorded.
+        """
+        success: dict[Any, Any] = {}
+        attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
+        fake_defs: set[foundation.ZCLAttributeDef] = set()
+
+        for attribute in attributes:
+            try:
+                attr_def = self.find_attribute(
+                    attribute, manufacturer_code=manufacturer
+                )
+            except KeyError:
+                attrs_to_read.append(attribute)
+                continue
+
+            if attr_def.id not in FAKE_ATTRIBUTE_IDS:
+                attrs_to_read.append(attribute)
+                continue
+
+            if attr_def in fake_defs:
+                raise ValueError(
+                    f"Cannot read the same attribute twice in the same call: {attr_def}"
+                )
+
+            fake_defs.add(attr_def)
+            value = super().get(attr_def.id)
+            if value is None:
+                value = self._DEFAULT_VALUES.get(attr_def.id)
+            if value is not None:
+                success[attribute] = attr_def.type(value)
+
+        failure: dict[Any, Any] = {}
+        if attrs_to_read:
+            read_success, failure = await super().read_attributes(
+                attrs_to_read,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+                **kwargs,
+            )
+            success.update(read_success)
+
+        return success, failure
+
+    def is_attribute_unsupported(
+        self, attr: int | str | foundation.ZCLAttributeDef
+    ) -> bool:
+        """Report the quirk-defined attributes as supported.
+
+        This also masks UNSUPPORTED marks recorded by earlier versions of the quirk.
+        """
+        try:
+            if self.find_attribute(attr).id in FAKE_ATTRIBUTE_IDS:
+                return False
+        except KeyError:
+            pass
+        return super().is_attribute_unsupported(attr)
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
-        # Set default values for attributes
-        if ZCL_DISABLE_LED_INDICATOR not in self._attr_cache:
-            self._update_attribute(ZCL_DISABLE_LED_INDICATOR, False)
-        if ZCL_CHILD_LOCK not in self._attr_cache:
-            self._update_attribute(ZCL_CHILD_LOCK, False)
-        if ZCL_FEEDING_MODE not in self._attr_cache:
-            self._update_attribute(ZCL_FEEDING_MODE, FeedingMode.Manual)
-        if ZCL_SERVING_SIZE not in self._attr_cache:
-            self._update_attribute(ZCL_SERVING_SIZE, 1)
-        if ZCL_PORTION_WEIGHT not in self._attr_cache:
-            self._update_attribute(ZCL_PORTION_WEIGHT, 8)
-        if ZCL_ERROR_DETECTED not in self._attr_cache:
-            self._update_attribute(ZCL_ERROR_DETECTED, False)
-        if ZCL_PORTIONS_DISPENSED not in self._attr_cache:
-            self._update_attribute(ZCL_PORTIONS_DISPENSED, 0)
-        if ZCL_WEIGHT_DISPENSED not in self._attr_cache:
-            self._update_attribute(ZCL_WEIGHT_DISPENSED, 0)
-
-        # Subscribe to attribute events to parse feeder_attr
-        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
-        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
 
     def _handle_attribute_event(
-        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
     ) -> None:
-        """Handle attribute report/update event to parse feeder attribute."""
+        """Handle attribute events: Xiaomi parsing first, then the feeder attribute."""
+        super()._handle_attribute_event(event)
+
         if event.attribute_id == FEEDER_ATTR:
             self._parse_feeder_attribute(event.value)
 
@@ -274,65 +347,109 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return await super().write_attributes(attrs, update_cache=False, **kwargs)
 
 
-class AqaraFeederAcn001(XiaomiCustomDevice):
-    """Aqara aqara.feeder.acn001 custom device implementation."""
-
-    signature = {
-        MODEL: "aqara.feeder.acn001",
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    OppleCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        MANUFACTURER: "Aqara",
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OppleCluster,
-                    Time.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    # The device does not provide a manufacturer during the interview
+    QuirkBuilder(None, "aqara.feeder.acn001")
+    # v2 entities only take over cleanly once the native classes are removed
+    # (zigpy/zha#883), if the model string matches
+    .friendly_name(manufacturer="Aqara", model="aqara.feeder.acn001")
+    .removes(OnOff.cluster_id)
+    .adds(Time)
+    .replaces(OppleCluster)
+    .enum(
+        attribute_name=OppleCluster.AttributeDefs.last_feeding_source.name,
+        enum_class=FeedingSource,
+        cluster_id=OppleCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-last_feeding_source",
+        translation_key="last_feeding_source",
+        fallback_name="Last feeding source",
+    )
+    .sensor(
+        attribute_name=OppleCluster.AttributeDefs.last_feeding_size.name,
+        cluster_id=OppleCluster.cluster_id,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-last_feeding_size",
+        translation_key="last_feeding_size",
+        fallback_name="Last feeding size",
+    )
+    .sensor(
+        attribute_name=OppleCluster.AttributeDefs.portions_dispensed.name,
+        cluster_id=OppleCluster.cluster_id,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-portions_dispensed",
+        translation_key="portions_dispensed_today",
+        fallback_name="Portions dispensed today",
+    )
+    .sensor(
+        attribute_name=OppleCluster.AttributeDefs.weight_dispensed.name,
+        cluster_id=OppleCluster.cluster_id,
+        unit=UnitOfMass.GRAMS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-weight_dispensed",
+        translation_key="weight_dispensed_today",
+        fallback_name="Weight dispensed today",
+    )
+    .switch(
+        attribute_name=OppleCluster.AttributeDefs.disable_led_indicator.name,
+        cluster_id=OppleCluster.cluster_id,
+        force_inverted=True,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-disable_led_indicator",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .switch(
+        attribute_name=OppleCluster.AttributeDefs.child_lock.name,
+        cluster_id=OppleCluster.cluster_id,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .enum(
+        attribute_name=OppleCluster.AttributeDefs.feeding_mode.name,
+        enum_class=FeedingMode,
+        cluster_id=OppleCluster.cluster_id,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-feeding_mode",
+        translation_key="feeding_mode",
+        fallback_name="Feeding mode",
+    )
+    .number(
+        attribute_name=OppleCluster.AttributeDefs.serving_size.name,
+        cluster_id=OppleCluster.cluster_id,
+        min_value=1,
+        max_value=10,
+        mode="box",
+        unique_id_suffix=f"{OppleCluster.cluster_id}-serving_size",
+        translation_key="serving_size",
+        fallback_name="Serving size",
+    )
+    .number(
+        attribute_name=OppleCluster.AttributeDefs.portion_weight.name,
+        cluster_id=OppleCluster.cluster_id,
+        min_value=1,
+        max_value=100,
+        unit=UnitOfMass.GRAMS,
+        mode="box",
+        unique_id_suffix=f"{OppleCluster.cluster_id}-portion_weight",
+        translation_key="portion_weight",
+        fallback_name="Portion weight",
+    )
+    .binary_sensor(
+        attribute_name=OppleCluster.AttributeDefs.error_detected.name,
+        cluster_id=OppleCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-error_detected",
+        fallback_name="Error detected",
+    )
+    .write_attr_button(
+        attribute_name=OppleCluster.AttributeDefs.feeding.name,
+        attribute_value=1,
+        cluster_id=OppleCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        unique_id_suffix=f"{OppleCluster.cluster_id}-feeding",
+        translation_key="feed",
+        fallback_name="Feed",
+    )
+    .add_to_registry()
+)
