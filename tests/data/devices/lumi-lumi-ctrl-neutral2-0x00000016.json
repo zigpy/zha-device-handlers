@@ -1,13 +1,27 @@
 {
+  "version": 3,
   "ieee": "00:15:8d:00:04:84:59:45",
   "nwk": "0x1C6F",
   "manufacturer": "LUMI",
   "model": "lumi.ctrl_neutral2",
-  "last_seen": "2026-11-08T12:08:10.968484+00:00",
+  "friendly_manufacturer": "LUMI",
+  "friendly_model": "lumi.ctrl_neutral2",
+  "name": "LUMI lumi.ctrl_neutral2",
+  "quirk_applied": true,
+  "quirk_class": "ctrl_neutral:CtrlNeutral_2G",
+  "exposes_features": [],
+  "manufacturer_code": 4151,
+  "power_source": "Mains",
+  "lqi": 132,
+  "rssi": -67,
+  "last_seen": "2026-11-08T12:22:04.381623+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
   "node_descriptor": {
-    "logical_type": 1,
-    "complex_descriptor_available": 0,
-    "user_descriptor_available": 0,
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
     "reserved": 0,
     "aps_flags": 0,
     "frequency_band": 8,
@@ -22,92 +36,125 @@
   "endpoints": {
     "1": {
       "profile_id": 260,
+      "device_type": {
+        "name": "REMOTE_CONTROL",
+        "id": 6
+      },
       "in_clusters": [
         {
           "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
           "attributes": [
             {
               "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
               "value": "LUMI"
             },
             {
               "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
               "value": "lumi.ctrl_neutral2"
             }
           ]
         },
         {
           "cluster_id": "0x0001",
+          "endpoint_attribute": "power",
           "attributes": []
         },
         {
           "cluster_id": "0x0002",
+          "endpoint_attribute": "device_temperature",
           "attributes": [
             {
               "id": "0x0000",
-              "value": 2700
+              "name": "current_temperature",
+              "zcl_type": "int16",
+              "value": 2600
             }
           ]
         },
         {
           "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
           "attributes": []
         },
         {
           "cluster_id": "0x000a",
+          "endpoint_attribute": "time",
           "attributes": []
         },
         {
           "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
           "attributes": []
         }
       ],
       "out_clusters": [
         {
           "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
           "attributes": []
         },
         {
           "cluster_id": "0x000a",
+          "endpoint_attribute": "time",
           "attributes": []
         },
         {
           "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
           "attributes": [
             {
               "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
               "value": 22
             }
-          ]
+          ],
+          "last_query_cmd": {
+            "manufacturer_code": 4447,
+            "image_type": 257,
+            "current_file_version": 22,
+            "hardware_version": null
+          }
         }
       ]
     },
     "2": {
       "profile_id": 260,
+      "device_type": {
+        "name": "ON_OFF_SWITCH",
+        "id": 0
+      },
       "in_clusters": [
         {
           "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
           "attributes": []
         },
         {
           "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
           "attributes": []
         },
         {
           "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
           "attributes": [
             {
               "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
               "value": 0
-            },
-            {
-              "id": "0xf000",
-              "value": 52195072
             }
           ]
         },
         {
           "cluster_id": "0x0010",
+          "endpoint_attribute": "binary_output",
           "attributes": []
         }
       ],
@@ -115,30 +162,36 @@
     },
     "3": {
       "profile_id": 260,
+      "device_type": {
+        "name": "ON_OFF_SWITCH",
+        "id": 0
+      },
       "in_clusters": [
         {
           "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
           "attributes": []
         },
         {
           "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
           "attributes": []
         },
         {
           "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
           "attributes": [
             {
               "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
               "value": 0
-            },
-            {
-              "id": "0xf000",
-              "value": 117440556
             }
           ]
         },
         {
           "cluster_id": "0x0010",
+          "endpoint_attribute": "binary_output",
           "attributes": []
         }
       ],
@@ -146,18 +199,26 @@
     },
     "4": {
       "profile_id": 260,
+      "device_type": {
+        "name": "ON_OFF_SWITCH",
+        "id": 0
+      },
       "in_clusters": [
         {
           "cluster_id": "0x0006",
+          "endpoint_attribute": "wall_switch_button",
           "attributes": [
             {
               "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
               "value": 1
             }
           ]
         },
         {
           "cluster_id": "0x0012",
+          "endpoint_attribute": "multistate_input",
           "attributes": []
         }
       ],
@@ -165,18 +226,26 @@
     },
     "5": {
       "profile_id": 260,
+      "device_type": {
+        "name": "ON_OFF_SWITCH",
+        "id": 0
+      },
       "in_clusters": [
         {
           "cluster_id": "0x0006",
+          "endpoint_attribute": "wall_switch_button",
           "attributes": [
             {
               "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
               "value": 1
             }
           ]
         },
         {
           "cluster_id": "0x0012",
+          "endpoint_attribute": "multistate_input",
           "attributes": []
         }
       ],
@@ -184,17 +253,34 @@
     }
   },
   "original_signature": {
+    "manufacturer": "LUMI",
+    "model": "lumi.ctrl_neutral2",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 132,
+      "manufacturer_code": 4151,
+      "maximum_buffer_size": 127,
+      "maximum_incoming_transfer_size": 100,
+      "server_mask": 1,
+      "maximum_outgoing_transfer_size": 100,
+      "descriptor_capability_field": 0
+    },
     "endpoints": {
       "1": {
         "profile_id": "0x0104",
         "device_type": "0x0006",
         "input_clusters": [
           "0x0000",
+          "0x0003",
           "0x0001",
           "0x0002",
-          "0x0003",
-          "0x000a",
-          "0x0019"
+          "0x0019",
+          "0x000a"
         ],
         "output_clusters": [
           "0x0000",
@@ -206,10 +292,10 @@
         "profile_id": "0x0104",
         "device_type": "0x0100",
         "input_clusters": [
-          "0x0004",
-          "0x0005",
+          "0x0010",
           "0x0006",
-          "0x0010"
+          "0x0004",
+          "0x0005"
         ],
         "output_clusters": []
       },
@@ -217,10 +303,10 @@
         "profile_id": "0x0104",
         "device_type": "0x0100",
         "input_clusters": [
-          "0x0004",
-          "0x0005",
+          "0x0010",
           "0x0006",
-          "0x0010"
+          "0x0004",
+          "0x0005"
         ],
         "output_clusters": []
       },
@@ -228,8 +314,8 @@
         "profile_id": "0x0104",
         "device_type": "0x0000",
         "input_clusters": [
-          "0x0006",
-          "0x0012"
+          "0x0012",
+          "0x0006"
         ],
         "output_clusters": []
       },
@@ -237,8 +323,8 @@
         "profile_id": "0x0104",
         "device_type": "0x0000",
         "input_clusters": [
-          "0x0006",
-          "0x0012"
+          "0x0012",
+          "0x0006"
         ],
         "output_clusters": []
       },
@@ -246,8 +332,8 @@
         "profile_id": "0x0104",
         "device_type": "0x0000",
         "input_clusters": [
-          "0x0006",
-          "0x0012"
+          "0x0012",
+          "0x0006"
         ],
         "output_clusters": []
       },
@@ -260,5 +346,193 @@
         "output_clusters": []
       }
     }
-  }
+  },
+  "zha_lib_entities": {
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-1-3",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 132,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": -67,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-1-2",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "DeviceTemperature",
+        "translation_key": "device_temperature",
+        "translation_placeholders": null,
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 26.0,
+        "suggested_display_precision": null,
+        "unit": "°C"
+      }
+    ],
+    "switch": [
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-2-6",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "Switch",
+        "translation_key": "switch",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 2,
+        "available": true,
+        "group_id": null,
+        "is_on": 0
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-3-6",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "Switch",
+        "translation_key": "switch",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 3,
+        "available": true,
+        "group_id": null,
+        "is_on": 0
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "00:15:8d:00:04:84:59:45-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "00:15:8d:00:04:84:59:45",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x00000016",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [
+    {
+      "device_type": "Router",
+      "rx_on_when_idle": "On",
+      "relationship": "Parent",
+      "extended_pan_id": "**REDACTED**",
+      "ieee": "**REDACTED**",
+      "nwk": "0x526C",
+      "permit_joining": "Unknown",
+      "depth": 1,
+      "lqi": 102
+    }
+  ],
+  "routes": []
 }
