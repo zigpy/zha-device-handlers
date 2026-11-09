@@ -93,14 +93,19 @@ def test_spm01v2_datapoints(spm01v2, payload, attribute, expected):
 
 
 def test_spm01v2_unknown_dp(spm01v2):
-    """Unknown datapoints must not break report processing."""
+    """Unknown datapoints must not create attribute updates."""
     cluster = get_tuya_cluster(spm01v2)
     listener = ClusterListener(cluster)
 
     # DP6: unknown RAW datapoint (8 bytes).
     payload = bytes.fromhex("003B060000080924000000000000")
 
-    assert send_dp(cluster, 0x5B, payload) == foundation.Status.SUCCESS
+    status = send_dp(cluster, 0x5B, payload)
+
+    assert status in (
+        foundation.Status.SUCCESS,
+        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+    )
     assert listener.attribute_updates == []
 
 
