@@ -24,9 +24,7 @@ def get_tuya_cluster(device):
     return cluster
 
 
-def send_dp(
-    cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes
-) -> foundation.Status:
+def send_dp(cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes) -> foundation.Status:
     """Send a Tuya DP report to the cluster."""
     frame = bytes([0x09, tsn, 0x01]) + dp_payload
     _, data = cluster.deserialize(frame)
@@ -82,9 +80,7 @@ def test_spm01v2_multiple_datapoints(spm01v2):
     cluster = get_tuya_cluster(spm01v2)
 
     # DP102, DP103 and DP104.
-    payload = bytes.fromhex(
-        "0001660200040000092567020004000000006802000400000000"
-    )
+    payload = bytes.fromhex("0001660200040000092567020004000000006802000400000000")
 
     assert send_dp(cluster, 0x5C, payload) == foundation.Status.SUCCESS
     assert cluster.get("voltage") == 2341
