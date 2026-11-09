@@ -2,14 +2,15 @@
 
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zha.quirks import SE_POLL_SUMMATION
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -20,7 +21,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.quirk_ids import SE_POLL_SUMMATION
 from zhaquirks.ubisys import InputMode, UbisysCluster, UbisysInputConfigCluster
 
 

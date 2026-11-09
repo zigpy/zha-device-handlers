@@ -1,7 +1,6 @@
 """Quirk for HZC Dimmer-Switch-ZB3.0 (e.g. D688-ZG)."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import NoReplyMixin
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,6 +24,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 
 class HzcOnOff(NoReplyMixin, CustomCluster, OnOff):

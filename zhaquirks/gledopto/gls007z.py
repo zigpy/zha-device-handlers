@@ -1,7 +1,6 @@
 """GLEDOPTO GL-S-007Z device."""
 
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -22,6 +21,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.gledopto import GLEDOPTO
+from zhaquirks.legacy import CustomDevice
 
 
 class GLS007Z(CustomDevice):

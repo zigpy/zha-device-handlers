@@ -9,7 +9,6 @@ import enum
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -21,6 +20,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
     LEFT,
@@ -30,6 +30,8 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import BaseCustomDevice
+from zhaquirks.legacy import CustomDevice
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -158,7 +160,7 @@ class TuyaData:
 
     def __init__(
         self,
-        value: TuyaDPType | None = None,
+        value: object | None = None,
         function: t.uint8_t = t.uint8_t(0),
         raw: bytes | None = None,
     ):
@@ -236,6 +238,20 @@ class TuyaData:
             self.raw = value.serialize()
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __repr__(self) -> str:
+        """Show the type and raw bytes, plus the payload if it decodes and differs from raw."""
+        fields = (
+            f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
+        )
+        try:
+            payload = self.payload
+        except (AttributeError, TypeError, ValueError):
+            payload = None
+        # a RAW payload is `raw` itself, so don't show the same bytes twice
+        if payload is not None and self.dp_type != TuyaDPType.RAW:
+            fields += f", *payload={payload!r}"
+        return f"{type(self).__name__}({fields})"
 
     def serialize(self) -> bytes:
         """Serialize Tuya data."""
@@ -525,6 +541,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
@@ -587,7 +606,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):
@@ -1705,6 +1724,12 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle get_data response (report)."""
         dp_error = False
         for record in command.datapoints:
+            self.debug(
+                "Received datapoint %s (%s, raw %s)",
+                record.dp,
+                record.data.dp_type,
+                record.data.raw,
+            )
             try:
                 dp_handler = self.data_point_handlers[record.dp]
                 getattr(self, dp_handler)(record)
@@ -1712,15 +1737,16 @@ class TuyaNewManufCluster(CustomCluster):
                 self.debug("No datapoint handler for %s", record)
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-        _LOGGER.debug(
-            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
-            self.endpoint.device.nwk,
-            self.endpoint.endpoint_id,
-            self.cluster_id,
-            record.data.payload,
-            record.dp,
-        )
+            except ValueError as exc:
+                # Some devices send malformed datapoints, e.g. a VALUE with 1 byte.
+                # Skip them, so the command is still acknowledged.
+                self.warning(
+                    "Ignoring invalid datapoint %s (%s, raw %s): %s",
+                    record.dp,
+                    record.data.dp_type,
+                    record.data.raw.hex(),
+                    exc,
+                )
 
         return (
             foundation.Status.SUCCESS

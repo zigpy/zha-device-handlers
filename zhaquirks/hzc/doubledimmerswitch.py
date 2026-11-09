@@ -1,10 +1,10 @@
 """Quirk for EcoDim 05 two gang dimmer (e.g. HZC Smart Double Dimmer D686-ZG)."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks import NoReplyMixin
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class HzcOnOff(NoReplyMixin, CustomCluster, OnOff):

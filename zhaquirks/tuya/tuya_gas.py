@@ -1,13 +1,20 @@
 """Tuya Gas Sensor."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import (
+    CONCENTRATION_PARTS_PER_MILLION,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTime,
+)
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -99,9 +106,19 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         translation_key="fault_alarm",
         fallback_name="Fault alarm",
     )
-    .tuya_binary_sensor(
+    # DP 12 is True while the sensor is within its service life, so the PROBLEM
+    # entity inverts it. The attribute keeps the device's own value.
+    .tuya_dp_attribute(
         dp_id=12,
         attribute_name="lifecycle",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .binary_sensor(
+        attribute_name="lifecycle",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_converter=lambda x: not x,
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="lifecycle",
         fallback_name="Lifecycle",
@@ -116,9 +133,9 @@ tuya_gas_alarm_base = (
     .tuya_ias(
         dp_id=1,
         ias_cfg=TuyaIasGasLEL,
-        converter=lambda x: IasZone.ZoneStatus.Alarm_1
-        if x == TuyaGasState.Present
-        else 0,
+        converter=lambda x: (
+            IasZone.ZoneStatus.Alarm_1 if x == TuyaGasState.Present else 0
+        ),
     )  # Reports as enum, not bool
     .tuya_switch(
         dp_id=8,
@@ -154,6 +171,8 @@ tuya_gas_alarm_base = (
     .applies_to("_TZE200_yojqa8xn", "TS0601")
     .applies_to("_TZE204_zougpkpy", "TS0601")
     .applies_to("_TZE204_chbyv06x", "TS0601")
+    .applies_to("_TZE284_chbyv06x", "TS0601")
+    .applies_to("_TZE28C1000000_chbyv06x", "TS0601")
     .applies_to("_TZE204_yojqa8xn", "TS0601")
     .tuya_sensor(
         dp_id=2,
