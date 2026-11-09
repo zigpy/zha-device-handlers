@@ -3396,7 +3396,7 @@ def test_aqara_w500_thermostat(zigpy_device_from_v2_quirk):
     assert hysteresis.step == 0.5
     assert hysteresis.multiplier == 0.1
 
-    
+
 def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
     """W100 quirk matches and swaps in its custom clusters on all endpoints."""
     device = zigpy_device_from_v2_quirk(
