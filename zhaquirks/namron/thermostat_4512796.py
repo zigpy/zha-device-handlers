@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.hvac import (
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.builder import (
+    EntityFilter,
     EntityType,
     NumberDeviceClass,
     QuirkBuilder,
@@ -234,23 +235,25 @@ class NamronOnOffCluster(CustomCluster, OnOff):
     .applies_to("Namron AS", "4512795")
     .replaces(NamronThermostatCluster)
     .replaces(NamronOnOffCluster)
-    # PI demand always reports 0
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=Thermostat.cluster_id,
-        unique_id_suffix=Thermostat.AttributeDefs.pi_heating_demand.name,
-    )
-    # On/off is controlled through the climate entity's Off/Heat modes
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.translation_key == "switch",
-    )
-    # Lock2-Lock4 all behave as Lock1, so a switch replaces the select
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=UserInterface.cluster_id,
-        function=lambda entity: entity.translation_key == "keypad_lockout",
+    .removes_entity(
+        # PI demand always reports 0
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+            unique_id_suffix=Thermostat.AttributeDefs.pi_heating_demand.name,
+        ),
+        # On/off is controlled through the climate entity's Off/Heat modes
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            translation_key="switch",
+        ),
+        # Lock2-Lock4 all behave as Lock1, so a switch replaces the select
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=UserInterface.cluster_id,
+            translation_key="keypad_lockout",
+        ),
     )
     .switch(
         attribute_name=UserInterface.AttributeDefs.keypad_lockout.name,

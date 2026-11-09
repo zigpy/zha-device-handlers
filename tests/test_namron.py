@@ -1,10 +1,13 @@
 """Tests for Namron quirks."""
 
-from types import SimpleNamespace
+from collections.abc import AsyncIterator
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms.climate.const import HVACAction
 from zha.quirks import DEVICE_REGISTRY
+from zha.zigbee.device import ZigbeeDevice
 from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -17,8 +20,9 @@ from zigpy.zcl.clusters.hvac import (
     UserInterface,
 )
 
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
-from zhaquirks.builder.metadata import PreventDefaultEntityCreationMetadata
+from zhaquirks.builder import EntityFilter
 from zhaquirks.namron.remote_4512793 import NamronPrivateRemoteCluster
 from zhaquirks.namron.thermostat_4512796 import (
     NamronOnOffCluster,
@@ -30,6 +34,10 @@ zhaquirks.setup()
 
 SYSTEM_MODE_ID = Thermostat.AttributeDefs.system_mode.id
 ON_OFF_ID = OnOff.AttributeDefs.on_off.id
+THERMOSTAT_DIAGNOSTICS = "namron-as-4512796-0x00000019.json"
+THERMOSTAT_IEEE = "00:11:22:33:44:55:66:77"
+CLIMATE_UNIQUE_ID = f"{THERMOSTAT_IEEE}-1"
+PROGRAM_MODE_UNIQUE_ID = f"{THERMOSTAT_IEEE}-1-program_mode"
 
 
 @pytest.fixture(params=["4512795", "4512796"])
@@ -169,30 +177,21 @@ def test_pi_demand_is_ignored(
 def test_default_entities_suppressed(thermostat_device: Device) -> None:
     """The empty demand sensor, on/off switch and keypad lockout select are hidden."""
     entry = DEVICE_REGISTRY.match_entry(thermostat_device)
-    pi_demand, switch, keypad_lockout = (
-        entry.zha_device_factory.quirk_definition.disabled_default_entities
+    assert entry.zha_device_factory.quirk_definition.disabled_default_entities == (
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=Thermostat.cluster_id,
+            unique_id_suffix="pi_heating_demand",
+        ),
+        EntityFilter(
+            endpoint_id=1, cluster_id=OnOff.cluster_id, translation_key="switch"
+        ),
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=UserInterface.cluster_id,
+            translation_key="keypad_lockout",
+        ),
     )
-
-    assert pi_demand == PreventDefaultEntityCreationMetadata(
-        endpoint_id=1,
-        cluster_id=Thermostat.cluster_id,
-        cluster_type=ClusterType.Server,
-        unique_id_suffix="pi_heating_demand",
-        function=None,
-    )
-
-    assert switch.endpoint_id == 1
-    assert switch.cluster_id == OnOff.cluster_id
-    assert switch.cluster_type == ClusterType.Server
-    assert switch.function(SimpleNamespace(translation_key="switch"))
-    # The start-up behavior select on the same cluster is kept
-    assert not switch.function(SimpleNamespace(translation_key="start_up_on_off"))
-
-    assert keypad_lockout.endpoint_id == 1
-    assert keypad_lockout.cluster_id == UserInterface.cluster_id
-    assert keypad_lockout.function(SimpleNamespace(translation_key="keypad_lockout"))
-    # The replacement child lock switch on the same attribute is kept
-    assert not keypad_lockout.function(SimpleNamespace(translation_key="child_lock"))
 
 
 def test_child_lock_switch(thermostat_device: Device) -> None:
@@ -553,6 +552,151 @@ async def test_read_program_mode_failure(thermostat_device: Device) -> None:
 
     assert success == {}
     assert failure == {"program_mode": foundation.Status.FAILURE}
+
+
+@pytest.fixture
+async def zha_thermostat() -> AsyncIterator[ZigbeeDevice]:
+    """Namron thermostat joined to a ZHA gateway from its diagnostics."""
+    async with zha_gateway() as gateway:
+        yield await join_device_from_diagnostics(
+            gateway, THERMOSTAT_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+
+
+def test_zha_entities(zha_thermostat: ZigbeeDevice) -> None:
+    """ZHA creates the quirk's entities in place of the removed defaults."""
+    entities = zha_thermostat.platform_entities
+
+    assert {
+        f"{THERMOSTAT_IEEE}-1-{suffix}"
+        for suffix in (
+            "keypad_lockout",
+            "program_mode",
+            "home_temperature",
+            "away_temperature",
+            "sleep_temperature",
+            "holiday_temperature",
+        )
+    } <= {unique_id for _, unique_id in entities}
+    assert {entity.translation_key for entity in entities.values()}.isdisjoint(
+        {"switch", "keypad_lockout", "pi_heating_demand"}
+    )
+
+
+async def test_zha_interview_skips_virtual_attribute(
+    zha_thermostat: ZigbeeDevice,
+) -> None:
+    """The virtual `program_mode` is never read from the device."""
+    thermostat = zha_thermostat.device.endpoints[1].thermostat
+
+    await zha_thermostat.async_configure()
+    await zha_thermostat.async_initialize(from_cache=False)
+    await zha_thermostat.gateway.async_block_till_done()
+
+    read = [
+        attr_id
+        for call in thermostat.read_attributes_raw.call_args_list
+        for attr_id in call.args[0]
+    ]
+    assert SYSTEM_MODE_ID in read
+    assert NamronThermostatCluster.AttributeDefs.program_mode.id not in read
+
+
+@pytest.mark.parametrize(
+    ("hvac_mode", "initial_on_off", "command_id", "system_mode"),
+    [
+        pytest.param(
+            "off", True, OnOff.ServerCommandDefs.off.id, SystemMode.Off, id="off"
+        ),
+        pytest.param(
+            "heat", False, OnOff.ServerCommandDefs.on.id, SystemMode.Heat, id="heat"
+        ),
+    ],
+)
+async def test_zha_hvac_mode_uses_on_off(
+    zha_thermostat: ZigbeeDevice,
+    hvac_mode: str,
+    initial_on_off: bool,
+    command_id: int,
+    system_mode: SystemMode,
+) -> None:
+    """The climate entity's HVAC mode is applied through the OnOff cluster."""
+    endpoint = zha_thermostat.device.endpoints[1]
+    endpoint.on_off.update_attribute(ON_OFF_ID, initial_on_off)
+    default_response = foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Default_Response
+    ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+    climate = zha_thermostat.get_platform_entity(
+        Platform.CLIMATE, unique_id=CLIMATE_UNIQUE_ID
+    )
+
+    with mock.patch.object(
+        endpoint.on_off, "command", mock.AsyncMock(return_value=default_response)
+    ) as command_mock:
+        await climate.async_set_hvac_mode(hvac_mode)
+        await zha_thermostat.gateway.async_block_till_done()
+
+    command_mock.assert_awaited_once_with(command_id)
+    assert endpoint.thermostat.get(SYSTEM_MODE_ID) == system_mode
+    assert climate.hvac_mode == hvac_mode
+
+
+async def test_zha_preset_select_writes_system_mode(
+    zha_thermostat: ZigbeeDevice,
+) -> None:
+    """The preset select writes the raw program to `system_mode`."""
+    endpoint = zha_thermostat.device.endpoints[1]
+    thermostat = endpoint.thermostat
+    endpoint.on_off.update_attribute(ON_OFF_ID, True)
+    thermostat.update_attribute(SYSTEM_MODE_ID, ProgramMode.Manual)
+    select = zha_thermostat.get_platform_entity(
+        Platform.SELECT, unique_id=PROGRAM_MODE_UNIQUE_ID
+    )
+    climate = zha_thermostat.get_platform_entity(
+        Platform.CLIMATE, unique_id=CLIMATE_UNIQUE_ID
+    )
+
+    with mock.patch.object(
+        thermostat,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=[
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+            ]
+        ),
+    ) as write_mock:
+        await select.async_select_option(ProgramMode.Away.name)
+        await zha_thermostat.gateway.async_block_till_done()
+
+    (record,) = write_mock.call_args[0][0]
+    assert record.attrid == SYSTEM_MODE_ID
+    assert record.value.value == ProgramMode.Away
+    assert select.current_option == ProgramMode.Away.name
+    assert climate.hvac_mode == "heat"
+
+
+@pytest.mark.parametrize(
+    ("running_state", "hvac_action"),
+    [
+        pytest.param(RunningState.Cool_2nd_Stage_On, HVACAction.IDLE, id="idle"),
+        pytest.param(0x0000, HVACAction.HEATING, id="heating"),
+    ],
+)
+async def test_zha_hvac_action_follows_running_state(
+    zha_thermostat: ZigbeeDevice, running_state: int, hvac_action: HVACAction
+) -> None:
+    """The HVAC action reflects the corrected `running_state` report."""
+    endpoint = zha_thermostat.device.endpoints[1]
+    endpoint.on_off.update_attribute(ON_OFF_ID, True)
+    climate = zha_thermostat.get_platform_entity(
+        Platform.CLIMATE, unique_id=CLIMATE_UNIQUE_ID
+    )
+
+    endpoint.thermostat.update_attribute(
+        Thermostat.AttributeDefs.running_state.id, running_state
+    )
+
+    assert climate.hvac_action == hvac_action
 
 
 @pytest.mark.parametrize(
