@@ -94,6 +94,8 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfPower.WATT,
         fallback_name="Power",
     )
+    # DP6: Unknown RAW datapoint, intentionally ignored
+    .tuya_dp(dp_id=6)
     .skip_configuration()
     .add_to_registry()
 )
