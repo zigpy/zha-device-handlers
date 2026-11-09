@@ -13,7 +13,7 @@ MODEL = "TS0601"
 @pytest.fixture
 def spm01v2(zigpy_device_from_v2_quirk):
     """Return a quirked SPM01V2 device."""
-    return zigpy_device_from_v2_quirk(MODEL, MANUFACTURER)
+    return zigpy_device_from_v2_quirk(MANUFACTURER, MODEL)
 
 
 def make_frame(tsn: int, dp_payload: bytes) -> bytes:
@@ -21,7 +21,7 @@ def make_frame(tsn: int, dp_payload: bytes) -> bytes:
     return bytes([0x09, tsn, 0x01]) + dp_payload
 
 
-def send_dp(cluster, tsn: int, dp_payload: bytes):
+def send_dp(cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes):
     """Send a Tuya DP report to the cluster."""
     frame = make_frame(tsn, dp_payload)
     header, data = cluster.deserialize(frame)
@@ -29,12 +29,18 @@ def send_dp(cluster, tsn: int, dp_payload: bytes):
     return cluster.handle_get_data(data.data)
 
 
+def get_tuya_cluster(device: object) -> TuyaMCUCluster:
+    """Return the Tuya MCU cluster."""
+    cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    assert isinstance(cluster, TuyaMCUCluster)
+    return cluster
+
+
 def test_spm01v2_cluster(spm01v2):
     """The device exposes the Tuya MCU cluster."""
-    endpoint = spm01v2.endpoints[1]
+    cluster = get_tuya_cluster(spm01v2)
 
-    assert endpoint.tuya_manufacturer is not None
-    assert isinstance(endpoint.tuya_manufacturer, TuyaMCUCluster)
+    assert isinstance(cluster, TuyaMCUCluster)
 
 
 @pytest.mark.parametrize(
@@ -80,28 +86,34 @@ def test_spm01v2_cluster(spm01v2):
 )
 def test_spm01v2_datapoints(spm01v2, payload, attribute, expected):
     """Test captured Tuya datapoints."""
-    cluster = spm01v2.endpoints[1].tuya_manufacturer
+    cluster = get_tuya_cluster(spm01v2)
+
     assert send_dp(cluster, 0x5A, payload) == foundation.Status.SUCCESS
     assert cluster.get(attribute) == expected
 
 
 def test_spm01v2_unknown_dp(spm01v2):
     """Unknown datapoints must not break report processing."""
-    cluster = spm01v2.endpoints[1].tuya_manufacturer
+    cluster = get_tuya_cluster(spm01v2)
     listener = ClusterListener(cluster)
 
     # DP6: unknown RAW datapoint.
     payload = bytes.fromhex("003B06000008092400000000000000")
+
     assert send_dp(cluster, 0x5B, payload) == foundation.Status.SUCCESS
     assert listener.attribute_updates == []
 
 
 def test_spm01v2_multiple_datapoints(spm01v2):
     """Several datapoints can be processed in one report."""
-    cluster = spm01v2.endpoints[1].tuya_manufacturer
+    cluster = get_tuya_cluster(spm01v2)
 
     # Sequence 0x0001, followed by DP102, DP103 and DP104.
-    payload = bytes.fromhex("0001660200040000092567020004000000006802000400000000")
+    payload = bytes.fromhex(
+        "00016602000400000925"
+        "6702000400000000"
+        "6802000400000000"
+    )
 
     assert send_dp(cluster, 0x5C, payload) == foundation.Status.SUCCESS
     assert cluster.get("voltage") == 234.1
