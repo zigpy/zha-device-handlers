@@ -727,7 +727,7 @@ async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     ),
 )
 async def test_siterwell_setpoint_limits(zigpy_device_from_quirk, quirk):
-    """Test the Siterwell TRV accepts setpoints from 5 to 30 °C, also after a restart."""
+    """Test the Siterwell TRV serves 5-30 °C setpoint limits, also after a restart."""
 
     valve_dev = zigpy_device_from_quirk(quirk)
 
