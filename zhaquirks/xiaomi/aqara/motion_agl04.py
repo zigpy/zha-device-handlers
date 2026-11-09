@@ -58,7 +58,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = BatterySize.CR1632
+        self.battery_size = BatterySize.CR2450
         self.battery_quantity = 2
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
