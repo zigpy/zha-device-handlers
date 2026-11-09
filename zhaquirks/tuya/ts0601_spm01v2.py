@@ -1,7 +1,4 @@
-
 """Zemismart SPM01V2 single-phase energy meter."""
-
-import zigpy.types as t
 
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
@@ -10,19 +7,15 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfFrequency,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-
 
 (
     TuyaQuirkBuilder("_TZE200_qhlxve78", "TS0601")
     .applies_to("_TZE284_qhlxve78", "TS0601")
     .applies_to("_TZE204_qhlxve78", "TS0601")
-
     # Total forward active energy
     .tuya_sensor(
         dp_id=1,
@@ -34,7 +27,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         fallback_name="Energy",
     )
-
     # Total reverse active energy
     .tuya_sensor(
         dp_id=2,
@@ -46,7 +38,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         fallback_name="Produced energy",
     )
-
     # Power factor: raw value in percent
     .tuya_sensor(
         dp_id=15,
@@ -57,7 +48,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit="%",
         fallback_name="Power factor",
     )
-
     # AC frequency
     .tuya_sensor(
         dp_id=101,
@@ -69,7 +59,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfFrequency.HERTZ,
         fallback_name="AC frequency",
     )
-
     # Voltage
     .tuya_sensor(
         dp_id=102,
@@ -81,7 +70,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfElectricPotential.VOLT,
         fallback_name="Voltage",
     )
-
     # Current
     .tuya_sensor(
         dp_id=103,
@@ -93,7 +81,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfElectricCurrent.AMPERE,
         fallback_name="Current",
     )
-
     # Active power
     .tuya_sensor(
         dp_id=104,
@@ -104,7 +91,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         unit=UnitOfPower.WATT,
         fallback_name="Power",
     )
-
     .skip_configuration()
     .add_to_registry()
 )
