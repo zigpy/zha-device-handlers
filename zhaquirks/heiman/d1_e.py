@@ -1,13 +1,10 @@
 """Heiman smart door sensor D1-E."""
 
-from zha.quirks import SIREN_BASIC
 import zigpy.types as t
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
-
 
 
 class CustomHeimanCluster(CustomCluster):
