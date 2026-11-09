@@ -1,6 +1,5 @@
 """Zemismart SPM01V2 single-phase energy meter."""
 
-
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
