@@ -24,7 +24,7 @@ def make_frame(tsn: int, dp_payload: bytes) -> bytes:
 def send_dp(cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes):
     """Send a Tuya DP report to the cluster."""
     frame = make_frame(tsn, dp_payload)
-    header, data = cluster.deserialize(frame)
+    _, data = cluster.deserialize(frame)
 
     return cluster.handle_get_data(data.data)
 
@@ -50,7 +50,7 @@ def test_spm01v2_cluster(spm01v2):
         (
             bytes.fromhex("00390102000400029584"),
             "energy",
-            1693.48,
+            169348,
         ),
         # DP15: 100 %
         (
@@ -62,13 +62,13 @@ def test_spm01v2_cluster(spm01v2):
         (
             bytes.fromhex("003D6502000400001388"),
             "ac_frequency",
-            50,
+            5000,
         ),
         # DP102: 2341 / 10 = 234.1 V
         (
             bytes.fromhex("00476602000400000925"),
             "voltage",
-            234.1,
+            2341,
         ),
         # DP103: 0 / 1000 = 0 A
         (
@@ -97,8 +97,8 @@ def test_spm01v2_unknown_dp(spm01v2):
     cluster = get_tuya_cluster(spm01v2)
     listener = ClusterListener(cluster)
 
-    # DP6: unknown RAW datapoint.
-    payload = bytes.fromhex("003B06000008092400000000000000")
+    # DP6: unknown RAW datapoint (8 bytes).
+    payload = bytes.fromhex("003B060000080924000000000000")
 
     assert send_dp(cluster, 0x5B, payload) == foundation.Status.SUCCESS
     assert listener.attribute_updates == []
@@ -109,9 +109,14 @@ def test_spm01v2_multiple_datapoints(spm01v2):
     cluster = get_tuya_cluster(spm01v2)
 
     # Sequence 0x0001, followed by DP102, DP103 and DP104.
-    payload = bytes.fromhex("0001660200040000092567020004000000006802000400000000")
+    payload = bytes.fromhex(
+        "0001"
+        "6602000400000925"
+        "6702000400000000"
+        "6802000400000000"
+    )
 
     assert send_dp(cluster, 0x5C, payload) == foundation.Status.SUCCESS
-    assert cluster.get("voltage") == 234.1
+    assert cluster.get("voltage") == 2341
     assert cluster.get("current") == 0
     assert cluster.get("power") == 0
