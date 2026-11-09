@@ -95,7 +95,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         fallback_name="Power",
     )
     # DP6: Unknown RAW datapoint, intentionally ignored
-    .tuya_dp(dp_id=6)
+    .tuya_dp_multi(dp_id=6, attribute_mapping=[])
     .skip_configuration()
     .add_to_registry()
 )
