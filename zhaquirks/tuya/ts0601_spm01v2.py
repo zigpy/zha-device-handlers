@@ -7,10 +7,7 @@ from zha.units import (
     UnitOfFrequency,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
