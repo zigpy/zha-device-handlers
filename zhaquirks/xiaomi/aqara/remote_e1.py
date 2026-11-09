@@ -1,7 +1,6 @@
 """Aqara E1-series wireless remote."""
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -11,6 +10,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_SHORT_PRESS,
