@@ -120,6 +120,8 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_h1_double
+import zhaquirks.xiaomi.aqara.switch_h1_single
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -1119,6 +1121,39 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
 
     assert em_listener.attribute_updates[2][0] == zcl_em_current_power
     assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.switch_h1_single.AqaraH1SingleRockerSwitchWithNeutral,
+        zhaquirks.xiaomi.aqara.switch_h1_double.AqaraH1DoubleRockerSwitchWithNeutral4,
+    ),
+)
+async def test_aqara_h1_switch_energy_from_heartbeat(zigpy_device_from_quirk, quirk):
+    """Test the Aqara H1 switches (with neutral) take energy and voltage from the 0xFCC0 heartbeat."""
+
+    device = zigpy_device_from_quirk(quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+    em_listener = ClusterListener(device.endpoints[1].electrical_measurement)
+    se_listener = ClusterListener(device.endpoints[1].smartenergy_metering)
+
+    opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1,
+        create_aqara_attr_report({149: 1.234, 150: 2300, 152: 15}),
+    )
+
+    assert se_listener.attribute_updates == [
+        (Metering.AttributeDefs.current_summ_delivered.id, 1234)
+    ]
+    assert (
+        ElectricalMeasurement.AttributeDefs.rms_voltage.id,
+        230,
+    ) in em_listener.attribute_updates
+    assert (
+        ElectricalMeasurement.AttributeDefs.active_power.id,
+        150,
+    ) in em_listener.attribute_updates
 
 
 async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
