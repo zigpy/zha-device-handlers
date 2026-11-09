@@ -101,9 +101,7 @@ def test_spm01v2_multiple_datapoints(spm01v2):
     cluster = spm01v2.endpoints[1].tuya_manufacturer
 
     # Sequence 0x0001, followed by DP102, DP103 and DP104.
-    payload = bytes.fromhex(
-        "0001660200040000092567020004000000006802000400000000"
-    )
+    payload = bytes.fromhex("0001660200040000092567020004000000006802000400000000")
 
     assert send_dp(cluster, 0x5C, payload) == foundation.Status.SUCCESS
     assert cluster.get("voltage") == 234.1
