@@ -13,7 +13,7 @@ MODEL = "TS0601"
 @pytest.fixture
 def spm01v2(zigpy_device_from_v2_quirk):
     """Return a quirked SPM01V2 device."""
-    return zigpy_device_from_v2_quirk(MANUFACTURER, MODEL)
+    return zigpy_device_from_v2_quirk(MODEL, MANUFACTURER)
 
 
 def make_frame(tsn: int, dp_payload: bytes) -> bytes:
@@ -21,7 +21,9 @@ def make_frame(tsn: int, dp_payload: bytes) -> bytes:
     return bytes([0x09, tsn, 0x01]) + dp_payload
 
 
-def send_dp(cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes) -> foundation.Status:
+def send_dp(
+    cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes
+) -> foundation.Status:
     """Send a Tuya DP report to the cluster."""
     frame = make_frame(tsn, dp_payload)
     _, data = cluster.deserialize(frame)
@@ -31,7 +33,7 @@ def send_dp(cluster: TuyaMCUCluster, tsn: int, dp_payload: bytes) -> foundation.
 
 def get_tuya_cluster(device) -> TuyaMCUCluster:
     """Return the Tuya MCU cluster."""
-    cluster = device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+    cluster = device.endpoints[1].tuya_manufacturer
     assert isinstance(cluster, TuyaMCUCluster)
     return cluster
 
@@ -114,7 +116,9 @@ def test_spm01v2_multiple_datapoints(spm01v2):
     cluster = get_tuya_cluster(spm01v2)
 
     # Sequence 0x0001, followed by DP102, DP103 and DP104.
-    payload = bytes.fromhex("0001660200040000092567020004000000006802000400000000")
+    payload = bytes.fromhex(
+        "0001660200040000092567020004000000006802000400000000"
+    )
 
     assert send_dp(cluster, 0x5C, payload) == foundation.Status.SUCCESS
     assert cluster.get("voltage") == 2341
