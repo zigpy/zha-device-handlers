@@ -3,14 +3,19 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
+from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_SINGLE, COMMAND_TRIPLE
 from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
+from zhaquirks.sonoff.snzb04pr2 import SonoffContactCluster
 from zhaquirks.sonoff.snzb06p import IlluminationStatus, SonoffFC11Cluster
 from zhaquirks.sonoff.zbm5 import (
     SonoffCluster,
@@ -344,3 +349,87 @@ async def test_snzb06p_illumination_read_without_manufacturer_code(
 
     assert not cluster.is_attribute_unsupported("last_illumination_state")
     assert cluster.get("last_illumination_state") == IlluminationStatus.Light
+
+
+def _snzb04pr2(zigpy_device_from_v2_quirk):
+    """Return a quirked SNZB-04PR2."""
+    return zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "SNZB-04PR2",
+        cluster_ids={1: {SonoffContactCluster.cluster_id: ClusterType.Server}},
+    )
+
+
+def test_snzb04pr2_tamper_entity(zigpy_device_from_v2_quirk):
+    """The quirk adds a tamper binary sensor without a reporting config."""
+    device = _snzb04pr2(zigpy_device_from_v2_quirk)
+    assert isinstance(device.endpoints[1].sonoff_contact_cluster, SonoffContactCluster)
+
+    entry = DEVICE_REGISTRY.match_entry(device)
+    (tamper,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert tamper.attribute_name == SonoffContactCluster.AttributeDefs.tamper.name
+    assert tamper.cluster_id == SonoffContactCluster.cluster_id
+    assert tamper.endpoint_id == 1
+    assert tamper.device_class == BinarySensorDeviceClass.TAMPER
+    assert tamper.entity_type == EntityType.DIAGNOSTIC
+    # The device answers Configure Reporting for 0x2000 with UNSUPPORTED_ATTRIBUTE
+    assert tamper.reporting_config is None
+
+
+@pytest.mark.parametrize(
+    ("frame", "tamper"),
+    [
+        # Report Attributes, server to client, no manufacturer code:
+        # tamper (0x2000, uint8) = 1 (switch released) or 0 (switch pressed)
+        (bytes.fromhex("18010a00202001"), 1),
+        (bytes.fromhex("18020a00202000"), 0),
+    ],
+    ids=["released", "pressed"],
+)
+async def test_snzb04pr2_tamper_report_without_manufacturer_code(
+    zigpy_device_from_v2_quirk, frame, tamper
+):
+    """The device reports 0x2000 without a manufacturer code, it must be cached."""
+    device = _snzb04pr2(zigpy_device_from_v2_quirk)
+    cluster = device.endpoints[1].sonoff_contact_cluster
+    listener = ClusterListener(cluster)
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zha.PROFILE_ID,
+            cluster_id=SonoffContactCluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(frame),
+        )
+    )
+
+    attr = SonoffContactCluster.AttributeDefs.tamper
+    assert listener.attribute_updates == [(attr.id, tamper)]
+    assert cluster.get(attr.name) == tamper
+
+
+async def test_snzb04pr2_tamper_read_without_manufacturer_code(
+    zigpy_device_from_v2_quirk,
+):
+    """0x2000 is read without a manufacturer code."""
+    cluster = _snzb04pr2(zigpy_device_from_v2_quirk).endpoints[1].sonoff_contact_cluster
+    attr = SonoffContactCluster.AttributeDefs.tamper
+
+    read_mock = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    attrid=attr.id,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(type=attr.zcl_type, value=t.uint8_t(1)),
+                )
+            ],
+        )
+    )
+    with mock.patch.object(cluster, "_read_attributes", read_mock):
+        await cluster.read_attributes([attr.name])
+
+    assert read_mock.await_count == 1
+    assert read_mock.await_args.kwargs["manufacturer"] is None
+    assert cluster.get(attr.name) == 1
