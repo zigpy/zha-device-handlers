@@ -1,5 +1,6 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
 
+import asyncio
 from typing import cast
 from unittest import mock
 
@@ -233,3 +234,138 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
         assert result
         assert fail
         assert reports == [656]
+
+
+# GetWeeklyScheduleResponse frames captured from an eTRV0103 (firmware 0x00000020).
+# The second byte is the TSN chosen by the device, never the TSN of the request.
+SCHEDULE_RSP_FRIDAY = bytes.fromhex("091d0004200100000807860134081a0408072805a406")
+SCHEDULE_RSP_SATURDAY = bytes.fromhex("091e0004400100000807860134081a0408072805a406")
+
+# Thermostat transitions in the captured frames: (minutes after midnight, centi-°C)
+SCHEDULE_VALUES = [0, 1800, 390, 2100, 1050, 1800, 1320, 1700]
+
+
+def _thermostat_packet(data: bytes) -> t.ZigbeePacket:
+    """Build a packet from the thermostat cluster of endpoint 1 carrying `data`."""
+    return t.ZigbeePacket(
+        profile_id=260,
+        cluster_id=Thermostat.cluster_id,
+        src_ep=1,
+        dst_ep=1,
+        data=t.SerializableBytes(data),
+    )
+
+
+def _with_tsn(data: bytes, tsn: int) -> bytes:
+    """Return the ZCL frame `data` with its TSN replaced by `tsn`."""
+    return data[:1] + bytes([tsn]) + data[2:]
+
+
+async def _wait_for_pending_tsns(device, count: int) -> list[int]:
+    """Wait until at least `count` requests are pending, return their TSNs."""
+    for _ in range(100):
+        if len(device._requests) >= count:
+            return sorted(key.tsn for key in device._requests)
+        await asyncio.sleep(0)
+
+    raise AssertionError(f"expected {count} pending requests: {device._requests}")
+
+
+async def test_danfoss_weekly_schedule_response_own_tsn(zigpy_device_from_quirk):
+    """Test that a response carrying the device's own TSN resolves the request."""
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    thermostat = device.endpoints[1].thermostat
+    listener = mock.MagicMock()
+    thermostat.add_listener(listener)
+
+    request = asyncio.create_task(
+        thermostat.get_weekly_schedule(
+            days_to_return=Thermostat.SeqDayOfWeek.Friday,
+            mode_to_return=Thermostat.SeqMode.Heat,
+        )
+    )
+    (tsn,) = await _wait_for_pending_tsns(device, 1)
+    assert tsn != SCHEDULE_RSP_FRIDAY[1]
+
+    device.packet_received(_thermostat_packet(SCHEDULE_RSP_FRIDAY))
+
+    rsp = await asyncio.wait_for(request, 1)
+    assert rsp.day_of_week_for_sequence == Thermostat.SeqDayOfWeek.Friday
+    assert rsp.values == SCHEDULE_VALUES
+    assert not device._weekly_schedule_requests
+
+    # the response still reaches the cluster and is surfaced as a ZHA event
+    listener.zha_send_event.assert_called_once_with("get_weekly_schedule_response", rsp)
+
+
+async def test_danfoss_weekly_schedule_response_concurrent(zigpy_device_from_quirk):
+    """Test that two queued GetWeeklySchedule requests are both resolved."""
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    thermostat = device.endpoints[1].thermostat
+    listener = mock.MagicMock()
+    thermostat.add_listener(listener)
+
+    friday = asyncio.create_task(
+        thermostat.get_weekly_schedule(
+            Thermostat.SeqDayOfWeek.Friday, Thermostat.SeqMode.Heat
+        )
+    )
+    saturday = asyncio.create_task(
+        thermostat.get_weekly_schedule(
+            Thermostat.SeqDayOfWeek.Saturday, Thermostat.SeqMode.Heat
+        )
+    )
+
+    # the second request may still be queued behind the first one in zigpy
+    await _wait_for_pending_tsns(device, 1)
+    assert len(device._weekly_schedule_requests) == 2
+
+    device.packet_received(_thermostat_packet(SCHEDULE_RSP_FRIDAY))
+    rsp_friday = await asyncio.wait_for(friday, 1)
+    assert rsp_friday.day_of_week_for_sequence == Thermostat.SeqDayOfWeek.Friday
+
+    await _wait_for_pending_tsns(device, 1)
+    device.packet_received(_thermostat_packet(SCHEDULE_RSP_SATURDAY))
+    rsp_saturday = await asyncio.wait_for(saturday, 1)
+    assert rsp_saturday.day_of_week_for_sequence == Thermostat.SeqDayOfWeek.Saturday
+
+    assert not device._weekly_schedule_requests
+    assert listener.zha_send_event.call_count == 2
+
+
+async def test_danfoss_weekly_schedule_response_matching_tsn(zigpy_device_from_quirk):
+    """Test a response that echoes the request TSN still emits a ZHA event."""
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    thermostat = device.endpoints[1].thermostat
+    listener = mock.MagicMock()
+    thermostat.add_listener(listener)
+
+    request = asyncio.create_task(
+        thermostat.get_weekly_schedule(
+            Thermostat.SeqDayOfWeek.Friday, Thermostat.SeqMode.Heat
+        )
+    )
+    (tsn,) = await _wait_for_pending_tsns(device, 1)
+
+    device.packet_received(_thermostat_packet(_with_tsn(SCHEDULE_RSP_FRIDAY, tsn)))
+
+    rsp = await asyncio.wait_for(request, 1)
+    assert rsp.values == SCHEDULE_VALUES
+    listener.zha_send_event.assert_called_once_with("get_weekly_schedule_response", rsp)
+
+
+async def test_danfoss_weekly_schedule_response_tsn_collision(zigpy_device_from_quirk):
+    """Test the device's own TSN never resolves another pending Thermostat request."""
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    thermostat = device.endpoints[1].thermostat
+
+    read = asyncio.create_task(
+        thermostat.read_attributes_raw([Thermostat.AttributeDefs.local_temperature.id])
+    )
+    (tsn,) = await _wait_for_pending_tsns(device, 1)
+
+    device.packet_received(_thermostat_packet(_with_tsn(SCHEDULE_RSP_FRIDAY, tsn)))
+    await asyncio.sleep(0)
+
+    assert not read.done()
+    read.cancel()
