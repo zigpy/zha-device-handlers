@@ -71,6 +71,7 @@ import logging
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -805,6 +806,18 @@ REPORTING_WHEN_CHANGED = ReportingConfig(
     .replaces(LegrandContactorAutoOnOff)
     .replaces(LegrandContactorSwitchOnOff)
     .replaces(LegrandIdentify)
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=ElectricalMeasurement.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix="rms_voltage",
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=ElectricalMeasurement.cluster_id,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix="rms_current",
+    )
     .enum(
         attribute_name="mode",
         enum_class=DeviceMode,

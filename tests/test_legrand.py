@@ -3,17 +3,20 @@
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import AttributeUnsupportedEvent
+from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
 from zigpy.zcl.clusters.general import (
     EffectIdentifier,
     EffectVariant,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 import zigpy.zcl.foundation as f
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
+from zhaquirks.builder import EntityFilter
 from zhaquirks.legrand import LEGRAND
 from zhaquirks.legrand.contactor import (
     AutoOverride,
@@ -154,6 +157,46 @@ async def test_legrand_identify_command(zigpy_device_from_v2_quirk):
         assert request.call_args_list[1].kwargs["identify_time"] == IDENTIFY_TIME
         assert "effect_id" not in request.call_args_list[1].kwargs
         assert "effect_variant" not in request.call_args_list[1].kwargs
+
+
+def test_legrand_contactor_electrical_entities(zigpy_device_from_v2_quirk):
+    """Hide only voltage and current while retaining power and contactor controls."""
+    device = zigpy_device_from_v2_quirk(
+        f" {LEGRAND}",
+        " Contactor",
+        cluster_ids={1: {ElectricalMeasurement.cluster_id: ClusterType.Server}},
+    )
+    entry = DEVICE_REGISTRY.match_entry(device)
+    definition = entry.zha_device_factory.quirk_definition
+    assert definition.disabled_default_entities == (
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=ElectricalMeasurement.cluster_id,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix="rms_voltage",
+        ),
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=ElectricalMeasurement.cluster_id,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix="rms_current",
+        ),
+    )
+
+    measurement = device.endpoints[1].electrical_measurement
+    for attribute in (
+        ElectricalMeasurement.AttributeDefs.active_power,
+        ElectricalMeasurement.AttributeDefs.apparent_power,
+    ):
+        measurement.update_attribute(attribute.id, 42)
+        assert measurement.get(attribute.name) == 42
+
+    assert isinstance(device.endpoints[1].on_off, LegrandContactorSwitchOnOff)
+    assert {metadata.translation_key for metadata in definition.entity_metadata} >= {
+        "operating_mode",
+        "reset_auto",
+        "auto_status",
+    }
 
 
 async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
