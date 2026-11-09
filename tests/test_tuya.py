@@ -719,6 +719,40 @@ async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[12][1] == 0x01
 
 
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,
+        zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type2,
+    ),
+)
+async def test_siterwell_setpoint_limits(zigpy_device_from_quirk, quirk):
+    """Test the Siterwell TRV accepts setpoints from 5 to 30 °C, also after a restart."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+
+    # zigpy's appdb clears the attribute cache of every cluster after applying quirks
+    for ep in valve_dev.non_zdo_endpoints:
+        for cluster in (*ep.in_clusters.values(), *ep.out_clusters.values()):
+            cluster._attr_cache.clear()
+
+    thermostat = valve_dev.endpoints[1].thermostat
+    for attr, value in (
+        (Thermostat.AttributeDefs.abs_min_heat_setpoint_limit, 500),
+        (Thermostat.AttributeDefs.abs_max_heat_setpoint_limit, 3000),
+        (
+            Thermostat.AttributeDefs.ctrl_sequence_of_oper,
+            Thermostat.ControlSequenceOfOperation.Heating_Only,
+        ),
+    ):
+        assert thermostat.get(attr.name) == value
+        assert not thermostat.is_attribute_unsupported(attr)
+
+    # the writable limits stay unset, so ZHA falls back to the absolute ones
+    assert thermostat.get(Thermostat.AttributeDefs.min_heat_setpoint_limit.name) is None
+    assert thermostat.get(Thermostat.AttributeDefs.max_heat_setpoint_limit.name) is None
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
 async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""

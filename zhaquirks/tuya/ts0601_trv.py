@@ -48,6 +48,8 @@ SITERWELL_TARGET_TEMP_ATTR = 0x0202  # [0,0,0,210] target room temp (decidegree)
 SITERWELL_TEMPERATURE_ATTR = 0x0203  # [0,0,0,200] current room temp (decidegree)
 SITERWELL_BATTERY_ATTR = 0x0215  # [0,0,0,98] battery charge
 SITERWELL_MODE_ATTR = 0x0404  # [0] off [1] scheduled [2] manual
+SITERWELL_MIN_TEMPERATURE_VAL = 500  # 5 °C (centidegree)
+SITERWELL_MAX_TEMPERATURE_VAL = 3000  # 30 °C (centidegree)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,6 +127,14 @@ class SiterwellManufCluster(TuyaManufClusterAttributes):
 
 class SiterwellThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
+
+    # The absolute limits only bound the setpoint range: unlike the writable
+    # min/max_heat_setpoint_limit, they don't make ZHA add config number entities.
+    _CONSTANT_ATTRIBUTES = {
+        **TuyaThermostatCluster._CONSTANT_ATTRIBUTES,
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: SITERWELL_MIN_TEMPERATURE_VAL,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: SITERWELL_MAX_TEMPERATURE_VAL,
+    }
 
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
