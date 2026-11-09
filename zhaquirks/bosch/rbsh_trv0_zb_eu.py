@@ -17,6 +17,7 @@ from zhaquirks.builder import (
     NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
+    UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
 
@@ -506,6 +507,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         max_value=30,
         step=0.1,
         multiplier=0.01,
+        unit=UnitOfTemperature.CELSIUS,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
     )
