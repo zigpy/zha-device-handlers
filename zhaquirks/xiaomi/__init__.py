@@ -758,6 +758,35 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
         super()._update_attribute(attrid, value)
 
 
+class MotionIlluminanceMeasurementCluster(IlluminanceMeasurementCluster):
+    """Illuminance measurement cluster that also signals motion.
+
+    The Aqara motion sensor (RTCGQ11LM) only sends an illuminance report when it detects
+    motion, next to its occupancy report. Its periodic illuminance value arrives in the
+    Xiaomi heartbeat on the Basic cluster instead. So when the occupancy report is lost
+    on the network but the illuminance report arrives, motion is still set.
+    """
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Handle a general request and set occupancy on an illuminance report."""
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes and any(
+            attr.attrid == self.AttributeDefs.measured_value.id
+            for attr in args.attribute_reports
+        ):
+            self.endpoint.occupancy.update_attribute(
+                OccupancySensing.AttributeDefs.occupancy.id,
+                OccupancySensing.Occupancy.Occupied,
+            )
+
+
 class LocalIlluminanceMeasurementCluster(
     LocalDataCluster, IlluminanceMeasurementCluster
 ):
