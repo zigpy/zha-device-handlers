@@ -1,5 +1,10 @@
 """Zemismart SPM01V2 single-phase energy meter."""
 
+
+from zha.application.platforms.sensor.device_class import (
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zha.units import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -7,7 +12,6 @@ from zha.units import (
     UnitOfFrequency,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
