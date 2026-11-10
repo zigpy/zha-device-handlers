@@ -792,5 +792,30 @@ class SEHeatingCoolingOutput(CustomCluster):
         fallback_name="External temperature sensor type",
         enum_class=SETemperatureSensorType,
     )
+    .number(
+        cluster_id=SEHeatingCoolingOutput.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEHeatingCoolingOutput.AttributeDefs.se_heat_temperature_high_limit.name,
+        translation_key="max_floor_temperature",
+        fallback_name="Max floor temperature",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=4,
+        max_value=40,
+        step=0.5,
+        multiplier=0.01,
+    )
+    .number(
+        cluster_id=SECycleTime.cluster_id,
+        endpoint_id=1,
+        attribute_name=SECycleTime.AttributeDefs.se_cycle_time.name,
+        translation_key="cycle_time",
+        fallback_name="Cycle time",
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=300,
+        max_value=1800,
+        step=60,
+    )
     .add_to_registry()
 )
