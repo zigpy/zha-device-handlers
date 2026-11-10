@@ -1,4 +1,3 @@
-
 """MOES SVL01-Z mmWave Radar Detection Smart Wall Light Switch."""
 
 import zigpy.types as t
