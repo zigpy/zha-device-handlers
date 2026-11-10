@@ -1025,16 +1025,31 @@ def test_attribute_parsing(raw_report_hex, attributes):
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
-    """Test binding Xiaomi EU plug sets OppleMode to True and removes the plug from group 0."""
+@pytest.mark.parametrize(
+    "read_result, writes_mode",
+    [
+        (({0x0009: 0}, {}), True),
+        # already enabled: writing again would only reboot the plug
+        (({0x0009: 1}, {}), False),
+        # newer firmware doesn't have the attribute
+        (({}, {0x0009: foundation.Status.UNSUPPORTED_ATTRIBUTE}), False),
+    ],
+)
+async def test_xiaomi_eu_plug_binding(
+    zigpy_device_from_quirk, quirk, read_result, writes_mode
+):
+    """Test binding Xiaomi EU plug enables OppleMode if needed and removes the plug from group 0."""
 
     device = zigpy_device_from_quirk(quirk)
     opple_cluster = device.endpoints[1].opple_cluster
 
     p1 = mock.patch.object(opple_cluster, "create_catching_task")
     p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
+    p3 = mock.patch.object(
+        opple_cluster, "read_attributes", mock.AsyncMock(return_value=read_result)
+    )
 
-    with p1 as mock_task, p2 as request_mock:
+    with p1 as mock_task, p2 as request_mock, p3 as read_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
         await opple_cluster.bind()
@@ -1048,8 +1063,14 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         assert request_mock.mock_calls[0].kwargs["sequence"] == 1
         assert request_mock.mock_calls[0].kwargs["data"] == b"\x01\x01\x03\x00\x00"
 
-        # Await call writing OppleMode attribute
+        # Await call reading and possibly writing OppleMode attribute
         await mock_task.call_args[0][0]
+
+        read_mock.assert_awaited_once_with([0x0009])
+
+        if not writes_mode:
+            assert len(request_mock.mock_calls) == 1
+            return
 
         assert len(request_mock.mock_calls) == 2
         assert request_mock.mock_calls[1].kwargs["cluster"] == 64704
