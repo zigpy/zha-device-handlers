@@ -1,0 +1,616 @@
+{
+  "version": 3,
+  "ieee": "cc:86:ec:ff:fe:c8:96:e0",
+  "nwk": "0xAB6E",
+  "manufacturer": "_TZ3000_qaaysllp",
+  "model": "TS0201",
+  "friendly_manufacturer": "_TZ3000_qaaysllp",
+  "friendly_model": "TS0201",
+  "name": "_TZ3000_qaaysllp TS0201",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.tuya.builder:(_TZ3000_qaaysllp / TS0201)",
+  "exposes_features": [],
+  "manufacturer_code": 4098,
+  "power_source": "Battery or Unknown",
+  "lqi": 76,
+  "rssi": -81,
+  "last_seen": "2026-11-08T18:18:38.404245+00:00",
+  "available": true,
+  "device_type": "EndDevice",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "EndDevice",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 128,
+    "manufacturer_code": 4098,
+    "maximum_buffer_size": 82,
+    "maximum_incoming_transfer_size": 82,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 82,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "LIGHT_SENSOR",
+        "id": 262
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0001",
+              "name": "app_version",
+              "zcl_type": "uint8",
+              "value": 68
+            },
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "_TZ3000_qaaysllp"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "TS0201"
+            },
+            {
+              "id": "0x0007",
+              "name": "power_source",
+              "zcl_type": "enum8",
+              "value": 3
+            },
+            {
+              "id": "0xfffe",
+              "name": "reporting_status",
+              "zcl_type": "enum8",
+              "value": 0
+            },
+            {
+              "id": "0x0000",
+              "name": "zcl_version",
+              "zcl_type": "uint8",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0001",
+          "endpoint_attribute": "power",
+          "attributes": [
+            {
+              "id": "0x0021",
+              "name": "battery_percentage_remaining",
+              "zcl_type": "uint8",
+              "value": 182
+            },
+            {
+              "id": "0x0033",
+              "name": "battery_quantity",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0031",
+              "name": "battery_size",
+              "zcl_type": "enum8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0020",
+              "name": "battery_voltage",
+              "zcl_type": "uint8",
+              "value": 29
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0400",
+          "endpoint_attribute": "illuminance",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "measured_value",
+              "zcl_type": "uint16",
+              "value": 16991
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xe002",
+          "endpoint_attribute": null,
+          "attributes": [
+            {
+              "id": "0xd00f",
+              "name": "alarm_humidity",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0xd00d",
+              "name": "alarm_humidity_max",
+              "zcl_type": "int16",
+              "value": 100
+            },
+            {
+              "id": "0xd00e",
+              "name": "alarm_humidity_min",
+              "zcl_type": "int16",
+              "value": 0
+            },
+            {
+              "id": "0xd006",
+              "name": "alarm_temperature",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0xd00a",
+              "name": "alarm_temperature_max",
+              "zcl_type": "int16",
+              "value": 80
+            },
+            {
+              "id": "0xd00b",
+              "name": "alarm_temperature_min",
+              "zcl_type": "int16",
+              "value": -20
+            },
+            {
+              "id": "0xd010",
+              "name": "unknown",
+              "zcl_type": "uint8",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x000a",
+          "endpoint_attribute": "time",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 68
+            }
+          ],
+          "last_query_cmd": {
+            "manufacturer_code": 4098,
+            "image_type": 5634,
+            "current_file_version": 68,
+            "hardware_version": null
+          }
+        }
+      ]
+    },
+    "2": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "TEMPERATURE_SENSOR",
+        "id": 770
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0402",
+          "endpoint_attribute": "temperature",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "measured_value",
+              "zcl_type": "int16",
+              "value": 2440
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0405",
+          "endpoint_attribute": "humidity",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "measured_value",
+              "zcl_type": "uint16",
+              "value": 4070
+            }
+          ]
+        }
+      ],
+      "out_clusters": []
+    }
+  },
+  "original_signature": {
+    "manufacturer": "_TZ3000_qaaysllp",
+    "model": "TS0201",
+    "node_desc": {
+      "logical_type": 2,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 128,
+      "manufacturer_code": 4098,
+      "maximum_buffer_size": 82,
+      "maximum_incoming_transfer_size": 82,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 82,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0106",
+        "input_clusters": [
+          "0x0000",
+          "0x0001",
+          "0x0400",
+          "0xe002"
+        ],
+        "output_clusters": [
+          "0x0019",
+          "0x000a"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "number": [
+      {
+        "fallback_name": "Alarm humidity max",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_humidity_max",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "alarm_humidity_max",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 100,
+        "mode": "auto",
+        "native_max_value": 100,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": "%"
+      },
+      {
+        "fallback_name": "Alarm humidity min",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_humidity_min",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "alarm_humidity_min",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 0,
+        "mode": "auto",
+        "native_max_value": 100,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": "%"
+      },
+      {
+        "fallback_name": "Alarm temperature max",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_temperature_max",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "alarm_temperature_max",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 80,
+        "mode": "auto",
+        "native_max_value": 80,
+        "native_min_value": -20,
+        "native_step": 1,
+        "native_unit_of_measurement": "°C"
+      },
+      {
+        "fallback_name": "Alarm temperature min",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_temperature_min",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "alarm_temperature_min",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": -20,
+        "mode": "auto",
+        "native_max_value": 80,
+        "native_min_value": -20,
+        "native_step": 1,
+        "native_unit_of_measurement": "°C"
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 76,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": -81,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-1",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Battery",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "battery",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "battery_quantity",
+          "battery_size",
+          "battery_voltage"
+        ],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 91.0,
+        "suggested_display_precision": 0,
+        "unit": "%",
+        "battery_size": null,
+        "battery_quantity": null,
+        "battery_voltage": 2.9
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-1024",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Illuminance",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "illuminance",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 50,
+        "suggested_display_precision": null,
+        "unit": "lx"
+      },
+      {
+        "fallback_name": "Humidity alarm",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_humidity",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "EnumSensor",
+        "translation_key": "humidity_alarm",
+        "translation_placeholders": null,
+        "device_class": "enum",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "ALARM_OFF",
+        "suggested_display_precision": null,
+        "unit": null,
+        "options": [
+          "ALARM_OFF",
+          "MAX_ALARM_ON",
+          "MIN_ALARM_ON"
+        ]
+      },
+      {
+        "fallback_name": "Temperature alarm",
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-alarm_temperature",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "EnumSensor",
+        "translation_key": "temperature_alarm",
+        "translation_placeholders": null,
+        "device_class": "enum",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "ALARM_OFF",
+        "suggested_display_precision": null,
+        "unit": null,
+        "options": [
+          "ALARM_OFF",
+          "MAX_ALARM_ON",
+          "MIN_ALARM_ON"
+        ]
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-2-1026",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Temperature",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 2,
+        "available": true,
+        "group_id": null,
+        "native_value": 24.4,
+        "suggested_display_precision": null,
+        "unit": "°C"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-2-1029",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Humidity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "humidity",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 2,
+        "available": true,
+        "group_id": null,
+        "native_value": 40.7,
+        "suggested_display_precision": null,
+        "unit": "%"
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "cc:86:ec:ff:fe:c8:96:e0-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "cc:86:ec:ff:fe:c8:96:e0",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x00000044",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}
