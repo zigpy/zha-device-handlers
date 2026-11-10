@@ -195,6 +195,10 @@ async def join_device_from_diagnostics(
     device = registry.resolve(device)
 
     for ep_id, ep_data in data["endpoints"].items():
+        # The diagnostics can also contain endpoints that an older quirk kept
+        if int(ep_id) not in device.endpoints:
+            continue
+
         ep = device.endpoints[int(ep_id)]
         ep.request = AsyncMock(return_value=[0])
 

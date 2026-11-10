@@ -8,7 +8,10 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
+import zigpy.endpoint
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
@@ -43,6 +46,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
@@ -65,6 +69,7 @@ from zhaquirks.const import (
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
 )
+from zhaquirks.device import BaseCustomDevice
 from zhaquirks.xiaomi import (
     AQARA,
     LUMI,
@@ -1024,17 +1029,32 @@ def test_attribute_parsing(raw_report_hex, attributes):
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
-    """Test binding Xiaomi EU plug sets OppleMode to True and removes the plug from group 0."""
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,))
+@pytest.mark.parametrize(
+    "read_result, writes_mode",
+    [
+        (({0x0009: 0}, {}), True),
+        # already enabled: writing again would only reboot the plug
+        (({0x0009: 1}, {}), False),
+        # newer firmware doesn't have the attribute
+        (({}, {0x0009: foundation.Status.UNSUPPORTED_ATTRIBUTE}), False),
+    ],
+)
+async def test_xiaomi_eu_plug_binding(
+    zigpy_device_from_quirk, quirk, read_result, writes_mode
+):
+    """Test binding Xiaomi EU plug enables OppleMode if needed and removes the plug from group 0."""
 
     device = zigpy_device_from_quirk(quirk)
     opple_cluster = device.endpoints[1].opple_cluster
 
     p1 = mock.patch.object(opple_cluster, "create_catching_task")
     p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
+    p3 = mock.patch.object(
+        opple_cluster, "read_attributes", mock.AsyncMock(return_value=read_result)
+    )
 
-    with p1 as mock_task, p2 as request_mock:
+    with p1 as mock_task, p2 as request_mock, p3 as read_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
         await opple_cluster.bind()
@@ -1048,8 +1068,14 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         assert request_mock.mock_calls[0].kwargs["sequence"] == 1
         assert request_mock.mock_calls[0].kwargs["data"] == b"\x01\x01\x03\x00\x00"
 
-        # Await call writing OppleMode attribute
+        # Await call reading and possibly writing OppleMode attribute
         await mock_task.call_args[0][0]
+
+        read_mock.assert_awaited_once_with([0x0009])
+
+        if not writes_mode:
+            assert len(request_mock.mock_calls) == 1
+            return
 
         assert len(request_mock.mock_calls) == 2
         assert request_mock.mock_calls[1].kwargs["cluster"] == 64704
@@ -1062,7 +1088,7 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
 @pytest.mark.parametrize(
     "quirk",
     (
-        zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,
+        zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,
         zhaquirks.xiaomi.aqara.switch_t1.SwitchT1,
     ),
 )
@@ -1121,13 +1147,162 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
 
 
+MAEU01_SIGNATURES = (
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt1,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt2,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt3,
+)
+
+
+def maeu01_device(zigpy_device_from_quirk, signature=MAEU01_SIGNATURES[1]):
+    """Create a MAEU01 plug with one of the signatures the v1 quirk matched."""
+    raw_device = zigpy_device_from_quirk(signature, apply_quirk=False)
+    raw_device.model = "lumi.plug.maeu01"
+    for endpoint in raw_device.endpoints.values():
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
+
+    return DEVICE_REGISTRY.resolve(raw_device)
+
+
+def test_xiaomi_maeu01_unknown_signature(zigpy_device_from_v2_quirk):
+    """Test a MAEU01 signature the v1 quirk didn't match stays unquirked."""
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.plug.maeu01",
+        cluster_ids={
+            1: dict.fromkeys(
+                [
+                    0x0002,
+                    0x0003,
+                    0x0004,
+                    0x0005,
+                    0x0006,
+                    0x0009,
+                    0x0702,
+                    0x0B04,
+                    0xFCC0,
+                ],
+                ClusterType.Server,
+            ),
+            21: {0x000C: ClusterType.Server},
+        },
+    )
+
+    assert not isinstance(device, BaseCustomDevice)
+
+
+@pytest.mark.parametrize("signature", MAEU01_SIGNATURES)
+def test_xiaomi_maeu01_signatures(zigpy_device_from_quirk, signature):
+    """Test the MAEU01 quirk turns every known signature into the same device."""
+    device = maeu01_device(zigpy_device_from_quirk, signature)
+
+    assert set(device.endpoints) == {0, 1, 21, 242}
+    # endpoint 21 isn't always on the device, but must not cause an interview
+    assert device.is_initialized
+
+    ep1 = device.endpoints[1]
+    assert isinstance(ep1.basic, zhaquirks.xiaomi.BasicCluster)
+    assert isinstance(ep1.smartenergy_metering, zhaquirks.xiaomi.MeteringCluster)
+    assert isinstance(
+        ep1.electrical_measurement, zhaquirks.xiaomi.ElectricalMeasurementCluster
+    )
+    assert isinstance(
+        ep1.opple_cluster, zhaquirks.xiaomi.aqara.plug_eu.OppleClusterMAEU01
+    )
+    assert isinstance(
+        device.endpoints[21].analog_input, zhaquirks.xiaomi.AnalogInputCluster
+    )
+
+
+def test_xiaomi_maeu01_power(zigpy_device_from_quirk):
+    """Test the Xiaomi report and endpoint 21 still update power on the MAEU01."""
+    device = maeu01_device(zigpy_device_from_quirk)
+    em_listener = ClusterListener(device.endpoints[1].electrical_measurement)
+    se_listener = ClusterListener(device.endpoints[1].smartenergy_metering)
+
+    device.endpoints[1].basic.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({150: 2300, 152: 15, 149: 2})
+    )
+    device.endpoints[21].analog_input.update_attribute(
+        AnalogInput.AttributeDefs.present_value.id, 40
+    )
+
+    assert em_listener.attribute_updates == [
+        (ElectricalMeasurement.AttributeDefs.active_power.id, 150),
+        (ElectricalMeasurement.AttributeDefs.rms_voltage.id, 230),
+        (ElectricalMeasurement.AttributeDefs.active_power.id, 400),
+    ]
+    assert se_listener.attribute_updates == [
+        (Metering.AttributeDefs.current_summ_delivered.id, 2000)
+    ]
+
+
+@pytest.mark.parametrize(
+    "attribute, value, data",
+    [
+        ("led_disabled", 1, b"\x04_\x11\x01\x02\x03\x02\x10\x01"),
+        ("button_lock", 0, b"\x04_\x11\x01\x02\x00\x02\x20\x00"),
+        ("auto_off", 1, b"\x04_\x11\x01\x02\x02\x02\x10\x01"),
+        ("overload_protection", 1000, b"\x04_\x11\x01\x02\x0b\x02\x39\x00\x00zD"),
+        ("heartbeat_interval", 60, b"\x04_\x11\x01\x02\xf6\x00\x21\x3c\x00"),
+    ],
+)
+async def test_xiaomi_maeu01_settings(zigpy_device_from_quirk, attribute, value, data):
+    """Test the MAEU01 settings are written as Aqara manufacturer specific attributes."""
+    device = maeu01_device(zigpy_device_from_quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        opple_cluster.endpoint, "request", mock.AsyncMock()
+    ) as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+        await opple_cluster.write_attributes({attribute: value})
+
+    assert request_mock.mock_calls[0].kwargs["data"] == data
+
+
+async def test_xiaomi_maeu01_entities():
+    """Test the MAEU01 keeps the unique IDs of the v1 quirk and adds its settings."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "lumi-lumi-plug-maeu01-0x00000020.json", DEVICE_REGISTRY
+        )
+
+        ieee = "ab:cd:ef:12:00:a3:30:ae"
+        assert {
+            entity.unique_id.removeprefix(ieee)
+            for (platform, _), entity in device.platform_entities.items()
+            if platform != Platform.VIRTUAL
+        } == {
+            # the same as with the v1 quirk
+            "-1",
+            "-1-0-lqi",
+            "-1-0-rssi",
+            "-1-2",
+            "-1-3",
+            "-1-25-firmware_update",
+            "-1-1794-summation_delivered",
+            "-1-2820",
+            "-1-2820-rms_voltage",
+            "-1-64704-consumer_connected",
+            "-1-power_outage_memory",
+            # new settings
+            "-1-led_disabled",
+            "-1-button_lock",
+            "-1-auto_off",
+            "-1-overload_protection",
+            "-1-heartbeat_interval",
+        }
+
+
 async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
     """Tests that the total_active_power attribute is cleared during init."""
 
     with mock.patch(
         "zhaquirks.xiaomi.ElectricalMeasurementCluster._update_attribute"
     ) as update_attribute_mock:
-        zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01)
+        zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01)
         update_attribute_mock.assert_called_with(
             ElectricalMeasurement.AttributeDefs.total_active_power.id, None
         )
