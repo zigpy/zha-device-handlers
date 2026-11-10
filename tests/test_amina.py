@@ -4,11 +4,14 @@ import asyncio
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms import EntityCategory
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.amina.amina_s import (
     AMINA_ENDPOINT_ID,
@@ -19,6 +22,16 @@ from zhaquirks.amina.amina_s import (
 )
 
 zhaquirks.setup()
+
+AMINA_S_DIAGNOSTICS = "amina-distribution-as-amina-s-0x01220001.json"
+AMINA_S_IEEE = "ab:cd:ef:12:27:02:db:b2"
+
+
+def move_to_level_response(status: foundation.Status) -> foundation.DefaultResponse:
+    """Return the charger's response to a MoveToLevel command."""
+    return foundation.DefaultResponse(
+        command_id=LevelControl.ServerCommandDefs.move_to_level.id, status=status
+    )
 
 
 @pytest.fixture
@@ -71,23 +84,90 @@ def test_alarms_text(value, expected):
     assert alarms_text(value) == expected
 
 
-def test_entities(amina_device):
-    """Test that every entity is backed by an attribute and has a unique ID."""
-    (entry,) = (
-        entry
-        for entry in DEVICE_REGISTRY
-        if entry.source.file.endswith("amina/amina_s.py")
-    )
-    entity_metadata = entry.zha_device_factory.quirk_definition.entity_metadata
-    endpoint = amina_device.endpoints[AMINA_ENDPOINT_ID]
+async def test_amina_s_entities():
+    """Test the entities of a real Amina S, joined from its diagnostics."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, AMINA_S_DIAGNOSTICS, DEVICE_REGISTRY
+        )
 
-    assert len(entity_metadata) == 17
-    for em in entity_metadata:
-        cluster = endpoint.in_clusters[em.cluster_id]
-        assert cluster.find_attribute(em.attribute_name)
+        def entity(platform: Platform, suffix: str):
+            return device.get_platform_entity(
+                platform, unique_id=f"{AMINA_S_IEEE}-{AMINA_ENDPOINT_ID}-{suffix}"
+            )
 
-    suffixes = [em.resolved_unique_id_suffix for em in entity_metadata]
-    assert len(suffixes) == len(set(suffixes))
+        # The quirk leaves the default on/off switch and power sensors in place
+        assert not entity(Platform.SWITCH, str(OnOff.cluster_id)).is_on
+        assert entity(
+            Platform.SENSOR, f"{ElectricalMeasurement.cluster_id}-total_active_power"
+        )
+
+        assert entity(Platform.SENSOR, "ev_status_text").native_value == "EV connected"
+        assert entity(Platform.BINARY_SENSOR, "ev_connected").is_on
+        assert not entity(Platform.BINARY_SENSOR, "charging").is_on
+        assert not entity(Platform.BINARY_SENSOR, "ev_ready").is_on
+        assert not entity(Platform.BINARY_SENSOR, "paused").is_on
+        assert not entity(Platform.BINARY_SENSOR, "derated").is_on
+
+        assert entity(Platform.SENSOR, "alarms_text").native_value == "No alarm"
+        assert not entity(Platform.BINARY_SENSOR, "alarm_active").is_on
+
+        assert entity(Platform.SENSOR, "total_active_energy").native_value == 1384.337
+        assert entity(Platform.SENSOR, "last_session_energy").native_value == 0.349
+        assert entity(Platform.SENSOR, "max_level").native_value == 32
+
+        charge_limit = entity(Platform.NUMBER, "current_level")
+        assert charge_limit.native_value == 32
+        assert charge_limit.native_min_value == 6
+        assert charge_limit.native_max_value == 32
+        assert charge_limit.entity_category is None
+
+        for suffix in ("single_phase", "enable_offline", "offline_single_phase"):
+            switch = entity(Platform.SWITCH, suffix)
+            assert not switch.is_on
+            assert switch.entity_category == EntityCategory.CONFIG
+
+        assert entity(Platform.NUMBER, "offline_current").native_value == 6
+        time_to_offline = entity(Platform.NUMBER, "time_to_offline")
+        assert time_to_offline.native_value == 0
+        assert time_to_offline.native_max_value == 60
+
+        # The status entities follow the EV status reported by the charger
+        device.device.endpoints[AMINA_ENDPOINT_ID].amina_control.update_attribute(
+            AminaControlCluster.AttributeDefs.ev_status.id, 0x0007
+        )
+        await gateway.async_block_till_done()
+        assert entity(Platform.SENSOR, "ev_status_text").native_value == "Charging"
+        assert entity(Platform.BINARY_SENSOR, "charging").is_on
+
+
+async def test_amina_s_charge_limit():
+    """Test that the charge limit entity sends a MoveToLevel command."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, AMINA_S_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        charge_limit = device.get_platform_entity(
+            Platform.NUMBER,
+            unique_id=f"{AMINA_S_IEEE}-{AMINA_ENDPOINT_ID}-current_level",
+        )
+        level_cluster = device.device.endpoints[AMINA_ENDPOINT_ID].level
+
+        with mock.patch.object(
+            level_cluster,
+            "request",
+            mock.AsyncMock(
+                return_value=move_to_level_response(foundation.Status.SUCCESS)
+            ),
+        ) as request:
+            await charge_limit.async_set_native_value(16)
+
+        assert request.call_count == 1
+        assert (
+            request.call_args[0][1] == LevelControl.ServerCommandDefs.move_to_level.id
+        )
+        assert request.call_args.kwargs["level"] == 16
+        assert charge_limit.native_value == 16
 
 
 def test_manufacturer_code(amina_device):
@@ -214,7 +294,11 @@ async def test_current_level_write(amina_device, requested, max_level, expected)
     level_cluster.update_attribute(LevelControl.AttributeDefs.min_level.id, 6)
     level_cluster.update_attribute(LevelControl.AttributeDefs.max_level.id, max_level)
 
-    with mock.patch.object(level_cluster, "request", mock.AsyncMock()) as request:
+    with mock.patch.object(
+        level_cluster,
+        "request",
+        mock.AsyncMock(return_value=move_to_level_response(foundation.Status.SUCCESS)),
+    ) as request:
         result = await level_cluster.write_attributes(
             {LevelControl.AttributeDefs.current_level.name: requested}
         )
@@ -241,7 +325,13 @@ async def test_current_level_write_unknown_limits(amina_device):
         mock.patch.object(
             level_cluster, "read_attributes", side_effect=asyncio.TimeoutError
         ) as read,
-        mock.patch.object(level_cluster, "request", mock.AsyncMock()) as request,
+        mock.patch.object(
+            level_cluster,
+            "request",
+            mock.AsyncMock(
+                return_value=move_to_level_response(foundation.Status.SUCCESS)
+            ),
+        ) as request,
     ):
         await level_cluster.write_attributes(
             {LevelControl.AttributeDefs.current_level.name: 40}
@@ -249,6 +339,33 @@ async def test_current_level_write_unknown_limits(amina_device):
 
     assert read.call_count == 1
     assert request.call_args.kwargs["level"] == 32
+
+
+async def test_current_level_write_rejected(amina_device):
+    """Test that a rejected MoveToLevel command fails the write."""
+    level_cluster = amina_device.endpoints[AMINA_ENDPOINT_ID].level
+    level_cluster.update_attribute(LevelControl.AttributeDefs.min_level.id, 6)
+    level_cluster.update_attribute(LevelControl.AttributeDefs.max_level.id, 32)
+    level_cluster.update_attribute(LevelControl.AttributeDefs.current_level.id, 10)
+
+    with mock.patch.object(
+        level_cluster,
+        "request",
+        mock.AsyncMock(return_value=move_to_level_response(foundation.Status.FAILURE)),
+    ):
+        result = await level_cluster.write_attributes(
+            {LevelControl.AttributeDefs.current_level.name: 16}
+        )
+
+    assert level_cluster.get(LevelControl.AttributeDefs.current_level.id) == 10
+    assert result == [
+        [
+            foundation.WriteAttributesStatusRecord(
+                status=foundation.Status.FAILURE,
+                attrid=LevelControl.AttributeDefs.current_level.id,
+            )
+        ]
+    ]
 
 
 async def test_other_level_writes_pass_through(amina_device):

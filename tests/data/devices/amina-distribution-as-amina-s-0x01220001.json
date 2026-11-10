@@ -1,0 +1,1441 @@
+{
+  "version": 3,
+  "ieee": "ab:cd:ef:12:27:02:db:b2",
+  "nwk": "0x08B2",
+  "manufacturer": "amina distribution AS",
+  "model": "amina S",
+  "friendly_manufacturer": "amina distribution AS",
+  "friendly_model": "amina S",
+  "name": "amina distribution AS amina S",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.amina.amina_s:(amina distribution AS / amina S)",
+  "exposes_features": [],
+  "manufacturer_code": 4660,
+  "power_source": "Mains",
+  "lqi": null,
+  "rssi": null,
+  "last_seen": "2026-10-13T07:08:54.497924+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4660,
+    "maximum_buffer_size": 108,
+    "maximum_incoming_transfer_size": 1617,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 1617,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "5": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "undefined_0xfff0",
+        "id": 65520
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 19005441
+            }
+          ]
+        }
+      ]
+    },
+    "10": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "LEVEL_CONTROLLABLE_OUTPUT",
+        "id": 3
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "amina distribution AS"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "amina S"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
+              "value": 0
+            },
+            {
+              "id": "0x4003",
+              "name": "start_up_on_off",
+              "zcl_type": "enum8",
+              "unsupported": true
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "current_level",
+              "zcl_type": "uint8",
+              "value": 32
+            },
+            {
+              "id": "0x0014",
+              "name": "default_move_rate",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0003",
+              "name": "max_level",
+              "zcl_type": "uint8",
+              "value": 32
+            },
+            {
+              "id": "0x0002",
+              "name": "min_level",
+              "zcl_type": "uint8",
+              "value": 6
+            },
+            {
+              "id": "0x0013",
+              "name": "off_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0011",
+              "name": "on_level",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0010",
+              "name": "on_off_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0012",
+              "name": "on_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x4000",
+              "name": "start_up_current_level",
+              "zcl_type": "uint8",
+              "unsupported": true
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0b04",
+          "endpoint_attribute": "electrical_measurement",
+          "attributes": [
+            {
+              "id": "0x0603",
+              "name": "ac_current_divisor",
+              "zcl_type": "uint16",
+              "value": 1000
+            },
+            {
+              "id": "0x0602",
+              "name": "ac_current_multiplier",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x0300",
+              "name": "ac_frequency",
+              "zcl_type": "uint16",
+              "value": 500
+            },
+            {
+              "id": "0x0401",
+              "name": "ac_frequency_divisor",
+              "zcl_type": "uint16",
+              "value": 10
+            },
+            {
+              "id": "0x0302",
+              "name": "ac_frequency_max",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0400",
+              "name": "ac_frequency_multiplier",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x0605",
+              "name": "ac_power_divisor",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x0604",
+              "name": "ac_power_multiplier",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x0601",
+              "name": "ac_voltage_divisor",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x0600",
+              "name": "ac_voltage_multiplier",
+              "zcl_type": "uint16",
+              "value": 1
+            },
+            {
+              "id": "0x050b",
+              "name": "active_power",
+              "zcl_type": "int16",
+              "value": 0
+            },
+            {
+              "id": "0x050d",
+              "name": "active_power_max",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x090d",
+              "name": "active_power_max_ph_b",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0a0d",
+              "name": "active_power_max_ph_c",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x090b",
+              "name": "active_power_ph_b",
+              "zcl_type": "int16",
+              "value": 0
+            },
+            {
+              "id": "0x0a0b",
+              "name": "active_power_ph_c",
+              "zcl_type": "int16",
+              "value": 0
+            },
+            {
+              "id": "0x050f",
+              "name": "apparent_power",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0103",
+              "name": "dc_current",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0203",
+              "name": "dc_current_divisor",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0202",
+              "name": "dc_current_multiplier",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0106",
+              "name": "dc_power",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0205",
+              "name": "dc_power_divisor",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0204",
+              "name": "dc_power_multiplier",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0100",
+              "name": "dc_voltage",
+              "zcl_type": "int16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0201",
+              "name": "dc_voltage_divisor",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0200",
+              "name": "dc_voltage_multiplier",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0000",
+              "name": "measurement_type",
+              "zcl_type": "map32",
+              "value": 57
+            },
+            {
+              "id": "0x0403",
+              "name": "power_divisor",
+              "zcl_type": "uint32",
+              "value": 1000
+            },
+            {
+              "id": "0x0510",
+              "name": "power_factor",
+              "zcl_type": "int8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0910",
+              "name": "power_factor_ph_b",
+              "zcl_type": "int8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0a10",
+              "name": "power_factor_ph_c",
+              "zcl_type": "int8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0402",
+              "name": "power_multiplier",
+              "zcl_type": "uint32",
+              "value": 1
+            },
+            {
+              "id": "0x0508",
+              "name": "rms_current",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x050a",
+              "name": "rms_current_max",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x090a",
+              "name": "rms_current_max_ph_b",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0a0a",
+              "name": "rms_current_max_ph_c",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0908",
+              "name": "rms_current_ph_b",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0a08",
+              "name": "rms_current_ph_c",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0505",
+              "name": "rms_voltage",
+              "zcl_type": "uint16",
+              "value": 233
+            },
+            {
+              "id": "0x0507",
+              "name": "rms_voltage_max",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0907",
+              "name": "rms_voltage_max_ph_b",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0a07",
+              "name": "rms_voltage_max_ph_c",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0905",
+              "name": "rms_voltage_ph_b",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0a05",
+              "name": "rms_voltage_ph_c",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0304",
+              "name": "total_active_power",
+              "zcl_type": "int32",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xfee7",
+          "endpoint_attribute": "amina_control",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "alarms",
+              "zcl_type": "map16",
+              "value": 0
+            },
+            {
+              "id": "0x0009",
+              "name": "enable_offline",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0003",
+              "name": "ev_status",
+              "zcl_type": "map16",
+              "value": 1
+            },
+            {
+              "id": "0x0011",
+              "name": "last_session_energy",
+              "zcl_type": "uint32",
+              "value": 349
+            },
+            {
+              "id": "0x0006",
+              "name": "offline_current",
+              "zcl_type": "uint8",
+              "value": 6
+            },
+            {
+              "id": "0x0007",
+              "name": "offline_single_phase",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0005",
+              "name": "single_phase",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0008",
+              "name": "time_to_offline",
+              "zcl_type": "uint16",
+              "value": 0
+            },
+            {
+              "id": "0x0010",
+              "name": "total_active_energy",
+              "zcl_type": "uint32",
+              "value": 1384337
+            }
+          ]
+        }
+      ],
+      "out_clusters": []
+    },
+    "242": {
+      "profile_id": 41440,
+      "device_type": {
+        "name": "PROXY_BASIC",
+        "id": 97
+      },
+      "in_clusters": [],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "amina distribution AS",
+    "model": "amina S",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4660,
+      "maximum_buffer_size": 108,
+      "maximum_incoming_transfer_size": 1617,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 1617,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "10": {
+        "profile_id": "0x0104",
+        "device_type": "0x0003",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0006",
+          "0x0008",
+          "0x0b04",
+          "0xfee7"
+        ],
+        "output_clusters": []
+      },
+      "5": {
+        "profile_id": "0x0104",
+        "device_type": "0xfff0",
+        "input_clusters": [
+          "0x0000"
+        ],
+        "output_clusters": [
+          "0x0019"
+        ]
+      },
+      "242": {
+        "profile_id": "0xa1e0",
+        "device_type": "0x0061",
+        "input_clusters": [],
+        "output_clusters": [
+          "0x0021"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "binary_sensor": [
+      {
+        "fallback_name": "Alarm active",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-alarm_active",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "alarm_active",
+        "translation_placeholders": null,
+        "device_class": "problem",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "alarms"
+      },
+      {
+        "fallback_name": "Charging",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-charging",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "charging",
+        "translation_placeholders": null,
+        "device_class": "battery_charging",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "ev_status"
+      },
+      {
+        "fallback_name": "Thermal derating",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-derated",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "derated",
+        "translation_placeholders": null,
+        "device_class": "heat",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "ev_status"
+      },
+      {
+        "fallback_name": "EV connected",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-ev_connected",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "ev_connected",
+        "translation_placeholders": null,
+        "device_class": "plug",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": true,
+        "attribute_name": "ev_status"
+      },
+      {
+        "fallback_name": "EV ready",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-ev_ready",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "ev_ready",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "ev_status"
+      },
+      {
+        "fallback_name": "Charging paused",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-paused",
+        "migrate_unique_ids": [],
+        "platform": "binary_sensor",
+        "class_name": "BinarySensor",
+        "translation_key": "charging_paused",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "attribute_name": "ev_status"
+      }
+    ],
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-3",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": "Charge current limit",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-current_level",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "charge_limit",
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 32,
+        "mode": "auto",
+        "native_max_value": 32,
+        "native_min_value": 6,
+        "native_step": 1,
+        "native_unit_of_measurement": "A"
+      },
+      {
+        "fallback_name": "Offline current limit",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-offline_current",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "offline_current",
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 6,
+        "mode": "auto",
+        "native_max_value": 32,
+        "native_min_value": 6,
+        "native_step": 1,
+        "native_unit_of_measurement": "A"
+      },
+      {
+        "fallback_name": "Time to offline",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-time_to_offline",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "time_to_offline",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0,
+        "mode": "auto",
+        "native_max_value": 60,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": "s"
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementActivePower",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "power",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "active_power_max",
+          "measurement_type"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "W",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "active_power_max"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-ac_frequency",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementFrequency",
+        "translation_key": "ac_frequency",
+        "translation_placeholders": null,
+        "device_class": "frequency",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "ac_frequency_max",
+          "measurement_type"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 50.0,
+        "suggested_display_precision": 1,
+        "unit": "Hz",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "ac_frequency_max"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-active_power_ph_b",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementActivePowerPhB",
+        "translation_key": "active_power_ph_b",
+        "translation_placeholders": null,
+        "device_class": "power",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "active_power_max_ph_b",
+          "measurement_type"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "W",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "active_power_max_ph_b"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-active_power_ph_c",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementActivePowerPhC",
+        "translation_key": "active_power_ph_c",
+        "translation_placeholders": null,
+        "device_class": "power",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "active_power_max_ph_c",
+          "measurement_type"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "W",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "active_power_max_ph_c"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_current",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSCurrent",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_current_max"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 2,
+        "unit": "A",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_current_max"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_current_ph_b",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSCurrentPhB",
+        "translation_key": "rms_current_ph_b",
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_current_max_ph_b"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 2,
+        "unit": "A",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_current_max_ph_b"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_current_ph_c",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSCurrentPhC",
+        "translation_key": "rms_current_ph_c",
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_current_max_ph_c"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 2,
+        "unit": "A",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_current_max_ph_c"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_voltage",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSVoltage",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_voltage_max"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 233.0,
+        "suggested_display_precision": 1,
+        "unit": "V",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_voltage_max"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_voltage_ph_b",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSVoltagePhB",
+        "translation_key": "rms_voltage_ph_b",
+        "translation_placeholders": null,
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_voltage_max_ph_b"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "V",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_voltage_max_ph_b"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-rms_voltage_ph_c",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementRMSVoltagePhC",
+        "translation_key": "rms_voltage_ph_c",
+        "translation_placeholders": null,
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "measurement_type",
+          "rms_voltage_max_ph_c"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "V",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "rms_voltage_max_ph_c"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-2820-total_active_power",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "ElectricalMeasurementTotalActivePower",
+        "translation_key": "total_active_power",
+        "translation_placeholders": null,
+        "device_class": "power",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "active_power_max",
+          "measurement_type"
+        ],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 1,
+        "unit": "W",
+        "measurement_type": "ACTIVE_MEASUREMENT, PHASE_A_MEASUREMENT, PHASE_B_MEASUREMENT, PHASE_C_MEASUREMENT",
+        "max_value": null,
+        "max_attribute_name": "active_power_max"
+      },
+      {
+        "fallback_name": "Alarms",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-alarms_text",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "alarms",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": "No alarm",
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": "EV status",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-ev_status_text",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "ev_status",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": "EV connected",
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": "Last session energy",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-last_session_energy",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "last_session_energy",
+        "translation_placeholders": null,
+        "device_class": "energy",
+        "state_class": "total",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.349,
+        "suggested_display_precision": null,
+        "unit": "kWh"
+      },
+      {
+        "fallback_name": "Hardware current limit",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-max_level",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "hardware_current_limit",
+        "translation_placeholders": null,
+        "device_class": "current",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 32,
+        "suggested_display_precision": null,
+        "unit": "A"
+      },
+      {
+        "fallback_name": "Total energy",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-total_active_energy",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "total_active_energy",
+        "translation_placeholders": null,
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "native_value": 1384.337,
+        "suggested_display_precision": null,
+        "unit": "kWh"
+      }
+    ],
+    "switch": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-6",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "Switch",
+        "translation_key": "switch",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": 0
+      },
+      {
+        "fallback_name": "Enable offline mode",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-enable_offline",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "ConfigurableAttributeSwitch",
+        "translation_key": "enable_offline",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "enable_offline",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      },
+      {
+        "fallback_name": "Offline single-phase charging",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-offline_single_phase",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "ConfigurableAttributeSwitch",
+        "translation_key": "offline_single_phase",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "offline_single_phase",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      },
+      {
+        "fallback_name": "Force single-phase charging",
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-10-single_phase",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "ConfigurableAttributeSwitch",
+        "translation_key": "single_phase",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 10,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "single_phase",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:27:02:db:b2-5-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:27:02:db:b2",
+        "endpoint_id": 5,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x01220001",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}

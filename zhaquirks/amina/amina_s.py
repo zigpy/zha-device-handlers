@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Final
 
+from zigpy.endpoint import Endpoint
 from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -182,6 +183,8 @@ class AminaControlCluster(CustomCluster):
         # `total_increasing` sensor. The charger occasionally returns a corrupt,
         # lower value, which would be recorded as a meter reset and inflate the
         # long-term statistics once the real value returns. Drop those reads.
+        # The last value is only kept in memory, so a genuine counter reset is
+        # picked up after the next restart.
         if attrid == self.AttributeDefs.total_active_energy.id and value is not None:
             if (
                 self._last_total_active_energy is not None
@@ -198,7 +201,7 @@ class AminaControlCluster(CustomCluster):
         super()._update_attribute(attrid, value)
 
 
-async def _refresh_amina_attributes(endpoint, attributes: list[str]) -> None:
+async def _refresh_amina_attributes(endpoint: Endpoint, attributes: list[str]) -> None:
     """Read attributes from the Amina control cluster on the given endpoint."""
     await endpoint.amina_control.read_attributes(attributes)
 
@@ -283,7 +286,8 @@ class AminaLevelControl(CustomCluster, LevelControl):
     The charger only accepts the charging current through a MoveToLevel command,
     so `current_level` writes are translated into one. The plain MoveToLevel is
     used, as MoveToLevelWithOnOff would also arm the charger. The requested
-    current is clamped to the device's min and max level.
+    current is clamped to the device's min and max level, and the write only
+    succeeds if the charger accepts the command.
     """
 
     async def _get_level_limits(self) -> tuple[int, int]:
@@ -328,11 +332,14 @@ class AminaLevelControl(CustomCluster, LevelControl):
             min_level, max_level = await self._get_level_limits()
             level = max(min_level, min(max_level, int(value)))
 
-            await self.move_to_level(level=level, transition_time=0)
-            self._update_attribute(LevelControl.AttributeDefs.current_level.id, level)
+            result = await self.move_to_level(level=level, transition_time=0)
+            if result.status == foundation.Status.SUCCESS:
+                self._update_attribute(
+                    LevelControl.AttributeDefs.current_level.id, level
+                )
             records.append(
                 foundation.WriteAttributesStatusRecord(
-                    status=foundation.Status.SUCCESS,
+                    status=result.status,
                     attrid=LevelControl.AttributeDefs.current_level.id,
                 )
             )
