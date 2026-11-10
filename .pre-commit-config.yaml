@@ -11,10 +11,15 @@ repos:
         additional_dependencies: [tomli]
         args: ["--toml", "pyproject.toml"]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0 # Keep this in sync with pyproject.toml
+  - repo: local
     hooks:
       - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        files: ^zhaquirks/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.17 # Keep this in sync with pyproject.toml

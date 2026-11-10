@@ -98,7 +98,8 @@ def build_onoff_actions(
             bytes([input_index, 0x0D, source_ep, 0x06, 0x00, 0x01]),
             bytes([input_index, 0x03, source_ep, 0x06, 0x00, 0x00]),
         ]
-    return []
+    # reachable: a zigpy enum can hold an undefined value reported by a device
+    return []  # type: ignore[unreachable]
 
 
 class UbisysInputConfigCluster(LocalDataCluster):
