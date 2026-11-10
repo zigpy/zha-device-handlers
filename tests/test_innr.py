@@ -1,19 +1,90 @@
 """Tests for Innr quirks."""
 
+from unittest import mock
+
 import pytest
 from zigpy.profiles import zll
 import zigpy.types as t
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import (
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    ClusterType,
+    ReportingConfig,
+)
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Scenes,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ConfigureReportingResponseRecord, Status
 
 import zhaquirks
 from zhaquirks.innr import MeteringClusterInnrNew, MeteringClusterInnrOld
 from zhaquirks.innr.innr_sp120_plug import SP120
+from zhaquirks.innr.innr_sp240_plug import (
+    ElectricalMeasurementClusterSP240,
+    InnrCluster,
+)
 
 zhaquirks.setup()
 
 # firmware version that fixed the metering divisor bug (max_version is exclusive)
 SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
+
+# the SP 242 (UK) uses the SP 240 quirk
+SP240_MODELS = ["SP 240", "SP 242"]
+
+
+@pytest.mark.parametrize("model", SP240_MODELS)
+@pytest.mark.parametrize(
+    "firmware_version",
+    [SP240_DIVISOR_FIX_FW_VERSION - 1, SP240_DIVISOR_FIX_FW_VERSION],
+)
+def test_innr_sp240_cluster_order(zigpy_device_from_v2_quirk, firmware_version, model):
+    """Test the SP 240 quirk keeps the device's cluster order.
+
+    ZHA configures reporting in this order, and the plug only has a few
+    reporting slots: Metering must stay ahead of Electrical Measurement.
+    LevelControl is removed by the quirk, so it is absent from the result.
+    """
+    raw_cluster_ids = [
+        Basic.cluster_id,
+        Identify.cluster_id,
+        Groups.cluster_id,
+        Scenes.cluster_id,
+        OnOff.cluster_id,
+        LevelControl.cluster_id,
+        Metering.cluster_id,
+        ElectricalMeasurement.cluster_id,
+        LightLink.cluster_id,
+        InnrCluster.cluster_id,
+    ]
+    device = zigpy_device_from_v2_quirk(
+        "innr",
+        model,
+        cluster_ids={1: dict.fromkeys(raw_cluster_ids, ClusterType.Server)},
+        firmware_version=firmware_version,
+    )
+
+    # LevelControl is removed (the plug cannot dim), everything else keeps its order
+    assert list(device.endpoints[1].in_clusters) == [
+        cluster_id
+        for cluster_id in raw_cluster_ids
+        if cluster_id != LevelControl.cluster_id
+    ]
+    assert isinstance(
+        device.endpoints[1].in_clusters[Metering.cluster_id],
+        MeteringClusterInnrOld | MeteringClusterInnrNew,
+    )
+    assert isinstance(
+        device.endpoints[1].in_clusters[InnrCluster.cluster_id], InnrCluster
+    )
 
 
 @pytest.mark.parametrize(
@@ -45,15 +116,32 @@ SP240_DIVISOR_FIX_FW_VERSION = 0x191B3685
         ),
     ],
 )
+@pytest.mark.parametrize("model", SP240_MODELS)
 def test_innr_sp240_firmware_version_metering(
     zigpy_device_from_v2_quirk,
     firmware_version,
     expected_cluster,
     expected_divisor,
+    model,
 ):
     """Test the correct Innr SP 240 quirk is selected based on firmware version."""
     device = zigpy_device_from_v2_quirk(
-        "innr", "SP 240", firmware_version=firmware_version
+        "innr",
+        model,
+        cluster_ids={
+            1: {
+                LevelControl.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+        firmware_version=firmware_version,
+    )
+
+    # both variants drop LevelControl and skip reporting the EM scaling constants
+    assert LevelControl.cluster_id not in device.endpoints[1].in_clusters
+    assert isinstance(
+        device.endpoints[1].electrical_measurement, ElectricalMeasurementClusterSP240
     )
 
     metering_cluster = device.endpoints[1].smartenergy_metering
@@ -61,6 +149,83 @@ def test_innr_sp240_firmware_version_metering(
 
     # the constant divisor override is applied regardless of what the device reports
     assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == expected_divisor
+
+
+@pytest.mark.parametrize("model", SP240_MODELS)
+async def test_innr_sp240_skips_em_scaling_constant_reporting(
+    zigpy_device_from_v2_quirk, model
+):
+    """The SP 240 does not configure reporting for the EM scaling constants."""
+    device = zigpy_device_from_v2_quirk(
+        "innr",
+        model,
+        cluster_ids={1: {ElectricalMeasurement.cluster_id: ClusterType.Server}},
+    )
+    em_cluster = device.endpoints[1].electrical_measurement
+    attrs = ElectricalMeasurement.AttributeDefs
+    reporting = ReportingConfig(min_interval=0, max_interval=900, reportable_change=1)
+
+    with mock.patch.object(
+        em_cluster,
+        "_configure_reporting",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    ConfigureReportingResponseRecord(
+                        status=Status.INSUFFICIENT_SPACE,
+                        direction=0,
+                        attrid=attrs.rms_voltage.id,
+                    )
+                ]
+            ]
+        ),
+    ) as configure_reporting:
+        result = await em_cluster.configure_reporting_multiple(
+            {
+                attrs.ac_power_multiplier: reporting,
+                attrs.ac_power_divisor: reporting,
+                attrs.active_power: reporting,
+                attrs.ac_current_multiplier: reporting,
+                attrs.ac_current_divisor: reporting,
+                attrs.rms_current: reporting,
+                attrs.ac_voltage_multiplier: reporting,
+                attrs.ac_voltage_divisor: reporting,
+                attrs.rms_voltage: reporting,
+            }
+        )
+
+    # only the measurements are sent to the device
+    assert configure_reporting.await_count == 1
+    sent_records = configure_reporting.await_args.args[0]
+    assert [record.attrid for record in sent_records] == [
+        attrs.active_power.id,
+        attrs.rms_current.id,
+        attrs.rms_voltage.id,
+    ]
+
+    # the scaling constants are answered locally, the device's statuses pass through
+    assert result == {
+        attrs.ac_power_multiplier: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.ac_power_divisor: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.active_power: Status.SUCCESS,
+        attrs.ac_current_multiplier: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.ac_current_divisor: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.rms_current: Status.SUCCESS,
+        attrs.ac_voltage_multiplier: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.ac_voltage_divisor: Status.UNREPORTABLE_ATTRIBUTE,
+        attrs.rms_voltage: Status.INSUFFICIENT_SPACE,
+    }
+
+    # a request for only scaling constants sends nothing to the device
+    with mock.patch.object(
+        em_cluster, "_configure_reporting", mock.AsyncMock()
+    ) as configure_reporting:
+        result = await em_cluster.configure_reporting_multiple(
+            {attrs.ac_power_divisor: reporting}
+        )
+
+    configure_reporting.assert_not_awaited()
+    assert result == {attrs.ac_power_divisor: Status.UNREPORTABLE_ATTRIBUTE}
 
 
 # Real SP 120 device-initiated metering report:

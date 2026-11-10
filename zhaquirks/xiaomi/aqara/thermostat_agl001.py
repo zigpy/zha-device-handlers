@@ -203,9 +203,9 @@ class ScheduleEvent:
 
     @staticmethod
     def _validate_time(time):
-        if time <= 0:
+        if time < 0:
             raise ValueError("Time must be between 00:00 and 23:59")
-        if time > 24 * 60:
+        if time >= 24 * 60:
             raise ValueError("Time must be between 00:00 and 23:59")
 
     @staticmethod
