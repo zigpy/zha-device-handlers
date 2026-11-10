@@ -63,7 +63,7 @@ from zhaquirks.builder import QuirkBuilder
 #### QuirkBuilder Methods Reference
 
 **Device Matching:**
-- `.applies_to(manufacturer, model)` - Add manufacturer/model pair to match
+- `.applies_to(manufacturer, model)` - Add manufacturer/model pair to match (`also_applies_to` is an alias; use `applies_to`)
 - `.filter(filter_function)` - Custom filter function `(device) -> bool`
 - `.firmware_version_filter(min_version, max_version, allow_missing)` - Filter by firmware version
 
@@ -92,10 +92,12 @@ Firmware version filtering is useful when different firmware versions need diffe
 Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
-- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
-- `.removes(cluster_id, endpoint_id=1, cluster_type=ClusterType.Server)` - Remove a cluster
-- `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace cluster with custom implementation
-- `.replace_cluster_occurrences(cluster_class, replace_server=True, replace_client=True)` - Replace across all endpoints
+- `.adds(cluster, cluster_type=ClusterType.Server, endpoint_id=1, constant_attributes=None)` - Add a cluster the device doesn't have. `constant_attributes` forces attribute values like `_CONSTANT_ATTRIBUTES` on a custom cluster, keyed by `ZCLAttributeDef` (e.g. `{Metering.AttributeDefs.divisor: 100}`); the cluster must then be a `CustomCluster` subclass
+- `.removes(cluster_id, cluster_type=ClusterType.Server, endpoint_id=1)` - Remove a cluster
+- `.replaces(replacement_cluster_class, cluster_id=None, cluster_type=ClusterType.Server, endpoint_id=1)` - Replace an existing cluster with a custom implementation. `cluster_id` is only needed when the removed cluster's ID differs from the replacement's
+- `.replace_cluster_occurrences(replacement_cluster_class, replace_server_instances=True, replace_client_instances=True)` - Replace across all endpoints
+
+Use `.replaces()`, not `.adds()`, for a cluster the device already has: `.replaces()` carries the existing attribute cache over to the new cluster, `.adds()` doesn't. When you pass `cluster_type` or `endpoint_id`, pass them as keywords: their positions differ between methods.
 
 `cluster_type` can be `ClusterType.Server` (in_clusters) or `ClusterType.Client` (out_clusters).
 
@@ -129,7 +131,7 @@ All entity methods require `fallback_name`. Common parameters:
 from zhaquirks.builder import ReportingConfig
 
 .sensor(
-    attribute_name="measured_value",
+    attribute_name=VOCIndex.AttributeDefs.measured_value.name,
     cluster_id=VOCIndex.cluster_id,
     reporting_config=ReportingConfig(
         min_interval=60,      # Minimum seconds between reports
@@ -140,12 +142,12 @@ from zhaquirks.builder import ReportingConfig
 )
 ```
 
-**Entity Methods:**
+**Entity Methods:** (`VendorCluster` stands for your `CustomCluster` subclass. Arguments marked "Optional" can be left out; the values shown are examples, not always the defaults, so check `builder.py` and leave out any argument that equals its default)
 ```python
 # Switch (on/off control)
 .switch(
-    attribute_name="led_enable",
-    cluster_id=CustomCluster.cluster_id,
+    attribute_name=VendorCluster.AttributeDefs.led_enable.name,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,  # Optional: default Server; use ClusterType.Client for out_clusters
     force_inverted=False,             # Optional: invert on/off
     off_value=0,                      # Optional: value written when turning off (default 0)
@@ -156,12 +158,11 @@ from zhaquirks.builder import ReportingConfig
 
 # Sensor (read-only value)
 .sensor(
-    attribute_name="temperature",
-    cluster_id=TemperatureMeasurement.cluster_id,
+    attribute_name=VendorCluster.AttributeDefs.temperature.name,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,          # Optional: default Server
     divisor=100,                              # Optional: divide raw value (default 1)
     multiplier=1,                             # Optional: multiply raw value (default 1)
-    suggested_display_precision=1,            # Optional: decimal places in HA UI
     device_class=SensorDeviceClass.TEMPERATURE,  # Optional: HA device class
     state_class=SensorStateClass.MEASUREMENT,    # Optional: HA state class
     unit=UnitOfTemperature.CELSIUS,           # Optional: use unit constants, not strings
@@ -171,8 +172,8 @@ from zhaquirks.builder import ReportingConfig
 
 # Binary Sensor (on/off state)
 .binary_sensor(
-    attribute_name="occupancy",
-    cluster_id=OccupancySensing.cluster_id,
+    attribute_name=VendorCluster.AttributeDefs.occupancy.name,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,  # Optional: default Server
     device_class=BinarySensorDeviceClass.OCCUPANCY,  # Optional: HA device class
     translation_key="occupancy",
@@ -192,8 +193,8 @@ from zhaquirks.builder import ReportingConfig
 
 # Number (adjustable value)
 .number(
-    attribute_name="off_to_on_delay",
-    cluster_id=CustomCluster.cluster_id,
+    attribute_name=VendorCluster.AttributeDefs.off_to_on_delay.name,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,  # Optional: default Server
     min_value=0,                      # Optional: minimum allowed value
     max_value=65535,                  # Optional: maximum allowed value
@@ -209,9 +210,9 @@ from zhaquirks.builder import ReportingConfig
 
 **Number `multiplier` semantics:** Defined on the entity by ZHA. HA Core is a pure pass-through — it does no scaling itself. The conversion is:
 - Display: `native_value = raw_attr_value * multiplier`
-- Write: `raw_attr_value = int(ha_value / multiplier)`
+- Write: `raw_attr_value = round(ha_value / multiplier)`
 
-If the underlying attribute is an integer representing a fractional unit (e.g., the ZCL `local_temperature_calibration` attribute is `int8s` storing tenths of a degree), pair fractional `step` with the matching `multiplier` so HA values are scaled correctly. The attribute's raw type comes from the cluster's `AttributeDefs` — for `.number()` (unlike `.tuya_number()`) you don't pass a `type`. Without a `multiplier` (default `1`), `int()` silently truncates fractional input on write and raw values are displayed unscaled.
+If the underlying attribute is an integer representing a fractional unit (e.g., the ZCL `local_temperature_calibration` attribute is `int8s` storing tenths of a degree), pair fractional `step` with the matching `multiplier` so HA values are scaled correctly. The attribute's raw type comes from the cluster's `AttributeDefs` — for `.number()` (unlike `.tuya_number()`) you don't pass a `type`. Without a `multiplier` (default `1`), fractional input is rounded to a whole raw value on write and raw values are displayed unscaled.
 
 ```python
 # ZCL Thermostat local_temperature_calibration: int8s, tenths of a degree.
@@ -224,6 +225,7 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
     step=0.1,
     multiplier=0.1,   # required: pairs with step=0.1
     unit=UnitOfTemperature.CELSIUS,
+    device_class=NumberDeviceClass.TEMPERATURE_DELTA,
     translation_key="local_temperature_calibration",
     fallback_name="Local temperature calibration",
 )
@@ -235,9 +237,9 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 
 # Enum as SELECT (dropdown, default) - user can change value
 .enum(
-    attribute_name="mode",
+    attribute_name=VendorCluster.AttributeDefs.mode.name,
     enum_class=ModeEnum,
-    cluster_id=CustomCluster.cluster_id,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,  # Optional: default Server
     translation_key="mode",
     fallback_name="Mode",
@@ -245,20 +247,20 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 
 # Enum as SENSOR (read-only display)
 .enum(
-    attribute_name="operating_mode",
+    attribute_name=VendorCluster.AttributeDefs.operating_mode.name,
     enum_class=OperatingModeEnum,
-    cluster_id=CustomCluster.cluster_id,
+    cluster_id=VendorCluster.cluster_id,
     entity_platform=EntityPlatform.SENSOR,  # Optional: makes it read-only (default SELECT)
-    entity_type=EntityType.DIAGNOSTIC,      # Optional: default CONFIG
+    entity_type=EntityType.DIAGNOSTIC,      # Required with SENSOR: an enum sensor can't be CONFIG
     translation_key="operating_mode",
     fallback_name="Operating mode",
 )
 
 # Button (write attribute on press)
 .write_attr_button(
-    attribute_name="reset",
+    attribute_name=VendorCluster.AttributeDefs.reset.name,
     attribute_value=1,
-    cluster_id=CustomCluster.cluster_id,
+    cluster_id=VendorCluster.cluster_id,
     cluster_type=ClusterType.Server,  # Optional: default Server
     translation_key="reset",
     fallback_name="Reset",
@@ -266,7 +268,7 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 
 # Button (execute ZCL command on press)
 .command_button(
-    command_name="reset_to_factory_defaults",
+    command_name=Basic.ServerCommandDefs.reset_fact_default.name,
     cluster_id=Basic.cluster_id,
     command_args=(),                  # Optional: positional args for command
     command_kwargs={},                # Optional: keyword args for command
@@ -313,9 +315,9 @@ Some entities are not created by a v2 quirk's entity declarations — they come 
 
 The cluster_id appears as a decimal integer. `{suffix}` comes from a hardcoded `_unique_id_suffix` class attribute on the ZHA-native entity class (typically matching the entity's `_attribute_name`, e.g. `"power_outage_memory"`, `"invert_switch"`, `"child_lock"`).
 
-Note: several primary platform-entity classes use a shorter legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility — `Light`, `Shade`, `DeviceTracker`, `Switch` (main OnOff on light/smart-plug/ballast/plug-in-unit device types), and `Cover`/`Thermostat`/`Siren` when the endpoint's device type matches the entity's primary type. Config switches, numbers and sensors on the same device still use the standard cluster_id-included format above.
+Note: several primary platform-entity classes use a shorter legacy `{ieee}-{endpoint_id}` format (no cluster_id, no suffix) for backwards compatibility — `Light`, `Shade`, `DeviceTracker`, `Switch` (main OnOff on light/smart-plug/ballast/plug-in-unit device types), and `Cover`/`Thermostat`/`Siren` when the endpoint's device type matches the entity's primary type. Config switches, numbers and sensors on the same device normally use the standard cluster_id-included format above, except that config switches (`ConfigurableAttributeSwitch`) on ballast, plug-in-unit and smart-plug endpoints also leave out the cluster_id. Check the existing unique_id in a diagnostics file before choosing the suffix.
 
-When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must include the cluster_id explicitly to match.
+When migrating such an entity to a quirks v2 definition, the v2 entity must produce the same unique_id as the old one or HA will treat it as a new entity. Because v2 quirk unique_ids do **not** auto-include the cluster_id, the v2 `unique_id_suffix=` must reproduce whatever sits between the endpoint ID and the suffix in the existing ID (usually the cluster_id).
 
 Example: for a ZHA-native entity on cluster_id `0xFCC0` (= `64704`) with attribute `child_lock`, the existing unique_id is `{ieee}-1-64704-child_lock`. To preserve that under v2, pass `unique_id_suffix="64704-child_lock"` on the corresponding `.switch(...)` call to get the same unique_id.
 
@@ -333,12 +335,32 @@ If you have access to a checkout of the ZHA library, you can find existing uniqu
 ```
 The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must uniquely match the `zha_event` fired by the device.
 
+When a custom cluster fires the event itself, use a `COMMAND_*` constant as the command (`COMMAND_SINGLE`, `COMMAND_DOUBLE`, `COMMAND_HOLD`, …) and keep press-type constants (`SHORT_PRESS`, …) for the trigger tuple:
+```python
+self.listener_event(ZHA_SEND_EVENT, COMMAND_SINGLE, {})
+# ...
+.device_automation_triggers({(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 1}})
+```
+
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
 - `.zigpy_device_class(cls)` - Replace the zigpy device with a `BaseCustomDevice` subclass (e.g., for special request handling)
 - `.zha_device_class(cls)` - Use a `QuirkV2Device` subclass as the ZHA device
 - `.skip_configuration()` - Skip attribute reporting configuration
-- `.add_to_registry()` - **Required** - Registers the quirk
+- `.clone()` - Copy a builder so variants can share a base (see below)
+- `.add_to_registry()` - **Required** - Registers the quirk. A builder without it registers nothing, silently
+
+**Sharing a base between models with `.clone()`:** build the base without manufacturer/model and never register it; add `.applies_to()` on each clone:
+```python
+base_quirk = (
+    QuirkBuilder()
+    .replaces(VendorCluster)
+    .device_automation_triggers({...})
+)
+base_quirk.clone().applies_to("Manufacturer", "ModelA").add_to_registry()
+base_quirk.clone().applies_to("Manufacturer", "ModelB").add_to_registry()
+```
+If the models need nothing different, use one builder with several `.applies_to()` calls instead.
 
 ```python
 # Example: Show user-friendly name instead of model code
@@ -390,6 +412,8 @@ Use the builder entity methods when an entity maps to one attribute. When it nee
 
 Example: a switch per relay bit of a mask attribute:
 ```python
+from zha.application.helpers import write_attributes_safe
+
 class DetachRelaySwitch(ConfigurableAttributeSwitch):
     _attribute_name = SonoffCluster.AttributeDefs.detach_relay_mask.name
     _server_cluster_config = {
@@ -413,7 +437,7 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
     async def async_turn_on_off(self, state: bool) -> None:
         mask = self._cluster.get(self._attribute_name)
         mask = (mask | self._relay) if state else (mask & ~self._relay)
-        await self._cluster.write_attributes({self._attribute_name: mask})
+        await write_attributes_safe(self._cluster, {self._attribute_name: mask})
         self.maybe_emit_state_changed_event()
 
 
@@ -448,7 +472,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
-    .tuya_switch(dp_id=5, attribute_name="valve", fallback_name="Valve")
+    .tuya_switch(dp_id=5, attribute_name="valve", translation_key="valve", fallback_name="Valve")
     .skip_configuration()
     .add_to_registry()
 )
@@ -521,7 +545,7 @@ class VOCIndex(CustomCluster):
         )
 ```
 
-**`manufacturer_code`**: Specifies the manufacturer code to send with read/write requests for this attribute. Required for vendor-specific attributes that aren't part of the ZCL standard. Without it, the device may not recognize or respond to the attribute request. Use the hex code for the manufacturer (e.g., `0x117C` for IKEA, `0x115F` for Xiaomi). Set `manufacturer_code=None` to explicitly suppress sending a manufacturer code, even on manufacturer-specific clusters. This replaces the older `is_manufacturer_specific=True` approach which obtained the code from the device's NodeDescriptor.
+**`manufacturer_code`**: Specifies the manufacturer code to send with read/write requests for this attribute. Needed for vendor-specific attributes on standard ZCL clusters; on a manufacturer-specific cluster (`0xFC00` and up) zigpy uses the device's manufacturer ID when it isn't set. Without it, the device may not recognize or respond to the attribute request. Use the hex code for the manufacturer (e.g., `0x117C` for IKEA, `0x115F` for Xiaomi). Set `manufacturer_code=None` to explicitly suppress sending a manufacturer code, even on manufacturer-specific clusters. This replaces the older `is_manufacturer_specific=True` approach which obtained the code from the device's NodeDescriptor.
 
 **`access`**: Controls attribute read/write/report capabilities. Not needed to explicitly specify - defaults to `"rwp"`. Values:
 - `"r"` - Read-only
@@ -566,9 +590,13 @@ When adding entities with v2 quirks:
 
 1. **`fallback_name`** is always required - English entity name in sentence case (e.g., "Soil moisture" not "Soil Moisture"). Abbreviations like "LED" stay uppercase.
 
-2. **`translation_key`** is optional but required when no device class is set. Typically the attribute name or slugified entity name.
+2. **`translation_key`** is optional but required when no device class is set. Typically the attribute name or slugified entity name. A `translation_key` must map to the same `fallback_name` everywhere in the repo unless the entity uses `translation_placeholders` (`test_translation_key_and_fallback_name_match` enforces it), so reuse an existing key and its exact name when the entity means the same thing.
 
 3. Entity name priority in Home Assistant: translation_key → device_class name → fallback_name
+
+4. Don't pass arguments that equal their default. Default `entity_type`: `.sensor()` STANDARD, `.binary_sensor()` DIAGNOSTIC, everything else CONFIG. An entity the user can change is never DIAGNOSTIC.
+
+5. `.enum()` creates a writable select by default. For a read-only attribute pass `entity_platform=EntityPlatform.SENSOR` together with `entity_type=EntityType.DIAGNOSTIC` (or `STANDARD`): an enum sensor can't use the default CONFIG (`test_enum_sensor_category`).
 
 ## Testing
 
@@ -579,15 +607,12 @@ Test fixtures are in `tests/conftest.py`:
 quirked = zigpy_device_from_quirk(quirk_class)
 
 # For v2 quirks
-quirked = zigpy_device_from_v2_quirk(model, manufacturer)
-
-# Verify signature matches quirk (useful for v1 quirks)
-def test_my_device_signature(assert_signature_matches_quirk):
-    signature = {...}  # From HA device page "Zigbee Device Signature"
-    assert_signature_matches_quirk(MyDeviceQuirk, signature)
+quirked = zigpy_device_from_v2_quirk(manufacturer, model)
 ```
 
-**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+Don't add new signature match tests (`assert_signature_matches_quirk`); they only exist for old v1 quirks.
+
+**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, `_CONSTANT_ATTRIBUTES`, or other pure definitions. Adding `.applies_to()` to an existing quirk doesn't need a test either. Once a device's diagnostics are in ZHA's test data, ZHA's snapshot tests cover the entities its quirk creates, so don't write tests that only assert what the builder produced. Example:
 
 ```python
 (
@@ -595,14 +620,14 @@ def test_my_device_signature(assert_signature_matches_quirk):
     .friendly_name(model="Wireless Mini Switch", manufacturer="Acme")
     .replaces(ExistingCustomCluster)
     .device_automation_triggers({
-        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
-        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_SINGLE},
+        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_DOUBLE},
     })
     .add_to_registry()
 )
 ```
 
-Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, custom filter functions, or custom entity classes.
+Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `_update_attribute`, `write_attributes`), value parsing or command handling, non-trivial filter functions, or custom entity classes. A one-line `attribute_converter` lambda doesn't need its own test.
 
 **End-to-end tests:** if your quirk is complex, its high-level behavior should be tested. Use `tests/zha_helpers.py` with diagnostics for your device:
 ```python
@@ -613,10 +638,14 @@ async with zha_gateway() as gateway:
 ## Code Organization
 
 Quirks are organized by manufacturer in `zhaquirks/<manufacturer>/`:
-- `__init__.py`: Shared clusters, constants, base classes for the manufacturer
-- `<device>.py`: Device-specific quirks
+- `__init__.py`: Required, or the directory's quirks are never imported. Holds clusters, constants and base classes *shared* by several device files
+- `<device>.py`: Device-specific quirks, including clusters only that device uses
+
+Tuya devices go in `zhaquirks/tuya/` whatever the brand on the box.
 
 ## Key Imports
+
+Import the quirks API from `zhaquirks.builder`, `zhaquirks.clusters` and `zhaquirks.legacy`. The old `zigpy.quirks` / `zigpy.quirks.v2` paths are deprecated shims; don't use them.
 
 ```python
 # Constants for signatures
@@ -651,7 +680,7 @@ import zigpy.types as t
 
 ## Code Style
 
-**Avoid magic numbers** for cluster IDs, attribute IDs, and command IDs. Use the cluster's definition instead:
+**Avoid magic numbers** for cluster IDs, attribute IDs, and command IDs that already have a definition. Reference the definition instead (a new attribute's ID belongs inline in its `ZCLAttributeDef`, not in a module constant):
 
 ```python
 # Good - use cluster and attribute/command references
@@ -697,4 +726,4 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
-- Tests should verify entity creation
+- Add tests for custom logic only (see Testing)
