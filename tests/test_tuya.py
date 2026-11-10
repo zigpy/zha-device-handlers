@@ -11,16 +11,18 @@ from zha.quirks import DEVICE_REGISTRY
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
     LevelControl,
     OnOff,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -61,6 +63,7 @@ from zhaquirks.tuya import (
 )
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts000f
+import zhaquirks.tuya.ts0001_switch
 import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts004f
 import zhaquirks.tuya.ts0041
@@ -2149,3 +2152,30 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+async def test_ts0001_ysiog9xi_plug(zigpy_device_from_v2_quirk):
+    """Test _TZ3000_ysiog9xi is a switch and has no phantom metering sensors."""
+    device = zigpy_device_from_v2_quirk(
+        "_TZ3000_ysiog9xi",
+        "TS0001",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                Metering.cluster_id: ClusterType.Server,
+                ElectricalMeasurement.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    ep = device.endpoints[1]
+
+    # the plug reports itself as an On/Off Light, which makes ZHA build a light
+    # entity; the quirk corrects it so a switch entity is built instead
+    assert ep.profile_id == zha.PROFILE_ID
+    assert ep.device_type == zha.DeviceType.ON_OFF_PLUG_IN_UNIT
+
+    # the metering clusters are advertised but never implemented
+    assert Metering.cluster_id not in ep.in_clusters
+    assert ElectricalMeasurement.cluster_id not in ep.in_clusters
+
+    assert OnOff.cluster_id in ep.in_clusters
