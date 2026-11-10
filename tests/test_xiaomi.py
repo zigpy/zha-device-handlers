@@ -210,6 +210,62 @@ async def test_xiaomi_motion(zigpy_device_from_quirk, quirk):
     assert occupancy_listener.attribute_updates[1][1] == 0
 
 
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2,
+        zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2,
+    ),
+)
+async def test_xiaomi_motion_aq2_illuminance_report_sets_motion(
+    zigpy_device_from_quirk, quirk
+):
+    """Test an illuminance report sets motion when the occupancy report was lost."""
+
+    motion_dev = zigpy_device_from_quirk(quirk)
+
+    illuminance_cluster = motion_dev.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+
+    motion_cluster = motion_dev.endpoints[1].ias_zone
+    motion_listener = ClusterListener(motion_cluster)
+
+    occupancy_cluster = motion_dev.endpoints[1].occupancy
+    occupancy_listener = ClusterListener(occupancy_cluster)
+
+    p1 = mock.patch.object(motion_cluster, "reset_s", 0)
+    p2 = mock.patch.object(occupancy_cluster, "reset_s", 0)
+    # illuminance report of 2 lx, as sent by the sensor
+    hdr, args = illuminance_cluster.deserialize(b"\x18\x02\n\x00\x00!\x02\x00")
+    with p1, p2:
+        illuminance_cluster.handle_message(hdr, args)
+
+    assert illuminance_listener.attribute_updates == [
+        (
+            IlluminanceMeasurement.AttributeDefs.measured_value.id,
+            10000 * math.log10(2) + 1,
+        )
+    ]
+
+    assert len(motion_listener.cluster_commands) == 1
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
+    assert motion_listener.cluster_commands[0][2][0] == ON
+
+    occupancy_id = OccupancySensing.AttributeDefs.occupancy.id
+    assert occupancy_listener.attribute_updates == [(occupancy_id, 1)]
+
+    await asyncio.sleep(0.1)
+
+    assert len(motion_listener.cluster_commands) == 2
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
+    assert motion_listener.cluster_commands[1][2][0] == OFF
+
+    assert occupancy_listener.attribute_updates == [
+        (occupancy_id, 1),
+        (occupancy_id, 0),
+    ]
+
+
 @pytest.mark.parametrize("presence", [0, 1, 0xFF, 2, None])
 @pytest.mark.parametrize("initial", [0, 1])
 async def test_aqara_fp1_heartbeat(zigpy_device_from_quirk, presence, initial):
@@ -2177,6 +2233,8 @@ async def test_xiaomi_motion_sensor_misc(
     illuminance_cluster = device.endpoints[1].illuminance
     illuminance_listener = ClusterListener(illuminance_cluster)
 
+    occupancy_listener = ClusterListener(device.endpoints[1].occupancy)
+
     power_cluster = device.endpoints[1].power
     power_listener = ClusterListener(power_cluster)
 
@@ -2206,6 +2264,9 @@ async def test_xiaomi_motion_sensor_misc(
     assert len(illuminance_listener.attribute_updates) == 1
     assert illuminance_listener.attribute_updates[0][0] == zcl_illuminance_id
     assert illuminance_listener.attribute_updates[0][1] == expected_results[1]
+
+    # the illuminance in the heartbeat does not mean motion
+    assert occupancy_listener.attribute_updates == []
 
     assert len(power_listener.attribute_updates) == 2
     assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
