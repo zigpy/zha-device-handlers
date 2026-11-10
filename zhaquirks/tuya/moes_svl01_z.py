@@ -87,3 +87,4 @@ class AutoChannelMode(t.enum8):
     )
     .skip_configuration()
     .add_to_registry()
+)
