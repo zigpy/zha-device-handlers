@@ -3,14 +3,13 @@
 see https://github.com/pvvx/ZigbeeTLc
 """
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import ScheduleProgrammingVisibility, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder import PERCENTAGE, QuirkBuilder, UnitOfTemperature, UnitOfTime
 
 
 class Display(t.enum8):

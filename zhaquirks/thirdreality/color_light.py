@@ -2,10 +2,11 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityLightCluster(CustomCluster):
@@ -27,6 +28,7 @@ class ThirdRealityLightCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RCB02070Z")
     .applies_to("Third Reality, Inc", "3RCB01057Z")
     .applies_to("Third Reality, Inc", "3RCB1095Z")
+    .applies_to("Third Reality, Inc", "3RCB1097Z")
     .replaces(ThirdRealityLightCluster, endpoint_id=1)
     .write_attr_button(
         attribute_name=ThirdRealityLightCluster.AttributeDefs.allow_bind.name,

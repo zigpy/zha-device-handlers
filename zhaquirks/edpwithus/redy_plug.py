@@ -1,7 +1,6 @@
 """EDP WithUs SmartPlug Quirk."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -15,6 +14,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.edpwithus import MeteringCluster
+from zhaquirks.legacy import CustomDevice
 
 
 class EdpWithUsSmartPlug(CustomDevice):

@@ -4,13 +4,13 @@ import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.application
 import zigpy.device
 from zigpy.device import Device
-import zigpy.quirks
 import zigpy.types
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, Ota
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
@@ -23,6 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import get_device
 
 from .async_mock import sentinel
 
@@ -174,6 +175,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         ieee=None,
         nwk=zigpy.types.NWK(0x1234),
         apply_quirk=True,
+        firmware_version: int | None = None,
     ) -> Device:
         """Create zigpy device for v2 quirks test by manufacturer and model.
 
@@ -187,6 +189,9 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         :param ieee: IEEE address of the device.
         :param nwk: Network address of the device.
         :param apply_quirk: Whether to apply the quirk to the device.
+        :param firmware_version: If set, add an OTA client cluster on ep 1 reporting
+            this `current_file_version`, so quirks using `firmware_version_filter`
+            can be selected. `None` leaves the device without a reported version.
         :return: Zigpy device object.
         """
         if ieee is None:
@@ -202,6 +207,11 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
             endpoint_clusters.setdefault(ep_id, {})
             if ep_id == 1:
                 endpoint_clusters[ep_id][Basic.cluster_id] = ClusterType.Server
+
+        # firmware_version_filter reads current_file_version from an OTA client
+        # cluster, so add one on ep 1 when a firmware version is requested
+        if firmware_version is not None:
+            endpoint_clusters.setdefault(1, {})[Ota.cluster_id] = ClusterType.Client
 
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
@@ -219,7 +229,13 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
                 else:
                     ep.add_input_cluster(cluster_id)
 
-        quirked = zigpy.quirks.get_device(raw_device)
+        # seed the reported firmware version before quirk selection runs
+        if firmware_version is not None:
+            raw_device.endpoints[1].out_clusters[Ota.cluster_id].update_attribute(
+                Ota.AttributeDefs.current_file_version.id, firmware_version
+            )
+
+        quirked = DEVICE_REGISTRY.resolve(raw_device)
 
         if not apply_quirk:
             for ep_id, ep_data in quirked.endpoints.items():
@@ -302,7 +318,7 @@ def assert_signature_matches_quirk():
         test_dev._application = Mock()
         test_dev._application._dblistener = None
 
-        device = zigpy.quirks.get_device(test_dev)
+        device = get_device(test_dev)
         assert isinstance(device, quirk)
 
     return _check

@@ -4,7 +4,6 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
@@ -20,6 +19,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATUS,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
 
 BUZZER_MANUAL_MUTE = 0x0126

@@ -144,7 +144,10 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
         fault: Final = ZCLAttributeDef(id=HAOZEE_FAULT_ATTR, type=t.uint8_t)
 
     DIRECT_MAPPED_ATTRS = {
-        HAOZEE_CURRENT_ROOM_TEMP_ATTR: ("local_temp", lambda value: value * 10),
+        HAOZEE_CURRENT_ROOM_TEMP_ATTR: (
+            "local_temperature",
+            lambda value: value * 10,
+        ),
         HAOZEE_TARGET_TEMP_ATTR: (
             "occupied_heating_setpoint",
             lambda value: value * 10,

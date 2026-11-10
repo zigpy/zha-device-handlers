@@ -1,14 +1,15 @@
 """Candeo rotary dimmer switches."""
 
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import Identify, Ota
+from typing import Final
 
-from zhaquirks.candeo import (
-    CANDEO,
-    CandeoLevelControlRemoteCluster,
-    CandeoOnOffRemoteCluster,
-)
+import zigpy.types as t
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import Identify, LevelControl, OnOff, Ota
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.candeo import CANDEO
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -33,13 +34,134 @@ from zhaquirks.const import (
     STOPPED_ROTATING,
 )
 
-remote_quirk = (
+
+class CandeoRemoteDirection(t.enum8):
+    """Candeo Remote Direction."""
+
+    Right = 0x00
+    Left = 0x01
+
+
+class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
+    """Candeo OnOff Remote Cluster."""
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """overwrite ServerCommandDefs."""
+
+        double: Final = ZCLCommandDef(
+            id=0x00,
+            schema={},
+        )
+        press: Final = ZCLCommandDef(
+            id=0x01,
+            schema={},
+        )
+        hold: Final = ZCLCommandDef(
+            id=0x02,
+            schema={},
+        )
+        release: Final = ZCLCommandDef(
+            id=0x03,
+            schema={},
+        )
+
+
+class CandeoLevelControlRemoteCluster(LevelControl, CustomCluster):
+    """Candeo LevelControl Remote Cluster."""
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """overwrite ServerCommandDefs."""
+
+        started_rotating: Final = ZCLCommandDef(
+            id=0x05,
+            schema={"direction": CandeoRemoteDirection},
+        )
+        continued_rotating: Final = ZCLCommandDef(
+            id=0x06,
+            schema={"direction": CandeoRemoteDirection},
+        )
+        stopped_rotating: Final = ZCLCommandDef(
+            id=0x03,
+            schema={},
+        )
+
+
+class CandeoOnOffRemoteLiteEP2FunctionalityCluster(OnOff, CustomCluster):
+    """Candeo OnOff Remote Lite EP2 Functionality Cluster."""
+
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute Definitions."""
+
+        extra_button_commands = ZCLAttributeDef(
+            id=0x8000,
+            type=t.Bool,
+            access="rw",
+            # manufacturer specific attribute, but not marked as such in the device
+            manufacturer_code=None,
+            is_manufacturer_specific=False,
+        )
+
+
+class CandeoOnOffRemoteLiteCluster(OnOff, CustomCluster):
+    """Candeo OnOff Remote Lite Cluster."""
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """overwrite ServerCommandDefs."""
+
+        double: Final = ZCLCommandDef(
+            id=0x00,
+            schema={},
+        )
+        hold: Final = ZCLCommandDef(
+            id=0x02,
+            schema={},
+        )
+        release: Final = ZCLCommandDef(
+            id=0x03,
+            schema={},
+        )
+
+
+dimmer_v2_quirk = (
     QuirkBuilder()
+    .replaces(CandeoOnOffRemoteLiteEP2FunctionalityCluster, endpoint_id=1)
     .replaces(
-        CandeoOnOffRemoteCluster,
+        CandeoOnOffRemoteLiteCluster,
         endpoint_id=2,
         cluster_type=ClusterType.Client,
     )
+    .removes(OnOff.cluster_id, endpoint_id=3)
+    .switch(
+        attribute_name=CandeoOnOffRemoteLiteEP2FunctionalityCluster.AttributeDefs.extra_button_commands.name,
+        cluster_id=CandeoOnOffRemoteLiteEP2FunctionalityCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="extra_button_commands",
+        fallback_name="Extra button commands",
+    )
+    .device_automation_triggers(
+        {
+            (DOUBLE_PRESS, ROTARY_KNOB): {
+                COMMAND: COMMAND_DOUBLE,
+                CLUSTER_ID: OnOff.cluster_id,
+                ENDPOINT_ID: 2,
+            },
+            (LONG_PRESS, ROTARY_KNOB): {
+                COMMAND: COMMAND_HOLD,
+                CLUSTER_ID: OnOff.cluster_id,
+                ENDPOINT_ID: 2,
+            },
+            (LONG_RELEASE, ROTARY_KNOB): {
+                COMMAND: COMMAND_RELEASE,
+                CLUSTER_ID: OnOff.cluster_id,
+                ENDPOINT_ID: 2,
+            },
+        }
+    )
+)
+
+remote_quirk = (
+    QuirkBuilder()
+    .replaces(CandeoOnOffRemoteCluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .replaces(
         CandeoLevelControlRemoteCluster,
         endpoint_id=2,
@@ -108,8 +230,16 @@ remote_quirk = (
 )
 
 (
+    dimmer_v2_quirk.clone()
+    .applies_to(CANDEO, "C-ZB-RD1Pv2-DIM")
+    .removes(Ota.cluster_id)
+    .add_to_registry()
+)
+
+(
     remote_quirk.clone()
     .applies_to(CANDEO, "C-ZB-RD1P-REM")
+    .applies_to(CANDEO, "C-ZB-RD1Pv2-REM")
     .removes(Identify.cluster_id, endpoint_id=1)
     .removes(Identify.cluster_id, endpoint_id=2)
     .removes(Ota.cluster_id)
@@ -119,6 +249,7 @@ remote_quirk = (
 (
     remote_quirk.clone()
     .applies_to(CANDEO, "C-ZB-RD1P-DPM")
+    .applies_to(CANDEO, "C-ZB-RD1Pv2-DPM")
     .removes(Ota.cluster_id)
     .add_to_registry()
 )

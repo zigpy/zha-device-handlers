@@ -2,15 +2,21 @@
 
 from typing import Any
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Ota, PowerConfiguration
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityPlatform,
+    EntityType,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import BatterySize
+from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BaseEnchantedDevice
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -160,7 +166,7 @@ class NlrfgpnySirenPowerConfiguration(CustomCluster, PowerConfiguration):
         super().update_attribute(attrid, value)
 
 
-class NlrfgpnySiren(CustomDeviceV2, BaseEnchantedDevice):
+class NlrfgpnySiren(CustomZigpyDevice, BaseEnchantedDevice):
     """NLRFGPNY siren that reports battery and installed firmware version."""
 
     tuya_spell_data_query = True

@@ -1,9 +1,9 @@
 """frient Motion Sensor/Pro/PET."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
 from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
 
 # MOSZB-140 (Motion Sensor Pro) - has tamper sensor, no sensitivity levels

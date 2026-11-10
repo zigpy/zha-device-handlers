@@ -131,7 +131,7 @@ async def test_nlrfgpny_siren_configuration_without_endpoint(
     siren_dev.endpoints = {}
 
     with mock.patch(
-        "zigpy.quirks.v2.CustomDeviceV2.apply_custom_configuration",
+        "zhaquirks.tuya.BaseEnchantedDevice.apply_custom_configuration",
         mock.AsyncMock(),
     ) as apply_mock:
         await siren_dev.apply_custom_configuration()
@@ -159,6 +159,28 @@ async def test_nlrfgpny_siren_preserves_alarm_mode(zigpy_device_from_v2_quirk):
         await siren_dev.apply_custom_configuration()
 
     assert tuya_cluster.get("alarm_mode") == TuyaSirenState.Sound_and_light
+
+
+async def test_nlrfgpny_siren_set_alarm_mode(zigpy_device_from_v2_quirk):
+    """Test setting alarm mode sends the expected Tuya datapoint."""
+    siren_dev = zigpy_device_from_v2_quirk(NLRFGPNY_MANUFACTURER, "TS0601")
+    tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
+
+    with mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock()) as config_request:
+        config_request.return_value = (foundation.Status.SUCCESS, "done")
+        await siren_dev.apply_custom_configuration()
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        await tuya_cluster.write_attributes(
+            {"alarm_mode": TuyaSirenState.Sound_and_light}
+        )
+        await wait_for_zigpy_tasks()
+
+    assert request_mock.call_args.kwargs["data"] == (
+        b"\x01\x01\x00\x00\x01\x66\x04\x00\x01\x02"
+    )
 
 
 async def test_siren_state_report(zigpy_device_from_v2_quirk):
@@ -224,6 +246,9 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -239,6 +264,9 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             use_ieee=False,
             ask_for_ack=None,
             priority=None,
+            retries=None,
+            retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 

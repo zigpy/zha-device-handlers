@@ -3,13 +3,17 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
@@ -177,10 +181,19 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE200_zuhszj9s", "TS0601")
     .applies_to("_TZE200_zr9c0day", "TS0601")
     .applies_to("_TZE200_0dvm9mva", "TS0601")
+    .applies_to("_TZE284_0dvm9mva", "TS0601")
     .applies_to("_TZE200_h4cgnbzg", "TS0601")
     .applies_to("_TZE200_exfrnlow", "TS0601")
     .applies_to("_TZE200_9m4kmbfu", "TS0601")
+    .applies_to("_TZE284_9m4kmbfu", "TS0601")
     .applies_to("_TZE200_3yp57tby", "TS0601")
+    .applies_to("_TZE204_3yp57tby", "TS0601")
+    .applies_to("_TZE284_3yp57tby", "TS0601")
+    .applies_to("_TZE2841000000_3yp57tby", "TS0601")
+    .applies_to("_TZE200_3ymoslep", "TS0601")
+    .applies_to("_TZE204_3ymoslep", "TS0601")
+    .applies_to("_TZE284_3ymoslep", "TS0601")
+    .applies_to("_TZE2841000000_3ymoslep", "TS0601")
     # default device type is `SMART_PLUG` for this,
     # so change it back to keep UID/entity the same
     .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
@@ -412,6 +425,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .applies_to("_TZE204_ogx8u5z6", "TS0601")
     .applies_to("_TZE284_ogx8u5z6", "TS0601")
     .applies_to("_TZE200_4utwozi2", "TS0601")
+    .applies_to("_TZE200_ow09xlxm", "TS0601")
     .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,

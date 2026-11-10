@@ -174,3 +174,30 @@ async def test_tuya_motion_quirk_enum_illum(
     assert len(illum_listener.attribute_updates) == 1
     assert illum_listener.attribute_updates[0][0] == zcl_illum_id
     assert illum_listener.attribute_updates[0][1] == exp_value
+
+
+@pytest.mark.asyncio
+async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
+    """Test the HOBEIAN ZG-204ZL configuration datapoints.
+
+    Occupancy/battery/illuminance stay on the native clusters, so only the
+    sensitivity/fading/interval datapoints are mapped by this quirk.
+    """
+
+    quirked = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-204ZL")
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    # DP 9 (enum): sensitivity 2 = High, DP 10 (enum): fading time 3 = 120 s
+    for msg in (
+        b"\tL\x01\x00\x05\x09\x04\x00\x01\x02",
+        b"\tL\x01\x00\x05\x0a\x04\x00\x01\x03",
+    ):
+        hdr, data = ep.tuya_manufacturer.deserialize(msg)
+        status = ep.tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
+    assert ep.tuya_manufacturer.get("fading_time") == 3
