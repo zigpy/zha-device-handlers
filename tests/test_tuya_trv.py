@@ -319,7 +319,7 @@ async def test_handle_get_data(
             b"\t\x1d\x02\x00\x10\x2f\x02\x00\x04\xff\xff\xff\xfa",
             47,
             -6,
-        ),  # Local temp calibration to -6, dp 47
+        ),  # Local temp calibration to raw -6 (-0.6 °C), dp 47
     ],
 )
 async def test_handle_get_data_tmcu(
