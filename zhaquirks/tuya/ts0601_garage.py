@@ -5,6 +5,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -14,6 +15,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 TUYA_MANUFACTURER_GARAGE = "tuya_manufacturer_garage"
@@ -149,3 +151,27 @@ class TuyaGarageSwitchTO(CustomDevice):
             },
         },
     }
+
+
+(
+    # Tuya TS0603 garage door opener with relay trigger and reed contact.
+    TuyaQuirkBuilder("_TZE608_xkr8gep3", "TS0603")
+    # DP 1: relay trigger
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="on_off",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch",
+        fallback_name="Garage trigger",
+    )
+    # DP 3: reed magnetic contact sensor
+    .tuya_binary_sensor(
+        dp_id=3,
+        attribute_name="contact",
+        device_class=BinarySensorDeviceClass.DOOR,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Garage contact",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
