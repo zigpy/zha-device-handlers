@@ -1,27 +1,20 @@
+
 """MOES SVL01-Z mmWave Radar Detection Smart Wall Light Switch."""
 
 import zigpy.types as t
 
-from zhaquirks.builder import NumberDeviceClass
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    NumberDeviceClass,
+    UnitOfTime,
+)
 from zhaquirks.tuya import PowerOnState
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
-class AutoOnMode(t.enum8):
-    """Automatic-on channel selection."""
-
-    off = 0x00
-    all = 0x01
-    ch1 = 0x02
-    ch2 = 0x03
-    ch3 = 0x04
-    ch1_and_ch2 = 0x05
-    ch2_and_ch3 = 0x06
-    ch1_and_ch3 = 0x07
-
-
-class AutoOffMode(t.enum8):
-    """Automatic-off channel selection."""
+class AutoChannelMode(t.enum8):
+    """Automatic channel selection."""
 
     off = 0x00
     all = 0x01
@@ -39,8 +32,8 @@ class AutoOffMode(t.enum8):
     .tuya_binary_sensor(
         dp_id=101,
         attribute_name="presence",
-        device_class="occupancy",
-        entity_type="standard",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+        entity_type=EntityType.STANDARD,
         translation_key="presence",
         fallback_name="Presence",
     )
@@ -61,7 +54,7 @@ class AutoOffMode(t.enum8):
         min_value=5,
         max_value=28800,
         step=1,
-        unit="s",
+        unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
         translation_key="trigger_hold",
         fallback_name="Trigger hold",
@@ -82,14 +75,14 @@ class AutoOffMode(t.enum8):
     .tuya_enum(
         dp_id=104,
         attribute_name="auto_on",
-        enum_class=AutoOnMode,
+        enum_class=AutoChannelMode,
         translation_key="auto_on",
         fallback_name="Auto on",
     )
     .tuya_enum(
         dp_id=105,
         attribute_name="auto_off",
-        enum_class=AutoOffMode,
+        enum_class=AutoChannelMode,
         translation_key="auto_off",
         fallback_name="Auto off",
     )
