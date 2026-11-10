@@ -102,6 +102,36 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
             Thermostat.AttributeDefs.system_mode,
             Thermostat.SystemMode.Heat,
         ),  # Set to heat, dp 1
+        (
+            "_TZE204_tagezcph",
+            b"\t\x13\x02\x00\x06\x01\x01\x00\x01\x01",
+            Thermostat.AttributeDefs.system_mode,
+            Thermostat.SystemMode.Heat,
+        ),  # Set to heat, dp 1
+        (
+            "_TZE204_tagezcph",
+            b"\t\x84\x02\x00\xf8\x10\x02\x00\x04\x00\x00\x00\xfa",
+            Thermostat.AttributeDefs.occupied_heating_setpoint,
+            2500,
+        ),  # Setpoint to 25.0, dp 16
+        (
+            "_TZE204_tagezcph",
+            b"\t\x85\x02\x00\xf9\x18\x02\x00\x04\x00\x00\x00\xf5",
+            Thermostat.AttributeDefs.local_temperature,
+            2450,
+        ),  # Current temp 24.5, dp 24
+        (
+            "_TZE204_tagezcph",
+            b"\t\x82\x02\x00\xf6\x24\x04\x00\x01\x00",
+            Thermostat.AttributeDefs.running_state,
+            Thermostat.RunningState.Heat_State_On,
+        ),  # Heating (inverted dp 36), dp 36
+        (
+            "_TZE204_tagezcph",
+            b"\t\x83\x02\x00\xf7\x24\x04\x00\x01\x01",
+            Thermostat.AttributeDefs.running_state,
+            Thermostat.RunningState.Idle,
+        ),  # Idle (inverted dp 36), dp 36
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, manuf, msg, attr, value):
@@ -174,6 +204,36 @@ async def test_tuya_no_mcu_version(zigpy_device_from_v2_quirk):
             19,
             -99,
         ),  # Local temp calibration to -9.9, dp 19
+        (
+            "_TZE204_tagezcph",
+            b"\t\x1d\x02\x00\x10\x1b\x02\x00\x04\xff\xff\xff\xfd",
+            27,
+            -3,
+        ),  # Local temp calibration, dp 27
+        (
+            "_TZE204_tagezcph",
+            b"\t\x1e\x02\x00\x11\x67\x02\x00\x04\x00\x00\x00\x01",
+            103,
+            1,
+        ),  # Deadzone temperature, dp 103
+        (
+            "_TZE204_tagezcph",
+            b"\t\x1f\x02\x00\x12\x68\x02\x00\x04\x00\x00\x01\xc2",
+            104,
+            450,
+        ),  # High temperature protection, dp 104
+        (
+            "_TZE204_tagezcph",
+            b"\t\x20\x02\x00\x13\x70\x02\x00\x04\x00\x00\x00\xc8",
+            112,
+            200,
+        ),  # ECO temperature, dp 112
+        (
+            "_TZE204_tagezcph",
+            b"\t\x21\x02\x00\x14\x66\x02\x00\x04\x00\x00\x01\x09",
+            102,
+            265,
+        ),  # Floor temperature, dp 102
     ],
 )
 async def test_handle_get_data_tmcu(
