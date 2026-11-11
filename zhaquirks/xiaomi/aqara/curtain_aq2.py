@@ -54,23 +54,28 @@ class CurtainAq2Cover(Cover):
     _command_time: float | None = None
     _refreshing: bool = False
 
-    def _note_command(self) -> None:
-        self._command_time = asyncio.get_running_loop().time()
+    async def _commanded(self, command) -> None:
+        """Run a movement command, the echo window starts once it has returned.
+
+        A report that arrives while the command is still in flight is not late.
+        """
+        self._command_time = float("inf")
+        try:
+            await command
+        finally:
+            self._command_time = asyncio.get_running_loop().time()
 
     async def async_open_cover(self) -> None:
         """Open the cover."""
-        self._note_command()
-        await super().async_open_cover()
+        await self._commanded(super().async_open_cover())
 
     async def async_close_cover(self) -> None:
         """Close the cover."""
-        self._note_command()
-        await super().async_close_cover()
+        await self._commanded(super().async_close_cover())
 
     async def async_set_cover_position(self, position: int) -> None:
         """Move the cover to a specific position."""
-        self._note_command()
-        await super().async_set_cover_position(position)
+        await self._commanded(super().async_set_cover_position(position))
 
     async def async_update(self) -> None:
         """Refresh the position, which is not a report from the device."""

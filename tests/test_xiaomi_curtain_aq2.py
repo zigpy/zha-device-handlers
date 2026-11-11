@@ -538,3 +538,32 @@ async def test_stop_succeeds_when_the_position_read_fails():
             res = await wc.stop()
 
         assert res.status == foundation.Status.SUCCESS
+
+
+async def test_echo_during_a_slow_write_is_not_late():
+    """The echo window starts when the command returns, not when it is sent."""
+    async with zha_gateway() as gateway:
+        zigpy_device, cover = await make_cover(gateway, 100)
+        analog = zigpy_device.endpoints[1].analog_output
+        loop = asyncio.get_running_loop()
+
+        async def slow_write(*args, **kwargs):
+            # The echo comes in before the write has returned, a lot later than
+            # the echo window after the command was started
+            cover._command_time -= 30
+            report_position(zigpy_device, 97)
+            return (
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        status=foundation.Status.SUCCESS, attrid=PRESENT_VALUE.id
+                    )
+                ],
+            )
+
+        with mock.patch.object(analog, "_write_attributes", slow_write):
+            await cover.async_close_cover()
+
+        assert cover.current_cover_position == 97
+        assert cover.is_closing
+        assert cover._target_lift_position == 0
+        assert loop.time() - cover._command_time < 5
