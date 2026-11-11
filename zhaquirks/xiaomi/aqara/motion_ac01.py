@@ -6,6 +6,7 @@ from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import Basic, DeviceTemperature, Identify, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -20,7 +21,11 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import (
+    PRESENCE_DETECTED,
+    XIAOMI_AQARA_ATTRIBUTE_E1,
+    XiaomiAqaraE1Cluster,
+)
 
 OCCUPANCY = 0x0000
 PRESENCE = 0x0142
@@ -58,6 +63,17 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         APPROACH_DISTANCE: ("approach_distance", types.uint8_t, True),
         RESET_NO_PRESENCE_STATUS: ("reset_no_presence_status", types.uint8_t, True),
     }
+
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ) -> None:
+        """Update occupancy from the presence state included in heartbeats."""
+        super()._handle_attribute_event(event)
+        if event.attribute_id != XIAOMI_AQARA_ATTRIBUTE_E1:
+            return
+        presence = self._parse_aqara_attributes(event.value).get(PRESENCE_DETECTED)
+        if presence in (0, 1):
+            self.endpoint.occupancy.update_attribute(OCCUPANCY, presence)
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
