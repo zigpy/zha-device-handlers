@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import typing
 
+from zigpy.typing import UNDEFINED, UndefinedType
 import zigpy.zcl
 from zigpy.zcl import foundation
 
@@ -20,50 +21,69 @@ class CustomCluster(zigpy.zcl.Cluster):
     _skip_registry = True
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] | None = None
 
-    async def read_attributes_raw(
-        self, attributes: list[int], manufacturer: int | None = None, **kwargs
-    ):
-        """Read attributes, serving `_CONSTANT_ATTRIBUTES` from the quirk locally."""
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> typing.Any:
+        """Read attributes, serving `_CONSTANT_ATTRIBUTES` without caching them.
+
+        Constant values are defined by the quirk, not reported by the device, so
+        they are kept out of the attribute cache. Otherwise, they would be persisted
+        to the database as if the device reported them, and would outlive the quirk.
+        """
         if not self._CONSTANT_ATTRIBUTES:
-            return await super().read_attributes_raw(
-                attributes, manufacturer=manufacturer, **kwargs
+            return await super().read_attributes(
+                attributes,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+                **kwargs,
             )
 
-        succeeded = [
-            foundation.ReadAttributeRecord(
-                attrid=attr,
-                status=foundation.Status.SUCCESS,
-                value=foundation.TypeValue(
-                    type=None,
-                    value=self._CONSTANT_ATTRIBUTES[attr],
-                ),
-            )
-            for attr in attributes
-            if attr in self._CONSTANT_ATTRIBUTES
-        ]
+        success: dict[typing.Any, typing.Any] = {}
+        failure: dict[typing.Any, typing.Any] = {}
+        attrs_to_read: list[int | str | foundation.ZCLAttributeDef] = []
+        constant_defs: set[foundation.ZCLAttributeDef] = set()
 
-        attrs_to_read = [
-            attr for attr in attributes if attr not in self._CONSTANT_ATTRIBUTES
-        ]
-
-        if not attrs_to_read:
-            return [succeeded]
-
-        results = await super().read_attributes_raw(
-            attrs_to_read, manufacturer=manufacturer, **kwargs
-        )
-        if not isinstance(results[0], list):
-            for attrid in attrs_to_read:
-                succeeded.append(  # noqa: PERF401
-                    foundation.ReadAttributeRecord(
-                        attrid,
-                        results[0],
-                        foundation.TypeValue(),
-                    )
+        for attribute in attributes:
+            try:
+                attr_def = self.find_attribute(
+                    attribute, manufacturer_code=manufacturer
                 )
-        else:
-            succeeded.extend(results[0])
-        return [succeeded]
+            except KeyError:
+                # Let zigpy handle unknown attributes
+                attrs_to_read.append(attribute)
+                continue
+
+            if attr_def.id not in self._CONSTANT_ATTRIBUTES:
+                attrs_to_read.append(attribute)
+                continue
+
+            if attr_def in constant_defs:
+                raise ValueError(
+                    f"Cannot read the same attribute twice in the same call: {attr_def}"
+                )
+
+            constant_defs.add(attr_def)
+            value = self._CONSTANT_ATTRIBUTES[attr_def.id]
+            success[attribute] = value if value is None else attr_def.type(value)
+
+        if attrs_to_read:
+            read_success, read_failure = await super().read_attributes(
+                attrs_to_read,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+                **kwargs,
+            )
+            success.update(read_success)
+            failure.update(read_failure)
+
+        return success, failure
 
     def get(self, key: int | str, default: typing.Any | None = None) -> typing.Any:
         """Get cached attribute."""
@@ -82,6 +102,19 @@ class CustomCluster(zigpy.zcl.Cluster):
             return self._CONSTANT_ATTRIBUTES[attr_def.id]
 
         return super().get(key, default)
+
+    def is_attribute_unsupported(
+        self, attr: int | str | foundation.ZCLAttributeDef
+    ) -> bool:
+        """Return whether an attribute is unsupported."""
+        # Constant attributes are always supported, even if the device was marked as
+        # not supporting them before the quirk was applied
+        if self._CONSTANT_ATTRIBUTES and (
+            self.find_attribute(attr).id in self._CONSTANT_ATTRIBUTES
+        ):
+            return False
+
+        return super().is_attribute_unsupported(attr)
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Apply custom configuration; overridden by clusters that need it."""
