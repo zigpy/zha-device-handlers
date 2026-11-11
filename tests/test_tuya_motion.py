@@ -1,15 +1,18 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 import zhaquirks.tuya
+from zhaquirks.tuya import TUYA_SET_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
@@ -201,3 +204,123 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 
     assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
     assert ep.tuya_manufacturer.get("fading_time") == 3
+
+
+# HOBEIAN ZG-204ZX 24GHz mmWave presence + T/H/lux sensor.
+# Frames captured from a live device; DP payloads are Tuya type 0x02 (4-byte value)
+# unless noted.
+ZCL_ZG204ZX_STATIC_SENS = b"\tL\x01\x00\x05\x02\x02\x00\x04\x00\x00\x00\x08"  # DP 2 = 8
+ZCL_ZG204ZX_DISTANCE = b"\tL\x01\x00\x05\x04\x02\x00\x04\x00\x00\x01\xf4"  # DP 4 = 500
+ZCL_ZG204ZX_FADING_TIME = (
+    b"\tL\x01\x00\x05\x66\x02\x00\x04\x00\x00\x00\x3c"  # DP 102 = 60
+)
+ZCL_ZG204ZX_ANTI_INTERF = b"\tL\x01\x00\x05\x67\x01\x00\x01\x01"  # DP 103 = True, bool
+ZCL_ZG204ZX_LUX_INTERVAL = (
+    b"\tL\x01\x00\x05\x6b\x02\x00\x04\x00\x00\x00\x0f"  # DP 107 = 15
+)
+ZCL_ZG204ZX_INDICATOR = b"\tL\x01\x00\x05\x6c\x01\x00\x01\x00"  # DP 108 = False, bool
+ZCL_ZG204ZX_MOTION_SENS = (
+    b"\tL\x01\x00\x05\x7b\x02\x00\x04\x00\x00\x00\x05"  # DP 123 = 5
+)
+
+
+@pytest.mark.parametrize(
+    "frame,attr_name,expected",
+    [
+        (ZCL_ZG204ZX_STATIC_SENS, "static_detection_sensitivity", 8),
+        (ZCL_ZG204ZX_DISTANCE, "static_detection_distance", 500),
+        (ZCL_ZG204ZX_FADING_TIME, "presence_timeout", 60),
+        (ZCL_ZG204ZX_ANTI_INTERF, "anti_interference", 1),
+        (ZCL_ZG204ZX_LUX_INTERVAL, "illuminance_interval", 15),
+        (ZCL_ZG204ZX_INDICATOR, "indicator", 0),
+        (ZCL_ZG204ZX_MOTION_SENS, "motion_detection_sensitivity", 5),
+    ],
+)
+@pytest.mark.parametrize("manufacturer", ["_TZE200_w0ap83qu", "HOBEIAN"])
+async def test_zg204zx_config_datapoints(
+    zigpy_device_from_v2_quirk, manufacturer, frame, attr_name, expected
+):
+    """Test that ZG-204ZX radar tuning datapoints decode to the right attributes."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "ZG-204ZX")
+    ep = quirked_device.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    listener = ClusterListener(ep.tuya_manufacturer)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(frame)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    attr_id = getattr(ep.tuya_manufacturer.AttributeDefs, attr_name).id
+    updates = [u for u in listener.attribute_updates if u[0] == attr_id]
+    assert len(updates) == 1
+    assert updates[0][1] == expected
+
+
+@pytest.mark.parametrize("manufacturer", ["_TZE200_w0ap83qu", "HOBEIAN"])
+async def test_zg204zx_does_not_shadow_standard_clusters(
+    zigpy_device_from_v2_quirk, manufacturer
+):
+    """ZG-204ZX exposes real ZCL clusters, so the quirk must not re-map their DPs.
+
+    Unlike the ZG-204ZM, this device reports presence, temperature, humidity,
+    illuminance and battery over standard clusters. DPs 1, 101, 106, 110 and 111 are
+    therefore deliberately unmapped, and the ZG-204ZM's human_motion_state datapoint
+    does not exist on this model at all.
+    """
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "ZG-204ZX")
+    ep = quirked_device.endpoints[1]
+
+    # Configuration must run so ZHA enrolls the IAS zone, the only presence source
+    # on the HOBEIAN variant.
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    assert not entry.zha_device_factory.quirk_definition.skip_configuration
+
+    assert "human_motion_state" not in ep.tuya_manufacturer.AttributeDefs
+
+    # The quirk adds no local shadow of the device's real measurement clusters.
+    for ep_attribute in ("occupancy", "temperature", "humidity", "illuminance"):
+        assert not hasattr(ep, ep_attribute)
+
+
+@pytest.mark.parametrize("manufacturer", ["_TZE200_w0ap83qu", "HOBEIAN"])
+def test_zg204zx_hides_pir_delays(zigpy_device_from_v2_quirk, manufacturer):
+    """Test the ZG-204ZX hides the ZCL PIR delays, which the device ignores."""
+    quirked_device = zigpy_device_from_v2_quirk(manufacturer, "ZG-204ZX")
+    entry = DEVICE_REGISTRY.match_entry(quirked_device)
+    rules = entry.zha_device_factory.quirk_definition.disabled_default_entities
+
+    assert {
+        (rule.endpoint_id, rule.cluster_id, rule.unique_id_suffix, rule.function)
+        for rule in rules
+    } == {
+        (1, OccupancySensing.cluster_id, "pir_o_to_u_delay", None),
+        (1, OccupancySensing.cluster_id, "pir_u_to_o_delay", None),
+    }
+
+
+@pytest.mark.parametrize(
+    "attr_name,value,dp_data",
+    [
+        ("static_detection_distance", 437, b"\x04\x02\x00\x04\x00\x00\x01\xb5"),
+        ("presence_timeout", 28800, b"\x66\x02\x00\x04\x00\x00\x70\x80"),
+        ("indicator", True, b"\x6c\x01\x00\x01\x01"),
+    ],
+)
+async def test_zg204zx_write(zigpy_device_from_v2_quirk, attr_name, value, dp_data):
+    """Test the ZG-204ZX sends its settings as set_data datapoint frames."""
+    quirked_device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-204ZX")
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        (status,) = await tuya_cluster.write_attributes({attr_name: value})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    request_mock.assert_called_once()
+    assert request_mock.call_args.kwargs["command_id"] == TUYA_SET_DATA
+    assert request_mock.call_args.kwargs["data"].endswith(dp_data)
