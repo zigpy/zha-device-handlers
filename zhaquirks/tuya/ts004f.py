@@ -238,6 +238,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
