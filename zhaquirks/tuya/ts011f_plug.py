@@ -1922,3 +1922,20 @@ class Plug_v7(EnchantedDevice):
     .tuya_enchantment()
     .add_to_registry()
 )
+
+
+# MakeGood MG-AUZG01 double power point. Matched by no v1 signature above
+# (SMART_PLUG endpoints, 0xE001 but no Identify or 0xE000 on endpoint 1), so
+# without a quirk ZHA showed the raw current in mA as A and the raw summation
+# in 0.01 kWh as kWh. Scaling as in Z2M's converter for this device.
+(
+    TuyaQuirkBuilder("_TZ3000_dd8wwzcy", "TS011F")
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBOnOffAttributeCluster, endpoint_id=2)
+    .replaces(TuyaZBMeteringCluster)
+    .replaces(TuyaZBElectricalMeasurement)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .exposes_feature(TUYA_PLUG_ONOFF)
+    .tuya_enchantment()
+    .add_to_registry()
+)
