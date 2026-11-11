@@ -2,6 +2,7 @@
 
 import asyncio
 from dataclasses import replace
+from types import SimpleNamespace
 from unittest import mock
 
 import pytest
@@ -120,16 +121,27 @@ def test_mini_zb1gsp_relay_and_trigger_metadata(zigpy_device_from_v2_quirk):
         metadata.cluster_id == OnOff.cluster_id
         for metadata in gp_definition.disabled_default_entities
     )
-    assert all(
-        metadata.cluster_id != OnOff.cluster_id
+    gsp_on_off_suppressions = [
+        metadata
         for metadata in gsp_definition.disabled_default_entities
-    )
+        if metadata.cluster_id == OnOff.cluster_id
+    ]
+    assert len(gsp_on_off_suppressions) == 1
+    opening_filter = gsp_on_off_suppressions[0].function
+    assert opening_filter is not None
+    assert opening_filter(SimpleNamespace(device_class="opening")) is True
+    assert opening_filter(SimpleNamespace(device_class="switch")) is False
     assert all(
         metadata.attribute_name != "external_trigger_mode"
         for metadata in gp_definition.entity_metadata
     )
     assert all(
         metadata.attribute_name != "detach_relay"
+        for metadata in gp_definition.entity_metadata
+    )
+    assert all(
+        metadata.attribute_name
+        not in ("delayed_power_on_state", "delayed_power_on_time")
         for metadata in gp_definition.entity_metadata
     )
     trigger_metadata = next(
@@ -147,6 +159,29 @@ def test_mini_zb1gsp_relay_and_trigger_metadata(zigpy_device_from_v2_quirk):
     assert detach_relay_metadata.off_value == 0
     assert detach_relay_metadata.on_value == 1
 
+    delayed_state_metadata = next(
+        metadata
+        for metadata in gsp_definition.entity_metadata
+        if metadata.attribute_name == "delayed_power_on_state"
+    )
+    assert delayed_state_metadata.entity_type.value == "config"
+    assert delayed_state_metadata.translation_key == "delayed_power_on_state"
+    assert delayed_state_metadata.fallback_name == "Delayed power on"
+
+    delayed_time_metadata = next(
+        metadata
+        for metadata in gsp_definition.entity_metadata
+        if metadata.attribute_name == "delayed_power_on_time"
+    )
+    assert delayed_time_metadata.entity_type.value == "config"
+    assert delayed_time_metadata.min == 0.5
+    assert delayed_time_metadata.max == 3599.5
+    assert delayed_time_metadata.step == 0.5
+    assert delayed_time_metadata.multiplier == 0.5
+    assert delayed_time_metadata.unit == "s"
+    assert delayed_time_metadata.translation_key == "delayed_power_on_time"
+    assert delayed_time_metadata.fallback_name == "Delayed power on time"
+
 
 def test_mini_zb1gp_attribute_definitions():
     """Test Sonoff manufacturer-specific attribute definitions."""
@@ -154,6 +189,8 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.current.id == 0x7004
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage.id == 0x7005
     assert SonoffMiniZb1gpCluster.AttributeDefs.power.id == 0x7006
+    assert SonoffMiniZb1gpCluster.AttributeDefs.delayed_power_on_state.id == 0x0014
+    assert SonoffMiniZb1gpCluster.AttributeDefs.delayed_power_on_time.id == 0x0015
     assert SonoffMiniZb1gpCluster.AttributeDefs.detach_relay.id == 0x0019
     assert (
         SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_mode.zcl_type
@@ -170,6 +207,26 @@ def test_mini_zb1gp_attribute_definitions():
     assert SonoffMiniZb1gpCluster.AttributeDefs.total_energy.id == 0x701E
     assert SonoffMiniZb1gpCluster.AttributeDefs.total_output_energy.id == 0x701F
     assert SonoffMiniZb1gpCluster.AttributeDefs.voltage_frequency.id == 0x7029
+
+
+def test_mini_zb1gp_measurements_preserve_device_reporting(
+    zigpy_device_from_v2_quirk,
+):
+    """Test measurement entities do not override device reporting intervals."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    entry = DEVICE_REGISTRY.match_entry(device)
+    metadata_by_attribute = {
+        metadata.attribute_name: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+    }
+
+    for attribute_name in ("power", "current", "voltage", "voltage_frequency"):
+        assert metadata_by_attribute[attribute_name].reporting_config is None
 
 
 def _report_attributes(cluster, values: dict[int, int]) -> None:

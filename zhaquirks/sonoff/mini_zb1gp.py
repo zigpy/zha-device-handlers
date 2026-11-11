@@ -144,6 +144,16 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             type=t.int16s,
             manufacturer_code=None,
         )
+        delayed_power_on_state = ZCLAttributeDef(
+            id=0x0014,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        delayed_power_on_time = ZCLAttributeDef(
+            id=0x0015,
+            type=t.uint16_t,
+            manufacturer_code=None,
+        )
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=SonoffExternalSwitchTriggerType,
@@ -722,24 +732,6 @@ def overload_protection(value: int) -> bool:
     return fault_code_bit_is_set(value, 0b100)
 
 
-power_reporting = ReportingConfig(
-    min_interval=5,
-    max_interval=900,
-    reportable_change=100,
-)
-
-current_reporting = ReportingConfig(
-    min_interval=5,
-    max_interval=900,
-    reportable_change=10,
-)
-
-voltage_reporting = ReportingConfig(
-    min_interval=5,
-    max_interval=900,
-    reportable_change=100,
-)
-
 energy_reporting = ReportingConfig(
     min_interval=60,
     max_interval=3600,
@@ -773,7 +765,6 @@ common_quirk = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfPower.WATT,
-        reporting_config=power_reporting,
         unique_id_suffix="2820-active_power",
         translation_key="power",
         fallback_name="Power",
@@ -786,7 +777,6 @@ common_quirk = (
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricCurrent.AMPERE,
-        reporting_config=current_reporting,
         unique_id_suffix="2820-rms_current",
         translation_key="current",
         fallback_name="Current",
@@ -799,7 +789,6 @@ common_quirk = (
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.VOLT,
-        reporting_config=voltage_reporting,
         unique_id_suffix="2820-rms_voltage",
         translation_key="voltage",
         fallback_name="Voltage",
@@ -915,7 +904,6 @@ common_quirk = (
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfFrequency.HERTZ,
-        reporting_config=voltage_reporting,
         translation_key="voltage_frequency",
         fallback_name="Voltage frequency",
         initially_disabled=True,
@@ -1073,6 +1061,32 @@ protection_quirk = (
 (
     protection_quirk.clone()
     .applies_to("SONOFF", "MINI-ZB1GSP")
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.device_class == "opening",
+    )
+    .switch(
+        SonoffMiniZb1gpCluster.AttributeDefs.delayed_power_on_state.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="delayed_power_on_state",
+        fallback_name="Delayed power on",
+    )
+    .number(
+        SonoffMiniZb1gpCluster.AttributeDefs.delayed_power_on_time.name,
+        SonoffMiniZb1gpCluster.cluster_id,
+        min_value=0.5,
+        max_value=3599.5,
+        step=0.5,
+        multiplier=0.5,
+        unit=UnitOfTime.SECONDS,
+        mode="box",
+        device_class=NumberDeviceClass.DURATION,
+        entity_type=EntityType.CONFIG,
+        translation_key="delayed_power_on_time",
+        fallback_name="Delayed power on time",
+    )
     .enum(
         SonoffMiniZb1gpCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
