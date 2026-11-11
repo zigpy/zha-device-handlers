@@ -2129,7 +2129,8 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
             super()._update_attribute(self.AttributeDefs.valve_anti_stuck_day.id, day)
             super()._update_attribute(
-                self.AttributeDefs.valve_anti_stuck_start_minute.id, start_minute
+                self.AttributeDefs.valve_anti_stuck_start_minute.id,
+                self._normalize_weekly_schedule_ui_minute(start_minute),
             )
             super()._update_attribute(
                 self.AttributeDefs.valve_anti_stuck_duration_minutes.id,
@@ -2468,9 +2469,9 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                     self.AttributeDefs.valve_anti_stuck_day.id: self._decode_valve_anti_stuck_schedule(
                         raw
                     )[0],
-                    self.AttributeDefs.valve_anti_stuck_start_minute.id: self._decode_valve_anti_stuck_schedule(
-                        raw
-                    )[1],
+                    self.AttributeDefs.valve_anti_stuck_start_minute.id: self._normalize_weekly_schedule_ui_minute(
+                        self._decode_valve_anti_stuck_schedule(raw)[1]
+                    ),
                     self.AttributeDefs.valve_anti_stuck_duration_minutes.id: self._decode_valve_anti_stuck_schedule(
                         raw
                     )[2],

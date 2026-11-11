@@ -804,6 +804,9 @@ async def test_tp_wgzba_private_virtual_reads(tp_wgzba_device):
         defs.screen_night_mode_period.id: private_cluster._encode_time_period(
             120, 1320
         ),
+        defs.valve_anti_stuck_schedule.id: private_cluster._encode_valve_anti_stuck_schedule(
+            tp_wgzba.WeeklyScheduleUiDay.Wednesday, 1042, 8
+        ),
         defs.relay_output_type_bitmap.id: 1,
         defs.remote_attribute_linkage.id: private_cluster._encode_remote_attribute_linkage(
             tp_wgzba.TemperatureSensorSelect.external, 2150
@@ -862,6 +865,7 @@ async def test_tp_wgzba_private_virtual_reads(tp_wgzba_device):
                 defs.radar_do_not_disturb_end_minute.id,
                 defs.screen_night_mode_start_minute.id,
                 defs.screen_night_mode_end_minute.id,
+                defs.valve_anti_stuck_start_minute.id,
                 defs.relay_output_type_relay1.id,
                 defs.relay_output_type_relay2.id,
                 defs.temperature_sensor_select.id,
@@ -887,6 +891,7 @@ async def test_tp_wgzba_private_virtual_reads(tp_wgzba_device):
     )
     assert values[defs.temperature_control_threshold_low.id] == -10
     assert values[defs.temperature_control_threshold_high.id] == 80
+    assert values[defs.valve_anti_stuck_start_minute.id] == 1050
     assert values[defs.current_ntc_temperature_display.id] == "21.50 C"
 
 
@@ -1235,7 +1240,7 @@ def test_tp_wgzba_schedule_attribute_updates_mirror_ui_values(tp_wgzba_device):
     defs = private_cluster.AttributeDefs
     holiday_payload = private_cluster._encode_holiday_schedule(14, 1800)
     anti_stuck_payload = private_cluster._encode_valve_anti_stuck_schedule(
-        tp_wgzba.WeeklyScheduleUiDay.Wednesday, 450, 8
+        tp_wgzba.WeeklyScheduleUiDay.Wednesday, 1042, 8
     )
 
     private_cluster._update_attribute(defs.holiday_schedule.id, holiday_payload)
@@ -1248,7 +1253,10 @@ def test_tp_wgzba_schedule_attribute_updates_mirror_ui_values(tp_wgzba_device):
     assert private_cluster.get(defs.valve_anti_stuck_day.name) == (
         tp_wgzba.WeeklyScheduleUiDay.Wednesday
     )
-    assert private_cluster.get(defs.valve_anti_stuck_start_minute.name) == 450
+    assert private_cluster.get(defs.valve_anti_stuck_start_minute.name) == 1050
+    assert (
+        private_cluster.get(defs.valve_anti_stuck_schedule.name) == anti_stuck_payload
+    )
     assert private_cluster.get(defs.valve_anti_stuck_duration_minutes.name) == 8
 
 
