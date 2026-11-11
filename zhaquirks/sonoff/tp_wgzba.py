@@ -420,7 +420,7 @@ class WeeklyScheduleUiDay(t.enum8):
 
 
 class ExternalTemperatureMode(t.enum8):
-    """Report whether the thermostat uses external temperature readings."""
+    """Report whether HA has enabled the external temperature source."""
 
     internal_sensor = 0
     external_sensor = 1
@@ -2146,10 +2146,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             super()._update_attribute(
                 self.AttributeDefs.external_temperature_input.id, external_temperature
             )
-            super()._update_attribute(
-                self.AttributeDefs.external_temperature_sensor.id,
-                sensor_select != TemperatureSensorSelect.internal,
-            )
             for source_attr_id, source_value in zip(
                 REMOTE_TEMPERATURE_SOURCE_ATTR_IDS,
                 self._decode_multi_remote_temperature(value),
@@ -2264,6 +2260,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         success: list[foundation.ReadAttributeRecord] = []
         failed: list[foundation.ReadAttributeRecord] = []
         remaining = list(attributes)
+
+        external_switch = self.AttributeDefs.external_temperature_sensor
+        read_external_switch = external_switch.id in remaining
+        if read_external_switch:
+            remaining.remove(external_switch.id)
 
         if self.AttributeDefs.temporary_temperature_mode_settings.id in remaining:
             remaining.remove(self.AttributeDefs.temporary_temperature_mode_settings.id)
@@ -2492,7 +2493,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                 {
                     self.AttributeDefs.temperature_sensor_select.id,
                     self.AttributeDefs.external_temperature_input.id,
-                    self.AttributeDefs.external_temperature_sensor.id,
                 },
                 self.AttributeDefs.remote_attribute_linkage.id,
                 lambda raw: {
@@ -2502,10 +2502,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
                     self.AttributeDefs.external_temperature_input.id: self._decode_remote_attribute_linkage(
                         raw
                     )[1],
-                    self.AttributeDefs.external_temperature_sensor.id: self._decode_remote_attribute_linkage(
-                        raw
-                    )[0]
-                    != TemperatureSensorSelect.internal,
                 },
             ),
             (
@@ -2581,6 +2577,14 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
             success.extend(raw_success)
             failed.extend(raw_failed)
+
+        if read_external_switch:
+            # The local switch can change while the device reads are in flight.
+            success.append(
+                self._read_record(
+                    external_switch.id, self.get(external_switch.name, False)
+                )
+            )
 
         return (success, failed) if failed else (success,)
 
@@ -2701,20 +2705,17 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         ):
             return source_results
 
+        external_switch = self.AttributeDefs.external_temperature_sensor
         if (
             has_external_temperature_sensor
-            and not bool(external_temperature_sensor_value)
             and not has_sensor_select
             and not has_external_temperature
         ):
-            raw_value = REMOTE_TEMPERATURE_UNBIND_PAYLOAD
-        elif (
-            has_external_temperature_sensor
-            and bool(external_temperature_sensor_value)
-            and not has_sensor_select
-            and not has_external_temperature
-        ):
-            raw_value = REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD
+            raw_value = (
+                REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD
+                if bool(external_temperature_sensor_value)
+                else REMOTE_TEMPERATURE_UNBIND_PAYLOAD
+            )
         else:
             current_sensor_select, current_external_temperature = (
                 self._decode_remote_attribute_linkage(
@@ -2763,6 +2764,10 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             self._update_attribute(
                 self.AttributeDefs.remote_attribute_linkage.id, raw_value
             )
+            if has_external_temperature_sensor:
+                self._update_attribute(
+                    external_switch.id, bool(external_temperature_sensor_value)
+                )
         return source_results + write_result
 
     async def write_attributes(  # noqa: C901

@@ -116,15 +116,96 @@ async def test_tp_wgzba_external_temperature_mode_sensor(tp_wgzba_device):
     assert sensor.state.device_class.value == "enum"
 
     cluster = tp_wgzba_device.endpoints[1].sonoff_private
-    linkage = cluster.AttributeDefs.remote_attribute_linkage.id
-    # Pending bind enables external mode before the blueprint sends its first reading.
-    for payload, expected in (
-        (tp_wgzba.REMOTE_TEMPERATURE_UNBIND_PAYLOAD, "internal_sensor"),
-        (tp_wgzba.REMOTE_TEMPERATURE_PENDING_BIND_PAYLOAD, "external_sensor"),
-        (tp_wgzba.REMOTE_TEMPERATURE_UNBIND_PAYLOAD, "internal_sensor"),
+    defs = cluster.AttributeDefs
+    switch_name = defs.external_temperature_sensor.name
+    wire_success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    failure = [
+        [
+            foundation.WriteAttributesStatusRecord(
+                foundation.Status.FAILURE, defs.remote_attribute_linkage.id
+            )
+        ]
+    ]
+    cluster.update_attribute(defs.external_temperature_sensor.id, False)
+    assert sensor.state.native_value == "internal_sensor"
+
+    with mock.patch.object(
+        cluster,
+        "write_attributes_raw",
+        new_callable=mock.AsyncMock,
+        side_effect=[failure, wire_success, failure, wire_success],
+    ) as write_raw:
+        for enabled, payload, expected_mode in (
+            (True, bytes.fromhex("01 01 00 01 03 02 00 00"), "external_sensor"),
+            (False, bytes.fromhex("01 01 00 01 01 00"), "internal_sensor"),
+        ):
+            previous_mode = sensor.state.native_value
+            assert await cluster.write_attributes({switch_name: enabled}) == failure
+            assert sensor.state.native_value == previous_mode
+
+            result = await cluster.write_attributes({switch_name: enabled})
+            assert result[0][0].status == foundation.Status.SUCCESS
+            written = write_raw.await_args.args[0][0]
+            assert written.attrid == defs.remote_attribute_linkage.id
+            assert written.value.value == payload
+            assert sensor.state.native_value == expected_mode
+
+
+async def test_tp_wgzba_external_temperature_switch_restores_cached_intent(
+    tp_wgzba_device,
+):
+    """Keep restored switch intent across startup reads and linkage updates."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    defs = cluster.AttributeDefs
+    switch = defs.external_temperature_sensor
+    linkage = defs.remote_attribute_linkage
+    payload = bytes.fromhex(
+        "02 01 00 00 04 00 00 00 00 03 13 03 "
+        "00 01 01 02 90 06 00 02 01 02 61 0A 00 03 01 02 50 0A"
+    ).ljust(64, b"\x00")
+    cluster.update_attribute(switch.id, True)
+
+    with mock.patch.object(
+        tp_wgzba.CustomCluster, "read_attributes_raw", new_callable=mock.AsyncMock
+    ) as read_raw:
+        values, failed = await cluster.read_attributes([switch.name], allow_cache=False)
+        read_raw.assert_not_awaited()
+    assert values == {switch.name: True}
+    assert not failed
+
+    cluster.update_attribute(linkage.id, payload)
+    assert cluster.get(switch.name) is True
+
+    response = cluster._read_record(linkage.id, payload)
+
+    async def read_after_unbinding(*args, **kwargs):
+        """Return the linkage after the switch is turned off during the read."""
+        # A successful unbind changes the local intent while this read is in flight.
+        await cluster.write_attributes({switch.name: False})
+        return ([response],)
+
+    wire_success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+    with (
+        mock.patch.object(
+            tp_wgzba.CustomCluster,
+            "read_attributes_raw",
+            new_callable=mock.AsyncMock,
+            side_effect=read_after_unbinding,
+        ) as read_raw,
+        mock.patch.object(
+            cluster,
+            "write_attributes_raw",
+            new_callable=mock.AsyncMock,
+            return_value=wire_success,
+        ),
     ):
-        cluster.update_attribute(linkage, payload)
-        assert sensor.state.native_value == expected
+        values, failed = await cluster.read_attributes(
+            [defs.remote_temperature_source1.name, switch.name], allow_cache=False
+        )
+        read_raw.assert_awaited_once()
+    assert values == {defs.remote_temperature_source1.name: 1680, switch.name: False}
+    assert not failed
+    assert cluster.get(switch.name) is False
 
 
 def test_tp_wgzba_system_mode_mapping():
@@ -550,7 +631,6 @@ def test_tp_wgzba_private_attribute_mirrors(tp_wgzba_device):
     assert private_cluster.get("temperature_sensor_select") == (
         tp_wgzba.TemperatureSensorSelect.external_2
     )
-    assert private_cluster.get("external_temperature_sensor") is True
     assert private_cluster.get("external_temperature_input") == 9990
 
     private_cluster._update_attribute(
