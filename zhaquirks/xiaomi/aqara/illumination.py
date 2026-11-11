@@ -14,6 +14,7 @@ from zhaquirks.const import (
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -26,6 +27,11 @@ from zhaquirks.xiaomi import (
 
 class Illumination(XiaomiCustomDevice):
     """Aqara LUMI lumi.sen_ill.mgl01 illumination sensor."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.battery_size = BatterySize.CR2450
+        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=262
