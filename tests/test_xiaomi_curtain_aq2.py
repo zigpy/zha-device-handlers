@@ -508,3 +508,33 @@ async def test_position_is_clamped_and_cache_reads_use_the_cluster():
         with patch_write(zigpy_device) as write:
             await wc.go_to_lift_percentage(percentage_lift_value=40)
         assert write.call_args[0][0][0].value.value == 60.0
+
+
+async def test_stop_succeeds_when_the_position_read_fails():
+    """A failing position read after a stop does not fail the stop."""
+    async with zha_gateway() as gateway:
+        zigpy_device, _ = await make_cover(gateway, 100)
+        wc = zigpy_device.endpoints[1].window_covering
+
+        with (
+            mock.patch.object(
+                wc,
+                "request",
+                mock.AsyncMock(
+                    return_value=foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Default_Response
+                    ].schema(
+                        command_id=WindowCovering.ServerCommandDefs.stop.id,
+                        status=foundation.Status.SUCCESS,
+                    )
+                ),
+            ),
+            mock.patch.object(
+                zigpy_device.endpoints[1].analog_output,
+                "read_attributes_raw",
+                mock.AsyncMock(side_effect=TimeoutError),
+            ),
+        ):
+            res = await wc.stop()
+
+        assert res.status == foundation.Status.SUCCESS

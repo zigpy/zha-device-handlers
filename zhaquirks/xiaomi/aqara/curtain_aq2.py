@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any
 
 from zha.application.platforms.cover import Cover
 from zigpy import types as t
+from zigpy.exceptions import ZigbeeException
 from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import AnalogOutput
@@ -166,9 +168,11 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
             result = await super().command(command_id, *args, **kwargs)
             if getattr(result, "status", None) == foundation.Status.SUCCESS:
                 # The device does not necessarily report the position after a stop
-                await self.endpoint.analog_output.read_attributes(
-                    [AnalogOutput.AttributeDefs.present_value], allow_cache=False
-                )
+                # (a failed read must not turn the successful stop into an error)
+                with contextlib.suppress(ZigbeeException, TimeoutError):
+                    await self.endpoint.analog_output.read_attributes(
+                        [AnalogOutput.AttributeDefs.present_value], allow_cache=False
+                    )
             return result
         else:
             return foundation.GENERAL_COMMANDS[
