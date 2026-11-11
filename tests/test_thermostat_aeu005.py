@@ -16,7 +16,7 @@ from zha.application.platforms.number import NumberConfigurationEntity
 from zha.application.platforms.select import ZCLEnumSelectEntity
 from zha.application.platforms.sensor import Sensor
 from zha.exceptions import ZHAException
-from zha.quirks import DEVICE_REGISTRY
+from zha.quirks import DEVICE_REGISTRY, DeviceMatch
 import zigpy.device
 import zigpy.exceptions
 import zigpy.types as t
@@ -24,6 +24,7 @@ from zigpy.zcl import foundation
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import CustomCluster
+from zhaquirks.builder.discovery import discover_quirks_v2_entities
 from zhaquirks.xiaomi.aqara import thermostat_aeu005 as w600
 from zhaquirks.xiaomi.aqara.thermostat_aeu005 import (
     AQARA,
@@ -58,6 +59,7 @@ def test_quirk_registration_matches_exact_manufacturer_and_model() -> None:
     matches = [
         model_info
         for entry in DEVICE_REGISTRY
+        if isinstance(entry.device_match, DeviceMatch)
         for model_info in entry.device_match.applies_to
         if (model_info.manufacturer, model_info.model) == (AQARA, MODEL)
     ]
@@ -609,7 +611,8 @@ def test_new_entities_do_not_add_reporting_and_source_has_readout_and_control():
     entry = next(
         entry
         for entry in DEVICE_REGISTRY
-        if any(
+        if isinstance(entry.device_match, DeviceMatch)
+        and any(
             info.manufacturer == AQARA and info.model == MODEL
             for info in entry.device_match.applies_to
         )
@@ -708,7 +711,8 @@ def test_raw_profile_sensor_retains_entity_identity():
     entry = next(
         entry
         for entry in DEVICE_REGISTRY
-        if any(
+        if isinstance(entry.device_match, DeviceMatch)
+        and any(
             info.manufacturer == AQARA and info.model == MODEL
             for info in entry.device_match.applies_to
         )
@@ -748,7 +752,8 @@ def test_abnormal_notification_switch_has_no_reporting():
     entry = next(
         entry
         for entry in DEVICE_REGISTRY
-        if any(
+        if isinstance(entry.device_match, DeviceMatch)
+        and any(
             info.manufacturer == AQARA and info.model == MODEL
             for info in entry.device_match.applies_to
         )
@@ -1225,25 +1230,35 @@ def test_external_input_is_created_without_fictitious_initial_temperature(
     """Verify external input is created without fictitious initial temperature."""
 
     fcc0, status = status_clusters
-    entity = NumberConfigurationEntity(
-        endpoint=SimpleNamespace(id=1),
-        device=SimpleNamespace(ieee=fcc0.endpoint.device.ieee),
-        cluster=status,
-        from_quirk=True,
-        attribute_name="external_temperature_input",
-        multiplier=0.01,
-        min_value=-40,
-        max_value=125,
-        step=0.01,
-        unique_id_suffix="w600-external-temperature-input",
+    entry = next(
+        entry
+        for entry in DEVICE_REGISTRY
+        if isinstance(entry.device_match, DeviceMatch)
+        and any(
+            info.manufacturer == AQARA and info.model == MODEL
+            for info in entry.device_match.applies_to
+        )
     )
-    # Quirk-discovered controls are supported even with an empty cache.
-    assert entity.is_supported()
+    metadata = next(
+        item
+        for item in entry.zha_device_factory.quirk_definition.entity_metadata
+        if item.translation_key == "external_temperature_input"
+    )
+    device = SimpleNamespace(
+        ieee=fcc0.endpoint.device.ieee,
+        name=MODEL,
+        endpoints={1: SimpleNamespace(id=1, zigpy_endpoint=status.endpoint)},
+        quirk_metadata=SimpleNamespace(entity_metadata=[metadata]),
+    )
+    (entity,) = discover_quirks_v2_entities(device)
+    assert isinstance(entity, NumberConfigurationEntity)
+    assert entity.unique_id == f"{device.ieee}-1-w600-external-temperature-input"
+    # ZHA skips the generic support check for explicitly discovered quirk entities.
+    assert entity.force_create
     assert entity.native_value is None
     status.update_attribute(0x0007, 2165)
     assert entity.native_value == pytest.approx(21.65)
     status.update_attribute(0x0007, None)
-    assert entity.is_supported()
     assert entity.native_value is None
 
 
