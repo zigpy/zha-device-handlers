@@ -936,15 +936,23 @@ class TuyaQuirkBuilder(QuirkBuilder):
         return self
 
     def tuya_enchantment(
-        self, read_attr_spell: bool = True, data_query_spell: bool = False
+        self,
+        read_attr_spell: bool = True,
+        data_query_spell: bool = False,
+        data_query_on_announce: bool = False,
     ) -> Self:
-        """Set the Tuya enchantment spells."""
+        """Set the Tuya enchantment spells.
+
+        `data_query_on_announce` also casts the data query spell whenever the device
+        announces itself, for devices that need it again after a reboot.
+        """
 
         class EnchantedDeviceV2(CustomZigpyDevice, BaseEnchantedDevice):
             """Enchanted device class for v2 quirks."""
 
         EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell
         EnchantedDeviceV2.tuya_spell_data_query = data_query_spell
+        EnchantedDeviceV2.tuya_spell_data_query_on_announce = data_query_on_announce
 
         self.device_class(EnchantedDeviceV2)
 

@@ -9,6 +9,8 @@ import enum
 import logging
 from typing import Any, Final
 
+import zigpy.device
+import zigpy.exceptions
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
@@ -586,6 +588,30 @@ class BaseEnchantedDevice(BaseCustomDevice):
     # These values can be overridden from a quirk to enable (or disable) additional Tuya spells:
     tuya_spell_read_attributes: bool = True  # spell reading attributes on Basic cluster
     tuya_spell_data_query: bool = False  # additional spell needed for some devices
+    # also cast the data query spell when the device announces itself, e.g. after a
+    # reboot: some devices need it again then, but a rejoin without a new NWK address
+    # runs no device configuration
+    tuya_spell_data_query_on_announce: bool = False
+
+    def __init__(self, *args, **kwargs):
+        """Init, listening for device announcements if needed."""
+        super().__init__(*args, **kwargs)
+        if self.tuya_spell_data_query_on_announce:
+            self.zdo.add_listener(self)
+
+    def device_announce(self, device: zigpy.device.Device) -> None:
+        """Cast the data query spell again when the device announces itself."""
+        self.create_task(
+            self._spell_data_query_on_announce(),
+            name=f"tuya_data_query_on_announce_{self.ieee}",
+        )
+
+    async def _spell_data_query_on_announce(self) -> None:
+        """Cast the data query spell, logging a failure instead of raising."""
+        try:
+            await self.spell_data_query()
+        except (TimeoutError, zigpy.exceptions.ZigbeeException) as exc:
+            self.debug("Data query spell after device announcement failed: %r", exc)
 
     async def apply_custom_configuration(self, *args, **kwargs):
         """Hooks device configuration to apply custom configuration."""

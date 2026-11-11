@@ -1,5 +1,6 @@
 """Tests for TuyaQuirkBuilder."""
 
+import asyncio
 import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -7,6 +8,7 @@ from zoneinfo import ZoneInfo
 import pytest
 import time_machine
 from zha.quirks import DeviceRegistry
+import zigpy.exceptions
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -406,6 +408,44 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
             assert not query_calls
 
         request_mock.reset_mock()
+
+
+@pytest.mark.parametrize("data_query_on_announce", [True, False])
+async def test_tuya_spell_data_query_on_announce(device_mock, data_query_on_announce):
+    """Test the data query spell is cast on a device announcement only if enabled."""
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(dp_id=1)
+        .tuya_enchantment(
+            data_query_spell=True, data_query_on_announce=data_query_on_announce
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.resolve(device_mock)
+    assert quirked.tuya_spell_data_query_on_announce is data_query_on_announce
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        # zigpy emits this for every ZDO Device_annce from the device
+        quirked.zdo.listener_event("device_announce", quirked)
+        await asyncio.gather(*quirked._tasks)
+
+        query_calls = [c for c in request_mock.mock_calls if c[1][1] == TUYA_QUERY_DATA]
+        assert request_mock.call_count == len(query_calls)
+        assert len(query_calls) == (1 if data_query_on_announce else 0)
+
+        # a device that is already asleep again doesn't break anything
+        request_mock.reset_mock()
+        request_mock.side_effect = zigpy.exceptions.DeliveryError("asleep")
+        quirked.zdo.listener_event("device_announce", quirked)
+        await asyncio.gather(*quirked._tasks)
+        assert request_mock.call_count == (1 if data_query_on_announce else 0)
 
 
 @time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
