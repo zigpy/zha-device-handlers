@@ -139,9 +139,7 @@ async def test_pilot_wire_write_attributes(zigpy_device_from_v2_quirk):
 
         (status,) = await tuya_cluster.write_attributes({"power_rating": 1500})
         await wait_for_zigpy_tasks()
-        assert m1.call_args.kwargs["data"].endswith(
-            b"\x8e\x02\x00\x04\x00\x00\x05\xdc"
-        )
+        assert m1.call_args.kwargs["data"].endswith(b"\x8e\x02\x00\x04\x00\x00\x05\xdc")
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
