@@ -1,5 +1,6 @@
 """Tuya TS201 temperature, humidity and optional illumination sensors."""
 
+import logging
 from typing import Final
 
 from zigpy.profiles import zha
@@ -235,4 +236,98 @@ class MoesTemperatureHumidtySensorWithScreen(CustomDevice):
                 ],
             },
         },
+    }
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class RelativeHumidityFolded(CustomCluster, RelativeHumidity):
+    """Handles invalid humidity values from Tuya devices using frame control field context."""
+
+    def deserialize(self, data):
+        """Intercept raw frame so we can extract frame control byte."""
+        fcf = data[0]  # frame control is always the first byte
+        self._last_fcf = fcf  # stash for use in _update_attribute
+        return super().deserialize(data)
+
+    @staticmethod
+    def _fix_humidity(raw: int, fcf: int, nwk: int) -> int:
+        """Convert raw humidity using raw value and ZCL frame control field."""
+
+        # Rule 1: 0–999 and fcf == 0x08 → raw * 10
+        if 0 <= raw <= 999 and fcf == 0x08:
+            return raw * 10
+
+        # Rule 2: 0–3347 and fcf == 0x18 and ones digit == 6 → strip ones, +656, *10
+        if 0 <= raw <= 3347 and fcf == 0x18 and raw % 10 == 6:
+            return (raw // 10 + 656) * 10
+
+        # Rule 3: 1000+ and ones digit == 0 → report raw as-is
+        if raw >= 1000 and raw % 10 == 0:
+            return raw
+
+        # Fallback
+        _LOGGER.debug(
+            "[0x%04x] TS0201 quirk fallback used | FCF=0x%02x | raw=%d | reported=%d (%.1f%%)",
+            nwk,
+            fcf,
+            raw,
+            raw,
+            raw / 100,
+        )
+        return raw
+
+    def _update_attribute(self, attrid, value):
+        if attrid == 0:  # humidity measured_value
+            nwk = self.endpoint.device.nwk
+            fcf = getattr(self, "_last_fcf", None)
+            value = self._fix_humidity(value, fcf or 0, nwk)
+
+        super()._update_attribute(attrid, value)
+
+
+class TuyaTemperatureHumidtySensor_ncw88jfq(CustomDevice):
+    """Tuya temperature and humidity sensor."""
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
+        #  device_version=1
+        #  input_clusters=[1, 1026, 1029, 61184, 0]
+        #  output_clusters=[25, 10]>
+        MODELS_INFO: [("_TZ3210_ncw88jfq", "TS0201")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidity.cluster_id,
+                    0xEF00,  # Unknown
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidityFolded.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        }
     }
