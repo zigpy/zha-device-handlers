@@ -1795,7 +1795,7 @@ class TuyaNewManufCluster(CustomCluster):
 
 @register_entity(TuyaZBOnOffAttributeCluster.cluster_id)
 class TuyaSwitchModeSelectEntity(select.ZCLEnumSelectEntity):
-    """Representation of a ZHA backlight mode select entity."""
+    """Select entity for the Tuya switch mode (command vs. event) attribute."""
 
     _unique_id_suffix = "switch_mode"
     _attribute_name = "switch_mode"
