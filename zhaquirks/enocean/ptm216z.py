@@ -8,14 +8,7 @@ from zigpy.device import GreenPowerCommandReceived
 from zigpy.zgp.types import DeviceID, GPDCommandID
 
 from zhaquirks.builder import ButtonEventType, EventDeviceClass, GreenPowerQuirkBuilder
-
-# The switch has two rockers, each with two contacts, reported as a bit in the 8-bit
-# vector of the GPD press command. Bit 4 is the energy bar, which is not exposed. Bits
-# 5-7 are unused.
-CONTACT_A0 = 0b0001
-CONTACT_A1 = 0b0010
-CONTACT_B0 = 0b0100
-CONTACT_B1 = 0b1000
+from zhaquirks.enocean import CONTACT_A0, CONTACT_A1, CONTACT_B0, CONTACT_B1
 
 
 class PTM216ZButton(BaseEvent):
@@ -54,7 +47,8 @@ class PTM216ZButton(BaseEvent):
         ):
             return
 
-        # Both commands carry the resulting state of every contact
+        # Both commands carry the resulting state of every contact as a bit vector. Bit
+        # 4 is the energy bar, which is not exposed. Bits 5-7 are unused.
         pressed = bool(event.command.contact_status & self._contact)
 
         if pressed == self._pressed:
