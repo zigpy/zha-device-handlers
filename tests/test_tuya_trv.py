@@ -73,7 +73,7 @@ TUYA_TEST_PLAN_V03 = (
     (
         b"\t\xc2\x02\x00q\x02\x04\x00\x01\x04",
         Thermostat.AttributeDefs.system_mode,
-        Thermostat.SystemMode.Auto,
+        Thermostat.SystemMode.Heat,
     ),  # Preset Auto (0x04), dp 2
     (
         b"\t\xc2\x02\x00q\x02\x04\x00\x01\x05",
@@ -442,7 +442,6 @@ async def test_moes_trv602z_preset_mode_write(
     "system_mode, preset",
     [
         (Thermostat.SystemMode.Off, 0x00),
-        (Thermostat.SystemMode.Auto, 0x04),
         (Thermostat.SystemMode.Heat, 0x05),
     ],
 )
@@ -472,7 +471,12 @@ async def test_moes_trv602z_system_mode_write(
     assert ep.tuya_manufacturer.get("preset_mode") == preset
 
 
-async def test_moes_trv602z_unsupported_system_mode(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize(
+    "system_mode", [Thermostat.SystemMode.Auto, Thermostat.SystemMode.Cool]
+)
+async def test_moes_trv602z_unsupported_system_mode(
+    zigpy_device_from_v2_quirk, system_mode
+):
     """A system mode the TRV has no preset for fails the whole write."""
 
     quirked = zigpy_device_from_v2_quirk("_TZE204_qyr2m29i", "TS0601")
@@ -485,7 +489,7 @@ async def test_moes_trv602z_unsupported_system_mode(zigpy_device_from_v2_quirk):
     ) as m1:
         (status,) = await ep.thermostat.write_attributes(
             {
-                "system_mode": Thermostat.SystemMode.Cool,
+                "system_mode": system_mode,
                 "occupied_heating_setpoint": 2100,
             }
         )
@@ -514,7 +518,7 @@ def test_moes_trv602z_preset_mode_report(zigpy_device_from_v2_quirk, preset):
     ep.tuya_manufacturer.handle_get_data(data.data)
 
     assert ep.tuya_manufacturer.get("preset_mode") == preset
-    assert ep.thermostat.get("system_mode") == {
-        0x00: Thermostat.SystemMode.Off,
-        0x04: Thermostat.SystemMode.Auto,
-    }.get(preset, Thermostat.SystemMode.Heat)
+    # Auto (0x04) runs the valve's schedule; it heats like the other presets
+    assert ep.thermostat.get("system_mode") == (
+        Thermostat.SystemMode.Off if preset == 0x00 else Thermostat.SystemMode.Heat
+    )

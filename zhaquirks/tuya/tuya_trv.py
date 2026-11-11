@@ -173,7 +173,6 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
 
     SYSTEM_MODE_TO_PRESET = {
         Thermostat.SystemMode.Off: TuyaPresetMode.Off,
-        Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
         Thermostat.SystemMode.Heat: TuyaPresetMode.Manual,
     }
 
@@ -757,16 +756,19 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
     )
     # DP 2 is the preset; the system mode follows it. System mode writes are sent
     # as a preset by MoesTrv602zThermostat, so preset writes go out unchanged.
+    # The valve only heats, so every preset but Off is system mode Heat. Its Auto
+    # preset runs the valve's schedule, which is not ZCL's heat/cool Auto mode.
     .tuya_dp_multi(
         dp_id=2,
         attribute_mapping=[
             DPToAttributeMapping(
                 ep_attribute=MoesTrv602zThermostat.ep_attribute,
                 attribute_name=MoesTrv602zThermostat.AttributeDefs.system_mode.name,
-                converter=lambda x: {
-                    TuyaPresetMode.Off: Thermostat.SystemMode.Off,
-                    TuyaPresetMode.Auto: Thermostat.SystemMode.Auto,
-                }.get(x, Thermostat.SystemMode.Heat),
+                converter=lambda x: (
+                    Thermostat.SystemMode.Off
+                    if x == TuyaPresetMode.Off
+                    else Thermostat.SystemMode.Heat
+                ),
             ),
             DPToAttributeMapping(
                 ep_attribute=TuyaMCUCluster.ep_attribute,
@@ -801,7 +803,7 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         min_value=15,
         max_value=35,
-        step=1,
+        step=0.5,
         multiplier=0.1,
         translation_key="max_temperature",
         fallback_name="Max temperature",
@@ -813,7 +815,7 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         min_value=1,
         max_value=15,
-        step=1,
+        step=0.5,
         multiplier=0.1,
         translation_key="min_temperature",
         fallback_name="Min temperature",
@@ -868,7 +870,7 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         min_value=5,
         max_value=30,
-        step=1,
+        step=0.5,
         multiplier=0.1,
         translation_key="comfort_temperature",
         fallback_name="Comfort temperature",
@@ -880,7 +882,7 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         min_value=5,
         max_value=30,
-        step=1,
+        step=0.5,
         multiplier=0.1,
         translation_key="eco_temperature",
         fallback_name="Eco temperature",
@@ -892,7 +894,7 @@ class MoesTrv602zThermostat(TuyaThermostatV2):
         unit=UnitOfTemperature.CELSIUS,
         min_value=5,
         max_value=30,
-        step=1,
+        step=0.5,
         multiplier=0.1,
         translation_key="holiday_temperature",
         fallback_name="Holiday temperature",
