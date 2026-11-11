@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from zha.application.platforms.cover import Cover
@@ -15,6 +16,11 @@ from zhaquirks.clusters import CustomCluster
 from zhaquirks.xiaomi import LUMI, BasicCluster
 
 LIFT_ATTR = WindowCovering.AttributeDefs.current_position_lift_percentage
+
+
+def _to_lift_percentage(present_value: float) -> t.uint8_t:
+    """Convert a present_value position (0 closed, 100 open) to a ZCL lift percentage."""
+    return t.uint8_t(round(100 - min(max(present_value, 0), 100)))
 
 
 class CurtainAq2Cover(Cover):
@@ -33,7 +39,59 @@ class CurtainAq2Cover(Cover):
     So while a commanded transition is running, the cover is moving until it reaches
     the target, a stop is sent or the full-travel timer expires. Reports only move
     the position.
+
+    The device sends nothing between the echo and the arrival, so a report that comes
+    well after the command, and is not the target, means the shade was stopped or
+    moved by something else (a physical button). That ends the transition. Reads
+    triggered by ZHA itself (a refresh mid-movement) are not such a report.
     """
+
+    # Seconds after a command in which a report is its echo
+    _ECHO_WINDOW = 5
+
+    _command_time: float | None = None
+    _refreshing: bool = False
+
+    def _note_command(self) -> None:
+        self._command_time = asyncio.get_running_loop().time()
+
+    async def async_open_cover(self) -> None:
+        """Open the cover."""
+        self._note_command()
+        await super().async_open_cover()
+
+    async def async_close_cover(self) -> None:
+        """Close the cover."""
+        self._note_command()
+        await super().async_close_cover()
+
+    async def async_set_cover_position(self, position: int) -> None:
+        """Move the cover to a specific position."""
+        self._note_command()
+        await super().async_set_cover_position(position)
+
+    async def async_update(self) -> None:
+        """Refresh the position, which is not a report from the device."""
+        self._refreshing = True
+        try:
+            await super().async_update()
+        finally:
+            self._refreshing = False
+
+    def handle_attribute_updated(self, event) -> None:
+        """End a commanded transition on a late report that is not the target."""
+        super().handle_attribute_updated(event)
+
+        if (
+            event.attribute_id == LIFT_ATTR.id
+            and not self._refreshing
+            and self._target_lift_position is not None
+            and self.current_cover_position != self._target_lift_position
+            and self._command_time is not None
+            and asyncio.get_running_loop().time() - self._command_time
+            > self._ECHO_WINDOW
+        ):
+            self._clear_lift_transition(determine_state=True)
 
     @staticmethod
     def _determine_state(
@@ -79,7 +137,7 @@ class AnalogOutputCurtainAq2(CustomCluster, AnalogOutput):
         """Mirror present_value reads and reports to the WindowCovering position."""
         if event.attribute_id == self.AttributeDefs.present_value.id:
             self.endpoint.window_covering.update_attribute(
-                LIFT_ATTR.id, t.uint8_t(round(100 - event.value))
+                LIFT_ATTR.id, _to_lift_percentage(event.value)
             )
 
 
@@ -102,9 +160,16 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
         elif command_id == WindowCovering.ServerCommandDefs.down_close.id:
             target = 0.0
         elif command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
-            target = float(100 - args[0])
+            percentage = args[0] if args else kwargs["percentage_lift_value"]
+            target = float(100 - percentage)
         elif command_id == WindowCovering.ServerCommandDefs.stop.id:
-            return await super().command(command_id, *args, **kwargs)
+            result = await super().command(command_id, *args, **kwargs)
+            if getattr(result, "status", None) == foundation.Status.SUCCESS:
+                # The device does not necessarily report the position after a stop
+                await self.endpoint.analog_output.read_attributes(
+                    [AnalogOutput.AttributeDefs.present_value], allow_cache=False
+                )
+            return result
         else:
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
@@ -119,12 +184,27 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=res[0].status)
 
+    def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
+        """Ignore the device's own lift reports: the position comes from AnalogOutput."""
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            args.attribute_reports = [
+                attr for attr in args.attribute_reports if attr.attrid != LIFT_ATTR.id
+            ]
+            if not args.attribute_reports:
+                return
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
     async def read_attributes(
         self,
         attributes: list[int | str | foundation.ZCLAttributeDef],
         **kwargs,
     ) -> Any:
         """Redirect current_position_lift_percentage reads to AnalogOutput."""
+        if kwargs.get("allow_cache") or kwargs.get("only_cache"):
+            # The AnalogOutput cache holds the last written target, not the position
+            return await super().read_attributes(attributes, **kwargs)
+
         pos_attr_key = next(
             (attr for attr in attributes if self.find_attribute(attr) == LIFT_ATTR),
             None,
@@ -141,7 +221,7 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
             [present_value], **kwargs
         )
         if present_value in ao_success:
-            success[pos_attr_key] = t.uint8_t(round(100 - ao_success[present_value]))
+            success[pos_attr_key] = _to_lift_percentage(ao_success[present_value])
         if present_value in ao_failure:
             failure[pos_attr_key] = ao_failure[present_value]
 
