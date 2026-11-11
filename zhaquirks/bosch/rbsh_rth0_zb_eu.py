@@ -11,6 +11,7 @@ from zhaquirks.builder import (
     NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
+    SensorDeviceClass,
     SensorStateClass,
     UnitOfTemperature,
 )
@@ -291,7 +292,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=SensorDeviceClass.TEMPERATURE,
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
         ),
@@ -305,7 +306,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=SensorDeviceClass.TEMPERATURE,
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
         ),
