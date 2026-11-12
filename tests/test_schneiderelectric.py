@@ -9,6 +9,13 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
+from zhaquirks.schneiderelectric.motion import (
+    AMBIENCE_LIGHT_THRESHOLD_MAX_LUX,
+    AMBIENCE_LIGHT_THRESHOLD_MIN_LUX,
+    SEAmbienceLightThreshold,
+    lux_to_raw,
+    raw_to_lux,
+)
 import zhaquirks.schneiderelectric.outlet
 from zhaquirks.schneiderelectric.thermostat import SEControlStatus, SEThermostat
 
@@ -131,3 +138,43 @@ async def test_thermostat_control_status_off(zigpy_device_from_v2_quirk, model):
     value = thermostat_cluster.get(control_status_attr_id)
     assert SEControlStatus(value) is SEControlStatus.Off
     assert SEControlStatus(value).name == "Off"
+
+
+@pytest.mark.parametrize(
+    ("lux", "raw"), ((1, 1), (10, 10001), (100, 20001), (1000, 30001), (2000, 33011))
+)
+def test_nhmotion_lux_conversion(lux, raw):
+    """Test the ambience light threshold lux encoding."""
+    assert lux_to_raw(lux) == raw
+    assert raw_to_lux(raw) == lux
+
+
+def test_nhmotion_lux_round_trip():
+    """Test that every lux value in the entity range survives a write and read."""
+    for lux in range(
+        AMBIENCE_LIGHT_THRESHOLD_MIN_LUX, AMBIENCE_LIGHT_THRESHOLD_MAX_LUX + 1
+    ):
+        assert raw_to_lux(lux_to_raw(lux)) == lux
+
+
+async def test_nhmotion_ambience_light_threshold_entity():
+    """Test that the threshold entity shows lux and writes the encoded value."""
+    cluster = mock.MagicMock()
+    entity = SEAmbienceLightThreshold.__new__(SEAmbienceLightThreshold)
+    entity._cluster = cluster
+
+    values = []
+    for raw in (30001, None):
+        cluster.get.return_value = raw
+        values.append(entity.native_value)
+    assert values == [1000, None]
+
+    with (
+        mock.patch(
+            "zha.application.platforms.number.write_attributes_safe"
+        ) as write_mock,
+        mock.patch.object(entity, "maybe_emit_state_changed_event"),
+    ):
+        await entity.async_set_native_value(100)
+
+    write_mock.assert_awaited_once_with(cluster, {"ambience_light_threshold": 20001})
