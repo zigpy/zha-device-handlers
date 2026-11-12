@@ -150,6 +150,7 @@ def last_action_user_converter(value: int) -> int:
     QuirkBuilder(NIMLY, "NimlyPRO24")
     .applies_to(NIMLY, "NimlyPRO")
     .applies_to(NIMLY, "NimlyCode")
+    .applies_to(NIMLY, "NimlyCodePRO")
     .applies_to(NIMLY, "NimlyTouch")
     .applies_to(NIMLY, "NimlyIn")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
