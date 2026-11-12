@@ -32,7 +32,7 @@ from zigpy.zcl import (
     AttributeUpdatedEvent,
     foundation,
 )
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
@@ -50,6 +50,8 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -92,7 +94,6 @@ class LocalDataCluster(CustomCluster):
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,12 +134,9 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(
-                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
-                )
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
@@ -217,6 +215,58 @@ class EventableCluster(CustomCluster):
                 VALUE: event.value,
             },
         )
+
+
+class LevelControlWithMoveDirection(CustomCluster, LevelControl):
+    """LevelControl cluster that tells the release of a dim button hold apart.
+
+    Several remotes send the same stop command for both dim buttons, so the stop alone
+    does not say which button was released. This tracks the direction of the move that
+    started the hold and emits a `move_up_release` or `move_down_release` event for the
+    stop, which a quirk's long release triggers can match. No event is emitted for a
+    stop that follows no move, for instance after a restart in the middle of a hold.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction: int | None = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands.
+        """
+        if hdr.command_id in (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+        ):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif (
+            hdr.command_id
+            in (
+                LevelControl.ServerCommandDefs.stop.id,
+                LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            )
+            and self._last_move_direction is not None
+        ):
+            event = (
+                COMMAND_MOVE_UP_RELEASE
+                if self._last_move_direction == LevelControl.MoveMode.Up
+                else COMMAND_MOVE_DOWN_RELEASE
+            )
+            self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class GroupBoundCluster(CustomCluster):
@@ -327,6 +377,11 @@ class _Motion(CustomCluster, IasZone):
         self._loop = asyncio.get_running_loop()
         self._timer_handle = None
 
+    @property
+    def reset_after(self) -> int:
+        """Seconds before resetting motion; override to derive from an attribute."""
+        return self.reset_s
+
     def _turn_off(self):
         self._timer_handle = None
         self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
@@ -355,7 +410,7 @@ class MotionWithReset(_Motion):
         if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
             if self.send_occupancy_event:
                 self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
 
@@ -381,7 +436,7 @@ class MotionOnEvent(_Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
 
 class _Occupancy(CustomCluster, OccupancySensing):
