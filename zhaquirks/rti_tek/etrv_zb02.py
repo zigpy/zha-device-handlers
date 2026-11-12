@@ -352,6 +352,7 @@ class RtiTekEtrvZb02Thermostat(CustomCluster, Thermostat):
                 response = response[0]
             elif len(response) == 4:
                 count, day, mode, values = response
+                response = None
             else:
                 return False
         else:
