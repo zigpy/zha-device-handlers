@@ -2,35 +2,43 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Final
 
-from zigpy.profiles import zgp, zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    Ota,
-    Scenes,
-)
 from zigpy.zcl.clusters.hvac import Fan
-from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
+from zigpy.zcl.clusters.measurement import PM25
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import Bus
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zhaquirks.builder import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTime,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.ikea import IKEA
+
+# The device reports fan mode and fan speed in steps of five (10-50), which are
+# scaled down to the 2-10 range ZHA's fan entity expects. 0 is off and 1 is auto.
+FAN_STEP: Final = 5
+FAN_RAW_MIN: Final = 10
+FAN_RAW_MAX: Final = 50
+FAN_MIN: Final = FAN_RAW_MIN // FAN_STEP  # 2
+FAN_MAX: Final = FAN_RAW_MAX // FAN_STEP  # 10
+
+# Report as soon as the value changes, and at least every 15 minutes.
+REPORT_ON_CHANGE: Final = ReportingConfig(
+    min_interval=0, max_interval=900, reportable_change=1
+)
+# Same, but for the counters that tick every minute: at most one report per 30s.
+REPORT_THROTTLED: Final = ReportingConfig(
+    min_interval=30, max_interval=900, reportable_change=1
+)
 
 
 class IkeaAirpurifier(CustomCluster):
@@ -43,45 +51,43 @@ class IkeaAirpurifier(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Cluster attributes."""
 
-        filter_run_time = ZCLAttributeDef(
+        filter_run_time: Final = ZCLAttributeDef(
             id=0x0000, type=t.uint32_t, manufacturer_code=0x117C
         )
-        replace_filter = ZCLAttributeDef(
+        replace_filter: Final = ZCLAttributeDef(
             id=0x0001, type=t.uint8_t, manufacturer_code=0x117C
         )
-        filter_life_time = ZCLAttributeDef(
+        filter_life_time: Final = ZCLAttributeDef(
             id=0x0002, type=t.uint32_t, manufacturer_code=0x117C
         )
-        disable_led = ZCLAttributeDef(id=0x0003, type=t.Bool, manufacturer_code=0x117C)
-        air_quality_25pm = ZCLAttributeDef(
+        disable_led: Final = ZCLAttributeDef(
+            id=0x0003, type=t.Bool, manufacturer_code=0x117C
+        )
+        # PM2.5 in µg/m³. 0xFFFF means the value is unavailable (device off),
+        # which ZHA already surfaces as "unknown" for a uint16 attribute.
+        air_quality_25pm: Final = ZCLAttributeDef(
             id=0x0004, type=t.uint16_t, manufacturer_code=0x117C
         )
-        child_lock = ZCLAttributeDef(id=0x0005, type=t.Bool, manufacturer_code=0x117C)
-        fan_mode = ZCLAttributeDef(
+        child_lock: Final = ZCLAttributeDef(
+            id=0x0005, type=t.Bool, manufacturer_code=0x117C
+        )
+        fan_mode: Final = ZCLAttributeDef(
             id=0x0006, type=t.uint8_t, manufacturer_code=0x117C
         )  # fan mode (Off, Auto, fanspeed 10 - 50)  read/write
-        fan_speed = ZCLAttributeDef(
+        fan_speed: Final = ZCLAttributeDef(
             id=0x0007, type=t.uint8_t, manufacturer_code=0x117C
         )  # current fan speed (only fan speed 10-50)
-        device_run_time = ZCLAttributeDef(
+        device_run_time: Final = ZCLAttributeDef(
             id=0x0008, type=t.uint32_t, manufacturer_code=0x117C
         )
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = {}
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.change_fan_mode_bus.add_listener(self)
-
-    def _update_attribute(self, attrid, value):
-        if attrid == 0x0004:
-            if (
-                value is not None and value < 5500
-            ):  # > 5500 = out of scale; if value is 65535 (0xFFFF), device is off
-                self.endpoint.device.pm25_bus.listener_event("update_state", value)
-        elif attrid in (0x0006, 0x0007):
-            if value >= 10 and value <= 50:
-                value = value // 5
+    def _update_attribute(self, attrid: int, value: Any) -> None:
+        """Scale the reported fan mode and fan speed down to 2-10."""
+        if (
+            attrid in (self.AttributeDefs.fan_mode.id, self.AttributeDefs.fan_speed.id)
+            and FAN_RAW_MIN <= value <= FAN_RAW_MAX
+        ):
+            value = value // FAN_STEP
         super()._update_attribute(attrid, value)
 
     async def write_attributes(
@@ -89,208 +95,92 @@ class IkeaAirpurifier(CustomCluster):
         attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Override wrong writes to thermostat attributes."""
-        if "fan_mode" in attributes:
-            fan_mode = attributes.get("fan_mode")
-            if fan_mode and fan_mode > 1 and fan_mode < 11:
-                fan_mode = fan_mode * 5
-                return await super().write_attributes({"fan_mode": fan_mode}, **kwargs)
+        """Scale a written fan mode back up to the device's 10-50 range."""
+        fan_mode_name = self.AttributeDefs.fan_mode.name
+        fan_mode = attributes.get(fan_mode_name)
+        if fan_mode is not None and FAN_MIN <= fan_mode <= FAN_MAX:
+            attributes = {**attributes, fan_mode_name: fan_mode * FAN_STEP}
         return await super().write_attributes(attributes, **kwargs)
 
 
-class PM25Cluster(CustomCluster, PM25):
-    """PM25 input cluster, only used to show PM2.5 values from IKEA cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.pm25_bus.add_listener(self)
-
-    def update_state(self, value):
-        """25pm reported."""
-        self._update_attribute(0x0000, value)
-
-    def _update_attribute(self, attrid, value):
-        """Check for a valid PM2.5 value."""
-        if attrid == 0x0000:
-            if value < 5500:
-                super()._update_attribute(attrid, value)
-        else:
-            super()._update_attribute(attrid, value)
-
-    async def read_attributes(
-        self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
-        """Read attributes ZCL foundation command."""
-        if "measured_value" in attributes:
-            return (
-                await self.endpoint.device.endpoints[1]
-                .in_clusters[64637]
-                .read_attributes(["air_quality_25pm"], **kwargs)
-            )
-        else:
-            return await super().read_attributes(attributes, **kwargs)
-
-
-class IkeaSTARKVIND(CustomDevice):
-    """STARKVIND Air purifier by IKEA of Sweden."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.pm25_bus = Bus()
-        self.change_fan_mode_bus = Bus()
-        self.change_fan_mode_ha_bus = Bus()
-        super().__init__(*args, **kwargs)
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)
-        # device_version=0
-        # input_clusters=[0, 3, 4, 5, 514, 64599, 64637] output_clusters=[25, 1024, 1066]>
-        MODELS_INFO: [
-            (IKEA, "STARKVIND Air purifier"),
-            (IKEA, "STARKVIND Air purifier table"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    Fan.cluster_id,  # 514    0x0202
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IkeaAirpurifier.cluster_id,  # 64637  0xFC7D
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                    PM25.cluster_id,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IkeaAirpurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
-                    PM25Cluster,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
-
-
-class IkeaSTARKVIND_v2(IkeaSTARKVIND):
-    """STARKVIND Air purifier by IKEA of Sweden."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)
-        # device_version=0
-        # input_clusters=[0, 3, 4, 5, 514, 64599, 64637] output_clusters=[25, 1024, 1066]>
-        MODELS_INFO: IkeaSTARKVIND.signature[MODELS_INFO].copy(),
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    Fan.cluster_id,  # 514    0x0202
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IKEA_CLUSTER_ID,  # 64636  0xFC7C
-                    IkeaAirpurifier.cluster_id,  # 64637  0xFC7D
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                    PM25.cluster_id,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IKEA_CLUSTER_ID,  # 64636  0xFC7C
-                    IkeaAirpurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
-                    PM25Cluster,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(IKEA, "STARKVIND Air purifier")
+    .applies_to(IKEA, "STARKVIND Air purifier table")
+    # The device exposes a standard `Fan` cluster, but it is not implemented.
+    # Fan control happens through the manufacturer specific cluster below.
+    .removes(Fan.cluster_id)
+    .replaces(IkeaAirpurifier)
+    # PM2.5 is only reported on the manufacturer specific cluster. This quirk used
+    # to mirror it onto a virtual `PM25` cluster, which made ZHA bind and configure
+    # reporting for an attribute the device does not implement. The unique_id of
+    # that sensor is preserved here so the entity survives the change.
+    .sensor(
+        attribute_name=IkeaAirpurifier.AttributeDefs.air_quality_25pm.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        device_class=SensorDeviceClass.PM25,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        reporting_config=REPORT_ON_CHANGE,
+        unique_id_suffix=str(PM25.cluster_id),
+        fallback_name="PM2.5",
+    )
+    .binary_sensor(
+        attribute_name=IkeaAirpurifier.AttributeDefs.replace_filter.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        reporting_config=REPORT_ON_CHANGE,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-replace_filter",
+        translation_key="replace_filter",
+        fallback_name="Replace filter",
+    )
+    .sensor(
+        attribute_name=IkeaAirpurifier.AttributeDefs.filter_run_time.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        reporting_config=REPORT_THROTTLED,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-filter_run_time",
+        translation_key="filter_run_time",
+        fallback_name="Filter run time",
+    )
+    .sensor(
+        attribute_name=IkeaAirpurifier.AttributeDefs.device_run_time.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        reporting_config=REPORT_THROTTLED,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-device_run_time",
+        translation_key="device_run_time",
+        fallback_name="Device run time",
+    )
+    .number(
+        attribute_name=IkeaAirpurifier.AttributeDefs.filter_life_time.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        min_value=0,
+        max_value=0xFFFFFFFF,
+        unit=UnitOfTime.MINUTES,
+        reporting_config=REPORT_THROTTLED,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-filter_life_time",
+        translation_key="filter_life_time",
+        fallback_name="Filter life time",
+    )
+    .switch(
+        attribute_name=IkeaAirpurifier.AttributeDefs.child_lock.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        reporting_config=REPORT_ON_CHANGE,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .switch(
+        attribute_name=IkeaAirpurifier.AttributeDefs.disable_led.name,
+        cluster_id=IkeaAirpurifier.cluster_id,
+        reporting_config=REPORT_ON_CHANGE,
+        unique_id_suffix=f"{IkeaAirpurifier.cluster_id}-disable_led",
+        translation_key="disable_led",
+        fallback_name="Disable LED",
+    )
+    .add_to_registry()
+)
