@@ -128,9 +128,7 @@ EtrvZb02ScheduleMinute = enum.Enum(
 
 def _schedule_defaults() -> dict[int, int]:
     """Return initial local editor values."""
-    values = {
-        ETRV_ZB02_WEEKLY_SCHEDULE_DAY_ATTR: EtrvZb02ScheduleDay.Monday.value
-    }
+    values = {ETRV_ZB02_WEEKLY_SCHEDULE_DAY_ATTR: EtrvZb02ScheduleDay.Monday.value}
     for index in range(1, ETRV_ZB02_WEEKLY_SCHEDULE_MAX_PERIODS + 1):
         values[ETRV_ZB02_WEEKLY_SCHEDULE_TIME_ATTRS[index]] = (
             ETRV_ZB02_WEEKLY_SCHEDULE_NULL_TIME
