@@ -6,10 +6,7 @@ from zigpy.zcl.clusters.general import OnOff as OnOffCluster
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.sonoff.zbminil2 import (
-    SonoffCluster,
-    SonoffExternalSwitchTriggerType,
-)
+from zhaquirks.sonoff.zbminil2 import SonoffCluster, SonoffExternalSwitchTriggerType
 
 zhaquirks.setup()
 
