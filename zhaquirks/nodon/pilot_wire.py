@@ -1,6 +1,8 @@
 """NodOn pilot wire heating module."""
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import DeviceTemperature
+from zigpy.zcl.clusters.measurement import RelativeHumidity
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import EntityType, QuirkBuilder
@@ -75,5 +77,27 @@ adeo = (
 )
 
 
+fps = (
+    QuirkBuilder(NODON, "FPS-4-1-00")
+    .replaces(NodOnPilotWireCluster)
+    # The humidity cluster is declared, but the firmware always reports an
+    # invalid measured value (0xFFFF)
+    .removes(RelativeHumidity.cluster_id)
+    # Internal device temperature, only meant for diagnostics
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=DeviceTemperature.cluster_id
+    )
+    .enum(
+        attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
+        enum_class=NodOnPilotWireMode,
+        cluster_id=NodOnPilotWireCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        translation_key="pilot_wire_mode",
+        fallback_name="Pilot wire mode",
+    )
+)  # fmt: skip
+
+
 nodon.add_to_registry()
 adeo.add_to_registry()
+fps.add_to_registry()
