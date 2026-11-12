@@ -21,7 +21,7 @@ async def test_centralite_3400g_quirk_loads(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk(CENTRALITE, "3400-G")
 
     # Verify device loaded with correct type
-    assert isinstance(device, cl_3400_G.CentraLiteDeviceV2)
+    assert isinstance(device, cl_3400_G.CentraLiteDevice)
 
     # Verify motion_bus exists
     assert hasattr(device, "motion_bus")

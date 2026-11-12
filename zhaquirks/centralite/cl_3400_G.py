@@ -1,14 +1,15 @@
 """Device handler for CentraLite 3400-G."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasAce, IasZone
 
 from zhaquirks import Bus, LocalDataCluster, MotionOnEvent, PowerConfigurationCluster
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import MOTION_EVENT
+from zhaquirks.device import CustomZigpyDevice
 
 CENTRALITE = "CentraLite"
 ZONE_TYPE = 0x0001
@@ -55,7 +56,7 @@ class CustomIasAce(CustomCluster, IasAce):
         return super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
-class CentraLiteDeviceV2(CustomDeviceV2):
+class CentraLiteDevice(CustomZigpyDevice):
     """Custom device class for CentraLite 3400-G with motion bus."""
 
     def __init__(self, *args, **kwargs):
@@ -70,6 +71,6 @@ class CentraLiteDeviceV2(CustomDeviceV2):
     .replaces(CustomIasAce, cluster_type="output")
     .adds_endpoint(2, device_type=zha.DeviceType.OCCUPANCY_SENSOR)
     .adds(MotionCluster, endpoint_id=2)
-    .device_class(CentraLiteDeviceV2)
+    .zigpy_device_class(CentraLiteDevice)
     .add_to_registry()
 )
