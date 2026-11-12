@@ -24,7 +24,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityType, QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -74,62 +74,6 @@ class AqaraLightT1M(XiaomiAqaraE1Cluster):
             access="rw",
             is_manufacturer_specific=True,
         )
-
-
-class LumiLightAcn003(XiaomiCustomDevice):
-    """Quirk for Aqara ceiling light L1-350 also known as Xiaomi ZNXDD01LM.
-
-    Provides dimmable light control with color temperature setting.
-    This quirk adds support for power on behavior by adding the power_outage_memory attribute.
-    """
-
-    signature = {
-        MODELS_INFO: [
-            ("Aqara", "lumi.light.acn003"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    BasicCluster.cluster_id,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    LevelControl.cluster_id,  # 0x0008
-                    Color.cluster_id,  # 0x0300
-                    OppleClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,  # 0x000A
-                    Ota.cluster_id,  # 0x0019
-                ],
-            }
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    LevelControl.cluster_id,  # 0x0008
-                    Color.cluster_id,  # 0x0300
-                    OppleClusterLight,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,  # 0x000A
-                    Ota.cluster_id,  # 0x0019
-                ],
-            }
-        }
-    }
 
 
 class LumiLightAcn014(XiaomiCustomDevice):
@@ -231,6 +175,22 @@ class LumiLightAcn014(XiaomiCustomDevice):
             },
         }
     }
+
+
+(
+    # Aqara ceiling light L1-350, also known as Xiaomi ZNXDD01LM
+    QuirkBuilder(AQARA, "lumi.light.acn003")
+    .replaces(BasicCluster)
+    .replaces(OppleClusterLight)
+    .switch(
+        OppleClusterLight.AttributeDefs.power_outage_memory.name,
+        OppleClusterLight.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="power_outage_memory",
+        fallback_name="Power outage memory",
+    )
+    .add_to_registry()
+)
 
 
 (
