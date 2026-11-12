@@ -14,7 +14,7 @@ from zhaquirks.builder import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaPowerConfigurationCluster2AA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
@@ -954,6 +954,95 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         attribute_name="scale_protection",
         translation_key="scale_protection",
         fallback_name="Scale protection",
+    )
+    .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE200_ytryxh0a", "TS0601")  # Kozii / Xanlite KZTETHEAU
+    .applies_to("_TZE204_ytryxh0a", "TS0601")
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            TuyaThermostatSystemMode.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
+            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
+            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
+        }[x],
+    )
+    .tuya_switch(
+        dp_id=8,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 50,
+        dp_converter=lambda x: x // 50,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_number(
+        dp_id=27,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_switch(
+        dp_id=30,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_dp(
+        dp_id=34,
+        ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: max(0, min(100, x - 50)) * 2,
+    )
+    .adds(TuyaPowerConfigurationCluster2AA)
+    .tuya_dp(
+        dp_id=105,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 50,
+        dp_converter=lambda x: x // 50,
+    )
+    .tuya_switch(
+        dp_id=106,
+        attribute_name="boost_heating",
+        translation_key="boost_heating",
+        fallback_name="Boost heating",
+    )
+    .tuya_sensor(
+        dp_id=118,
+        attribute_name="boost_time",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTime.SECONDS,
+        translation_key="boost_time",
+        fallback_name="Boost time",
     )
     .adds(TuyaThermostatV2)
     .skip_configuration()

@@ -320,6 +320,12 @@ async def test_handle_get_data(
             47,
             -6,
         ),  # Local temp calibration to -6, dp 47
+        (
+            "_TZE204_ytryxh0a",
+            b"\t\x1d\x02\x00\x10\x1b\x02\x00\x04\xff\xff\xff\xfa",
+            27,
+            -6,
+        ),  # Local temp calibration to -6, dp 27
     ],
 )
 async def test_handle_get_data_tmcu(
@@ -378,3 +384,62 @@ def test_handle_get_data_invalid_datapoint(zigpy_device_from_v2_quirk):
         (Thermostat.AttributeDefs.occupied_heating_setpoint.id, 2100),
         (Thermostat.AttributeDefs.local_temperature.id, 2050),
     ]
+
+
+@pytest.mark.parametrize("manuf", ["_TZE200_ytryxh0a", "_TZE204_ytryxh0a"])
+async def test_kozii_trv(zigpy_device_from_v2_quirk, manuf):
+    """Test Kozii / Xanlite KZTETHEAU TRV datapoints."""
+
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
+    ep = quirked.endpoints[1]
+
+    # DP 16 (manual setpoint = 21.0 °C, raw 42 = 0x2a)
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\t\x01\x02\x00\x01\x10\x02\x00\x04\x00\x00\x00\x2a"
+    )
+    assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2100
+
+    # DP 105 (auto setpoint = 20.5 °C, raw 41 = 0x29)
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\t\x02\x02\x00\x02\x69\x02\x00\x04\x00\x00\x00\x29"
+    )
+    assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2050
+
+    # DP 24 (local temperature = 22.5 °C, raw 225 = 0xe1)
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\t\x03\x02\x00\x03\x18\x02\x00\x04\x00\x00\x00\xe1"
+    )
+    assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert ep.thermostat.get(Thermostat.AttributeDefs.local_temperature.id) == 2250
+
+    # DP 34 (battery = 80%, raw 130 = 0x82 -> 160 half-percent)
+    hdr, data = ep.tuya_manufacturer.deserialize(
+        b"\t\x04\x02\x00\x04\x22\x02\x00\x04\x00\x00\x00\x82"
+    )
+    assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert ep.power.get("battery_percentage_remaining") == 160
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {"occupied_heating_setpoint": 2500}
+        )
+        await wait_for_zigpy_tasks()
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+        assert m1.call_count == 2
+        assert (
+            m1.call_args_list[0].kwargs["data"]
+            == b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x32"
+        )
+        assert (
+            m1.call_args_list[1].kwargs["data"]
+            == b"\x01\x02\x00\x00\x02\x69\x02\x00\x04\x00\x00\x00\x32"
+        )
