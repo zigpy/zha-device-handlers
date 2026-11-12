@@ -398,14 +398,18 @@ async def test_kozii_trv(zigpy_device_from_v2_quirk, manuf):
         b"\t\x01\x02\x00\x01\x10\x02\x00\x04\x00\x00\x00\x2a"
     )
     assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
-    assert ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2100
+    assert (
+        ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2100
+    )
 
     # DP 105 (auto setpoint = 20.5 °C, raw 41 = 0x29)
     hdr, data = ep.tuya_manufacturer.deserialize(
         b"\t\x02\x02\x00\x02\x69\x02\x00\x04\x00\x00\x00\x29"
     )
     assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
-    assert ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2050
+    assert (
+        ep.thermostat.get(Thermostat.AttributeDefs.occupied_heating_setpoint.id) == 2050
+    )
 
     # DP 24 (local temperature = 22.5 °C, raw 225 = 0xe1)
     hdr, data = ep.tuya_manufacturer.deserialize(
