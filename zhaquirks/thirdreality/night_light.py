@@ -1,38 +1,28 @@
 """Third Reality night light zigbee devices."""
 
-from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    MultistateInput,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+from zhaquirks.builder import (
+    LIGHT_LUX,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    UnitOfTime,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.thirdreality import THIRD_REALITY
 
 THIRD_REALITY_CLUSTER_ID = 0xFC00
 THIRD_REALITY_MOTION_EVENT_ATTR_ID = 0x0002
+
+# The local routine (motion turns the light on when it is dark) is toggled with
+# the pinhole button and shows up in present_value of the MultistateInput cluster
+LOCAL_ROUTINE_ON = 86
+LOCAL_ROUTINE_OFF = 87
 
 
 class ThirdRealitySpecificCluster(CustomCluster):
@@ -75,55 +65,41 @@ class LocalIasZone(LocalDataCluster, IasZone):
     }
 
 
-class Nightlight(CustomDevice):
-    """Custom device for 3RSNL02043Z."""
-
-    signature = {
-        MODELS_INFO: [(THIRD_REALITY, "3RSNL02043Z")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    MultistateInput.cluster_id,
-                    Color.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    ThirdRealitySpecificCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    MultistateInput.cluster_id,
-                    Color.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    LightLink.cluster_id,
-                    LocalIasZone,
-                    ThirdRealitySpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(THIRD_REALITY, "3RSNL02043Z")
+    .replaces(ThirdRealitySpecificCluster)
+    .adds(LocalIasZone)
+    .switch(
+        attribute_name=MultistateInput.AttributeDefs.present_value.name,
+        cluster_id=MultistateInput.cluster_id,
+        on_value=LOCAL_ROUTINE_ON,
+        off_value=LOCAL_ROUTINE_OFF,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=900, reportable_change=1
+        ),
+        translation_key="local_routine",
+        fallback_name="Local routine",
+    )
+    .number(
+        attribute_name=ThirdRealitySpecificCluster.AttributeDefs.local_routine_time.name,
+        cluster_id=ThirdRealitySpecificCluster.cluster_id,
+        min_value=10,
+        max_value=3600,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="local_routine_time",
+        fallback_name="Local routine time",
+    )
+    .number(
+        attribute_name=ThirdRealitySpecificCluster.AttributeDefs.lux_threshold.name,
+        cluster_id=ThirdRealitySpecificCluster.cluster_id,
+        min_value=0,
+        max_value=1000,
+        step=1,
+        unit=LIGHT_LUX,
+        device_class=NumberDeviceClass.ILLUMINANCE,
+        translation_key="illuminance_threshold",
+        fallback_name="Illuminance threshold",
+    )
+    .add_to_registry()
+)
