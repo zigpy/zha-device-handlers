@@ -196,6 +196,13 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
 class HY08WEThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
 
+    class AttributeDefs(TuyaThermostatCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        unoccupied_duration_days: Final = ZCLAttributeDef(
+            id=0x4007, type=t.uint32_t, manufacturer_code=None
+        )
+
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
             HAOZEE_TARGET_TEMP_ATTR,
@@ -217,6 +224,7 @@ class HY08WEThermostat(TuyaThermostatCluster):
             HAOZEE_TEMP_CALIBRATION_ATTR,
             lambda value: round(value / 10),
         ),
+        "unoccupied_duration_days": (HAOZEE_AWAY_DAYS_ATTR, None),
     }
 
     def map_attribute(self, attribute, value):
