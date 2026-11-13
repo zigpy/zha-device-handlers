@@ -6,7 +6,7 @@ from typing import Any, Final, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.general import (
     AnalogOutput,
     Basic,
@@ -1092,17 +1092,10 @@ ZONNSMART_ONLINE_MODE_BOOL_ATTR = 0x0173  # but expects to receive bool datatype
 
 ZONNSMART_MAX_TEMPERATURE_VAL = 3000
 ZONNSMART_MIN_TEMPERATURE_VAL = 500
-ZonnsmartManuClusterSelf = None
 
 
 class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        global ZonnsmartManuClusterSelf  # noqa: PLW0603
-        ZonnsmartManuClusterSelf = self
 
     class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
         """Attribute definitions."""
@@ -1387,6 +1380,10 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
         else:
             return
 
+        # Either value can be missing before both temperatures were reported
+        if temp_current is None or temp_set is None:
+            return
+
         state = 0 if (int(temp_current) >= int(temp_set)) else 1
         self.endpoint.device.thermostat_bus.listener_event("state_change", state)
 
@@ -1412,6 +1409,15 @@ class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
     def set_value(self, value):
         """Set opened window value."""
         self._update_attribute(self.attributes_by_name["present_value"].id, value)
+
+
+def _zonnsmart_manufacturer_cluster(cluster: Cluster) -> ZONNSMARTManufCluster:
+    """Return the Tuya manufacturer cluster of the same device.
+
+    Helper clusters can live on other endpoints than the manufacturer
+    cluster, so resolve it through the device instead of a module global.
+    """
+    return cluster.endpoint.device.endpoints[1].tuya_manufacturer
 
 
 class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
@@ -1445,10 +1451,8 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         if has_change:
             attr_val = self.get_attr_val_to_write(value)
             if attr_val is not None:
-                # global self in case when different endpoint has to exist
-                return await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                    attr_val, **kwargs
-                )
+                manufacturer_cluster = _zonnsmart_manufacturer_cluster(self)
+                return await manufacturer_cluster.write_attributes(attr_val, **kwargs)
 
         return [
             [
@@ -1626,7 +1630,8 @@ class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
             self._update_attribute(attrid, value)
 
             # different Endpoint for compatibility issue
-            await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
+            manufacturer_cluster = _zonnsmart_manufacturer_cluster(self)
+            await manufacturer_cluster.write_attributes(
                 {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, **kwargs
             )
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
