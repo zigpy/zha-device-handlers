@@ -21,10 +21,13 @@ from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 from zhaquirks.builder import UnitOfTemperature, UnitOfTime
 from zhaquirks.gledopto.glc008p import (
     COLOR_LOOP_DEFAULT_TIME,
+    NATIVE_MAX_MIREDS,
+    NATIVE_MIN_MIREDS,
     GledoptoColorCluster,
     GledoptoColorLoopConfigCluster,
     GledoptoColorRangeConfigCluster,
     GledoptoLight,
+    _kelvin_range_to_mireds,
 )
 import zhaquirks.gledopto.glc009
 
@@ -411,3 +414,47 @@ async def test_glc008p_uses_reported_native_range(glc008p):
 
     assert command.await_args_list[0].kwargs["color_temp_mireds"] == 495
     assert command.await_args_list[1].kwargs["color_temp_mireds"] == 158
+
+
+@pytest.mark.parametrize(
+    "warmest_k, coldest_k",
+    [(None, 6500), ("warm", 6500), (4000, 4000)],
+)
+def test_glc008p_invalid_range_falls_back_to_native(warmest_k, coldest_k):
+    """Test that an invalid or empty configured range uses the native range."""
+    assert _kelvin_range_to_mireds(warmest_k, coldest_k) == (
+        NATIVE_MIN_MIREDS,
+        NATIVE_MAX_MIREDS,
+    )
+
+
+def test_glc008p_without_range_config(glc008p):
+    """Test that the native range is used when the config cluster is missing."""
+    endpoint = glc008p.endpoints[11]
+    color = endpoint.light_color
+    color.update_attribute(Color.AttributeDefs.color_temp_physical_min.id, 158)
+    color.update_attribute(Color.AttributeDefs.color_temp_physical_max.id, 495)
+    del endpoint.in_clusters[GledoptoColorRangeConfigCluster.cluster_id]
+
+    assert color.get(Color.AttributeDefs.color_temp_physical_min.name) == 158
+    assert color.get(Color.AttributeDefs.color_temp_physical_max.name) == 495
+    color.update_attribute(Color.AttributeDefs.color_temperature.id, 300)
+    assert color.get(Color.AttributeDefs.color_temperature.name) == 300
+
+
+async def test_glc008p_stop_color_temp_move(glc008p):
+    """Test that a zero rate, used to stop a move, is not scaled."""
+    _set_range(glc008p, 2700, 6500)
+    color = glc008p.endpoints[11].light_color
+
+    with mock.patch.object(Color, "command", new=mock.AsyncMock()) as command:
+        await color.move_color_temp(Color.MoveMode.Stop, 0, 0, 0)
+
+    assert command.await_args.kwargs["rate"] == 0
+
+
+def test_glc008p_get_unknown_attribute(glc008p):
+    """Test that unknown attributes are passed on to the base cluster."""
+    color = glc008p.endpoints[11].light_color
+    with pytest.raises(KeyError):
+        color.get("unknown_attribute")
