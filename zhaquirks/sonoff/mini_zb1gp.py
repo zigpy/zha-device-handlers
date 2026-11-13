@@ -258,6 +258,8 @@ class SonoffMiniZb1gpCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self._protection_state: SonoffProtectionState | None = None
         self._protection_read_revision = 0
+        self._pending_energy_decreases: set[int] = set()
+        self._energy_confirmation_task: asyncio.Task | None = None
         self.on_event(AttributeReadEvent.event_type, self._handle_protection_change)
         self.on_event(AttributeReportedEvent.event_type, self._handle_protection_change)
         self.on_event(AttributeUpdatedEvent.event_type, self._handle_protection_change)
@@ -266,40 +268,49 @@ class SonoffMiniZb1gpCluster(CustomCluster):
             AttributeReportedEvent.event_type, self._handle_external_trigger_event
         )
 
-    def handle_cluster_general_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: Any,
-        *,
-        dst_addressing: t.AddrMode | None = None,
-    ) -> None:
-        """Discard the known all-zero startup energy report."""
+    def _update_attribute(self, attrid, value):
+        """Confirm decreases before exposing counter resets to statistics."""
 
-        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            reported_energy = {
-                report.attrid: report.value.value
-                for report in args.attribute_reports
-                if report.attrid in self.energy_attribute_ids
-            }
-            has_cached_nonzero_energy = any(
-                self._attr_cache.get(attrid, 0) != 0
-                for attrid in self.energy_attribute_ids
-            )
+        attrid = attrid.id if isinstance(attrid, ZCLAttributeDef) else attrid
+        if attrid in self.energy_attribute_ids and value is not None:
+            if value < self.get(attrid, 0):
+                self._pending_energy_decreases.add(attrid)
+                if self._energy_confirmation_task is None:
+                    self._energy_confirmation_task = asyncio.create_task(
+                        self._confirm_energy_decreases()
+                    )
+                return
+            self._pending_energy_decreases.discard(attrid)
 
-            if (
-                reported_energy.keys() == self.energy_attribute_ids
-                and all(value == 0 for value in reported_energy.values())
-                and has_cached_nonzero_energy
-            ):
-                args = args.replace(
-                    attribute_reports=[
-                        report
-                        for report in args.attribute_reports
-                        if report.attrid not in self.energy_attribute_ids
-                    ]
-                )
+        super()._update_attribute(attrid, value)
 
-        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+    async def _confirm_energy_decreases(self):
+        """Delay and confirm suspicious resets; retain old values on read failure."""
+
+        try:
+            for _ in range(3):
+                await asyncio.sleep(10)
+                pending = set(self._pending_energy_decreases)
+                if not pending:
+                    return
+                try:
+                    values, _ = await self.read_attributes(
+                        sorted(pending), allow_cache=False
+                    )
+                except Exception:  # pylint: disable=broad-exception-caught
+                    continue
+                for attrid in pending:
+                    if values.get(attrid) is None:
+                        continue
+                    # Reports arriving during the read take precedence over zeros.
+                    if attrid not in self._pending_energy_decreases:
+                        continue
+                    self._pending_energy_decreases.discard(attrid)
+                    super()._update_attribute(attrid, values[attrid])
+                if not self._pending_energy_decreases:
+                    return
+        finally:
+            self._energy_confirmation_task = None
 
     def _handle_protection_change(
         self,

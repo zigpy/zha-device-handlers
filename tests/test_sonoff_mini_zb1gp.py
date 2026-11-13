@@ -229,6 +229,102 @@ def test_mini_zb1gp_measurements_preserve_device_reporting(
         assert metadata_by_attribute[attribute_name].reporting_config is None
 
 
+@pytest.mark.parametrize("confirmed", [0, 127270, None])
+async def test_energy_zero_confirmation(zigpy_device_from_v2_quirk, confirmed):
+    """Confirm separate startup zeros without exposing an unconfirmed reset."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    total = cluster.AttributeDefs.total_energy.id
+    daily = cluster.AttributeDefs.energy_today.id
+    cluster.update_attribute(total, 127270)
+    cluster.update_attribute(daily, 490)
+    cluster.update_attribute(total, 0)
+    _report_attributes(cluster, {daily: 0})
+    assert cluster.get(total) == 127270
+    assert cluster.get(daily) == 490
+    response = ({total: confirmed, daily: 0}, {}) if confirmed is not None else ({}, {})
+    with (
+        mock.patch(
+            "zhaquirks.sonoff.mini_zb1gp.asyncio.sleep", new_callable=mock.AsyncMock
+        ) as sleep,
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            new_callable=mock.AsyncMock,
+            return_value=response,
+        ) as read,
+    ):
+        await cluster._energy_confirmation_task
+    assert cluster.get(total) == (127270 if confirmed is None else confirmed)
+    assert cluster.get(daily) == (490 if confirmed is None else 0)
+    assert read.call_count == (3 if confirmed is None else 1)
+    assert all(call.args == (10,) for call in sleep.call_args_list)
+    assert all(call.kwargs == {"allow_cache": False} for call in read.call_args_list)
+
+
+async def test_energy_zero_recovery_during_confirmation(zigpy_device_from_v2_quirk):
+    """Do not overwrite a recovered counter with a stale read response."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    total = cluster.AttributeDefs.total_energy.id
+    cluster.update_attribute(total, 127270)
+    cluster.update_attribute(total, 0)
+
+    async def read(*args, **kwargs):
+        cluster.update_attribute(total, 127280)
+        return {total: 0}, {}
+
+    with (
+        mock.patch(
+            "zhaquirks.sonoff.mini_zb1gp.asyncio.sleep", new_callable=mock.AsyncMock
+        ),
+        mock.patch.object(cluster, "read_attributes", side_effect=read),
+    ):
+        await cluster._energy_confirmation_task
+    assert cluster.get(total) == 127280
+    assert cluster._energy_confirmation_task is None
+
+
+async def test_energy_captured_reboot_sequence(zigpy_device_from_v2_quirk):
+    """Hold daily-first zeros and stale nonzero counters captured on 1.2.7."""
+
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        "MINI-ZB1GP",
+        cluster_ids={1: {SonoffMiniZb1gpCluster.cluster_id: ClusterType.Server}},
+    )
+    cluster = device.endpoints[1].in_clusters[SonoffMiniZb1gpCluster.cluster_id]
+    total = cluster.AttributeDefs.total_energy.id
+    daily = cluster.AttributeDefs.energy_today.id
+    monthly = cluster.AttributeDefs.energy_month.id
+    original = {daily: 510, monthly: 10820, total: 127290}
+    _report_attributes(cluster, original)
+    for report in (
+        {daily: 0},
+        {monthly: 0},
+        {total: 0},
+        {daily: 500, monthly: 10810, total: 127280},
+    ):
+        _report_attributes(cluster, report)
+        assert all(cluster.get(attrid) == value for attrid, value in original.items())
+    _report_attributes(cluster, original)
+    with mock.patch(
+        "zhaquirks.sonoff.mini_zb1gp.asyncio.sleep", new_callable=mock.AsyncMock
+    ):
+        await cluster._energy_confirmation_task
+    assert not cluster._pending_energy_decreases
+
+
 def _report_attributes(cluster, values: dict[int, int]) -> None:
     """Send a Report Attributes command to a cluster."""
 
@@ -253,7 +349,7 @@ def _report_attributes(cluster, values: dict[int, int]) -> None:
     cluster.handle_cluster_general_request(hdr, args)
 
 
-def test_mini_zb1gp_ignores_all_zero_startup_energy_report(
+async def test_mini_zb1gp_ignores_all_zero_startup_energy_report(
     zigpy_device_from_v2_quirk,
 ):
     """Test the known all-zero startup report preserves energy counters."""
@@ -277,9 +373,12 @@ def test_mini_zb1gp_ignores_all_zero_startup_energy_report(
     for attribute_id, value in initial_energy.items():
         assert cluster.get(attribute_id) == value
     assert cluster.get(cluster.AttributeDefs.power.id) == 0
+    cluster._energy_confirmation_task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await cluster._energy_confirmation_task
 
 
-def test_mini_zb1gp_accepts_valid_zero_energy_reports(zigpy_device_from_v2_quirk):
+async def test_mini_zb1gp_accepts_valid_zero_energy_reports(zigpy_device_from_v2_quirk):
     """Test midnight, month-boundary, and initial zero reports are accepted."""
 
     device = zigpy_device_from_v2_quirk(
@@ -293,11 +392,35 @@ def test_mini_zb1gp_accepts_valid_zero_energy_reports(zigpy_device_from_v2_quirk
 
     _report_attributes(cluster, {daily: 1000, monthly: 2000})
     _report_attributes(cluster, {daily: 0})
+    with (
+        mock.patch(
+            "zhaquirks.sonoff.mini_zb1gp.asyncio.sleep", new_callable=mock.AsyncMock
+        ),
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            new_callable=mock.AsyncMock,
+            return_value=({daily: 0}, {}),
+        ),
+    ):
+        await cluster._energy_confirmation_task
     assert cluster.get(daily) == 0
     assert cluster.get(monthly) == 2000
 
     _report_attributes(cluster, {daily: 1000, monthly: 2000})
     _report_attributes(cluster, {daily: 0, monthly: 0})
+    with (
+        mock.patch(
+            "zhaquirks.sonoff.mini_zb1gp.asyncio.sleep", new_callable=mock.AsyncMock
+        ),
+        mock.patch.object(
+            cluster,
+            "read_attributes",
+            new_callable=mock.AsyncMock,
+            return_value=({daily: 0, monthly: 0}, {}),
+        ),
+    ):
+        await cluster._energy_confirmation_task
     assert cluster.get(daily) == 0
     assert cluster.get(monthly) == 0
 
