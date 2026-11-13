@@ -2200,3 +2200,16 @@ async def test_zonnsmart_writes_go_to_own_device(zigpy_device_from_quirk, quirk)
         ]
         m2.assert_called_once()
         m1.assert_not_called()
+
+        m1.reset_mock()
+        m2.reset_mock()
+
+        # opened-window temperature analog output lives on endpoint 2
+        (status,) = await valve_dev_1.endpoints[2].analog_output.write_attributes(
+            {"present_value": 19}
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+        m1.assert_called_once()
+        m2.assert_not_called()
