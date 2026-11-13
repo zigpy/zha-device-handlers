@@ -102,7 +102,7 @@ base_level_quirk = (
         min_value=10,
         max_value=400,
         step=1,
-        translation_key="max_liquid_depth",
+        translation_key="liquid_depth_max_me201wz",
         fallback_name="Maximum liquid depth",
     )
     .add_to_registry()
