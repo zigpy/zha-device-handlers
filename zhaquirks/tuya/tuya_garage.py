@@ -36,7 +36,7 @@ class TuyaDoorAlarm(t.enum8):
         attribute_value=True,
         unique_id_suffix="open",
         translation_key="open_door",
-        fallback_name="Open door",
+        fallback_name="Open",
     )
     .write_attr_button(
         attribute_name="garage_door_trigger",
@@ -45,7 +45,7 @@ class TuyaDoorAlarm(t.enum8):
         attribute_value=False,
         unique_id_suffix="close",
         translation_key="close_door",
-        fallback_name="Close door",
+        fallback_name="Close",
     )
     .tuya_number(
         dp_id=2,
@@ -65,7 +65,7 @@ class TuyaDoorAlarm(t.enum8):
         entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.GARAGE_DOOR,
         translation_key="door_contact",
-        fallback_name="Door state",
+        fallback_name="State",
     )
     .tuya_number(
         dp_id=4,
@@ -122,7 +122,7 @@ class TuyaDoorAlarm(t.enum8):
         cluster_id=TUYA_CLUSTER_ID,
         attribute_value=True,
         translation_key="toggle_door",
-        fallback_name="Toggle door",
+        fallback_name="Toggle",
     )
     .tuya_binary_sensor(
         dp_id=3,
@@ -130,7 +130,7 @@ class TuyaDoorAlarm(t.enum8):
         entity_type=EntityType.STANDARD,
         device_class=BinarySensorDeviceClass.GARAGE_DOOR,
         translation_key="door_contact",
-        fallback_name="Door state",
+        fallback_name="State",
     )
     .tuya_enchantment()
     .skip_configuration()
