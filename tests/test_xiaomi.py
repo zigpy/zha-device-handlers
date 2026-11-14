@@ -1696,7 +1696,8 @@ async def test_aqara_smoke_sensor_binding_failure_writes_mode(
         # the write runs as a background task
         await asyncio.sleep(0)
 
-    assert write_mock.mock_calls == expected_writes
+    # `await_args_list` only records writes that were actually scheduled and awaited
+    assert write_mock.await_args_list == expected_writes
 
 
 @pytest.mark.parametrize(
