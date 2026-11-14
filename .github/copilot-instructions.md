@@ -587,7 +587,7 @@ def test_my_device_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
 
-**Test code, not definitions.** Only code with a `def` or a `lambda` needs a test. If a quirk has neither, it needs no test. Do not test entity creation, quirk matching, signatures, or other definitions. ZHA covers these with snapshot tests of the device diagnostics JSON. Example of a quirk that needs no test:
+**Test code, not definitions.** Only write tests for code with a `def` or a `lambda`. If a quirk has neither, do not write a test for it. Do not write tests for entity creation, quirk matching, signatures, or other definitions. These tests are long and fragile, and we do not accept them. ZHA already covers definitions with snapshot tests of the device diagnostics JSON. Example of a quirk that must not have a test:
 
 ```python
 (
@@ -697,5 +697,5 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
-- Only add tests for code (`def` or `lambda`). See **Testing**.
+- Only add tests for code (`def` or `lambda`). Do not add tests for definitions. See **Testing**.
 - Do not open a Home Assistant Core PR to add translations for new `translation_key` values. Maintainers add them in the Core PR that bumps the `zha-quirks` package.
