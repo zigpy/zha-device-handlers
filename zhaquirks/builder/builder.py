@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -22,13 +22,14 @@ from zha.application import (  # noqa: F401
     # cannot be loaded while `zha.zigbee.device` is only partially initialized.
     discovery,
 )
-from zha.application.platforms import PlatformEntity, ZclPlatformEntity
+from zha.application.platforms import BaseEntity, PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.switch import Switch
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceMatch,
@@ -44,6 +45,7 @@ import zigpy.device
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
@@ -341,6 +343,20 @@ class SetDeviceAutomationTriggers:
         device.device_automation_triggers = dict(self.triggers)
 
         return device
+
+
+class LightAsSwitch(Switch):
+    """Switch for an On/Off light, unless ZHA already created a switch for it."""
+
+    def is_supported_in_list(self, entities: Collection[BaseEntity]) -> bool:
+        """Step aside if the endpoint already has a switch (e.g. a config override)."""
+        return not any(
+            entity is not self
+            and isinstance(entity, Switch)
+            and entity.endpoint is self.endpoint
+            and entity.targets_cluster(OnOff.cluster_id)
+            for entity in entities
+        )
 
 
 class QuirkBuilder:
@@ -1109,6 +1125,7 @@ class QuirkBuilder:
     def change_entity_metadata(
         self,
         *,
+        platform: Platform | None = None,
         endpoint_id: int | None = None,
         cluster_id: int | None = None,
         cluster_type: ClusterType | None = None,
@@ -1133,6 +1150,7 @@ class QuirkBuilder:
         self.changed_entity_metadata.append(
             ChangedEntityMetadata(
                 filter=EntityFilter(
+                    platform=platform,
                     endpoint_id=endpoint_id,
                     cluster_id=cluster_id,
                     cluster_type=cluster_type,
@@ -1151,6 +1169,32 @@ class QuirkBuilder:
             ),
         )
         return self
+
+    def light_as_switch(self, *, endpoint_id: int) -> Self:
+        """Expose the On/Off light of an endpoint as a switch, and disable the light.
+
+        For devices that are no lights (e.g. relay modules) but report an On/Off
+        light device type, which makes ZHA create a light. The reported device type
+        is kept, so existing installations keep their light entity: the light is
+        only disabled by default when it is first registered, and the switch is
+        added next to it. On a single gang module the switch takes over the primary
+        entity, so the light is named "<device> Light" from then on.
+
+        If ZHA already created a switch for the endpoint (e.g. through a
+        `device_config` override to `type: switch`), no second switch is added.
+        """
+        return self.adds_entity(
+            LightAsSwitch,
+            endpoint_id=endpoint_id,
+            cluster_id=OnOff.cluster_id,
+            unique_id_suffix="switch",
+        ).change_entity_metadata(
+            platform=Platform.LIGHT,
+            endpoint_id=endpoint_id,
+            cluster_id=OnOff.cluster_id,
+            new_primary=False,
+            new_entity_registry_enabled_default=False,
+        )
 
     def _compile_transformations(self) -> tuple[DeviceOp, ...]:
         """Compile the accumulated cluster/endpoint operations, in v2 order."""

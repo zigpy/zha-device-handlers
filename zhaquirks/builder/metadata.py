@@ -15,7 +15,7 @@ from typing import Any
 
 import attrs
 from frozendict import frozendict
-from zha.application import EntityPlatform, EntityType
+from zha.application import EntityPlatform, EntityType, Platform
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
@@ -194,7 +194,7 @@ class EntityFilter:
     """Match entities. Every field that is set must match."""
 
     entity_cls: type[PlatformEntity] | None = attrs.field(default=None)
-    platform: EntityPlatform | None = attrs.field(default=None)
+    platform: EntityPlatform | Platform | None = attrs.field(default=None)
     endpoint_id: int | None = attrs.field(default=None)
     cluster_id: int | None = attrs.field(default=None)
     cluster_type: ClusterType | None = attrs.field(default=None)
