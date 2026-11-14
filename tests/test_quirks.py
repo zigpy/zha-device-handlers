@@ -5,7 +5,9 @@ from __future__ import annotations
 import collections
 import importlib
 import json
+import keyword
 from pathlib import Path
+import pkgutil
 from unittest import mock
 
 import pytest
@@ -441,9 +443,23 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
 
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all(m and m.isidentifier() for m in path.split(".")), (
-        f"{path} is not importable"
-    )
+    assert all(
+        m and m.isidentifier() and not keyword.iskeyword(m) for m in path.split(".")
+    ), f"{path} is not importable"
+
+
+def test_quirk_modules_importable() -> None:
+    """Ensure every quirk module, including v2 quirks, can be imported with `import`."""
+
+    invalid = [
+        module.name
+        for module in pkgutil.walk_packages(zhaquirks.__path__, "zhaquirks.")
+        if not all(
+            part.isidentifier() and not keyword.iskeyword(part)
+            for part in module.name.split(".")
+        )
+    ]
+    assert not invalid, f"Modules are not importable: {invalid}"
 
 
 def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
@@ -862,8 +878,10 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.tuya.ts004f.TuyaSmartRemote004FSK_v2,
             # swap OnOff from input to output cluster (Tuya remotes):
             zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,
+            zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusB,
             zhaquirks.tuya.ts0042.TuyaSmartRemote0042TOPlusA,
             zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusB,
+            zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusC,
             zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusB,
             zhaquirks.tuya.ts0046.TuyaSmartRemote0046,
             # swap TuyaZBExternalSwitchTypeCluster input to output cluster (Tuya plug):
