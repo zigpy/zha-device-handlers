@@ -578,15 +578,22 @@ def _legacy_zha_device_factory(cls: type[CustomDevice]) -> QuirkV2Factory | None
     return QuirkV2Factory(QuirkV2Device, QuirkDefinition(entity_metadata=entities))
 
 
-def _register_pending_quirks() -> None:
-    """Drain legacy v1 quirks queued by imports into ZHA's unified registry."""
+def _register_pending_quirks(*, swallow_errors: bool = False) -> None:
+    """Drain legacy v1 quirks queued by imports into ZHA's unified registry.
+
+    With `swallow_errors`, a quirk that fails to register is logged and skipped instead
+    of raising, so one broken custom quirk cannot keep ZHA from starting.
+    """
 
     for cls in PENDING_LEGACY_QUIRKS:
-        # An invalid quirk, such as a custom one, must not keep ZHA from starting
+        if not swallow_errors:
+            ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+            continue
+
         try:
             ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
         except Exception:
-            _LOGGER.exception("Failed to register quirk %r", cls)
+            _LOGGER.exception("Failed to register custom quirk %r", cls)
 
     PENDING_LEGACY_QUIRKS.clear()
 
@@ -641,7 +648,8 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     # Custom quirks queued new v1/v2 registrations during the import above; drain
     # them too, or they never reach ZHA's registry and silently fail to resolve.
-    _register_pending_quirks()
+    # A broken custom quirk is logged and skipped rather than failing startup.
+    _register_pending_quirks(swallow_errors=True)
 
     if loaded:
         _LOGGER.warning(

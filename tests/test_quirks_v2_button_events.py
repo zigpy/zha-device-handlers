@@ -719,7 +719,7 @@ def _cluster_ids(clusters: list) -> set[int]:
 )
 def test_v1_button_event_entities_valid(quirk: type[CustomDevice]) -> None:
     """Test that v1 quirks register and their entities are attached to clusters."""
-    # Registration validates the entities, and an invalid quirk is only logged
+    # Registration validates the entities and raises for an invalid quirk
     _legacy_quirk_to_registry_entry(quirk)
     assert any(
         isinstance(transform, ReplaceZigpyDevice) and transform.device_cls is quirk
@@ -839,7 +839,7 @@ def test_v1_invalid_custom_quirk(
     try:
         zhaquirks.setup(custom_quirks_path=str(custom_quirks))
 
-        assert "Failed to register quirk" in caplog.text
+        assert "Failed to register custom quirk" in caplog.text
         assert (
             "uses a device automation trigger the quirk does not define" in caplog.text
         )
@@ -854,3 +854,27 @@ def test_v1_invalid_custom_quirk(
         zhaquirks.setup(custom_quirks_path=str(custom_quirks))
         sys.modules.pop("good_remote", None)
         sys.modules.pop("bad_remote", None)
+
+
+def test_v1_register_pending_quirks_error_handling(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that only the custom quirk drain swallows registration failures."""
+
+    def fail(cls: type) -> None:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(zhaquirks, "_legacy_quirk_to_registry_entry", fail)
+
+    class Dummy:
+        pass
+
+    monkeypatch.setattr(zhaquirks, "PENDING_LEGACY_QUIRKS", [Dummy])
+
+    # A built-in quirk failing to register is a repo bug and must stay loud
+    with pytest.raises(ValueError, match="boom"):
+        zhaquirks._register_pending_quirks()
+
+    zhaquirks._register_pending_quirks(swallow_errors=True)
+    assert "Failed to register custom quirk" in caplog.text
+    assert not zhaquirks.PENDING_LEGACY_QUIRKS
