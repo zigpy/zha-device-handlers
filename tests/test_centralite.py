@@ -56,6 +56,19 @@ async def test_3130_button_events(zigpy_device_from_quirk):
         ("button_down", "long_press_end"),
     ]
 
+    # The direction picks the button, whichever move variant carries it
+    send_command(device, 1, LevelControl.cluster_id, "move", 0, 50)
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+    send_command(device, 1, LevelControl.cluster_id, "move_with_on_off", 1, 50)
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+
+    assert recorder.pop() == [
+        ("button_up", "long_press_start"),
+        ("button_up", "long_press_end"),
+        ("button_down", "long_press_start"),
+        ("button_down", "long_press_end"),
+    ]
+
     # A stop without a hold is not classified
     send_command(device, 1, LevelControl.cluster_id, "stop")
     send_command(device, 1, LevelControl.cluster_id, "stop_with_on_off")

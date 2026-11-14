@@ -32,6 +32,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -39,6 +40,24 @@ from zhaquirks.const import (
 )
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.osram import OSRAM
+
+
+def _long_press_start_events(move_mode: int) -> tuple[ButtonEvent, ...]:
+    """Return the events of a held button, which is told apart by its direction.
+
+    The device may send either move variant, so the direction is matched, not the variant.
+    """
+    return tuple(
+        ButtonEvent(
+            event_type=ButtonEventType.LONG_PRESS_START,
+            event_data={
+                COMMAND: command,
+                CLUSTER_ID: LevelControl.cluster_id,
+                PARAMS: {"move_mode": move_mode},
+            },
+        )
+        for command in (COMMAND_MOVE_ON_OFF, COMMAND_MOVE)
+    )
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -115,10 +134,7 @@ class CentraLite3130(CustomDevice):
                     event_type=ButtonEventType.PRESS_END,
                     trigger=(SHORT_PRESS, TURN_ON),
                 ),
-                ButtonEvent(
-                    event_type=ButtonEventType.LONG_PRESS_START,
-                    trigger=(SHORT_PRESS, DIM_UP),
-                ),
+                *_long_press_start_events(move_mode=0),
                 *(
                     ButtonEvent(
                         event_type=ButtonEventType.LONG_PRESS_END,
@@ -143,10 +159,7 @@ class CentraLite3130(CustomDevice):
                     event_type=ButtonEventType.PRESS_END,
                     trigger=(SHORT_PRESS, TURN_OFF),
                 ),
-                ButtonEvent(
-                    event_type=ButtonEventType.LONG_PRESS_START,
-                    trigger=(SHORT_PRESS, DIM_DOWN),
-                ),
+                *_long_press_start_events(move_mode=1),
                 *(
                     ButtonEvent(
                         event_type=ButtonEventType.LONG_PRESS_END,

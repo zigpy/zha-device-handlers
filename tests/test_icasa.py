@@ -77,3 +77,19 @@ async def test_keypad_button_events(zigpy_device_from_quirk, quirk, scene_button
     send_command(device, 1, Scenes.cluster_id, "recall", 0x0000, scene_buttons + 1)
     send_command(device, 1, Scenes.cluster_id, "recall", 0x1234, 1)
     assert recorder.pop() == []
+
+    # The rate of the move does not matter
+    send_command(device, 1, LevelControl.cluster_id, "move_with_on_off", 0, 25)
+    send_command(device, 1, LevelControl.cluster_id, "stop")
+
+    assert recorder.pop() == [
+        ("button_on", "long_press_start"),
+        ("button_on", "long_press_end"),
+    ]
+    send_command(device, 1, LevelControl.cluster_id, "move_with_on_off", 1, 25)
+    send_command(device, 1, LevelControl.cluster_id, "stop_with_on_off")
+
+    assert recorder.pop() == [
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]

@@ -32,6 +32,10 @@ async def test_lzl4bwhl01_button_events(zigpy_device_from_quirk):
         ("button_off", "single_press"),
     ]
 
+    # The transition time does not matter
+    send_command(device, 1, level, "move_to_level_with_on_off", 254, 10)
+    assert recorder.pop() == [("button_on", "single_press")]
+
     # Other levels and the dim buttons fire nothing
     send_command(device, 1, level, "move_to_level_with_on_off", 128, 4)
     send_command(device, 1, level, "step_with_on_off", 0, 26, 7)

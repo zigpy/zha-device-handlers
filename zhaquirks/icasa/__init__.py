@@ -9,9 +9,8 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
     COMMAND_STOP_ON_OFF,
-    DIM_DOWN,
-    DIM_UP,
     ENDPOINT_ID,
     LONG_PRESS,
     LONG_RELEASE,
@@ -48,9 +47,15 @@ ON_OFF_BUTTON_EVENT_ENTITIES = (
                 event_type=ButtonEventType.PRESS_END,
                 trigger=(SHORT_PRESS, TURN_ON),
             ),
+            # The held button is matched by direction only, not by the keypad's rate
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_START,
-                trigger=(LONG_PRESS, DIM_UP),
+                event_data={
+                    COMMAND: COMMAND_MOVE_ON_OFF,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                    PARAMS: {"move_mode": 0},
+                },
             ),
             *_STOP_EVENTS,
         ],
@@ -68,7 +73,12 @@ ON_OFF_BUTTON_EVENT_ENTITIES = (
             ),
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_START,
-                trigger=(LONG_PRESS, DIM_DOWN),
+                event_data={
+                    COMMAND: COMMAND_MOVE_ON_OFF,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                    PARAMS: {"move_mode": 1},
+                },
             ),
             # The off button may also move down without on/off
             ButtonEvent(

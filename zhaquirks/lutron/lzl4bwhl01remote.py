@@ -142,9 +142,15 @@ class LutronLZL4BWHL01Remote(CustomDevice):
     button_event_entities = tuple(
         ButtonEventMetadata(
             events=[
+                # The level tells the buttons apart, the transition time is incidental
                 ButtonEvent(
                     event_type=ButtonEventType.SINGLE_PRESS,
-                    trigger=(SHORT_PRESS, subtype),
+                    event_data={
+                        COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
+                        CLUSTER_ID: LevelControl.cluster_id,
+                        ENDPOINT_ID: 1,
+                        PARAMS: {"level": level},
+                    },
                 ),
             ],
             cluster_id=LevelControl.cluster_id,
@@ -153,8 +159,8 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             translation_key=translation_key,
             fallback_name=fallback_name,
         )
-        for subtype, unique_id_suffix, translation_key, fallback_name in (
-            (TURN_ON, "button_on", "on_button", "On button"),
-            (TURN_OFF, "button_off", "off_button", "Off button"),
+        for level, unique_id_suffix, translation_key, fallback_name in (
+            (254, "button_on", "on_button", "On button"),
+            (0, "button_off", "off_button", "Off button"),
         )
     )
