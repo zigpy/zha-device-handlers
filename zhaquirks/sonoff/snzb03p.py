@@ -1,14 +1,20 @@
 """Sonoff SNZB-03P – stable ZHA quirk (practical version)."""
 
-from zha.application import EntityPlatform, EntityType
-from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.number import SonoffPresenceSenorTimeout
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.builder import (
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfTime,
+)
 from zhaquirks.clusters import CustomCluster
+
 
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
@@ -26,6 +32,8 @@ class SonoffIlluminationCluster(CustomCluster):
     """Vendor-specific illumination cluster used by SNZB-03P."""
 
     cluster_id = 0xFC11
+    name = "Sonoff illumination"
+    ep_attribute = "sonoff_illumination"
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for the illumination cluster."""
@@ -39,35 +47,43 @@ class SonoffIlluminationCluster(CustomCluster):
 
 
 # ---------------------------------------------------------------------
+# Motion timeout
+# ---------------------------------------------------------------------
+
+
+class SNZB03PMotionTimeout(SonoffPresenceSenorTimeout):
+    """Motion timeout, the SNZB-03P accepts 5 s and up."""
+
+    _attr_native_min_value: int = 5
+    _attr_native_unit_of_measurement: str = UnitOfTime.SECONDS
+    _attr_device_class: NumberDeviceClass = NumberDeviceClass.DURATION
+
+
+# ---------------------------------------------------------------------
 # Quirk definition
 # ---------------------------------------------------------------------
 
 (
     QuirkBuilder("eWeLink", "SNZB-03P")
-    # Vendor illumination cluster
-    .replaces(SonoffIlluminationCluster)
+    # Add vendor illumination cluster
+    .adds(SonoffIlluminationCluster)
     # Prevent default IAS Zone entity creation
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=IasZone.cluster_id,
     )
-    # Motion timeout (mapped by Sonoff to OccupancySensing delay)
-    .number(
-        OccupancySensing.AttributeDefs.ultrasonic_o_to_u_delay.name,
-        OccupancySensing.cluster_id,
-        min_value=5,
-        max_value=60,
-        step=1,
-        unit=UnitOfTime.SECONDS,
-        device_class=NumberDeviceClass.DURATION,
-        translation_key="motion_timeout",
-        fallback_name="Motion timeout",
+    # Replace native ZHA motion timeout entity, preserving its unique ID
+    .replaces_entity(
+        SonoffPresenceSenorTimeout,
+        SNZB03PMotionTimeout,
+        endpoint_id=1,
+        cluster_id=OccupancySensing.cluster_id,
     )
     # Illumination state (dim / bright)
     .enum(
-        SonoffIlluminationCluster.AttributeDefs.last_illumination_state.name,
-        LastIlluminationState,
-        SonoffIlluminationCluster.cluster_id,
+        attribute_name=SonoffIlluminationCluster.AttributeDefs.last_illumination_state.name,
+        enum_class=LastIlluminationState,
+        cluster_id=SonoffIlluminationCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="illumination",
