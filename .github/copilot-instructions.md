@@ -698,3 +698,4 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
 - Tests should verify entity creation
+- Do not open a Home Assistant Core PR to add translations for new `translation_key` values. Maintainers add them in the Core PR that bumps the `zha-quirks` package.
