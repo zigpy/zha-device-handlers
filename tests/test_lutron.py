@@ -15,14 +15,20 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks.const import COMMAND
+from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_MOVE_TO_LEVEL_ON_OFF,
+    ENDPOINT_ID,
+    LEFT,
+    RIGHT,
+    ROTARY_KNOB,
+    ROTATED,
+)
 from zhaquirks.lutron.aurora import (
     AURORA_MODEL,
-    CLOCKWISE,
-    COUNTERCLOCKWISE,
     DIAL_ROTATE_CCW,
     DIAL_ROTATE_CW,
-    DIAL_ROTATED,
     LUTRON,
     AuroraRemoteCluster,
 )
@@ -32,25 +38,31 @@ from zhaquirks.philips import PhilipsRemoteCluster
 # 0x00000c12. Manufacturer code 0x100B, command 0x00, server -> client.
 AURORA_PRESS = bytes.fromhex("1d0b1030000100003000210000")
 AURORA_SHORT_RELEASE = bytes.fromhex("1d0b1031000100003002210100")
-AURORA_DIAL_START_CCW = bytes.fromhex(
-    "1d0b102b001400013001293cff21ba0929700221ba09293cff219001"
-)
-AURORA_DIAL_CCW_FAST = bytes.fromhex(
-    "1d0b102f0014000130022920ff21900129f0fe2122102920ff219001"
-)
+# Dial frames, in the order the device sent them (TSN 0x29, 0x2a, 0x2b, 0x2f).
+# Each carries an adjusted amount and a cumulative counter:
+#   CW_FAST    phase 2, adjusted  112, counter  704
+#   CW_SLOW    phase 2, adjusted   32, counter  736
+#   START_CCW  phase 1, adjusted -196, counter  624
+#   CCW_FAST   phase 2, adjusted -224, counter -272
 AURORA_DIAL_CW_FAST = bytes.fromhex(
     "1d0b102900140001300229700021900129c00221ae06297000219001"
 )
 AURORA_DIAL_CW_SLOW = bytes.fromhex(
     "1d0b102a00140001300229200021940229e002214209292000219001"
 )
-# Synthetic variants of the slow frame: rotation 10 (a single step) and 0.
-AURORA_DIAL_CW_STEP = bytes.fromhex(
-    "1d0b102a001400013002290a0021940229e002214209290a00219001"
+AURORA_DIAL_START_CCW = bytes.fromhex(
+    "1d0b102b001400013001293cff21ba0929700221ba09293cff219001"
 )
-AURORA_DIAL_ZERO = bytes.fromhex(
-    "1d0b102a00140001300229000021940229e002214209290000219001"
+AURORA_DIAL_CCW_FAST = bytes.fromhex(
+    "1d0b102f0014000130022920ff21900129f0fe2122102920ff219001"
 )
+# First frame of a twist after a pause, where the counter restarts: phase 1,
+# adjusted -28, counter -16 (4 * adjusted == 7 * counter).
+AURORA_DIAL_RESET_CCW = bytes.fromhex(
+    "1d0b101400140001300129e4ff216e0029f0ff216e0029e4ff219001"
+)
+# Synthetic: the dial's button id on a frame with the 8-byte button layout.
+AURORA_DIAL_SHORT_FRAME = bytes.fromhex("1d0b1030001400003000210000")
 
 AURORA_CLUSTERS = {
     1: {
@@ -151,39 +163,71 @@ def test_aurora_knob_double_press(aurora):
     assert actions == ["knob_double_press"]
 
 
+def _dial_events(listener) -> list[tuple[str, dict]]:
+    """Return the (action, event_args) pairs sent so far."""
+    return [call.args for call in listener.zha_send_event.call_args_list]
+
+
+def test_aurora_knob_event_args_unchanged(aurora):
+    """Button events carry the five Philips fields, without the dial's extras."""
+    cluster, listener = aurora
+    _feed(cluster, AURORA_PRESS)
+    _feed(cluster, AURORA_SHORT_RELEASE)
+    for queue in cluster.button_press_queue.values():
+        queue.fire()
+
+    for _, event_args in _dial_events(listener):
+        assert len(event_args["args"]) == 5
+        assert None not in list(event_args["args"])
+
+
 @pytest.mark.parametrize(
-    ("frame", "action", "expected"),
+    ("previous", "frame", "action", "expected"),
     [
-        (
-            AURORA_DIAL_START_CCW,
-            DIAL_ROTATE_CCW,
-            {"rotation": -196, "direction": "ccw", "speed": "fast", "phase": "start"},
-        ),
-        (
-            AURORA_DIAL_CCW_FAST,
-            DIAL_ROTATE_CCW,
-            {"rotation": -224, "direction": "ccw", "speed": "fast", "phase": "rotate"},
-        ),
+        # Mid-twist: the counter moved 704 -> 736.
         (
             AURORA_DIAL_CW_FAST,
-            DIAL_ROTATE_CW,
-            {"rotation": 112, "direction": "cw", "speed": "fast", "phase": "rotate"},
-        ),
-        (
             AURORA_DIAL_CW_SLOW,
             DIAL_ROTATE_CW,
             {"rotation": 32, "direction": "cw", "speed": "slow", "phase": "rotate"},
         ),
+        # Reversal: the counter moved 736 -> 624. The frame's own adjusted
+        # amount (-196) overstates this by 7/4.
         (
-            AURORA_DIAL_CW_STEP,
-            DIAL_ROTATE_CW,
-            {"rotation": 10, "direction": "cw", "speed": "step", "phase": "rotate"},
+            AURORA_DIAL_CW_SLOW,
+            AURORA_DIAL_START_CCW,
+            DIAL_ROTATE_CCW,
+            {"rotation": -112, "direction": "ccw", "speed": "fast", "phase": "start"},
+        ),
+        # Three frames were not captured in between: the counter difference
+        # still covers the whole movement, 624 -> -272.
+        (
+            AURORA_DIAL_START_CCW,
+            AURORA_DIAL_CCW_FAST,
+            DIAL_ROTATE_CCW,
+            {"rotation": -896, "direction": "ccw", "speed": "fast", "phase": "rotate"},
+        ),
+        # A restarted counter is the movement itself, whatever came before.
+        (
+            AURORA_DIAL_CW_SLOW,
+            AURORA_DIAL_RESET_CCW,
+            DIAL_ROTATE_CCW,
+            {"rotation": -16, "direction": "ccw", "speed": "step", "phase": "start"},
+        ),
+        (
+            None,
+            AURORA_DIAL_RESET_CCW,
+            DIAL_ROTATE_CCW,
+            {"rotation": -16, "direction": "ccw", "speed": "step", "phase": "start"},
         ),
     ],
 )
-def test_aurora_dial_rotation(aurora, frame, action, expected):
-    """Dial frames become dial_rotate_cw/ccw with a signed rotation."""
+def test_aurora_dial_rotation(aurora, previous, frame, action, expected):
+    """Dial frames become dial_rotate_cw/ccw with the counter's movement."""
     cluster, listener = aurora
+    if previous is not None:
+        _feed(cluster, previous)
+        listener.reset_mock()
     _feed(cluster, frame)
 
     listener.zha_send_event.assert_called_once()
@@ -195,10 +239,42 @@ def test_aurora_dial_rotation(aurora, frame, action, expected):
     assert event_args["args"][0] == 0x14
 
 
-def test_aurora_dial_zero_rotation_ignored(aurora):
-    """A dial frame with zero rotation does not emit an event."""
+def test_aurora_dial_twist_sums_to_counter(aurora):
+    """Over a twist the rotations add up to the counter's net movement."""
     cluster, listener = aurora
-    _feed(cluster, AURORA_DIAL_ZERO)
+    for frame in (
+        AURORA_DIAL_CW_FAST,
+        AURORA_DIAL_CW_SLOW,
+        AURORA_DIAL_START_CCW,
+        AURORA_DIAL_CCW_FAST,
+    ):
+        _feed(cluster, frame)
+
+    rotations = [args["rotation"] for _, args in _dial_events(listener)]
+    assert rotations == [32, -112, -896]
+    assert sum(rotations) == -272 - 704
+
+
+def test_aurora_dial_without_baseline_ignored(aurora):
+    """A mid-twist frame with nothing to compare against only sets the baseline."""
+    cluster, listener = aurora
+    _feed(cluster, AURORA_DIAL_CW_FAST)
+    listener.zha_send_event.assert_not_called()
+
+
+def test_aurora_dial_repeated_frame_ignored(aurora):
+    """A frame that does not move the counter does not emit an event."""
+    cluster, listener = aurora
+    _feed(cluster, AURORA_DIAL_CW_FAST)
+    _feed(cluster, AURORA_DIAL_CW_SLOW)
+    _feed(cluster, AURORA_DIAL_CW_SLOW)
+    listener.zha_send_event.assert_called_once()
+
+
+def test_aurora_dial_unknown_layout_ignored(aurora):
+    """A dial frame without the counter is not read as a rotation."""
+    cluster, listener = aurora
+    _feed(cluster, AURORA_DIAL_SHORT_FRAME)
     listener.zha_send_event.assert_not_called()
 
 
@@ -208,7 +284,14 @@ def test_aurora_device_automation_triggers(zigpy_device_from_v2_quirk):
         LUTRON, AURORA_MODEL, cluster_ids=AURORA_CLUSTERS
     )
     triggers = device.device_automation_triggers
-    assert triggers[(DIAL_ROTATED, CLOCKWISE)] == {COMMAND: DIAL_ROTATE_CW}
-    assert triggers[(DIAL_ROTATED, COUNTERCLOCKWISE)] == {COMMAND: DIAL_ROTATE_CCW}
-    assert ("remote_button_short_press", "knob") in triggers
-    assert triggers[("remote_button_short_press", "knob")] == {COMMAND: "knob_press"}
+    assert triggers[(ROTATED, RIGHT)] == {COMMAND: DIAL_ROTATE_CW}
+    assert triggers[(ROTATED, LEFT)] == {COMMAND: DIAL_ROTATE_CCW}
+    assert triggers[("remote_button_short_press", ROTARY_KNOB)] == {
+        COMMAND: "knob_press"
+    }
+    # Older firmware reports the button and the dial through LevelControl.
+    assert triggers[(ROTATED, ROTARY_KNOB)] == {
+        COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
+        CLUSTER_ID: LevelControl.cluster_id,
+        ENDPOINT_ID: 1,
+    }
