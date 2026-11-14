@@ -668,7 +668,7 @@ SWITCH_4G_GPP_VAR2_SIGNATURE = {
 }
 
 
-def _add_quirk(signature: dict, *, removes_green_power: bool = False) -> None:
+def _add_quirk(signature: dict) -> None:
     """Add the quirk for the signature of a TS000X switch module."""
     endpoints = signature[ENDPOINTS]
 
@@ -692,9 +692,6 @@ def _add_quirk(signature: dict, *, removes_green_power: bool = False) -> None:
         .tuya_enchantment()
     )
 
-    if removes_green_power:
-        builder = builder.removes_endpoint(GREEN_POWER_ENDPOINT)
-
     for endpoint_id in endpoints:
         if endpoint_id != GREEN_POWER_ENDPOINT:
             builder = builder.light_as_switch(endpoint_id=endpoint_id)
@@ -702,8 +699,8 @@ def _add_quirk(signature: dict, *, removes_green_power: bool = False) -> None:
     builder.add_to_registry()
 
 
-_add_quirk(SWITCH_1G_GPP_SIGNATURE, removes_green_power=True)
-_add_quirk(SWITCH_1G_METERING_SIGNATURE, removes_green_power=True)
+_add_quirk(SWITCH_1G_GPP_SIGNATURE)
+_add_quirk(SWITCH_1G_METERING_SIGNATURE)
 _add_quirk(SWITCH_2G_GPP_SIGNATURE)
 _add_quirk(SWITCH_2G_METERING_SIGNATURE)
 _add_quirk(SWITCH_2G_VAR03_SIGNATURE)
