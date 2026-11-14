@@ -358,3 +358,22 @@ def test_child_device_id_type() -> None:
         QuirkBuilder("manufacturer", "model").child_device(
             b"left", endpoint_id=1, fallback_name="Left"
         )
+
+
+def test_clone_child_devices() -> None:
+    """Test cloning a quirk copies its child devices."""
+    template = QuirkBuilder("manufacturer", "model").child_device(
+        "left", endpoint_id=1, fallback_name="Left"
+    )
+
+    clone = template.clone().applies_to("manufacturer", "model2")
+    clone.child_device("right", endpoint_id=2, fallback_name="Right")
+
+    assert [child_device.id for child_device in template.child_devices] == ["left"]
+    assert [child_device.id for child_device in clone.child_devices] == [
+        "left",
+        "right",
+    ]
+
+    disabled = QuirkBuilder("manufacturer", "model").disable_child_devices().clone()
+    assert disabled.child_devices == []
