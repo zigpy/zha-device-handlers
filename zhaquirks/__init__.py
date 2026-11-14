@@ -87,7 +87,7 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls.
 
-    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids, names or definitions.
     Set _DEFAULT_VALUES to provide default values for attribute ids. These are
     returned when no value is cached yet, but are overridden by any cached value.
     Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
