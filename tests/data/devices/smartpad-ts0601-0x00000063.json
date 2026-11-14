@@ -1,0 +1,205 @@
+{
+  "version": 3,
+  "manufacturer": "_TZE28C1000000_zpvusbtv",
+  "model": "TS0601",
+  "manufacturer_code": 4417,
+  "power_source": "Mains",
+  "last_seen": "2026-11-14T11:04:04.394873+00:00",
+  "device_type": "Router",
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4417,
+    "maximum_buffer_size": 74,
+    "maximum_incoming_transfer_size": 80,
+    "server_mask": 10752,
+    "maximum_outgoing_transfer_size": 80,
+    "descriptor_capability_field": 0
+  },
+  "original_signature": {
+    "manufacturer": "_TZE28C1000000_zpvusbtv",
+    "model": "TS0601",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4417,
+      "maximum_buffer_size": 74,
+      "maximum_incoming_transfer_size": 80,
+      "server_mask": 10752,
+      "maximum_outgoing_transfer_size": 80,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0051",
+        "input_clusters": [
+          "0x0000",
+          "0xe000",
+          "0xeb00",
+          "0xed00",
+          "0x0004",
+          "0x0005",
+          "0x0003",
+          "0xef00"
+        ],
+        "output_clusters": [
+          "0x000a",
+          "0x0019"
+        ]
+      },
+      "242": {
+        "profile_id": "0xa1e0",
+        "device_type": "0x0061",
+        "input_clusters": [],
+        "output_clusters": [
+          "0x0021"
+        ]
+      }
+    }
+  },
+  "ieee": "00:11:22:33:44:55:66:77",
+  "nwk": "0x1234",
+  "_sanitization": {
+    "source": "Home Assistant device diagnostics exported 2026-11-14; only this TS0601 device is retained.",
+    "synthetic_identifiers": {
+      "ieee": "Synthetic test address, not the physical device IEEE.",
+      "nwk": "Synthetic test address, not the physical Zigbee network address."
+    },
+    "measurements": "Node descriptor, original signature, last_seen and retained attribute values are unmodified observations.",
+    "removed": "Host/config/integration inventory, device/room names, entity registry names, neighbors, routes, unrelated cluster attributes."
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "SMART_PLUG",
+        "id": 81
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "_TZE28C1000000_zpvusbtv"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "TS0601"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0004",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xe000",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xeb00",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xed00",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xef00",
+          "attributes": [
+            {
+              "id": "0xef66",
+              "name": "dp102_raw",
+              "zcl_type": "uint32",
+              "value": 30
+            },
+            {
+              "id": "0xef0f",
+              "name": "dp15_raw",
+              "zcl_type": "uint8",
+              "value": 1
+            },
+            {
+              "id": "0xef10",
+              "name": "dp16_raw",
+              "zcl_type": "bool",
+              "value": 1
+            },
+            {
+              "id": "0xef68",
+              "name": "led_off_color",
+              "zcl_type": "enum8",
+              "value": 1
+            },
+            {
+              "id": "0xef67",
+              "name": "led_on_color",
+              "zcl_type": "enum8",
+              "value": 3
+            },
+            {
+              "id": "0xef01",
+              "name": "relay_1",
+              "zcl_type": "bool",
+              "value": 0
+            },
+            {
+              "id": "0xef02",
+              "name": "relay_2",
+              "zcl_type": "bool",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x000a",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "attributes": []
+        }
+      ]
+    },
+    "242": {
+      "profile_id": 41440,
+      "device_type": {
+        "name": "PROXY_BASIC",
+        "id": 97
+      },
+      "in_clusters": [],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "attributes": []
+        }
+      ]
+    }
+  }
+}
