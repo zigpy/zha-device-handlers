@@ -15,7 +15,6 @@ from zhaquirks.builder import (
 )
 from zhaquirks.clusters import CustomCluster
 
-
 # ---------------------------------------------------------------------
 # Illumination (vendor-specific, read-only)
 # ---------------------------------------------------------------------
