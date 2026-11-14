@@ -1043,9 +1043,12 @@ class QuirkBuilder:
         Defining a child device replaces the automatic split of an allowlisted device
         in ZHA, and entities can only refer to child devices the quirk defines. To keep
         the child devices ZHA creates for such a device without the quirk, define one
-        per split endpoint the way ZHA does: id `str(endpoint_id)`,
+        per split endpoint (`endpoint_id=`) the way ZHA does: id `str(endpoint_id)`,
         `translation_key="channel"`, `translation_placeholders={"index": ...}`
-        (1-based, in endpoint order) and `fallback_name="Channel <index>"`.
+        (1-based, in endpoint order) and `fallback_name="Channel <index>"`. ZHA's split
+        only moves entity kinds that repeat on several split endpoints, while a defined
+        child device takes every entity on its endpoints, so keep the others on the
+        main device with `child_device_id=None`.
         """
         if endpoint_id is not None and endpoint_ids is not None:
             raise ValueError("Use either endpoint_id or endpoint_ids, not both")
