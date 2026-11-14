@@ -100,4 +100,3 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
         # Handle move command
         pass
 ```
-

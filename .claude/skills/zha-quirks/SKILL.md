@@ -161,4 +161,3 @@ from zigpy.zcl.clusters.general import Basic, OnOff, Groups, Scenes
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumidity
 import zigpy.types as t
 ```
-

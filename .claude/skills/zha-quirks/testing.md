@@ -34,4 +34,3 @@ Tests **are** needed when a quirk introduces custom logic such as custom cluster
 async with zha_gateway() as gateway:
     device = await join_device_from_diagnostics(gateway, "your_device.json", DEVICE_REGISTRY)
 ```
-

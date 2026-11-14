@@ -275,4 +275,3 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
 ```
 
 Removing entities: `.removes_entity(EntityFilter(...))` with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
-
