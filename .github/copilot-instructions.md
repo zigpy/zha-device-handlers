@@ -65,7 +65,7 @@ from zhaquirks.builder import QuirkBuilder
 **Device Matching:**
 - `.applies_to(manufacturer, model)` - Add manufacturer/model pair to match
 - `.filter(filter_function)` - Custom filter function `(device) -> bool`
-- `.firmware_version_filter(min_version, max_version, allow_missing)` - Filter by firmware version
+- `.firmware_version_filter(*, min_version, max_version, allow_missing)` - Filter by firmware version (keyword-only)
 
 Firmware version filtering is useful when different firmware versions need different quirks:
 ```python
@@ -92,10 +92,10 @@ Firmware version filtering is useful when different firmware versions need diffe
 Note: In the example above, `0x191B3685` appears in both quirks because `max_version` is exclusive (old quirk applies to versions *before* this) while `min_version` is inclusive (new quirk applies to this version *and newer*).
 
 **Cluster Modification:**
-- `.adds(cluster, endpoint_id=1, cluster_type=ClusterType.Server, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
-- `.removes(cluster_id, endpoint_id=1, cluster_type=ClusterType.Server)` - Remove a cluster
-- `.replaces(replacement_cluster_class, endpoint_id=1, cluster_type=ClusterType.Server)` - Replace cluster with custom implementation
-- `.replace_cluster_occurrences(cluster_class, replace_server=True, replace_client=True)` - Replace across all endpoints
+- `.adds(cluster, cluster_type=ClusterType.Server, *, endpoint_id=1, constant_attributes={})` - Add a cluster. `constant_attributes` dict forces specific attribute values (same as `_CONSTANT_ATTRIBUTES` on a custom cluster)
+- `.removes(cluster_id, cluster_type=ClusterType.Server, *, endpoint_id=1)` - Remove a cluster
+- `.replaces(replacement_cluster_class, cluster_id=None, cluster_type=ClusterType.Server, *, endpoint_id=1)` - Replace cluster with custom implementation
+- `.replace_cluster_occurrences(cluster_class, *, replace_server_instances=True, replace_client_instances=True)` - Replace across all endpoints
 
 `cluster_type` can be `ClusterType.Server` (in_clusters) or `ClusterType.Client` (out_clusters).
 
