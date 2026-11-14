@@ -141,28 +141,27 @@ async def test_tuya_connection_status(
         assert cluster_listener.cluster_commands[0][1] == TUYA_MCU_CONNECTION_STATUS
 
         assert cluster_listener.cluster_commands[0][2].payload.tsn == mcu_tsn
-        assert cluster_listener.cluster_commands[0][2].payload.status == b""
 
         m1.assert_called_once_with(
             TUYA_MCU_CONNECTION_STATUS,
-            tuya_cluster.TuyaConnectionStatus(tsn=mcu_tsn, status=b"\x01"),
+            tuya_cluster.TuyaConnectionStatus(tsn=mcu_tsn, status=1),
             expect_reply=False,
+            disable_default_response=True,
         )
 
 
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
-async def test_tuya_connection_status_rsp_no_manufacturer_code(
-    zigpy_device_from_quirk, quirk
-):
-    """Test the TUYA_MCU_CONNECTION_STATUS reply is sent without a manufacturer code."""
+async def test_tuya_connection_status_rsp_frame(zigpy_device_from_quirk, quirk):
+    """Test the TUYA_MCU_CONNECTION_STATUS reply echoes the sequence number and has no manufacturer code or default response."""
 
     tuya_device = zigpy_device_from_quirk(quirk)
     tuya_device.node_desc = NodeDescriptor(manufacturer_code=0x1141)
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
 
-    hdr, args = tuya_cluster.deserialize(b"\t\x13%/\x00")
+    # the request carries a 16-bit MCU sequence number (0x022F here)
+    hdr, args = tuya_cluster.deserialize(b"\t\x13%/\x02")
 
     with mock.patch.object(
         tuya_device.endpoints[1], "request", new=mock.AsyncMock()
@@ -176,9 +175,10 @@ async def test_tuya_connection_status_rsp_no_manufacturer_code(
     )
     assert rsp_hdr.command_id == TUYA_MCU_CONNECTION_STATUS
     assert not rsp_hdr.frame_control.is_manufacturer_specific
+    assert rsp_hdr.frame_control.disable_default_response
     assert rsp_hdr.manufacturer is None
-    # MCU sequence number 0x2F echoed back, status 0x01 (connected)
-    assert rsp_data == b"\x2f\x01\x01"
+    # both MCU sequence number bytes echoed back, then status 0x01 (connected)
+    assert rsp_data == b"\x2f\x02\x01"
 
 
 @pytest.mark.parametrize(

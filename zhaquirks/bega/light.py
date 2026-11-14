@@ -9,7 +9,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
 
@@ -45,10 +45,12 @@ class LevelControlBega(CustomCluster, LevelControl):
     # Expose a feature to match the ZHA entity against
     .exposes_feature(BEGA_LIGHT_SWITCHABLE_WHITE)
     # To prevent non-functional binary sensor from being created
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.device_class == "opening",
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
     )
     .add_to_registry()
 )
