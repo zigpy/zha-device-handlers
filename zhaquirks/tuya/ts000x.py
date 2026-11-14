@@ -1,7 +1,8 @@
 """Tuya TS000X Switches.
 
-The 1 to 4 gang relay modules are matched by their endpoint signature (model only, any
-manufacturer), so the same devices match as with the former v1 quirks.
+The modules report the On/Off light device type, which makes ZHA create a light. The
+quirks keep that device type, so existing installations keep their light entity, add a
+switch and disable the light by default (only used for new installations).
 """
 
 from zha.quirks import TUYA_PLUG_ONOFF
@@ -34,6 +35,8 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+
+GREEN_POWER_ENDPOINT = 242
 
 # Tuya 1 gang switch module with restore power state support.
 SWITCH_1G_GPP_SIGNATURE = {
@@ -667,7 +670,9 @@ SWITCH_4G_GPP_VAR2_SIGNATURE = {
 
 def _add_quirk(signature: dict) -> None:
     """Add the quirk for the signature of a TS000X switch module."""
-    (
+    endpoints = signature[ENDPOINTS]
+
+    builder = (
         TuyaQuirkBuilder(None, signature[MODEL])
         .filter(signature_matches(signature))
         .replace_cluster_occurrences(
@@ -685,8 +690,13 @@ def _add_quirk(signature: dict) -> None:
         )
         .exposes_feature(TUYA_PLUG_ONOFF)
         .tuya_enchantment()
-        .add_to_registry()
     )
+
+    for endpoint_id in endpoints:
+        if endpoint_id != GREEN_POWER_ENDPOINT:
+            builder = builder.light_as_switch(endpoint_id=endpoint_id)
+
+    builder.add_to_registry()
 
 
 _add_quirk(SWITCH_1G_GPP_SIGNATURE)
