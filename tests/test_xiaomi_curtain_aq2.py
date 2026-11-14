@@ -442,6 +442,37 @@ async def test_device_lift_reports_are_ignored():
         assert cover.state.is_closed is True
 
 
+async def test_lift_only_report_still_gets_a_default_response():
+    """Filtering the device's lift report must not swallow the Default Response."""
+    async with zha_gateway() as gateway:
+        zigpy_device, _ = await make_cover(gateway, 0)
+        wc = zigpy_device.endpoints[1].window_covering
+
+        hdr = foundation.ZCLHeader.general(
+            201,
+            foundation.GeneralCommand.Report_Attributes,
+            direction=foundation.Direction.Server_to_Client,
+        )
+        hdr.frame_control = hdr.frame_control.replace(disable_default_response=False)
+        args = foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Report_Attributes
+        ].schema(
+            [
+                foundation.Attribute(
+                    attrid=WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                    value=foundation.TypeValue(0x20, t.uint8_t(0)),
+                )
+            ]
+        )
+
+        with mock.patch.object(wc, "send_default_rsp") as send_default_rsp:
+            wc.handle_cluster_general_request(hdr, args)
+
+        send_default_rsp.assert_called_once()
+        # The frame object the listeners already received is left untouched
+        assert len(args.attribute_reports) == 1
+
+
 async def test_stop_reads_position():
     """The position is read after a successful stop."""
     async with zha_gateway() as gateway:

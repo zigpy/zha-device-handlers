@@ -196,11 +196,15 @@ class WindowCoveringCurtainAq2(CustomCluster, WindowCovering):
     def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
         """Ignore the device's own lift reports: the position comes from AnalogOutput."""
         if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            args.attribute_reports = [
-                attr for attr in args.attribute_reports if attr.attrid != LIFT_ATTR.id
-            ]
-            if not args.attribute_reports:
-                return
+            # Always call super() so zigpy still sends the Default Response, even
+            # when nothing is left after filtering
+            args = args.replace(
+                attribute_reports=[
+                    attr
+                    for attr in args.attribute_reports
+                    if attr.attrid != LIFT_ATTR.id
+                ]
+            )
 
         super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
