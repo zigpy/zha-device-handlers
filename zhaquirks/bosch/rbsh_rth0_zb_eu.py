@@ -263,11 +263,13 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Some units expose an On/Off cluster on endpoint 1 for the relay that
-    # switches the connected heating/cooling device. Name its switch accordingly.
+    # switches the connected heating/cooling device. Name its switch accordingly,
+    # and keep it from tying with the climate entity for the primary entity.
     .change_entity_metadata(
         endpoint_id=1,
         cluster_id=OnOff.cluster_id,
         unique_id_suffix="1-6",
+        new_primary=False,
         new_translation_key="relay",
         new_fallback_name="Relay",
     )
