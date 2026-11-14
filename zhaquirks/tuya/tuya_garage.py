@@ -59,6 +59,15 @@ class TuyaDoorAlarm(t.enum8):
         translation_key="relay_countdown",
         fallback_name="Relay countdown",
     )
+    .write_attr_button(
+        attribute_name="relay_countdown",
+        entity_type=EntityType.STANDARD,
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_value=True,
+        unique_id_suffix="trigger",
+        translation_key="trigger_door",
+        fallback_name="Trigger",
+    )
     .tuya_binary_sensor(
         dp_id=3,
         attribute_name="door_contact",
