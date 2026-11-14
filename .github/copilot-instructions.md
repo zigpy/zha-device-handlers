@@ -587,7 +587,7 @@ def test_my_device_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
 
-**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+**Test code, not definitions.** Only write tests for code with a `def` or a `lambda`. If a quirk has neither, do not write a test for it. Do not write tests for entity creation, quirk matching, signatures, or other definitions. These tests are long and fragile, and we do not accept them. ZHA already covers definitions with snapshot tests of the device diagnostics JSON. Example of a quirk that must not have a test:
 
 ```python
 (
@@ -602,7 +602,7 @@ def test_my_device_signature(assert_signature_matches_quirk):
 )
 ```
 
-Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, custom filter functions, or custom entity classes.
+Tests **are** needed for custom cluster methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, custom filter functions, and custom entity classes. Test what that code does, not that the entities exist.
 
 **End-to-end tests:** if your quirk is complex, its high-level behavior should be tested. Use `tests/zha_helpers.py` with diagnostics for your device:
 ```python
@@ -697,4 +697,5 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
-- Tests should verify entity creation
+- Only add tests for code (`def` or `lambda`). Do not add tests for definitions. See **Testing**.
+- Do not open a Home Assistant Core PR to add translations for new `translation_key` values. Maintainers add them in the Core PR that bumps the `zha-quirks` package.
