@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 from zha.application import Platform
+from zha.application.helpers import DeviceOverridesConfiguration
 from zha.application.platforms.switch import Switch
 from zha.quirks import DeviceRegistry
 from zigpy.zcl.clusters.general import OnOff
@@ -10,6 +11,7 @@ from zigpy.zcl.foundation import Status
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder.builder import LightAsSwitch
 from zhaquirks.tuya import (
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
@@ -52,7 +54,7 @@ async def test_light_as_switch() -> None:
         assert light.entity_registry_enabled_default is False
         assert light.primary is False
 
-        assert type(switch) is Switch
+        assert type(switch) is LightAsSwitch
         assert switch.entity_registry_enabled_default is True
         # The switch takes over the primary entity of the light (by weight)
         assert device.primary_entity is switch
@@ -86,3 +88,30 @@ async def test_no_light_as_switch() -> None:
 
         assert light.entity_registry_enabled_default is True
         assert (Platform.SWITCH, f"{IEEE}-1-switch") not in device.platform_entities
+
+
+async def test_light_as_switch_with_platform_override() -> None:
+    """Test that no second switch is added if ZHA already created one."""
+    registry = DeviceRegistry()
+    _tuya_ts0001_quirk(registry, light_as_switch=True)
+
+    async with zha_gateway() as gateway:
+        # The documented workaround: override the device type to a switch
+        gateway.config.config.device_overrides[f"{IEEE}-1"] = (
+            DeviceOverridesConfiguration(type=Platform.SWITCH)
+        )
+
+        device = await join_device_from_diagnostics(
+            gateway, "tz3000-p26flek3-ts0001-0x00000053.json", registry
+        )
+        switches = [
+            e
+            for (platform, _), e in device.platform_entities.items()
+            if platform == Platform.SWITCH
+        ]
+
+        # Only the overridden switch exists, with its legacy unique ID
+        assert [s.unique_id for s in switches] == [f"{IEEE}-1"]
+        assert type(switches[0]) is Switch
+        assert switches[0].entity_registry_enabled_default is True
+        assert device.primary_entity is switches[0]
