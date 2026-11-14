@@ -64,9 +64,8 @@ class TuyaDoorAlarm(t.enum8):
         entity_type=EntityType.STANDARD,
         cluster_id=TUYA_CLUSTER_ID,
         attribute_value=True,
-        unique_id_suffix="trigger",
-        translation_key="trigger_door",
-        fallback_name="Trigger",
+        translation_key="toggle_door",
+        fallback_name="Toggle",
     )
     .tuya_binary_sensor(
         dp_id=3,
