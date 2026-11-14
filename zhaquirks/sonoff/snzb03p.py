@@ -15,10 +15,6 @@ from zhaquirks.builder import (
 )
 from zhaquirks.clusters import CustomCluster
 
-# ---------------------------------------------------------------------
-# Illumination (vendor-specific, read-only)
-# ---------------------------------------------------------------------
-
 
 class LastIlluminationState(t.enum8):
     """Enum representing the last illumination state reported by SNZB-03P."""
@@ -45,11 +41,6 @@ class SonoffIlluminationCluster(CustomCluster):
         )
 
 
-# ---------------------------------------------------------------------
-# Motion timeout
-# ---------------------------------------------------------------------
-
-
 class SNZB03PMotionTimeout(SonoffPresenceSenorTimeout):
     """Motion timeout, the SNZB-03P accepts 5 s and up."""
 
@@ -57,10 +48,6 @@ class SNZB03PMotionTimeout(SonoffPresenceSenorTimeout):
     _attr_native_unit_of_measurement: str = UnitOfTime.SECONDS
     _attr_device_class: NumberDeviceClass = NumberDeviceClass.DURATION
 
-
-# ---------------------------------------------------------------------
-# Quirk definition
-# ---------------------------------------------------------------------
 
 (
     QuirkBuilder("eWeLink", "SNZB-03P")
