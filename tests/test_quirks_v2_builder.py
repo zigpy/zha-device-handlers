@@ -15,6 +15,7 @@ from zigpy.const import (
     SIG_MODELS_INFO,
 )
 from zigpy.device import Device
+import zigpy.endpoint
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -664,6 +665,7 @@ async def test_quirks_v2_endpoints(device_mock):
     assert 5 in quirked.endpoints
     assert quirked.endpoints[5].profile_id == 260
     assert quirked.endpoints[5].device_type == 255
+    assert quirked.endpoints[5].status == zigpy.endpoint.Status.ZDO_INIT
 
 
 async def test_quirks_v2_processing_order(device_mock):
@@ -703,6 +705,9 @@ async def test_quirks_v2_processing_order(device_mock):
 
     # verify endpoint 2 cluster added by quirk is present though
     assert quirked.endpoints[2].in_clusters.get(LevelControl.cluster_id) is not None
+
+    # endpoints created by the quirk count as initialized
+    assert quirked.endpoints[2].status == zigpy.endpoint.Status.ZDO_INIT
 
     # verify endpoint 3 cluster was replaced by alternatively using removes and adds
     # instead of just using replaces directly

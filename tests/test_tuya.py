@@ -548,6 +548,18 @@ async def test_haozee_local_temperature(zigpy_device_from_quirk, quirk):
     ]
 
 
+async def test_zonnsmart_endpoints_initialized(zigpy_device_from_v2_quirk):
+    """Test the endpoints added by the quirk don't leave the device uninitialized."""
+
+    valve_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_e9ba97vf", "TS0601", cluster_ids=TUYA_TRV_SIGNATURE_CLUSTERS
+    )
+
+    assert {2, 3} <= set(valve_dev.endpoints)
+    assert valve_dev.all_endpoints_init
+    assert valve_dev.is_initialized
+
+
 async def test_zonnsmart_send_attribute(zigpy_device_from_v2_quirk):
     """Test thermostatic valve outgoing commands."""
 
