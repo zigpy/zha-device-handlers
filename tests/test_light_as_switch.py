@@ -110,6 +110,9 @@ async def test_light_as_switch_with_platform_override() -> None:
             if platform == Platform.SWITCH
         ]
 
+        # ZHA created no light for the override, only the overridden switch
+        assert not [k for k in device.platform_entities if k[0] == Platform.LIGHT]
+
         # Only the overridden switch exists, with its legacy unique ID
         assert [s.unique_id for s in switches] == [f"{IEEE}-1"]
         assert type(switches[0]) is Switch
