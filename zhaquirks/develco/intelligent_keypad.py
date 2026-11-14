@@ -10,11 +10,9 @@ from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilde
     .prevent_default_entity_creation(endpoint_id=44, cluster_id=BinaryInput.cluster_id)
     # Hide the default `ias_zone` entity
     .removes_entity(
-        EntityFilter(
-            endpoint_id=44,
-            cluster_id=IasZone.cluster_id,
-            translation_key="ias_zone",
-        )
+        endpoint_id=44,
+        cluster_id=IasZone.cluster_id,
+        translation_key="ias_zone",
     )
     .removes_entity(
         *(

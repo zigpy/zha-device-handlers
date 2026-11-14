@@ -16,7 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Ballast
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
+from zhaquirks.builder import BinarySensorDeviceClass, QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -287,11 +287,9 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
     .replaces(LegrandIdentify)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
     .removes_entity(
-        EntityFilter(
-            endpoint_id=1,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        device_class=BinarySensorDeviceClass.OPENING,
     )
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.device_mode.name,

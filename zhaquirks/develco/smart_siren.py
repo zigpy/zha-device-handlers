@@ -6,7 +6,6 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.builder import (
     PERCENTAGE,
     BinarySensorDeviceClass,
-    EntityFilter,
     EntityType,
     QuirkBuilder,
     SensorDeviceClass,
@@ -17,11 +16,9 @@ BASE_SIREN_QUIRK = (
     QuirkBuilder()
     # Hide the default `ias_zone` entity
     .removes_entity(
-        EntityFilter(
-            endpoint_id=43,
-            cluster_id=IasZone.cluster_id,
-            translation_key="ias_zone",
-        )
+        endpoint_id=43,
+        cluster_id=IasZone.cluster_id,
+        translation_key="ias_zone",
     )
     # This is a mains-powered device that has a backup battery
     .sensor(
