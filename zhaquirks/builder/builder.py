@@ -41,6 +41,7 @@ from zha.quirks import (
 )
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
+import zigpy.endpoint
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
@@ -261,6 +262,9 @@ class AddEndpoint:
         if self.endpoint_id in device.endpoints:
             return device
         endpoint = device.add_endpoint(self.endpoint_id)
+        # The quirk fully describes the endpoint, so it must not leave the device
+        # uninitialized (a `NEW` endpoint makes `device.is_initialized` False)
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
 
@@ -294,6 +298,7 @@ class ReplaceEndpoint:
             endpoint = device.endpoints[self.endpoint_id]
         else:
             endpoint = device.add_endpoint(self.endpoint_id)
+            endpoint.status = zigpy.endpoint.Status.ZDO_INIT
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
 
