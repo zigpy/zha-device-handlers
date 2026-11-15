@@ -4,6 +4,10 @@ from unittest import mock
 
 import pytest
 from zha.quirks import DEVICE_REGISTRY
+from zha.zigbee.cluster_config import (
+    aggregate_cluster_configs,
+    initialize_cluster_configs,
+)
 from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -13,13 +17,35 @@ from zigpy.zcl.foundation import WriteAttributesStatusRecord
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
+    BoschRestartReason,
     BoschThermostatCluster as BoschTrvThermostatCluster,
     BoschUserInterfaceCluster,
     BoschValveAdaptStatus,
 )
 from zhaquirks.builder import NumberDeviceClass, UnitOfTemperature
+from zhaquirks.builder.discovery import discover_quirks_v2_entities
 
 zhaquirks.setup()
+
+
+def _mock_bosch_write_statuses(status_by_attribute):
+    """Return a device-style write response with failures or global success."""
+
+    def mock_write(attributes, manufacturer=None):
+        failures = [
+            WriteAttributesStatusRecord(
+                status_by_attribute[attribute.attrid], attrid=attribute.attrid
+            )
+            for attribute in attributes
+            if status_by_attribute.get(attribute.attrid, foundation.Status.SUCCESS)
+            != foundation.Status.SUCCESS
+        ]
+        return [
+            failures or [WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            [],
+        ]
+
+    return mock.AsyncMock(side_effect=mock_write)
 
 
 async def test_bosch_radiator_thermostat_II_write_attributes(
@@ -763,6 +789,410 @@ async def test_bosch_radiator_thermostat_II_operating_mode_values(
         assert result[0][0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
         assert cluster.get("operating_mode") != BoschOperatingMode.Eco
         assert cluster.get("system_mode") == Thermostat.SystemMode.Off
+
+
+@pytest.mark.parametrize(
+    ("operating_mode", "write_status", "expected_system_mode"),
+    [
+        (
+            BoschOperatingMode.Manual,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (BoschOperatingMode.Eco, foundation.Status.SUCCESS, Thermostat.SystemMode.Cool),
+        (
+            BoschOperatingMode.Away,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            BoschOperatingMode.Holiday,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            BoschOperatingMode.Schedule,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Auto,
+        ),
+        (
+            BoschOperatingMode.Pause,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Off,
+        ),
+        (
+            BoschOperatingMode.Manual,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Heat,
+        ),
+        (
+            BoschOperatingMode.Eco,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Heat,
+        ),
+    ],
+)
+async def test_bosch_control_sequence_updates_system_mode_after_success(
+    zigpy_device_from_v2_quirk, operating_mode, write_status, expected_system_mode
+):
+    """Only a successful control-sequence write changes an active system mode."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    initial_system_mode = {
+        BoschOperatingMode.Schedule: Thermostat.SystemMode.Auto,
+        BoschOperatingMode.Pause: Thermostat.SystemMode.Off,
+    }.get(operating_mode, Thermostat.SystemMode.Heat)
+    cluster._update_attribute(mode_attr.id, operating_mode)
+    cluster._update_attribute(control_attr.id, ControlSequenceOfOperation.Heating_Only)
+    cluster._update_attribute(system_attr.id, initial_system_mode)
+
+    with mock.patch.object(
+        cluster,
+        "_write_attributes",
+        _mock_bosch_write_statuses({control_attr.id: write_status}),
+    ):
+        result = await cluster.write_attributes(
+            {control_attr.name: ControlSequenceOfOperation.Cooling_Only}
+        )
+
+    assert result[0][0].status == write_status
+    assert cluster.get(control_attr.name) == (
+        ControlSequenceOfOperation.Cooling_Only
+        if write_status == foundation.Status.SUCCESS
+        else ControlSequenceOfOperation.Heating_Only
+    )
+    assert cluster.get(system_attr.name) == expected_system_mode
+
+
+@pytest.mark.parametrize(
+    ("mode_status", "temperature_status", "expected_system_mode"),
+    [
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Heat,
+        ),
+        (
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Off,
+        ),
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Heat,
+        ),
+    ],
+)
+async def test_bosch_operating_mode_partial_write(
+    zigpy_device_from_v2_quirk, mode_status, temperature_status, expected_system_mode
+):
+    """Synchronize system mode based on the mode write, not unrelated attributes."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    temperature_attr = BoschTrvThermostatCluster.AttributeDefs.eco_temperature
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    cluster._update_attribute(mode_attr.id, BoschOperatingMode.Pause)
+    cluster._update_attribute(control_attr.id, ControlSequenceOfOperation.Heating_Only)
+    cluster._update_attribute(system_attr.id, Thermostat.SystemMode.Off)
+    statuses = {mode_attr.id: mode_status, temperature_attr.id: temperature_status}
+
+    with mock.patch.object(
+        cluster, "_write_attributes", _mock_bosch_write_statuses(statuses)
+    ):
+        result = await cluster.write_attributes(
+            {mode_attr.name: BoschOperatingMode.Eco, temperature_attr.name: 1800}
+        )
+
+    assert {record.attrid: record.status for record in result[0]} == statuses
+    assert cluster.get(mode_attr.name) == (
+        BoschOperatingMode.Eco
+        if mode_status == foundation.Status.SUCCESS
+        else BoschOperatingMode.Pause
+    )
+    assert cluster.get(system_attr.name) == expected_system_mode
+
+
+@pytest.mark.parametrize(
+    ("mode_status", "control_status", "temperature_status", "expected_system_mode"),
+    [
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Heat,
+        ),
+        (
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Heat,
+        ),
+    ],
+)
+async def test_bosch_combined_operating_mode_and_control_writes(
+    zigpy_device_from_v2_quirk,
+    mode_status,
+    control_status,
+    temperature_status,
+    expected_system_mode,
+):
+    """Derive system mode from whichever writes actually succeeded."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    temperature_attr = BoschTrvThermostatCluster.AttributeDefs.eco_temperature
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    cluster._update_attribute(mode_attr.id, BoschOperatingMode.Manual)
+    cluster._update_attribute(control_attr.id, ControlSequenceOfOperation.Heating_Only)
+    cluster._update_attribute(system_attr.id, Thermostat.SystemMode.Heat)
+    statuses = {
+        mode_attr.id: mode_status,
+        control_attr.id: control_status,
+        temperature_attr.id: temperature_status,
+    }
+
+    with mock.patch.object(
+        cluster, "_write_attributes", _mock_bosch_write_statuses(statuses)
+    ):
+        result = await cluster.write_attributes(
+            {
+                mode_attr.name: BoschOperatingMode.Eco,
+                control_attr.name: ControlSequenceOfOperation.Cooling_Only,
+                temperature_attr.name: 1800,
+            }
+        )
+
+    assert {record.attrid: record.status for record in result[0]} == statuses
+    assert cluster.get(mode_attr.name) == (
+        BoschOperatingMode.Eco
+        if mode_status == foundation.Status.SUCCESS
+        else BoschOperatingMode.Manual
+    )
+    assert cluster.get(control_attr.name) == (
+        ControlSequenceOfOperation.Cooling_Only
+        if control_status == foundation.Status.SUCCESS
+        else ControlSequenceOfOperation.Heating_Only
+    )
+    assert cluster.get(system_attr.name) == expected_system_mode
+
+
+@pytest.mark.parametrize(
+    ("mode_status", "control_status", "expected_system_mode"),
+    [
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            foundation.Status.SUCCESS,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Heat,
+        ),
+        (
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.SUCCESS,
+            Thermostat.SystemMode.Cool,
+        ),
+        (
+            foundation.Status.INVALID_VALUE,
+            foundation.Status.INVALID_VALUE,
+            Thermostat.SystemMode.Heat,
+        ),
+    ],
+)
+async def test_bosch_combined_system_mode_and_control_writes(
+    zigpy_device_from_v2_quirk, mode_status, control_status, expected_system_mode
+):
+    """Keep translated system-mode writes consistent with control-sequence results."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    cluster._update_attribute(mode_attr.id, BoschOperatingMode.Eco)
+    cluster._update_attribute(control_attr.id, ControlSequenceOfOperation.Heating_Only)
+    cluster._update_attribute(system_attr.id, Thermostat.SystemMode.Heat)
+    statuses = {mode_attr.id: mode_status, control_attr.id: control_status}
+
+    with mock.patch.object(
+        cluster, "_write_attributes", _mock_bosch_write_statuses(statuses)
+    ):
+        result = await cluster.write_attributes(
+            {
+                system_attr.name: Thermostat.SystemMode.Cool,
+                control_attr.name: ControlSequenceOfOperation.Cooling_Only,
+            }
+        )
+
+    assert {
+        record.attrid: record.status for response in result for record in response
+    } == statuses
+    assert cluster.get(mode_attr.name) == (
+        BoschOperatingMode.Manual
+        if mode_status == foundation.Status.SUCCESS
+        else BoschOperatingMode.Eco
+    )
+    assert cluster.get(control_attr.name) == (
+        ControlSequenceOfOperation.Cooling_Only
+        if control_status == foundation.Status.SUCCESS
+        else ControlSequenceOfOperation.Heating_Only
+    )
+    assert cluster.get(system_attr.name) == expected_system_mode
+
+
+async def test_bosch_operating_mode_missing_write_status(
+    zigpy_device_from_v2_quirk,
+):
+    """Do not infer a mode write succeeded from another attribute's status."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    temperature_attr = BoschTrvThermostatCluster.AttributeDefs.eco_temperature
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    cluster._update_attribute(mode_attr.id, BoschOperatingMode.Pause)
+    cluster._update_attribute(control_attr.id, ControlSequenceOfOperation.Heating_Only)
+    cluster._update_attribute(system_attr.id, Thermostat.SystemMode.Off)
+
+    with mock.patch.object(
+        Thermostat,
+        "write_attributes",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    WriteAttributesStatusRecord(
+                        foundation.Status.SUCCESS, temperature_attr.id
+                    )
+                ]
+            ]
+        ),
+    ):
+        await cluster.write_attributes(
+            {mode_attr.name: BoschOperatingMode.Eco, temperature_attr.name: 1800}
+        )
+
+    assert cluster.get(mode_attr.name) == BoschOperatingMode.Pause
+    assert cluster.get(system_attr.name) == Thermostat.SystemMode.Off
+
+
+@pytest.mark.parametrize(
+    ("write_mode", "missing_attribute"),
+    [
+        (True, Thermostat.AttributeDefs.ctrl_sequence_of_oper),
+        (False, BoschTrvThermostatCluster.AttributeDefs.operating_mode),
+    ],
+)
+async def test_bosch_system_mode_not_guessed_when_required_read_fails(
+    zigpy_device_from_v2_quirk, caplog, write_mode, missing_attribute
+):
+    """Keep the previous system mode when its other input cannot be read."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    cluster = device.endpoints[1].thermostat
+    mode_attr = BoschTrvThermostatCluster.AttributeDefs.operating_mode
+    control_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+    system_attr = Thermostat.AttributeDefs.system_mode
+    cluster._update_attribute(system_attr.id, Thermostat.SystemMode.Off)
+    if write_mode:
+        attributes = {mode_attr.name: BoschOperatingMode.Eco}
+    else:
+        attributes = {control_attr.name: ControlSequenceOfOperation.Cooling_Only}
+    read_mock = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    missing_attribute.id, foundation.Status.UNSUPPORTED_ATTRIBUTE
+                )
+            ],
+        )
+    )
+
+    with (
+        mock.patch.object(cluster, "_read_attributes", read_mock),
+        mock.patch.object(cluster, "_write_attributes", _mock_bosch_write_statuses({})),
+    ):
+        result = await cluster.write_attributes(attributes)
+
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert cluster.get(system_attr.name) == Thermostat.SystemMode.Off
+    read_mock.assert_awaited_once()
+    assert "Cannot synchronize system mode" in caplog.text
+
+
+@pytest.mark.parametrize("from_cache", [False, True])
+@pytest.mark.parametrize("cached_reason", [None, BoschRestartReason.cold_start])
+async def test_bosch_restart_reason_requests_fresh_initialization(
+    zigpy_device_from_v2_quirk, from_cache, cached_reason
+):
+    """Read fresh during network initialization, but honor cache-only restore."""
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV1-ZB-EU")
+    entry = DEVICE_REGISTRY.match_entry(device)
+    (metadata,) = (
+        entity
+        for entity in entry.zha_device_factory.quirk_definition.entity_metadata
+        if entity.translation_key == "restart_reason"
+    )
+    cluster = device.endpoints[1].thermostat
+    reason_attr = BoschTrvThermostatCluster.AttributeDefs.restart_reason
+    if cached_reason is not None:
+        cluster._update_attribute(reason_attr.id, cached_reason)
+    endpoint = mock.Mock(id=1, zigpy_endpoint=device.endpoints[1])
+    zha_device = mock.Mock(
+        ieee=device.ieee,
+        endpoints={1: endpoint},
+        quirk_metadata=mock.Mock(entity_metadata=(metadata,)),
+    )
+    (entity,) = discover_quirks_v2_entities(zha_device)
+    configs = aggregate_cluster_configs([entity])
+    read_mock = mock.AsyncMock(
+        return_value=(
+            [
+                foundation.ReadAttributeRecord(
+                    reason_attr.id,
+                    foundation.Status.SUCCESS,
+                    foundation.TypeValue(None, BoschRestartReason.firmware_installed),
+                )
+            ],
+        )
+    )
+
+    with mock.patch.object(cluster, "_read_attributes", read_mock):
+        await initialize_cluster_configs(configs, from_cache=from_cache)
+
+    assert metadata.reporting_config is None
+    assert entity.entity_registry_enabled_default is False
+    if from_cache:
+        read_mock.assert_not_awaited()
+        assert cluster.get(reason_attr.name) == cached_reason
+    else:
+        read_mock.assert_awaited_once()
+        assert read_mock.await_args.kwargs["manufacturer"] == 0x1209
+        assert cluster.get(reason_attr.name) == BoschRestartReason.firmware_installed
 
 
 def test_bosch_radiator_thermostat_II_manufacturer_attribute_definitions():
