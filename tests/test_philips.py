@@ -1140,8 +1140,8 @@ async def test_rdm002_dial_no_button_events(zigpy_device_from_quirk):
     assert recorder.pop() == []
 
 
-def test_button_event_entities_skip_mapped_native_press_types():
-    """Test that press types a subclass maps itself are not declared again."""
+def test_button_event_entities_keep_native_press_types_when_mapped():
+    """Test that a subclass mapping press types itself keeps the native events."""
 
     class MappedPressCluster(PhilipsRwlRemoteCluster):
         PRESS_TYPES = {
@@ -1153,10 +1153,12 @@ def test_button_event_entities_skip_mapped_native_press_types():
         endpoint_id=1, names=RWL_BUTTON_NAMES
     )
     assert [event.event_type for event in entities[0].events] == [
+        "press_start",
         "press_end",
         "long_press_start",
         "long_press_end",
     ]
+    assert all(event.trigger is None for event in entities[0].events[:2])
 
     entities = PhilipsRwlRemoteCluster.generate_button_event_entities(
         endpoint_id=1, names=RWL_BUTTON_NAMES

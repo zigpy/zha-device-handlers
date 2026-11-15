@@ -27,6 +27,7 @@ from zhaquirks.const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
+    COMMAND_STOP,
     COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     ENDPOINT_ID,
@@ -48,7 +49,8 @@ def _button_event_entity(button: str, number: int, endpoint_id: int):
     """Return the button event entity of a button.
 
     A short press is sent on release, as the buttons can be held. The two buttons
-    of an endpoint stop with the same command, which ends the hold of the held one
+    of an endpoint stop with the same command (`stop_with_on_off`, or plain `stop`),
+    which ends the hold of the held one
     (of both, if both are held at once).
     """
     return ButtonEventMetadata(
@@ -59,6 +61,17 @@ def _button_event_entity(button: str, number: int, endpoint_id: int):
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, button),
+            ),
+            # The device may stop with `stop` instead of `stop_with_on_off`, as the
+            # OSRAM Switch Mini does
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={
+                    COMMAND: COMMAND_STOP,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: endpoint_id,
+                },
+                while_held=True,
             ),
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_END,

@@ -96,8 +96,24 @@ async def test_fourbtnremote_button_events(zigpy_device_from_quirk):
                 (button, "long_press_end"),
             ]
 
+            # A plain stop ends the hold too
+            send_command(
+                device,
+                endpoint_id,
+                LevelControl.cluster_id,
+                "move_with_on_off",
+                move_mode,
+                50,
+            )
+            send_command(device, endpoint_id, LevelControl.cluster_id, "stop")
+            assert recorder.pop() == [
+                (button, "long_press_start"),
+                (button, "long_press_end"),
+            ]
+
         # A stop without a hold fires nothing
         send_command(device, endpoint_id, LevelControl.cluster_id, "stop_with_on_off")
+        send_command(device, endpoint_id, LevelControl.cluster_id, "stop")
         assert recorder.pop() == []
 
     # A move at another rate is no trigger of the remote

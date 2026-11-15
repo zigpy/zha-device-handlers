@@ -232,7 +232,7 @@ class PhilipsRemoteCluster(CustomCluster):
         )
 
         native_press_type = self.NATIVE_PRESS_TYPES.get(args[2])
-        if native_press_type is not None and args[2] not in self.PRESS_TYPES:
+        if native_press_type is not None:
             self.listener_event(
                 ZHA_SEND_EVENT,
                 f"{button.action}_{native_press_type}",
@@ -374,15 +374,10 @@ class PhilipsRemoteCluster(CustomCluster):
         long_press = cls.PRESS_TYPES[1]
         long_release = cls.PRESS_TYPES[3]
 
-        # The native events are not sent for press types the subclass maps itself
-        native_events = [
-            (event_type, press_type)
-            for event_type, press_type in (
-                (ButtonEventType.PRESS_START, 0),
-                (ButtonEventType.PRESS_END, 2),
-            )
-            if press_type not in cls.PRESS_TYPES
-        ]
+        native_events = (
+            (ButtonEventType.PRESS_START, 0),
+            (ButtonEventType.PRESS_END, 2),
+        )
 
         return tuple(
             ButtonEventMetadata(
