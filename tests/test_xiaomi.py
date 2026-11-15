@@ -8,9 +8,9 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
 from zigpy.zcl import (
     AttributeReportedEvent,
@@ -45,6 +45,7 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks.builder import EntityType
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
@@ -3370,11 +3371,15 @@ def test_aqara_w500_thermostat(zigpy_device_from_v2_quirk):
     ):
         assert getattr(attrs, name).id == attr_id
 
+    entry = DEVICE_REGISTRY.match_entry(device)
     entities = {
-        entity.translation_key: entity
-        for entity in device.exposes_metadata[
-            (1, AqaraThermostatW500Cluster.cluster_id, ClusterType.Server)
-        ]
+        metadata.translation_key: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if (
+            metadata.endpoint_id == 1
+            and metadata.cluster_id == AqaraThermostatW500Cluster.cluster_id
+            and metadata.cluster_type == ClusterType.Server
+        )
     }
     assert set(entities) == {
         "preset",

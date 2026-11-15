@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from zigpy import types as t
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTemperature
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import EntityType, QuirkBuilder, UnitOfTemperature
 from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster
 
 XIAOMI_MFG_CODE = 0x115F
