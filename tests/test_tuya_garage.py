@@ -1,9 +1,11 @@
 """Tests for Tuya Garage."""
 
+from unittest import mock
+
 import pytest
 from zigpy.zcl import foundation
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -80,3 +82,35 @@ async def test_handle_get_data(
     assert listener.attribute_updates[0][0] == attr_id
     assert listener.attribute_updates[0][1] == value
     assert cluster.get(attr_id) == value
+
+
+@pytest.mark.parametrize(
+    "manuf,model,attr,value",
+    [
+        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", True), # Open
+        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", False), # Close
+        ("_TZE200_nklqjk62", "TS0601", "relay_countdown", 1), # Toggle
+        ("_TZE200_wfxuhoea", "TS0601", "garage_door_trigger", True),
+    ],
+)
+async def test_trigger_sent_once_without_reply(
+    zigpy_device_from_v2_quirk, manuf, model, attr, value
+):
+    """Test each trigger write goes out once, without waiting for a reply.
+
+    The relay pulses on every set_data it receives. If the request expected a
+    reply, zigpy would resend it after APS_REPLY_TIMEOUT when the reply is lost,
+    and the extra pulse would stop the door a few seconds after it starts moving.
+    """
+
+    quirked = zigpy_device_from_v2_quirk(manuf, model)
+    cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        await cluster.write_attributes({attr: value})
+        await wait_for_zigpy_tasks()
+
+    assert request_mock.call_count == 1
+    assert request_mock.call_args.kwargs["expect_reply"] is False
