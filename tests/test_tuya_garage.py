@@ -87,9 +87,9 @@ async def test_handle_get_data(
 @pytest.mark.parametrize(
     "manuf,model,attr,value",
     [
-        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", True), # Open
-        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", False), # Close
-        ("_TZE200_nklqjk62", "TS0601", "relay_countdown", 1), # Toggle
+        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", True),  # Open
+        ("_TZE200_nklqjk62", "TS0601", "garage_door_trigger", False),  # Close
+        ("_TZE200_nklqjk62", "TS0601", "relay_countdown", 1),  # Toggle
         ("_TZE200_wfxuhoea", "TS0601", "garage_door_trigger", True),
     ],
 )
