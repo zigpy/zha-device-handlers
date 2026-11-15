@@ -2,6 +2,7 @@
 
 from typing import Any, Final
 
+from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
@@ -17,6 +18,7 @@ from zhaquirks.builder import (
     NumberDeviceClass,
     QuirkBuilder,
     ReportingConfig,
+    UnitOfTemperature,
 )
 from zhaquirks.clusters import CustomCluster
 
@@ -48,7 +50,7 @@ SCREEN_ORIENTATION_ATTR_ID = 0x400B
 # Displayed temperature with values BoschDisplayedTemperature.
 DISPLAY_MODE_ATTR_ID = 0x4039
 
-# Display on-time (5s - 30s).
+# In a physical test, TRV1 accepted 1 s, but the display did not light visibly.
 SCREEN_TIMEOUT_ATTR_ID = 0x403A
 
 # Display brightness (0 - 10).
@@ -62,13 +64,28 @@ CTRL_SEQUENCE_OF_OPERATION_ID = Thermostat.AttributeDefs.ctrl_sequence_of_oper.i
 # Trigger valve calibration.
 CALIBRATE_VALVE_CMD_ID = 0x41
 
+# On TRV1 firmware 0x11087140, command 0x42 (fix motor logic) returned
+# UNSUP_CLUSTER_COMMAND during testing.
+
+BOSCH_MANUFACTURER_CODE = 0x1209
+
 
 class BoschOperatingMode(t.enum8):
     """Bosch operating mode attribute values."""
 
     Schedule = 0x00
     Manual = 0x01
+    Eco = 0x02
+    Away = 0x03
+    Holiday = 0x04
     Pause = 0x05
+
+
+class BoschRemoteTemperatureSource(t.enum8):
+    """Source used for thermostat temperature regulation."""
+
+    Internal = 0x00
+    External = 0x01
 
 
 class BoschValveAdaptStatus(t.enum8):
@@ -79,6 +96,17 @@ class BoschValveAdaptStatus(t.enum8):
     CalibrationInProgress = 0x02
     Error = 0x03
     Success = 0x04
+    FixMotorStarted = 0x05
+    FixMotorFailed = 0x06
+    FixMotorSuccessful = 0x07
+
+
+class BoschRestartReason(t.enum8):
+    """Reason for the last thermostat restart."""
+
+    cold_start = 0x00
+    warm_start = 0x01
+    firmware_installed = 0x02
 
 
 class State(t.enum8):
@@ -105,6 +133,7 @@ class BoschDisplayedTemperature(t.enum8):
 class BoschControlSequenceOfOperation(t.enum8):
     """Supported ControlSequenceOfOperation modes."""
 
+    # The tested TRV1 has no cooling, although the standard cooling setpoint is readable.
     Cooling = ControlSequenceOfOperation.Cooling_Only
     Heating = ControlSequenceOfOperation.Heating_Only
 
@@ -116,6 +145,9 @@ SYSTEM_MODE_ATTR = Thermostat.AttributeDefs.system_mode
 OPERATING_MODE_TO_SYSTEM_MODE_MAP = {
     BoschOperatingMode.Schedule: Thermostat.SystemMode.Auto,
     BoschOperatingMode.Manual: Thermostat.SystemMode.Heat,
+    BoschOperatingMode.Eco: Thermostat.SystemMode.Heat,
+    BoschOperatingMode.Away: Thermostat.SystemMode.Heat,
+    BoschOperatingMode.Holiday: Thermostat.SystemMode.Heat,
     BoschOperatingMode.Pause: Thermostat.SystemMode.Off,
 }
 
@@ -131,6 +163,22 @@ SYSTEM_MODE_TO_OPERATING_MODE_MAP = {
 BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
     min_interval=10, max_interval=10800, reportable_change=1
 )
+
+
+def _write_succeeded(
+    result: list[list[foundation.WriteAttributesStatusRecord]], attribute_id: int
+) -> bool:
+    """Return whether the specified attribute write succeeded."""
+
+    records = [
+        record
+        for response in result
+        for record in response
+        if record.attrid == attribute_id
+    ]
+    return bool(records) and all(
+        record.status == foundation.Status.SUCCESS for record in records
+    )
 
 
 def get_attribute_id_or_name(
@@ -152,10 +200,12 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     class AttributeDefs(Thermostat.AttributeDefs):
         """Bosch thermostat manufacturer specific attributes."""
 
+        # On TRV1 firmware 0x11087140, manufacturer-specific reads of 0x4026,
+        # 0x4027, 0x4044, 0x4045, and 0x4071-0x4075 returned UNSUPPORTED_ATTRIBUTE.
         operating_mode: Final = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         pi_heating_demand: Final = ZCLAttributeDef(
@@ -163,25 +213,80 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.uint8_t,
             zcl_type=DataTypeId.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         valve_adapt_status: Final = ZCLAttributeDef(
             id=VALVE_ADAPT_STATUS_ATTR_ID,
             type=BoschValveAdaptStatus,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=WINDOW_OPEN_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         boost_heating: Final = ZCLAttributeDef(
-            id=BOOST_HEATING_ATTR_ID, type=State, is_manufacturer_specific=True
+            id=BOOST_HEATING_ATTR_ID,
+            type=State,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         remote_temperature: Final = ZCLAttributeDef(
-            id=REMOTE_TEMPERATURE_ATTR_ID, type=t.int16s, is_manufacturer_specific=True
+            id=REMOTE_TEMPERATURE_ATTR_ID,
+            type=t.int16s,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        eco_temperature: Final = ZCLAttributeDef(
+            id=0x4008, type=t.uint16_t, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        away_temperature: Final = ZCLAttributeDef(
+            id=0x4009, type=t.uint16_t, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        holiday_temperature: Final = ZCLAttributeDef(
+            id=0x400A, type=t.uint16_t, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        anti_freeze_enabled: Final = ZCLAttributeDef(
+            id=0x400E, type=t.Bool, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        anti_freeze_temperature: Final = ZCLAttributeDef(
+            id=0x400F, type=t.uint16_t, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        decalcification_day: Final = ZCLAttributeDef(
+            id=0x4023, type=t.enum8, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        decalcification_hour: Final = ZCLAttributeDef(
+            id=0x4024, type=t.enum8, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        remote_temperature_source: Final = ZCLAttributeDef(
+            id=0x4041,
+            type=BoschRemoteTemperatureSource,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        window_open_temperature: Final = ZCLAttributeDef(
+            id=0x4050, type=t.enum8, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        error_state: Final = ZCLAttributeDef(
+            id=0x5000, type=t.bitmap8, manufacturer_code=BOSCH_MANUFACTURER_CODE
+        )
+
+        restart_reason: Final = ZCLAttributeDef(
+            id=0x5010,
+            type=BoschRestartReason,
+            access="r",
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
@@ -190,8 +295,40 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         calibrate_valve: Final = ZCLCommandDef(
             id=CALIBRATE_VALVE_CMD_ID,
             schema={},
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
+
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Only start valve calibration when the valve is ready for it."""
+        if self.server_commands[command_id].id != CALIBRATE_VALVE_CMD_ID:
+            return await super().command(command_id, *args, **kwargs)
+
+        valve_status_attr = self.AttributeDefs.valve_adapt_status
+        success, _ = await self.read_attributes([valve_status_attr.name])
+        valve_status = success.get(valve_status_attr.name)
+        if valve_status is None:
+            raise ZigbeeException(
+                "Valve calibration not started: valve status could not be read"
+            )
+        valve_status = BoschValveAdaptStatus(valve_status)
+        if valve_status != BoschValveAdaptStatus.ReadyToCalibrate:
+            raise ZigbeeException(
+                "Valve calibration not started: valve status is "
+                f"{valve_status.name}, not {BoschValveAdaptStatus.ReadyToCalibrate.name}"
+            )
+
+        result = await super().command(command_id, *args, **kwargs)
+        status = getattr(result, "status", foundation.Status.SUCCESS)
+        if status != foundation.Status.SUCCESS:
+            raise ZigbeeException(
+                f"Valve calibration rejected by device: {foundation.Status(status).name}"
+            )
+        return result
 
     async def write_attributes(
         self,
@@ -207,7 +344,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         operating_mode_attr = self.AttributeDefs.operating_mode
 
-        result = []
+        result: list[list[foundation.WriteAttributesStatusRecord]] = []
         remaining_attributes = attributes.copy()
         system_mode_value = None
         operating_mode_value = None
@@ -239,79 +376,130 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             else:
                 operating_mode_value = attributes.get(operating_mode_attribute_id)
 
+        ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+        ctrl_sequence_of_oper_attribute_id = get_attribute_id_or_name(
+            ctrl_sequence_of_oper_attr, remaining_attributes
+        )
+        translated_mode_written = False
         if system_mode_value is not None:
             """Write operating_mode (from system_mode value)."""
-            new_operating_mode_value = SYSTEM_MODE_TO_OPERATING_MODE_MAP[
+            new_operating_mode_value = SYSTEM_MODE_TO_OPERATING_MODE_MAP.get(
                 system_mode_value
-            ]
-            result += await super().write_attributes(
+            )
+            if new_operating_mode_value is None:
+                return [
+                    [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.INVALID_VALUE,
+                            attrid=SYSTEM_MODE_ATTR.id,
+                        )
+                    ]
+                ]
+            mode_result = await super().write_attributes(
                 {operating_mode_attr.id: new_operating_mode_value}, **kwargs
             )
-            self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+            result += mode_result
+            translated_mode_written = _write_succeeded(
+                mode_result, operating_mode_attr.id
+            )
+            if translated_mode_written:
+                operating_mode_value = new_operating_mode_value
+                self._update_attribute(operating_mode_attr.id, new_operating_mode_value)
+                # A simultaneous control-sequence write determines the final mode.
+                if ctrl_sequence_of_oper_attribute_id is None:
+                    self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
         elif operating_mode_value is not None:
-            new_system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[
-                operating_mode_value
-            ]
+            if OPERATING_MODE_TO_SYSTEM_MODE_MAP.get(operating_mode_value) is None:
+                return [
+                    [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.INVALID_VALUE,
+                            attrid=operating_mode_attr.id,
+                        )
+                    ]
+                ]
 
-            if new_system_mode_value == Thermostat.SystemMode.Heat:
-                """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
-                ctrl_sequence_of_oper_attr = (
-                    Thermostat.AttributeDefs.ctrl_sequence_of_oper
+        remaining_result: list[list[foundation.WriteAttributesStatusRecord]] = []
+        if remaining_attributes:
+            remaining_result = await super().write_attributes(
+                remaining_attributes, **kwargs
+            )
+            result += remaining_result
+
+        operating_mode_written = (
+            system_mode_value is None
+            and operating_mode_value is not None
+            and _write_succeeded(remaining_result, operating_mode_attr.id)
+        ) or (
+            translated_mode_written and ctrl_sequence_of_oper_attribute_id is not None
+        )
+        control_sequence_written = (
+            ctrl_sequence_of_oper_attribute_id is not None
+            and _write_succeeded(remaining_result, ctrl_sequence_of_oper_attr.id)
+        )
+
+        if operating_mode_written:
+            if system_mode_value is None:
+                self._update_attribute(operating_mode_attr.id, operating_mode_value)
+        elif control_sequence_written:
+            successful_r, failed_r = await super().read_attributes(
+                [operating_mode_attr.name],
+                allow_cache=True,
+                only_cache=False,
+                **kwargs,
+            )
+            operating_mode_value = successful_r.get(operating_mode_attr.name)
+            if operating_mode_value is None:
+                self.warning(
+                    "Cannot synchronize system mode: operating mode read failed: %s",
+                    failed_r,
                 )
+                return result
+        else:
+            return result
+
+        new_system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP.get(
+            operating_mode_value
+        )
+        if new_system_mode_value is None:
+            self.warning(
+                "Cannot synchronize system mode: unknown operating mode %s",
+                operating_mode_value,
+            )
+            return result
+
+        if new_system_mode_value == Thermostat.SystemMode.Heat:
+            if (
+                control_sequence_written
+                and ctrl_sequence_of_oper_attribute_id is not None
+            ):
+                ctrl_sequence_of_oper_value = attributes[
+                    ctrl_sequence_of_oper_attribute_id
+                ]
+            else:
                 successful_r, failed_r = await super().read_attributes(
                     [ctrl_sequence_of_oper_attr.name],
                     allow_cache=True,
                     only_cache=False,
                     **kwargs,
                 )
-                if ctrl_sequence_of_oper_attr.name in successful_r:
-                    ctrl_sequence_of_oper_value = successful_r.pop(
-                        ctrl_sequence_of_oper_attr.name
-                    )
-                    if (
-                        ctrl_sequence_of_oper_value
-                        == BoschControlSequenceOfOperation.Cooling
-                    ):
-                        new_system_mode_value = Thermostat.SystemMode.Cool
-
-            self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
-        else:
-            """Sync system_mode with ctrl_sequence_of_oper."""
-            ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
-
-            ctrl_sequence_of_oper_attribute_id = get_attribute_id_or_name(
-                ctrl_sequence_of_oper_attr, attributes
-            )
-            if ctrl_sequence_of_oper_attribute_id is not None:
-                ctrl_sequence_of_oper_value = attributes.get(
-                    ctrl_sequence_of_oper_attribute_id
+                ctrl_sequence_of_oper_value = successful_r.get(
+                    ctrl_sequence_of_oper_attr.name
                 )
-                if ctrl_sequence_of_oper_value is not None:
-                    successful_r, failed_r = await super().read_attributes(
-                        [operating_mode_attr.name],
-                        allow_cache=True,
-                        only_cache=False,
-                        **kwargs,
+                if ctrl_sequence_of_oper_value is None:
+                    self.warning(
+                        "Cannot synchronize system mode: control sequence read "
+                        "failed: %s",
+                        failed_r,
                     )
-                    if operating_mode_attr.name in successful_r:
-                        operating_mode_attr_value = successful_r.pop(
-                            operating_mode_attr.name
-                        )
-                        if operating_mode_attr_value == BoschOperatingMode.Manual:
-                            new_system_mode_value = Thermostat.SystemMode.Heat
-                            if (
-                                ctrl_sequence_of_oper_value
-                                == BoschControlSequenceOfOperation.Cooling
-                            ):
-                                new_system_mode_value = Thermostat.SystemMode.Cool
+                    return result
 
-                            self._update_attribute(
-                                SYSTEM_MODE_ATTR.id, new_system_mode_value
-                            )
+            if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling:
+                new_system_mode_value = Thermostat.SystemMode.Cool
+        elif not operating_mode_written:
+            return result
 
-        """Write the remaining attributes to thermostat cluster."""
-        if remaining_attributes:
-            result += await super().write_attributes(remaining_attributes, **kwargs)
+        self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
         return result
 
     async def read_attributes(
@@ -346,12 +534,15 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             )
             if operating_mode_attr.name in successful_r:
                 operating_mode_value = successful_r.pop(operating_mode_attr.name)
-                system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[
+                system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP.get(
                     operating_mode_value
-                ]
+                )
 
                 """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
-                if ctrl_sequence_of_oper_attr.name in successful_r:
+                if (
+                    system_mode_value is not None
+                    and ctrl_sequence_of_oper_attr.name in successful_r
+                ):
                     ctrl_sequence_of_oper_value = successful_r.pop(
                         ctrl_sequence_of_oper_attr.name
                     )
@@ -362,8 +553,11 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                     ):
                         system_mode_value = Thermostat.SystemMode.Cool
 
-                successful_r[system_mode_attribute_id] = system_mode_value
-                self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+                if system_mode_value is None:
+                    failed_r[system_mode_attribute_id] = foundation.Status.INVALID_VALUE
+                else:
+                    successful_r[system_mode_attribute_id] = system_mode_value
+                    self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
 
         """Read remaining attributes from thermostat cluster."""
         if remaining_attributes:
@@ -432,33 +626,41 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             id=SCREEN_ORIENTATION_ATTR_ID,
             type=BoschDisplayOrientation,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_on_time: Final = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
-            # Usable values range from 5-30
+            # Seconds, values range from 1-255
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         display_brightness: Final = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
             type=t.enum8,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
         displayed_temperature: Final = ZCLAttributeDef(
             id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
-            is_manufacturer_specific=True,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
+        )
+
+        light_ring_on_temperature_change: Final = ZCLAttributeDef(
+            id=0x4031,
+            type=t.enum8,
+            manufacturer_code=BOSCH_MANUFACTURER_CODE,
         )
 
 
 (
     QuirkBuilder("BOSCH", "RBSH-TRV0-ZB-EU")
     .applies_to("BOSCH", "RBSH-TRV1-ZB-EU")
+    # On TRV1 firmware 0x11087140, reads of OTA-cluster attributes 0x5000-0x5004
+    # returned UNSUPPORTED_ATTRIBUTE; firmware update support was not tested.
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
@@ -469,8 +671,40 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        attribute_initialized_from_cache=False,
         translation_key="operating_mode",
         fallback_name="Operating mode",
+    )
+    .enum(
+        BoschThermostatCluster.AttributeDefs.remote_temperature_source.name,
+        BoschRemoteTemperatureSource,
+        BoschThermostatCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        attribute_initialized_from_cache=False,
+        translation_key="remote_temperature_source",
+        fallback_name="Remote temperature source",
+    )
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.error_state.name,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
+        attribute_initialized_from_cache=False,
+        translation_key="error_status",
+        fallback_name="Error status",
+    )
+    .enum(
+        BoschThermostatCluster.AttributeDefs.restart_reason.name,
+        BoschRestartReason,
+        BoschThermostatCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        initially_disabled=True,
+        attribute_initialized_from_cache=False,
+        translation_key="restart_reason",
+        fallback_name="Restart reason",
     )
     # Valve adapt status - read-only.
     .enum(
@@ -502,12 +736,105 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .number(
         BoschThermostatCluster.AttributeDefs.remote_temperature.name,
         BoschThermostatCluster.cluster_id,
+        min_value=-80,
+        max_value=80,
+        step=0.1,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="external_temperature_sensor_value",
+        fallback_name="External temperature sensor value",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.eco_temperature.name,
+        BoschThermostatCluster.cluster_id,
         min_value=5,
         max_value=30,
         step=0.1,
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
-        fallback_name="Remote temperature",
+        unit=UnitOfTemperature.CELSIUS,
+        attribute_initialized_from_cache=False,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.away_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=0.1,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        attribute_initialized_from_cache=False,
+        translation_key="away_preset_temperature",
+        fallback_name="Away preset temperature",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.holiday_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=0.1,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        attribute_initialized_from_cache=False,
+        translation_key="holiday_temperature",
+        fallback_name="Holiday temperature",
+    )
+    .switch(
+        BoschThermostatCluster.AttributeDefs.anti_freeze_enabled.name,
+        BoschThermostatCluster.cluster_id,
+        attribute_initialized_from_cache=False,
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.anti_freeze_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=0.1,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        attribute_initialized_from_cache=False,
+        translation_key="frost_protection_temperature",
+        fallback_name="Frost protection temperature",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.decalcification_day.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=0,
+        max_value=6,
+        step=1,
+        attribute_initialized_from_cache=False,
+        translation_key="decalcification_day",
+        fallback_name="Decalcification day",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.decalcification_hour.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=0,
+        max_value=23,
+        step=1,
+        attribute_initialized_from_cache=False,
+        translation_key="decalcification_hour",
+        fallback_name="Decalcification hour",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.window_open_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=5,
+        max_value=10,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        attribute_initialized_from_cache=False,
+        translation_key="window_open_temperature",
+        fallback_name="Window open temperature",
     )
     # Valve calibration.
     .command_button(
@@ -522,6 +849,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschUserInterfaceCluster.AttributeDefs.displayed_temperature.name,
         BoschDisplayedTemperature,
         BoschUserInterfaceCluster.cluster_id,
+        attribute_initialized_from_cache=False,
         translation_key="displayed_temperature",
         fallback_name="Displayed temperature",
     )
@@ -530,16 +858,19 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschUserInterfaceCluster.AttributeDefs.display_orientation.name,
         BoschDisplayOrientation,
         BoschUserInterfaceCluster.cluster_id,
+        attribute_initialized_from_cache=False,
         translation_key="display_orientation",
         fallback_name="Display orientation",
     )
-    # Display time-out.
+    # Display time-out. The device accepts 1, but the display stays on for
+    # roughly the configured value minus one second, so 1 is never visible.
     .number(
         BoschUserInterfaceCluster.AttributeDefs.display_on_time.name,
         BoschUserInterfaceCluster.cluster_id,
-        min_value=5,
-        max_value=30,
+        min_value=2,
+        max_value=255,
         step=1,
+        attribute_initialized_from_cache=False,
         translation_key="display_on_time",
         fallback_name="Display on-time",
     )
@@ -550,14 +881,23 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=0,
         max_value=10,
         step=1,
+        attribute_initialized_from_cache=False,
         translation_key="display_brightness",
         fallback_name="Display brightness",
+    )
+    .switch(
+        BoschUserInterfaceCluster.AttributeDefs.light_ring_on_temperature_change.name,
+        BoschUserInterfaceCluster.cluster_id,
+        attribute_initialized_from_cache=False,
+        translation_key="light_ring_on_temperature_change",
+        fallback_name="Light ring on temperature change",
     )
     # Heating vs Cooling.
     .enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
         BoschThermostatCluster.cluster_id,
+        attribute_initialized_from_cache=False,
         translation_key="ctrl_sequence_of_oper",
         fallback_name="Control sequence",
     )
