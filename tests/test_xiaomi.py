@@ -8,6 +8,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -44,6 +45,7 @@ from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
+from zhaquirks.builder import EntityType
 from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
@@ -121,6 +123,7 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
+from zhaquirks.xiaomi.aqara.thermostat_aeu001 import AqaraThermostatW500Cluster
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -3347,6 +3350,56 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+def test_aqara_w500_thermostat(zigpy_device_from_v2_quirk):
+    """Test the Aqara W500 floor heating thermostat quirk."""
+    device = zigpy_device_from_v2_quirk("Aqara", "lumi.airrtc.aeu001")
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    assert isinstance(opple_cluster, AqaraThermostatW500Cluster)
+
+    attrs = AqaraThermostatW500Cluster.AttributeDefs
+    for name, attr_id in (
+        ("preset", 0x0311),
+        ("state", 0x0310),
+        ("sensor_source", 0x0280),
+        ("ntc_sensor_type", 0x0315),
+        ("window_detection", 0x0273),
+        ("child_lock", 0x0277),
+        ("hysteresis", 0x030C),
+    ):
+        assert getattr(attrs, name).id == attr_id
+
+    entry = DEVICE_REGISTRY.match_entry(device)
+    entities = {
+        metadata.translation_key: metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if (
+            metadata.endpoint_id == 1
+            and metadata.cluster_id == AqaraThermostatW500Cluster.cluster_id
+            and metadata.cluster_type == ClusterType.Server
+        )
+    }
+    assert set(entities) == {
+        "preset",
+        "thermostat_state",
+        "temperature_sensor_source",
+        "ntc_sensor_type",
+        "window_detection",
+        "child_lock",
+        "hysteresis",
+    }
+
+    assert entities["thermostat_state"].fallback_name == "State"
+    assert entities["thermostat_state"].entity_type == EntityType.DIAGNOSTIC
+    assert entities["window_detection"].fallback_name == "Open window detection"
+
+    hysteresis = entities["hysteresis"]
+    assert hysteresis.min == 0
+    assert hysteresis.max == 3
+    assert hysteresis.step == 0.5
+    assert hysteresis.multiplier == 0.1
 
 
 def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):
