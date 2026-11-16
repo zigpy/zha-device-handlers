@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import pytest
 import time_machine
 from zha.quirks import DeviceRegistry
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zdo.types import NodeDescriptor
@@ -484,3 +485,69 @@ async def test_from_cluster_data_multi_dp_cross_endpoint(device_mock):
     assert result[0].datapoints[0].dp == 1
     # combine_power_and_current(7, 42) = 7 * 1000 + 42 = 7042
     assert result[0].datapoints[0].data.payload == 7042
+
+
+@pytest.mark.parametrize(
+    ("attr_value", "expected_payload", "dp_type"),
+    [
+        ("Kitchen", "Kitchen", TuyaDPType.STRING),
+        ("5", "5", TuyaDPType.STRING),
+        # everything else is handled as before: floats are truncated to int, ints
+        # (including bools) keep their type
+        (730.0, 730, TuyaDPType.VALUE),
+        (t.Single(730.5), 730, TuyaDPType.VALUE),
+        (True, True, TuyaDPType.BOOL),
+        (7, 7, TuyaDPType.VALUE),
+    ],
+)
+async def test_tuya_cluster_data_attr_value_types(
+    device_mock, attr_value, expected_payload, dp_type
+):
+    """Test that string values survive TuyaClusterData and reach the MCU.
+
+    TuyaClusterData.attr_value used to be typed `int`, so zigpy's Struct
+    conversion raised ValueError for strings, making string datapoints impossible
+    to write. Other values must keep being sent as integers.
+    """
+
+    registry = DeviceRegistry()
+
+    class StringCluster(TuyaLocalCluster):
+        """Cluster with a string attribute backed by a Tuya datapoint."""
+
+        cluster_id = 0xFC01
+        name = "String cluster"
+        ep_attribute = "string_cluster"
+
+        class AttributeDefs(foundation.BaseAttributeDefs):
+            label = foundation.ZCLAttributeDef(
+                id=0x0000, type=t.CharacterString, access="rw"
+            )
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp(dp_id=106, ep_attribute="string_cluster", attribute_name="label")
+        .adds(StringCluster)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.resolve(device_mock)
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    cluster_data = TuyaClusterData(
+        endpoint_id=1,
+        cluster_name="string_cluster",
+        cluster_attr="label",
+        attr_value=attr_value,
+        expect_reply=False,
+    )
+
+    commands = tuya_cluster.from_cluster_data(cluster_data)
+    assert len(commands) == 1
+
+    datapoints = commands[0].datapoints
+    assert len(datapoints) == 1
+    assert datapoints[0].dp == 106
+    assert datapoints[0].data.dp_type == dp_type
+    assert datapoints[0].data.payload == expected_payload
