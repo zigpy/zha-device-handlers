@@ -1,12 +1,14 @@
 """Tests for xiaomi."""
 
 import asyncio
+import datetime
 import itertools
 import logging
 import math
 import struct
 from typing import Any
 from unittest import mock
+import zoneinfo
 
 import pytest
 from zha.application.helpers import convert_zcl_value
@@ -29,6 +31,7 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -127,6 +130,7 @@ from zhaquirks.xiaomi.aqara.switch_aeu001 import (
     ButtonOperationMode,
     ButtonRelay,
     ElderMode,
+    LocalTimeCluster,
     LVBytesString,
     OppleCluster as DisplaySwitchOppleCluster,
     ProximitySensitivity,
@@ -4023,3 +4027,86 @@ async def test_aqara_display_switch_weather_temperature_zha_conversion(
         await opple_cluster.write_attributes({attr_def.id: converted})
 
     assert struct.unpack(">f", _written(m)[0][1][-4:])[0] == expected
+
+
+async def test_aqara_display_switch_proximity(zigpy_device_from_v2_quirk):
+    """Test the latched proximity flag is held for the cooldown, then cleared."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    proximity_id = DisplaySwitchOppleCluster.AttributeDefs.proximity.id
+    listener = ClusterListener(opple_cluster)
+
+    with mock.patch("zhaquirks.xiaomi.aqara.switch_aeu001.PROXIMITY_HOLD_S", 0.01):
+        device.endpoints[2].opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        assert opple_cluster.get(proximity_id) == t.Bool.true
+        assert listener.attribute_updates == [(proximity_id, t.Bool.true)]
+
+        await asyncio.sleep(0.05)
+        assert opple_cluster.get(proximity_id) == t.Bool.false
+
+        opple_cluster.update_attribute(proximity_id, t.Bool.true)
+        opple_cluster.update_attribute(proximity_id, t.Bool.false)
+        await asyncio.sleep(0.05)
+
+    assert listener.attribute_updates == [
+        (proximity_id, t.Bool.true),
+        (proximity_id, t.Bool.false),
+        (proximity_id, t.Bool.true),
+        (proximity_id, t.Bool.false),
+    ]
+
+
+async def test_aqara_display_switch_proximity_stale_cache(
+    zigpy_device_from_v2_quirk,
+):
+    """Test a cached proximity value from before a restart reads as clear."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    proximity = DisplaySwitchOppleCluster.AttributeDefs.proximity
+    opple_cluster._attr_cache.set_value(proximity, t.Bool.true)
+
+    assert opple_cluster.get(proximity.name) == t.Bool.false
+
+    opple_cluster.update_attribute(proximity.id, t.Bool.true)
+    assert opple_cluster.get(proximity.name) == t.Bool.true
+    opple_cluster._proximity_timer.cancel()
+
+
+def test_aqara_display_switch_local_time(zigpy_device_from_v2_quirk):
+    """Test Time reads are answered with local time and no offset."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.switch.aeu001", endpoint_ids=[1, 2, 3, 4, 21]
+    )
+    time_cluster = device.endpoints[1].out_clusters[Time.cluster_id]
+    assert isinstance(time_cluster, LocalTimeCluster)
+
+    device.application.local_timezone = zoneinfo.ZoneInfo("Europe/Sofia")
+    attrs = Time.AttributeDefs
+    now = datetime.datetime(2026, 7, 1, 12, 0, tzinfo=datetime.UTC)
+
+    with mock.patch("zigpy.zcl.clusters.general.datetime") as dt:
+        dt.now.return_value = now
+        records = time_cluster._handle_read_attributes(
+            [
+                attrs.time.id,
+                attrs.time_zone.id,
+                attrs.local_time.id,
+                attrs.standard_time.id,
+                attrs.dst_shift.id,
+            ]
+        )
+
+    values = {record.attrid: record.value.value for record in records}
+    local = t.UTCTime.from_datetime(now + datetime.timedelta(hours=3))
+    assert values == {
+        attrs.time.id: local,
+        attrs.time_zone.id: 0,
+        attrs.local_time.id: local,
+        attrs.standard_time.id: local,
+        attrs.dst_shift.id: 0,
+    }

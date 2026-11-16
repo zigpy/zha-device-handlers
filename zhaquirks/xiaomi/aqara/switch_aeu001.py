@@ -5,12 +5,25 @@ import struct
 from typing import Any, Final
 
 from zigpy import types as t
+from zigpy.time import TimeSnapshot
 from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Groups, Identify, MultistateInput, OnOff, Scenes
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import (
+    Groups,
+    Identify,
+    MultistateInput,
+    OnOff,
+    Scenes,
+    Time,
+)
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
-from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    UnitOfTime,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -32,6 +45,9 @@ from zhaquirks.xiaomi import (
 
 # Attribute for present_value in MultistateInput cluster
 PRESENT_VALUE_ATTR = MultistateInput.AttributeDefs.present_value.id
+
+# The device latches proximity at 1 for its 60 s hardware cooldown and never sends 0
+PROXIMITY_HOLD_S = 58
 
 
 class LVBytesString(t.LVBytes):
@@ -164,6 +180,28 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
+class LocalTimeCluster(CustomCluster, Time):
+    """Time cluster that answers with local time, which the display shows as is."""
+
+    def handle_read_attribute_time(self, snapshot: TimeSnapshot) -> t.UTCTime:
+        """Return local time."""
+        return t.UTCTime(snapshot.local_time)
+
+    def handle_read_attribute_time_zone(self, snapshot: TimeSnapshot) -> t.int32s:
+        """Return no offset, since the time is already local."""
+        return t.int32s(0)
+
+    def handle_read_attribute_standard_time(
+        self, snapshot: TimeSnapshot
+    ) -> t.StandardTime:
+        """Return local time."""
+        return t.StandardTime(snapshot.local_time)
+
+    def handle_read_attribute_dst_shift(self, snapshot: TimeSnapshot) -> t.int32s:
+        """Return no DST shift, since the time is already local."""
+        return t.int32s(0)
+
+
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster for Aqara Display Switch."""
 
@@ -248,6 +286,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
+        proximity: Final = ZCLAttributeDef(
+            id=0x0142,
+            type=t.Bool,
+            zcl_type=DataTypeId.uint8,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+
         # Other features
         elder_mode: Final = ZCLAttributeDef(
             id=0x0217,
@@ -292,6 +338,46 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         super().__init__(*args, **kwargs)
         self._weather_seq = 0
         self._weather_lock = asyncio.Lock()
+        self._proximity_timer: asyncio.TimerHandle | None = None
+
+    def _update_attribute(self, attrid, value):
+        if attrid != self.AttributeDefs.proximity.id:
+            super()._update_attribute(attrid, value)
+            return
+
+        if self.endpoint.endpoint_id != 1:
+            self.endpoint.device.endpoints[1].opple_cluster._update_attribute(
+                attrid, value
+            )
+            return
+
+        if not value:
+            if self._proximity_timer is not None:
+                self._proximity_timer.cancel()
+                self._proximity_timer = None
+        elif self._proximity_timer is not None:
+            return
+        else:
+            self._proximity_timer = asyncio.get_running_loop().call_later(
+                PROXIMITY_HOLD_S, self._clear_proximity
+            )
+
+        super()._update_attribute(attrid, value)
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Report proximity only while its hold timer runs, not from a stale cache."""
+        value = super().get(key, default)
+        if (
+            value
+            and self._proximity_timer is None
+            and self.find_attribute(key) == self.AttributeDefs.proximity
+        ):
+            return t.Bool.false
+        return value
+
+    def _clear_proximity(self) -> None:
+        self._proximity_timer = None
+        super()._update_attribute(self.AttributeDefs.proximity.id, t.Bool.false)
 
     def _get_ieee_bytes(self) -> bytes:
         """Extract last 6 bytes of device IEEE address for weather packets."""
@@ -438,6 +524,7 @@ builder = (
     .replaces(MeteringCluster)
     .replaces(ElectricalMeasurementCluster)
     .replaces(OppleCluster)
+    .replaces(LocalTimeCluster, cluster_type=ClusterType.Client)
     # Endpoint 2: Secondary switch
     .replaces_endpoint(2, device_type=0x010A)
     .adds(Identify, endpoint_id=2)
@@ -552,6 +639,13 @@ builder = (
         OppleCluster.cluster_id,
         translation_key="elder_mode",
         fallback_name="Elder mode",
+    )
+    .binary_sensor(
+        OppleCluster.AttributeDefs.proximity.name,
+        OppleCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+        fallback_name="Occupancy",
     )
     # Switch entities for boolean settings
     .switch(
