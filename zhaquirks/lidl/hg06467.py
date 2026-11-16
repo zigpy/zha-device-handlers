@@ -77,6 +77,8 @@ DP_COLOR = 5
 DP_EFFECT = 6
 
 DEFAULT_SPEED = 50  # percent
+# Pause between datapoints: the string's MCU drops commands sent too densely.
+SEND_GAP = 0.15  # seconds
 # Below this saturation (of 1000) a picked colour uses the white mode.
 WHITE_SATURATION = 30
 DEVICE_SPEED_MAX = 64
@@ -262,6 +264,8 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         super().__init__(*args, **kwargs)
         self._send_lock = asyncio.Lock()
         self._sent_dps: set[int] = set()
+        self._power_sync: asyncio.Task | None = None
+        self._power_dirty = False
 
     def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
         """Skip echoes of datapoints this quirk writes.
@@ -287,7 +291,9 @@ class MelineraTuyaCluster(TuyaMCUCluster):
     async def send_dps(self, *datapoints: tuple[int, Any]) -> None:
         """Send datapoints to the string, in order and not interleaved."""
         async with self._send_lock:
-            for dp, value in datapoints:
+            for i, (dp, value) in enumerate(datapoints):
+                if i:
+                    await asyncio.sleep(SEND_GAP)
                 self._sent_dps.add(dp)
                 await self.command(
                     self.mcu_write_command,
@@ -319,25 +325,31 @@ class MelineraTuyaCluster(TuyaMCUCluster):
 
         light_mode keeps the logical mode (colour, white or effect) to resume;
         the string itself is put into white mode, the only mode in which zero
-        brightness darkens it. State is updated before sending, so that rapid
-        on/off calls always build on the latest intent; the sends are queued.
+        brightness darkens it.
         """
         self.update_attribute("soft_off", True)
-        await self.send_dps(
-            (DP_WHITE_BRIGHTNESS, 0),
-            (DP_MODE, LightMode.White),
-            (DP_WHITE_BRIGHTNESS, 0),
-        )
+        await self._sync_power()
 
     async def resume(self) -> None:
         """Restore the mode, colour, brightness or effect from before soft off."""
         self.update_attribute("soft_off", False)
+        await self._sync_power()
+
+    def _power_dps(self) -> list[tuple[int, Any]]:
+        """Datapoints for the current soft-off state."""
+        if self.get("soft_off"):
+            # DP3 before and after the mode, so that no white flash is seen.
+            return [
+                (DP_WHITE_BRIGHTNESS, 0),
+                (DP_MODE, LightMode.White),
+                (DP_WHITE_BRIGHTNESS, 0),
+            ]
         mode = self.get("light_mode")
         level = level_to_1000(
             self.endpoint.level.get(LevelControl.AttributeDefs.current_level.name)
         )
         if mode == LightMode.Effect:
-            await self.send_dps(
+            return [
                 (DP_MODE, LightMode.Effect),
                 (
                     DP_EFFECT,
@@ -347,17 +359,29 @@ class MelineraTuyaCluster(TuyaMCUCluster):
                         self.get("effect_palette"),
                     ),
                 ),
-            )
-        elif mode == LightMode.Color:
+            ]
+        if mode == LightMode.Color:
             hue, sat = current_hs(self.endpoint)
-            await self.send_dps(
-                (DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, level))
-            )
-        else:
-            self.update_attribute("light_mode", LightMode.White)
-            await self.send_dps(
-                (DP_MODE, LightMode.White), (DP_WHITE_BRIGHTNESS, level)
-            )
+            return [(DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, level))]
+        self.update_attribute("light_mode", LightMode.White)
+        return [(DP_MODE, LightMode.White), (DP_WHITE_BRIGHTNESS, level)]
+
+    async def _sync_power(self) -> None:
+        """Bring the string to the latest soft-off state.
+
+        Rapid on/off calls are coalesced: while a sync is running, further
+        calls only mark it dirty, and the running sync then sends the final
+        state once instead of every intermediate one.
+        """
+        self._power_dirty = True
+        if self._power_sync is None or self._power_sync.done():
+            self._power_sync = asyncio.ensure_future(self._power_sync_loop())
+        await asyncio.shield(self._power_sync)
+
+    async def _power_sync_loop(self) -> None:
+        while self._power_dirty:
+            self._power_dirty = False
+            await self.send_dps(*self._power_dps())
 
     async def write_attributes(
         self,

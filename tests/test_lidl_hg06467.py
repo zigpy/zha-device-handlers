@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.lighting import Color
 from tests.common import wait_for_zigpy_tasks
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
+from zhaquirks.lidl import hg06467
 from zhaquirks.lidl.hg06467 import (
     DP_COLOR as DP_COLOR_DP,
     DP_MODE,
@@ -30,6 +31,12 @@ from zhaquirks.lidl.hg06467 import (
 from zhaquirks.tuya import TuyaCommand, TuyaDatapointData, TuyaNewManufCluster
 
 zhaquirks.setup()
+
+
+@pytest.fixture(autouse=True)
+def no_send_gap(monkeypatch):
+    """Skip the pause between datapoints in tests."""
+    monkeypatch.setattr(hg06467, "SEND_GAP", 0)
 
 
 def _dev(zigpy_device_from_v2_quirk):
@@ -438,3 +445,42 @@ async def test_rapid_toggling(effect):
             await gateway.async_block_till_done()
             assert not light.is_on
             assert _sent(req)[-1] == (3, 0)
+
+
+async def test_rapid_toggling_coalesced(zigpy_device_from_v2_quirk):
+    """Test rapid on/off only sends the final state."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    tuya.update_attribute("light_mode", LightMode.Effect)
+    tuya.update_attribute("string_effect", StringEffect.Glow)
+    tuya.update_attribute("effect_speed", 100)
+
+    async def slow_request(*args, **kwargs):
+        await asyncio.sleep(0.01)
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        await asyncio.gather(
+            tuya.soft_off(),
+            tuya.resume(),
+            tuya.soft_off(),
+            tuya.resume(),
+            tuya.soft_off(),
+            tuya.resume(),
+        )
+    assert _sent(req) == [(2, LightMode.Effect), (6, "0f64")]
+    assert not tuya.get("soft_off")
+
+    # presses during a running sync collapse into one final sync
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        first = asyncio.ensure_future(tuya.soft_off())
+        await asyncio.sleep(0.005)
+        await asyncio.gather(tuya.resume(), tuya.soft_off(), tuya.resume(), first)
+    assert _sent(req) == [
+        (3, 0),
+        (2, LightMode.White),
+        (3, 0),
+        (2, LightMode.Effect),
+        (6, "0f64"),
+    ]
