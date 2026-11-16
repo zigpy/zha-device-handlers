@@ -11,7 +11,7 @@ from unittest import mock
 import zoneinfo
 
 import pytest
-from zha.application.helpers import convert_zcl_value, write_attributes_safe
+from zha.application.helpers import write_attributes_safe
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -3886,13 +3886,13 @@ async def test_opple_cluster_write_attributes_weather_temperature(
     opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
 
     with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
-        result = await opple_cluster.write_attributes({attr: -5})
+        result = await opple_cluster.write_attributes({attr: -55})
 
     written = _written(m)
     assert len(written) == 1
     assert written[0][0] == DisplaySwitchOppleCluster.AttributeDefs.weather_data.id
     assert written[0][1][17:19] == b"\x00\x04"
-    assert struct.unpack(">f", written[0][1][-4:])[0] == -5.0
+    assert struct.unpack(">f", written[0][1][-4:])[0] == pytest.approx(-5.5)
     assert result[0][0].status == foundation.Status.SUCCESS
     assert (
         result[0][0].attrid
@@ -4014,20 +4014,56 @@ def test_aqara_display_switch_heartbeat_power(zigpy_device_from_v2_quirk):
     assert electrical[ElectricalMeasurement.AttributeDefs.active_power.id] == 120
 
 
-@pytest.mark.parametrize(("value", "expected"), [("22.5", 22.5), (-5, -5.0)])
-async def test_aqara_display_switch_weather_temperature_zha_conversion(
-    zigpy_device_from_v2_quirk, value, expected
+@pytest.mark.parametrize("value", [22.5, -0.3, 18])
+async def test_aqara_display_switch_weather_temperature_entity_write(
+    zigpy_device_from_v2_quirk, value
 ):
-    """Test fractional temperatures survive ZHA's value conversion."""
+    """Test fractional temperatures survive ZHA's number entity write path."""
     opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
     attr_def = DisplaySwitchOppleCluster.AttributeDefs.weather_temperature
-
-    converted = convert_zcl_value(value, attr_def.type)
+    (metadata,) = (
+        m
+        for m in zhaquirks.xiaomi.aqara.switch_aeu001.builder.entity_metadata
+        if getattr(m, "attribute_name", None) == attr_def.name
+    )
 
     with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
-        await opple_cluster.write_attributes({attr_def.id: converted})
+        await write_attributes_safe(
+            opple_cluster, {attr_def.name: round(value / metadata.multiplier)}
+        )
 
-    assert struct.unpack(">f", _written(m)[0][1][-4:])[0] == expected
+    assert struct.unpack(">f", _written(m)[0][1][-4:])[0] == pytest.approx(value)
+    assert opple_cluster.get(attr_def.name) * metadata.multiplier == pytest.approx(
+        value
+    )
+
+
+async def test_opple_cluster_write_attributes_weather_ordering(
+    zigpy_device_from_v2_quirk,
+):
+    """Test overlapping weather writes do not interleave their packets."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+
+    async def slow_write(*args, **kwargs):
+        await asyncio.sleep(0)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    with mock.patch.object(
+        opple_cluster, "_write_attributes", mock.AsyncMock(side_effect=slow_write)
+    ) as m:
+        await asyncio.gather(
+            opple_cluster.write_attributes(
+                {"weather_condition": WeatherCondition.Sunny, "weather_temperature": 1}
+            ),
+            opple_cluster.write_attributes({"weather_temperature": 2}),
+        )
+
+    packets = [value for _, value in _written(m)]
+    assert [packet[4] for packet in packets] == [1, 2, 3, 4]
+    assert [struct.unpack(">f", packet[-4:])[0] for packet in packets[2:]] == [
+        pytest.approx(0.1),
+        pytest.approx(0.2),
+    ]
 
 
 async def test_aqara_display_switch_proximity(zigpy_device_from_v2_quirk):
@@ -4137,7 +4173,7 @@ async def test_aqara_display_switch_weather_entities(zigpy_device_from_v2_quirk)
         with mock.patch.object(
             opple_cluster, "_write_attributes", _mock_write()
         ) as write_mock:
-            await write_attributes_safe(opple_cluster, {"weather_temperature": 22.5})
+            await write_attributes_safe(opple_cluster, {"weather_temperature": 225})
 
         assert struct.unpack(">f", _written(write_mock)[0][1][-4:])[0] == 22.5
 
@@ -4145,6 +4181,6 @@ async def test_aqara_display_switch_weather_entities(zigpy_device_from_v2_quirk)
             ["weather_temperature", "display_brightness"]
         )
 
-    assert success == {"weather_temperature": 22.5, "display_brightness": 80}
+    assert success == {"weather_temperature": 225, "display_brightness": 80}
     assert failure == {}
     assert read_mock.call_args.args[0] == [attr_defs.display_brightness.id]

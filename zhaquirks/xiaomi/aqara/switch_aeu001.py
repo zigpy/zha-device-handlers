@@ -5,6 +5,7 @@ import struct
 from typing import Any, Final
 
 from zigpy import types as t
+from zigpy.profiles import zha
 from zigpy.time import TimeSnapshot
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import ClusterType, foundation
@@ -338,7 +339,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         )
         weather_temperature: Final = ZCLAttributeDef(
             id=0xFFF1,  # Virtual ID (not a real device attribute)
-            type=t.Single,  # Temperature in Celsius
+            type=t.int16s,  # Temperature in 0.1 °C
             manufacturer_code=0x115F,
         )
 
@@ -471,7 +472,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Encode the virtual weather attributes into weather_data writes."""
         records: list[foundation.WriteAttributesStatusRecord] = []
         remaining: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
-        weather: dict[int, tuple[Any, list[bytes]]] = {}
+        weather: dict[int, Any] = {}
 
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr, manufacturer_code=manufacturer)
@@ -483,20 +484,23 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                         raise ValueError(
                             f"Invalid weather condition: {value!r}"
                         ) from exc
-                value = WeatherCondition(value)
-                weather[attr_def.id] = (
-                    value,
-                    [self._build_condition_packet(value), self._build_null_packet()],
-                )
+                weather[attr_def.id] = WeatherCondition(value)
             elif attr_def == self.AttributeDefs.weather_temperature:
-                value = t.Single(value)
-                weather[attr_def.id] = (value, [self._build_temperature_packet(value)])
+                weather[attr_def.id] = t.int16s(value)
             else:
                 remaining[attr] = value
 
-        for attrid, (value, packets) in weather.items():
-            status = foundation.Status.SUCCESS
-            async with self._weather_lock:
+        async with self._weather_lock:
+            for attrid, value in weather.items():
+                if attrid == self.AttributeDefs.weather_condition.id:
+                    packets = [
+                        self._build_condition_packet(value),
+                        self._build_null_packet(),
+                    ]
+                else:
+                    packets = [self._build_temperature_packet(value / 10)]
+
+                status = foundation.Status.SUCCESS
                 for packet in packets:
                     result = await super().write_attributes(
                         {self.AttributeDefs.weather_data.id: packet},
@@ -509,11 +513,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                     if failed:
                         status = failed[0].status
                         break
-            records.append(
-                foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)
-            )
-            if status == foundation.Status.SUCCESS:
-                self._update_attribute(attrid, value)
+                records.append(
+                    foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)
+                )
+                if status == foundation.Status.SUCCESS:
+                    self._update_attribute(attrid, value)
 
         if remaining:
             result = await super().write_attributes(
@@ -548,7 +552,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 builder = (
     QuirkBuilder("Aqara", "lumi.switch.aeu001")
     # Endpoint 1: Primary switch with metering
-    .replaces_endpoint(1, device_type=0x010A)
+    .replaces_endpoint(1, device_type=zha.DeviceType.ON_OFF_PLUG_IN_UNIT)
     .replaces(BasicCluster)
     .adds(Identify)
     .adds(Groups)
@@ -560,7 +564,7 @@ builder = (
     .replaces(OppleCluster)
     .replaces(LocalTimeCluster, cluster_type=ClusterType.Client)
     # Endpoint 2: Secondary switch
-    .replaces_endpoint(2, device_type=0x010A)
+    .replaces_endpoint(2, device_type=zha.DeviceType.ON_OFF_PLUG_IN_UNIT)
     .adds(Identify, endpoint_id=2)
     .adds(Groups, endpoint_id=2)
     .adds(Scenes, endpoint_id=2)
@@ -688,6 +692,7 @@ builder = (
         min_value=-50,
         max_value=60,
         step=0.1,
+        multiplier=0.1,
         unit=UnitOfTemperature.CELSIUS,
         mode="box",
         entity_type=EntityType.STANDARD,
