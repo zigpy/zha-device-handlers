@@ -23,6 +23,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.text.const import MAX_LENGTH_STATE_STATE, TextMode
 from zigpy.zcl import ClusterType
 
 # pylint: disable=too-many-instance-attributes
@@ -128,6 +129,34 @@ class NumberMetadata(EntityMetadata):
     mode: str | None = attrs.field(default=None)
     multiplier: float | None = attrs.field(default=None)
     device_class: NumberDeviceClass | None = attrs.field(default=None)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class TextMetadata(EntityMetadata):
+    """Metadata for exposed text entity."""
+
+    attribute_name: str = attrs.field()
+    reporting_config: ReportingConfig | None = attrs.field(default=None)
+    min_length: int | None = attrs.field(default=None)
+    max_length: int | None = attrs.field(default=None)
+    pattern: str | None = attrs.field(default=None)
+    mode: TextMode | None = attrs.field(
+        default=None, converter=attrs.converters.optional(TextMode)
+    )
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the text metadata."""
+        super().__attrs_post_init__()
+        if self.max_length is not None and not (
+            0 < self.max_length <= MAX_LENGTH_STATE_STATE
+        ):
+            raise ValueError(
+                f"max_length must be between 1 and {MAX_LENGTH_STATE_STATE}: {self}"
+            )
+        if self.min_length is not None and not (
+            0 <= self.min_length <= (self.max_length or MAX_LENGTH_STATE_STATE)
+        ):
+            raise ValueError(f"min_length must be between 0 and max_length: {self}")
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
