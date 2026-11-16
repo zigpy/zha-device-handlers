@@ -35,8 +35,9 @@ Exposed in Home Assistant, kept to as few controls as possible:
     - number "Effect speed": 0..100 %, applied at once in effect mode and
       otherwise kept for the next effect (as in Zigbee2MQTT)
 
-Turning the light off from Home Assistant is a "soft off": the LEDs are set
-to zero brightness but the controller stays powered, because its power
+Turning the light off from Home Assistant is a "soft off": the string is set
+to white mode at zero brightness (zero brightness in colour mode does not
+darken it) but the controller stays powered, because its power
 supply hums when switched off. Turning on restores the colour, white or
 effect. The physical button still switches the controller fully.
 """
@@ -287,15 +288,15 @@ class MelineraTuyaCluster(TuyaMCUCluster):
                 "resume_mode", LightMode.White if mode is None else mode
             )
         self.update_attribute("soft_off", True)
-        if mode == LightMode.White:
-            await self.send_dps((DP_WHITE_BRIGHTNESS, 0))
-        else:
-            # An effect cannot be dimmed: show its last colour at zero.
-            hue, sat = current_hs(self.endpoint)
-            await self.send_dps(
-                (DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, 0))
-            )
-            self.update_attribute("light_mode", LightMode.Color)
+        # Zero brightness darkens the string only in white mode (in colour
+        # mode the LEDs stay lit), so go dark through white. DP3 is sent
+        # before and after the mode so that no white flash is seen.
+        await self.send_dps(
+            (DP_WHITE_BRIGHTNESS, 0),
+            (DP_MODE, LightMode.White),
+            (DP_WHITE_BRIGHTNESS, 0),
+        )
+        self.update_attribute("light_mode", LightMode.White)
 
     async def resume(self) -> None:
         """Restore the mode, colour, brightness or effect from before soft off."""

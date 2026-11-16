@@ -280,9 +280,7 @@ async def test_soft_off(zigpy_device_from_v2_quirk):
             req.reset_mock()
             await light.async_turn_off()
             await gateway.async_block_till_done()
-            sent = _sent(req)
-            assert sent[0] == (2, LightMode.Color)
-            assert sent[1][0] == 5 and sent[1][1].endswith("0000")
+            assert _sent(req) == [(3, 0), (2, LightMode.White), (3, 0)]
             off_calls = [
                 c for c in req.call_args_list if c.kwargs["cluster"] == OnOff.cluster_id
             ]
@@ -290,7 +288,7 @@ async def test_soft_off(zigpy_device_from_v2_quirk):
             assert not light.is_on
 
             # the zero-brightness echo does not overwrite the kept brightness
-            _report(tuya, 5, sent[1][1])
+            _report(tuya, 3, 0)
             assert ep.level.get("current_level") == 200
             assert not light.is_on
 
@@ -298,7 +296,9 @@ async def test_soft_off(zigpy_device_from_v2_quirk):
             req.reset_mock()
             await light.async_turn_on()
             await gateway.async_block_till_done()
-            dp, value = _sent(req)[1]
+            sent = _sent(req)
+            assert sent[0] == (2, LightMode.Color)
+            dp, value = sent[1]
             assert dp == 5 and value[8:12] == f"{level_to_1000(200):04x}"
             assert light.is_on
 
@@ -320,7 +320,7 @@ async def test_soft_off(zigpy_device_from_v2_quirk):
             req.reset_mock()
             await light.async_turn_off()
             await gateway.async_block_till_done()
-            assert _sent(req) == [(3, 0)]
+            assert _sent(req) == [(3, 0), (2, LightMode.White), (3, 0)]
 
             # physical button: real off, then on resumes the white
             light.async_transition_complete()
