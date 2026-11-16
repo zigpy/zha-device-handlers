@@ -148,14 +148,7 @@ class SonoffCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         """Initialize the Sonoff cluster."""
         super().__init__(*args, **kwargs)
-        self._inching_enable = False
-        self._inching_mode_bit = 0
-        self._inching_timeout = 2
         self._cmd_seq = 0
-        # Seed attribute cache with default values
-        self._update_attribute(INCHING_ENABLE_ATTR, self._inching_enable)
-        self._update_attribute(INCHING_MODE_ATTR, self._inching_mode_bit)
-        self._update_attribute(INCHING_TIMEOUT_ATTR, self._inching_timeout)
         self._update_attribute(RELAY_DETACH_ATTR_ID, RelaySperaKeyAction(0).name)
 
     def _update_attribute(self, attrid, value):
@@ -177,26 +170,23 @@ class SonoffCluster(CustomCluster):
 
         for key, value in attrs.items():
             if key == "inching_enable":
-                self._inching_enable = bool(value)
+                self._update_attribute(INCHING_ENABLE_ATTR, bool(value))
                 await self._send_combined()
                 results.append(
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR)
                 )
             elif key == "inching_mode":
-                self._inching_mode_bit = value
+                self._update_attribute(INCHING_MODE_ATTR, value)
                 await self._send_combined()
                 results.append(
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR)
                 )
             elif key == "inching_timeout":
-                self._inching_timeout = value
+                self._update_attribute(INCHING_TIMEOUT_ATTR, value)
                 await self._send_combined()
                 results.append(
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR)
                 )
-                self._update_attribute(INCHING_TIMEOUT_ATTR, value)
-            else:
-                real_attrs[key] = value
 
         if real_attrs:
             parent_results = await super().write_attributes(
@@ -217,10 +207,11 @@ class SonoffCluster(CustomCluster):
 
     async def _send_combined(self):
         """Send combined inching configuration."""
-        mode = (0x80 if self._inching_enable else 0x00) | (
-            self._inching_mode_bit & 0x01
-        )
-        await self.set_inching(mode, INCHING_CHANNEL, self._inching_timeout)
+        enable = bool(self.get(INCHING_ENABLE_ATTR, False))
+        mode_bit = int(self.get(INCHING_MODE_ATTR, 0)) & 0x01
+        timeout = int(self.get(INCHING_TIMEOUT_ATTR, 2))
+        mode = (0x80 if enable else 0x00) | mode_bit
+        await self.set_inching(mode, INCHING_CHANNEL, timeout)
 
     async def set_inching(self, mode: int, channel: int, timeout_units: int):
         """Send inching command (ZCL command ID 0x01, manufacturer-specific)."""
@@ -268,7 +259,7 @@ class SonoffCluster(CustomCluster):
             _LOGGER.error("Failed to send inching command: %s", e)
             raise
 
-    def handle_message(self, hdr, args):
+    def handle_message(self, hdr, args, *, dst_addressing=None):
         """Handle incoming inching report messages (ZCL command ID 0x01)."""
         if (
             hdr.command_id == 0x01
@@ -288,17 +279,13 @@ class SonoffCluster(CustomCluster):
                     )
                     enable = (mode_byte & 0x80) != 0
                     mode_bit = mode_byte & 0x01
-                    self._inching_enable = enable
-                    self._inching_mode_bit = mode_bit
-                    self._inching_timeout = timeout_units
                     self._update_attribute(INCHING_ENABLE_ATTR, enable)
                     self._update_attribute(INCHING_MODE_ATTR, mode_bit)
                     self._update_attribute(INCHING_TIMEOUT_ATTR, timeout_units)
             except Exception:
                 _LOGGER.exception("Failed to process inching report")
             return
-        else:
-            return super().handle_message(hdr, args)
+        return super().handle_message(hdr, args, dst_addressing=dst_addressing)
 
 
 (
