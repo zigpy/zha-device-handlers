@@ -852,7 +852,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         min_length: int | None = None,
         max_length: int | None = None,
         pattern: str | None = None,
-        mode: TextMode | None = None,
+        mode: TextMode | str | None = None,
         entity_type: EntityType = EntityType.CONFIG,
         initially_disabled: bool = False,
         attribute_initialized_from_cache: bool = True,

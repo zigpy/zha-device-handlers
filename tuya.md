@@ -175,7 +175,7 @@ Adds a number entity.
 
 #### tuya_text
 
-Adds a text entity for a string datapoint (Tuya type `0x03`), such as a label shown on a display. The length limits count characters.
+Adds a text entity for a string datapoint (Tuya type `0x03`), such as a label shown on a display. The length limits count characters, while the datapoint is limited in bytes (UTF-8) and by what the device accepts, so set `max_length` to the device's label size.
 
 ```python
 .tuya_text(

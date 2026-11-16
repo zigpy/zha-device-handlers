@@ -356,10 +356,6 @@ async def test_tuya_quirkbuilder_text(device_mock):
     assert tuya_cluster.get("label") == "Kitchen"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="string datapoint writes need the fix in zigpy/zha-device-handlers#5311",
-)
 async def test_tuya_quirkbuilder_text_write(device_mock):
     """Test that writing the text attribute sends a string datapoint."""
     _, quirked = _tuya_text_device(device_mock)
@@ -375,6 +371,7 @@ async def test_tuya_quirkbuilder_text_write(device_mock):
     data = m1.mock_calls[-1].kwargs["data"]
     # DP 106, string type, 6 bytes of UTF-8
     assert data.endswith(b"\x6a\x03\x00\x06Office")
+    assert tuya_cluster.get("label") == "Office"
 
 
 async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
