@@ -84,7 +84,9 @@ def test_ntcht01_clusters(zigpy_device_from_v2_quirk):
     assert isinstance(ep.power, PowerConfiguration)
 
 
-@pytest.mark.parametrize("manuf,model", [("Excellux", "NTCHT02"), ("Excellux", "NTCHT03")])
+@pytest.mark.parametrize(
+    "manuf,model", [("Excellux", "NTCHT02"), ("Excellux", "NTCHT03")]
+)
 def test_ntcht01_whitelabels(zigpy_device_from_v2_quirk, manuf, model):
     """Test that the white-label variants match the same quirk."""
     device = zigpy_device_from_v2_quirk(manuf, model)
@@ -96,7 +98,8 @@ def test_ntcht01_whitelabels(zigpy_device_from_v2_quirk, manuf, model):
 
 def test_ntcht01_temperature_dp_mapping(zigpy_device_from_v2_quirk):
     """Test that the body reading (dp 5) feeds the main sensor and the probe
-    reading (dp 1) feeds the probe sensor, each with its own scale."""
+    reading (dp 1) feeds the probe sensor, each with its own scale.
+    """
     device = zigpy_device_from_v2_quirk("Excellux", "NTCHT01")
     ep = device.endpoints[1]
 
@@ -131,7 +134,8 @@ def test_ntcht01_negative_temperatures(zigpy_device_from_v2_quirk):
 
 async def test_ntcht01_ignores_standard_reports(zigpy_device_from_v2_quirk):
     """Test that the device's periodic raw 0x0402/0x0405 reports (wrong scale)
-    cannot overwrite the datapoint-fed values."""
+    cannot overwrite the datapoint-fed values.
+    """
     device = zigpy_device_from_v2_quirk("Excellux", "NTCHT01")
     ep = device.endpoints[1]
 
