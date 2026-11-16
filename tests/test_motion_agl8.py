@@ -225,8 +225,8 @@ async def test_aqara_fp300_configuration_survives_read_failure(
         await device.apply_custom_configuration()
 
 
-async def test_aqara_fp300_motion_sensitivity_write(zigpy_device_from_v2_quirk):
-    """Test that motion sensitivity is written as a manufacturer-specific uint8."""
+async def test_aqara_fp300_presence_sensitivity_write(zigpy_device_from_v2_quirk):
+    """Test that presence sensitivity is written as a manufacturer-specific uint8."""
     device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
     manu_cluster = device.endpoints[1].aqara_fp300_manu
     manu_cluster._write_attributes = mock.AsyncMock(

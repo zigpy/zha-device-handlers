@@ -152,8 +152,10 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         attribute_name=AqaraFP300ManuCluster.AttributeDefs.motion_sensitivity.name,
         enum_class=MotionSensitivity,
         cluster_id=AqaraFP300ManuCluster.cluster_id,
-        translation_key="motion_sensitivity",
-        fallback_name="Motion sensitivity",
+        # Aqara and Zigbee2MQTT call this "Presence Detection Sensitivity"; the
+        # attribute name stays motion_sensitivity so the unique_id doesn't change.
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
     )
     .add_to_registry()
 )
