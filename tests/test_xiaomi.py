@@ -11,7 +11,7 @@ from unittest import mock
 import zoneinfo
 
 import pytest
-from zha.application.helpers import convert_zcl_value
+from zha.application.helpers import convert_zcl_value, write_attributes_safe
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -3869,6 +3869,7 @@ async def test_opple_cluster_write_attributes_weather_condition(
     ]
     assert attributes == {attr: value}
     assert opple_cluster.get(weather_data_id) is None
+    assert opple_cluster.get("weather_condition") == WeatherCondition.Cloudy
 
 
 @pytest.mark.parametrize(
@@ -4094,6 +4095,7 @@ def test_aqara_display_switch_local_time(zigpy_device_from_v2_quirk):
         records = time_cluster._handle_read_attributes(
             [
                 attrs.time.id,
+                attrs.time_status.id,
                 attrs.time_zone.id,
                 attrs.local_time.id,
                 attrs.standard_time.id,
@@ -4105,8 +4107,44 @@ def test_aqara_display_switch_local_time(zigpy_device_from_v2_quirk):
     local = t.UTCTime.from_datetime(now + datetime.timedelta(hours=3))
     assert values == {
         attrs.time.id: local,
+        attrs.time_status.id: 0x0D,
         attrs.time_zone.id: 0,
         attrs.local_time.id: local,
         attrs.standard_time.id: local,
         attrs.dst_shift.id: 0,
     }
+
+
+async def test_aqara_display_switch_weather_entities(zigpy_device_from_v2_quirk):
+    """Test the weather entities write floats and read back from the cache."""
+    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
+    attr_defs = DisplaySwitchOppleCluster.AttributeDefs
+    read_mock = mock.AsyncMock(
+        return_value=[
+            [
+                foundation.ReadAttributeRecord(
+                    attrid=attr_defs.display_brightness.id,
+                    status=foundation.Status.SUCCESS,
+                    value=foundation.TypeValue(type=DataTypeId.uint8, value=80),
+                )
+            ]
+        ]
+    )
+
+    with mock.patch.object(opple_cluster, "_read_attributes", read_mock):
+        assert await opple_cluster.read_attributes(["weather_temperature"]) == ({}, {})
+
+        with mock.patch.object(
+            opple_cluster, "_write_attributes", _mock_write()
+        ) as write_mock:
+            await write_attributes_safe(opple_cluster, {"weather_temperature": 22.5})
+
+        assert struct.unpack(">f", _written(write_mock)[0][1][-4:])[0] == 22.5
+
+        success, failure = await opple_cluster.read_attributes(
+            ["weather_temperature", "display_brightness"]
+        )
+
+    assert success == {"weather_temperature": 22.5, "display_brightness": 80}
+    assert failure == {}
+    assert read_mock.call_args.args[0] == [attr_defs.display_brightness.id]

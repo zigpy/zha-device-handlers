@@ -15,13 +15,16 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Scenes,
     Time,
+    TimeStatus,
 )
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityType,
+    NumberDeviceClass,
     QuirkBuilder,
+    UnitOfTemperature,
     UnitOfTime,
 )
 from zhaquirks.clusters import CustomCluster
@@ -187,6 +190,12 @@ class LocalTimeCluster(CustomCluster, Time):
         """Return local time."""
         return t.UTCTime(snapshot.local_time)
 
+    def handle_read_attribute_time_status(self, snapshot: TimeSnapshot) -> TimeStatus:
+        """Claim superseding authority, as the display ignores other time servers."""
+        return super().handle_read_attribute_time_status(snapshot) | (
+            TimeStatus.Superseding
+        )
+
     def handle_read_attribute_time_zone(self, snapshot: TimeSnapshot) -> t.int32s:
         """Return no offset, since the time is already local."""
         return t.int32s(0)
@@ -213,25 +222,25 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0517,
             type=StartupOnOff,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         button_operation_mode: Final = ZCLAttributeDef(
             id=0x0269,
             type=ButtonOperationMode,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         button_relay: Final = ZCLAttributeDef(
             id=0x0235,
             type=ButtonRelay,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         button_layout: Final = ZCLAttributeDef(
             id=0x0300,
             type=ButtonLayout,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
 
         # Display configuration
@@ -239,51 +248,51 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0215,
             type=Theme,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         show_mode: Final = ZCLAttributeDef(
             id=0x026A,
             type=ShowMode,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         display_brightness: Final = ZCLAttributeDef(
-            id=0x0211, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0211, type=t.uint8_t, manufacturer_code=0x115F
         )
         standby_time: Final = ZCLAttributeDef(
-            id=0x0216, type=t.uint32_t, is_manufacturer_specific=True
+            id=0x0216, type=t.uint32_t, manufacturer_code=0x115F
         )
         standby_screen_saver: Final = ZCLAttributeDef(
-            id=0x0221, type=t.Bool, is_manufacturer_specific=True
+            id=0x0221, type=t.Bool, manufacturer_code=0x115F
         )
         standby_brightness: Final = ZCLAttributeDef(
-            id=0x0222, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0222, type=t.uint8_t, manufacturer_code=0x115F
         )
         screensaver_style: Final = ZCLAttributeDef(
             id=0x0214,
             type=ScreensaverStyle,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         # weather_data and color_button are complex byte arrays with device-specific
         # encoding. They are defined for attribute discovery but not exposed as
         # Home Assistant entities since their format is not fully documented.
         weather_data: Final = ZCLAttributeDef(
-            id=0xFFF2, type=t.LVBytes, is_manufacturer_specific=True
+            id=0xFFF2, type=t.LVBytes, manufacturer_code=0x115F
         )
         color_button: Final = ZCLAttributeDef(
-            id=0x0266, type=t.LVBytes, is_manufacturer_specific=True
+            id=0x0266, type=t.LVBytes, manufacturer_code=0x115F
         )
 
         # Proximity sensor
         proximity_activation: Final = ZCLAttributeDef(
-            id=0x026D, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x026D, type=t.uint8_t, manufacturer_code=0x115F
         )
         proximity_sensitivity: Final = ZCLAttributeDef(
             id=0x0268,
             type=ProximitySensitivity,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
 
         proximity: Final = ZCLAttributeDef(
@@ -291,7 +300,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             type=t.Bool,
             zcl_type=DataTypeId.uint8,
             access="rp",
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
 
         # Other features
@@ -299,24 +308,24 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0217,
             type=ElderMode,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         double_tap_override: Final = ZCLAttributeDef(
-            id=0x0236, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0236, type=t.uint8_t, manufacturer_code=0x115F
         )
 
         # Button/Switch labels (writable via zha.set_zigbee_cluster_attribute service)
         button_name: Final = ZCLAttributeDef(
-            id=0x026B, type=LVBytesString, is_manufacturer_specific=True
+            id=0x026B, type=LVBytesString, manufacturer_code=0x115F
         )
         button_icon: Final = ZCLAttributeDef(
-            id=0x026C, type=LVBytesString, is_manufacturer_specific=True
+            id=0x026C, type=LVBytesString, manufacturer_code=0x115F
         )
         switch_name: Final = ZCLAttributeDef(
-            id=0x026E, type=LVBytesString, is_manufacturer_specific=True
+            id=0x026E, type=LVBytesString, manufacturer_code=0x115F
         )
         switch_icon: Final = ZCLAttributeDef(
-            id=0x026F, type=LVBytesString, is_manufacturer_specific=True
+            id=0x026F, type=LVBytesString, manufacturer_code=0x115F
         )
 
         # Weather display attributes (write-only, used with screensaver_style=WeatherConditions)
@@ -325,12 +334,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0xFFF0,  # Virtual ID (not a real device attribute)
             type=WeatherCondition,
             zcl_type=DataTypeId.uint8,
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
         weather_temperature: Final = ZCLAttributeDef(
             id=0xFFF1,  # Virtual ID (not a real device attribute)
             type=t.Single,  # Temperature in Celsius
-            is_manufacturer_specific=True,
+            manufacturer_code=0x115F,
         )
 
     def __init__(self, *args, **kwargs):
@@ -462,7 +471,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Encode the virtual weather attributes into weather_data writes."""
         records: list[foundation.WriteAttributesStatusRecord] = []
         remaining: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
-        weather: dict[int, list[bytes]] = {}
+        weather: dict[int, tuple[Any, list[bytes]]] = {}
 
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr, manufacturer_code=manufacturer)
@@ -474,16 +483,18 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                         raise ValueError(
                             f"Invalid weather condition: {value!r}"
                         ) from exc
-                weather[attr_def.id] = [
-                    self._build_condition_packet(WeatherCondition(value)),
-                    self._build_null_packet(),
-                ]
+                value = WeatherCondition(value)
+                weather[attr_def.id] = (
+                    value,
+                    [self._build_condition_packet(value), self._build_null_packet()],
+                )
             elif attr_def == self.AttributeDefs.weather_temperature:
-                weather[attr_def.id] = [self._build_temperature_packet(float(value))]
+                value = t.Single(value)
+                weather[attr_def.id] = (value, [self._build_temperature_packet(value)])
             else:
                 remaining[attr] = value
 
-        for attrid, packets in weather.items():
+        for attrid, (value, packets) in weather.items():
             status = foundation.Status.SUCCESS
             async with self._weather_lock:
                 for packet in packets:
@@ -501,6 +512,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             records.append(
                 foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)
             )
+            if status == foundation.Status.SUCCESS:
+                self._update_attribute(attrid, value)
 
         if remaining:
             result = await super().write_attributes(
@@ -509,6 +522,27 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             records.extend(result[0])
 
         return [records]
+
+    async def read_attributes(
+        self, attributes: list[int | str | foundation.ZCLAttributeDef], *args, **kwargs
+    ) -> Any:
+        """Answer the virtual weather attributes from the cache."""
+        virtual = (
+            self.AttributeDefs.weather_condition,
+            self.AttributeDefs.weather_temperature,
+        )
+        local = [attr for attr in attributes if self.find_attribute(attr) in virtual]
+        remote = [attr for attr in attributes if attr not in local]
+
+        success, failure = (
+            await super().read_attributes(remote, *args, **kwargs)
+            if remote
+            else ({}, {})
+        )
+        for attr in local:
+            if (value := self.get(attr)) is not None:
+                success[attr] = value
+        return success, failure
 
 
 builder = (
@@ -640,6 +674,27 @@ builder = (
         translation_key="elder_mode",
         fallback_name="Elder mode",
     )
+    .enum(
+        OppleCluster.AttributeDefs.weather_condition.name,
+        WeatherCondition,
+        OppleCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        translation_key="weather_condition",
+        fallback_name="Weather condition",
+    )
+    .number(
+        OppleCluster.AttributeDefs.weather_temperature.name,
+        OppleCluster.cluster_id,
+        min_value=-50,
+        max_value=60,
+        step=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        mode="box",
+        entity_type=EntityType.STANDARD,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="weather_temperature",
+        fallback_name="Weather temperature",
+    )
     .binary_sensor(
         OppleCluster.AttributeDefs.proximity.name,
         OppleCluster.cluster_id,
@@ -717,33 +772,3 @@ builder.add_to_registry()
 #   attribute: 0x026F     # switch_icon (0x026F) or switch_name (0x026E) for switch mode
 #                         # button_icon (0x026C) or button_name (0x026B) for button mode
 #   value: "light_bulb"   # Icon name or custom text label
-#
-#
-# Example service calls to set weather display (for screensaver_style = WeatherConditions):
-#
-# Set weather condition:
-# service: zha.set_zigbee_cluster_attribute
-# data:
-#   ieee: "your:device:ieee:address"
-#   endpoint_id: 1
-#   cluster_id: 64704     # 0xFCC0
-#   cluster_type: in
-#   attribute: 0xFFF0     # weather_condition (virtual attribute)
-#   value: 4              # WeatherCondition enum value (see below)
-#
-# Set weather temperature:
-# service: zha.set_zigbee_cluster_attribute
-# data:
-#   ieee: "your:device:ieee:address"
-#   endpoint_id: 1
-#   cluster_id: 64704     # 0xFCC0
-#   cluster_type: in
-#   attribute: 0xFFF1     # weather_temperature (virtual attribute)
-#   value: "22.5"         # Temperature in Celsius, quoted to keep decimals
-#
-# WeatherCondition values:
-#   Sunny=0, Clear=1, Fair=3, Cloudy=4, PartlyCloudy=5, MostlyCloudy=7,
-#   Overcast=9, LightRain=13, ModerateRain=14, Storm=16, HeavyStorm=17,
-#   SevereStorm=18, FreezingRain=19, Sleet=20, SnowFlurry=21, LightSnow=22,
-#   ModerateSnow=23, HeavySnow=24, Snowstorm=25, Foggy=30, Windy=32,
-#   Blustery=33, Hurricane=34, TropicalStorm=35, Tornado=36, Unknown=37
