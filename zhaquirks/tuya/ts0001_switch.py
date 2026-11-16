@@ -1,11 +1,19 @@
-"""Tuya switch device."""
+"""Tuya 1 gang switch with power monitoring.
 
+The v1 ``ts000x.Switch_1G_Metering`` quirk matches the same hardware by endpoint
+signature, but these manufacturers also ship layouts without the Green Power
+endpoint or the 0xE000 cluster, which that signature misses. This v2 quirk matches
+them by manufacturer and takes precedence over the v1 quirk, so it carries the same
+Tuya plug features and spell.
+"""
+
+from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster, TuyaZBOnOffAttributeCluster
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class CustomElectricalMeasurement(ElectricalMeasurement, CustomCluster):
@@ -32,7 +40,7 @@ class CustomMetering(Metering, CustomCluster):
 
 
 (
-    QuirkBuilder("_TZ3000_xkap8wtb", "TS0001")
+    TuyaQuirkBuilder("_TZ3000_xkap8wtb", "TS0001")
     .applies_to("_TZ3000_qnejhcsu", "TS0001")
     .applies_to("_TZ3000_x3ewpzyr", "TS0001")
     .applies_to("_TZ3000_mkhkxx1p", "TS0001")
@@ -48,5 +56,7 @@ class CustomMetering(Metering, CustomCluster):
     .replaces(CustomElectricalMeasurement)
     .replaces(TuyaZBOnOffAttributeCluster)
     .replaces(TuyaZBExternalSwitchTypeCluster)
+    .exposes_feature(TUYA_PLUG_ONOFF)
+    .tuya_enchantment()
     .add_to_registry()
 )
