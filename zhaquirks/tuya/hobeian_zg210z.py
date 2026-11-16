@@ -1,11 +1,7 @@
 """HOBEIAN ZG-210Z Pressure Sensing Strap / Bed Occupancy Sensor."""
 
 from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    UnitOfTemperature,
-    UnitOfTime,
-)
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
