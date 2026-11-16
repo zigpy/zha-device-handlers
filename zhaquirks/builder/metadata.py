@@ -135,7 +135,7 @@ class NumberMetadata(EntityMetadata):
 def _int_validator(instance: Any, attribute: attrs.Attribute, value: Any) -> None:
     """Accept an int, but not a bool."""
     if not isinstance(value, int) or isinstance(value, bool):
-        raise ValueError(f"{attribute.name} must be an int: {value!r}")
+        raise TypeError(f"{attribute.name} must be an int: {value!r}")
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)

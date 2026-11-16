@@ -206,20 +206,28 @@ def test_quirks_v2_text():
 
 @pytest.mark.parametrize(
     ("min_length", "max_length"),
-    [
-        (None, 0),
-        (None, 256),
-        (-1, None),
-        (5, 4),
-        (256, None),
-        (None, 1.5),
-        (True, None),
-        (None, "16"),
-    ],
+    [(None, 0), (None, 256), (-1, None), (5, 4), (256, None)],
 )
 def test_quirks_v2_text_invalid_lengths(min_length, max_length):
     """Test that impossible length limits are rejected."""
-    with pytest.raises(ValueError, match="_length must be"):
+    with pytest.raises(ValueError, match="_length must be between"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            min_length=min_length,
+            max_length=max_length,
+            translation_key="location",
+            fallback_name="Location",
+        )
+
+
+@pytest.mark.parametrize(
+    ("min_length", "max_length"),
+    [(None, 1.5), (True, None), (None, "16")],
+)
+def test_quirks_v2_text_length_types(min_length, max_length):
+    """Test that length limits must be ints."""
+    with pytest.raises(TypeError, match="_length must be an int"):
         QuirkBuilder("manufacturer", "model").text(
             Basic.AttributeDefs.location_desc.name,
             Basic.cluster_id,
