@@ -150,7 +150,7 @@ class UbisysLD6Cluster(UbisysCluster):
         )
 
     async def apply_custom_configuration(self, *args, **kwargs):
-        """Read the output configuration during pairing to populate its select."""
+        """Read the output configuration on (re)configuration for its select."""
         success, _ = await self.read_attributes(
             [self.AttributeDefs.output_configurations.name]
         )
@@ -185,9 +185,9 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
     the select shows an unknown state. Same for configurations that do not match
     any of the reference ones.
 
-    pairing_required is set after writing a configuration: the LD6 then changes
-    its light endpoints, which ZHA only picks up after the device is removed and
-    paired again. Removing the device also resets the attribute.
+    reconfigure_required is set after writing a configuration: the LD6 then
+    changes its light endpoints, which ZHA picks up when the device is
+    reconfigured. Reconfiguring reads the configuration and resets the attribute.
     """
 
     cluster_id = 0xFBFE
@@ -200,14 +200,15 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
         output_configuration: Final = ZCLAttributeDef(
             id=0x0000, type=LD6OutputConfiguration
         )
-        pairing_required: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
+        reconfigure_required: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
 
     _DEFAULT_VALUES: dict[int, Any] = {
-        AttributeDefs.pairing_required.id: t.Bool.false,
+        AttributeDefs.reconfigure_required.id: t.Bool.false,
     }
 
     def update_from_device(self, entries: list[bytes]) -> None:
         """Set the selected configuration from the device's OutputConfigurations."""
+        self._update_attribute(self.AttributeDefs.reconfigure_required, t.Bool.false)
         for output_config, reference in OUTPUT_CONFIGURATIONS.items():
             if entries == reference:
                 self._update_attribute(
@@ -235,10 +236,10 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
                 OUTPUT_CONFIGURATIONS[output_config]
             )
             self._update_attribute(attr_def, output_config)
-            self._update_attribute(self.AttributeDefs.pairing_required, t.Bool.true)
+            self._update_attribute(self.AttributeDefs.reconfigure_required, t.Bool.true)
             _LOGGER.info(
                 "%s: output configuration changed to %s, the device has to be"
-                " removed and paired again for the new light endpoints to be used",
+                " reconfigured for the new light endpoints to be used",
                 self.endpoint.device.ieee,
                 output_config.name,
             )
@@ -318,12 +319,12 @@ class UbisysLD6InputConfigCluster(UbisysD1InputConfigCluster):
         fallback_name="Output configuration",
     )
     .binary_sensor(
-        attribute_name=UbisysLD6OutputConfigCluster.AttributeDefs.pairing_required.name,
+        attribute_name=UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required.name,
         cluster_id=UbisysLD6OutputConfigCluster.cluster_id,
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="pairing_required",
-        fallback_name="Pairing required",
+        translation_key="reconfigure_required",
+        fallback_name="Reconfigure required",
     )
     .enum(
         attribute_name=UbisysLD6InputConfigCluster.AttributeDefs.input_mode_1.name,

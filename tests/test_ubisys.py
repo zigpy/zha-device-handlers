@@ -1549,7 +1549,7 @@ async def test_ld6_entities_from_diagnostics():
         assert (Platform.SELECT, f"{ieee}-1-output_configuration") in (
             device.platform_entities
         )
-        assert (Platform.BINARY_SENSOR, f"{ieee}-1-pairing_required") in (
+        assert (Platform.BINARY_SENSOR, f"{ieee}-1-reconfigure_required") in (
             device.platform_entities
         )
         for i in (1, 2, 3):
@@ -1589,10 +1589,14 @@ def test_ld6_output_configurations_complete():
     ],
 )
 async def test_ld6_output_configuration_read(ubisys_ld6, entries, expected):
-    """Test the output configuration is read from the device during pairing."""
+    """Test the output configuration is read on reconfiguration."""
     device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
     output_config = ubisys_ld6.endpoints[1].ubisys_output_config
     attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+    reconfigure_required = (
+        UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required
+    )
+    output_config.update_attribute(reconfigure_required.id, t.Bool.true)
 
     with mock.patch.object(
         device_setup,
@@ -1610,6 +1614,7 @@ async def test_ld6_output_configuration_read(ubisys_ld6, entries, expected):
         [UbisysLD6Cluster.AttributeDefs.output_configurations.name]
     )
     assert output_config.get(attr.id) == expected
+    assert output_config.get(reconfigure_required.id) == t.Bool.false
 
 
 async def test_ld6_output_configuration_read_failure(ubisys_ld6):
@@ -1642,9 +1647,11 @@ async def test_ld6_output_configuration_write(ubisys_ld6):
     output_config = ubisys_ld6.endpoints[1].ubisys_output_config
     endpoint_232 = ubisys_ld6.endpoints[232]
     attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
-    pairing_required = UbisysLD6OutputConfigCluster.AttributeDefs.pairing_required
+    reconfigure_required = (
+        UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required
+    )
 
-    assert output_config.get(pairing_required.id) == t.Bool.false
+    assert output_config.get(reconfigure_required.id) == t.Bool.false
 
     with mock.patch.object(
         endpoint_232,
@@ -1665,4 +1672,4 @@ async def test_ld6_output_configuration_write(ubisys_ld6):
         assert sent_data == bytes(expected)
 
     assert output_config.get(attr.id) == LD6OutputConfiguration.RGBCCT
-    assert output_config.get(pairing_required.id) == t.Bool.true
+    assert output_config.get(reconfigure_required.id) == t.Bool.true
