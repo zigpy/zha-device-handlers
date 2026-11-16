@@ -1,8 +1,9 @@
 """Module for Legrand switches (without dimming functionality)."""
 
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 
-from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
+from zhaquirks.builder import EntityFilter, QuirkBuilder
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
 (
@@ -16,7 +17,7 @@ from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
         EntityFilter(
             endpoint_id=1,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .switch(

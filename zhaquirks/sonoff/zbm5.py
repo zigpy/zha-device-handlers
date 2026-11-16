@@ -14,13 +14,7 @@ from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.builder import (
-    BinarySensorDeviceClass,
-    EntityFilter,
-    EntityPlatform,
-    EntityType,
-    QuirkBuilder,
-)
+from zhaquirks.builder import EntityFilter, EntityPlatform, EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -156,7 +150,7 @@ zbm_1c_quirk = (
         EntityFilter(
             endpoint_id=1,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .enum(
@@ -190,7 +184,7 @@ zbm_2c_quirk = (
         EntityFilter(
             endpoint_id=2,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .switch(
@@ -215,7 +209,7 @@ zbm_3c_quirk = (
         EntityFilter(
             endpoint_id=3,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .switch(

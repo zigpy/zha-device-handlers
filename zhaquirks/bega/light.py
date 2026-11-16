@@ -6,10 +6,11 @@ from typing import Final
 
 from zha.quirks import BEGA_LIGHT_SWITCHABLE_WHITE
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
+from zhaquirks.builder import EntityFilter, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
 
@@ -49,7 +50,7 @@ class LevelControlBega(CustomCluster, LevelControl):
         EntityFilter(
             endpoint_id=1,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .add_to_registry()

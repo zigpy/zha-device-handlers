@@ -1,6 +1,7 @@
 """Module for Legrand dimmers."""
 
 from zigpy.profiles import zgp, zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -16,7 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Ballast
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.builder import BinarySensorDeviceClass, EntityFilter, QuirkBuilder
+from zhaquirks.builder import EntityFilter, QuirkBuilder
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -290,7 +291,7 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
         EntityFilter(
             endpoint_id=1,
             cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
+            cluster_type=ClusterType.Client,
         )
     )
     .switch(
