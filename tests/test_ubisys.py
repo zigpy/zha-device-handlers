@@ -3,14 +3,17 @@
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent, ClusterType
+from zigpy.zcl import AttributeWrittenEvent, ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import Status
 
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.ubisys import (
     InputMode,
@@ -30,6 +33,15 @@ from zhaquirks.ubisys.dimmer_d1 import (
     UbisysD1InputConfigCluster,
     build_dimmer_double_actions,
     build_dimmer_single_actions,
+)
+from zhaquirks.ubisys.light_ld6 import (
+    OUTPUT_CONFIGURATIONS,
+    LD6InputMode,
+    LD6OutputConfiguration,
+    UbisysLD6Cluster,
+    UbisysLD6InputConfigCluster,
+    UbisysLD6OutputConfigCluster,
+    _layout,
 )
 from zhaquirks.ubisys.switch_s1r import UbisysS1RInputConfigCluster
 from zhaquirks.ubisys.switch_s2 import UbisysS2InputConfigCluster
@@ -108,6 +120,18 @@ def ubisys_c4(zigpy_device_from_v2_quirk):
     return zigpy_device_from_v2_quirk(
         "ubisys",
         "C4 (5504)",
+        cluster_ids={
+            232: {UbisysCluster.cluster_id: ClusterType.Server},
+        },
+    )
+
+
+@pytest.fixture
+def ubisys_ld6(zigpy_device_from_v2_quirk):
+    """Create ubisys LD6 device."""
+    return zigpy_device_from_v2_quirk(
+        "ubisys",
+        "LD6",
         cluster_ids={
             232: {UbisysCluster.cluster_id: ClusterType.Server},
         },
@@ -1401,3 +1425,296 @@ async def test_c4_input_mode_write(ubisys_c4, attr_name, input_index, source_ep)
     # Verify the correct attribute was cached
     attr_def = getattr(UbisysC4InputConfigCluster.AttributeDefs, attr_name)
     assert (attr_def.id, mode) in input_config_listener.attribute_updates
+
+
+# --- LD6 Tests ---
+
+_LD6_INPUTS = [
+    (UbisysLD6InputConfigCluster.AttributeDefs.input_mode_1.name, 0, 2),
+    (UbisysLD6InputConfigCluster.AttributeDefs.input_mode_2.name, 1, 3),
+    (UbisysLD6InputConfigCluster.AttributeDefs.input_mode_3.name, 2, 4),
+]
+
+
+def _build_ld6_expected_actions(
+    input_index: int, source_ep: int, mode: LD6InputMode
+) -> list[bytes]:
+    """Build expected actions for an LD6 input, dispatching by mode."""
+    if mode == LD6InputMode.Dimmer_single:
+        return build_dimmer_single_actions(input_index, source_ep)
+    return build_onoff_actions(input_index, source_ep, InputMode(mode))
+
+
+def test_ld6_default_matches_device():
+    """Test the default Dimmer_single actions match those read from a real LD6."""
+    # InputActions read from an LD6: inputs 1 and 2 in single-button dimmer mode
+    device_actions = [
+        bytes.fromhex("000702060002"),
+        bytes.fromhex("0086020800050032"),
+        bytes.fromhex("00c6020800050132"),
+        bytes.fromhex("000b02080003"),
+        bytes.fromhex("010703060002"),
+        bytes.fromhex("0186030800050032"),
+        bytes.fromhex("01c6030800050132"),
+        bytes.fromhex("010b03080003"),
+    ]
+    assert device_actions == (
+        build_dimmer_single_actions(0, 2) + build_dimmer_single_actions(1, 3)
+    )
+
+
+@pytest.mark.parametrize("mode", list(LD6InputMode))
+@pytest.mark.parametrize(("attr_name", "input_index", "source_ep"), _LD6_INPUTS)
+async def test_ld6_input_mode_write(
+    ubisys_ld6, attr_name, input_index, source_ep, mode
+):
+    """Test LD6 input_mode writes actions for all 3 inputs to endpoint 232."""
+    input_config_cluster = ubisys_ld6.endpoints[1].ubisys_input_config
+    endpoint_232 = ubisys_ld6.endpoints[232]
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    with mock.patch.object(
+        endpoint_232,
+        "request",
+        mock.AsyncMock(return_value=[0]),
+    ):
+        await input_config_cluster.write_attributes({attr_name: mode})
+
+        assert endpoint_232.request.call_count == 1
+
+        call_kwargs = endpoint_232.request.call_args.kwargs
+        assert call_kwargs["cluster"] == UbisysCluster.cluster_id
+        assert call_kwargs["command_id"] == 0x0F
+
+        sent_data = call_kwargs["data"]
+        tsn = sent_data[1]
+
+        # The changed input gets the new mode, others stay at Dimmer_single
+        expected_actions: list[bytes] = []
+        for _, idx, sep in _LD6_INPUTS:
+            expected_actions.extend(
+                _build_ld6_expected_actions(
+                    idx, sep, mode if idx == input_index else LD6InputMode.Dimmer_single
+                )
+            )
+        assert sent_data == _build_expected_frame(expected_actions, tsn=tsn)
+
+    attr_def = getattr(UbisysLD6InputConfigCluster.AttributeDefs, attr_name)
+    assert (attr_def.id, mode) in input_config_listener.attribute_updates
+
+
+@pytest.mark.parametrize("detach", [True, False])
+@pytest.mark.parametrize(
+    ("attr_name", "input_ep"),
+    [
+        (UbisysLD6InputConfigCluster.AttributeDefs.detached_1.name, 2),
+        (UbisysLD6InputConfigCluster.AttributeDefs.detached_2.name, 3),
+        (UbisysLD6InputConfigCluster.AttributeDefs.detached_3.name, 4),
+    ],
+)
+async def test_ld6_detached(ubisys_ld6, attr_name, input_ep, detach):
+    """Test LD6 detached sends bind/unbind to EP1 on OnOff + LevelControl."""
+    input_config_cluster = ubisys_ld6.endpoints[1].ubisys_input_config
+    zdo = ubisys_ld6.zdo
+
+    input_config_listener = ClusterListener(input_config_cluster)
+
+    req_name = "Unbind_req" if detach else "Bind_req"
+    with mock.patch.object(
+        zdo,
+        req_name,
+        mock.AsyncMock(return_value=[0]),
+    ) as mock_req:
+        await input_config_cluster.write_attributes({attr_name: detach})
+
+        calls = [c[0] for c in mock_req.call_args_list]
+        assert [(c[0], c[1], c[2], c[3].endpoint) for c in calls] == [
+            (ubisys_ld6.ieee, input_ep, OnOff.cluster_id, 1),
+            (ubisys_ld6.ieee, input_ep, LevelControl.cluster_id, 1),
+        ]
+
+    attr_def = getattr(UbisysLD6InputConfigCluster.AttributeDefs, attr_name)
+    assert (attr_def.id, t.Bool(detach)) in input_config_listener.attribute_updates
+
+
+async def test_ld6_entities_from_diagnostics():
+    """Test the quirk applies to a real LD6 and creates the input entities."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "ubisys-ld6-0x01710470.json", DEVICE_REGISTRY
+        )
+
+        assert device.quirk_applied
+        ieee = "00:1f:ee:00:00:00:12:34"
+        assert (Platform.SELECT, f"{ieee}-1-output_configuration") in (
+            device.platform_entities
+        )
+        for i in (1, 2, 3):
+            assert (Platform.SELECT, f"{ieee}-1-input_mode_{i}") in (
+                device.platform_entities
+            )
+            assert (Platform.SWITCH, f"{ieee}-1-detached_{i}") in (
+                device.platform_entities
+            )
+
+
+# OutputConfigurations read from an LD6 with RGB and cool/warm white channels on EP1
+_LD6_DEVICE_OUTPUT_CONFIGURATIONS = [
+    bytes.fromhex(entry)
+    for entry in (
+        "134706b1ef4e 14a0391d82d3 1542c61fcc0e 11fe4250d952 12feb9751d69 00ffffffffff"
+    ).split()
+]
+
+
+def test_ld6_output_configurations_complete():
+    """Test every output configuration has six 6-byte channel entries."""
+    assert set(OUTPUT_CONFIGURATIONS) == set(LD6OutputConfiguration)
+    for entries in OUTPUT_CONFIGURATIONS.values():
+        assert [len(entry) for entry in entries] == [6] * 6
+    # every reference configuration has a distinct endpoint and function layout
+    assert len({_layout(entries) for entries in OUTPUT_CONFIGURATIONS.values()}) == len(
+        OUTPUT_CONFIGURATIONS
+    )
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected"),
+    [
+        (_LD6_DEVICE_OUTPUT_CONFIGURATIONS, LD6OutputConfiguration.RGBCCT),
+        (
+            [bytes.fromhex("10ffffffffff")] + [bytes.fromhex("00ffffffffff")] * 5,
+            LD6OutputConfiguration.Dimmable,
+        ),
+        # calibrated flux and chromaticity
+        (
+            [bytes.fromhex("1180ffffffff"), bytes.fromhex("12804250d952")]
+            + [bytes.fromhex("00ffffffffff")] * 4,
+            LD6OutputConfiguration.Tunable_white,
+        ),
+        ([bytes.fromhex("1180ffffffff")] + [bytes.fromhex("00ffffffffff")] * 5, None),
+    ],
+)
+async def test_ld6_output_configuration_read(ubisys_ld6, entries, expected):
+    """Test the output configuration is read on reconfiguration."""
+    device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
+    output_config = ubisys_ld6.endpoints[1].ubisys_output_config
+    attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+    output_config.update_attribute(attr.id, LD6OutputConfiguration.Dimmable_x6)
+
+    with mock.patch.object(
+        device_setup,
+        "read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                {UbisysLD6Cluster.AttributeDefs.output_configurations.name: entries},
+                {},
+            )
+        ),
+    ) as read_mock:
+        await ubisys_ld6.apply_custom_configuration()
+
+    read_mock.assert_awaited_once_with(
+        [UbisysLD6Cluster.AttributeDefs.output_configurations.name]
+    )
+    assert output_config.get(attr.id) == expected
+
+
+async def test_ld6_output_configuration_read_failure(ubisys_ld6):
+    """Test a failed read leaves the output configuration unknown."""
+    device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
+    output_config = ubisys_ld6.endpoints[1].ubisys_output_config
+    attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+
+    with mock.patch.object(
+        device_setup,
+        "read_attributes",
+        mock.AsyncMock(
+            return_value=(
+                {},
+                {
+                    UbisysLD6Cluster.AttributeDefs.output_configurations.name: (
+                        Status.UNSUPPORTED_ATTRIBUTE
+                    )
+                },
+            )
+        ),
+    ):
+        await ubisys_ld6.apply_custom_configuration()
+
+    assert output_config.get(attr.id) is None
+    success, failure = await output_config.read_attributes([attr.name])
+    assert success == {attr.name: None}
+    assert not failure
+
+
+async def test_ld6_output_configuration_write(ubisys_ld6):
+    """Test selecting an output configuration writes it and re-interviews."""
+    output_config = ubisys_ld6.endpoints[1].ubisys_output_config
+    endpoint_232 = ubisys_ld6.endpoints[232]
+    attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+
+    success = foundation.WriteAttributesStructuredResponseSchema(
+        status_records=[
+            foundation.WriteAttributesStructuredStatusRecord(status=Status.SUCCESS)
+        ]
+    )
+
+    with (
+        mock.patch.object(
+            endpoint_232, "request", mock.AsyncMock(return_value=success)
+        ),
+        mock.patch.object(
+            ubisys_ld6, "reinterview", mock.AsyncMock()
+        ) as reinterview_mock,
+    ):
+        await output_config.write_attributes({attr.name: LD6OutputConfiguration.RGBCCT})
+
+        call_kwargs = endpoint_232.request.call_args.kwargs
+        assert call_kwargs["cluster"] == UbisysCluster.cluster_id
+        assert call_kwargs["command_id"] == 0x0F
+
+        sent_data = call_kwargs["data"]
+        expected = bytearray([0x00, sent_data[1], 0x0F])
+        expected += b"\x10\x00\x00\x48\x41\x06\x00"
+        for entry in _LD6_DEVICE_OUTPUT_CONFIGURATIONS:
+            expected += bytes([len(entry)]) + entry
+        assert sent_data == bytes(expected)
+
+    assert output_config.get(attr.id) == LD6OutputConfiguration.RGBCCT
+    reinterview_mock.assert_awaited_once_with()
+
+
+async def test_ld6_output_configuration_write_rejected(ubisys_ld6):
+    """Test a rejected write keeps the selection and does not re-interview."""
+    output_config = ubisys_ld6.endpoints[1].ubisys_output_config
+    device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
+    attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+    output_config.update_attribute(attr.id, LD6OutputConfiguration.RGBCCT)
+    rejected = foundation.WriteAttributesStructuredResponseSchema(
+        status_records=[
+            foundation.WriteAttributesStructuredStatusRecord(
+                status=Status.UNSUPPORTED_ATTRIBUTE,
+                attrid=UbisysLD6Cluster.AttributeDefs.output_configurations.id,
+            )
+        ]
+    )
+
+    with (
+        mock.patch.object(
+            device_setup,
+            "write_attributes_structured_raw",
+            mock.AsyncMock(return_value=rejected),
+        ),
+        mock.patch.object(
+            ubisys_ld6, "reinterview", mock.AsyncMock()
+        ) as reinterview_mock,
+    ):
+        result = await output_config.write_attributes(
+            {attr.name: LD6OutputConfiguration.Dimmable}
+        )
+
+    assert result is rejected
+    assert output_config.get(attr.id) == LD6OutputConfiguration.RGBCCT
+    reinterview_mock.assert_not_awaited()

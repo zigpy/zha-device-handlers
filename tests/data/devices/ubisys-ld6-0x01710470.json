@@ -1,0 +1,919 @@
+{
+  "version": 3,
+  "ieee": "00:1f:ee:00:00:00:12:34",
+  "nwk": "0xB729",
+  "manufacturer": "ubisys",
+  "model": "LD6",
+  "friendly_manufacturer": "ubisys",
+  "friendly_model": "LD6",
+  "name": "ubisys LD6",
+  "quirk_applied": false,
+  "quirk_class": "zigpy.device.ZigbeeDevice",
+  "exposes_features": [],
+  "manufacturer_code": 4338,
+  "power_source": "Mains",
+  "lqi": 164,
+  "rssi": -70,
+  "last_seen": "2026-11-15T23:27:13.884645+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4338,
+    "maximum_buffer_size": 127,
+    "maximum_incoming_transfer_size": 242,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 242,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "EXTENDED_COLOR_LIGHT",
+        "id": 269
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "ubisys"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "LD6"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
+              "value": 0
+            },
+            {
+              "id": "0x4003",
+              "name": "start_up_on_off",
+              "zcl_type": "enum8",
+              "value": 255
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "current_level",
+              "zcl_type": "uint8",
+              "value": 162
+            },
+            {
+              "id": "0x0014",
+              "name": "default_move_rate",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0013",
+              "name": "off_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x0011",
+              "name": "on_level",
+              "zcl_type": "uint8",
+              "value": 255
+            },
+            {
+              "id": "0x0010",
+              "name": "on_off_transition_time",
+              "zcl_type": "uint16",
+              "value": 10
+            },
+            {
+              "id": "0x0012",
+              "name": "on_transition_time",
+              "zcl_type": "uint16",
+              "unsupported": true
+            },
+            {
+              "id": "0x4000",
+              "name": "start_up_current_level",
+              "zcl_type": "uint8",
+              "value": 255
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0300",
+          "endpoint_attribute": "light_color",
+          "attributes": [
+            {
+              "id": "0x400a",
+              "name": "color_capabilities",
+              "zcl_type": "map16",
+              "value": 31
+            },
+            {
+              "id": "0x4002",
+              "name": "color_loop_active",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0008",
+              "name": "color_mode",
+              "zcl_type": "enum8",
+              "value": 2
+            },
+            {
+              "id": "0x400c",
+              "name": "color_temp_physical_max",
+              "zcl_type": "uint16",
+              "value": 556
+            },
+            {
+              "id": "0x400b",
+              "name": "color_temp_physical_min",
+              "zcl_type": "uint16",
+              "value": 133
+            },
+            {
+              "id": "0x0007",
+              "name": "color_temperature",
+              "zcl_type": "uint16",
+              "value": 440
+            },
+            {
+              "id": "0x0000",
+              "name": "current_hue",
+              "zcl_type": "uint8",
+              "value": 35
+            },
+            {
+              "id": "0x0001",
+              "name": "current_saturation",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0003",
+              "name": "current_x",
+              "zcl_type": "uint16",
+              "value": 32646
+            },
+            {
+              "id": "0x0004",
+              "name": "current_y",
+              "zcl_type": "uint16",
+              "value": 27214
+            },
+            {
+              "id": "0x000f",
+              "name": "options",
+              "zcl_type": "map8",
+              "value": 1
+            },
+            {
+              "id": "0x4010",
+              "name": "start_up_color_temperature",
+              "zcl_type": "uint16",
+              "value": 65535
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0301",
+          "endpoint_attribute": "light_ballast",
+          "attributes": [
+            {
+              "id": "0x0011",
+              "name": "max_level",
+              "zcl_type": "uint8",
+              "value": 254
+            },
+            {
+              "id": "0x0010",
+              "name": "min_level",
+              "zcl_type": "uint8",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "out_clusters": []
+    },
+    "2": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "DIMMER_SWITCH",
+        "id": 260
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0300",
+          "endpoint_attribute": "light_color",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc02",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        }
+      ]
+    },
+    "3": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "DIMMER_SWITCH",
+        "id": 260
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0300",
+          "endpoint_attribute": "light_color",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc02",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        }
+      ]
+    },
+    "4": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "DIMMER_SWITCH",
+        "id": 260
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0008",
+          "endpoint_attribute": "level",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0300",
+          "endpoint_attribute": "light_color",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc02",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        }
+      ]
+    },
+    "232": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "undefined_0x0507",
+        "id": 1287
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x003d",
+          "endpoint_attribute": "zigbee_direct_configuration",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc00",
+          "endpoint_attribute": "manufacturer_specific",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0xfc57",
+          "endpoint_attribute": "works_with_all_hubs",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 24183920
+            }
+          ],
+          "last_query_cmd": {
+            "manufacturer_code": 4338,
+            "image_type": 31532,
+            "current_file_version": 24183920,
+            "hardware_version": 1
+          }
+        }
+      ]
+    },
+    "242": {
+      "profile_id": 41440,
+      "device_type": {
+        "name": "COMBO_BASIC",
+        "id": 102
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "ubisys",
+    "model": "LD6",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4338,
+      "maximum_buffer_size": 127,
+      "maximum_incoming_transfer_size": 242,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 242,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x010d",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0004",
+          "0x0005",
+          "0x0006",
+          "0x0008",
+          "0x0300",
+          "0x0301"
+        ],
+        "output_clusters": []
+      },
+      "2": {
+        "profile_id": "0x0104",
+        "device_type": "0x0104",
+        "input_clusters": [
+          "0x0000",
+          "0x0003"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0005",
+          "0x0006",
+          "0x0008",
+          "0x0300",
+          "0xfc02"
+        ]
+      },
+      "3": {
+        "profile_id": "0x0104",
+        "device_type": "0x0104",
+        "input_clusters": [
+          "0x0000",
+          "0x0003"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0005",
+          "0x0006",
+          "0x0008",
+          "0x0300",
+          "0xfc02"
+        ]
+      },
+      "4": {
+        "profile_id": "0x0104",
+        "device_type": "0x0104",
+        "input_clusters": [
+          "0x0000",
+          "0x0003"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0005",
+          "0x0006",
+          "0x0008",
+          "0x0300",
+          "0xfc02"
+        ]
+      },
+      "232": {
+        "profile_id": "0x0104",
+        "device_type": "0x0507",
+        "input_clusters": [
+          "0x0000",
+          "0x003d",
+          "0xfc00",
+          "0xfc57"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0019"
+        ]
+      },
+      "242": {
+        "profile_id": "0xa1e0",
+        "device_type": "0x0066",
+        "input_clusters": [
+          "0x0021"
+        ],
+        "output_clusters": [
+          "0x0021"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "light": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "light",
+        "class_name": "Light",
+        "translation_key": "light",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "on": false,
+        "brightness": 162,
+        "xy_color": null,
+        "color_temp": 440,
+        "effect_list": [
+          "off",
+          "colorloop"
+        ],
+        "effect": "off",
+        "supported_features": 44,
+        "color_mode": "color_temp",
+        "supported_color_modes": [
+          "xy",
+          "color_temp",
+          "onoff",
+          "brightness"
+        ],
+        "off_with_transition": false,
+        "off_brightness": 162,
+        "min_mireds": 133,
+        "max_mireds": 556
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "StartUpColorTemperatureConfigurationEntity",
+        "translation_key": "start_up_color_temperature",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 65535,
+        "mode": "auto",
+        "native_max_value": 556,
+        "native_min_value": 133,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "BallastMaxLevel",
+        "translation_key": "maximum_dimming_level",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 254,
+        "mode": "auto",
+        "native_max_value": 254,
+        "native_min_value": 1,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "BallastMinLevel",
+        "translation_key": "minimum_dimming_level",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 1,
+        "mode": "auto",
+        "native_max_value": 254,
+        "native_min_value": 1,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "OnLevelConfigurationEntity",
+        "translation_key": "on_level",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 255,
+        "mode": "auto",
+        "native_max_value": 255,
+        "native_min_value": 0,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "OnOffTransitionTimeConfigurationEntity",
+        "translation_key": "on_off_transition_time",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 10,
+        "mode": "auto",
+        "native_max_value": 65535,
+        "native_min_value": 0,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "StartUpCurrentLevelConfigurationEntity",
+        "translation_key": "start_up_current_level",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 255,
+        "mode": "auto",
+        "native_max_value": 255,
+        "native_min_value": 0,
+        "native_step": 1.0,
+        "native_unit_of_measurement": null
+      }
+    ],
+    "select": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "StartupOnOffSelectEntity",
+        "translation_key": "start_up_on_off",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_option": "PreviousValue",
+        "enum": "StartUpOnOff",
+        "options": [
+          "Off",
+          "On",
+          "Toggle",
+          "PreviousValue"
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": 164,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": false,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": -70,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "**REDACTED**",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "**REDACTED**",
+        "endpoint_id": 232,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x01710470",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": "0x01710470",
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": "https://github.com/zigpy/zigpy-ota/pull/240",
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}
