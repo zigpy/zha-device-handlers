@@ -1,7 +1,7 @@
 {
   "version": 3,
   "ieee": "84:2e:14:ff:fe:00:00:01",
-  "nwk": "0x3E5F",
+  "nwk": "0xBA17",
   "manufacturer": "_TZE200_s8gkrkxk",
   "model": "TS0601",
   "friendly_manufacturer": "_TZE200_s8gkrkxk",
@@ -12,9 +12,9 @@
   "exposes_features": [],
   "manufacturer_code": 4098,
   "power_source": "Mains",
-  "lqi": 98,
+  "lqi": 54,
   "rssi": null,
-  "last_seen": "2026-11-16T19:14:29.179574+00:00",
+  "last_seen": "2026-11-16T19:54:16.312780+00:00",
   "available": true,
   "device_type": "Router",
   "active_coordinator": false,
@@ -148,7 +148,7 @@
               "id": "0x400a",
               "name": "color_capabilities",
               "zcl_type": "map16",
-              "value": 24
+              "value": 8
             },
             {
               "id": "0x4002",
@@ -160,25 +160,19 @@
               "id": "0x0008",
               "name": "color_mode",
               "zcl_type": "enum8",
-              "value": 2
+              "value": 1
             },
             {
               "id": "0x400c",
               "name": "color_temp_physical_max",
               "zcl_type": "uint16",
-              "value": 454
+              "unsupported": true
             },
             {
               "id": "0x400b",
               "name": "color_temp_physical_min",
               "zcl_type": "uint16",
-              "value": 250
-            },
-            {
-              "id": "0x0007",
-              "name": "color_temperature",
-              "zcl_type": "uint16",
-              "value": 357
+              "unsupported": true
             },
             {
               "id": "0x0000",
@@ -196,13 +190,13 @@
               "id": "0x0003",
               "name": "current_x",
               "zcl_type": "uint16",
-              "value": 0
+              "value": 12802
             },
             {
               "id": "0x0004",
               "name": "current_y",
               "zcl_type": "uint16",
-              "value": 0
+              "value": 6298
             },
             {
               "id": "0x000f",
@@ -232,19 +226,19 @@
               "id": "0xeff6",
               "name": "effect_speed",
               "zcl_type": "uint8",
-              "value": 100
+              "value": 83
             },
             {
               "id": "0xef02",
               "name": "light_mode",
               "zcl_type": "enum8",
-              "value": 0
+              "value": 1
             },
             {
               "id": "0xef06",
               "name": "string_effect",
               "zcl_type": "enum8",
-              "value": 7
+              "value": 8
             }
           ]
         }
