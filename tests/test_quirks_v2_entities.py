@@ -14,15 +14,16 @@ from zha.application.platforms.light import HueLight, Light
 from zha.application.platforms.number import OnLevelConfigurationEntity
 from zha.application.platforms.sensor import BaseSensor, RSSISensor, Sensor, Temperature
 from zha.application.platforms.sensor.device_class import SensorDeviceClass
+from zha.application.platforms.text import TextConfigurationEntity
 from zha.quirks import DeviceRegistry
 from zha.zigbee.device import ZigbeeDevice
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import LevelControl, OnOff, Ota
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, Ota
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
-from zhaquirks.builder import EntityFilter, QuirkBuilder
+from zhaquirks.builder import EntityFilter, QuirkBuilder, TextMode
 
 IEEE = "00:0d:6f:00:05:65:83:f2"
 
@@ -890,3 +891,40 @@ async def test_v2_entity_unique_id_omits_cluster_id() -> None:
         )
 
         assert entity.fallback_name == "Tolerance"
+
+
+async def test_text_entity() -> None:
+    """Test a text entity for a string attribute."""
+    registry = DeviceRegistry()
+    (
+        QuirkBuilder("CentraLite", "3405-L")
+        .text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            max_length=16,
+            mode=TextMode.TEXT,
+            translation_key="location",
+            fallback_name="Location",
+        )
+        .add_to_registry(registry)
+    )
+
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "centralite-3405-l-0x10025310.json", registry
+        )
+        entity = device.get_platform_entity(
+            Platform.TEXT, unique_id=f"{IEEE}-1-location_desc"
+        )
+
+        assert type(entity) is TextConfigurationEntity
+        assert entity.fallback_name == "Location"
+        assert entity.translation_key == "location"
+        assert entity.state.native_value is None
+        assert entity.state.native_max == 16
+        assert entity.state.mode == TextMode.TEXT
+
+        await entity.async_set_value("Kitchen")
+
+        assert device.device.endpoints[1].basic.get("location_desc") == "Kitchen"
+        assert entity.state.native_value == "Kitchen"

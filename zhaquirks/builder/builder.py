@@ -29,6 +29,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.text.const import TextMode
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceMatch,
@@ -63,6 +64,7 @@ from zhaquirks.builder.metadata import (
     ReplacedEntityMetadata,
     ReportingConfig,
     SwitchMetadata,
+    TextMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
     ZCLEnumMetadata,
@@ -828,6 +830,57 @@ class QuirkBuilder:
                 mode=mode,
                 multiplier=multiplier,
                 device_class=device_class,
+                primary=primary,
+            )
+        )
+        return self
+
+    def text(
+        self,
+        attribute_name: str,
+        cluster_id: int,
+        cluster_type: ClusterType = ClusterType.Server,
+        endpoint_id: int = 1,
+        min_length: int | None = None,
+        max_length: int | None = None,
+        pattern: str | None = None,
+        mode: TextMode | str | None = None,
+        entity_type: EntityType = EntityType.CONFIG,
+        initially_disabled: bool = False,
+        attribute_initialized_from_cache: bool = True,
+        reporting_config: ReportingConfig | None = None,
+        unique_id_suffix: str | None = None,
+        translation_key: str | None = None,
+        fallback_name: str | None = None,
+        primary: bool | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
+        """Add an EntityMetadata containing TextMetadata and return self.
+
+        This method allows exposing a text entity in Home Assistant for a string
+        attribute. Attributes typed as raw bytes are decoded from and encoded to
+        UTF-8. `min_length` and `max_length` count characters, not bytes.
+        """
+        self._add_entity_metadata(
+            TextMetadata(
+                endpoint_id=endpoint_id,
+                cluster_id=cluster_id,
+                cluster_type=cluster_type,
+                entity_platform=EntityPlatform.TEXT,
+                entity_type=entity_type,
+                initially_disabled=initially_disabled,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+                reporting_config=reporting_config,
+                unique_id_suffix=unique_id_suffix,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders or {},
+                fallback_name=fallback_name,
+                attribute_name=attribute_name,
+                min_length=min_length,
+                max_length=max_length,
+                pattern=pattern,
+                mode=mode,
                 primary=primary,
             )
         )

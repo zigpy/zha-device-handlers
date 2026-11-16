@@ -15,6 +15,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.text.const import TextMode
 from zha.units import *  # noqa: F401, F403
 
 from zhaquirks.builder.builder import QuirkBuilder
@@ -34,4 +35,5 @@ __all__ = [
     "ReportingConfig",
     "SensorDeviceClass",
     "SensorStateClass",
+    "TextMode",
 ]
