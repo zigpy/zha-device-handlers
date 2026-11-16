@@ -34,6 +34,7 @@ class FingerBotReverse(t.enum8):
         enum_class=FingerBotMode,
         translation_key="mode",
         fallback_name="Mode",
+        as_device_value=True,
     )
     .tuya_number(
         dp_id=102,
@@ -45,6 +46,7 @@ class FingerBotReverse(t.enum8):
         unit=PERCENTAGE,
         translation_key="down_movement",
         fallback_name="Down movement",
+        as_device_value=True,
     )
     .tuya_number(
         dp_id=103,
@@ -56,6 +58,7 @@ class FingerBotReverse(t.enum8):
         unit=UnitOfTime.SECONDS,
         translation_key="sustain_time",
         fallback_name="Sustain time",
+        as_device_value=True,
     )
     .tuya_enum(
         dp_id=104,
@@ -63,6 +66,7 @@ class FingerBotReverse(t.enum8):
         enum_class=FingerBotReverse,
         translation_key="reverse",
         fallback_name="Reverse",
+        as_device_value=True,
     )
     .tuya_battery(dp_id=105, battery_type=BatterySize.CR2, battery_qty=1)
     .tuya_number(
@@ -75,12 +79,14 @@ class FingerBotReverse(t.enum8):
         unit=PERCENTAGE,
         translation_key="up_movement",
         fallback_name="Up movement",
+        as_device_value=True,
     )
     .tuya_switch(
         dp_id=107,
         attribute_name="touch_control",
         translation_key="touch_control",
         fallback_name="Touch control",
+        as_device_value=True,
     )
     .tuya_enchantment()
     .add_to_registry(mcu_write_command=TUYA_SEND_DATA)
