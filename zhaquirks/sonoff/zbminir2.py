@@ -56,8 +56,8 @@ class RelaySperaKeyAction(types.enum8):
     Single_click = 0x01
     Double_click = 0x02
     Long_press = 0x03
-    # Follow_on = 0x04
-    # Follow_off = 0x05
+    Follow_on = 0x04
+    Follow_off = 0x05
 
 
 class InchingModeBit(types.enum8):
@@ -207,11 +207,10 @@ class SonoffCluster(CustomCluster):
                 and isinstance(parent_results, list)
                 and parent_results[0]
             ):
-                results.extend(
-                    parent_results[0]
-                    if isinstance(parent_results[0], list)
-                    else parent_results
-                )
+                if isinstance(parent_results[0], list):
+                    results.extend(parent_results[0])
+                else:
+                    results.extend(parent_results)
 
         _LOGGER.debug("write_attributes returning: %s", results)
         return [results]
@@ -298,7 +297,8 @@ class SonoffCluster(CustomCluster):
             except Exception:
                 _LOGGER.exception("Failed to process inching report")
             return
-        return super().handle_message(hdr, args)
+        else:
+            return super().handle_message(hdr, args)
 
 
 (
@@ -390,6 +390,16 @@ class SonoffCluster(CustomCluster):
                 CLUSTER_ID: SonoffCluster.cluster_id,
                 ENDPOINT_ID: 1,
                 COMMAND: "Long_press",
+            },
+            ("External Switch action", "Follow On"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 1,
+                COMMAND: "Follow_on",
+            },
+            ("External Switch action", "Follow Off"): {
+                CLUSTER_ID: SonoffCluster.cluster_id,
+                ENDPOINT_ID: 1,
+                COMMAND: "Follow_off",
             },
         }
     )

@@ -162,6 +162,16 @@ async def test_relay_detach_key_event(zbminir2_device):
     assert listener.zha_send_event.call_count == 1
     listener.zha_send_event.assert_called_with("undefined_0x63", {})
 
+    listener.reset_mock()
+    cluster.update_attribute(0x0028, RelaySperaKeyAction.Follow_on)
+    assert listener.zha_send_event.call_count == 1
+    listener.zha_send_event.assert_called_with("Follow_on", {})
+
+    listener.reset_mock()
+    cluster.update_attribute(0x0028, RelaySperaKeyAction.Follow_off)
+    assert listener.zha_send_event.call_count == 1
+    listener.zha_send_event.assert_called_with("Follow_off", {})
+
 
 async def test_inching_write_failure_does_not_revert_cache(zbminir2_device):
     """Test that even if _send_combined raises an exception, the local cache is updated.
@@ -238,11 +248,23 @@ async def test_device_automation_triggers(zbminir2_device):
     assert ("External Switch action", "Single Click") in triggers
     assert ("External Switch action", "Double Click") in triggers
     assert ("External Switch action", "Long Press") in triggers
+    assert ("External Switch action", "Follow On") in triggers
+    assert ("External Switch action", "Follow Off") in triggers
 
     trigger_def = triggers[("External Switch action", "Double Click")]
     assert trigger_def["cluster_id"] == SonoffCluster.cluster_id
     assert trigger_def["endpoint_id"] == 1
     assert trigger_def["command"] == "Double_click"
+
+    follow_on_def = triggers[("External Switch action", "Follow On")]
+    assert follow_on_def["cluster_id"] == SonoffCluster.cluster_id
+    assert follow_on_def["endpoint_id"] == 1
+    assert follow_on_def["command"] == "Follow_on"
+
+    follow_off_def = triggers[("External Switch action", "Follow Off")]
+    assert follow_off_def["cluster_id"] == SonoffCluster.cluster_id
+    assert follow_off_def["endpoint_id"] == 1
+    assert follow_off_def["command"] == "Follow_off"
 
 
 async def test_onoff_toggle_triggers_single_click(zbminir2_device):
