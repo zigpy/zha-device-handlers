@@ -425,7 +425,11 @@ class MelineraLight(Light):
         if tuya is None or tuya.get("light_mode") != LightMode.Effect:
             return EFFECT_OFF
         effect = tuya.get("string_effect")
-        return EFFECT_OFF if effect is None else EFFECT_NAMES[StringEffect(effect)]
+        return (
+            EFFECT_NAMES.get(StringEffect(effect), EFFECT_OFF)
+            if effect is not None
+            else EFFECT_OFF
+        )
 
     def recompute_capabilities(self) -> None:
         """Offer the built-in effects instead of colour loop."""
