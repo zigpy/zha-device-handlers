@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import copy
 import dataclasses
 import datetime
 import enum
@@ -35,6 +36,7 @@ from zhaquirks.legacy import CustomDevice
 
 if TYPE_CHECKING:
     from zigpy.store import StoredValue
+    from zigpy.zcl.helpers import AttributeCacheRow
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -1736,6 +1738,102 @@ class TuyaNewManufCluster(CustomCluster):
                     if "_VALID_ATTRIBUTES" not in cluster.__dict__:
                         cluster._VALID_ATTRIBUTES = set()
                     cluster._VALID_ATTRIBUTES.add(attr.id)
+
+    def migrate_attribute_cache_row(self, row: AttributeCacheRow, value: Any) -> bool:
+        """Move the invented attribute of a datapoint that is now a device value.
+
+        The builder kept datapoints as invented attributes `0xEF00 | dp` on this
+        cluster, so the datapoint is taken from the attribute ID. That only holds for
+        IDs the builder made: a hand-written quirk that numbered its attributes
+        otherwise must not map their datapoints to device values while such rows can
+        exist. The attribute held the converted value, which is what the device value
+        stores, so the value is taken as it is.
+
+        The newer of the two wins: the attribute's value replaces a stored value only
+        if it was updated later (after going back to an older quirk version and
+        forward again), or if the stored value would be dropped when read (an older
+        version that its migration does not keep). A stored value of a newer version is
+        kept. A value that cannot be stored is logged and dropped. The row is migrated
+        either way, so that going back to a quirk version that still defines the
+        attribute cannot load a stale value as current.
+        """
+        if row.attr_id >> 8 != 0xEF:
+            return False
+
+        dp = row.attr_id & 0xFF
+        mappings = [
+            mapping
+            for mapping in self._dp_to_attributes.get(dp, [])
+            if isinstance(mapping, DPToDeviceValueMapping)
+        ]
+
+        if not mappings:
+            return False
+
+        if len(mappings) > 1:
+            self.warning(
+                "Not migrating attribute 0x%04X: datapoint %d maps to device values %s",
+                row.attr_id,
+                dp,
+                ", ".join(mapping.value.key for mapping in mappings),
+            )
+            return False
+
+        value_def = mappings[0].value
+        store = self.endpoint.device.store
+        last_updated = datetime.datetime.fromtimestamp(row.last_updated, datetime.UTC)
+
+        if self._stored_value_is_newer(value_def, last_updated):
+            return True
+
+        try:
+            store.set(value_def, value, last_updated=last_updated)
+        except Exception:  # noqa: BLE001
+            self.warning(
+                "Cannot store %r of datapoint %d as device value %s, dropping it",
+                value,
+                dp,
+                value_def.key,
+                exc_info=True,
+            )
+
+        return True
+
+    def _stored_value_is_newer(
+        self, value_def: StoredValue[Any], last_updated: datetime.datetime
+    ) -> bool:
+        """Whether the store holds a value of `value_def` to keep over a migrated one."""
+        namespace = self.endpoint.device.store.namespace(value_def.namespace)
+
+        if value_def.key not in namespace:
+            return False
+
+        item = namespace.item(value_def.key)
+
+        if item.version > value_def.version:
+            return True
+
+        # An older version is dropped when read unless its migration keeps it
+        if item.version < value_def.version:
+            if value_def.migrate is None:
+                return False
+
+            try:
+                # A copy, so that a migration that changes the value in place cannot
+                # change the stored item, which is migrated again when it is read
+                migrated = value_def.migrate(item.version, copy.deepcopy(item.value))
+            except Exception:  # noqa: BLE001
+                self.warning(
+                    "Stored device value %s cannot be migrated",
+                    value_def.key,
+                    exc_info=True,
+                )
+                return False
+
+            if migrated is None:
+                return False
+
+        return item.last_updated >= last_updated
 
     def handle_cluster_request(
         self,
