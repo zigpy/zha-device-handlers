@@ -176,17 +176,19 @@ class SonoffCluster(CustomCluster):
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_ENABLE_ATTR)
                 )
             elif key == "inching_mode":
-                self._update_attribute(INCHING_MODE_ATTR, value)
+                self._update_attribute(INCHING_MODE_ATTR, int(value))
                 await self._send_combined()
                 results.append(
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_MODE_ATTR)
                 )
             elif key == "inching_timeout":
-                self._update_attribute(INCHING_TIMEOUT_ATTR, value)
+                self._update_attribute(INCHING_TIMEOUT_ATTR, int(value))
                 await self._send_combined()
                 results.append(
                     WriteAttributesStatusRecord(Status.SUCCESS, INCHING_TIMEOUT_ATTR)
                 )
+            else:
+                real_attrs[key] = value
 
         if real_attrs:
             parent_results = await super().write_attributes(
