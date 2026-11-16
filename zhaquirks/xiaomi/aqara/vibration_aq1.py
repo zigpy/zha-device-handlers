@@ -3,9 +3,9 @@
 import math
 from typing import Final
 
+from zha.quirks import XIAOMI_AQARA_VIBRATION_AQ1
 from zigpy import types
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -19,6 +19,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -37,7 +38,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     ZONE_TYPE,
 )
-from zhaquirks.quirk_ids import XIAOMI_AQARA_VIBRATION_AQ1
 from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,

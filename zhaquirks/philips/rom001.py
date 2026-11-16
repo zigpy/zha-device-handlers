@@ -1,7 +1,6 @@
 """Philips ROM001 device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -27,6 +26,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
     SIGNIFY,
@@ -65,7 +65,12 @@ class PhilipsROM001(CustomDevice):
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512, 4096]
         #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
-        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001"), (SIGNIFY, "RDM003")],
+        MODELS_INFO: [
+            (PHILIPS, "ROM001"),
+            (SIGNIFY, "ROM001"),
+            (SIGNIFY, "RDM003"),
+            (SIGNIFY, "RDM005"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

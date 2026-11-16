@@ -1,7 +1,6 @@
 """Device handler for Lutron LZL4BWHL01 Remote."""
 
 from zigpy.profiles import zll
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -33,6 +32,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.legacy import CustomDevice
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_1 = 0xFF00  # decimal = 65280
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC44  # decimal = 64580

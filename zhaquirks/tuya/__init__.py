@@ -9,9 +9,8 @@ import enum
 import logging
 from typing import Any, Final
 
-from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.typing import AddressingMode
+from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
@@ -21,6 +20,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
     LEFT,
@@ -30,6 +30,8 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     BatterySize,
 )
+from zhaquirks.device import BaseCustomDevice
+from zhaquirks.legacy import CustomDevice
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -158,7 +160,7 @@ class TuyaData:
 
     def __init__(
         self,
-        value: TuyaDPType | None = None,
+        value: object | None = None,
         function: t.uint8_t = t.uint8_t(0),
         raw: bytes | None = None,
     ):
@@ -236,6 +238,20 @@ class TuyaData:
             self.raw = value.serialize()
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __repr__(self) -> str:
+        """Show the type and raw bytes, plus the payload if it decodes and differs from raw."""
+        fields = (
+            f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
+        )
+        try:
+            payload = self.payload
+        except (AttributeError, TypeError, ValueError):
+            payload = None
+        # a RAW payload is `raw` itself, so don't show the same bytes twice
+        if payload is not None and self.dp_type != TuyaDPType.RAW:
+            fields += f", *payload={payload!r}"
+        return f"{type(self).__name__}({fields})"
 
     def serialize(self) -> bytes:
         """Serialize Tuya data."""
@@ -337,30 +353,11 @@ class MCUVersionRsp(t.Struct):
 
 
 class NoManufacturerCluster(CustomCluster):
-    """Forces no manufacturer id in command.
+    """Originally used to force no manufacturer id in command. Now without function.
 
+    Instead, specify manufacturer_code=None in the command definitions instead.
     TODO: Remove this class once all clusters are properly migrated.
     """
-
-    async def command(
-        self,
-        command_id: foundation.GeneralCommand | int | t.uint8_t,
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        expect_reply: bool = True,
-        tsn: int | t.uint8_t | None = None,
-        **kwargs: Any,
-    ):
-        """Override the default Cluster command."""
-        self.debug("Setting no manufacturer id in command: %s", command_id)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=None,
-            expect_reply=expect_reply,
-            tsn=tsn,
-            **kwargs,
-        )
 
 
 class TuyaManufCluster(CustomCluster):
@@ -538,15 +535,25 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         self._update_attribute(tuya_cmd, zvalue)
 
     async def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+
         return await super().read_attributes(
-            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+            attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,  # XXX: default in quirks
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)
@@ -599,7 +606,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):
@@ -750,7 +757,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Implement writeable attributes."""
 
         records = self._write_attr_records(attributes)
@@ -788,7 +799,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
-            manufacturer_attrs, manufacturer=manufacturer
+            manufacturer_attrs, **kwargs
         )
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
@@ -862,7 +873,11 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
         """Defer the keypad_lockout attribute to child_lock."""
 
         records = self._write_attr_records(attributes)
@@ -901,7 +916,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
             ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
-            manufacturer_attrs, manufacturer=manufacturer
+            manufacturer_attrs, **kwargs
         )
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
@@ -1508,6 +1523,46 @@ class DPToAttributeMapping:
     converter: Callable[[Any], Any] | None = None
     endpoint_id: int | None = None
 
+    def __init__(
+        self,
+        ep_attribute: str,
+        attribute_name: str | tuple[str, ...],
+        converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
+    ):
+        """Init DPToAttributeMapping."""
+        self.ep_attribute = ep_attribute
+        self.attribute_name = attribute_name
+        self.converter = converter
+        self.endpoint_id = endpoint_id
+
+        if not isinstance(attribute_name, str):
+            _LOGGER.debug(
+                "Using a tuple for attribute_name is deprecated, please update ZHA quirks "
+                "to use multiple DPToAttributeMapping instances instead. Affected tuple: %s",
+                attribute_name,
+            )
+
+    def decompose_attributes(self) -> list[DPToAttributeMapping]:
+        """Decompose attributes into multiple mappings."""
+
+        def wrap_converter(converter: Callable[[Any], Any] | None, attr_index: int):
+            if converter is None:
+                return None
+            return lambda args: converter(args)[attr_index]
+
+        if isinstance(self.attribute_name, tuple):
+            return [
+                DPToAttributeMapping(
+                    self.ep_attribute,
+                    attr_name,
+                    wrap_converter(self.converter, attr_index),
+                    self.endpoint_id,
+                )
+                for attr_index, attr_name in enumerate(self.attribute_name)
+            ]
+        return [self]
+
 
 @dataclasses.dataclass
 class AttributeWithMask:
@@ -1587,10 +1642,19 @@ class TuyaNewManufCluster(CustomCluster):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
 
-        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
-            dp: attr if isinstance(attr, list) else [attr]
-            for dp, attr in self.dp_to_attribute.items()
-        }
+        # Normalize dp_to_attribute: map each DP to a flat list of single attr mappings
+        # This decomposes old tuple-based mappings
+        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {}
+        for dp, mappings in self.dp_to_attribute.items():
+            # Normalize to list (dp_to_attribute allows single mapping or list)
+            if not isinstance(mappings, list):
+                mappings = [mappings]
+            # Flatten: decompose any tuple-based mappings into individual mappings
+            self._dp_to_attributes[dp] = [
+                decomposed
+                for mapping in mappings
+                for decomposed in mapping.decompose_attributes()
+            ]
         for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
@@ -1660,6 +1724,12 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle get_data response (report)."""
         dp_error = False
         for record in command.datapoints:
+            self.debug(
+                "Received datapoint %s (%s, raw %s)",
+                record.dp,
+                record.data.dp_type,
+                record.data.raw,
+            )
             try:
                 dp_handler = self.data_point_handlers[record.dp]
                 getattr(self, dp_handler)(record)
@@ -1667,15 +1737,16 @@ class TuyaNewManufCluster(CustomCluster):
                 self.debug("No datapoint handler for %s", record)
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-        _LOGGER.debug(
-            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
-            self.endpoint.device.nwk,
-            self.endpoint.endpoint_id,
-            self.cluster_id,
-            record.data.payload,
-            record.dp,
-        )
+            except ValueError as exc:
+                # Some devices send malformed datapoints, e.g. a VALUE with 1 byte.
+                # Skip them, so the command is still acknowledged.
+                self.warning(
+                    "Ignoring invalid datapoint %s (%s, raw %s): %s",
+                    record.dp,
+                    record.data.dp_type,
+                    record.data.raw.hex(),
+                    exc,
+                )
 
         return (
             foundation.Status.SUCCESS
@@ -1707,15 +1778,9 @@ class TuyaNewManufCluster(CustomCluster):
             if mapped_attr.converter:
                 value = mapped_attr.converter(value)
 
-            if isinstance(mapped_attr.attribute_name, tuple):
-                for k, v in zip(mapped_attr.attribute_name, value):
-                    if isinstance(v, AttributeWithMask):
-                        v = cluster.get(k, 0) & (~v.mask) | v.value
-                    cluster.update_attribute(k, v)
-            else:
-                if isinstance(value, AttributeWithMask):
-                    value = (
-                        cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
-                        | value.value
-                    )
-                cluster.update_attribute(mapped_attr.attribute_name, value)
+            if isinstance(value, AttributeWithMask):
+                value = (
+                    cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
+                    | value.value
+                )
+            cluster.update_attribute(mapped_attr.attribute_name, value)

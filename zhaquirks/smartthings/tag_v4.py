@@ -1,7 +1,6 @@
 """Device handler for smartthings tagV4 sensors."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
 
 from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
@@ -12,6 +11,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legacy import CustomDevice
 
 ARRIVAL_SENSOR_DEVICE_TYPE = 0x8000
 

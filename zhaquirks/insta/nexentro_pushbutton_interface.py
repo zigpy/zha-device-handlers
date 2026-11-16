@@ -1,7 +1,6 @@
 """Device handler for Insta NEXENTRO Pushbutton Interface."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -44,6 +43,7 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.insta import INSTA
+from zhaquirks.legacy import CustomDevice
 
 COMMAND_OPEN = "up_open"
 COMMAND_CLOSE = "down_close"

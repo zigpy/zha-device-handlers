@@ -1,15 +1,16 @@
 """Sonoff SNZB-04 device."""
 
 from zigpy import types
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import (
+from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import (
     BinarySensorDeviceClass,
     EntityType,
     QuirkBuilder,
     ReportingConfig,
 )
-from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffContactCluster(CustomCluster):

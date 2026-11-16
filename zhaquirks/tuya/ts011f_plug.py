@@ -1,7 +1,7 @@
 """TS011F plug."""
 
+from zha.quirks import TUYA_PLUG_ONOFF
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -26,7 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
+from zhaquirks.legacy import CustomDevice, signature_matches
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNewManufCluster,
@@ -38,6 +38,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class Plug(EnchantedDevice):
@@ -1097,6 +1098,61 @@ class Plug_v2(EnchantedDevice):
     }
 
 
+class Plug_v2_var_fc11(EnchantedDevice):
+    """Another TS011F Tuya plug, Plug_v2 variant with additional 0xfc11 input-cluster.
+
+    First ones using this definition are _TZ3000_okaz9tjs and _TZ3000_5f43h46b.
+    """
+
+    quirk_id = TUYA_PLUG_ONOFF
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0051",
+            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001", "0xfc11"],
+            # "out_clusters": []
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    0xFC11,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                    0xFC11,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+
 class Plug_v3(EnchantedDevice):
     """Tuya TS011F plug. One plug is _Tz3000_0Zfrhq4I."""
 
@@ -1475,7 +1531,12 @@ class Plug_2AC_var03(CustomDevice):
 
 
 class Plug_CB_Metering(EnchantedDevice):
-    """Circuit breaker with monitoring, e.g. Tongou TO-Q-SY1-JZT. First one using this definition was _TZ3000_qeuvnohg."""
+    """Circuit breaker with monitoring.
+
+    Written for the Tongou TO-Q-SY1-JZT (_TZ3000_qeuvnohg), which now has its own
+    v2 quirk at the end of this file that keeps TemperatureMeasurement so its reports
+    get acknowledged. Other TS011F breakers with this signature still use this one.
+    """
 
     quirk_id = TUYA_PLUG_ONOFF
 
@@ -1838,3 +1899,26 @@ class Plug_v7(EnchantedDevice):
             },
         },
     }
+
+
+# Tongou TO-Q-SY1-JZT. The firmware sends TemperatureMeasurement reports that
+# expect a Default Response, but the value is not a usable temperature. The
+# Plug_CB_Metering replacement drops the cluster, so the reports are never
+# acknowledged and the device retransmits each one around ten times, flooding the
+# network. Keep the cluster so zigpy acknowledges the reports, without an entity.
+# Only applies to devices matching the Plug_CB_Metering signature, like before.
+(
+    TuyaQuirkBuilder("_TZ3000_qeuvnohg", "TS011F")
+    .filter(signature_matches(Plug_CB_Metering.signature))
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBMeteringCluster)
+    .replaces(TuyaZBElectricalMeasurement)
+    .replaces(TuyaZBE000Cluster)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=TemperatureMeasurement.cluster_id
+    )
+    .exposes_feature(TUYA_PLUG_ONOFF)
+    .tuya_enchantment()
+    .add_to_registry()
+)

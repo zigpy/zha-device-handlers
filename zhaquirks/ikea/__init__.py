@@ -2,13 +2,13 @@
 
 import logging
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import BatterySize
 
 _LOGGER = logging.getLogger(__name__)
@@ -236,11 +236,12 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
 
         # check if sw_build_id was read successfully and old firmware is installed
-        # if so, update cache with reported battery percentage (doubled)
+        # if so, update cache with reported battery percentage again,
+        # _update_attribute doubles it now that the firmware is known to be old
         if not self._is_firmware_new():
             self._update_attribute(
                 PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
-                reported_battery_pct * 2,
+                reported_battery_pct,
             )
 
     def _update_attribute(self, attrid, value):

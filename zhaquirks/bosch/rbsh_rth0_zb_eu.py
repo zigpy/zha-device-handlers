@@ -1,14 +1,21 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.builder import (
+    PERCENTAGE,
+    BinarySensorDeviceClass,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+    UnitOfTemperature,
+)
+from zhaquirks.clusters import CustomCluster
 
 """Bosch specific thermostat attribute ids."""
 
@@ -285,7 +292,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=SensorDeviceClass.TEMPERATURE,
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
         ),
@@ -299,7 +306,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=SensorDeviceClass.TEMPERATURE,
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
         ),

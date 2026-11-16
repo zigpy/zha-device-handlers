@@ -2,10 +2,11 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeDef
+
+from zhaquirks.clusters import CustomCluster
 
 
 class LinkindBasicCluster(CustomCluster, Basic):

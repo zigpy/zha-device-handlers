@@ -1,9 +1,9 @@
 """Smart button."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff
 
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 
 (

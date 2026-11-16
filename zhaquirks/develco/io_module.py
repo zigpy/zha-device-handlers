@@ -1,7 +1,8 @@
 """Develco IO Module."""
 
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
+
+from zhaquirks.builder import QuirkBuilder
 
 (
     QuirkBuilder("frient A/S", "IOMZB-110")

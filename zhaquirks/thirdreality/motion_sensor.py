@@ -2,11 +2,11 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 
 
 class ThirdRealityMotionCluster(CustomCluster):
