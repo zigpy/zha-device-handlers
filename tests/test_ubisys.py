@@ -6,7 +6,7 @@ import pytest
 from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent, ClusterType
+from zigpy.zcl import AttributeWrittenEvent, ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -41,6 +41,7 @@ from zhaquirks.ubisys.light_ld6 import (
     UbisysLD6Cluster,
     UbisysLD6InputConfigCluster,
     UbisysLD6OutputConfigCluster,
+    _layout,
 )
 from zhaquirks.ubisys.switch_s1r import UbisysS1RInputConfigCluster
 from zhaquirks.ubisys.switch_s2 import UbisysS2InputConfigCluster
@@ -1549,9 +1550,6 @@ async def test_ld6_entities_from_diagnostics():
         assert (Platform.SELECT, f"{ieee}-1-output_configuration") in (
             device.platform_entities
         )
-        assert (Platform.BINARY_SENSOR, f"{ieee}-1-reconfigure_required") in (
-            device.platform_entities
-        )
         for i in (1, 2, 3):
             assert (Platform.SELECT, f"{ieee}-1-input_mode_{i}") in (
                 device.platform_entities
@@ -1575,6 +1573,10 @@ def test_ld6_output_configurations_complete():
     assert set(OUTPUT_CONFIGURATIONS) == set(LD6OutputConfiguration)
     for entries in OUTPUT_CONFIGURATIONS.values():
         assert [len(entry) for entry in entries] == [6] * 6
+    # every reference configuration has a distinct endpoint and function layout
+    assert len({_layout(entries) for entries in OUTPUT_CONFIGURATIONS.values()}) == len(
+        OUTPUT_CONFIGURATIONS
+    )
 
 
 @pytest.mark.parametrize(
@@ -1585,6 +1587,12 @@ def test_ld6_output_configurations_complete():
             [bytes.fromhex("10ffffffffff")] + [bytes.fromhex("00ffffffffff")] * 5,
             LD6OutputConfiguration.Dimmable,
         ),
+        # calibrated flux and chromaticity
+        (
+            [bytes.fromhex("1180ffffffff"), bytes.fromhex("12804250d952")]
+            + [bytes.fromhex("00ffffffffff")] * 4,
+            LD6OutputConfiguration.Tunable_white,
+        ),
         ([bytes.fromhex("1180ffffffff")] + [bytes.fromhex("00ffffffffff")] * 5, None),
     ],
 )
@@ -1593,10 +1601,7 @@ async def test_ld6_output_configuration_read(ubisys_ld6, entries, expected):
     device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
     output_config = ubisys_ld6.endpoints[1].ubisys_output_config
     attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
-    reconfigure_required = (
-        UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required
-    )
-    output_config.update_attribute(reconfigure_required.id, t.Bool.true)
+    output_config.update_attribute(attr.id, LD6OutputConfiguration.Dimmable_x6)
 
     with mock.patch.object(
         device_setup,
@@ -1614,7 +1619,6 @@ async def test_ld6_output_configuration_read(ubisys_ld6, entries, expected):
         [UbisysLD6Cluster.AttributeDefs.output_configurations.name]
     )
     assert output_config.get(attr.id) == expected
-    assert output_config.get(reconfigure_required.id) == t.Bool.false
 
 
 async def test_ld6_output_configuration_read_failure(ubisys_ld6):
@@ -1640,23 +1644,30 @@ async def test_ld6_output_configuration_read_failure(ubisys_ld6):
         await ubisys_ld6.apply_custom_configuration()
 
     assert output_config.get(attr.id) is None
+    success, failure = await output_config.read_attributes([attr.name])
+    assert success == {attr.name: None}
+    assert not failure
 
 
 async def test_ld6_output_configuration_write(ubisys_ld6):
-    """Test selecting an output configuration writes it to endpoint 232."""
+    """Test selecting an output configuration writes it and re-interviews."""
     output_config = ubisys_ld6.endpoints[1].ubisys_output_config
     endpoint_232 = ubisys_ld6.endpoints[232]
     attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
-    reconfigure_required = (
-        UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required
+
+    success = foundation.WriteAttributesStructuredResponseSchema(
+        status_records=[
+            foundation.WriteAttributesStructuredStatusRecord(status=Status.SUCCESS)
+        ]
     )
 
-    assert output_config.get(reconfigure_required.id) == t.Bool.false
-
-    with mock.patch.object(
-        endpoint_232,
-        "request",
-        mock.AsyncMock(return_value=[0]),
+    with (
+        mock.patch.object(
+            endpoint_232, "request", mock.AsyncMock(return_value=success)
+        ),
+        mock.patch.object(
+            ubisys_ld6, "reinterview", mock.AsyncMock()
+        ) as reinterview_mock,
     ):
         await output_config.write_attributes({attr.name: LD6OutputConfiguration.RGBCCT})
 
@@ -1672,4 +1683,38 @@ async def test_ld6_output_configuration_write(ubisys_ld6):
         assert sent_data == bytes(expected)
 
     assert output_config.get(attr.id) == LD6OutputConfiguration.RGBCCT
-    assert output_config.get(reconfigure_required.id) == t.Bool.true
+    reinterview_mock.assert_awaited_once_with()
+
+
+async def test_ld6_output_configuration_write_rejected(ubisys_ld6):
+    """Test a rejected write keeps the selection and does not re-interview."""
+    output_config = ubisys_ld6.endpoints[1].ubisys_output_config
+    device_setup = ubisys_ld6.endpoints[232].ubisys_cluster
+    attr = UbisysLD6OutputConfigCluster.AttributeDefs.output_configuration
+    output_config.update_attribute(attr.id, LD6OutputConfiguration.RGBCCT)
+    rejected = foundation.WriteAttributesStructuredResponseSchema(
+        status_records=[
+            foundation.WriteAttributesStructuredStatusRecord(
+                status=Status.UNSUPPORTED_ATTRIBUTE,
+                attrid=UbisysLD6Cluster.AttributeDefs.output_configurations.id,
+            )
+        ]
+    )
+
+    with (
+        mock.patch.object(
+            device_setup,
+            "write_attributes_structured_raw",
+            mock.AsyncMock(return_value=rejected),
+        ),
+        mock.patch.object(
+            ubisys_ld6, "reinterview", mock.AsyncMock()
+        ) as reinterview_mock,
+    ):
+        result = await output_config.write_attributes(
+            {attr.name: LD6OutputConfiguration.Dimmable}
+        )
+
+    assert result is rejected
+    assert output_config.get(attr.id) == LD6OutputConfiguration.RGBCCT
+    reinterview_mock.assert_not_awaited()

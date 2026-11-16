@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -64,8 +64,9 @@ def _entries(hex_entries: str) -> list[bytes]:
     return [bytes.fromhex(entry) for entry in hex_entries.split()]
 
 
-# Reference configurations, one 6-byte entry per output channel:
-# endpoint (high nibble) and function (low nibble), flux, CIE 1931 x and y
+# Reference configurations from the LD6 technical reference (6.13.3.4), one 6-byte
+# entry per output channel: endpoint (high nibble) and function (low nibble),
+# flux, CIE 1931 x and y
 OUTPUT_CONFIGURATIONS: dict[LD6OutputConfiguration, list[bytes]] = {
     LD6OutputConfiguration.Dimmable: _entries(
         "10ffffffffff 00ffffffffff 00ffffffffff 00ffffffffff 00ffffffffff 00ffffffffff"
@@ -139,6 +140,19 @@ OUTPUT_CONFIGURATIONS: dict[LD6OutputConfiguration, list[bytes]] = {
 }
 
 
+def _layout(entries: list[bytes]) -> tuple[int, ...]:
+    """Return the endpoint and function byte of each OutputConfigurations entry."""
+    return tuple(entry[0] for entry in entries)
+
+
+# Matched by layout only, so configurations with calibrated flux or chromaticity
+# still show their reference configuration
+_OUTPUT_CONFIGURATIONS_BY_LAYOUT: dict[tuple[int, ...], LD6OutputConfiguration] = {
+    _layout(entries): output_config
+    for output_config, entries in OUTPUT_CONFIGURATIONS.items()
+}
+
+
 class UbisysLD6Cluster(UbisysCluster):
     """Ubisys device setup cluster with the LD6 output configurations."""
 
@@ -185,9 +199,8 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
     the select shows an unknown state. Same for configurations that do not match
     any of the reference ones.
 
-    reconfigure_required is set after writing a configuration: the LD6 then
-    changes its light endpoints, which ZHA picks up when the device is
-    reconfigured. Reconfiguring reads the configuration and resets the attribute.
+    After a configuration is written, the LD6 changes its light endpoints, so the
+    device is re-interviewed for ZHA to rebuild its entities.
     """
 
     cluster_id = 0xFBFE
@@ -200,26 +213,19 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
         output_configuration: Final = ZCLAttributeDef(
             id=0x0000, type=LD6OutputConfiguration
         )
-        reconfigure_required: Final = ZCLAttributeDef(id=0x0001, type=t.Bool)
 
-    _DEFAULT_VALUES: dict[int, Any] = {
-        AttributeDefs.reconfigure_required.id: t.Bool.false,
-    }
+    _VALID_ATTRIBUTES = {AttributeDefs.output_configuration.id}
 
     def update_from_device(self, entries: list[bytes]) -> None:
         """Set the selected configuration from the device's OutputConfigurations."""
-        self._update_attribute(self.AttributeDefs.reconfigure_required, t.Bool.false)
-        for output_config, reference in OUTPUT_CONFIGURATIONS.items():
-            if entries == reference:
-                self._update_attribute(
-                    self.AttributeDefs.output_configuration, output_config
-                )
-                return
-        _LOGGER.info(
-            "%s: output configuration does not match any reference configuration: %s",
-            self.endpoint.device.ieee,
-            [entry.hex() for entry in entries],
-        )
+        output_config = _OUTPUT_CONFIGURATIONS_BY_LAYOUT.get(_layout(entries))
+        if output_config is None:
+            _LOGGER.info(
+                "%s: output configuration does not match any reference configuration: %s",
+                self.endpoint.device.ieee,
+                [entry.hex() for entry in entries],
+            )
+        self._update_attribute(self.AttributeDefs.output_configuration, output_config)
 
     async def write_attributes(
         self,
@@ -235,14 +241,26 @@ class UbisysLD6OutputConfigCluster(LocalDataCluster):
             result = await device_setup.write_output_configurations(
                 OUTPUT_CONFIGURATIONS[output_config]
             )
+            if (
+                not isinstance(
+                    result, foundation.WriteAttributesStructuredResponseSchema
+                )
+                or result.status_records[0].status != foundation.Status.SUCCESS
+            ):
+                _LOGGER.warning(
+                    "%s: writing output configuration %s failed: %s",
+                    self.endpoint.device.ieee,
+                    output_config.name,
+                    result,
+                )
+                return result
             self._update_attribute(attr_def, output_config)
-            self._update_attribute(self.AttributeDefs.reconfigure_required, t.Bool.true)
             _LOGGER.info(
-                "%s: output configuration changed to %s, the device has to be"
-                " reconfigured for the new light endpoints to be used",
+                "%s: output configuration changed to %s, re-interviewing the device",
                 self.endpoint.device.ieee,
                 output_config.name,
             )
+            await self.endpoint.device.reinterview()
             return result
 
         # find_attribute raises KeyError for undefined attributes, so this line
@@ -317,14 +335,6 @@ class UbisysLD6InputConfigCluster(UbisysD1InputConfigCluster):
         cluster_id=UbisysLD6OutputConfigCluster.cluster_id,
         translation_key="output_configuration",
         fallback_name="Output configuration",
-    )
-    .binary_sensor(
-        attribute_name=UbisysLD6OutputConfigCluster.AttributeDefs.reconfigure_required.name,
-        cluster_id=UbisysLD6OutputConfigCluster.cluster_id,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="reconfigure_required",
-        fallback_name="Reconfigure required",
     )
     .enum(
         attribute_name=UbisysLD6InputConfigCluster.AttributeDefs.input_mode_1.name,
