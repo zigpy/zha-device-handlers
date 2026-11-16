@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 from tests.common import ClusterListener
 from zhaquirks.const import BatterySize
 from zhaquirks.xiaomi import AQARA, XIAOMI_AQARA_ATTRIBUTE_E1
-from zhaquirks.xiaomi.aqara.motion_agl8 import AqaraFP300ManuCluster
+from zhaquirks.xiaomi.aqara.motion_agl8 import AqaraFP300ManuCluster, MotionSensitivity
 
 
 def create_aqara_attr_report(attributes):
@@ -223,3 +223,31 @@ async def test_aqara_fp300_configuration_survives_read_failure(
         side_effect=TimeoutError,
     ):
         await device.apply_custom_configuration()
+
+
+async def test_aqara_fp300_motion_sensitivity_write(zigpy_device_from_v2_quirk):
+    """Test that motion sensitivity is written as a manufacturer-specific uint8."""
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.sensor_occupy.agl8")
+    manu_cluster = device.endpoints[1].aqara_fp300_manu
+    manu_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    await manu_cluster.write_attributes(
+        {
+            AqaraFP300ManuCluster.AttributeDefs.motion_sensitivity.name: (
+                MotionSensitivity.High
+            )
+        }
+    )
+
+    assert len(manu_cluster._write_attributes.mock_calls) == 1
+    call = manu_cluster._write_attributes.mock_calls[0]
+    assert call.kwargs["manufacturer"] == 0x115F
+    [attr] = call.args[0]
+    # Same encoding Zigbee2MQTT uses for 0x010C on this device: uint8, values 1 to 3
+    assert attr.attrid == 0x010C
+    assert attr.value.type == foundation.DataTypeId.uint8
+    assert attr.value.value == 3
