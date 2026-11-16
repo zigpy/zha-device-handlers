@@ -1,10 +1,12 @@
 """Test for Tuya rain sensor."""
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.tuya.tuya_rain import RAIN_INTENSITY
 
 zhaquirks.setup()
 
@@ -38,7 +40,28 @@ async def test_rain_sensor_state_report(
         IasZone.ZoneStatus.Alarm_1 if rain_detected else 0
     )
 
+    # The rain intensity is a device value, not an attribute of the Tuya cluster
     assert len(rain_listener.cluster_commands) == 1
-    assert len(rain_listener.attribute_updates) == 1
-    assert rain_listener.attribute_updates[0][0] == 0xEF69
-    assert rain_listener.attribute_updates[0][1] == value
+    assert len(rain_listener.attribute_updates) == 0
+    assert rain_dev.store[RAIN_INTENSITY] == value
+    assert type(rain_dev.store[RAIN_INTENSITY]) is t.uint32_t
+
+
+@pytest.mark.parametrize(
+    "dp_id,key",
+    [(102, "average_light_intensity_20mins"), (103, "todays_max_light_intensity")],
+)
+async def test_rain_sensor_light_intensity(zigpy_device_from_v2_quirk, dp_id, key):
+    """Test that the light intensity datapoints are kept as device values."""
+
+    rain_dev = zigpy_device_from_v2_quirk("_TZ3210_tgvtvdoc", "TS0207")
+    tuya_cluster = rain_dev.endpoints[1].tuya_manufacturer
+    rain_listener = ClusterListener(tuya_cluster)
+
+    frame = b"\tp\x02\x00\x02" + bytes([dp_id]) + b"\x02\x00\x04\x00\x00\x03\xe8"
+    hdr, args = tuya_cluster.deserialize(frame)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(rain_listener.attribute_updates) == 0
+    assert key not in tuya_cluster.attributes_by_name
+    assert rain_dev.store.namespace(RAIN_INTENSITY.namespace)[key] == 1000

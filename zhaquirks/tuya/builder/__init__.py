@@ -47,6 +47,7 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
+    DPToStoredValueMapping,
     TuyaMCUCluster,
     TuyaOnOffNM,
     TuyaWindowCovering,
@@ -215,7 +216,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Init the TuyaQuirkBuilder."""
         super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}
-        self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
+        self.tuya_dp_to_attribute: dict[
+            int, list[DPToAttributeMapping | DPToStoredValueMapping]
+        ] = {}
         self.tuya_attributes_to_dp_converters: dict[int, Callable[[Any], Any]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         # quirk_file will point to the init call above if called from this QuirkBuilder,
@@ -650,7 +653,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_dp_multi(
         self,
         dp_id: int,
-        attribute_mapping: list[DPToAttributeMapping],
+        attribute_mapping: list[DPToAttributeMapping | DPToStoredValueMapping],
         dp_handler: str = "_dp_2_attr_update",
         dp_converter: Callable[[Any], Any] | None = None,
     ) -> Self:  # fmt: skip
@@ -901,11 +904,50 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        as_device_value: bool = False,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster. The sensor keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            if dp_converter is not None:
+                raise ValueError("A device value sensor is read-only: no dp_converter")
+
+            if fallback_name is None:
+                raise ValueError("A device value sensor needs a fallback_name")
+
+            if translation_key is None and device_class is None:
+                raise ValueError(
+                    "A device value sensor needs a translation_key or device_class"
+                )
+
+            # Only quirks using device values need a ZHA version that has them
+            from zha.zigbee.store import device_value  # noqa: PLC0415
+
+            value = device_value(attribute_name, type)
+            self.tuya_dp_multi(
+                dp_id, [DPToStoredValueMapping(value, converter=converter)]
+            )
+
+            return self.device_value_sensor(
+                value,
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                divisor=divisor,
+                multiplier=multiplier,
+                entity_type=entity_type,
+                device_class=device_class,
+                state_class=state_class,
+                unit=unit,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
 
         self.tuya_dp_attribute(
             dp_id=dp_id,
@@ -984,7 +1026,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
                 """Replacement Tuya Cluster."""
 
                 data_point_handlers: dict[int, str]
-                dp_to_attribute: dict[int, list[DPToAttributeMapping]]
+                dp_to_attribute: dict[
+                    int, list[DPToAttributeMapping | DPToStoredValueMapping]
+                ]
 
                 class AttributeDefs(NewAttributeDefs):
                     """Attribute Definitions."""

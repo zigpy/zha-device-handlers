@@ -6,7 +6,9 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
+from zha.application.platforms.sensor import DeviceValueSensor
 from zha.quirks import DeviceRegistry
+from zha.zigbee.store import DEVICE_VALUES_NAMESPACE
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -44,7 +46,12 @@ from zhaquirks.tuya.builder import (
     TuyaTemperatureMeasurement,
     TuyaValveWaterConsumedNoInstDemand,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    DPToStoredValueMapping,
+    TuyaMCUCluster,
+    TuyaOnOffNM,
+)
 from zhaquirks.tuya.tuya_sensor import NoManufTimeTuyaMCUCluster
 
 ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
@@ -588,3 +595,67 @@ async def test_tuya_quirk_builder_endpoint_id(device_mock):
 
     assert hasattr(quirked.endpoints[1], "soil_moisture")
     assert not hasattr(quirked.endpoints[2], "soil_moisture")
+
+
+def test_tuya_sensor_as_device_value():
+    """A Tuya sensor kept as a device value invents no attribute and keeps its ID."""
+    builder = TuyaQuirkBuilder("_TZE200_values", "TS0601").tuya_sensor(
+        dp_id=9,
+        attribute_name="soil_moisture",
+        type=t.uint16_t,
+        divisor=10,
+        translation_key="soil_moisture",
+        fallback_name="Soil moisture",
+        endpoint_id=2,
+        as_device_value=True,
+    )
+
+    assert not builder.new_attributes
+    assert builder.entity_metadata == []
+
+    (mapping,) = builder.tuya_dp_to_attribute[9]
+    assert isinstance(mapping, DPToStoredValueMapping)
+    assert mapping.value.namespace == DEVICE_VALUES_NAMESPACE
+    assert mapping.value.key == "soil_moisture"
+    assert mapping.value.type is t.uint16_t
+
+    (added,) = builder.added_entities
+    assert added.entity_cls is DeviceValueSensor
+    assert added.endpoint_id is None
+    assert added.kwargs["value"] is mapping.value
+    assert added.kwargs["unique_id_suffix"] == "2-soil_moisture"
+    assert added.kwargs["divisor"] == 10
+
+
+def test_tuya_sensor_as_device_value_invalid():
+    """A device value sensor is read-only and needs a name."""
+    builder = TuyaQuirkBuilder("_TZE200_values", "TS0601")
+
+    with pytest.raises(ValueError, match="read-only"):
+        builder.tuya_sensor(
+            dp_id=9,
+            attribute_name="soil_moisture",
+            type=t.uint16_t,
+            dp_converter=lambda x: x,
+            fallback_name="Soil moisture",
+            translation_key="soil_moisture",
+            as_device_value=True,
+        )
+
+    with pytest.raises(ValueError, match="fallback_name"):
+        builder.tuya_sensor(
+            dp_id=9,
+            attribute_name="soil_moisture",
+            type=t.uint16_t,
+            translation_key="soil_moisture",
+            as_device_value=True,
+        )
+
+    with pytest.raises(ValueError, match="translation_key or device_class"):
+        builder.tuya_sensor(
+            dp_id=9,
+            attribute_name="soil_moisture",
+            type=t.uint16_t,
+            fallback_name="Soil moisture",
+            as_device_value=True,
+        )
