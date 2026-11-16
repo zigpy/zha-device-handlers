@@ -484,3 +484,99 @@ async def test_rapid_toggling_coalesced(zigpy_device_from_v2_quirk):
         (2, LightMode.Effect),
         (6, "0f64"),
     ]
+
+
+def test_converters_malformed():
+    """Test malformed datapoints and edge colours fall back safely."""
+    assert hg06467.parse_hsb("bad") == (0, 0, 1000)
+    assert hg06467.dp6_to_effect("zz") == StringEffect.Steady
+    assert hg06467.dp6_to_speed("00zz") == hg06467.DEFAULT_SPEED
+    assert xy_to_hs(0.3, 0.0) == xy_to_hs(0.3, 1e-11)
+
+
+async def test_cluster_passthrough(zigpy_device_from_v2_quirk):
+    """Test other commands, attributes and edge cases of the clusters."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+
+    # colour report ignored outside colour mode
+    tuya.update_attribute("light_mode", LightMode.White)
+    ep.level.update_attribute("current_level", 254)
+    _report(tuya, DP_COLOR_DP, "007803e80000")
+    assert ep.level.get("current_level") == 254
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req:
+        # non-effect attributes go the normal Tuya way
+        await tuya.write_attributes({"light_mode": LightMode.Color})
+        await wait_for_zigpy_tasks()
+        assert _sent(req) == [(2, LightMode.Color)]
+
+        # other level and colour commands go to the device's own clusters
+        await ep.level.command(LevelControl.ServerCommandDefs.stop.id)
+        await ep.light_color.command(Color.ServerCommandDefs.stop_move_step.id)
+        assert {c.kwargs["cluster"] for c in req.call_args_list[1:]} == {
+            LevelControl.cluster_id,
+            Color.cluster_id,
+        }
+
+        # move to level 0 with on/off switches off
+        req.reset_mock()
+        await ep.level.command(
+            LevelControl.ServerCommandDefs.move_to_level_with_on_off.id, 0, 0
+        )
+        assert [c.kwargs["cluster"] for c in req.call_args_list] == [OnOff.cluster_id]
+
+        # move to level with on/off turns a switched-off string on
+        req.reset_mock()
+        ep.on_off.update_attribute("on_off", False)
+        await ep.level.command(
+            LevelControl.ServerCommandDefs.move_to_level_with_on_off.id, 100, 0
+        )
+        clusters = [c.kwargs["cluster"] for c in req.call_args_list]
+        assert clusters == [TuyaNewManufCluster.cluster_id, OnOff.cluster_id]
+
+
+async def test_light_effect_paths():
+    """Test effects from off, leaving an effect and resuming when unpowered."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        ep = device.device.endpoints[1]
+        tuya = ep.tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        with mock.patch.object(
+            tuya.endpoint, "request", return_value=[0, foundation.Status.SUCCESS]
+        ) as req:
+            # effect while the controller is off switches it on first
+            ep.on_off.update_attribute("on_off", False)
+            assert not light.is_on
+            await light.async_turn_on(effect="Snow", brightness=100)
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+            assert light.is_on
+            assert light.effect == "Snow"
+            assert req.call_args_list[0].kwargs["cluster"] == OnOff.cluster_id
+
+            # effect "off" goes back to the last colour
+            req.reset_mock()
+            await light.async_turn_on(effect="off")
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+            assert light.effect == "off"
+            assert [dp for dp, _ in _sent(req)][:2] == [2, 5]
+
+            # soft off, then the button switches off; turning on powers on
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            ep.on_off.update_attribute("on_off", False)
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            assert req.call_args_list[0].kwargs["cluster"] == OnOff.cluster_id
+            assert light.is_on

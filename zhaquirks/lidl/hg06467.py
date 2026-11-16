@@ -137,9 +137,7 @@ def hs_to_xy(hue_deg: float, sat_1000: float) -> tuple[float, float]:
     x_ = r * 0.664511 + g * 0.154324 + b * 0.162028
     y_ = r * 0.283881 + g * 0.668433 + b * 0.047685
     z_ = r * 0.000088 + g * 0.072310 + b * 0.986039
-    total = x_ + y_ + z_
-    if total <= 0:
-        return (0.0, 0.0)
+    total = x_ + y_ + z_  # > 0: the HSV value is always 1
     return (x_ / total, y_ / total)
 
 
@@ -157,8 +155,6 @@ def xy_to_hs(x: float, y: float) -> tuple[float, float]:
     peak = max(r, g, b)
     if peak > 1:
         r, g, b = r / peak, g / peak, b / peak
-    if peak <= 0:
-        return (0.0, 0.0)
     h, s, _ = colorsys.rgb_to_hsv(r, g, b)
     return (h * 360 % 360, s * 1000)
 
