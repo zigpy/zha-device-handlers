@@ -1,15 +1,19 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+import math
+from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 import zhaquirks.tuya
+from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
@@ -201,3 +205,62 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 
     assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
     assert ep.tuya_manufacturer.get("fading_time") == 3
+
+
+@pytest.mark.parametrize("manuf", ["_TZ321C_fkzihax8", "_TZ321C_4slreunp"])
+@pytest.mark.asyncio
+async def test_wenzhi_mtd085_zb(zigpy_device_from_v2_quirk, manuf):
+    """Test the Wenzhi MTD085-ZB 5.8GHz presence sensor.
+
+    Occupancy stays on the native IAS Zone cluster. The Tuya cluster is not
+    advertised by the device, so the quirk adds it and writes with send_data.
+    """
+
+    quirked = zigpy_device_from_v2_quirk(
+        manuf,
+        "TS0225",
+        cluster_ids={
+            1: {
+                Groups.cluster_id: ClusterType.Server,
+                Scenes.cluster_id: ClusterType.Server,
+                IasZone.cluster_id: ClusterType.Server,
+                Time.cluster_id: ClusterType.Client,
+                Ota.cluster_id: ClusterType.Client,
+            }
+        },
+    )
+    ep = quirked.endpoints[1]
+
+    assert isinstance(ep.ias_zone, IasZone)
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    tuya_cluster = ep.tuya_manufacturer
+    illum_listener = ClusterListener(ep.illuminance)
+
+    # DP 119 (value): target distance 276 cm, DP 107 (value): illuminance 95.0 lx,
+    # DP 111 (enum): scene preset 6 = Meeting room
+    for msg in (
+        b"\tL\x01\x00\x05\x77\x02\x00\x04\x00\x00\x01\x14",
+        b"\tL\x01\x00\x05\x6b\x02\x00\x04\x00\x00\x03\xb6",
+        b"\tL\x01\x00\x05\x6f\x04\x00\x01\x06",
+    ):
+        hdr, data = tuya_cluster.deserialize(msg)
+        status = tuya_cluster.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    assert tuya_cluster.get("target_distance") == 276
+    assert tuya_cluster.get("scene_preset") == 6
+    assert illum_listener.attribute_updates[0][0] == (
+        IlluminanceMeasurement.AttributeDefs.measured_value.id
+    )
+    assert illum_listener.attribute_updates[0][1] == 10000 * math.log10(95) + 1
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request_mock:
+        await tuya_cluster.write_attributes({"entry_distance": 240})
+        await wait_for_zigpy_tasks()
+
+        assert request_mock.call_args.kwargs["command_id"] == TUYA_SEND_DATA
+        assert request_mock.call_args.kwargs["data"].endswith(
+            b"\x66\x02\x00\x04\x00\x00\x00\xf0"
+        )
