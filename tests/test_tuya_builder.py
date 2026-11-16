@@ -14,9 +14,12 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import EntityPlatform, TextMode
+from zhaquirks.builder.metadata import TextMetadata
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
     TUYA_QUERY_DATA,
     TUYA_SEND_DATA,
     TUYA_SET_TIME,
@@ -303,6 +306,72 @@ async def test_tuya_quirkbuilder(device_mock):
     assert electrical_meas_cluster.get("active_power") == "3"
     assert electrical_meas_cluster.get("rms_current") == "4"
     assert electrical_meas_cluster.get("rms_voltage") == "5"
+
+
+def _tuya_text_device(device_mock):
+    """Return a device quirked with a string datapoint exposed as text."""
+    registry = DeviceRegistry()
+    entry = (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_text(
+            dp_id=106,
+            attribute_name="label",
+            max_length=12,
+            mode=TextMode.TEXT,
+            translation_key="label",
+            fallback_name="Label",
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )
+    return entry, registry.resolve(device_mock)
+
+
+async def test_tuya_quirkbuilder_text(device_mock):
+    """Test that a string datapoint is exposed as a text entity."""
+    entry, quirked = _tuya_text_device(device_mock)
+
+    (text_metadata,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert isinstance(text_metadata, TextMetadata)
+    assert text_metadata.entity_platform == EntityPlatform.TEXT
+    assert text_metadata.cluster_id == TUYA_CLUSTER_ID
+    assert text_metadata.attribute_name == "label"
+    assert text_metadata.max_length == 12
+
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+    attr_def = tuya_cluster.attributes_by_name["label"]
+    assert attr_def.id == 0xEF6A
+    assert attr_def.type is t.CharacterString
+    assert attr_def.access == (
+        foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write
+    )
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=2,
+            datapoints=[TuyaDatapointData(106, TuyaData("Kitchen"))],
+        )
+    )
+    assert tuya_cluster.get("label") == "Kitchen"
+
+
+async def test_tuya_quirkbuilder_text_write(device_mock):
+    """Test that writing the text attribute sends a string datapoint."""
+    _, quirked = _tuya_text_device(device_mock)
+    tuya_cluster = quirked.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes({"label": "Office"})
+        await wait_for_zigpy_tasks()
+
+    assert status == [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    data = m1.mock_calls[-1].kwargs["data"]
+    # DP 106, string type, 6 bytes of UTF-8
+    assert data.endswith(b"\x6a\x03\x00\x06Office")
+    assert tuya_cluster.get("label") == "Office"
 
 
 async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
