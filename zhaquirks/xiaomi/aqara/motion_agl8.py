@@ -31,6 +31,14 @@ from zhaquirks.xiaomi import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class MotionSensitivity(t.enum8):
+    """Presence detection sensitivity."""
+
+    Low = 0x01
+    Medium = 0x02
+    High = 0x03
+
+
 class FP300PowerConfigurationVoltage(XiaomiPowerConfigurationPercent):
     """Battery from the Aqara TLV report: voltage from tag 23, percentage from tag 24.
 
@@ -101,6 +109,14 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             manufacturer_code=0x115F,
         )
 
+        motion_sensitivity: Final = ZCLAttributeDef(
+            id=0x010C,
+            type=MotionSensitivity,
+            zcl_type=DataTypeId.uint8,
+            access="rwp",
+            manufacturer_code=0x115F,
+        )
+
 
 (
     QuirkBuilder("Aqara", "lumi.sensor_occupy.agl8")
@@ -131,6 +147,15 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         entity_type=EntityType.DIAGNOSTIC,
         initially_disabled=True,
         fallback_name="Motion",
+    )
+    .enum(
+        attribute_name=AqaraFP300ManuCluster.AttributeDefs.motion_sensitivity.name,
+        enum_class=MotionSensitivity,
+        cluster_id=AqaraFP300ManuCluster.cluster_id,
+        # Aqara and Zigbee2MQTT call this "Presence Detection Sensitivity"; the
+        # attribute name stays motion_sensitivity so the unique_id doesn't change.
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
     )
     .add_to_registry()
 )
