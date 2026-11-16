@@ -25,6 +25,7 @@ from zha.application import (  # noqa: F401
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.sensor import DeviceValueSensor
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
@@ -1081,12 +1082,9 @@ class QuirkBuilder:
 
         A device value is state that is not a ZCL attribute, kept in the device's
         store (`zha.zigbee.store.device_value` declares one). The quirk's cluster code
-        sets it, as Tuya datapoints mapped with `DPToStoredValueMapping` do. The
+        sets it, as Tuya datapoints mapped with `DPToDeviceValueMapping` do. The
         entity is bound to the device, and its unique ID suffix defaults to the key.
         """
-        # Only quirks using device values need a ZHA version that has them
-        from zha.application.platforms.sensor import DeviceValueSensor  # noqa: PLC0415
-
         if translation_key is None and device_class is None:
             raise ValueError(
                 f"A device value sensor needs a translation_key or device_class: {value}"

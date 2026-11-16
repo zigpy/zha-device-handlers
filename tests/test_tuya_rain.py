@@ -1,7 +1,6 @@
 """Test for Tuya rain sensor."""
 
 import pytest
-import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
@@ -44,7 +43,6 @@ async def test_rain_sensor_state_report(
     assert len(rain_listener.cluster_commands) == 1
     assert len(rain_listener.attribute_updates) == 0
     assert rain_dev.store[RAIN_INTENSITY] == value
-    assert type(rain_dev.store[RAIN_INTENSITY]) is t.uint32_t
 
 
 @pytest.mark.parametrize(

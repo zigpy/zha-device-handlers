@@ -1567,7 +1567,7 @@ class DPToAttributeMapping:
         return [self]
 
 
-class DPToStoredValueMapping:
+class DPToDeviceValueMapping:
     """Container for a datapoint mapped to a device value in the device's store.
 
     A device value is not a ZCL attribute, so there is no cluster, endpoint or
@@ -1584,11 +1584,11 @@ class DPToStoredValueMapping:
         value: StoredValue[Any],
         converter: Callable[[Any], Any] | None = None,
     ) -> None:
-        """Init DPToStoredValueMapping."""
+        """Init DPToDeviceValueMapping."""
         self.value = value
         self.converter = converter
 
-    def decompose_attributes(self) -> list[DPToStoredValueMapping]:
+    def decompose_attributes(self) -> list[DPToDeviceValueMapping]:
         """Return the mapping, which never maps to several values."""
         return [self]
 
@@ -1671,8 +1671,8 @@ class TuyaNewManufCluster(CustomCluster):
     dp_to_attribute: dict[
         int,
         DPToAttributeMapping
-        | DPToStoredValueMapping
-        | list[DPToAttributeMapping | DPToStoredValueMapping],
+        | DPToDeviceValueMapping
+        | list[DPToAttributeMapping | DPToDeviceValueMapping],
     ] = {}
     data_point_handlers: dict[int, str] = {}
 
@@ -1683,7 +1683,7 @@ class TuyaNewManufCluster(CustomCluster):
         # Normalize dp_to_attribute: map each DP to a flat list of single attr mappings
         # This decomposes old tuple-based mappings
         self._dp_to_attributes: dict[
-            int, list[DPToAttributeMapping | DPToStoredValueMapping]
+            int, list[DPToAttributeMapping | DPToDeviceValueMapping]
         ] = {}
         for dp, mappings in self.dp_to_attribute.items():
             # Normalize to list (dp_to_attribute allows single mapping or list)
@@ -1699,7 +1699,7 @@ class TuyaNewManufCluster(CustomCluster):
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
             for mapped_attr in dp_map:
-                if isinstance(mapped_attr, DPToStoredValueMapping):
+                if isinstance(mapped_attr, DPToDeviceValueMapping):
                     continue
 
                 if mapped_attr.endpoint_id:
@@ -1814,12 +1814,20 @@ class TuyaNewManufCluster(CustomCluster):
 
         endpoint = self.endpoint
         for mapped_attr in dp_map:
-            if isinstance(mapped_attr, DPToStoredValueMapping):
+            if isinstance(mapped_attr, DPToDeviceValueMapping):
                 value = datapoint.data.payload
                 if mapped_attr.converter:
                     value = mapped_attr.converter(value)
 
-                self.endpoint.device.store[mapped_attr.value] = value
+                try:
+                    self.endpoint.device.store[mapped_attr.value] = value
+                except (TypeError, ValueError):
+                    # The other mappings of the datapoint still apply
+                    self.warning(
+                        "Cannot store %r for %s as a device value",
+                        value,
+                        mapped_attr.value.key,
+                    )
                 continue
 
             if mapped_attr.endpoint_id:

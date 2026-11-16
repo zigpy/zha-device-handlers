@@ -14,9 +14,9 @@ from zhaquirks.builder import (
 )
 from zhaquirks.tuya import BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import DPToAttributeMapping, DPToStoredValueMapping
+from zhaquirks.tuya.mcu import DPToAttributeMapping, DPToDeviceValueMapping
 
-RAIN_INTENSITY = device_value("rain_intensity", t.uint32_t)
+RAIN_INTENSITY = device_value("rain_intensity", int)
 
 
 class TuyaIasZone(IasZone, TuyaLocalCluster):
@@ -72,7 +72,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
                 attribute_name=TuyaIasZone.AttributeDefs.zone_status.name,
                 converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x > 100 else 0,
             ),
-            DPToStoredValueMapping(RAIN_INTENSITY),
+            DPToDeviceValueMapping(RAIN_INTENSITY),
         ],
     )
     .device_value_sensor(

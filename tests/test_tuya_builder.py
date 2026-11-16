@@ -8,7 +8,8 @@ import pytest
 import time_machine
 from zha.application.platforms.sensor import DeviceValueSensor
 from zha.quirks import DeviceRegistry
-from zha.zigbee.store import DEVICE_VALUES_NAMESPACE
+from zha.zigbee.store import DEVICE_VALUES_NAMESPACE, device_value
+from zigpy.store import StoredValue
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -48,7 +49,8 @@ from zhaquirks.tuya.builder import (
 )
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    DPToStoredValueMapping,
+    DPToDeviceValueMapping,
+    TuyaClusterData,
     TuyaMCUCluster,
     TuyaOnOffNM,
 )
@@ -614,10 +616,12 @@ def test_tuya_sensor_as_device_value():
     assert builder.entity_metadata == []
 
     (mapping,) = builder.tuya_dp_to_attribute[9]
-    assert isinstance(mapping, DPToStoredValueMapping)
+    assert isinstance(mapping, DPToDeviceValueMapping)
     assert mapping.value.namespace == DEVICE_VALUES_NAMESPACE
     assert mapping.value.key == "soil_moisture"
-    assert mapping.value.type is t.uint16_t
+    # Read as stored, not cast to the wire type
+    assert mapping.value.type(2.5) == 2.5
+    assert mapping.value.type(-5) == -5
 
     (added,) = builder.added_entities
     assert added.entity_cls is DeviceValueSensor
@@ -659,3 +663,156 @@ def test_tuya_sensor_as_device_value_invalid():
             fallback_name="Soil moisture",
             as_device_value=True,
         )
+
+
+def test_tuya_sensor_as_device_value_duplicate_key():
+    """A device value can only be mapped from one datapoint."""
+    builder = TuyaQuirkBuilder("_TZE200_values", "TS0601").tuya_sensor(
+        dp_id=9,
+        attribute_name="soil_moisture",
+        type=t.uint16_t,
+        translation_key="soil_moisture",
+        fallback_name="Soil moisture",
+        as_device_value=True,
+    )
+
+    with pytest.raises(ValueError, match="already mapped"):
+        builder.tuya_sensor(
+            dp_id=10,
+            attribute_name="soil_moisture",
+            type=t.uint16_t,
+            translation_key="soil_moisture",
+            fallback_name="Soil moisture",
+            endpoint_id=2,
+            as_device_value=True,
+        )
+
+
+def test_device_value_mapped_once():
+    """Any mapping of a device value that is already mapped is refused."""
+    builder = TuyaQuirkBuilder("_TZE200_values", "TS0601").tuya_sensor(
+        dp_id=9,
+        attribute_name="x",
+        type=t.uint16_t,
+        translation_key="x",
+        fallback_name="X",
+        as_device_value=True,
+    )
+
+    with pytest.raises(ValueError, match="already mapped"):
+        builder.tuya_dp_multi(10, [DPToDeviceValueMapping(device_value("x", int))])
+
+    with pytest.raises(ValueError, match="already mapped"):
+        builder.tuya_dp_multi(
+            12,
+            [
+                DPToDeviceValueMapping(device_value("y", int)),
+                DPToDeviceValueMapping(device_value("y", int)),
+            ],
+        )
+
+    # The same key in another namespace is another value
+    other = StoredValue(namespace="other", key="x", type=int)
+    builder.tuya_dp_multi(11, [DPToDeviceValueMapping(other)])
+
+
+def test_device_value_sensor_builder():
+    """The unique ID suffix of a device value sensor defaults to the key."""
+    value = device_value("pressure", int)
+    builder = TuyaQuirkBuilder("_TZE200_values", "TS0601").device_value_sensor(
+        value, translation_key="pressure", fallback_name="Pressure"
+    )
+
+    (added,) = builder.added_entities
+    assert added.entity_cls is DeviceValueSensor
+    assert added.kwargs["unique_id_suffix"] == "pressure"
+
+    with pytest.raises(ValueError, match="translation_key or device_class"):
+        builder.device_value_sensor(value, fallback_name="Pressure")
+
+
+async def test_tuya_device_values_from_datapoints(device_mock, caplog):
+    """Datapoints are stored as device values as converted, or logged if they cannot be."""
+    registry = DeviceRegistry()
+    signed = device_value("signed", int)
+    raw = device_value("raw", int)
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_sensor(
+            dp_id=1,
+            attribute_name="scaled",
+            type=t.uint16_t,
+            converter=lambda x: x / 10,
+            translation_key="scaled",
+            fallback_name="Scaled",
+            as_device_value=True,
+        )
+        .tuya_dp_multi(2, [DPToDeviceValueMapping(signed)])
+        .tuya_dp_multi(
+            3,
+            [
+                DPToDeviceValueMapping(raw),
+                DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "raw_attr"),
+            ],
+        )
+        .tuya_attribute(dp_id=3, attribute_name="raw_attr", type=t.LVBytes)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].tuya_manufacturer
+
+    def receive(dp: int, data: TuyaData) -> None:
+        cluster.handle_get_data(
+            TuyaCommand(status=0, tsn=1, datapoints=[TuyaDatapointData(dp, data)])
+        )
+
+    receive(1, TuyaData(t.uint32_t(25)))
+    receive(2, TuyaData(t.int32s(-5)))
+    receive(3, TuyaData(t.LVBytes(b"\xab\xcd")))
+
+    namespace = device.store.namespace(signed.namespace)
+    assert namespace["scaled"] == 2.5
+    assert device.store[signed] == -5
+
+    # A payload that is not JSON is logged, and the other mappings still apply
+    assert raw not in device.store
+    assert "Cannot store" in caplog.text
+    assert cluster.get("raw_attr") is not None
+
+
+async def test_tuya_dp_converter_reads_device_value(device_mock):
+    """A datapoint converter fed by several mappings gets the device value too."""
+    registry = DeviceRegistry()
+    offset = device_value("offset", int)
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp_multi(
+            5,
+            [
+                DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "target"),
+                DPToDeviceValueMapping(offset),
+            ],
+            dp_converter=lambda target, offset: target + (offset or 0),
+        )
+        .tuya_attribute(dp_id=5, attribute_name="target")
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    cluster = device.endpoints[1].tuya_manufacturer
+    device.store[offset] = 7
+
+    (command,) = cluster.from_cluster_data(
+        TuyaClusterData(
+            endpoint_id=1,
+            cluster_name=TuyaMCUCluster.ep_attribute,
+            cluster_attr="target",
+            attr_value=10,
+        )
+    )
+    assert command.datapoints[0].data.payload == 17

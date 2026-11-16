@@ -8,6 +8,7 @@ import pathlib
 from typing import Any, Self
 
 from zha.quirks import QuirkRegistryEntry
+from zha.zigbee.store import device_value
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -47,13 +48,18 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    DPToStoredValueMapping,
+    DPToDeviceValueMapping,
     TuyaMCUCluster,
     TuyaOnOffNM,
     TuyaWindowCovering,
 )
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
+
+
+def _as_stored(value: Any) -> Any:
+    """Read a Tuya device value as stored: a JSON number, string or bool."""
+    return value
 
 
 BATTERY_VOLTAGES = {
@@ -217,7 +223,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}
         self.tuya_dp_to_attribute: dict[
-            int, list[DPToAttributeMapping | DPToStoredValueMapping]
+            int, list[DPToAttributeMapping | DPToDeviceValueMapping]
         ] = {}
         self.tuya_attributes_to_dp_converters: dict[int, Callable[[Any], Any]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
@@ -653,7 +659,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_dp_multi(
         self,
         dp_id: int,
-        attribute_mapping: list[DPToAttributeMapping | DPToStoredValueMapping],
+        attribute_mapping: list[DPToAttributeMapping | DPToDeviceValueMapping],
         dp_handler: str = "_dp_2_attr_update",
         dp_converter: Callable[[Any], Any] | None = None,
     ) -> Self:  # fmt: skip
@@ -661,6 +667,26 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         if dp_id in self.tuya_dp_to_attribute:
             raise ValueError(f"DP {dp_id} is already mapped.")
+
+        mapped_values = {
+            (mapping.value.namespace, mapping.value.key)
+            for mappings in self.tuya_dp_to_attribute.values()
+            for mapping in mappings
+            if isinstance(mapping, DPToDeviceValueMapping)
+        }
+
+        for mapping in attribute_mapping:
+            if not isinstance(mapping, DPToDeviceValueMapping):
+                continue
+
+            value_id = (mapping.value.namespace, mapping.value.key)
+
+            if value_id in mapped_values:
+                raise ValueError(
+                    f"Device value {mapping.value.key!r} is already mapped"
+                )
+
+            mapped_values.add(value_id)
 
         self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
@@ -926,12 +952,11 @@ class TuyaQuirkBuilder(QuirkBuilder):
                     "A device value sensor needs a translation_key or device_class"
                 )
 
-            # Only quirks using device values need a ZHA version that has them
-            from zha.zigbee.store import device_value  # noqa: PLC0415
-
-            value = device_value(attribute_name, type)
+            # Kept as the converter returns it: `type` is the datapoint's wire type,
+            # which a converted value (a float, a signed value) need not fit
+            value = device_value(attribute_name, _as_stored)
             self.tuya_dp_multi(
-                dp_id, [DPToStoredValueMapping(value, converter=converter)]
+                dp_id, [DPToDeviceValueMapping(value, converter=converter)]
             )
 
             return self.device_value_sensor(
@@ -1027,7 +1052,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
                 data_point_handlers: dict[int, str]
                 dp_to_attribute: dict[
-                    int, list[DPToAttributeMapping | DPToStoredValueMapping]
+                    int, list[DPToAttributeMapping | DPToDeviceValueMapping]
                 ]
 
                 class AttributeDefs(NewAttributeDefs):
