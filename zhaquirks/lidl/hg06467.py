@@ -10,7 +10,6 @@ Protocol (Tuya MCU cluster 0xEF00), as documented by zigbee-herdsman-converters
     DP1 = power (bool). The physical button reports only this DP.
     DP2 = mode (enum): 0 white, 1 color, 2 effect
     DP3 = white brightness (value): 0..1000
-    DP4 = color temperature (value): 0..1000 (not used by Z2M; kept experimental)
     DP5 = color (string): HHHHSSSSBBBB, hex hue 0..359, sat 0..1000, bri 0..1000
     DP6 = effect (string): EE SS [RRGGBB ...]
           EE = effect id, hex 00..0f
@@ -25,12 +24,16 @@ Color handling:
     UI - the same values Zigbee2MQTT sends - instead of being shifted by an
     sRGB/Wide RGB matrix mismatch.
 
-Exposed in Home Assistant:
-    - light: on/off, brightness, colour (xy), colour temperature
-    - select "Effect": 16 built-in effects
-    - number "Effect speed": 0..100 %, kept for the next effect when not in
-      effect mode (as in Zigbee2MQTT)
-    - select "Light mode": white / color / effect
+Brightness, like in Zigbee2MQTT, never uses the device's own Level Control
+cluster: in colour mode it is sent inside DP5, in white mode as DP3, and in
+effect mode it is only kept for when the effect is left.
+
+Exposed in Home Assistant, kept to as few controls as possible:
+    - light: on/off, brightness, colour, and the 16 built-in effects in the
+      light's own effect list. Picking white in the colour picker uses the
+      string's white mode; picking a colour or "off" leaves the effect.
+    - number "Effect speed": 0..100 %, applied at once in effect mode and
+      otherwise kept for the next effect (as in Zigbee2MQTT)
 """
 
 from __future__ import annotations
@@ -38,9 +41,17 @@ from __future__ import annotations
 import colorsys
 from typing import Any
 
+from zha.application.platforms.light import Light
+from zha.application.platforms.light.const import EFFECT_OFF, LightEntityFeature
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
-from zigpy.zcl import foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    AttributeWrittenEvent,
+    foundation,
+)
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
 
@@ -55,14 +66,12 @@ TUYA_CLUSTER_ID = 0xEF00
 DP_POWER = 1
 DP_MODE = 2
 DP_WHITE_BRIGHTNESS = 3
-DP_COLOR_TEMP = 4
 DP_COLOR = 5
 DP_EFFECT = 6
 
-COLOR_TEMP_MIN = 250  # mireds, coolest
-COLOR_TEMP_MAX = 454  # mireds, warmest
-
 DEFAULT_SPEED = 50  # percent
+# Below this saturation (of 1000) a picked colour uses the white mode.
+WHITE_SATURATION = 30
 DEVICE_SPEED_MAX = 64
 
 
@@ -194,25 +203,6 @@ def dp5_to_level(value: Any) -> int:
     return to_level(parse_hsb(value)[2])
 
 
-def dp4_to_mireds(value: Any) -> int:
-    """Device 0 = warmest, 1000 = coolest."""
-    v = _clamp(int(value), 0, 1000)
-    return round(COLOR_TEMP_MAX - v * (COLOR_TEMP_MAX - COLOR_TEMP_MIN) / 1000)
-
-
-def mireds_to_dp4(mireds: int) -> int:
-    """Convert mireds to the DP4 range (0 = warmest)."""
-    m = _clamp(int(mireds), COLOR_TEMP_MIN, COLOR_TEMP_MAX)
-    return round((COLOR_TEMP_MAX - m) * 1000 / (COLOR_TEMP_MAX - COLOR_TEMP_MIN))
-
-
-def dp2_to_color_mode(value: Any) -> Color.ColorMode:
-    """Map the DP2 mode to the ZCL colour mode."""
-    if int(value) == LightMode.White:
-        return Color.ColorMode.Color_temperature
-    return Color.ColorMode.X_and_Y
-
-
 def dp6_to_effect(value: Any) -> StringEffect:
     """Read the effect id from DP6."""
     try:
@@ -249,11 +239,29 @@ def effect_to_dp6(effect: Any, speed: Any, palette: Any) -> str:
 
 
 class MelineraTuyaCluster(TuyaMCUCluster):
-    """Tuya MCU cluster that stores the effect speed until effect mode is used.
+    """Tuya MCU cluster handling the mode-dependent datapoints."""
 
-    Writing DP6 always switches the string into effect mode, so - as in
-    Zigbee2MQTT - a speed change outside effect mode is only remembered.
-    """
+    async def send_dps(self, *datapoints: tuple[int, Any]) -> None:
+        """Send datapoints to the string, in order."""
+        for dp, value in datapoints:
+            await self.command(
+                self.mcu_write_command,
+                TuyaCommand(
+                    status=0,
+                    tsn=self.endpoint.device.application.get_sequence(),
+                    datapoints=[TuyaDatapointData(dp, value)],
+                ),
+                expect_reply=False,
+            )
+
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
+        """Ignore brightness/colour echoes that belong to another mode."""
+        mode = self.get("light_mode")
+        if datapoint.dp == DP_WHITE_BRIGHTNESS and mode not in (None, LightMode.White):
+            return
+        if datapoint.dp == DP_COLOR and mode not in (None, LightMode.Color):
+            return
+        super()._dp_2_attr_update(datapoint)
 
     async def write_attributes(
         self,
@@ -261,15 +269,37 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         manufacturer: int | UndefinedType | None = UNDEFINED,
         **kwargs,
     ) -> list[list[foundation.WriteAttributesStatusRecord]]:
-        """Store the effect speed locally unless the string is in effect mode."""
+        """Send effect changes with the effect mode; keep speed outside it."""
         remaining: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
-        in_effect_mode = self.get("light_mode") == LightMode.Effect
+        effect_changes: dict[str, Any] = {}
         for key, value in attributes.items():
             attr = self.find_attribute(key)
-            if attr.name == "effect_speed" and not in_effect_mode:
-                self.update_attribute(attr.name, attr.type(value))
+            if attr.name in ("string_effect", "effect_speed"):
+                effect_changes[attr.name] = attr.type(value)
             else:
                 remaining[key] = value
+
+        if effect_changes:
+            for name, value in effect_changes.items():
+                self.update_attribute(name, value)
+            # A speed change alone outside effect mode is only remembered.
+            if (
+                "string_effect" in effect_changes
+                or self.get("light_mode") == LightMode.Effect
+            ):
+                await self.send_dps(
+                    (DP_MODE, LightMode.Effect),
+                    (
+                        DP_EFFECT,
+                        effect_to_dp6(
+                            self.get("string_effect"),
+                            self.get("effect_speed"),
+                            self.get("effect_palette"),
+                        ),
+                    ),
+                )
+                self.update_attribute("light_mode", LightMode.Effect)
+
         if remaining:
             return await super().write_attributes(
                 remaining, manufacturer=manufacturer, **kwargs
@@ -277,91 +307,193 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class MelineraColorCluster(CustomCluster, Color):
-    """Translate ZCL xy / colour temperature commands into Tuya datapoints."""
+def _success(command_id: int) -> foundation.DefaultResponse:
+    return foundation.GENERAL_COMMANDS[
+        foundation.GeneralCommand.Default_Response
+    ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
-    _CONSTANT_ATTRIBUTES = {
-        Color.AttributeDefs.color_capabilities.id: (
-            Color.ColorCapabilities.XY_attributes
-            | Color.ColorCapabilities.Color_temperature
-        ),
-        Color.AttributeDefs.color_temp_physical_min.id: COLOR_TEMP_MIN,
-        Color.AttributeDefs.color_temp_physical_max.id: COLOR_TEMP_MAX,
-    }
+
+class MelineraLevelCluster(CustomCluster, LevelControl):
+    """Send brightness as the datapoint of the active mode."""
 
     async def read_attributes(self, attributes, **kwargs):
-        """Serve reads from the cache; the device's Color cluster lacks the Tuya state."""
+        """Serve reads from the cache; the device's cluster lacks the Tuya state."""
         kwargs.pop("allow_cache", None)
         kwargs.pop("only_cache", None)
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    @property
-    def _tuya(self) -> MelineraTuyaCluster:
-        return self.endpoint.tuya_manufacturer
+    async def command(self, command_id, *args, **kwargs):
+        """Handle move to level by mode, as Zigbee2MQTT does."""
+        if command_id not in (
+            LevelControl.ServerCommandDefs.move_to_level.id,
+            LevelControl.ServerCommandDefs.move_to_level_with_on_off.id,
+        ):
+            return await super().command(command_id, *args, **kwargs)
 
-    async def _send(self, dp: int, value: Any) -> None:
-        await self._tuya.command(
-            self._tuya.mcu_write_command,
-            TuyaCommand(
-                status=0,
-                tsn=self.endpoint.device.application.get_sequence(),
-                datapoints=[TuyaDatapointData(dp, value)],
-            ),
-            expect_reply=False,
+        level = int(kwargs.get("level", args[0] if args else 254))
+        on_off = (
+            command_id == LevelControl.ServerCommandDefs.move_to_level_with_on_off.id
+        )
+        if on_off and level == 0:
+            await self.endpoint.on_off.off()
+            return _success(command_id)
+
+        tuya: MelineraTuyaCluster = self.endpoint.tuya_manufacturer
+        mode = tuya.get("light_mode")
+        if mode == LightMode.Color:
+            color = self.endpoint.light_color
+            hue, sat = xy_to_hs(
+                (color.get(Color.AttributeDefs.current_x.name) or 0) / 65535,
+                (color.get(Color.AttributeDefs.current_y.name) or 0) / 65535,
+            )
+            await tuya.send_dps((DP_COLOR, encode_hsb(hue, sat, level_to_1000(level))))
+        elif mode != LightMode.Effect:
+            # White mode (or unknown): DP3. In effect mode it is only kept.
+            await tuya.send_dps((DP_WHITE_BRIGHTNESS, level_to_1000(level)))
+        self.update_attribute(LevelControl.AttributeDefs.current_level.name, level)
+
+        if on_off and not self.endpoint.on_off.get(OnOff.AttributeDefs.on_off.name):
+            await self.endpoint.on_off.on()
+        return _success(command_id)
+
+
+class MelineraColorCluster(CustomCluster, Color):
+    """Translate ZCL xy commands into Tuya datapoints."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: (
+            Color.ColorCapabilities.XY_attributes
+        ),
+        Color.AttributeDefs.color_mode.id: Color.ColorMode.X_and_Y,
+        # The string has no colour temperature; hide any cached value.
+        Color.AttributeDefs.color_temperature.id: None,
+    }
+
+    async def read_attributes(self, attributes, **kwargs):
+        """Serve reads from the cache; the device's cluster lacks the Tuya state."""
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+        return await super().read_attributes(
+            attributes, allow_cache=True, only_cache=True, **kwargs
         )
 
-    def _success(self, command_id):
-        return foundation.GENERAL_COMMANDS[
-            foundation.GeneralCommand.Default_Response
-        ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
-
     async def command(self, command_id, *args, **kwargs):
-        """Handle xy and colour temperature commands via Tuya datapoints."""
-        if command_id == Color.ServerCommandDefs.move_to_color.id:
-            x = int(kwargs.get("color_x", args[0] if args else 0))
-            y = int(kwargs.get("color_y", args[1] if len(args) > 1 else 0))
-            hue, sat = xy_to_hs(x / 65535, y / 65535)
-            level = self.endpoint.level.get(
-                LevelControl.AttributeDefs.current_level.name
+        """Handle xy colour commands via Tuya datapoints."""
+        if command_id != Color.ServerCommandDefs.move_to_color.id:
+            return await super().command(command_id, *args, **kwargs)
+
+        x = int(kwargs.get("color_x", args[0] if args else 0))
+        y = int(kwargs.get("color_y", args[1] if len(args) > 1 else 0))
+        hue, sat = xy_to_hs(x / 65535, y / 65535)
+        level = self.endpoint.level.get(LevelControl.AttributeDefs.current_level.name)
+
+        tuya: MelineraTuyaCluster = self.endpoint.tuya_manufacturer
+        if sat < WHITE_SATURATION:
+            await tuya.send_dps(
+                (DP_MODE, LightMode.White),
+                (DP_WHITE_BRIGHTNESS, level_to_1000(level)),
+            )
+            tuya.update_attribute("light_mode", LightMode.White)
+        else:
+            await tuya.send_dps(
+                (DP_MODE, LightMode.Color),
+                (DP_COLOR, encode_hsb(hue, sat, level_to_1000(level))),
+            )
+            tuya.update_attribute("light_mode", LightMode.Color)
+        self.update_attribute(Color.AttributeDefs.current_x.name, x)
+        self.update_attribute(Color.AttributeDefs.current_y.name, y)
+        return _success(command_id)
+
+
+EFFECT_NAMES: dict[StringEffect, str] = {
+    effect: effect.name.replace("_", " ") for effect in StringEffect
+}
+
+
+class MelineraLight(Light):
+    """Light with the string's built-in effects in its own effect list."""
+
+    @property
+    def _tuya(self) -> MelineraTuyaCluster | None:
+        on_off = getattr(self, "_on_off_cluster", None)
+        return getattr(on_off.endpoint, "tuya_manufacturer", None) if on_off else None
+
+    def _current_effect(self) -> str:
+        tuya = self._tuya
+        if tuya is None or tuya.get("light_mode") != LightMode.Effect:
+            return EFFECT_OFF
+        effect = tuya.get("string_effect")
+        return EFFECT_OFF if effect is None else EFFECT_NAMES[StringEffect(effect)]
+
+    def recompute_capabilities(self) -> None:
+        """Offer the built-in effects instead of colour loop."""
+        super().recompute_capabilities()
+        self._supported_features |= LightEntityFeature.EFFECT
+        self._effect_list = [EFFECT_OFF, *EFFECT_NAMES.values()]
+        self._effect = self._current_effect()
+
+    def on_add(self) -> None:
+        """Follow mode and effect changes, including the physical button."""
+        super().on_add()
+        tuya = self._tuya
+        assert tuya is not None
+        for event_type in (
+            AttributeReadEvent,
+            AttributeReportedEvent,
+            AttributeUpdatedEvent,
+            AttributeWrittenEvent,
+        ):
+            self._on_remove_callbacks.append(
+                tuya.on_event(event_type.event_type, self._handle_tuya_update)
             )
 
-            await self._send(DP_MODE, LightMode.Color)
-            await self._send(DP_COLOR, encode_hsb(hue, sat, level_to_1000(level)))
+    def _handle_tuya_update(self, event) -> None:
+        if event.attribute_name not in ("light_mode", "string_effect"):
+            return
+        effect = self._current_effect()
+        if effect != self._effect:
+            self._effect = effect
+            self.maybe_emit_state_changed_event()
 
-            self._tuya.update_attribute("light_mode", LightMode.Color)
-            self.update_attribute(Color.AttributeDefs.current_x.name, x)
-            self.update_attribute(Color.AttributeDefs.current_y.name, y)
-            self.update_attribute(
-                Color.AttributeDefs.color_mode.name, Color.ColorMode.X_and_Y
-            )
-            return self._success(command_id)
+    async def async_turn_on(self, *, effect: str | None = None, **kwargs) -> None:
+        """Turn on, optionally starting or leaving a built-in effect."""
+        tuya = self._tuya
+        assert tuya is not None
+        in_effect = tuya.get("light_mode") == LightMode.Effect
 
-        if command_id == Color.ServerCommandDefs.move_to_color_temp.id:
-            mireds = int(
-                kwargs.get("color_temp_mireds", args[0] if args else COLOR_TEMP_MAX)
+        chosen = next((e for e, n in EFFECT_NAMES.items() if n == effect), None)
+        if chosen is not None:
+            if not self.is_on:
+                await self._on_off_cluster.on()
+                self._state = True
+            await tuya.write_attributes({"string_effect": chosen})
+            self._effect = effect
+            if all(value is None for value in kwargs.values()):
+                self.maybe_emit_state_changed_event()
+                return
+        elif (
+            effect == EFFECT_OFF
+            and in_effect
+            and kwargs.get("xy_color") is None
+            and self._color_cluster is not None
+        ):
+            # Leave the effect for the last colour.
+            x, y = self._xy_color or (0.0, 0.0)
+            await self._color_cluster.move_to_color(
+                color_x=round(x * 65535), color_y=round(y * 65535), transition_time=0
             )
-            await self._send(DP_MODE, LightMode.White)
-            await self._send(DP_COLOR_TEMP, mireds_to_dp4(mireds))
+            self._effect = EFFECT_OFF
 
-            self._tuya.update_attribute("light_mode", LightMode.White)
-            self.update_attribute(
-                Color.AttributeDefs.color_temperature.name,
-                int(_clamp(mireds, COLOR_TEMP_MIN, COLOR_TEMP_MAX)),
-            )
-            self.update_attribute(
-                Color.AttributeDefs.color_mode.name,
-                Color.ColorMode.Color_temperature,
-            )
-            return self._success(command_id)
-
-        return await super().command(command_id, *args, **kwargs)
+        await super().async_turn_on(**kwargs)
 
 
 (
     TuyaQuirkBuilder("_TZE200_s8gkrkxk", "TS0601")
     .replaces(MelineraColorCluster)
+    .replaces(MelineraLevelCluster)
+    .replaces_entity(Light, MelineraLight, endpoint_id=1, cluster_id=OnOff.cluster_id)
     # Physical button: the string reports power only through DP1.
     .tuya_dp(
         dp_id=DP_POWER,
@@ -369,42 +501,20 @@ class MelineraColorCluster(CustomCluster, Color):
         attribute_name=OnOff.AttributeDefs.on_off.name,
         converter=lambda v: t.Bool(bool(v)),
     )
-    # Mode: select entity, and keeps the light's colour mode in sync.
-    .tuya_attribute(
+    .tuya_dp_attribute(
         dp_id=DP_MODE,
         attribute_name="light_mode",
         type=LightMode,
         access=foundation.ZCLAttributeAccess.Read
         | foundation.ZCLAttributeAccess.Write
         | foundation.ZCLAttributeAccess.Report,
-    )
-    .tuya_dp_multi(
-        dp_id=DP_MODE,
-        attribute_mapping=[
-            DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "light_mode",
-                converter=lambda v: LightMode(int(v)),
-            ),
-            DPToAttributeMapping(
-                Color.ep_attribute,
-                Color.AttributeDefs.color_mode.name,
-                converter=dp2_to_color_mode,
-            ),
-        ],
-        dp_converter=lambda mode, _color_mode=None: LightMode(int(mode)),
+        converter=lambda v: LightMode(int(v)),
     )
     .tuya_dp(
         dp_id=DP_WHITE_BRIGHTNESS,
         ep_attribute=LevelControl.ep_attribute,
         attribute_name=LevelControl.AttributeDefs.current_level.name,
         converter=to_level,
-    )
-    .tuya_dp(
-        dp_id=DP_COLOR_TEMP,
-        ep_attribute=Color.ep_attribute,
-        attribute_name=Color.AttributeDefs.color_temperature.name,
-        converter=dp4_to_mireds,
     )
     .tuya_dp_multi(
         dp_id=DP_COLOR,
@@ -426,8 +536,8 @@ class MelineraColorCluster(CustomCluster, Color):
             ),
         ],
     )
-    # DP6 carries effect, speed and palette together. Writing either the
-    # effect or the speed rebuilds the whole string from the cached values.
+    # DP6 carries effect, speed and palette together; writes are built in
+    # MelineraTuyaCluster.write_attributes.
     .tuya_attribute(
         dp_id=DP_EFFECT,
         attribute_name="string_effect",
@@ -463,15 +573,6 @@ class MelineraColorCluster(CustomCluster, Color):
                 TuyaMCUCluster.ep_attribute, "effect_palette", converter=dp6_to_palette
             ),
         ],
-        dp_converter=effect_to_dp6,
-    )
-    .enum(
-        attribute_name="string_effect",
-        enum_class=StringEffect,
-        cluster_id=TUYA_CLUSTER_ID,
-        entity_type=EntityType.STANDARD,
-        translation_key="string_effect",
-        fallback_name="Effect",
     )
     .number(
         attribute_name="effect_speed",
@@ -484,14 +585,6 @@ class MelineraColorCluster(CustomCluster, Color):
         entity_type=EntityType.STANDARD,
         translation_key="effect_speed",
         fallback_name="Effect speed",
-    )
-    .enum(
-        attribute_name="light_mode",
-        enum_class=LightMode,
-        cluster_id=TUYA_CLUSTER_ID,
-        entity_type=EntityType.STANDARD,
-        translation_key="light_mode",
-        fallback_name="Light mode",
     )
     .add_to_registry(replacement_cluster=MelineraTuyaCluster)
 )
