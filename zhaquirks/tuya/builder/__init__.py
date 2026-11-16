@@ -34,6 +34,7 @@ from zhaquirks.builder import (
     QuirkBuilder,
     SensorDeviceClass,
     SensorStateClass,
+    TextMode,
 )
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
@@ -832,6 +833,54 @@ class TuyaQuirkBuilder(QuirkBuilder):
             multiplier=multiplier,
             entity_type=entity_type,
             device_class=device_class,
+            initially_disabled=initially_disabled,
+            attribute_initialized_from_cache=attribute_initialized_from_cache,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+        )
+
+        return self
+
+    def tuya_text(
+        self,
+        dp_id: int,
+        attribute_name: str,
+        access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Write,
+        endpoint_id: int = 1,
+        min_length: int | None = None,
+        max_length: int | None = None,
+        pattern: str | None = None,
+        mode: TextMode | None = None,
+        entity_type: EntityType = EntityType.CONFIG,
+        initially_disabled: bool = False,
+        attribute_initialized_from_cache: bool = True,
+        translation_key: str | None = None,
+        fallback_name: str | None = None,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> Self:
+        """Add an EntityMetadata containing TextMetadata and return self.
+
+        This method allows exposing a text entity in Home Assistant for a string
+        datapoint.
+        """
+        self.tuya_dp_attribute(
+            dp_id=dp_id,
+            attribute_name=attribute_name,
+            type=t.CharacterString,
+            access=access,
+        )
+        self.text(
+            attribute_name=attribute_name,
+            cluster_id=TUYA_CLUSTER_ID,
+            endpoint_id=endpoint_id,
+            min_length=min_length,
+            max_length=max_length,
+            pattern=pattern,
+            mode=mode,
+            entity_type=entity_type,
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
