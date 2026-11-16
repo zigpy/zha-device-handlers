@@ -254,11 +254,6 @@ def current_hs(endpoint) -> tuple[float, float]:
     )
 
 
-def _dp_key(value: Any) -> str:
-    """Return a comparable form of a datapoint value, sent or received."""
-    return value.lower() if isinstance(value, str) else str(int(value))
-
-
 class MelineraTuyaCluster(TuyaMCUCluster):
     """Tuya MCU cluster handling the mode-dependent datapoints."""
 
@@ -266,21 +261,20 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self._send_lock = asyncio.Lock()
-        self._last_sent: dict[int, str] = {}
+        self._sent_dps: set[int] = set()
 
     def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
-        """Skip echoes of superseded writes, as Zigbee2MQTT does.
+        """Skip echoes of datapoints this quirk writes.
 
-        The string echoes every write with a data response (0x01), sometimes
-        after a newer write was sent; only the echo of the latest write per
-        datapoint is applied. Its own changes (the button) arrive as reports
+        The string echoes every write with a data response (0x01), often after
+        newer writes are already queued; applying such an echo would undo the
+        newer state (e.g. the zero brightness of a soft off arriving after a
+        turn on). The quirk already knows what it sent, so these echoes are
+        dropped. The string's own changes (the button) arrive as reports
         (0x02, handle_set_data_response) and are always applied.
         """
         command.datapoints = [
-            record
-            for record in command.datapoints
-            if record.dp not in self._last_sent
-            or _dp_key(record.data.payload) == self._last_sent[record.dp]
+            record for record in command.datapoints if record.dp not in self._sent_dps
         ]
         return super().handle_get_data(command)
 
@@ -294,7 +288,7 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         """Send datapoints to the string, in order and not interleaved."""
         async with self._send_lock:
             for dp, value in datapoints:
-                self._last_sent[dp] = _dp_key(value)
+                self._sent_dps.add(dp)
                 await self.command(
                     self.mcu_write_command,
                     TuyaCommand(
@@ -307,7 +301,11 @@ class MelineraTuyaCluster(TuyaMCUCluster):
 
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Ignore brightness/colour echoes of another mode or of a soft off."""
-        if self.get("soft_off") and datapoint.dp in (DP_WHITE_BRIGHTNESS, DP_COLOR):
+        if self.get("soft_off") and datapoint.dp in (
+            DP_MODE,
+            DP_WHITE_BRIGHTNESS,
+            DP_COLOR,
+        ):
             return
         mode = self.get("light_mode")
         if datapoint.dp == DP_WHITE_BRIGHTNESS and mode not in (None, LightMode.White):
@@ -317,27 +315,24 @@ class MelineraTuyaCluster(TuyaMCUCluster):
         super()._dp_2_attr_update(datapoint)
 
     async def soft_off(self) -> None:
-        """Darken the LEDs but keep the controller powered (it hums when off)."""
-        mode = self.get("light_mode")
-        if not self.get("soft_off"):
-            self.update_attribute(
-                "resume_mode", LightMode.White if mode is None else mode
-            )
+        """Darken the LEDs but keep the controller powered (it hums when off).
+
+        light_mode keeps the logical mode (colour, white or effect) to resume;
+        the string itself is put into white mode, the only mode in which zero
+        brightness darkens it. State is updated before sending, so that rapid
+        on/off calls always build on the latest intent; the sends are queued.
+        """
         self.update_attribute("soft_off", True)
-        # Zero brightness darkens the string only in white mode (in colour
-        # mode the LEDs stay lit), so go dark through white. DP3 is sent
-        # before and after the mode so that no white flash is seen.
         await self.send_dps(
             (DP_WHITE_BRIGHTNESS, 0),
             (DP_MODE, LightMode.White),
             (DP_WHITE_BRIGHTNESS, 0),
         )
-        self.update_attribute("light_mode", LightMode.White)
 
     async def resume(self) -> None:
         """Restore the mode, colour, brightness or effect from before soft off."""
         self.update_attribute("soft_off", False)
-        mode = self.get("resume_mode")
+        mode = self.get("light_mode")
         level = level_to_1000(
             self.endpoint.level.get(LevelControl.AttributeDefs.current_level.name)
         )
@@ -359,11 +354,10 @@ class MelineraTuyaCluster(TuyaMCUCluster):
                 (DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, level))
             )
         else:
-            mode = LightMode.White
+            self.update_attribute("light_mode", LightMode.White)
             await self.send_dps(
                 (DP_MODE, LightMode.White), (DP_WHITE_BRIGHTNESS, level)
             )
-        self.update_attribute("light_mode", mode)
 
     async def write_attributes(
         self,
@@ -389,6 +383,7 @@ class MelineraTuyaCluster(TuyaMCUCluster):
                 "string_effect" in effect_changes
                 or self.get("light_mode") == LightMode.Effect
             ):
+                self.update_attribute("light_mode", LightMode.Effect)
                 await self.send_dps(
                     (DP_MODE, LightMode.Effect),
                     (
@@ -400,7 +395,6 @@ class MelineraTuyaCluster(TuyaMCUCluster):
                         ),
                     ),
                 )
-                self.update_attribute("light_mode", LightMode.Effect)
 
         if remaining:
             return await super().write_attributes(
@@ -444,13 +438,13 @@ class MelineraLevelCluster(CustomCluster, LevelControl):
 
         tuya: MelineraTuyaCluster = self.endpoint.tuya_manufacturer
         mode = tuya.get("light_mode")
+        self.update_attribute(LevelControl.AttributeDefs.current_level.name, level)
         if mode == LightMode.Color:
             hue, sat = current_hs(self.endpoint)
             await tuya.send_dps((DP_COLOR, encode_hsb(hue, sat, level_to_1000(level))))
         elif mode != LightMode.Effect:
             # White mode (or unknown): DP3. In effect mode it is only kept.
             await tuya.send_dps((DP_WHITE_BRIGHTNESS, level_to_1000(level)))
-        self.update_attribute(LevelControl.AttributeDefs.current_level.name, level)
 
         if on_off and not self.endpoint.on_off.get(OnOff.AttributeDefs.on_off.name):
             await self.endpoint.on_off.on()
@@ -488,20 +482,20 @@ class MelineraColorCluster(CustomCluster, Color):
         level = self.endpoint.level.get(LevelControl.AttributeDefs.current_level.name)
 
         tuya: MelineraTuyaCluster = self.endpoint.tuya_manufacturer
+        self.update_attribute(Color.AttributeDefs.current_x.name, x)
+        self.update_attribute(Color.AttributeDefs.current_y.name, y)
         if sat < WHITE_SATURATION:
+            tuya.update_attribute("light_mode", LightMode.White)
             await tuya.send_dps(
                 (DP_MODE, LightMode.White),
                 (DP_WHITE_BRIGHTNESS, level_to_1000(level)),
             )
-            tuya.update_attribute("light_mode", LightMode.White)
         else:
+            tuya.update_attribute("light_mode", LightMode.Color)
             await tuya.send_dps(
                 (DP_MODE, LightMode.Color),
                 (DP_COLOR, encode_hsb(hue, sat, level_to_1000(level))),
             )
-            tuya.update_attribute("light_mode", LightMode.Color)
-        self.update_attribute(Color.AttributeDefs.current_x.name, x)
-        self.update_attribute(Color.AttributeDefs.current_y.name, y)
         return _success(command_id)
 
 
@@ -520,7 +514,11 @@ class MelineraLight(Light):
 
     def _current_effect(self) -> str:
         tuya = self._tuya
-        if tuya is None or tuya.get("light_mode") != LightMode.Effect:
+        if (
+            tuya is None
+            or tuya.get("soft_off")
+            or tuya.get("light_mode") != LightMode.Effect
+        ):
             return EFFECT_OFF
         effect = tuya.get("string_effect")
         return (
@@ -706,12 +704,6 @@ class MelineraLight(Light):
         dp_id=0xF8,  # not a device DP; local attribute id 0xEFF8
         attribute_name="soft_off",
         type=t.Bool,
-        access=foundation.ZCLAttributeAccess.Read,
-    )
-    .tuya_attribute(
-        dp_id=0xF9,  # not a device DP; local attribute id 0xEFF9
-        attribute_name="resume_mode",
-        type=LightMode,
         access=foundation.ZCLAttributeAccess.Read,
     )
     .tuya_dp_multi(

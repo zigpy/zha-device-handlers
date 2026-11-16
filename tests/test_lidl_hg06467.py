@@ -358,12 +358,12 @@ async def test_stale_echoes_ignored(zigpy_device_from_v2_quirk):
         await tuya.send_dps((DP_MODE, LightMode.White), (DP_WHITE, 0))
         await tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8"))
 
-    # late echoes of the first write are skipped
+    tuya.update_attribute("light_mode", LightMode.Color)
+    # late echoes of written datapoints are skipped
     _echo(tuya, DP_MODE, LightMode.White)
-    assert tuya.get("light_mode") != LightMode.White
-    # the echo of the latest write is applied
-    _echo(tuya, DP_MODE, LightMode.Color)
+    _echo(tuya, DP_WHITE, 0)
     assert tuya.get("light_mode") == LightMode.Color
+    assert ep.level.get("current_level") == 254
     # the string's own change (button) is always applied
     _report(tuya, DP_MODE, LightMode.Effect)
     assert tuya.get("light_mode") == LightMode.Effect
@@ -384,3 +384,57 @@ async def test_overlapping_sends_not_interleaved(zigpy_device_from_v2_quirk):
             tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8")),
         )
     assert [dp for dp, _ in _sent(req)] == [3, 2, 3, 2, 5]
+
+
+@pytest.mark.parametrize("effect", ["Glow", None])
+async def test_rapid_toggling(effect):
+    """Test rapid on/off ends in the requested state, with late echoes."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        tuya = device.device.endpoints[1].tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        async def slow_request(*args, **kwargs):
+            await asyncio.sleep(0)
+            # the string echoes the white of a soft off late
+            _echo(tuya, DP_MODE, LightMode.White)
+            _echo(tuya, DP_WHITE, 0)
+            return [0, foundation.Status.SUCCESS]
+
+        with mock.patch.object(
+            tuya.endpoint, "request", side_effect=slow_request
+        ) as req:
+            if effect:
+                await light.async_turn_on(effect=effect)
+            else:
+                await light.async_turn_on(xy_color=ha_hs_to_xy(30, 100))
+            await gateway.async_block_till_done()
+            light.async_transition_complete()
+
+            for _ in range(5):
+                await asyncio.gather(
+                    light.async_turn_off(),
+                    light.async_turn_on(),
+                    light.async_turn_off(),
+                    light.async_turn_on(),
+                )
+                await gateway.async_block_till_done()
+                light.async_transition_complete()
+
+            assert light.is_on
+            if effect:
+                assert light.effect == effect
+                assert tuya.get("light_mode") == LightMode.Effect
+                assert _sent(req)[-2:] == [(2, LightMode.Effect), (6, "0f64")]
+            else:
+                assert tuya.get("light_mode") == LightMode.Color
+                dp, value = _sent(req)[-1]
+                assert dp == 5 and 28 <= int(value[0:4], 16) <= 33
+
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert not light.is_on
+            assert _sent(req)[-1] == (3, 0)
