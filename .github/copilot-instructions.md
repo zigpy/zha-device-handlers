@@ -239,14 +239,14 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
     cluster_type=ClusterType.Server,  # Optional: default Server
     min_length=0,                     # Optional: minimum length in characters
     max_length=10,                    # Optional: maximum length in characters (default 255)
-    pattern=r"[A-Za-z0-9 ]*",         # Optional: regex the value has to match
+    pattern=r"^[A-Za-z0-9 ]*$",       # Optional: regex the value has to match
     mode=TextMode.TEXT,               # Optional: TextMode.PASSWORD masks the input
     translation_key="button_name",
     fallback_name="Button name",
 )
 ```
 
-The attribute can be a ZCL character string or raw bytes (`t.LVBytes`); raw bytes are decoded from and encoded to UTF-8. The length limits count characters, while ZCL limits strings in bytes, so leave headroom for non-ASCII text. `TextMode.PASSWORD` only masks the input: a written value is still cached, stored and shown as the entity state.
+The attribute can be a ZCL character string or raw bytes (`t.LVBytes`); raw bytes are decoded from and encoded to UTF-8. Anchor `pattern` with `^…$`: like Home Assistant, ZHA only checks that the start of the value matches. The length limits count characters, while ZCL limits strings in bytes, so leave headroom for non-ASCII text. `TextMode.PASSWORD` only masks the input: a written value is still cached, stored and shown as the entity state.
 
 ```python
 

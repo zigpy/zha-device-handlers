@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
+import re
 from typing import Any
 
 import attrs
@@ -131,14 +132,24 @@ class NumberMetadata(EntityMetadata):
     device_class: NumberDeviceClass | None = attrs.field(default=None)
 
 
+def _int_validator(instance: Any, attribute: attrs.Attribute, value: Any) -> None:
+    """Accept an int, but not a bool."""
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{attribute.name} must be an int: {value!r}")
+
+
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class TextMetadata(EntityMetadata):
     """Metadata for exposed text entity."""
 
     attribute_name: str = attrs.field()
     reporting_config: ReportingConfig | None = attrs.field(default=None)
-    min_length: int | None = attrs.field(default=None)
-    max_length: int | None = attrs.field(default=None)
+    min_length: int | None = attrs.field(
+        default=None, validator=attrs.validators.optional(_int_validator)
+    )
+    max_length: int | None = attrs.field(
+        default=None, validator=attrs.validators.optional(_int_validator)
+    )
     pattern: str | None = attrs.field(default=None)
     mode: TextMode | None = attrs.field(
         default=None, converter=attrs.converters.optional(TextMode)
@@ -157,6 +168,11 @@ class TextMetadata(EntityMetadata):
             0 <= self.min_length <= (self.max_length or MAX_LENGTH_STATE_STATE)
         ):
             raise ValueError(f"min_length must be between 0 and max_length: {self}")
+        if self.pattern is not None:
+            try:
+                re.compile(self.pattern)
+            except re.error as exc:
+                raise ValueError(f"pattern is not a valid regex: {self}") from exc
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)

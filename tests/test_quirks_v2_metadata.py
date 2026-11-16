@@ -181,7 +181,7 @@ def test_quirks_v2_text():
             Basic.AttributeDefs.location_desc.name,
             Basic.cluster_id,
             max_length=16,
-            pattern=r"[A-Za-z ]*",
+            pattern=r"^[A-Za-z ]*$",
             mode="password",
             translation_key="location",
             fallback_name="Location",
@@ -199,23 +199,44 @@ def test_quirks_v2_text():
     assert text_metadata.attribute_name == Basic.AttributeDefs.location_desc.name
     assert text_metadata.min_length is None
     assert text_metadata.max_length == 16
-    assert text_metadata.pattern == r"[A-Za-z ]*"
+    assert text_metadata.pattern == r"^[A-Za-z ]*$"
     assert text_metadata.mode is TextMode.PASSWORD
     assert text_metadata.resolved_unique_id_suffix == "location_desc"
 
 
 @pytest.mark.parametrize(
     ("min_length", "max_length"),
-    [(None, 0), (None, 256), (-1, None), (5, 4), (256, None)],
+    [
+        (None, 0),
+        (None, 256),
+        (-1, None),
+        (5, 4),
+        (256, None),
+        (None, 1.5),
+        (True, None),
+        (None, "16"),
+    ],
 )
 def test_quirks_v2_text_invalid_lengths(min_length, max_length):
     """Test that impossible length limits are rejected."""
-    with pytest.raises(ValueError, match="_length must be between"):
+    with pytest.raises(ValueError, match="_length must be"):
         QuirkBuilder("manufacturer", "model").text(
             Basic.AttributeDefs.location_desc.name,
             Basic.cluster_id,
             min_length=min_length,
             max_length=max_length,
+            translation_key="location",
+            fallback_name="Location",
+        )
+
+
+def test_quirks_v2_text_invalid_pattern():
+    """Test that a pattern that isn't a valid regex is rejected."""
+    with pytest.raises(ValueError, match="pattern is not a valid regex"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            pattern="[",
             translation_key="location",
             fallback_name="Location",
         )
