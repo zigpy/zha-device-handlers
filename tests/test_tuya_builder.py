@@ -15,11 +15,12 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.common import ClusterListener, attribute_cache_row, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
     TUYA_QUERY_DATA,
     TUYA_SEND_DATA,
     TUYA_SET_TIME,
@@ -816,3 +817,187 @@ async def test_tuya_dp_converter_reads_device_value(device_mock):
         )
     )
     assert command.datapoints[0].data.payload == 17
+
+
+async def test_tuya_invented_attributes_migrated(device_mock, caplog):
+    """Rows of invented attributes move into the device values that replace them."""
+    registry = DeviceRegistry()
+    first = device_value("first", int)
+    second = device_value("second", int)
+    raw = device_value("raw", int)
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_sensor(
+            dp_id=1,
+            attribute_name="scaled",
+            type=t.uint16_t,
+            converter=lambda x: x / 10,
+            translation_key="scaled",
+            fallback_name="Scaled",
+            as_device_value=True,
+        )
+        .tuya_dp_multi(
+            2, [DPToDeviceValueMapping(first), DPToDeviceValueMapping(second)]
+        )
+        .tuya_dp_multi(
+            3,
+            [
+                DPToDeviceValueMapping(raw),
+                DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "raw_attr"),
+            ],
+        )
+        .tuya_attribute(dp_id=3, attribute_name="raw_attr", type=t.uint16_t)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    device.manufacturer_id_override = 0x1002
+    cluster = device.endpoints[1].tuya_manufacturer
+    manufacturer_code = cluster._get_effective_manufacturer_code(
+        cluster.find_attribute("raw_attr")
+    )
+    assert manufacturer_code == 0x1002
+
+    rows = [
+        # The attribute held the converted value, which is stored as it is
+        attribute_cache_row(
+            device, TUYA_CLUSTER_ID, 0xEF01, 2.5, manufacturer_code=manufacturer_code
+        ),
+        # Two device values, either of which the attribute could have held: kept
+        attribute_cache_row(
+            device, TUYA_CLUSTER_ID, 0xEF02, 7, manufacturer_code=manufacturer_code
+        ),
+        # Still an attribute
+        attribute_cache_row(
+            device,
+            TUYA_CLUSTER_ID,
+            0xEF03,
+            t.uint16_t(9).serialize(),
+            foundation.DataTypeId.uint16,
+            manufacturer_code=manufacturer_code,
+        ),
+        # Still an attribute, under another manufacturer code: zigpy does not offer it
+        attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF03, 8),
+    ]
+
+    result = device.load_attribute_cache(rows, migrate=True)
+
+    assert [row.attr_id for row in result.migrated] == [0xEF01]
+    assert device.store.namespace(DEVICE_VALUES_NAMESPACE)["scaled"] == 2.5
+    assert first not in device.store
+    assert second not in device.store
+    assert cluster._attr_cache.get(0xEF02) == 7
+    assert "datapoint 2 maps to device values first, second" in caplog.text
+    assert raw not in device.store
+    assert cluster.get("raw_attr") == 9
+    assert [change.old for change in result.changes if change.new is None] == (
+        result.migrated
+    )
+
+
+@pytest.mark.parametrize(
+    ("migrate", "expected"),
+    [
+        # The stored value survives its migration and is newer than the attribute
+        (lambda version, value: value * 2, 84),
+        # The stored value would be dropped when read, so the attribute wins
+        (lambda version, value: None, 5),
+        (None, 5),
+    ],
+)
+async def test_tuya_migration_runs_stored_value_migration(
+    device_mock, migrate, expected
+):
+    """A stored value of an older version counts only if its migration keeps it."""
+    registry = DeviceRegistry()
+    value_def = StoredValue(
+        namespace=DEVICE_VALUES_NAMESPACE,
+        key="level",
+        type=int,
+        version=2,
+        migrate=migrate,
+    )
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp_multi(4, [DPToDeviceValueMapping(value_def)])
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    device.store.namespace(DEVICE_VALUES_NAMESPACE).set("level", 42, version=1)
+
+    result = device.load_attribute_cache(
+        [attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF04, 5)], migrate=True
+    )
+
+    assert len(result.migrated) == 1
+    assert device.store[value_def] == expected
+
+
+async def test_tuya_migration_in_place_stored_value_migration(device_mock):
+    """A migration that changes the stored value in place still applies only once."""
+    registry = DeviceRegistry()
+
+    def migrate(version, value):
+        value["level"] *= 2
+        return value
+
+    value_def = StoredValue(
+        namespace=DEVICE_VALUES_NAMESPACE,
+        key="level",
+        type=lambda value: value["level"],
+        encode=lambda level: {"level": level},
+        version=2,
+        migrate=migrate,
+    )
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp_multi(4, [DPToDeviceValueMapping(value_def)])
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    namespace = device.store.namespace(DEVICE_VALUES_NAMESPACE)
+    namespace.set("level", {"level": 21}, version=1)
+
+    device.load_attribute_cache(
+        [attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF04, 5)], migrate=True
+    )
+
+    assert namespace.item("level").version == 1
+    assert namespace["level"] == {"level": 21}
+    assert device.store[value_def] == 42
+
+
+async def test_tuya_migration_store_error(device_mock, caplog):
+    """Any error storing the value is logged, and the row is migrated."""
+    registry = DeviceRegistry()
+
+    def encode(value):
+        raise RuntimeError("Broken encoder")
+
+    value_def = StoredValue(
+        namespace=DEVICE_VALUES_NAMESPACE, key="level", type=int, encode=encode
+    )
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_dp_multi(4, [DPToDeviceValueMapping(value_def)])
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    device = registry.resolve(device_mock)
+    result = device.load_attribute_cache(
+        [attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF04, 5)], migrate=True
+    )
+
+    assert len(result.migrated) == 1
+    assert value_def not in device.store
+    assert "Cannot store 5 of datapoint 4 as device value level" in caplog.text
