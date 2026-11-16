@@ -120,6 +120,7 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_b1lc04
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -3483,3 +3484,51 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+@pytest.mark.parametrize(
+    "attribute, value, attr_id, data_type",
+    [
+        ("flip_indicator_light", 0, 0x00F0, DataTypeId.uint8),
+        ("flip_indicator_light", 1, 0x00F0, DataTypeId.uint8),
+        ("power_outage_memory", False, 0x0201, DataTypeId.bool_),
+        ("power_outage_memory", True, 0x0201, DataTypeId.bool_),
+        ("operation_mode", 0, 0x0200, DataTypeId.uint8),
+        ("operation_mode", 1, 0x0200, DataTypeId.uint8),
+        ("mode_switch", 1, 0x0004, DataTypeId.uint16),
+        ("mode_switch", 4, 0x0004, DataTypeId.uint16),
+    ],
+)
+async def test_aqara_e1_switch_b1lc04_write_attrs(
+    zigpy_device_from_v2_quirk, attribute, value, attr_id, data_type
+):
+    """Test writing config attributes on Aqara E1 switch QBKG38LM."""
+
+    device = zigpy_device_from_v2_quirk(
+        LUMI,
+        "lumi.switch.b1lc04",
+        cluster_ids={
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                XiaomiAqaraE1Cluster.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    assert isinstance(opple_cluster, zhaquirks.xiaomi.aqara.switch_b1lc04.OppleCluster)
+
+    opple_cluster._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+
+    await opple_cluster.write_attributes({attribute: value})
+
+    assert len(opple_cluster._write_attributes.mock_calls) == 1
+    call_args = opple_cluster._write_attributes.mock_calls[0]
+    attr = call_args.args[0][0]
+    assert attr.attrid == attr_id
+    assert attr.value.type == data_type
+    assert attr.value.value == value
+    assert call_args.kwargs["manufacturer"] == 0x115F
