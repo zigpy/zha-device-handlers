@@ -285,7 +285,7 @@ class SonoffCluster(CustomCluster):
             except Exception:
                 _LOGGER.exception("Failed to process inching report")
             return
-        return super().handle_message(hdr, args, dst_addressing=dst_addressing)
+        return super().handle_message(hdr, args)
 
 
 (

@@ -50,15 +50,15 @@ async def test_inching_write_attributes(zbminir2_device):
     with mock.patch.object(cluster, "_send_combined", mock.AsyncMock()) as mock_send:
         await cluster.write_attributes({"inching_enable": True})
         assert mock_send.call_count == 1
-        assert cluster._inching_enable is True
+        assert cluster.get(INCHING_ENABLE_ATTR) is True
 
         await cluster.write_attributes({"inching_mode": InchingModeBit.Auto_on})
         assert mock_send.call_count == 2
-        assert cluster._inching_mode_bit == 1
+        assert cluster.get(INCHING_MODE_ATTR) == 1
 
         await cluster.write_attributes({"inching_timeout": 10})
         assert mock_send.call_count == 3
-        assert cluster._inching_timeout == 10
+        assert cluster.get(INCHING_TIMEOUT_ATTR) == 10
 
         mock_send.reset_mock()
         await cluster.write_attributes(
@@ -137,9 +137,9 @@ async def test_handle_message_inching_report(zbminir2_device):
     )
     cluster.handle_message(hdr, report_payload)
 
-    assert cluster._inching_enable is True
-    assert cluster._inching_mode_bit == 1
-    assert cluster._inching_timeout == 5
+    assert cluster.get(INCHING_ENABLE_ATTR) is True
+    assert cluster.get(INCHING_MODE_ATTR) == 1
+    assert cluster.get(INCHING_TIMEOUT_ATTR) == 5
 
     assert len(listener.attribute_updates) == 3
     assert listener.attribute_updates[0] == (INCHING_ENABLE_ATTR, True)
@@ -185,7 +185,7 @@ async def test_inching_write_failure_does_not_revert_cache(zbminir2_device):
     ):
         with pytest.raises(Exception, match="Comm error"):
             await cluster.write_attributes({"inching_mode": 1})
-        assert cluster._inching_mode_bit == 1
+        assert cluster.get(INCHING_MODE_ATTR) == 1
 
 
 async def test_non_inching_attributes_write(zbminir2_device):
@@ -234,11 +234,14 @@ async def test_non_inching_attributes_write(zbminir2_device):
 
 
 async def test_initial_attribute_defaults(zbminir2_device):
-    """Test that inching attributes are seeded with default values."""
+    """Test that inching attributes are not seeded and fall back to defaults."""
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
-    assert cluster._inching_enable is False
-    assert cluster._inching_mode_bit == 0
-    assert cluster._inching_timeout == 2
+    assert INCHING_ENABLE_ATTR not in cluster._attr_cache
+    assert INCHING_MODE_ATTR not in cluster._attr_cache
+    assert INCHING_TIMEOUT_ATTR not in cluster._attr_cache
+    assert cluster.get(INCHING_ENABLE_ATTR, False) is False
+    assert cluster.get(INCHING_MODE_ATTR, 0) == 0
+    assert cluster.get(INCHING_TIMEOUT_ATTR, 2) == 2
 
 
 async def test_device_automation_triggers(zbminir2_device):
@@ -393,9 +396,9 @@ async def test_handle_message_non_inching_else_branch(zbminir2_device):
 async def test_send_combined_with_disabled_inching(zbminir2_device):
     """Test _send_combined when inching is disabled."""
     cluster = zbminir2_device.endpoints[1].in_clusters[SonoffCluster.cluster_id]
-    cluster._inching_enable = False
-    cluster._inching_mode_bit = 0
-    cluster._inching_timeout = 2
+    cluster._attr_cache[INCHING_ENABLE_ATTR] = False
+    cluster._attr_cache[INCHING_MODE_ATTR] = 0
+    cluster._attr_cache[INCHING_TIMEOUT_ATTR] = 2
 
     with mock.patch.object(cluster, "set_inching", mock.AsyncMock()) as mock_set:
         await cluster._send_combined()
