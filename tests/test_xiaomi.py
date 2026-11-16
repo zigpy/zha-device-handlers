@@ -11,7 +11,9 @@ from unittest import mock
 import zoneinfo
 
 import pytest
+from zha.application import Platform
 from zha.application.helpers import write_attributes_safe
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -48,6 +50,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
@@ -4015,27 +4018,36 @@ def test_aqara_display_switch_heartbeat_power(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize("value", [22.5, -0.3, 18])
-async def test_aqara_display_switch_weather_temperature_entity_write(
-    zigpy_device_from_v2_quirk, value
-):
-    """Test fractional temperatures survive ZHA's number entity write path."""
-    opple_cluster = _display_switch_opple_cluster(zigpy_device_from_v2_quirk)
-    attr_def = DisplaySwitchOppleCluster.AttributeDefs.weather_temperature
-    (metadata,) = (
-        m
-        for m in zhaquirks.xiaomi.aqara.switch_aeu001.builder.entity_metadata
-        if getattr(m, "attribute_name", None) == attr_def.name
-    )
-
-    with mock.patch.object(opple_cluster, "_write_attributes", _mock_write()) as m:
-        await write_attributes_safe(
-            opple_cluster, {attr_def.name: round(value / metadata.multiplier)}
+async def test_aqara_display_switch_weather_entities_on_gateway(value):
+    """Test the weather entities are created and write through their setters."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "aqara-lumi-switch-aeu001-0x00000d25.json", DEVICE_REGISTRY
         )
+        entities = {
+            getattr(entity, "_attribute_name", None): entity
+            for entity in device.platform_entities.values()
+        }
+        temperature = entities["weather_temperature"]
+        condition = entities["weather_condition"]
+        opple_cluster = device.device.endpoints[1].opple_cluster
 
-    assert struct.unpack(">f", _written(m)[0][1][-4:])[0] == pytest.approx(value)
-    assert opple_cluster.get(attr_def.name) * metadata.multiplier == pytest.approx(
-        value
-    )
+        assert temperature.PLATFORM == Platform.NUMBER
+        assert condition.PLATFORM == Platform.SELECT
+        assert temperature.native_value is None
+        assert condition.current_option is None
+
+        with mock.patch.object(
+            opple_cluster, "_write_attributes", _mock_write()
+        ) as write_mock:
+            await temperature.async_set_native_value(value)
+            await condition.async_select_option("PartlyCloudy")
+
+        packets = [packet for _, packet in _written(write_mock)]
+        assert struct.unpack(">f", packets[0][-4:])[0] == pytest.approx(value)
+        assert packets[1][-1] == WeatherCondition.PartlyCloudy
+        assert temperature.native_value == pytest.approx(value)
+        assert condition.current_option == "PartlyCloudy"
 
 
 async def test_opple_cluster_write_attributes_weather_ordering(
