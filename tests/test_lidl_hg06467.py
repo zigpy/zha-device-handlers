@@ -20,6 +20,7 @@ from zhaquirks.lidl.hg06467 import (
     MelineraLight,
     StringEffect,
     hs_to_xy,
+    level_to_1000,
     xy_to_hs,
 )
 from zhaquirks.tuya import TuyaCommand, TuyaDatapointData, TuyaNewManufCluster
@@ -257,3 +258,76 @@ async def test_light_entity_from_diagnostics():
             await gateway.async_block_till_done()
             assert [dp for dp, _ in _sent(req)] == [2, 5]
             assert light.effect == "off"
+
+
+async def test_soft_off(zigpy_device_from_v2_quirk):
+    """Test turning off darkens the LEDs but keeps the controller on."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze200-s8gkrkxk-ts0601-0x00000046.json", DEVICE_REGISTRY
+        )
+        light = device.get_platform_entity(Platform.LIGHT, f"{device.ieee}-1")
+        ep = device.device.endpoints[1]
+        tuya = ep.tuya_manufacturer
+        tuya.update_attribute("effect_speed", 100)
+
+        with mock.patch.object(
+            tuya.endpoint, "request", return_value=[0, foundation.Status.SUCCESS]
+        ) as req:
+            # colour mode, then off: zero brightness, controller stays on
+            await light.async_turn_on(xy_color=ha_hs_to_xy(120, 100), brightness=200)
+            await gateway.async_block_till_done()
+            req.reset_mock()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            sent = _sent(req)
+            assert sent[0] == (2, LightMode.Color)
+            assert sent[1][0] == 5 and sent[1][1].endswith("0000")
+            off_calls = [
+                c for c in req.call_args_list if c.kwargs["cluster"] == OnOff.cluster_id
+            ]
+            assert off_calls == []
+            assert not light.is_on
+
+            # the zero-brightness echo does not overwrite the kept brightness
+            _report(tuya, 5, sent[1][1])
+            assert ep.level.get("current_level") == 200
+            assert not light.is_on
+
+            # on restores the colour at the kept brightness
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            dp, value = _sent(req)[1]
+            assert dp == 5 and value[8:12] == f"{level_to_1000(200):04x}"
+            assert light.is_on
+
+            # an effect resumes as the effect
+            await light.async_turn_on(effect="Glow")
+            await gateway.async_block_till_done()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert light.effect == "off"
+            req.reset_mock()
+            await light.async_turn_on()
+            await gateway.async_block_till_done()
+            assert _sent(req)[:2] == [(2, LightMode.Effect), (6, "0f64")]
+            assert light.effect == "Glow"
+
+            # white resumes as white
+            await light.async_turn_on(xy_color=ha_hs_to_xy(0, 0))
+            await gateway.async_block_till_done()
+            req.reset_mock()
+            await light.async_turn_off()
+            await gateway.async_block_till_done()
+            assert _sent(req) == [(3, 0)]
+
+            # physical button: real off, then on resumes the white
+            light.async_transition_complete()
+            _report(tuya, 1, False)
+            ep.on_off.update_attribute("on_off", False)
+            req.reset_mock()
+            ep.on_off.update_attribute("on_off", True)
+            await gateway.async_block_till_done()
+            assert (2, LightMode.White) in _sent(req)
+            assert light.is_on

@@ -34,6 +34,11 @@ Exposed in Home Assistant, kept to as few controls as possible:
       string's white mode; picking a colour or "off" leaves the effect.
     - number "Effect speed": 0..100 %, applied at once in effect mode and
       otherwise kept for the next effect (as in Zigbee2MQTT)
+
+Turning the light off from Home Assistant is a "soft off": the LEDs are set
+to zero brightness but the controller stays powered, because its power
+supply hums when switched off. Turning on restores the colour, white or
+effect. The physical button still switches the controller fully.
 """
 
 from __future__ import annotations
@@ -238,6 +243,15 @@ def effect_to_dp6(effect: Any, speed: Any, palette: Any) -> str:
 # --- clusters -------------------------------------------------------------------
 
 
+def current_hs(endpoint) -> tuple[float, float]:
+    """Hue/saturation of the last colour, from the cached xy."""
+    color = endpoint.light_color
+    return xy_to_hs(
+        (color.get(Color.AttributeDefs.current_x.name) or 0) / 65535,
+        (color.get(Color.AttributeDefs.current_y.name) or 0) / 65535,
+    )
+
+
 class MelineraTuyaCluster(TuyaMCUCluster):
     """Tuya MCU cluster handling the mode-dependent datapoints."""
 
@@ -255,13 +269,64 @@ class MelineraTuyaCluster(TuyaMCUCluster):
             )
 
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
-        """Ignore brightness/colour echoes that belong to another mode."""
+        """Ignore brightness/colour echoes of another mode or of a soft off."""
+        if self.get("soft_off") and datapoint.dp in (DP_WHITE_BRIGHTNESS, DP_COLOR):
+            return
         mode = self.get("light_mode")
         if datapoint.dp == DP_WHITE_BRIGHTNESS and mode not in (None, LightMode.White):
             return
         if datapoint.dp == DP_COLOR and mode not in (None, LightMode.Color):
             return
         super()._dp_2_attr_update(datapoint)
+
+    async def soft_off(self) -> None:
+        """Darken the LEDs but keep the controller powered (it hums when off)."""
+        mode = self.get("light_mode")
+        if not self.get("soft_off"):
+            self.update_attribute(
+                "resume_mode", LightMode.White if mode is None else mode
+            )
+        self.update_attribute("soft_off", True)
+        if mode == LightMode.White:
+            await self.send_dps((DP_WHITE_BRIGHTNESS, 0))
+        else:
+            # An effect cannot be dimmed: show its last colour at zero.
+            hue, sat = current_hs(self.endpoint)
+            await self.send_dps(
+                (DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, 0))
+            )
+            self.update_attribute("light_mode", LightMode.Color)
+
+    async def resume(self) -> None:
+        """Restore the mode, colour, brightness or effect from before soft off."""
+        self.update_attribute("soft_off", False)
+        mode = self.get("resume_mode")
+        level = level_to_1000(
+            self.endpoint.level.get(LevelControl.AttributeDefs.current_level.name)
+        )
+        if mode == LightMode.Effect:
+            await self.send_dps(
+                (DP_MODE, LightMode.Effect),
+                (
+                    DP_EFFECT,
+                    effect_to_dp6(
+                        self.get("string_effect"),
+                        self.get("effect_speed"),
+                        self.get("effect_palette"),
+                    ),
+                ),
+            )
+        elif mode == LightMode.Color:
+            hue, sat = current_hs(self.endpoint)
+            await self.send_dps(
+                (DP_MODE, LightMode.Color), (DP_COLOR, encode_hsb(hue, sat, level))
+            )
+        else:
+            mode = LightMode.White
+            await self.send_dps(
+                (DP_MODE, LightMode.White), (DP_WHITE_BRIGHTNESS, level)
+            )
+        self.update_attribute("light_mode", mode)
 
     async def write_attributes(
         self,
@@ -343,11 +408,7 @@ class MelineraLevelCluster(CustomCluster, LevelControl):
         tuya: MelineraTuyaCluster = self.endpoint.tuya_manufacturer
         mode = tuya.get("light_mode")
         if mode == LightMode.Color:
-            color = self.endpoint.light_color
-            hue, sat = xy_to_hs(
-                (color.get(Color.AttributeDefs.current_x.name) or 0) / 65535,
-                (color.get(Color.AttributeDefs.current_y.name) or 0) / 65535,
-            )
+            hue, sat = current_hs(self.endpoint)
             await tuya.send_dps((DP_COLOR, encode_hsb(hue, sat, level_to_1000(level))))
         elif mode != LightMode.Effect:
             # White mode (or unknown): DP3. In effect mode it is only kept.
@@ -431,6 +492,40 @@ class MelineraLight(Light):
             else EFFECT_OFF
         )
 
+    @property
+    def _powered(self) -> bool:
+        """Whether the controller itself is on (also while soft off)."""
+        return bool(getattr(self, "_state", False))
+
+    @property
+    def is_on(self) -> bool:
+        """Return false while the string is soft off."""
+        tuya = self._tuya
+        return super().is_on and not (tuya is not None and tuya.get("soft_off"))
+
+    def handle_attribute_updated(self, event) -> None:
+        """Resume when the physical button powers a soft-off string back on."""
+        was_on = self._powered
+        super().handle_attribute_updated(event)
+        tuya = self._tuya
+        if tuya is not None and tuya.get("soft_off") and self._powered and not was_on:
+            self._device.gateway.async_create_task(self._resume_from_button())
+
+    async def _resume_from_button(self) -> None:
+        tuya = self._tuya
+        assert tuya is not None
+        await tuya.resume()
+        self.maybe_emit_state_changed_event()
+
+    async def async_turn_off(self, *, transition: float | None = None) -> None:
+        """Turn off without powering the controller down, which makes it hum."""
+        tuya = self._tuya
+        assert tuya is not None
+        if self._powered:
+            await tuya.soft_off()
+        self._effect = EFFECT_OFF
+        self.maybe_emit_state_changed_event()
+
     def recompute_capabilities(self) -> None:
         """Offer the built-in effects instead of colour loop."""
         super().recompute_capabilities()
@@ -465,6 +560,12 @@ class MelineraLight(Light):
         """Turn on, optionally starting or leaving a built-in effect."""
         tuya = self._tuya
         assert tuya is not None
+        if tuya.get("soft_off"):
+            if not self._powered:
+                await self._on_off_cluster.on()
+                self._state = True
+            await tuya.resume()
+            self._effect = self._current_effect()
         in_effect = tuya.get("light_mode") == LightMode.Effect
 
         chosen = next((e for e, n in EFFECT_NAMES.items() if n == effect), None)
@@ -562,6 +663,18 @@ class MelineraLight(Light):
         dp_id=0xF7,  # not a device DP; local attribute id 0xEFF7
         attribute_name="effect_palette",
         type=t.CharacterString,
+        access=foundation.ZCLAttributeAccess.Read,
+    )
+    .tuya_attribute(
+        dp_id=0xF8,  # not a device DP; local attribute id 0xEFF8
+        attribute_name="soft_off",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read,
+    )
+    .tuya_attribute(
+        dp_id=0xF9,  # not a device DP; local attribute id 0xEFF9
+        attribute_name="resume_mode",
+        type=LightMode,
         access=foundation.ZCLAttributeAccess.Read,
     )
     .tuya_dp_multi(
