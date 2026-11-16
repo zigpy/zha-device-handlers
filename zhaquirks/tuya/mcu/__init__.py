@@ -69,9 +69,25 @@ class TuyaClusterData(t.Struct):
     endpoint_id: int
     cluster_name: str
     cluster_attr: str
-    attr_value: int  # Maybe also others types?
+    # Typed `object` so zigpy's Struct conversion doesn't force strings through
+    # `int()`. Other non-int values (e.g. floats) keep being converted with `int()`
+    # by `normalize_attr_value`, as they were before.
+    attr_value: object
     expect_reply: bool
     manufacturer: int | UndefinedType | None
+
+
+def normalize_attr_value(value: object) -> int | str:
+    """Return the value to send: ints (incl. bools, enums, bitmaps) and strings as is.
+
+    Anything else (e.g. floats) is converted with `int()`, which is what the
+    `attr_value: int` annotation used to do for them.
+    """
+
+    if isinstance(value, (int, str)):
+        return value
+
+    return int(value)  # type: ignore[call-overload]
 
 
 class MoesBacklight(t.enum8):
@@ -259,7 +275,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tuya_commands: list[TuyaCommand] = []
         for dp in dp_mapping:
-            val = data.attr_value
+            val = normalize_attr_value(data.attr_value)
 
             if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
                 args = []
@@ -317,7 +333,9 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         endpoint = self.endpoint.device.endpoints[cluster_data.endpoint_id]
         cluster = getattr(endpoint, cluster_data.cluster_name)
-        cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
+        cluster.update_attribute(
+            cluster_data.cluster_attr, normalize_attr_value(cluster_data.attr_value)
+        )
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
