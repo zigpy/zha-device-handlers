@@ -179,7 +179,6 @@ class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
             ("_TZE200_iossyxra", "TS0601"),
             ("_TZE200_pw7mji0l", "TS0601"),
             ("_TZE200_9vpe3fl1", "TS0601"),
-            ("_TZE200_sq6affpe", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -646,9 +645,15 @@ class BorderSetting(t.enum8):
     Remove_top_bottom = 0x04
 
 
-(
-    TuyaQuirkBuilder("_TZE284_3mzb0sdz", "TS0601")
-    .applies_to("_TZE2841000000_3mzb0sdz", "TS0601")
+class ClickControl(t.enum8):
+    """Single-step motor control values."""
+
+    Up = 0x00
+    Down = 0x01
+
+
+base_zemismart_tubular_motor = (
+    TuyaQuirkBuilder()
     .tuya_cover(control_dp=1, position_state_dp=8, position_control_dp=9)
     .tuya_battery(dp_id=13)
     .tuya_enum(
@@ -704,5 +709,42 @@ class BorderSetting(t.enum8):
         fallback_name="Delete all limits",
     )
     .skip_configuration()
+)
+
+
+(
+    # Zemismart ZM16B
+    base_zemismart_tubular_motor.clone()
+    .applies_to("_TZE284_3mzb0sdz", "TS0601")
+    .applies_to("_TZE2841000000_3mzb0sdz", "TS0601")
+    .add_to_registry()
+)
+
+
+(
+    # Zemismart ZM25R3
+    base_zemismart_tubular_motor.clone()
+    .applies_to("_TZE200_sq6affpe", "TS0601")
+    .tuya_dp_attribute(
+        dp_id=20,
+        attribute_name="click_control",
+        type=ClickControl,
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Up,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="click_up",
+        translation_key="step_up",
+        fallback_name="Step up",
+    )
+    .write_attr_button(
+        attribute_name="click_control",
+        attribute_value=ClickControl.Down,
+        cluster_id=TUYA_CLUSTER_ID,
+        unique_id_suffix="click_down",
+        translation_key="step_down",
+        fallback_name="Step down",
+    )
     .add_to_registry()
 )
