@@ -122,6 +122,14 @@ class TuyaIasGas(IasZone, TuyaLocalCluster):
     }
 
 
+class TuyaIasWaterLeak(IasZone, TuyaLocalCluster):
+    """Tuya local IAS water leak cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Water_Sensor
+    }
+
+
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
 
@@ -577,6 +585,16 @@ class TuyaQuirkBuilder(QuirkBuilder):
             endpoint_id=endpoint_id,
         )
         self.adds(voc_cfg, endpoint_id=endpoint_id)
+        return self
+
+    def tuya_water_leak(self, dp_id: int, endpoint_id: int = 1) -> Self:
+        """Add a Tuya IAS water leak sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasWaterLeak,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
+            endpoint_id=endpoint_id,
+        )
         return self
 
     def tuya_attribute(

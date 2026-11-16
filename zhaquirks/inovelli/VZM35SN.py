@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import KeepAlive
 
 from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM35SNCluster
 from zhaquirks.inovelli.builder import InovelliQuirkBuilder
@@ -15,6 +16,7 @@ from zhaquirks.inovelli.builder import InovelliQuirkBuilder
     # these missing clusters are needed for button presses to generate events:
     .replaces(InovelliVZM35SNCluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .replaces(InovelliVZM35SNCluster, endpoint_id=3, cluster_type=ClusterType.Client)
+    .adds(KeepAlive, cluster_type=ClusterType.Client, endpoint_id=1)
     # number entities
     .inovelli_remote_dimming_up_speed()
     .inovelli_local_dimming_up_speed()

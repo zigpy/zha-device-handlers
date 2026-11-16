@@ -3,12 +3,53 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.tuya.mcu import TuyaClusterData, TuyaLevelControl, TuyaMCUCluster
 
 zhaquirks.setup()
+
+
+@pytest.mark.parametrize("manufacturer", ("_TZE200_a1ovdobn", "_TZE284_a1ovdobn"))
+async def test_moes_zs_d1(zigpy_device_from_v2_quirk, manufacturer):
+    """Test the MOES ZS-D1 dimmer."""
+
+    dimmer = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    endpoint = dimmer.endpoints[1]
+
+    assert endpoint.device_type == zha.DeviceType.DIMMABLE_LIGHT
+    assert isinstance(endpoint.tuya_manufacturer, TuyaMCUCluster)
+    assert isinstance(endpoint.on_off, OnOff)
+    assert isinstance(endpoint.level, TuyaLevelControl)
+
+    tuya_cluster = endpoint.tuya_manufacturer
+
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x01\x02\x00\x01\x02\x02\x00\x04\x00\x00\x03\x20"
+    )
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert endpoint.level.get(LevelControl.AttributeDefs.current_level.name) == 204
+
+    hdr, data = tuya_cluster.deserialize(b"\x09\x02\x02\x00\x02\x01\x01\x00\x01\x01")
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+    assert endpoint.on_off.get(OnOff.AttributeDefs.on_off.name) == 1
+
+    commands = tuya_cluster.from_cluster_data(
+        TuyaClusterData(
+            endpoint_id=1,
+            cluster_name=TuyaLevelControl.ep_attribute,
+            cluster_attr=LevelControl.AttributeDefs.current_level.name,
+            attr_value=204,
+            expect_reply=True,
+        )
+    )
+    assert len(commands) == 1
+    assert commands[0].datapoints[0].dp == 2
+    assert commands[0].datapoints[0].data.payload == 800
 
 
 @pytest.mark.parametrize(
