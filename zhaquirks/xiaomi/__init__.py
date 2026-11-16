@@ -428,6 +428,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.switch.n0agl1",
             "lumi.switch.n0acn2",
             "lumi.switch.acn047",
+            "lumi.switch.aeu001",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
         elif self.endpoint.device.model == "lumi.switch.agl011":

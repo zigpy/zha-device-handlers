@@ -1,15 +1,17 @@
 """Aqara Display Switch V1 EU (lumi.switch.aeu001)."""
 
+import asyncio
 import struct
 from typing import Any, Final
 
 from zigpy import types as t
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.typing import UNDEFINED, UndefinedType
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Groups, Identify, MultistateInput, OnOff, Scenes
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
+from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -281,7 +283,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         )
         weather_temperature: Final = ZCLAttributeDef(
             id=0xFFF1,  # Virtual ID (not a real device attribute)
-            type=t.int16s,  # Temperature in Celsius (e.g., -10 to 50)
+            type=t.Single,  # Temperature in Celsius
             is_manufacturer_specific=True,
         )
 
@@ -289,6 +291,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Initialize the cluster with instance-level weather sequence counter."""
         super().__init__(*args, **kwargs)
         self._weather_seq = 0
+        self._weather_lock = asyncio.Lock()
 
     def _get_ieee_bytes(self) -> bytes:
         """Extract last 6 bytes of device IEEE address for weather packets."""
@@ -300,13 +303,13 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     def _build_weather_packet(self, msg_type: tuple[int, int], payload: bytes) -> bytes:
         """Build a weather data packet for the display.
 
-        Packet format (22 bytes):
+        Packet format (25 bytes):
         - Header: 0xAA 0x71 0x13 0x44 (4 bytes)
         - Sequence: 1 byte (incrementing counter)
         - Checksum: 1 byte (0x8E - sequence)
         - Type marker: 0x08 0x41 0x10 (3 bytes)
         - Reserved: 0x00 0x00 (2 bytes)
-        - IEEE address: 6 bytes (last 6 bytes of device address)
+        - IEEE address: 6 bytes (serialized IEEE without the first 2 bytes)
         - Message type: 2 bytes (e.g., 0x0D 0x02 for condition)
         - Data marker: 0x00 0x55 (2 bytes)
         - Payload: 4 bytes
@@ -365,66 +368,64 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return self._build_weather_packet((0x00, 0x04), payload)
 
     async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
-    ) -> list:
-        """Override write_attributes to handle weather virtual attributes."""
-        # Check for weather virtual attributes
-        weather_condition_id = self.AttributeDefs.weather_condition.id
-        weather_temperature_id = self.AttributeDefs.weather_temperature.id
-        weather_data_id = self.AttributeDefs.weather_data.id
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        manufacturer: int | UndefinedType | None = UNDEFINED,
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Encode the virtual weather attributes into weather_data writes."""
+        records: list[foundation.WriteAttributesStatusRecord] = []
+        remaining: dict[str | int | foundation.ZCLAttributeDef, Any] = {}
+        weather: dict[int, list[bytes]] = {}
 
-        # Process weather_condition
-        if weather_condition_id in attributes or "weather_condition" in attributes:
-            value = attributes.pop(weather_condition_id, None) or attributes.pop(
-                "weather_condition", None
-            )
-            if value is not None:
-                # Convert enum value if needed
-                if isinstance(value, WeatherCondition):
-                    condition_code = value.value
-                elif isinstance(value, int):
-                    condition_code = value
-                else:
-                    # Try to look up by name
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr, manufacturer_code=manufacturer)
+            if attr_def == self.AttributeDefs.weather_condition:
+                if isinstance(value, str):
                     try:
-                        condition_code = WeatherCondition[value].value
+                        value = WeatherCondition[value]
                     except KeyError as exc:
                         raise ValueError(
                             f"Invalid weather condition: {value!r}"
                         ) from exc
+                weather[attr_def.id] = [
+                    self._build_condition_packet(WeatherCondition(value)),
+                    self._build_null_packet(),
+                ]
+            elif attr_def == self.AttributeDefs.weather_temperature:
+                weather[attr_def.id] = [self._build_temperature_packet(float(value))]
+            else:
+                remaining[attr] = value
 
-                # Build and send condition packet
-                condition_packet = self._build_condition_packet(condition_code)
-                await super().write_attributes(
-                    {weather_data_id: condition_packet}, manufacturer=manufacturer
-                )
-
-                # Send null packet (required for some conditions like fog)
-                null_packet = self._build_null_packet()
-                await super().write_attributes(
-                    {weather_data_id: null_packet}, manufacturer=manufacturer
-                )
-
-        # Process weather_temperature
-        if weather_temperature_id in attributes or "weather_temperature" in attributes:
-            value = attributes.pop(weather_temperature_id, None) or attributes.pop(
-                "weather_temperature", None
+        for attrid, packets in weather.items():
+            status = foundation.Status.SUCCESS
+            async with self._weather_lock:
+                for packet in packets:
+                    result = await super().write_attributes(
+                        {self.AttributeDefs.weather_data.id: packet},
+                        manufacturer=manufacturer,
+                        update_cache=False,
+                    )
+                    failed = [
+                        r for r in result[0] if r.status != foundation.Status.SUCCESS
+                    ]
+                    if failed:
+                        status = failed[0].status
+                        break
+            records.append(
+                foundation.WriteAttributesStatusRecord(status=status, attrid=attrid)
             )
-            if value is not None:
-                temperature = float(value)
-                temp_packet = self._build_temperature_packet(temperature)
-                await super().write_attributes(
-                    {weather_data_id: temp_packet}, manufacturer=manufacturer
-                )
 
-        # Process remaining attributes normally
-        if attributes:
-            return await super().write_attributes(attributes, manufacturer=manufacturer)
+        if remaining:
+            result = await super().write_attributes(
+                remaining, manufacturer=manufacturer, **kwargs
+            )
+            records.extend(result[0])
 
-        return [0]  # Success
+        return [records]
 
 
-(
+builder = (
     QuirkBuilder("Aqara", "lumi.switch.aeu001")
     # Endpoint 1: Primary switch with metering
     .replaces_endpoint(1, device_type=0x010A)
@@ -541,106 +542,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.AttributeDefs.startup_on_off.name,
         StartupOnOff,
         OppleCluster.cluster_id,
-        translation_key="startup_on_off",
-        fallback_name="Power-on behavior",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_operation_mode.name,
-        ButtonOperationMode,
-        OppleCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="button_operation_mode_1",
-        fallback_name="Button 1 operation mode",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_operation_mode.name,
-        ButtonOperationMode,
-        OppleCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="button_operation_mode_2",
-        fallback_name="Button 2 operation mode",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_operation_mode.name,
-        ButtonOperationMode,
-        OppleCluster.cluster_id,
-        endpoint_id=3,
-        translation_key="button_operation_mode_3",
-        fallback_name="Button 3 operation mode",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_operation_mode.name,
-        ButtonOperationMode,
-        OppleCluster.cluster_id,
-        endpoint_id=4,
-        translation_key="button_operation_mode_4",
-        fallback_name="Button 4 operation mode",
-    )
-    # Button relay assignment (which relay each button controls)
-    .enum(
-        OppleCluster.AttributeDefs.button_relay.name,
-        ButtonRelay,
-        OppleCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="button_relay_1",
-        fallback_name="Button 1 relay",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_relay.name,
-        ButtonRelay,
-        OppleCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="button_relay_2",
-        fallback_name="Button 2 relay",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_relay.name,
-        ButtonRelay,
-        OppleCluster.cluster_id,
-        endpoint_id=3,
-        translation_key="button_relay_3",
-        fallback_name="Button 3 relay",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_relay.name,
-        ButtonRelay,
-        OppleCluster.cluster_id,
-        endpoint_id=4,
-        translation_key="button_relay_4",
-        fallback_name="Button 4 relay",
-    )
-    # Button layout assignment (what each button position shows)
-    .enum(
-        OppleCluster.AttributeDefs.button_layout.name,
-        ButtonLayout,
-        OppleCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="button_layout_1",
-        fallback_name="Button 1 layout",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_layout.name,
-        ButtonLayout,
-        OppleCluster.cluster_id,
-        endpoint_id=2,
-        translation_key="button_layout_2",
-        fallback_name="Button 2 layout",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_layout.name,
-        ButtonLayout,
-        OppleCluster.cluster_id,
-        endpoint_id=3,
-        translation_key="button_layout_3",
-        fallback_name="Button 3 layout",
-    )
-    .enum(
-        OppleCluster.AttributeDefs.button_layout.name,
-        ButtonLayout,
-        OppleCluster.cluster_id,
-        endpoint_id=4,
-        translation_key="button_layout_4",
-        fallback_name="Button 4 layout",
+        translation_key="power_on_state",
+        fallback_name="Power on state",
     )
     # Elder mode (larger interface elements)
     .enum(
@@ -669,8 +572,40 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         translation_key="double_tap_override",
         fallback_name="Double tap override",
     )
-    .add_to_registry()
 )
+
+for endpoint_id in range(1, 5):
+    builder = (
+        builder.enum(
+            OppleCluster.AttributeDefs.button_operation_mode.name,
+            ButtonOperationMode,
+            OppleCluster.cluster_id,
+            endpoint_id=endpoint_id,
+            translation_key="button_operation_mode_id",
+            translation_placeholders={"id": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id} operation mode",
+        )
+        .enum(
+            OppleCluster.AttributeDefs.button_relay.name,
+            ButtonRelay,
+            OppleCluster.cluster_id,
+            endpoint_id=endpoint_id,
+            translation_key="button_relay_id",
+            translation_placeholders={"id": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id} relay",
+        )
+        .enum(
+            OppleCluster.AttributeDefs.button_layout.name,
+            ButtonLayout,
+            OppleCluster.cluster_id,
+            endpoint_id=endpoint_id,
+            translation_key="button_layout_id",
+            translation_placeholders={"id": str(endpoint_id)},
+            fallback_name=f"Button {endpoint_id} layout",
+        )
+    )
+
+builder.add_to_registry()
 
 
 # Example service call to set button/switch names or icons:
@@ -688,7 +623,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 #   attribute: 0x026F     # switch_icon (0x026F) or switch_name (0x026E) for switch mode
 #                         # button_icon (0x026C) or button_name (0x026B) for button mode
 #   value: "light_bulb"   # Icon name or custom text label
-#   manufacturer: 4447    # 0x115F (Aqara)
 #
 #
 # Example service calls to set weather display (for screensaver_style = WeatherConditions):
@@ -702,7 +636,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 #   cluster_type: in
 #   attribute: 0xFFF0     # weather_condition (virtual attribute)
 #   value: 4              # WeatherCondition enum value (see below)
-#   manufacturer: 4447    # 0x115F (Aqara)
 #
 # Set weather temperature:
 # service: zha.set_zigbee_cluster_attribute
@@ -712,8 +645,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 #   cluster_id: 64704     # 0xFCC0
 #   cluster_type: in
 #   attribute: 0xFFF1     # weather_temperature (virtual attribute)
-#   value: 22             # Temperature in Celsius
-#   manufacturer: 4447    # 0x115F (Aqara)
+#   value: "22.5"         # Temperature in Celsius, quoted to keep decimals
 #
 # WeatherCondition values:
 #   Sunny=0, Clear=1, Fair=3, Cloudy=4, PartlyCloudy=5, MostlyCloudy=7,
