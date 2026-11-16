@@ -1,5 +1,6 @@
 """Tests for the Lidl Melinera HG06467 string lights quirk."""
 
+import asyncio
 import colorsys
 from unittest import mock
 
@@ -14,6 +15,9 @@ from tests.common import wait_for_zigpy_tasks
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.lidl.hg06467 import (
+    DP_COLOR as DP_COLOR_DP,
+    DP_MODE,
+    DP_WHITE_BRIGHTNESS as DP_WHITE,
     EFFECT_NAMES,
     LightMode,
     MelineraColorCluster,
@@ -45,6 +49,13 @@ def _dev(zigpy_device_from_v2_quirk):
 
 
 def _report(cluster, dp, value):
+    """Simulate the string's own change (data report, 0x02)."""
+    cmd = TuyaCommand(status=0, tsn=1, datapoints=[TuyaDatapointData(dp, value)])
+    assert cluster.handle_set_data_response(cmd) == foundation.Status.SUCCESS
+
+
+def _echo(cluster, dp, value):
+    """Simulate the string echoing a write (data response, 0x01)."""
     cmd = TuyaCommand(status=0, tsn=1, datapoints=[TuyaDatapointData(dp, value)])
     assert cluster.handle_get_data(cmd) == foundation.Status.SUCCESS
 
@@ -331,3 +342,45 @@ async def test_soft_off(zigpy_device_from_v2_quirk):
             await gateway.async_block_till_done()
             assert (2, LightMode.White) in _sent(req)
             assert light.is_on
+
+
+async def test_stale_echoes_ignored(zigpy_device_from_v2_quirk):
+    """Test echoes of superseded writes do not overwrite the state."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    ep = dev.endpoints[1]
+    tuya = ep.tuya_manufacturer
+    ep.level.update_attribute("current_level", 254)
+
+    with mock.patch.object(
+        tuya.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ):
+        # rapid off/on: white at zero, then colour again
+        await tuya.send_dps((DP_MODE, LightMode.White), (DP_WHITE, 0))
+        await tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8"))
+
+    # late echoes of the first write are skipped
+    _echo(tuya, DP_MODE, LightMode.White)
+    assert tuya.get("light_mode") != LightMode.White
+    # the echo of the latest write is applied
+    _echo(tuya, DP_MODE, LightMode.Color)
+    assert tuya.get("light_mode") == LightMode.Color
+    # the string's own change (button) is always applied
+    _report(tuya, DP_MODE, LightMode.Effect)
+    assert tuya.get("light_mode") == LightMode.Effect
+
+
+async def test_overlapping_sends_not_interleaved(zigpy_device_from_v2_quirk):
+    """Test two command sequences sent at once are not mixed."""
+    dev = _dev(zigpy_device_from_v2_quirk)
+    tuya = dev.endpoints[1].tuya_manufacturer
+
+    async def slow_request(*args, **kwargs):
+        await asyncio.sleep(0)
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(tuya.endpoint, "request", side_effect=slow_request) as req:
+        await asyncio.gather(
+            tuya.send_dps((DP_WHITE, 0), (DP_MODE, LightMode.White), (DP_WHITE, 0)),
+            tuya.send_dps((DP_MODE, LightMode.Color), (DP_COLOR_DP, "007803e803e8")),
+        )
+    assert [dp for dp, _ in _sent(req)] == [3, 2, 3, 2, 5]

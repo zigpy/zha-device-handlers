@@ -44,6 +44,7 @@ effect. The physical button still switches the controller fully.
 
 from __future__ import annotations
 
+import asyncio
 import colorsys
 from typing import Any
 
@@ -253,21 +254,56 @@ def current_hs(endpoint) -> tuple[float, float]:
     )
 
 
+def _dp_key(value: Any) -> str:
+    """Return a comparable form of a datapoint value, sent or received."""
+    return value.lower() if isinstance(value, str) else str(int(value))
+
+
 class MelineraTuyaCluster(TuyaMCUCluster):
     """Tuya MCU cluster handling the mode-dependent datapoints."""
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._send_lock = asyncio.Lock()
+        self._last_sent: dict[int, str] = {}
+
+    def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
+        """Skip echoes of superseded writes, as Zigbee2MQTT does.
+
+        The string echoes every write with a data response (0x01), sometimes
+        after a newer write was sent; only the echo of the latest write per
+        datapoint is applied. Its own changes (the button) arrive as reports
+        (0x02, handle_set_data_response) and are always applied.
+        """
+        command.datapoints = [
+            record
+            for record in command.datapoints
+            if record.dp not in self._last_sent
+            or _dp_key(record.data.payload) == self._last_sent[record.dp]
+        ]
+        return super().handle_get_data(command)
+
+    def handle_set_data_response(self, command: TuyaCommand) -> foundation.Status:
+        """Apply the string's own changes (reports)."""
+        return super().handle_get_data(command)
+
+    handle_active_status_report = handle_set_data_response
+
     async def send_dps(self, *datapoints: tuple[int, Any]) -> None:
-        """Send datapoints to the string, in order."""
-        for dp, value in datapoints:
-            await self.command(
-                self.mcu_write_command,
-                TuyaCommand(
-                    status=0,
-                    tsn=self.endpoint.device.application.get_sequence(),
-                    datapoints=[TuyaDatapointData(dp, value)],
-                ),
-                expect_reply=False,
-            )
+        """Send datapoints to the string, in order and not interleaved."""
+        async with self._send_lock:
+            for dp, value in datapoints:
+                self._last_sent[dp] = _dp_key(value)
+                await self.command(
+                    self.mcu_write_command,
+                    TuyaCommand(
+                        status=0,
+                        tsn=self.endpoint.device.application.get_sequence(),
+                        datapoints=[TuyaDatapointData(dp, value)],
+                    ),
+                    expect_reply=False,
+                )
 
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Ignore brightness/colour echoes of another mode or of a soft off."""
