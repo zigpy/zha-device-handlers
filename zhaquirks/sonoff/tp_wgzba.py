@@ -841,7 +841,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             id=EXTERNAL_TEMPERATURE_INPUT_ATTR_ID, type=t.int16s, access="rw"
         )
         external_temperature_sensor: Final = ZCLAttributeDef(
-            id=EXTERNAL_TEMPERATURE_SENSOR_ATTR_ID, type=t.Bool, access="rw"
+            # Match the manufacturer code used by the persisted switch state.
+            id=EXTERNAL_TEMPERATURE_SENSOR_ATTR_ID,
+            type=t.Bool,
+            access="rw",
+            manufacturer_code=0x1286,
         )
         remote_temperature_source1: Final = ZCLAttributeDef(
             id=REMOTE_TEMPERATURE_SOURCE_ATTR_IDS[0], type=t.int16s, access="rw"

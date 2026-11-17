@@ -151,6 +151,30 @@ async def test_tp_wgzba_external_temperature_mode_sensor(tp_wgzba_device):
             assert sensor.state.native_value == expected_mode
 
 
+@pytest.mark.parametrize(
+    ("cached_value", "expected_mode"), [(0, "internal_sensor"), (1, "external_sensor")]
+)
+async def test_tp_wgzba_temperature_source_mode_restores_database_cache(
+    tp_wgzba_device, cached_value, expected_mode
+):
+    """Restore the temperature source mode from the persisted manufacturer key."""
+    cluster = tp_wgzba_device.endpoints[1].sonoff_private
+    switch = cluster.AttributeDefs.external_temperature_sensor
+
+    # Match Zigpy's startup lookup of the attribute ID and manufacturer code.
+    attr_def = cluster.find_attribute(switch.id, manufacturer_code=0x1286)
+    cluster._attr_cache.set_value(attr_def, cached_value)
+
+    entry = DEVICE_REGISTRY.match_entry(tp_wgzba_device)
+    zha_device = entry.zha_device_factory(tp_wgzba_device, mock.MagicMock())
+    (sensor,) = (
+        entity
+        for entity in zha_device.discover_entities()
+        if entity.translation_key == "temperature_source_mode"
+    )
+    assert sensor.state.native_value == expected_mode
+
+
 async def test_tp_wgzba_external_temperature_switch_restores_cached_intent(
     tp_wgzba_device,
 ):
@@ -174,7 +198,7 @@ async def test_tp_wgzba_external_temperature_switch_restores_cached_intent(
     assert not failed
 
     cluster.update_attribute(linkage.id, payload)
-    assert cluster.get(switch.name) is True
+    assert cluster.get(switch.name) == t.Bool.true
 
     response = cluster._read_record(linkage.id, payload)
 
@@ -205,7 +229,7 @@ async def test_tp_wgzba_external_temperature_switch_restores_cached_intent(
         read_raw.assert_awaited_once()
     assert values == {defs.remote_temperature_source1.name: 1680, switch.name: False}
     assert not failed
-    assert cluster.get(switch.name) is False
+    assert cluster.get(switch.name) == t.Bool.false
 
 
 def test_tp_wgzba_system_mode_mapping():
