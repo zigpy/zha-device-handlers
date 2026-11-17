@@ -69,7 +69,6 @@ from zhaquirks.const import (
     ZONE_STATUS_CHANGE_COMMAND,
     BatterySize,
 )
-from zhaquirks.device import BaseCustomDevice
 from zhaquirks.xiaomi import (
     AQARA,
     LUMI,
@@ -1147,32 +1146,16 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
 
 
-MAEU01_SIGNATURES = (
-    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,
-    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt1,
-    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt2,
-    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt3,
-)
+class PlugMAEU01FullSignature:
+    """MAEU01 that reported all of its clusters, from ZHA's diagnostics."""
 
-
-def maeu01_device(zigpy_device_from_quirk, signature=MAEU01_SIGNATURES[1]):
-    """Create a MAEU01 plug with one of the signatures the v1 quirk matched."""
-    raw_device = zigpy_device_from_quirk(signature, apply_quirk=False)
-    raw_device.model = "lumi.plug.maeu01"
-    for endpoint in raw_device.endpoints.values():
-        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
-
-    return DEVICE_REGISTRY.resolve(raw_device)
-
-
-def test_xiaomi_maeu01_unknown_signature(zigpy_device_from_v2_quirk):
-    """Test a MAEU01 signature the v1 quirk didn't match stays unquirked."""
-    device = zigpy_device_from_v2_quirk(
-        LUMI,
-        "lumi.plug.maeu01",
-        cluster_ids={
-            1: dict.fromkeys(
-                [
+    signature = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    0x0000,
                     0x0002,
                     0x0003,
                     0x0004,
@@ -1183,18 +1166,49 @@ def test_xiaomi_maeu01_unknown_signature(zigpy_device_from_v2_quirk):
                     0x0B04,
                     0xFCC0,
                 ],
-                ClusterType.Server,
-            ),
-            21: {0x000C: ClusterType.Server},
-        },
-    )
+                OUTPUT_CLUSTERS: [0x000A, 0x0019],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [0x000C],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,
+                DEVICE_TYPE: 0x0061,
+                OUTPUT_CLUSTERS: [0x0021],
+            },
+        }
+    }
 
-    assert not isinstance(device, BaseCustomDevice)
+
+# The signatures the v1 quirk matched, and one it didn't
+MAEU01_SIGNATURES = (
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt1,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt2,
+    zhaquirks.xiaomi.aqara.plug_eu.PlugMMEU01Alt3,
+    PlugMAEU01FullSignature,
+)
+
+
+def maeu01_device(zigpy_device_from_quirk, signature=MAEU01_SIGNATURES[1]):
+    """Create a MAEU01 plug with one of the signatures the v1 quirk matched."""
+    raw_device = zigpy_device_from_quirk(signature, apply_quirk=False)
+    raw_device.manufacturer = LUMI
+    raw_device.model = "lumi.plug.maeu01"
+    for endpoint in raw_device.endpoints.values():
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
+
+    return DEVICE_REGISTRY.resolve(raw_device)
 
 
 @pytest.mark.parametrize("signature", MAEU01_SIGNATURES)
 def test_xiaomi_maeu01_signatures(zigpy_device_from_quirk, signature):
-    """Test the MAEU01 quirk turns every known signature into the same device."""
+    """Test the MAEU01 quirk turns every known signature into the same device.
+
+    The plug doesn't always report all of its endpoints and clusters.
+    """
     device = maeu01_device(zigpy_device_from_quirk, signature)
 
     assert set(device.endpoints) == {0, 1, 21, 242}

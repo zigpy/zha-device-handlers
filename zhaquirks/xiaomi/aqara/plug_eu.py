@@ -31,7 +31,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import signature_matches
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
@@ -345,17 +344,10 @@ class OppleClusterMAEU01(OppleCluster):
         )
 
 
-# The signatures the v1 quirk matched. ZHA has diagnostics of a MAEU01 with both
-# the Aqara and the metering clusters on endpoint 1, which was never quirked.
-MAEU01_SIGNATURES = tuple(
-    signature_matches(quirk.signature)
-    for quirk in (PlugMMEU01, PlugMMEU01Alt1, PlugMMEU01Alt2, PlugMMEU01Alt3)
-)
-
 (
     QuirkBuilder(LUMI, "lumi.plug.maeu01")
-    .filter(lambda device: any(matches(device) for matches in MAEU01_SIGNATURES))
-    # Same device as the v1 quirk produced for all known signatures
+    # The plug doesn't always report all of its endpoints and clusters during the
+    # interview. Add what's missing, and drop endpoints 22 and 31 as the v1 quirk did.
     .removes_endpoint(22)
     .removes_endpoint(31)
     .adds_endpoint(21, device_type=zha.DeviceType.SMART_PLUG)
