@@ -4,7 +4,12 @@ from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    BaseCommandDefs,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+)
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
@@ -125,7 +130,7 @@ class SonoffCustomCluster(CustomCluster):
         result += await super().write_attributes(attributes, **kwargs)
         return result
 
-    class ServerCommandDefs(CustomCluster.ServerCommandDefs):
+    class ServerCommandDefs(BaseCommandDefs):
         """Sonoff manufacturer specific server commands."""
 
         clear_energy_consumption: Final = ZCLCommandDef(
