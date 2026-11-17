@@ -1,6 +1,5 @@
 """Heiman HS1SA-E smoke sensor."""
 
-from zha.quirks import SIREN_BASIC
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -125,12 +124,22 @@ class CustomHeimanCluster(CustomCluster):
     .applies_to("HEIMAN", "HS1SA-E-PLUS")
     .friendly_name(manufacturer="HEIMAN", model="HS1SA-E-PLUS")  # Used by newer fw
     .replaces(CustomHeimanCluster)
-    .exposes_feature(SIREN_BASIC)
-    .change_entity_metadata(
-        endpoint_id=1,
-        cluster_id=IasWd.cluster_id,
-        new_primary=False,
-        new_entity_category=EntityType.CONFIG,
+    # Replace the IAS WD siren (fixed tone, ZHA-limited to ~30 s) with an
+    # attribute-controlled siren that supports tone selection and sounds until
+    # turned off. Reuse the IAS WD siren's unique_id so existing entities migrate.
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=IasWd.cluster_id)
+    .siren(
+        CustomHeimanCluster.AttributeDefs.siren_for_automation.name,
+        CustomHeimanCluster.cluster_id,
+        available_tones={
+            SmokeSirenEnum.Smoke_siren: "Smoke siren",
+            SmokeSirenEnum.CO_siren: "CO siren",
+        },
+        off_value=SmokeSirenEnum.Stop,
+        default_tone=SmokeSirenEnum.Smoke_siren,
+        unique_id_suffix=str(IasWd.cluster_id),
+        translation_key="siren",
+        fallback_name="Siren",
     )
     .switch(
         CustomHeimanCluster.AttributeDefs.heartbeat_indicator.name,
@@ -138,7 +147,6 @@ class CustomHeimanCluster(CustomCluster):
         translation_key="heartbeat_indicator",
         fallback_name="Heartbeat indicator",
     )
-    # XXX: siren_for_automation should be added as a siren entity, needs zigpy API
     .enum(
         CustomHeimanCluster.AttributeDefs.chamber_contamination.name,
         ChamberContaminationEnum,
