@@ -18,7 +18,7 @@ RMS_VOLTAGE = ElectricalMeasurement.AttributeDefs.rms_voltage.id
     (
         # Older firmware: 4-byte value, current (mA) << 16 | voltage (0.1 V)
         (
-            bytes.fromhex("09 28 02 00 c8 06 02 00 04 07 fc 09 66"),
+            bytes.fromhex("09 28 02 00 c8 06 00 00 04 07 fc 09 66"),
             2044,
             240.6,
         ),
