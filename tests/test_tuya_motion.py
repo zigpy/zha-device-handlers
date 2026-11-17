@@ -69,6 +69,7 @@ zhaquirks.setup()
         ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),
+        ("AY204T", "AOYAN", ZCL_TUYA_MOTION),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
@@ -201,3 +202,32 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 
     assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
     assert ep.tuya_manufacturer.get("fading_time") == 3
+
+
+@pytest.mark.parametrize(
+    "illum_msg,exp_value",
+    [
+        # DP 106, datatype 0x02 (value), 4 byte BE: 100 lx -> 10000*log10(100)+1
+        (b"\tL\x01\x00\x05\x6a\x02\x00\x04\x00\x00\x00\x64", 20001),
+    ],
+)
+async def test_ay204t_illuminance(zigpy_device_from_v2_quirk, illum_msg, exp_value):
+    """Test the AOYAN AY204T illuminance datapoint (DP 106)."""
+    quirked_device = zigpy_device_from_v2_quirk("AY204T", "AOYAN")
+    ep = quirked_device.endpoints[1]
+
+    assert ep.illuminance is not None
+    assert isinstance(ep.illuminance, IlluminanceMeasurement)
+
+    illum_listener = ClusterListener(ep.illuminance)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(illum_msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    zcl_illum_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    assert len(illum_listener.attribute_updates) == 1
+    assert illum_listener.attribute_updates[0][0] == zcl_illum_id
+    assert illum_listener.attribute_updates[0][1] == exp_value
