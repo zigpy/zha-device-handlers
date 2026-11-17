@@ -113,28 +113,19 @@ class TuyaSmartRemote0044TI(CustomDevice, Tuya4ButtonTriggers):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
         },
@@ -205,28 +196,19 @@ class TuyaSmartRemote0044TO(CustomDevice, Tuya4ButtonTriggers):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
         },
@@ -299,28 +281,19 @@ class TuyaSmartRemote0044TOPlusA(CustomDevice, Tuya4ButtonTriggers):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    TuyaNoBindPowerConfigurationCluster,
-                    TuyaSmartRemoteOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
                 OUTPUT_CLUSTERS: [],
             },
         },

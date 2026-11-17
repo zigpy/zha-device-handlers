@@ -2149,3 +2149,22 @@ async def test_ts000f_attribute_report(
     attr_id = onoff_cluster.attributes_by_name[attribute].id
     assert listener.attribute_updates == [(attr_id, expected_value)]
     assert isinstance(listener.attribute_updates[0][1], type(expected_value))
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.tuya.ts0044.TuyaSmartRemote0044TI,
+        zhaquirks.tuya.ts0044.TuyaSmartRemote0044TO,
+        zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusA,
+        zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusB,
+    ),
+)
+def test_ts0044_single_battery_endpoint(zigpy_device_from_quirk, quirk):
+    """Test that only endpoint 1 exposes the battery cluster on TS0044 remotes."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    assert PowerConfiguration.cluster_id in device.endpoints[1].in_clusters
+    for ep_id in (2, 3, 4):
+        assert PowerConfiguration.cluster_id not in device.endpoints[ep_id].in_clusters
