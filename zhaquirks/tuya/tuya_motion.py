@@ -1814,7 +1814,7 @@ class TuyaTemperatureUnit(t.enum8):
     .tuya_number(
         dp_id=105,
         attribute_name="temperature_calibration",
-        type=t.int16_t,
+        type=t.int16s,
         min_value=-20,
         max_value=20,
         step=1,
@@ -1827,7 +1827,7 @@ class TuyaTemperatureUnit(t.enum8):
     .tuya_number(
         dp_id=104,
         attribute_name="humidity_calibration",
-        type=t.int16_t,
+        type=t.int16s,
         min_value=-20,
         max_value=20,
         step=1,
