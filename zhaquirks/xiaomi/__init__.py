@@ -420,6 +420,8 @@ class XiaomiCluster(CustomCluster):
                 }
             )
         elif self.endpoint.device.model in [
+            "lumi.ctrl_ln1.aq1",
+            "lumi.ctrl_ln2.aq1",
             "lumi.plug",
             "lumi.plug.maus01",
             "lumi.plug.maeu01",
