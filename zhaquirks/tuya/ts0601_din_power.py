@@ -1,9 +1,14 @@
 """Tuya Din Power Meter."""
 
-from typing import Final
+from __future__ import annotations
+
+import logging
+from typing import Any, Final
 
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.typing import AddressingMode
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -50,6 +55,12 @@ HIKING_FREQUENCY_ATTR = 0x0269
 HIKING_POWER_FACTOR_ATTR = 0x026F
 HIKING_TOTAL_REACTIVE_ATTR = 0x026D
 HIKING_REACTIVE_POWER_ATTR = 0x026E
+
+# Newer firmware sends datapoint 6 as a 15-byte raw block instead of a 4-byte value
+HIKING_VOLTAGE_CURRENT_LEGACY_LEN = 4
+HIKING_VOLTAGE_CURRENT_RAW_LEN = 15
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
@@ -224,6 +235,59 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.electrical_measurement.reactive_power_reported(value)
         elif attrid == HIKING_POWER_FACTOR_ATTR:
             self.endpoint.electrical_measurement.power_factor_reported(value / 10)
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Decode the 15-byte voltage/current datapoint sent by newer firmware.
+
+        Raw block layout (big endian):
+            bytes 0-3   active power, W
+            bytes 4-7   reactive power, var
+            bytes 8-9   power factor, x1000
+            bytes 10-12 current, mA
+            bytes 13-14 voltage, x0.1 V
+        Active power, reactive power and power factor also arrive as separate
+        datapoints, so only current and voltage are taken from the block.
+        """
+        if (
+            hdr.command_id
+            in (
+                TuyaManufClusterAttributes.ClientCommandDefs.get_data.id,
+                TuyaManufClusterAttributes.ClientCommandDefs.set_data_response.id,
+            )
+            and args
+            and args[0].command_id == HIKING_VOLTAGE_CURRENT_ATTR
+            and args[0].data
+            and args[0].data[0] != HIKING_VOLTAGE_CURRENT_LEGACY_LEN
+        ):
+            # The MCU expects a default response, as in the parent implementation
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+            # data[0] is the payload length, the rest is the payload in wire order
+            raw = bytes(args[0].data[1:])
+            if len(raw) != HIKING_VOLTAGE_CURRENT_RAW_LEN:
+                _LOGGER.debug(
+                    "[0x%04x:%s:0x%04x] Unexpected voltage/current payload: %s",
+                    self.endpoint.device.nwk,
+                    self.endpoint.endpoint_id,
+                    self.cluster_id,
+                    raw.hex(" "),
+                )
+                return
+
+            current = int.from_bytes(raw[10:13], "big")
+            voltage = int.from_bytes(raw[13:15], "big")
+            self.endpoint.electrical_measurement.current_reported(current)
+            self.endpoint.electrical_measurement.voltage_reported(voltage / 10)
+            return
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class TuyaPowerMeter(TuyaSwitch):
