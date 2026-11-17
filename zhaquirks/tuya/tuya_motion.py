@@ -10,16 +10,16 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks import MotionWithReset
 from zhaquirks.builder import (
     LIGHT_LUX,
+    PERCENTAGE,
     BinarySensorDeviceClass,
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
-    PERCENTAGE,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
-    UnitOfTime,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -1741,6 +1741,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 class TuyaTemperatureUnit(t.enum8):
     """Tuya temperature unit."""
