@@ -64,6 +64,7 @@ STOP = "stop"  # To constants
 
 # ---------------------------------------------------------
 # Value for dp_type
+# https://developer.tuya.com/en/docs/iot/tuya-zigbee-universal-docking-access-standard?id=K9ik6zvofpzql
 # ---------------------------------------------------------
 # ID    Name            Description
 # ---------------------------------------------------------
@@ -80,22 +81,29 @@ TUYA_DP_TYPE_STRING = 0x0300
 TUYA_DP_TYPE_ENUM = 0x0400
 TUYA_DP_TYPE_FAULT = 0x0500
 # ---------------------------------------------------------
-# Value for dp_identifier (These are device specific)
+# Value for dp_identifier. These are device type and potentially device specific.
+# The ones we use here are common for some Tuya cover variants, but are not universal.
+# https://developer.tuya.com/en/docs/iot/f?id=K9gf46o5mtfyc
 # ---------------------------------------------------------
 # ID    Name               Type    Description
 # ---------------------------------------------------------
 # 0x01  control            enum    open, stop, close, continue
 # 0x02  percent_control    value   0-100% control
 # 0x03  percent_state      value   Report from motor about current percentage
-# 0x04  control_back       enum    Configures motor direction (untested)
-# 0x05  work_state         enum    Motor Direction Setting
+# 0x05  control_back       enum    Configures motor direction
 # 0x06  situation_set      enum    Configures if 100% equals to fully closed or fully open (untested)
 # 0x07  fault              bitmap  Anything but 0 means something went wrong (untested)
+# 0x0D  ?                  value   Battery charge percentage
+# 0x10  border             enum    set open limit, set close limit, clear open, clear close, clear both
+# 0x14  click control      enum    move up/open a small step, move down/close
 TUYA_DP_ID_CONTROL = 0x01
 TUYA_DP_ID_PERCENT_CONTROL = 0x02
 TUYA_DP_ID_PERCENT_STATE = 0x03
 TUYA_DP_ID_DIRECTION_CHANGE = 0x05
 TUYA_DP_ID_COVER_INVERTED = 0x06
+TUYA_DP_ID_BATTERY_PERCENT = 0x0D
+TUYA_DP_ID_LIMIT_SETTINGS = 0x10
+TUYA_DP_ID_SMALL_STEP = 0x14
 # ---------------------------------------------------------
 # Window Cover Server Commands
 # ---------------------------------------------------------
