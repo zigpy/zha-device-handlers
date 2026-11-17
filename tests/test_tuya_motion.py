@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
@@ -201,3 +201,65 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 
     assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
     assert ep.tuya_manufacturer.get("fading_time") == 3
+
+
+@pytest.mark.asyncio
+async def test_ay204t_presence(zigpy_device_from_v2_quirk):
+    """Test the AOYAN AY204T presence datapoint (DP 1)."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        "AOYAN",
+        "AY204T",
+        cluster_ids={1: {TuyaMCUCluster.cluster_id: ClusterType.Server}},
+    )
+    ep = quirked_device.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    assert ep.occupancy is not None
+    assert isinstance(ep.occupancy, OccupancySensing)
+
+    occupancy_listener = ClusterListener(ep.occupancy)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(ZCL_TUYA_MOTION)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    zcl_occupancy_id = OccupancySensing.AttributeDefs.occupancy.id
+
+    assert len(occupancy_listener.attribute_updates) == 1
+    assert occupancy_listener.attribute_updates[0][0] == zcl_occupancy_id
+    assert (
+        occupancy_listener.attribute_updates[0][1]
+        == OccupancySensing.Occupancy.Occupied
+    )
+
+
+@pytest.mark.asyncio
+async def test_ay204t_illuminance(zigpy_device_from_v2_quirk):
+    """Test the AOYAN AY204T illuminance datapoint (DP 106)."""
+    quirked_device = zigpy_device_from_v2_quirk(
+        "AOYAN",
+        "AY204T",
+        cluster_ids={1: {TuyaMCUCluster.cluster_id: ClusterType.Server}},
+    )
+    ep = quirked_device.endpoints[1]
+
+    assert ep.illuminance is not None
+    assert isinstance(ep.illuminance, IlluminanceMeasurement)
+
+    illum_listener = ClusterListener(ep.illuminance)
+
+    # DP 106, datatype 0x02 (value), 4 byte big endian: 100 lx
+    # -> 10000 * log10(100) + 1 = 20001
+    message = b"\tL\x01\x00\x05\x6a\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    zcl_illum_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    assert len(illum_listener.attribute_updates) == 1
+    assert illum_listener.attribute_updates[0][0] == zcl_illum_id
+    assert illum_listener.attribute_updates[0][1] == 20001
