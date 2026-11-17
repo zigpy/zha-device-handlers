@@ -41,6 +41,7 @@ from zha.quirks import (
 )
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
+import zigpy.endpoint
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
@@ -263,6 +264,10 @@ class AddEndpoint:
         endpoint = device.add_endpoint(self.endpoint_id)
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
+        # The device doesn't have this endpoint, so there is nothing to interview.
+        # Left as NEW, zigpy would treat the device as not initialized and
+        # interview and reconfigure it again on every start.
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
 
         return device
 
@@ -294,6 +299,8 @@ class ReplaceEndpoint:
             endpoint = device.endpoints[self.endpoint_id]
         else:
             endpoint = device.add_endpoint(self.endpoint_id)
+            # Not on the device, see `AddEndpoint`
+            endpoint.status = zigpy.endpoint.Status.ZDO_INIT
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
 

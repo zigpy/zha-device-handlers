@@ -15,6 +15,7 @@ from zigpy.const import (
     SIG_MODELS_INFO,
 )
 from zigpy.device import Device
+import zigpy.endpoint
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -659,6 +660,10 @@ async def test_quirks_v2_endpoints(device_mock):
 
     # verify cluster was added to endpoint 4
     assert quirked.endpoints[4].in_clusters.get(OnOff.cluster_id) is not None
+
+    # verify added endpoints don't need an interview, as the device doesn't have them
+    assert quirked.endpoints[4].status == zigpy.endpoint.Status.ZDO_INIT
+    assert quirked.endpoints[5].status == zigpy.endpoint.Status.ZDO_INIT
 
     # verify endpoint 5 was added with default profile id and device type using replaces
     assert 5 in quirked.endpoints
