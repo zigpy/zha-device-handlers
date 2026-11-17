@@ -26,7 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legacy import CustomDevice
+from zhaquirks.legacy import CustomDevice, signature_matches
 from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaNewManufCluster,
@@ -38,6 +38,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class Plug(EnchantedDevice):
@@ -1530,7 +1531,12 @@ class Plug_2AC_var03(CustomDevice):
 
 
 class Plug_CB_Metering(EnchantedDevice):
-    """Circuit breaker with monitoring, e.g. Tongou TO-Q-SY1-JZT. First one using this definition was _TZ3000_qeuvnohg."""
+    """Circuit breaker with monitoring.
+
+    Written for the Tongou TO-Q-SY1-JZT (_TZ3000_qeuvnohg), which now has its own
+    v2 quirk at the end of this file that keeps TemperatureMeasurement so its reports
+    get acknowledged. Other TS011F breakers with this signature still use this one.
+    """
 
     quirk_id = TUYA_PLUG_ONOFF
 
@@ -1893,3 +1899,26 @@ class Plug_v7(EnchantedDevice):
             },
         },
     }
+
+
+# Tongou TO-Q-SY1-JZT. The firmware sends TemperatureMeasurement reports that
+# expect a Default Response, but the value is not a usable temperature. The
+# Plug_CB_Metering replacement drops the cluster, so the reports are never
+# acknowledged and the device retransmits each one around ten times, flooding the
+# network. Keep the cluster so zigpy acknowledges the reports, without an entity.
+# Only applies to devices matching the Plug_CB_Metering signature, like before.
+(
+    TuyaQuirkBuilder("_TZ3000_qeuvnohg", "TS011F")
+    .filter(signature_matches(Plug_CB_Metering.signature))
+    .replaces(TuyaZBOnOffAttributeCluster)
+    .replaces(TuyaZBMeteringCluster)
+    .replaces(TuyaZBElectricalMeasurement)
+    .replaces(TuyaZBE000Cluster)
+    .replaces(TuyaZBExternalSwitchTypeCluster)
+    .prevent_default_entity_creation(
+        endpoint_id=1, cluster_id=TemperatureMeasurement.cluster_id
+    )
+    .exposes_feature(TUYA_PLUG_ONOFF)
+    .tuya_enchantment()
+    .add_to_registry()
+)

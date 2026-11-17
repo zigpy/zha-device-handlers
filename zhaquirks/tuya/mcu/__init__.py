@@ -163,11 +163,17 @@ class MCUVersion(t.Struct):
         return None
 
 
-class TuyaConnectionStatus(t.Struct):
-    """Tuya connection status data."""
+class TuyaConnectionStatusRequest(t.Struct):
+    """Tuya connection status request: the MCU's 16-bit sequence number."""
 
-    tsn: t.uint8_t
-    status: t.LVBytes
+    tsn: t.uint16_t
+
+
+class TuyaConnectionStatus(t.Struct):
+    """Tuya connection status reply: the request's sequence number, then the status."""
+
+    tsn: t.uint16_t
+    status: t.uint8_t
 
 
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
@@ -201,7 +207,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         )
         mcu_connection_status = foundation.ZCLCommandDef(
             id=TUYA_MCU_CONNECTION_STATUS,
-            schema={"payload": TuyaConnectionStatus},
+            schema={"payload": TuyaConnectionStatusRequest},
             is_manufacturer_specific=True,
         )
 
@@ -211,7 +217,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         mcu_connection_status_rsp = foundation.ZCLCommandDef(
             id=TUYA_MCU_CONNECTION_STATUS,
             schema={"payload": TuyaConnectionStatus},
-            is_manufacturer_specific=True,
+            manufacturer_code=None,
         )
 
     def __init__(self, *args, **kwargs):
@@ -369,16 +375,21 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
     def handle_mcu_connection_status(
         self,
-        payload: TuyaConnectionStatus,  # type:ignore[valid-type]
+        payload: TuyaConnectionStatusRequest,
     ) -> foundation.Status:
         """Handle gateway connection status requests (0x25)."""
 
         payload_rsp = TuyaMCUCluster.TuyaConnectionStatus()
         payload_rsp.tsn = payload.tsn
-        payload_rsp.status = b"\x01"  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
+        payload_rsp.status = 0x01  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
 
         self.create_catching_task(
-            super().command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
+            super().command(
+                TUYA_MCU_CONNECTION_STATUS,
+                payload_rsp,
+                expect_reply=False,
+                disable_default_response=True,
+            )
         )
 
         return foundation.Status.SUCCESS
