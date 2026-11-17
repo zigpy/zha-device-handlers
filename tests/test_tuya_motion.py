@@ -207,8 +207,8 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 async def test_ay204t_presence(zigpy_device_from_v2_quirk):
     """Test the AOYAN AY204T presence datapoint (DP 1)."""
     quirked_device = zigpy_device_from_v2_quirk(
-        "AY204T",
         "AOYAN",
+        "AY204T",
         cluster_ids={1: {TuyaMCUCluster.cluster_id: ClusterType.Server}},
     )
     ep = quirked_device.endpoints[1]
@@ -239,8 +239,8 @@ async def test_ay204t_presence(zigpy_device_from_v2_quirk):
 async def test_ay204t_illuminance(zigpy_device_from_v2_quirk):
     """Test the AOYAN AY204T illuminance datapoint (DP 106)."""
     quirked_device = zigpy_device_from_v2_quirk(
-        "AY204T",
         "AOYAN",
+        "AY204T",
         cluster_ids={1: {TuyaMCUCluster.cluster_id: ClusterType.Server}},
     )
     ep = quirked_device.endpoints[1]
