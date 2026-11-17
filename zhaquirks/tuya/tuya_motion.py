@@ -14,10 +14,12 @@ from zhaquirks.builder import (
     EntityPlatform,
     EntityType,
     NumberDeviceClass,
+    PERCENTAGE,
     SensorDeviceClass,
     SensorStateClass,
     UnitOfLength,
     UnitOfTime,
+    UnitOfTemperature,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -1736,6 +1738,103 @@ base_tuya_motion = (
     TuyaQuirkBuilder("_TZ3040_bb6xaihh", "TS0202")
     .replaces(TuyaPowerConfigurationCluster2AAA)
     .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+class TuyaTemperatureUnit(t.enum8):
+    """Tuya temperature unit."""
+
+    Celsius = 0x00
+    Fahrenheit = 0x01
+
+
+# Tuya 24GHz mmWave human presence sensor, AOYAN AY204T
+# Functionally a HOBEIAN ZG-204ZV with a different manufacturer/model string.
+# Illuminance only arrives via Tuya DP 106; the standard
+# msIlluminanceMeasurement cluster of this device reports a constant 0.
+(
+    TuyaQuirkBuilder("AOYAN", "AY204T")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=19,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_illuminance(dp_id=106)
+    .tuya_number(
+        dp_id=107,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .tuya_switch(
+        dp_id=108,
+        attribute_name="indicator",
+        translation_key="indicator",
+        fallback_name="Indicator LED",
+    )
+    .tuya_enum(
+        dp_id=109,
+        attribute_name="temperature_unit",
+        enum_class=TuyaTemperatureUnit,
+        translation_key="temperature_unit",
+        fallback_name="Temperature unit",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="temperature_calibration",
+        type=t.int16_t,
+        min_value=-20,
+        max_value=20,
+        step=1,
+        multiplier=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="humidity_calibration",
+        type=t.int16_t,
+        min_value=-20,
+        max_value=20,
+        step=1,
+        device_class=NumberDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+        translation_key="humidity_calibration",
+        fallback_name="Humidity calibration",
+    )
     .skip_configuration()
     .add_to_registry()
 )
