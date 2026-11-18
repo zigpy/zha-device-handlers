@@ -43,7 +43,7 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder()
     .applies_to("Heiman", "D1-E")
-    .friendly_name(manufacturer="Heiman", model="Smart door sensor")
+    .friendly_name(manufacturer="Heiman", model="D1-E")
     .replaces(CustomHeimanCluster)
     .switch(
         CustomHeimanCluster.AttributeDefs.alarm_indicator.name,
