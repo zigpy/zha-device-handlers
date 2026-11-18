@@ -1,10 +1,9 @@
 """Heiman H1-E temperature and humidity sensor."""
 
-from collections.abc import Iterator
 from typing import Final
 
 from zha.application.helpers import write_attributes_safe
-from zha.application.platforms import AttrConfig, ClusterConfig, PlatformEntity
+from zha.application.platforms import AttrConfig, ClusterConfig
 from zha.application.platforms.select import ZCLEnumSelectEntity
 from zha.exceptions import ZHAException
 import zigpy.types as t
@@ -12,7 +11,6 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import PERCENTAGE, EntityType, QuirkBuilder, UnitOfTemperature
-from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.clusters import CustomCluster
 
 CELSIUS_DISPLAY_BIT: Final = 0x01
@@ -77,24 +75,6 @@ class TemperatureDisplaySelect(ZCLEnumSelectEntity):
         self.maybe_emit_state_changed_event()
 
 
-class HeimanH1Device(QuirkV2Device):
-    """Expose the bit-backed select through the supported ZHA device API."""
-
-    def discover_entities(self) -> Iterator[PlatformEntity]:
-        """Add the display select alongside the standard and declarative entities."""
-        yield from super().discover_entities()
-        endpoint = self.endpoints[1]
-        yield TemperatureDisplaySelect(
-            endpoint=endpoint,
-            device=self,
-            cluster=endpoint.zigpy_endpoint.temperature,
-            from_quirk=True,
-            entity_type=EntityType.CONFIG,
-            translation_key="temperature_display_mode",
-            fallback_name="Temperature display mode",
-        )
-
-
 class CustomHeimanCluster(CustomCluster):
     """Heiman H1-E calibration settings and diagnostics."""
 
@@ -126,9 +106,16 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder("Heiman", "H1-E")
     .applies_to("HEIMAN", "H1-E")
-    .zha_device_class(HeimanH1Device)
     .replaces(HeimanTemperatureMeasurement)
     .replaces(CustomHeimanCluster)
+    .adds_entity(
+        TemperatureDisplaySelect,
+        endpoint_id=1,
+        cluster_id=TemperatureMeasurement.cluster_id,
+        force_create=True,
+        translation_key="temperature_display_mode",
+        fallback_name="Temperature display mode",
+    )
     .number(
         attribute_name=CustomHeimanCluster.AttributeDefs.temperature_offset.name,
         cluster_id=CustomHeimanCluster.cluster_id,

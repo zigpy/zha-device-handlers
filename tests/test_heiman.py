@@ -44,7 +44,7 @@ def test_heiman_hs1rm_e_temperature_scaling(zigpy_device_from_v2_quirk):
 
 
 @pytest.fixture
-async def h1_e_display_select():
+async def h1_e_display_select(request):
     """Create a display select with a device value that includes other flag bits."""
     async with zha_gateway() as gateway:
         raw = zigpy.device.Device(
@@ -68,7 +68,7 @@ async def h1_e_display_select():
         device = DEVICE_REGISTRY.resolve(raw)
         cluster = device.endpoints[1].temperature
         attr = HeimanTemperatureMeasurement.AttributeDefs.temperature_display_mode
-        values = {attr.id: 7}
+        values = getattr(request, "param", {attr.id: 7}).copy()
         _patch_cluster(cluster, values)
         _patch_cluster(device.endpoints[1].basic, {})
         _patch_cluster(
@@ -85,6 +85,17 @@ async def h1_e_display_select():
             return_value=[[WriteAttributesStatusRecord(Status.SUCCESS)]]
         )
         yield cluster, select, values
+
+
+@pytest.mark.parametrize("h1_e_display_select", [{}], indirect=True)
+async def test_heiman_h1_e_display_created_before_attribute_read(h1_e_display_select):
+    """Create the config select even when the display attribute has no cached value."""
+    cluster, select, _ = h1_e_display_select
+    attr = HeimanTemperatureMeasurement.AttributeDefs.temperature_display_mode
+    assert cluster.get(attr.name) is None
+    assert select.current_option is None
+    assert select.force_create is True
+    assert select.entity_category == "config"
 
 
 @pytest.mark.parametrize(
