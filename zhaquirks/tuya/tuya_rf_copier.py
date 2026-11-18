@@ -4,7 +4,7 @@ import zigpy.types as t
 
 from zhaquirks.builder import EntityType
 from zhaquirks.tuya import TUYA_CLUSTER_ID
-from zhaquirks.tuya.builder import TuyaIlluminance, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 def _register_zrf01() -> None:
@@ -30,21 +30,22 @@ def _register_zrf01() -> None:
 
     quirk = (
         TuyaQuirkBuilder("_TZE284_tdg4ckyh", "TS0601")
+        # Learning mode appears unnecessary; setting the button to "Learn" is sufficient. Still keeping next block in case this toggle affects some other yet-to-be-discovered behavior.
         .tuya_switch(
             dp_id=117,
             attribute_name="rf_learning_mode",
-            entity_type=EntityType.STANDARD,
+            entity_type=EntityType.CONFIG,
             translation_key="rf_learning_mode",
             fallback_name="RF learning mode",
         )
         .tuya_switch(
             dp_id=118,
             attribute_name="long_packet_mode",
-            entity_type=EntityType.STANDARD,
+            entity_type=EntityType.CONFIG,
             translation_key="long_packet_mode",
             fallback_name="Long packet mode",
         )
-        .tuya_illuminance(dp_id=119, illuminance_cfg=TuyaIlluminance)
+        .tuya_illuminance(dp_id=119)
     )
 
     for i in range(1, 9):
@@ -53,7 +54,8 @@ def _register_zrf01() -> None:
                 dp_id=100 + i,
                 attribute_name=f"button_{i}",
                 enum_class=SlotStatus,
-                translation_key=f"button_{i}_code",
+                translation_key="button_index_code",
+                translation_placeholders={"index": str(i)},
                 fallback_name=f"Button {i} code",
             )
             .tuya_dp_attribute(
@@ -65,12 +67,14 @@ def _register_zrf01() -> None:
                 attribute_name=f"transmit_{i}",
                 cluster_id=TUYA_CLUSTER_ID,
                 attribute_value=Trigger.Transmit,
-                translation_key=f"button_{i}_transmit",
+                entity_type=EntityType.STANDARD,
+                translation_key="button_index_transmit",
+                translation_placeholders={"index": str(i)},
                 fallback_name=f"Button {i} transmit",
             )
         )
 
-    quirk.add_to_registry()
+    quirk.skip_configuration().add_to_registry()
 
 
 _register_zrf01()
