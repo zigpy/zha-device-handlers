@@ -40,7 +40,7 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder()
     .applies_to("Heiman", "L1-E")
-    .friendly_name(manufacturer="Heiman", model="Smart water leak sensor")
+    .friendly_name(manufacturer="Heiman", model="L1-E")
     .replaces(CustomHeimanCluster)
     .switch(
         CustomHeimanCluster.AttributeDefs.alarm_indicator.name,
