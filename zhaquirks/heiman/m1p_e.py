@@ -180,7 +180,7 @@ class CustomHeimanCluster(CustomCluster):
         cluster_id=CustomHeimanCluster.cluster_id,
         attribute_initialized_from_cache=False,
         min_value=0,
-        max_value=1100,
+        max_value=1000,
         step=1,
         unit=LIGHT_LUX,
         translation_key="illuminance_threshold",
