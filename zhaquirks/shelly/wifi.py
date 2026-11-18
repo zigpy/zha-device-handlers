@@ -115,14 +115,32 @@ class ShellyCustomProfileDevice(CustomZigpyDevice):
         return hdr, rsp_key
 
 
+# Models that expose the WiFi setup cluster and need nothing else. Models with
+# their own quirk (e.g. Presence) add the cluster there instead.
+SHELLY_WIFI_SETUP_MODELS = (
+    "1",
+    "1L",
+    "1PM",
+    "2L",
+    "2PM",
+    "Dimmer",
+    "Dimmer 0-1/10",
+    "Dimmer US",
+    "EM",
+    "EM Mini",
+    "I4",
+    "Mini1",
+    "Mini1PM",
+    "Plug US",
+    "Power Strip",
+)
+
+_builder = QuirkBuilder("Shelly", SHELLY_WIFI_SETUP_MODELS[0])
+for _model in SHELLY_WIFI_SETUP_MODELS[1:]:
+    _builder = _builder.applies_to("Shelly", _model)
+
 (
-    QuirkBuilder("Shelly", "1PM")
-    .applies_to("Shelly", "1")
-    .applies_to("Shelly", "2PM")
-    .applies_to("Shelly", "Mini1PM")
-    .applies_to("Shelly", "Mini1")
-    .applies_to("Shelly", "EM Mini")
-    .device_class(ShellyCustomProfileDevice)
+    _builder.device_class(ShellyCustomProfileDevice)
     .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
     .add_to_registry()
 )
