@@ -115,14 +115,39 @@ class ShellyCustomProfileDevice(CustomZigpyDevice):
         return hdr, rsp_key
 
 
-(
-    QuirkBuilder("Shelly", "1PM")
-    .applies_to("Shelly", "1")
-    .applies_to("Shelly", "2PM")
-    .applies_to("Shelly", "Mini1PM")
-    .applies_to("Shelly", "Mini1")
-    .applies_to("Shelly", "EM Mini")
-    .device_class(ShellyCustomProfileDevice)
-    .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
-    .add_to_registry()
+def with_wifi_setup(builder: QuirkBuilder) -> QuirkBuilder:
+    """Add the WiFi setup cluster to a Shelly quirk.
+
+    ZHA applies a single quirk per model, so a model that needs more than the
+    WiFi setup cluster (e.g. Presence) has its own quirk and must use this
+    too, otherwise it loses the cluster.
+    """
+    return builder.device_class(ShellyCustomProfileDevice).replaces(
+        ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID
+    )
+
+
+# Models that expose the WiFi setup cluster and need nothing else.
+SHELLY_WIFI_SETUP_MODELS = (
+    "1",
+    "1L",
+    "1PM",
+    "2L",
+    "2PM",
+    "Dimmer",
+    "Dimmer 0-1/10",
+    "Dimmer US",
+    "EM",
+    "EM Mini",
+    "I4",
+    "Mini1",
+    "Mini1PM",
+    "Plug US",
+    "Power Strip",
 )
+
+_builder = QuirkBuilder("Shelly", SHELLY_WIFI_SETUP_MODELS[0])
+for _model in SHELLY_WIFI_SETUP_MODELS[1:]:
+    _builder = _builder.applies_to("Shelly", _model)
+
+with_wifi_setup(_builder).add_to_registry()
