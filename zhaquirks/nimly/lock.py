@@ -86,6 +86,8 @@ def last_action_user_converter(value: int) -> int:
     .applies_to(NIMLY, "EasyCodeTouch")
     .applies_to(NIMLY, "easyCodeTouch_v1")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
+    .replaces(DoublingPowerConfigurationCluster, endpoint_id=11)
+    .replaces(NimlyDoorLock, endpoint_id=11)
     .sensor(
         endpoint_id=11,
         cluster_id=NimlyDoorLock.cluster_id,
