@@ -4,17 +4,11 @@ from __future__ import annotations
 
 from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder, ReportingConfig
 from zhaquirks.shelly import LightLevel, ShellyLightLevelCluster
-from zhaquirks.shelly.wifi import (
-    SHELLY_WIFI_SETUP_ENDPOINT_ID,
-    ShellyCustomProfileDevice,
-    ShellyWiFiSetupCluster,
-)
+from zhaquirks.shelly.wifi import with_wifi_setup
 
 (
-    QuirkBuilder("Shelly", "Presence")
-    .device_class(ShellyCustomProfileDevice)
+    with_wifi_setup(QuirkBuilder("Shelly", "Presence"))
     .replaces(ShellyLightLevelCluster, endpoint_id=1)
-    .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
     .enum(
         attribute_name=ShellyLightLevelCluster.AttributeDefs.light_level.name,
         enum_class=LightLevel,
