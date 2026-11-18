@@ -1,25 +1,28 @@
 """Heiman H1-E temperature and humidity sensor."""
 
-from typing import Final, Self
+from collections.abc import Iterator
+from typing import Final
 
+from zha.application.helpers import write_attributes_safe
+from zha.application.platforms import AttrConfig, ClusterConfig, PlatformEntity
+from zha.application.platforms.select import ZCLEnumSelectEntity
+from zha.exceptions import ZHAException
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import PERCENTAGE, EntityType, QuirkBuilder, UnitOfTemperature
+from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.clusters import CustomCluster
+
+CELSIUS_DISPLAY_BIT: Final = 0x01
 
 
 class TemperatureDisplayMode(t.enum8):
-    """Temperature unit shown on the device screen."""
+    """Unit options exposed by the display setting's bit 0."""
 
     Celsius = 1
     Fahrenheit = 0
-
-    @classmethod
-    def _missing_(cls, value: object) -> Self:
-        """Treat other nonzero device values as Celsius."""
-        return cls.Celsius
 
 
 class HeimanTemperatureMeasurement(CustomCluster, TemperatureMeasurement):
@@ -29,7 +32,66 @@ class HeimanTemperatureMeasurement(CustomCluster, TemperatureMeasurement):
         """Attribute definitions."""
 
         temperature_display_mode: Final = ZCLAttributeDef(
-            id=0xF002, type=t.int8s, manufacturer_code=0x120B
+            # Preserve the device's int8 wire type for this bit field.
+            id=0xF002,
+            type=t.int8s,
+            manufacturer_code=0x120B,
+        )
+
+
+class TemperatureDisplaySelect(ZCLEnumSelectEntity):
+    """Select the temperature unit while preserving the other display bits."""
+
+    _attribute_name = (
+        HeimanTemperatureMeasurement.AttributeDefs.temperature_display_mode.name
+    )
+    _enum = TemperatureDisplayMode
+    _unique_id_suffix = "temperature_display_mode"
+    _server_cluster_config = {
+        TemperatureMeasurement.cluster_id: ClusterConfig(
+            attributes={
+                HeimanTemperatureMeasurement.AttributeDefs.temperature_display_mode: AttrConfig(
+                    read_on_startup=True
+                )
+            }
+        )
+    }
+
+    @property
+    def current_option(self) -> str | None:
+        """Decode the unit from bit 0 of the original device value."""
+        value = self._cluster.get(self._attribute_name)
+        if value is None:
+            return None
+        return TemperatureDisplayMode(int(value) & CELSIUS_DISPLAY_BIT).name
+
+    async def async_select_option(self, option: str) -> None:
+        """Update only the temperature unit bit of the cached device value."""
+        unit = self._enum[option]
+        current = self._cluster.get(self._attribute_name)
+        if current is None:
+            raise ZHAException("Temperature display settings are not available")
+
+        value = (int(current) & ~CELSIUS_DISPLAY_BIT) | int(unit)
+        await write_attributes_safe(self._cluster, {self._attribute_name: value})
+        self.maybe_emit_state_changed_event()
+
+
+class HeimanH1Device(QuirkV2Device):
+    """Expose the bit-backed select through the supported ZHA device API."""
+
+    def discover_entities(self) -> Iterator[PlatformEntity]:
+        """Add the display select alongside the standard and declarative entities."""
+        yield from super().discover_entities()
+        endpoint = self.endpoints[1]
+        yield TemperatureDisplaySelect(
+            endpoint=endpoint,
+            device=self,
+            cluster=endpoint.zigpy_endpoint.temperature,
+            from_quirk=True,
+            entity_type=EntityType.CONFIG,
+            translation_key="temperature_display_mode",
+            fallback_name="Temperature display mode",
         )
 
 
@@ -64,16 +126,9 @@ class CustomHeimanCluster(CustomCluster):
 (
     QuirkBuilder("Heiman", "H1-E")
     .applies_to("HEIMAN", "H1-E")
+    .zha_device_class(HeimanH1Device)
     .replaces(HeimanTemperatureMeasurement)
     .replaces(CustomHeimanCluster)
-    .enum(
-        attribute_name=HeimanTemperatureMeasurement.AttributeDefs.temperature_display_mode.name,
-        cluster_id=HeimanTemperatureMeasurement.cluster_id,
-        enum_class=TemperatureDisplayMode,
-        attribute_initialized_from_cache=False,
-        translation_key="temperature_display_mode",
-        fallback_name="Temperature display mode",
-    )
     .number(
         attribute_name=CustomHeimanCluster.AttributeDefs.temperature_offset.name,
         cluster_id=CustomHeimanCluster.cluster_id,
