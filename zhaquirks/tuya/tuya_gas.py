@@ -14,7 +14,11 @@ from zhaquirks.builder import (
     UnitOfTime,
 )
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaLocalCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster1CR123A,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -123,6 +127,79 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         translation_key="lifecycle",
         fallback_name="Lifecycle",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# NOUS E12 carbon monoxide (CO) detector
+(
+    TuyaQuirkBuilder("_TZE284_sonkaxrd", "TS0601")
+    .applies_to("_TZE2841000000_sonkaxrd", "TS0601")
+    .tuya_gas(dp_id=1)
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="co",
+        type=t.int16s,
+        device_class=SensorDeviceClass.CO,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        fallback_name="CO concentration",
+    )
+    .tuya_binary_sensor(
+        dp_id=8,
+        attribute_name="self_checking",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="self_checking",
+        fallback_name="Self checking",
+    )
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="self_test_result",
+        enum_class=TuyaSelfTestResult,
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="self_test_result",
+        fallback_name="Self test result",
+    )
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="preheat",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="preheat",
+        fallback_name="Preheat",
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    # DP 12 is True while the sensor is within its service life, so the PROBLEM
+    # entity inverts it. The attribute keeps the device's own value.
+    .tuya_dp_attribute(
+        dp_id=12,
+        attribute_name="lifecycle",
+        type=t.Bool,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .binary_sensor(
+        attribute_name="lifecycle",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_converter=lambda x: not x,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="lifecycle",
+        fallback_name="Lifecycle",
+    )
+    .tuya_dp(
+        dp_id=14,
+        ep_attribute=TuyaPowerConfigurationCluster1CR123A.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 10, 1: 100, 2: 200}.get(x, 0),
+    )
+    .adds(TuyaPowerConfigurationCluster1CR123A)
     .skip_configuration()
     .add_to_registry()
 )
