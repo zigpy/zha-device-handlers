@@ -8,8 +8,12 @@ import zhaquirks
 
 zhaquirks.setup()
 
+ZBEK_MODELS = [
+    f"ZBEK-{number}" for number in (*range(1, 15), 27, 28, 29, 30, 32, 33, 37)
+]
 
-@pytest.mark.parametrize("model", ["ZBEK-1", "ZBEK-4"])
+
+@pytest.mark.parametrize("model", ZBEK_MODELS)
 @pytest.mark.parametrize("advertises_keepalive", [False, True])
 async def test_zbek_keepalive(zigpy_device_mock, model, advertises_keepalive):
     """Expose KeepAlive as a client whether or not the bulb advertises it."""
@@ -37,7 +41,7 @@ async def test_zbek_keepalive(zigpy_device_mock, model, advertises_keepalive):
         assert keepalive.get(keepalive_base) == 10
 
 
-@pytest.mark.parametrize("model", ["ZBEK-1", "ZBEK-4"])
+@pytest.mark.parametrize("model", ZBEK_MODELS)
 async def test_zbek_without_endpoint_one(zigpy_device_mock, model):
     """Leave a device without endpoint 1 untouched."""
     device = zigpy_device_mock()
