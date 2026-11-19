@@ -180,12 +180,7 @@ async def test_nous_e12_co_sensor(zigpy_device_from_v2_quirk):
     assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
     assert tuya_cluster.get("self_test_result") == TuyaSelfTestResult.Success
 
-    # DP 10, bool True (preheat) & DP 11, bool True (fault_alarm)
-    pre_frame = b"\tL\x01\x00\x08\x0a\x01\x00\x01\x01"
-    hdr, data = tuya_cluster.deserialize(pre_frame)
-    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
-    assert tuya_cluster.get("preheat") == 1
-
+    # DP 11, bool True (fault_alarm)
     flt_frame = b"\tL\x01\x00\x09\x0b\x01\x00\x01\x01"
     hdr, data = tuya_cluster.deserialize(flt_frame)
     assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS

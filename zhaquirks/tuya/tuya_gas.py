@@ -162,13 +162,8 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         translation_key="self_test_result",
         fallback_name="Self test result",
     )
-    .tuya_binary_sensor(
-        dp_id=10,
-        attribute_name="preheat",
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="preheat",
-        fallback_name="Preheat",
-    )
+    # DP 10 (preheat) intentionally omitted: device reports True on power-on
+    # but never clears it after warm-up ends.
     .tuya_binary_sensor(
         dp_id=11,
         attribute_name="fault_alarm",
@@ -197,7 +192,7 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster1CR123A.ep_attribute,
         attribute_name="battery_percentage_remaining",
-        converter=lambda x: {0: 10, 1: 100, 2: 200}.get(x, 0),
+        converter=lambda x: {0: 10, 1: 100, 2: 200}[x],
     )
     .adds(TuyaPowerConfigurationCluster1CR123A)
     .skip_configuration()
