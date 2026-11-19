@@ -32,9 +32,9 @@ ZLINKY_DIAGNOSTICS = "lixee-zlinky-tic-0x00000001.json"
 ZCL_TARIFF_OPTION = bytes.fromhex(
     "1c3710c101000000421042425228000000000000000000000000"
 )
-ZCL_TARIFF_PERIOD = bytes.fromhex("1c3710b301100000420448504a42")
-ZCL_TOMORROW_COLOR = bytes.fromhex("1c3710b20101000042042d2d2d2d")
 ZCL_LINKY_MODE = bytes.fromhex("1c3710b6010003002000")
+# Report of tomorrow color and tariff period: sent without manufacturer code
+ZCL_REPORT = bytes.fromhex("18050a010042042d2d2d2d1000420448504a42")
 
 
 @pytest.mark.parametrize(
@@ -105,15 +105,13 @@ async def test_zlinky_entities():
                 assert entity["unique_id"] in unique_ids
 
         cluster = device.device.endpoints[1].zlinky_manufacturer_specific
-        for message in (
-            ZCL_TARIFF_OPTION,
-            ZCL_TARIFF_PERIOD,
-            ZCL_TOMORROW_COLOR,
-            ZCL_LINKY_MODE,
-        ):
+        # answers to the reads sent with manufacturer code on startup
+        for message in (ZCL_TARIFF_OPTION, ZCL_LINKY_MODE):
             _, rsp = cluster.deserialize(message)
             for record in rsp.status_records:
                 cluster._update_attribute(record.attrid, record.value.value)
+        # reports go through the attribute lookup of a received frame
+        cluster.handle_message(*cluster.deserialize(ZCL_REPORT))
 
         attrs = ZLinkyTICManufacturerCluster.AttributeDefs
         for attribute, value in (
@@ -132,12 +130,14 @@ async def test_zlinky_entities():
             assert entity.state_class is None
 
         # tariff period and tomorrow color are only sent with reporting configured
-        reported = {
-            attr_id
+        reported = [
+            cluster.find_attribute(attr)
             for call in cluster.configure_reporting_multiple.await_args_list
-            for attr_id in call.args[0]
-        }
-        assert {cluster.find_attribute(attr_id).name for attr_id in reported} == {
+            for attr in call.args[0]
+        ]
+        assert {attr.name for attr in reported} == {
             attrs.linky_tariff_period.name,
             attrs.hist_tomorrow_color.name,
         }
+        # like their reports, configured without manufacturer code
+        assert all(attr.manufacturer_code is None for attr in reported)

@@ -44,8 +44,9 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
             id=0x0000, type=t.LimitedCharString(16), is_manufacturer_specific=True
         )
         # Historical mode: DEMAIN "Couleur du lendemain" / String 4 car
+        # Reported without manufacturer code
         hist_tomorrow_color: Final = ZCLAttributeDef(
-            id=0x0001, type=t.LimitedCharString(4), is_manufacturer_specific=True
+            id=0x0001, type=t.LimitedCharString(4), manufacturer_code=None
         )
         # Historical mode: HHPHC "Horaire Heure Pleines Heures Creuses" / Uint8 1 car
         hist_schedule_peak_hours_off_peak_hours: Final = ZCLAttributeDef(
@@ -80,8 +81,9 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
             id=0x0009, type=t.LimitedCharString(6), is_manufacturer_specific=True
         )
         # Historical and standard mode: "Tariff Period (From V15)" / String 16 car
+        # Reported without manufacturer code
         linky_tariff_period: Final = ZCLAttributeDef(
-            id=0x0010, type=t.LimitedCharString(16), is_manufacturer_specific=True
+            id=0x0010, type=t.LimitedCharString(16), manufacturer_code=None
         )
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         linky_acquisition_time: Final = ZCLAttributeDef(
