@@ -6,6 +6,7 @@ from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.builder import (
     BinarySensorDeviceClass,
+    EntityPlatform,
     EntityType,
     SensorDeviceClass,
     SensorStateClass,
@@ -18,6 +19,7 @@ from zhaquirks.builder import (
 from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
+from zhaquirks.tuya.tuya_trv import TuyaThermostatV2
 
 
 class RegulatorPeriod(t.enum8):
@@ -102,6 +104,27 @@ class WorkingDayV02(t.enum8):
     Five_Two = 0x01
     Six_One = 0x02
     Seven = 0x03
+
+
+class TuyaPilotWireMode(t.enum8):
+    """Tuya pilot wire mode enum."""
+
+    Comfort = 0x00
+    Eco = 0x01
+    FrostProtection = 0x02
+    Off = 0x03
+    ComfortMinus1 = 0x04
+    ComfortMinus2 = 0x05
+    Program = 0x06
+    Manual = 0x07
+
+
+class TuyaPilotWireType(t.enum8):
+    """Tuya pilot wire type enum."""
+
+    FourModes = 0x00
+    SixModes = 0x01
+    Switch = 0x02
 
 
 class TuyaThermostat(Thermostat, TuyaAttributesCluster):
@@ -606,6 +629,235 @@ base_avatto_quirk = (
         fallback_name="Invert relay",
     )
     .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Pilot wire thermostat for electric radiators
+(
+    TuyaQuirkBuilder("_TZE204_6vwfjkcj", "TS0601")
+    .applies_to("_TZE204_3regm3h6", "TS0601")
+    .applies_to("_TZE284_3regm3h6", "TS0601")
+    .applies_to("_TZE204_0hcjew5p", "TS0601")
+    .applies_to("_TZE204_ouy7vpm1", "TS0601")
+    # only switches the heating in manual mode, where the device regulates
+    # on its own setpoint: use the pilot wire mode to stop the radiator
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: (
+            Thermostat.SystemMode.Heat if x else Thermostat.SystemMode.Off
+        ),
+        dp_converter=lambda x: x != Thermostat.SystemMode.Off,
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="pilot_wire_mode",
+        enum_class=TuyaPilotWireMode,
+        entity_type=EntityType.STANDARD,
+        translation_key="pilot_wire_mode",
+        fallback_name="Pilot wire mode",
+    )
+    .tuya_sensor(
+        dp_id=11,
+        attribute_name="power",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfPower.WATT,
+        fallback_name="Power",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_binary_sensor(
+        dp_id=17,
+        attribute_name="window_open",
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.WINDOW,
+        fallback_name="Window open",
+    )
+    .tuya_number(
+        dp_id=19,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    # bitmap DP: on when any fault bit is set
+    .tuya_binary_sensor(
+        dp_id=20,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_switch(
+        dp_id=29,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_dp(
+        dp_id=50,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_sensor(
+        dp_id=101,
+        attribute_name="voltage",
+        type=t.uint16_t,
+        divisor=10,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        fallback_name="Voltage",
+    )
+    .tuya_sensor(
+        dp_id=102,
+        attribute_name="current",
+        type=t.uint16_t,
+        divisor=1000,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        fallback_name="Current",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="temperature_sensitivity",
+        type=t.uint16_t,
+        min_value=0.5,
+        max_value=5,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_sensitivity",
+        fallback_name="Temperature sensitivity",
+    )
+    .tuya_sensor(
+        dp_id=104,
+        attribute_name="energy_today",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="energy_today",
+        fallback_name="Energy today",
+    )
+    .tuya_sensor(
+        dp_id=105,
+        attribute_name="energy_yesterday",
+        type=t.uint32_t,
+        divisor=10,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="energy_yesterday",
+        fallback_name="Energy yesterday",
+    )
+    .tuya_enum(
+        dp_id=106,
+        attribute_name="pilot_wire_type",
+        enum_class=TuyaPilotWireType,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="pilot_wire_type",
+        fallback_name="Pilot wire type",
+    )
+    .tuya_sensor(
+        dp_id=107,
+        attribute_name="energy",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        fallback_name="Energy",
+    )
+    # 108-114 weekly program, skipped
+    # switches to the manual pilot wire mode, the device then regulates itself
+    .tuya_switch(
+        dp_id=115,
+        attribute_name="no_integrated_regulation",
+        translation_key="no_integrated_regulation",
+        fallback_name="Radiator without integrated regulation",
+    )
+    .tuya_switch(
+        dp_id=116,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_number(
+        dp_id=117,
+        attribute_name="eco_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    .tuya_number(
+        dp_id=118,
+        attribute_name="comfort_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=35,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="comfort_temperature",
+        fallback_name="Comfort temperature",
+    )
+    .tuya_number(
+        dp_id=119,
+        attribute_name="antifrost_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=15,
+        step=0.5,
+        multiplier=0.1,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="antifrost_temperature",
+        fallback_name="Antifrost temperature",
+    )
+    .adds(TuyaThermostatV2)
+    # no heating state DP: the HVAC action would always be unknown
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=Thermostat.cluster_id,
+        unique_id_suffix="hvac_action",
+    )
+    # the device only sends its settings when they change: query all of them
+    # on join and reconfigure, otherwise they stay unknown
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
