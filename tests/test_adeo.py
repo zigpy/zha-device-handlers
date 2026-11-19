@@ -4,6 +4,10 @@ import pytest
 from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl.clusters.general import KeepAlive, Ota
 
+import zhaquirks
+
+zhaquirks.setup()
+
 
 @pytest.mark.parametrize("model", ["ZBEK-1", "ZBEK-4"])
 @pytest.mark.parametrize("advertises_keepalive", [False, True])
