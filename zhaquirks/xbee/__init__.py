@@ -8,6 +8,7 @@ import enum
 import logging
 from typing import Any
 
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -21,7 +22,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster, LocalDataCluster
-from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
+from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 from zhaquirks.legacy import CustomDevice
 
 from .types import ATCommand, BinaryString, Bytes, IOSample
@@ -303,11 +304,6 @@ class XBeeRemoteATRequest(LocalDataCluster):
 
     _seq: int = 1
 
-    def _save_at_request(self, frame_id, future):
-        self._endpoint.in_clusters[XBEE_AT_RESPONSE_CLUSTER].save_at_request(
-            frame_id, future
-        )
-
     def remote_at_command(self, cmd_name, *args, apply_changes=True, **kwargs):
         """Execute a Remote AT Command and Return Response."""
         if hasattr(self._endpoint.device.application, "remote_at_command"):
@@ -329,18 +325,17 @@ class XBeeRemoteATRequest(LocalDataCluster):
         _LOGGER.debug("Remote AT command: %s %s", name, args)
         data = t.serialize(args, (AT_COMMANDS[name],))
         try:
-            return await asyncio.wait_for(
-                await self._command(options, name.encode("ascii"), data, *args),
-                timeout=REMOTE_AT_COMMAND_TIMEOUT,
-            )
+            return await self._command(options, name.encode("ascii"), data, *args)
         except TimeoutError:
             _LOGGER.warning("No response to %s command", name)
             raise
 
     async def _command(self, options, command, data, *args):
         _LOGGER.debug("Command %s %s", command, data)
+        response_cluster = self._endpoint.in_clusters[XBEE_AT_RESPONSE_CLUSTER]
         frame_id = self._seq
         self._seq = (self._seq % 255) + 1
+
         schema = (
             t.uint8_t,
             t.uint8_t,
@@ -365,8 +360,8 @@ class XBeeRemoteATRequest(LocalDataCluster):
             schema,
         )
 
-        future = asyncio.Future()
-        self._save_at_request(frame_id, future)
+        future = asyncio.get_running_loop().create_future()
+        response_cluster.save_at_request(frame_id, future)
 
         try:
             await self._endpoint.device.application.request(
@@ -379,10 +374,15 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 data,
                 expect_reply=False,
             )
-        except Exception as e:
-            future.set_exception(e)
-
-        return future
+            return await asyncio.wait_for(future, timeout=REMOTE_AT_COMMAND_TIMEOUT)
+        finally:
+            if response_cluster._awaiting.get(frame_id) is future:
+                del response_cluster._awaiting[frame_id]
+            if not future.done():
+                future.cancel()
+            elif not future.cancelled():
+                # A response can arrive before the transport reports a send failure.
+                future.exception()
 
     async def command(
         self,
@@ -434,11 +434,14 @@ class XBeeRemoteATResponse(LocalDataCluster):
 
     cluster_id = XBEE_AT_RESPONSE_CLUSTER
 
-    _awaiting = {}
+    def __init__(self, *args, **kwargs):
+        """Initialize pending requests for this device."""
+        super().__init__(*args, **kwargs)
+        self._awaiting: dict[int, asyncio.Future] = {}
 
     def save_at_request(self, frame_id, future):
         """Save pending request."""
-        self._awaiting[frame_id] = (future,)
+        self._awaiting[frame_id] = future
 
     def handle_cluster_request(
         self,
@@ -453,7 +456,11 @@ class XBeeRemoteATResponse(LocalDataCluster):
                 "Remote AT command response: %s",
                 (args.frame_id, args.cmd, args.status, args.value),
             )
-            (fut,) = self._awaiting.pop(args.frame_id)
+            fut = self._awaiting.get(args.frame_id)
+            if fut is None or fut.done():
+                _LOGGER.debug("Ignoring unexpected AT response: %s", args.frame_id)
+                return
+
             try:
                 status = ATCommandResult(args.status)
             except ValueError:
@@ -670,6 +677,7 @@ class XBeeCommon(CustomDevice):
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
             XBEE_DATA_ENDPOINT: {
+                PROFILE_ID: zha.PROFILE_ID,
                 INPUT_CLUSTERS: [
                     XBeeDigitalIOCluster,
                     XBeeSerialDataCluster,
