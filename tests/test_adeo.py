@@ -25,6 +25,7 @@ async def test_zbek_keepalive(zigpy_device_mock, model, advertises_keepalive):
         )
 
     device = DEVICE_REGISTRY.resolve(raw_device)
+    assert (device is raw_device) == advertises_keepalive
     endpoint = device.endpoints[1]
 
     assert set(endpoint.out_clusters) == {Ota.cluster_id, KeepAlive.cluster_id}
@@ -34,3 +35,13 @@ async def test_zbek_keepalive(zigpy_device_mock, model, advertises_keepalive):
     assert KeepAlive.cluster_id not in endpoint.in_clusters
     if advertises_keepalive:
         assert keepalive.get(keepalive_base) == 10
+
+
+@pytest.mark.parametrize("model", ["ZBEK-1", "ZBEK-4"])
+async def test_zbek_without_endpoint_one(zigpy_device_mock, model):
+    """Leave a device without endpoint 1 untouched."""
+    device = zigpy_device_mock()
+    device.manufacturer = "Adeo"
+    device.model = model
+
+    assert DEVICE_REGISTRY.resolve(device) is device
