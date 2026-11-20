@@ -413,6 +413,7 @@ class NeoBatteryState(t.enum8):
         enum_class=TuyaSirenState,
         translation_key="alarm_mode",
         fallback_name="Alarm mode",
+        as_device_value=True,
     )
     .tuya_enum(
         dp_id=5,
@@ -420,12 +421,14 @@ class NeoBatteryState(t.enum8):
         enum_class=TuyaAlarmVolume,
         translation_key="alarm_volume",
         fallback_name="Alarm volume",
+        as_device_value=True,
     )
     .tuya_binary_sensor(
         dp_id=6,
         attribute_name="charge_state",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         fallback_name="Charging",
+        as_device_value=True,
     )
     .tuya_number(
         dp_id=7,
@@ -437,6 +440,7 @@ class NeoBatteryState(t.enum8):
         unit=UnitOfTime.MINUTES,
         translation_key="alarm_duration",
         fallback_name="Alarm duration",
+        as_device_value=True,
     )
     .tuya_switch(
         dp_id=13,
@@ -444,6 +448,7 @@ class NeoBatteryState(t.enum8):
         entity_type=EntityType.STANDARD,
         translation_key="siren_on",
         fallback_name="Siren on",
+        as_device_value=True,
     )
     # DP 14, battery level enum skipped
     .tuya_battery(
@@ -455,6 +460,7 @@ class NeoBatteryState(t.enum8):
         enum_class=TuyaSirenRingtoneV02,
         translation_key="alarm_ringtone",
         fallback_name="Alarm ringtone",
+        as_device_value=True,
     )
     .skip_configuration()
     .add_to_registry()

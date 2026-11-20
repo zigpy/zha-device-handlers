@@ -1,7 +1,7 @@
 """Tuya Gas Sensor."""
 
+from zha.zigbee.store import device_value
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.builder import (
@@ -14,8 +14,12 @@ from zhaquirks.builder import (
     UnitOfTime,
 )
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaLocalCluster
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToDeviceValueMapping
+
+# Whether the sensor is within its service life (datapoint 12)
+LIFECYCLE = device_value("lifecycle", bool)
 
 
 class TuyaSelfTestResult(t.enum8):
@@ -98,6 +102,7 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="preheat",
         fallback_name="Preheat",
+        as_device_value=True,
     )
     .tuya_binary_sensor(
         dp_id=11,
@@ -105,20 +110,15 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="fault_alarm",
         fallback_name="Fault alarm",
+        as_device_value=True,
     )
     # DP 12 is True while the sensor is within its service life, so the PROBLEM
-    # entity inverts it. The attribute keeps the device's own value.
-    .tuya_dp_attribute(
-        dp_id=12,
-        attribute_name="lifecycle",
-        type=t.Bool,
-        access=foundation.ZCLAttributeAccess.Read
-        | foundation.ZCLAttributeAccess.Report,
-    )
-    .binary_sensor(
-        attribute_name="lifecycle",
-        cluster_id=TUYA_CLUSTER_ID,
-        attribute_converter=lambda x: not x,
+    # entity inverts it. The device value keeps the device's own value.
+    .tuya_dp_multi(dp_id=12, attribute_mapping=[DPToDeviceValueMapping(LIFECYCLE)])
+    .device_value_binary_sensor(
+        LIFECYCLE,
+        unique_id_suffix="1-lifecycle",
+        value_converter=lambda x: not x,
         device_class=BinarySensorDeviceClass.PROBLEM,
         translation_key="lifecycle",
         fallback_name="Lifecycle",
