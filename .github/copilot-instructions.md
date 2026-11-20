@@ -31,6 +31,9 @@ ruff format zhaquirks/
 
 # Type checking
 mypy zhaquirks/
+
+# Regenerate the recorded mypy suppressions after fixing type errors
+python -m tools.regenerate_mypy_ignores
 ```
 
 ## Zigbee Concepts
