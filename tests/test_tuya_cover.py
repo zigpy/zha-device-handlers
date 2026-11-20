@@ -10,7 +10,10 @@ import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
 from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
-from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts0601_cover import (
+    TuyaMoesCover0601,
+    TuyaMoesCover0601_inv_position_GP,
+)
 
 zhaquirks.setup()
 
@@ -32,6 +35,30 @@ def test_ts601_moes_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(TuyaMoesCover0601, signature)
+
+
+def test_ts601_moes_inv_position_gp_signature(assert_signature_matches_quirk):
+    """Test _TZE204_nladmfvf cover signature is matched to its quirk."""
+    signature = {
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x0051",
+                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "_TZE204_nladmfvf",
+        "model": "TS0601",
+        "class": "zigpy.device.Device",
+    }
+    assert_signature_matches_quirk(TuyaMoesCover0601_inv_position_GP, signature)
 
 
 async def test_zemismart_zm16b_quirk(zigpy_device_from_v2_quirk):
