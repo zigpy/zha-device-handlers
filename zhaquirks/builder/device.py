@@ -178,7 +178,7 @@ class QuirkV2Device(ZigbeeDevice):
 
     def _quirk_device_automation_triggers(
         self,
-    ) -> dict[tuple[str, str], dict[str, str]]:
+    ) -> dict[tuple[str, str], dict[str, Any]]:
         return dict(self._quirk_definition.device_automation_triggers)
 
     def _is_entity_removed_by_quirk(self, entity: PlatformEntity) -> bool:

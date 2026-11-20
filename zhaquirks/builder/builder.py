@@ -334,7 +334,7 @@ class SetModelInfo:
 class SetDeviceAutomationTriggers:
     """Set the quirk-defined device automation triggers on a device."""
 
-    triggers: frozendict[tuple[str, str], frozendict[str, str]]
+    triggers: frozendict[tuple[str, str], frozendict[str, Any]]
 
     def __call__(self, device: zigpy.device.Device) -> zigpy.device.Device:
         """Apply this operation to the given zigpy device."""
@@ -379,7 +379,7 @@ class QuirkBuilder:
         self.added_entities: list[AddedEntityMetadata] = []
         self.replaced_entities: list[ReplacedEntityMetadata] = []
         self.device_automation_triggers_metadata: dict[
-            tuple[str, str], dict[str, str]
+            tuple[str, str], dict[str, Any]
         ] = {}
 
         current_frame: FrameType = inspect.currentframe()
@@ -680,7 +680,7 @@ class QuirkBuilder:
         cluster_type: ClusterType = ClusterType.Server,
         endpoint_id: int = 1,
         divisor: int = 1,
-        multiplier: int = 1,
+        multiplier: float = 1,
         suggested_display_precision: int = 1,
         entity_type: EntityType = EntityType.STANDARD,
         device_class: SensorDeviceClass | None = None,
@@ -963,7 +963,7 @@ class QuirkBuilder:
         return self
 
     def device_automation_triggers(
-        self, device_automation_triggers: dict[tuple[str, str], dict[str, str]]
+        self, device_automation_triggers: dict[tuple[str, str], dict[str, Any]]
     ) -> Self:
         """Add device automation triggers and returns self."""
         self.device_automation_triggers_metadata.update(device_automation_triggers)

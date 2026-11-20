@@ -96,7 +96,7 @@ class ZCLSensorMetadata(EntityMetadata):
     attribute_converter: Callable[[Any], Any] | None = attrs.field(default=None)
     reporting_config: ReportingConfig | None = attrs.field(default=None)
     divisor: int | None = attrs.field(default=None)
-    multiplier: int | None = attrs.field(default=None)
+    multiplier: float | None = attrs.field(default=None)
     suggested_display_precision: int | None = attrs.field(default=None)
     unit: str | None = attrs.field(default=None)
     device_class: SensorDeviceClass | None = attrs.field(default=None)
@@ -311,7 +311,7 @@ class QuirkDefinition:
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
     added_entities: tuple[AddedEntityMetadata, ...] = attrs.field(factory=tuple)
     replaced_entities: tuple[ReplacedEntityMetadata, ...] = attrs.field(factory=tuple)
-    device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
+    device_automation_triggers: frozendict[tuple[str, str], frozendict[str, Any]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )
     skip_configuration: bool = attrs.field(default=False)
