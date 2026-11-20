@@ -16,6 +16,9 @@ dependencies = ["zigpy>=2.4.0", "zha>=2.4.0"]
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*"]
 
+[tool.setuptools.package-data]
+zhaquirks = ["py.typed"]
+
 [dependency-groups]
 ci = [
     "pytest-github-actions-annotate-failures>=0.3.0",
