@@ -127,6 +127,15 @@ class TuyaPilotWireType(t.enum8):
     Switch = 0x02
 
 
+class TuyaPilotWireThermostat(TuyaThermostatV2):
+    """Tuya pilot wire thermostat cluster, setpoint from 5 to 35 °C."""
+
+    _CONSTANT_ATTRIBUTES = {
+        **TuyaThermostatV2._CONSTANT_ATTRIBUTES,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 3500,
+    }
+
+
 class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
@@ -645,8 +654,8 @@ base_avatto_quirk = (
     # on its own setpoint: use the pilot wire mode to stop the radiator
     .tuya_dp(
         dp_id=1,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaPilotWireThermostat.ep_attribute,
+        attribute_name=TuyaPilotWireThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: (
             Thermostat.SystemMode.Heat if x else Thermostat.SystemMode.Off
         ),
@@ -672,8 +681,8 @@ base_avatto_quirk = (
     )
     .tuya_dp(
         dp_id=16,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaPilotWireThermostat.ep_attribute,
+        attribute_name=TuyaPilotWireThermostat.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     .tuya_binary_sensor(
@@ -685,7 +694,7 @@ base_avatto_quirk = (
     )
     .tuya_number(
         dp_id=19,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        attribute_name=TuyaPilotWireThermostat.AttributeDefs.local_temperature_calibration.name,
         type=t.int32s,
         min_value=-9,
         max_value=9,
@@ -716,10 +725,10 @@ base_avatto_quirk = (
     )
     .tuya_dp(
         dp_id=50,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaPilotWireThermostat.ep_attribute,
+        attribute_name=TuyaPilotWireThermostat.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
+        dp_converter=lambda x: round(x / 10),
     )
     .tuya_sensor(
         dp_id=101,
@@ -848,7 +857,7 @@ base_avatto_quirk = (
         translation_key="antifrost_temperature",
         fallback_name="Antifrost temperature",
     )
-    .adds(TuyaThermostatV2)
+    .adds(TuyaPilotWireThermostat)
     # no heating state DP: the HVAC action would always be unknown
     .prevent_default_entity_creation(
         endpoint_id=1,

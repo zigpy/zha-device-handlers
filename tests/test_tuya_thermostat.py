@@ -350,6 +350,40 @@ async def test_pilot_wire_system_mode():
         assert sent_datapoints(request, tuya_cluster) == [(1, TuyaDPType.BOOL, b"\x00")]
 
 
+@pytest.mark.parametrize(
+    "temperature,datapoint",
+    [
+        (32.5, (50, TuyaDPType.VALUE, b"\x00\x00\x01\x45")),  # above 30 °C
+        (19.9, (50, TuyaDPType.VALUE, b"\x00\x00\x00\xc7")),  # not truncated
+    ],
+)
+async def test_pilot_wire_setpoint(temperature, datapoint):
+    """Test the climate setpoint of the pilot wire thermostat."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, PILOT_WIRE_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        tuya_cluster = device.device.endpoints[1].tuya_manufacturer
+        climate = next(
+            entity
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM == Platform.CLIMATE
+        )
+        assert (climate.min_temp, climate.max_temp) == (5.0, 35.0)
+
+        # ZHA only writes the setpoint while the climate is on
+        tuya_cluster.handle_message(*tuya_cluster.deserialize(ZCL_PILOT_WIRE_ON))
+        await gateway.async_block_till_done()
+
+        with mock.patch.object(
+            tuya_cluster.endpoint, "request", mock.AsyncMock(return_value=[0, 0])
+        ) as request:
+            await climate.async_set_temperature(temperature=temperature)
+            await gateway.async_block_till_done()
+
+        assert sent_datapoints(request, tuya_cluster) == [datapoint]
+
+
 async def test_pilot_wire_configure_queries_data():
     """Test the settings are queried on configuration."""
     async with zha_gateway() as gateway:
