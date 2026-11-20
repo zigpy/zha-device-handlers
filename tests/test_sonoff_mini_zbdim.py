@@ -5,15 +5,15 @@ from unittest import mock
 
 import pytest
 import zigpy.quirks
-from zigpy.quirks.v2 import EntityPlatform
 import zigpy.types as t
+from zigpy.quirks.v2 import EntityPlatform
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import LevelControl
 
 from tests.common import ClusterListener
 import zhaquirks
 
-mini_zbdim = importlib.import_module("zhaquirks.sonoff.mini-zbdim")
+mini_zbdim = importlib.import_module("zhaquirks.sonoff.mini_zbdim")
 SonoffCluster = mini_zbdim.SonoffCluster
 SonoffLevelControl = mini_zbdim.SonoffLevelControl
 
@@ -134,9 +134,7 @@ async def test_sonoff_mini_zbdim_network_led_write(sonoff_cluster, enabled):
 
 @pytest.mark.parametrize("attribute", PERCENT_ATTRIBUTES, ids=lambda attr: attr.name)
 @pytest.mark.parametrize("raw_value", [3, 128, 255])
-async def test_sonoff_mini_zbdim_percent_raw_write(
-    sonoff_cluster, attribute, raw_value
-):
+async def test_sonoff_mini_zbdim_percent_raw_write(sonoff_cluster, attribute, raw_value):
     """Serialize the raw brightness byte rather than the rounded display percentage."""
     sonoff_cluster.update_attribute(attribute.id, t.uint8_t(raw_value))
     value = sonoff_cluster.get(attribute.name)
