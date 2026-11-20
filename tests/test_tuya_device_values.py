@@ -19,7 +19,7 @@ from zigpy.zcl import foundation
 
 from tests.common import attribute_cache_row, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.builder import EntityType
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     TUYA_SEND_DATA,
@@ -880,3 +880,87 @@ def test_tuya_smart_siren_attributes_migrated(zigpy_device_from_v2_quirk, typed)
         "siren_on": 0,
         "alarm_ringtone": 9,
     }
+
+
+async def test_hobeian_contact_device_values(zigpy_device_from_v2_quirk):
+    """The HOBEIAN door and vibration sensor keeps its datapoints as device values."""
+    device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-102ZM")
+    cluster = device.endpoints[1].tuya_manufacturer
+    added = _added_entities(device)
+
+    assert {
+        (
+            key,
+            a.entity_cls,
+            a.kwargs["unique_id_suffix"],
+            a.kwargs["entity_type"],
+            a.kwargs.get("device_class"),
+        )
+        for key, a in added.items()
+    } == {
+        (
+            "vibration",
+            DeviceValueBinarySensor,
+            "1-vibration",
+            EntityType.STANDARD,
+            BinarySensorDeviceClass.VIBRATION,
+        ),
+        (
+            "contact",
+            DeviceValueBinarySensor,
+            "1-contact",
+            EntityType.STANDARD,
+            BinarySensorDeviceClass.OPENING,
+        ),
+        (
+            "sensitivity_level",
+            DeviceValueNumber,
+            "1-sensitivity_level",
+            EntityType.CONFIG,
+            None,
+        ),
+    }
+
+    # Reports: contact open (101, bool) and sensitivity 20 (6, value)
+    for frame in (
+        b"\x09\x10\x02\x00\x10\x65\x01\x00\x01\x01",
+        b"\x09\x10\x02\x00\x10\x06\x02\x00\x04\x00\x00\x00\x14",
+    ):
+        hdr, args = cluster.deserialize(frame)
+        cluster.handle_message(hdr, args)
+
+    assert device.store.get(added["contact"].kwargs["value"]) == 1
+    assert device.store.get(added["vibration"].kwargs["value"]) is None
+    assert device.store.get(added["sensitivity_level"].kwargs["value"]) == 20
+
+    with mock.patch.object(
+        cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        await added["sensitivity_level"].kwargs["writer"](device, 35)
+
+    assert [
+        (command_id, dp, data.dp_type, data.payload)
+        for command_id, dp, data in _sent_datapoints(request)
+    ] == [(TUYA_SET_DATA, 6, TuyaDPType.VALUE, 35)]
+    assert device.store.get(added["sensitivity_level"].kwargs["value"]) == 35
+
+
+@pytest.mark.parametrize("typed", [True, False])
+def test_hobeian_contact_attributes_migrated(zigpy_device_from_v2_quirk, typed):
+    """The HOBEIAN sensor's old attributes move into its device values."""
+    device = zigpy_device_from_v2_quirk("HOBEIAN", "ZG-102ZM")
+    added = _added_entities(device)
+
+    old_attributes = {
+        "vibration": (0xEF01, t.Bool.false),
+        "sensitivity_level": (0xEF06, t.uint8_t(25)),
+        "contact": (0xEF65, t.Bool.true),
+    }
+    rows = _old_attribute_rows(device, old_attributes, typed)
+
+    result = device.load_attribute_cache(rows, migrate=True)
+    assert len(result.migrated) == len(rows)
+
+    assert {
+        key: device.store.get(added[key].kwargs["value"]) for key in old_attributes
+    } == {"vibration": 0, "sensitivity_level": 25, "contact": 1}

@@ -59,6 +59,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         device_class=BinarySensorDeviceClass.VIBRATION,
         entity_type=EntityType.STANDARD,
         fallback_name="Vibration",
+        as_device_value=True,
     )
     .tuya_binary_sensor(
         dp_id=101,
@@ -66,6 +67,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         device_class=BinarySensorDeviceClass.OPENING,
         entity_type=EntityType.STANDARD,
         fallback_name="Contact",
+        as_device_value=True,
     )
     .tuya_battery(dp_id=4)
     .tuya_number(
@@ -77,6 +79,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         step=1,
         translation_key="sensitivity_level",
         fallback_name="Sensitivity level",
+        as_device_value=True,
     )
     # Disable the default IAS Zone entity (HOBEIAN signature only); it
     # shows as "opening" and conflates contact + vibration. No-op on
