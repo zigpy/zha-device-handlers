@@ -4,7 +4,8 @@ import importlib
 from unittest import mock
 
 import pytest
-from zigpy.quirks.v2 import EntityPlatform
+from zha.application import EntityPlatform
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import LevelControl
@@ -92,9 +93,10 @@ def test_sonoff_mini_zbdim_non_percent_value(sonoff_cluster):
 def test_sonoff_mini_zbdim_entity_metadata(sonoff_cluster):
     """Expose the LED switch and use the correct brightness percentage multiplier."""
     device = sonoff_cluster.endpoint.device
-    metadata = device.exposes_metadata[
-        (1, SonoffCluster.cluster_id, ClusterType.Server)
-    ]
+    entry = DEVICE_REGISTRY.match_entry(device)
+    assert entry is not None
+
+    metadata = entry.zha_device_factory.quirk_definition.entity_metadata
     entities = {entity.attribute_name: entity for entity in metadata}
     for attribute in PERCENT_ATTRIBUTES:
         entity = entities[attribute.name]
