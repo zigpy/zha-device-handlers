@@ -252,8 +252,6 @@ base_tuya_motion = (
 
 (
     base_tuya_motion.clone()
-    .applies_to("_TZE200_gkfbdvyx", "TS0601")
-    .applies_to("_TZE204_gkfbdvyx", "TS0601")
     .applies_to("_TZE200_ya4ft0w4", "TS0601")
     .applies_to("_TZE204_ya4ft0w4", "TS0601")
     .tuya_dp(
@@ -293,6 +291,101 @@ base_tuya_motion = (
         translation_key="fading_time",
         fallback_name="Fading time",
     )
+    .add_to_registry()
+)
+
+
+# ZY-M100-24GV3 with a different radar module than ya4ft0w4: target distance is
+# reported in 0.1 m, and the range settings use 0.5 m steps (as in z2m).
+(
+    TuyaQuirkBuilder("_TZE200_gkfbdvyx", "TS0601")
+    .applies_to("_TZE204_gkfbdvyx", "TS0601")
+    .adds(TuyaOccupancySensing)
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: True if x in (1, 2) else False,
+    )
+    .tuya_number(
+        dp_id=2,
+        attribute_name="move_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="move_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=3,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=6,
+        step=0.5,
+        multiplier=0.01,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0.5,
+        max_value=9,
+        step=0.5,
+        multiplier=0.01,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_sensor(
+        dp_id=9,
+        attribute_name="distance",
+        type=t.uint16_t,
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        entity_type=EntityType.STANDARD,
+        translation_key="distance",
+        fallback_name="Target distance",
+    )
+    .tuya_switch(
+        dp_id=101,
+        attribute_name="distance_tracking",
+        entity_type=EntityType.CONFIG,
+        translation_key="distance_tracking",
+        fallback_name="Distance tracking",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="presence_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_illuminance(dp_id=103)
+    .tuya_number(
+        dp_id=105,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=15000,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .skip_configuration()
     .add_to_registry()
 )
 
