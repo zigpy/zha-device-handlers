@@ -19,6 +19,7 @@ from zigpy.zcl import foundation
 
 from tests.common import attribute_cache_row, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.builder import EntityType
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     TUYA_SEND_DATA,
@@ -36,6 +37,11 @@ from zhaquirks.tuya.mcu import (
     tuya_device_value_writer,
 )
 from zhaquirks.tuya.tuya_fingerbot import FingerBotMode, FingerBotReverse
+from zhaquirks.tuya.tuya_siren import (
+    TuyaAlarmVolume,
+    TuyaSirenRingtoneV02,
+    TuyaSirenState,
+)
 
 zhaquirks.setup()
 
@@ -723,3 +729,154 @@ async def test_tuya_fingerbot_attributes_migrated(zigpy_device_from_v2_quirk, ty
     hdr, args = cluster.deserialize(b"\x09\x10\x02\x00\x10\x6b\x01\x00\x01\x01")
     cluster.handle_message(hdr, args)
     assert device.store.get(values["touch_control"]) == 1
+
+
+def _old_attribute_rows(
+    device, old_attributes: dict[str, tuple[int, Any]], typed: bool
+) -> list:
+    """Rows of the invented attributes a quirk had, typed or as untyped values."""
+    return [
+        attribute_cache_row(
+            device,
+            TUYA_CLUSTER_ID,
+            attr_id,
+            value.serialize() if typed else int(value),
+            foundation.DataType.from_python_type(type(value)).type_id
+            if typed
+            else None,
+            manufacturer_code=device.manufacturer_id,
+        )
+        for attr_id, value in old_attributes.values()
+    ]
+
+
+def _added_entities(device) -> dict[str, Any]:
+    """Return the entities the device's quirk adds, by device value key."""
+    definition = DEVICE_REGISTRY.match_entry(device).zha_device_factory.quirk_definition
+
+    # No entity is left on an invented attribute of the Tuya cluster
+    assert [
+        m.attribute_name
+        for m in definition.entity_metadata
+        if m.cluster_id == TUYA_CLUSTER_ID
+    ] == []
+
+    return {a.kwargs["value"].key: a for a in definition.added_entities}
+
+
+async def test_tuya_smart_siren_device_values(zigpy_device_from_v2_quirk):
+    """The smart siren keeps its datapoints as device values, entities unchanged."""
+    device = zigpy_device_from_v2_quirk("_TZE204_k7mfgaen", "TS0601")
+    cluster = device.endpoints[1].tuya_manufacturer
+    added = _added_entities(device)
+
+    assert {
+        (
+            key,
+            a.entity_cls,
+            a.kwargs["unique_id_suffix"],
+            a.kwargs["entity_type"],
+            a.kwargs["translation_key"],
+        )
+        for key, a in added.items()
+    } == {
+        (
+            "alarm_mode",
+            DeviceValueSelect,
+            "1-alarm_mode",
+            EntityType.CONFIG,
+            "alarm_mode",
+        ),
+        (
+            "alarm_volume",
+            DeviceValueSelect,
+            "1-alarm_volume",
+            EntityType.CONFIG,
+            "alarm_volume",
+        ),
+        (
+            "charge_state",
+            DeviceValueBinarySensor,
+            "1-charge_state",
+            EntityType.DIAGNOSTIC,
+            None,
+        ),
+        (
+            "alarm_duration",
+            DeviceValueNumber,
+            "1-alarm_duration",
+            EntityType.CONFIG,
+            "alarm_duration",
+        ),
+        ("siren_on", DeviceValueSwitch, "1-siren_on", EntityType.STANDARD, "siren_on"),
+        (
+            "alarm_ringtone",
+            DeviceValueSelect,
+            "1-alarm_ringtone",
+            EntityType.CONFIG,
+            "alarm_ringtone",
+        ),
+    }
+    for name in added:
+        assert name not in cluster.attributes_by_name
+
+    # Reports: siren on (13, bool) and charging (6, bool)
+    for frame in (
+        b"\x09\x10\x02\x00\x10\x0d\x01\x00\x01\x01",
+        b"\x09\x10\x02\x00\x10\x06\x01\x00\x01\x01",
+    ):
+        hdr, args = cluster.deserialize(frame)
+        cluster.handle_message(hdr, args)
+
+    assert device.store.get(added["siren_on"].kwargs["value"]) == 1
+    assert device.store.get(added["charge_state"].kwargs["value"]) == 1
+
+    with mock.patch.object(
+        cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as request:
+        await added["alarm_ringtone"].kwargs["writer"](
+            device, TuyaSirenRingtoneV02.Door
+        )
+        await added["alarm_duration"].kwargs["writer"](device, 5)
+        await added["siren_on"].kwargs["writer"](device, 0)
+
+    assert [
+        (command_id, dp, data.dp_type, data.payload)
+        for command_id, dp, data in _sent_datapoints(request)
+    ] == [
+        (TUYA_SET_DATA, 21, TuyaDPType.ENUM, TuyaSirenRingtoneV02.Door),
+        (TUYA_SET_DATA, 7, TuyaDPType.VALUE, 5),
+        (TUYA_SET_DATA, 13, TuyaDPType.BOOL, t.Bool.false),
+    ]
+    assert device.store.get(added["siren_on"].kwargs["value"]) == 0
+
+
+@pytest.mark.parametrize("typed", [True, False])
+def test_tuya_smart_siren_attributes_migrated(zigpy_device_from_v2_quirk, typed):
+    """The smart siren's old attributes move into its device values."""
+    device = zigpy_device_from_v2_quirk("_TZE204_k7mfgaen", "TS0601")
+    added = _added_entities(device)
+
+    old_attributes = {
+        "alarm_mode": (0xEF01, TuyaSirenState.Sound_and_light),
+        "alarm_volume": (0xEF05, TuyaAlarmVolume.High),
+        "charge_state": (0xEF06, t.Bool.true),
+        "alarm_duration": (0xEF07, t.uint16_t(10)),
+        "siren_on": (0xEF0D, t.Bool.false),
+        "alarm_ringtone": (0xEF15, TuyaSirenRingtoneV02.Water),
+    }
+    rows = _old_attribute_rows(device, old_attributes, typed)
+
+    result = device.load_attribute_cache(rows, migrate=True)
+    assert len(result.migrated) == len(rows)
+
+    assert {
+        key: device.store.get(added[key].kwargs["value"]) for key in old_attributes
+    } == {
+        "alarm_mode": 2,
+        "alarm_volume": 2,
+        "charge_state": 1,
+        "alarm_duration": 10,
+        "siren_on": 0,
+        "alarm_ringtone": 9,
+    }
