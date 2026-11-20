@@ -31,6 +31,7 @@ class RoundedPercentRaw(int):
     """Round percentage display without changing the underlying ZCL value."""
 
     def __mul__(self, factor):
+        """Round only when multiplying by the brightness percentage scale."""
         result = int(self) * factor
         return round(result) if factor == 100 / 255 else result
 
