@@ -12,6 +12,7 @@ a package without an entry is checked in full.
 from collections import defaultdict
 from pathlib import Path
 import re
+import sys
 
 from mypy import api as mypy_api
 
@@ -36,8 +37,15 @@ MYPY_FLAGS = [
 
 
 def run_mypy() -> list[str]:
-    """Run mypy with no error codes disabled and capture output."""
-    stdout, stderr, _ = mypy_api.run(MYPY_FLAGS)
+    """Run mypy with no error codes disabled and capture output.
+
+    Exits instead of returning when mypy fails fatally (exit status 2, e.g. a
+    syntax error), as its output then doesn't list the type errors.
+    """
+    stdout, stderr, exit_status = mypy_api.run(MYPY_FLAGS)
+    if exit_status == 2:
+        sys.stderr.write(stdout + stderr)
+        raise SystemExit(exit_status)
     return stdout.splitlines() + stderr.splitlines()
 
 
