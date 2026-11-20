@@ -1,7 +1,15 @@
 """Tuya based touch switch."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    LevelControl,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -12,8 +20,10 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, NoManufacturerCluster, TuyaDimmerSwitch
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
+    TuyaLevelControl,
     TuyaLevelControlManufCluster,
     TuyaOnOff,
     TuyaOnOffNM,
@@ -418,3 +428,20 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
             },
         }
     }
+
+
+(
+    TuyaQuirkBuilder("_TZE200_a1ovdobn", "TS0601")  # MOES ZS-D1
+    .applies_to("_TZE284_a1ovdobn", "TS0601")
+    .tuya_onoff(dp_id=1, onoff_cfg=TuyaOnOff)
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaLevelControl.ep_attribute,
+        attribute_name=LevelControl.AttributeDefs.current_level.name,
+        converter=lambda value: (value * 255) // 1000,
+        dp_converter=lambda value: (value * 1000) // 255,
+    )
+    .adds(TuyaLevelControl)
+    .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
+    .add_to_registry()
+)
