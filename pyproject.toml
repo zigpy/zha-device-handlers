@@ -36,6 +36,7 @@ dev = [
     "pytest-timeout",
     "ruff==0.15.17",        # Keep this in sync with .pre-commit-config.yaml
     "time-machine>=2,<3",
+    "uv>=0.11.21",  # The pre-commit hooks run through `uv run`
 ]
 
 [tool.setuptools-git-versioning]
