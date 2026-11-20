@@ -4,8 +4,8 @@ import importlib
 from unittest import mock
 
 import pytest
-import zigpy.types as t
 from zigpy.quirks.v2 import EntityPlatform
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import LevelControl
 
@@ -92,7 +92,9 @@ def test_sonoff_mini_zbdim_non_percent_value(sonoff_cluster):
 def test_sonoff_mini_zbdim_entity_metadata(sonoff_cluster):
     """Expose the LED switch and use the correct brightness percentage multiplier."""
     device = sonoff_cluster.endpoint.device
-    metadata = device.exposes_metadata[(1, SonoffCluster.cluster_id, ClusterType.Server)]
+    metadata = device.exposes_metadata[
+        (1, SonoffCluster.cluster_id, ClusterType.Server)
+    ]
     entities = {entity.attribute_name: entity for entity in metadata}
     for attribute in PERCENT_ATTRIBUTES:
         entity = entities[attribute.name]
@@ -134,7 +136,9 @@ async def test_sonoff_mini_zbdim_network_led_write(sonoff_cluster, enabled):
 
 @pytest.mark.parametrize("attribute", PERCENT_ATTRIBUTES, ids=lambda attr: attr.name)
 @pytest.mark.parametrize("raw_value", [3, 128, 255])
-async def test_sonoff_mini_zbdim_percent_raw_write(sonoff_cluster, attribute, raw_value):
+async def test_sonoff_mini_zbdim_percent_raw_write(
+    sonoff_cluster, attribute, raw_value
+):
     """Serialize the raw brightness byte rather than the rounded display percentage."""
     sonoff_cluster.update_attribute(attribute.id, t.uint8_t(raw_value))
     value = sonoff_cluster.get(attribute.name)
