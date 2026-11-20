@@ -425,7 +425,7 @@ class TuyaManufCluster(CustomCluster):
             id=0x0024, schema={"param": t.data16}, manufacturer_code=None
         )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.command_bus = Bus()
@@ -625,7 +625,7 @@ class EnchantedDevice(CustomDevice, BaseEnchantedDevice):
 class TuyaOnOff(CustomCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.switch_bus.add_listener(self)
@@ -709,7 +709,7 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
 class TuyaSwitch(CustomDevice):
     """Tuya switch device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init device."""
         self.switch_bus = Bus()
         super().__init__(*args, **kwargs)
@@ -718,7 +718,7 @@ class TuyaSwitch(CustomDevice):
 class TuyaDimmerSwitch(TuyaSwitch):
     """Tuya dimmer switch device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init device."""
         self.dimmer_bus = Bus()
         super().__init__(*args, **kwargs)
@@ -732,7 +732,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     class AttributeDefs(Thermostat.AttributeDefs):
         """Cluster attributes."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.thermostat_bus.add_listener(self)
@@ -855,7 +855,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
     class AttributeDefs(UserInterface.AttributeDefs):
         """Cluster attributes."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.ui_bus.add_listener(self)
@@ -955,7 +955,7 @@ class TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         # listening to battery_bus required for legacy and custom Tuya TRV quirks
@@ -1020,7 +1020,7 @@ class TuyaPowerConfigurationClusterOther(PowerConfiguration, TuyaLocalCluster):
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init device."""
         self.thermostat_bus = Bus()
         self.ui_bus = Bus()
@@ -1087,7 +1087,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
         switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
@@ -1284,7 +1284,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         motor_direction: Final = ZCLAttributeDef(id=ATTR_COVER_DIRECTION, type=t.Bool)
         cover_inverted: Final = ZCLAttributeDef(id=ATTR_COVER_INVERTED, type=t.Bool)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize instance."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.cover_bus.add_listener(self)
@@ -1404,7 +1404,7 @@ class TuyaWindowCover(CustomDevice):
     # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
     tuya_cover_inverted_by_default = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init device."""
         self.cover_bus = Bus()
         super().__init__(*args, **kwargs)
@@ -1453,7 +1453,7 @@ class TuyaManufacturerLevelControl(TuyaManufCluster):
 class TuyaLevelControl(CustomCluster, LevelControl):
     """Tuya Level cluster for dimmable device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.dimmer_bus.add_listener(self)
@@ -1638,7 +1638,7 @@ class TuyaNewManufCluster(CustomCluster):
     dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
     data_point_handlers: dict[int, str] = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
 

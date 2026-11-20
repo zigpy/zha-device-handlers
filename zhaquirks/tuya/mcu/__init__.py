@@ -220,7 +220,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             manufacturer_code=None,
         )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
 

@@ -434,7 +434,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
 
     cluster_id = XBEE_AT_RESPONSE_CLUSTER
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize pending requests for this device."""
         super().__init__(*args, **kwargs)
         self._awaiting: dict[int, asyncio.Future] = {}

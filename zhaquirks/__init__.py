@@ -78,7 +78,7 @@ _LOGGER = logging.getLogger(__name__)
 class Bus(ListenableMixin):
     """Event bus implementation."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init event bus."""
         super().__init__(*args, **kwargs)
         self._listeners = {}
@@ -178,7 +178,7 @@ class LocalDataCluster(CustomCluster):
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_report)
@@ -227,7 +227,7 @@ class LevelControlWithMoveDirection(CustomCluster, LevelControl):
     stop that follows no move, for instance after a restart in the middle of a hold.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize instance."""
         super().__init__(*args, **kwargs)
         self._last_move_direction: int | None = None
@@ -371,11 +371,11 @@ class _Motion(CustomCluster, IasZone):
 
     reset_s: int = 30
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self._loop = asyncio.get_running_loop()
-        self._timer_handle = None
+        self._timer_handle: asyncio.TimerHandle | None = None
 
     @property
     def reset_after(self) -> int:
@@ -420,7 +420,7 @@ class MotionOnEvent(_Motion):
 
     reset_s: int = 120
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.motion_bus.add_listener(self)
@@ -444,10 +444,10 @@ class _Occupancy(CustomCluster, OccupancySensing):
 
     reset_s: int = 600
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
-        self._timer_handle = None
+        self._timer_handle: asyncio.TimerHandle | None = None
         self._loop = asyncio.get_running_loop()
 
     def _turn_off(self):
@@ -458,7 +458,7 @@ class _Occupancy(CustomCluster, OccupancySensing):
 class OccupancyOnEvent(_Occupancy):
     """Self reset occupancy from bus."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.occupancy_bus.add_listener(self)
@@ -476,7 +476,7 @@ class OccupancyOnEvent(_Occupancy):
 class OccupancyWithReset(_Occupancy):
     """Self reset Occupancy cluster and send event on motion bus."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)

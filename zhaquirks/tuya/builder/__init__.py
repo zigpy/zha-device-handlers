@@ -158,7 +158,7 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
 class TuyaValveWaterConsumedNoInstDemand(TuyaValveWaterConsumed):
     """Tuya Valve Water consumed cluster without instantaneous demand."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init a TuyaValveWaterConsumedNoInstDemand cluster."""
         super().__init__(*args, **kwargs)
         self.add_unsupported_attribute(Metering.AttributeDefs.instantaneous_demand.id)
@@ -211,7 +211,7 @@ class TuyaIlluminance(IlluminanceMeasurement, TuyaLocalCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init the TuyaQuirkBuilder."""
         super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}

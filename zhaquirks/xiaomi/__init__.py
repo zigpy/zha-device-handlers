@@ -127,7 +127,7 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiCustomDevice(CustomDevice):
     """Custom device representing xiaomi devices."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = BatterySize.CR2032
@@ -164,7 +164,7 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
 class XiaomiCluster(CustomCluster):
     """Xiaomi cluster implementation."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
@@ -569,7 +569,7 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
     MAX_VOLTS_MV = 3100
     MIN_VOLTS_MV = 2820
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self._CONSTANT_ATTRIBUTES = {
@@ -720,7 +720,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.rms_voltage.id: 0,
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         # Previously, this cluster was wrongly setting the total_active_power attribute,

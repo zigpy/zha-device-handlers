@@ -107,7 +107,7 @@ class MotionCluster(LocalDataCluster, _Motion):
 class MotionClusterLeft(MotionCluster):
     """Motion cluster."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.motion_left_bus.add_listener(self)
@@ -116,7 +116,7 @@ class MotionClusterLeft(MotionCluster):
 class MotionClusterRight(MotionCluster):
     """Motion cluster."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.motion_right_bus.add_listener(self)
@@ -142,7 +142,7 @@ class TerncyRawCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self._last_clicks = deque(maxlen=10)

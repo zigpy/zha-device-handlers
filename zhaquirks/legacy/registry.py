@@ -7,7 +7,7 @@ import inspect
 import itertools
 import logging
 import pathlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from zigpy.const import QUIRKS_REPO_URL, SIG_MANUFACTURER, SIG_MODEL, SIG_MODELS_INFO
 from zigpy.util import deprecated
@@ -26,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 class LegacyDeviceRegistry:
     """Device registry for quirks v1."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the registry."""
         self._registry_v1: dict[
             str | None, dict[str | None, deque[type[CustomDevice]]]
