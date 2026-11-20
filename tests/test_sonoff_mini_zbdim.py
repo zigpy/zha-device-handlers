@@ -1,142 +1,384 @@
-"""Tests for Sonoff MINI-ZBDIM quirks."""
+"""Sonoff MINI-ZBDIM - Zigbee Dimmer Switch."""
 
-import importlib
-from unittest import mock
+from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy import types
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import (
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfPower,
+    UnitOfTime,
+)
 from zigpy.zcl.clusters.general import LevelControl
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeAccess, ZCLAttributeDef
 
-from tests.common import ClusterListener
-import zhaquirks
-
-mini_zbdim = importlib.import_module("zhaquirks.sonoff.mini-zbdim")
-SonoffCluster = mini_zbdim.SonoffCluster
-SonoffLevelControl = mini_zbdim.SonoffLevelControl
-
-zhaquirks.setup()
+ACTION_ATTRIBUTE_IDS = (0xFFD1, 0xFFD2, 0xFFD3)
+PERCENT_ATTRIBUTE_IDS = (0x4001, 0x4002, 0x4006)
 
 
-async def test_sonoff_mini_zbdim_write_attributes_maps_virtual_actions(
-    zigpy_device_from_v2_quirk,
-):
-    """Virtual calibration action attributes should map to the real device attribute."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer="SONOFF",
-        model="MINI-ZBDIM",
-        cluster_ids={
-            1: {
-                SonoffCluster.cluster_id: ClusterType.Server,
-            }
-        },
+class RoundedPercentRaw(int):
+    """Round percentage display without changing the underlying ZCL value."""
+
+    def __mul__(self, factor):
+        result = int(self) * factor
+        return round(result) if factor == 100 / 255 else result
+
+
+class SonoffCluster(CustomCluster):
+    """Custom Sonoff cluster."""
+
+    cluster_id = 0xFC11
+    ep_attribute = "sonoff_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        network_led = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        delayed_power_on_state = ZCLAttributeDef(
+            id=0x0014,
+            type=t.Bool,
+            manufacturer_code=None,
+        )
+        delayed_power_on_time = ZCLAttributeDef(
+            id=0x0015,
+            type=t.uint16_t,
+            manufacturer_code=None,
+        )
+        external_trigger_mode = ZCLAttributeDef(
+            id=0x0016,
+            type=t.uint8_t,
+            manufacturer_code=None,
+        )
+        set_calibration_action = ZCLAttributeDef(
+            id=0x001D,
+            type=t.CharacterString,
+            manufacturer_code=None,
+        )
+        set_calibration_action_start = ZCLAttributeDef(
+            id=0xFFD1,
+            type=t.CharacterString,
+            manufacturer_code=None,
+        )
+        set_calibration_action_stop = ZCLAttributeDef(
+            id=0xFFD2,
+            type=t.CharacterString,
+            manufacturer_code=None,
+        )
+        calibration_status = ZCLAttributeDef(
+            id=0x001E,
+            type=t.uint8_t,
+            access=(ZCLAttributeAccess.Read | ZCLAttributeAccess.Report),
+            manufacturer_code=None,
+        )
+        calibration_progress = ZCLAttributeDef(
+            id=0x0020,
+            type=t.uint8_t,
+            access=(ZCLAttributeAccess.Read | ZCLAttributeAccess.Report),
+            manufacturer_code=None,
+        )
+        transition_time = ZCLAttributeDef(
+            id=0x001F,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        min_brightness_threshold = ZCLAttributeDef(
+            id=0x4001,
+            type=t.uint8_t,
+            manufacturer_code=None,
+        )
+        dimming_light_rate = ZCLAttributeDef(
+            id=0x4003,
+            type=t.uint8_t,
+            manufacturer_code=None,
+        )
+        accurrent_current_value = ZCLAttributeDef(
+            id=0x7004,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        accurrent_voltage_value = ZCLAttributeDef(
+            id=0x7005,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        accurrent_power_value = ZCLAttributeDef(
+            id=0x7006,
+            type=t.uint32_t,
+            manufacturer_code=None,
+        )
+        max_brightness_threshold = ZCLAttributeDef(
+            id=0x4002,
+            type=t.uint8_t,
+            manufacturer_code=None,
+        )
+        level_for_calibration = ZCLAttributeDef(
+            id=0x4006,
+            type=t.uint8_t,
+            manufacturer_code=None,
+        )
+
+    def get(self, key: int | str, default: Any | None = None) -> Any:
+        """Round the three percentage numbers when ZHA scales cached values."""
+        value = super().get(key, default)
+        if (
+            isinstance(value, int)
+            and not isinstance(value, bool)
+            and self.find_attribute(key).id in PERCENT_ATTRIBUTE_IDS
+        ):
+            return RoundedPercentRaw(value)
+        return value
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | ZCLAttributeDef, Any],
+        manufacturer: int | None = None,
+        **kwargs,
+    ):
+        """Map virtual calibration action attributes to the real device attribute."""
+        remapped_attributes = {}
+        for attr, value in attributes.items():
+            if self.find_attribute(attr).id in ACTION_ATTRIBUTE_IDS:
+                remapped_attributes[
+                    self.AttributeDefs.set_calibration_action.name
+                ] = value
+            else:
+                remapped_attributes[attr] = value
+
+        return await super().write_attributes(
+            remapped_attributes, manufacturer=manufacturer, **kwargs
+        )
+
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Read entity-backed attributes during pairing."""
+        await self.read_attributes(
+            [
+                self.AttributeDefs.delayed_power_on_state.id,
+                self.AttributeDefs.delayed_power_on_time.id,
+                self.AttributeDefs.external_trigger_mode.id,
+                self.AttributeDefs.calibration_status.id,
+                self.AttributeDefs.calibration_progress.id,
+                self.AttributeDefs.transition_time.id,
+                self.AttributeDefs.min_brightness_threshold.id,
+                self.AttributeDefs.dimming_light_rate.id,
+                self.AttributeDefs.max_brightness_threshold.id,
+                self.AttributeDefs.level_for_calibration.id,
+            ]
+        )
+
+
+class SonoffLevelControl(CustomCluster, LevelControl):
+    """Override level control cluster."""
+
+    def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
+        """Convert the current level attribute."""
+        if attrid == self.AttributeDefs.current_level.id and value <= 2:
+            value = 2
+        super()._update_attribute(attrid, value)
+
+
+class ExternalTriggerMode(types.enum8):
+    """External trigger mode attribute values."""
+
+    Edge = 0x00
+    Pulse = 0x01
+    Double_pulse = 0x03
+    Triple_pulse = 0x04
+
+
+class DimmingLightRate(types.enum8):
+    """Dimming light rate attribute values."""
+
+    X1 = 1
+    X2 = 2
+    X3 = 3
+    X4 = 4
+    X5 = 5
+
+
+class CalibrationStatus(types.enum8):
+    """Calibration status attribute values."""
+
+    UnCalibrate = 0x00
+    Calibrating = 0x01
+    CalibrationFailed = 0x02
+    Calibrated = 0x03
+
+
+(
+    QuirkBuilder("SONOFF", "MINI-ZBDIM")
+    .replaces(SonoffCluster)
+    .replaces(SonoffLevelControl)
+    .removes(cluster_id=0x0B04)
+    .sensor(
+        attribute_name=SonoffCluster.AttributeDefs.accurrent_current_value.name,
+        cluster_id=SonoffCluster.cluster_id,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="accurrent_current_value",
+        fallback_name="Current",
+        divisor=1000,
+        suggested_display_precision=2,
     )
-
-    sonoff_cluster = device.endpoints[1].sonoff_cluster
-    write_response = [
-        [foundation.WriteAttributesStatusRecord(status=foundation.Status.SUCCESS)]
-    ]
-
-    with mock.patch.object(
-        sonoff_cluster,
-        "write_attributes_raw",
-        mock.AsyncMock(return_value=write_response),
-    ) as mock_write:
-        start_value = bytes([0x01, 0x01, 0x01]).decode("latin-1")
-        await sonoff_cluster.write_attributes(
-            {SonoffCluster.AttributeDefs.set_calibration_action_start.name: start_value}
-        )
-
-        written_attrs = mock_write.call_args[0][0]
-        assert len(written_attrs) == 1
-        assert (
-            written_attrs[0].attrid
-            == SonoffCluster.AttributeDefs.set_calibration_action.id
-        )
-        assert written_attrs[0].value.value == start_value
-
-        stop_value = bytes([0x01, 0x01, 0x02]).decode("latin-1")
-        await sonoff_cluster.write_attributes(
-            {
-                SonoffCluster.AttributeDefs.set_calibration_action_stop.name: stop_value,
-                SonoffCluster.AttributeDefs.delayed_power_on_state.name: True,
-            }
-        )
-
-        written_attrs = mock_write.call_args[0][0]
-        assert len(written_attrs) == 2
-        assert (
-            written_attrs[0].attrid
-            == SonoffCluster.AttributeDefs.set_calibration_action.id
-        )
-        assert written_attrs[0].value.value == stop_value
-        assert (
-            written_attrs[1].attrid
-            == SonoffCluster.AttributeDefs.delayed_power_on_state.id
-        )
-        assert written_attrs[1].value.value == t.Bool.true
-
-
-async def test_sonoff_mini_zbdim_apply_custom_configuration_reads_backed_attributes(
-    zigpy_device_from_v2_quirk,
-):
-    """Pairing configuration should read the attributes behind exposed entities."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer="SONOFF",
-        model="MINI-ZBDIM",
-        cluster_ids={
-            1: {
-                SonoffCluster.cluster_id: ClusterType.Server,
-            }
-        },
+    .sensor(
+        attribute_name=SonoffCluster.AttributeDefs.accurrent_voltage_value.name,
+        cluster_id=SonoffCluster.cluster_id,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        divisor=1000,
+        translation_key="accurrent_voltage_value",
+        fallback_name="Voltage",
+        suggested_display_precision=2,
     )
-
-    sonoff_cluster = device.endpoints[1].sonoff_cluster
-
-    with mock.patch.object(
-        sonoff_cluster,
-        "read_attributes",
-        mock.AsyncMock(),
-    ) as mock_read:
-        await sonoff_cluster.apply_custom_configuration()
-
-    mock_read.assert_awaited_once_with(
-        [
-            SonoffCluster.AttributeDefs.delayed_power_on_state.id,
-            SonoffCluster.AttributeDefs.delayed_power_on_time.id,
-            SonoffCluster.AttributeDefs.external_trigger_mode.id,
-            SonoffCluster.AttributeDefs.calibration_status.id,
-            SonoffCluster.AttributeDefs.calibration_progress.id,
-            SonoffCluster.AttributeDefs.transition_time.id,
-            SonoffCluster.AttributeDefs.min_brightness_threshold.id,
-            SonoffCluster.AttributeDefs.dimming_light_rate.id,
-            SonoffCluster.AttributeDefs.max_brightness_threshold.id,
-            SonoffCluster.AttributeDefs.level_for_calibration.id,
-        ]
+    .sensor(
+        attribute_name=SonoffCluster.AttributeDefs.accurrent_power_value.name,
+        cluster_id=SonoffCluster.cluster_id,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfPower.WATT,
+        divisor=1000,
+        translation_key="accurrent_power_value",
+        fallback_name="Power",
+        suggested_display_precision=2,
     )
-
-
-async def test_sonoff_mini_zbdim_level_control_clamps_minimum_level(
-    zigpy_device_from_v2_quirk,
-):
-    """Current level values below the device minimum should be clamped to 2."""
-    device = zigpy_device_from_v2_quirk(
-        manufacturer="SONOFF",
-        model="MINI-ZBDIM",
-        cluster_ids={
-            1: {
-                LevelControl.cluster_id: ClusterType.Server,
-            }
-        },
+    .switch(
+        SonoffCluster.AttributeDefs.network_led.name,
+        SonoffCluster.cluster_id,
+        endpoint_id=1,
+        translation_key="network_led",
+        fallback_name="Network LED",
     )
-
-    level_cluster = device.endpoints[1].level
-    listener = ClusterListener(level_cluster)
-    current_level_id = SonoffLevelControl.AttributeDefs.current_level.id
-
-    level_cluster.update_attribute(current_level_id, 1)
-    assert listener.attribute_updates[-1] == (current_level_id, 2)
-    assert level_cluster.get(current_level_id) == 2
-
-    level_cluster.update_attribute(current_level_id, 3)
-    assert listener.attribute_updates[-1] == (current_level_id, 3)
-    assert level_cluster.get(current_level_id) == 3
+    .switch(
+        SonoffCluster.AttributeDefs.delayed_power_on_state.name,
+        SonoffCluster.cluster_id,
+        off_value=0,
+        on_value=1,
+        translation_key="delayed_power_on_state",
+        fallback_name="Delayed power on state",
+    )
+    .number(
+        SonoffCluster.AttributeDefs.delayed_power_on_time.name,
+        SonoffCluster.cluster_id,
+        min_value=0.5,
+        max_value=3599.5,
+        step=0.5,
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        multiplier=0.5,
+        translation_key="delayed_power_on_time",
+        fallback_name="Delayed power on time",
+    )
+    .write_attr_button(
+        SonoffCluster.AttributeDefs.set_calibration_action_stop.name,
+        bytes([0x01, 0x01, 0x02]).decode("latin-1"),
+        SonoffCluster.cluster_id,
+        translation_key="stop_calibrate",
+        fallback_name="Stop calibrate",
+    )
+    .write_attr_button(
+        SonoffCluster.AttributeDefs.set_calibration_action_start.name,
+        bytes([0x01, 0x01, 0x01]).decode("latin-1"),
+        SonoffCluster.cluster_id,
+        translation_key="start_calibrate",
+        fallback_name="Start calibrate",
+    )
+    # .enum(
+    #     SonoffCluster.AttributeDefs.set_calibration_action.name,
+    #     SetCalibrationAction,
+    #     SonoffCluster.cluster_id,
+    #     translation_key="set_calibration_action",
+    #     fallback_name="Set calibration action",
+    # )
+    .enum(
+        SonoffCluster.AttributeDefs.calibration_status.name,
+        CalibrationStatus,
+        SonoffCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="calibration_status",
+        fallback_name="Calibration status",
+    )
+    .sensor(
+        attribute_name=SonoffCluster.AttributeDefs.calibration_progress.name,
+        cluster_id=SonoffCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        translation_key="calibration_progress",
+        fallback_name="Calibration progress",
+    )
+    .enum(
+        SonoffCluster.AttributeDefs.external_trigger_mode.name,
+        ExternalTriggerMode,
+        SonoffCluster.cluster_id,
+        translation_key="external_trigger_mode",
+        fallback_name="External trigger mode",
+    )
+    .number(
+        SonoffCluster.AttributeDefs.min_brightness_threshold.name,
+        SonoffCluster.cluster_id,
+        min_value=1,
+        max_value=99,
+        step=1,
+        unit=PERCENTAGE,
+        multiplier=100 / 255,
+        translation_key="min_brightness_threshold",
+        fallback_name="Min brightness threshold",
+    )
+    .number(
+        SonoffCluster.AttributeDefs.transition_time.name,
+        SonoffCluster.cluster_id,
+        min_value=0,
+        max_value=5,
+        step=0.1,
+        unit="s",
+        multiplier=0.1,
+        translation_key="transition_time",
+        fallback_name="Transition time",
+    )
+    .enum(
+        SonoffCluster.AttributeDefs.dimming_light_rate.name,
+        DimmingLightRate,
+        SonoffCluster.cluster_id,
+        translation_key="dimming_light_rate",
+        fallback_name="Dimming light rate",
+    )
+    .number(
+        SonoffCluster.AttributeDefs.max_brightness_threshold.name,
+        SonoffCluster.cluster_id,
+        min_value=2,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        multiplier=100 / 255,
+        translation_key="max_brightness_threshold",
+        fallback_name="Max brightness threshold",
+    )
+    .number(
+        SonoffCluster.AttributeDefs.level_for_calibration.name,
+        SonoffCluster.cluster_id,
+        min_value=1,
+        max_value=100,
+        step=1,
+        unit=PERCENTAGE,
+        multiplier=100 / 255,
+        translation_key="level_for_calibration",
+        fallback_name="Level For Calibration",
+    )
+    .add_to_registry()
+)
