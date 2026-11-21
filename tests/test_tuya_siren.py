@@ -82,6 +82,7 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -99,6 +100,7 @@ async def test_siren_send_attribute(zigpy_device_from_v2_quirk):
             priority=None,
             retries=None,
             retry_delay=None,
+            aps_encryption=False,
         )
         assert status == foundation.Status.SUCCESS
 
