@@ -1,5 +1,7 @@
 """Smoke Sensor."""
 
+import asyncio
+
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -10,10 +12,12 @@ from zhaquirks import LocalDataCluster
 from zhaquirks.builder import BinarySensorDeviceClass, EntityType, QuirkBuilder
 from zhaquirks.tuya import (
     BatterySize,
+    TuyaDatapointData,
     TuyaManufClusterAttributes,
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 
 class TuyaSensitivityMode(t.enum8):
@@ -75,14 +79,124 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 (
     TuyaQuirkBuilder("_TZE200_aycxwiau", "TS0601")
     .applies_to("_TZE200_dq1mfjug", "TS0601")
-    .applies_to("_TZE200_m9skfctm", "TS0601")
-    .applies_to("_TZE200_rccxox8p", "TS0601")
-    .applies_to("_TZE284_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
     .tuya_smoke(dp_id=1)
     .skip_configuration()
     .add_to_registry()
+)
+
+# --- PA-44Z (_TZE284_rccxox8p) fixed parameters, derived from device logs ---
+# The device reports the start of an alarm (DP 1) but never its end. While the
+# alarm sounds it streams DP 101 = false reports, at most about 20 s apart.
+ALARM_CLEAR_S = 60  # no DP 101 = false report for this long: alarm over
+
+DP_SMOKE = 1
+DP_SELF_TEST = 101
+
+ATTR_ZONE_STATUS = IasZone.AttributeDefs.zone_status.name
+
+
+class PA44ZTuyaCluster(TuyaMCUCluster):
+    """Tuya cluster that clears the latching smoke alarm."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._loop = asyncio.get_running_loop()
+        self._alarm_handle = None
+        # A smoke alarm restored from the database after a restart is not seen
+        # by the datapoint handlers. Start the normal timer now: when it fires
+        # it clears the alarm only if one is active, and DP 101 = false reports
+        # from a real ongoing alarm keep restarting it.
+        self._arm_alarm_timer(ALARM_CLEAR_S)
+
+    # --- smoke alarm ---
+
+    def _ias(self) -> IasZone | None:
+        return getattr(self.endpoint, IasZone.ep_attribute, None)
+
+    def _alarm_active(self) -> bool:
+        ias = self._ias()
+        if ias is None:
+            return False
+        status = ias.get(ATTR_ZONE_STATUS)
+        return bool(status) and bool(int(status) & IasZone.ZoneStatus.Alarm_1)
+
+    def _cancel_alarm_timer(self) -> None:
+        if self._alarm_handle:
+            self._alarm_handle.cancel()
+            self._alarm_handle = None
+
+    def _arm_alarm_timer(self, delay: float) -> None:
+        self._cancel_alarm_timer()
+        self._alarm_handle = self._loop.call_later(delay, self._clear_alarm)
+
+    def _clear_alarm(self) -> None:
+        self._cancel_alarm_timer()
+        ias = self._ias()
+        if ias is not None and self._alarm_active():
+            self.debug("%s - Clearing smoke alarm", self.endpoint.device.ieee)
+            ias.update_attribute(ATTR_ZONE_STATUS, 0)
+
+    # --- datapoint handling ---
+
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
+        """Map the datapoint as usual, then apply the latching workarounds."""
+        super()._dp_2_attr_update(datapoint)
+        value = datapoint.data.payload
+
+        if datapoint.dp == DP_SMOKE and value == 0:
+            # Smoke reported: alarm stays on until the heartbeat stops.
+            self._arm_alarm_timer(ALARM_CLEAR_S)
+
+        elif datapoint.dp == DP_SELF_TEST:
+            if value:
+                # Self test done, only possible when not alarming: clear now.
+                self._clear_alarm()
+            elif self._alarm_active():
+                # Alarm heartbeat: keep the alarm on.
+                self._arm_alarm_timer(ALARM_CLEAR_S)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_rccxox8p", "TS0601")
+    .applies_to("_TZE200_m9skfctm", "TS0601")
+    .applies_to("_TZE200_rccxox8p", "TS0601")
+    .applies_to("_TZE2841000000_rccxox8p", "TS0601")
+    .tuya_smoke(dp_id=DP_SMOKE)
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="fault_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="fault_alarm",
+        fallback_name="Fault alarm",
+    )
+    .tuya_battery(
+        dp_id=15,
+        battery_type=BatterySize.AA,
+        battery_qty=2,
+    )
+    # DP 16 mute state is two-way, but delivery is best-effort: during an alarm
+    # the device sends reports every 0.1-0.2 s and may miss or delay one-off
+    # writes and reports.
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        entity_type=EntityType.STANDARD,
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=DP_SELF_TEST,
+        attribute_name="self_test_done",
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="self_test_done",
+        fallback_name="Self-test done",
+    )
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=PA44ZTuyaCluster)
 )
 
 (
