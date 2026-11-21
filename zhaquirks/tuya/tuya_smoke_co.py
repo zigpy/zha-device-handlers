@@ -1,12 +1,25 @@
 """MOES JKD-513COM-Z combined smoke and carbon monoxide detector."""
 
+from time import monotonic
+from typing import Any
+
+from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
+from zigpy.typing import AddressingMode
 from zigpy.zcl import foundation
 
 from zhaquirks.builder import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import (
+    TUYA_ACTIVE_STATUS_RPT,
+    TUYA_CLUSTER_ID,
+    TUYA_GET_DATA,
+    TUYA_QUERY_DATA,
+    TUYA_SET_DATA_RESPONSE,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+_QUERY_RESPONSE_WINDOW = 20.0
 
 
 class SmokeState(t.enum8):
@@ -43,13 +56,75 @@ class BatteryState(t.enum8):
     Unknown = 255  # Local initial value.
 
 
+_KNOWN_STATES = {
+    "smoke_state": (SmokeState.Alarm, SmokeState.Normal, SmokeState.Detecting),
+    "co_state": (COState.Alarm, COState.Normal),
+    "battery_state": (BatteryState.Low, BatteryState.High),
+}
+
+
 def alarm_state(value: int) -> bool | None:
     """Only explicit normal clears an alarm; other states remain unknown."""
     return {0: True, 1: False}.get(int(value))
 
 
 class MoesSmokeCOCluster(TuyaMCUCluster):
-    """Initialize unreported alarm attributes to unknown, not normal."""
+    """Request initial states and keep missing reports unknown."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Track the initial and follow-up queries for this device."""
+        super().__init__(*args, **kwargs)
+        # None marks a pending query, including one scheduled by a report.
+        self._followup_allowed_at: float | None = 0.0
+        self._followup_sent = False
+
+    async def apply_custom_configuration(self, *args: Any, **kwargs: Any) -> None:
+        """Request Tuya datapoints during ZHA device configuration."""
+        await super().apply_custom_configuration(*args, **kwargs)
+        if self._followup_allowed_at is None:
+            return
+        self._followup_sent = False
+        self._followup_allowed_at = None
+        await self._query_status()
+
+    async def _query_status(self) -> None:
+        """Request status and allow configuration to finish on delivery failure."""
+        response_window = _QUERY_RESPONSE_WINDOW
+        try:
+            await self.command(TUYA_QUERY_DATA)
+        except (TimeoutError, ZigbeeException) as exc:
+            self.debug("Tuya status query failed: %s", exc)
+            response_window = 0.0
+        finally:
+            self._followup_allowed_at = monotonic() + response_window
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Query remaining states once after a later Tuya report."""
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+        if (
+            hdr.direction != foundation.Direction.Server_to_Client
+            or hdr.command_id
+            not in (TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE, TUYA_ACTIVE_STATUS_RPT)
+            or self._followup_sent
+            or self._followup_allowed_at is None
+            # Query replies can use the same commands as unsolicited reports.
+            or monotonic() < self._followup_allowed_at
+            or not args[0].datapoints
+        ):
+            return
+
+        if all(self.get(name) in states for name, states in _KNOWN_STATES.items()):
+            return
+
+        self._followup_sent = True
+        self._followup_allowed_at = None
+        self.create_catching_task(self._query_status())
 
     def get(self, key, default=None):
         """Keep unreported alarm and battery states unknown."""

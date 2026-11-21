@@ -1,16 +1,24 @@
 """Offline protocol/quirk checks; no radio or real detector required."""
 
+import asyncio
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
+import pytest
 from zha.application.platforms.binary_sensor import BinarySensor
 from zha.application.platforms.sensor import EnumSensor
 import zigpy.device
+from zigpy.exceptions import DeliveryError
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 
 from zhaquirks.builder import EntityPlatform
 from zhaquirks.tuya import (
+    TUYA_ACTIVE_STATUS_RPT,
+    TUYA_CLUSTER_ID,
+    TUYA_GET_DATA,
+    TUYA_QUERY_DATA,
+    TUYA_SET_DATA_RESPONSE,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
@@ -18,6 +26,51 @@ from zhaquirks.tuya import (
     tuya_smoke_co as q,
 )
 from zhaquirks.tuya.mcu import TuyaClusterData
+
+
+@pytest.fixture
+def smoke_co_cluster(zigpy_device_from_v2_quirk) -> q.MoesSmokeCOCluster:
+    """Resolve the Tuya cluster on the matched detector."""
+    device = zigpy_device_from_v2_quirk(
+        "_TZE284_aoah6bv8",
+        "TS0601",
+        cluster_ids={1: {TUYA_CLUSTER_ID: ClusterType.Server}},
+    )
+    return device.endpoints[1].in_clusters[TUYA_CLUSTER_ID]
+
+
+@pytest.fixture
+def query_transport(monkeypatch, smoke_co_cluster) -> tuple[AsyncMock, Mock]:
+    """Capture serialized Zigbee requests and control the query response window."""
+    request = AsyncMock()
+    clock = Mock(return_value=100.0)
+    monkeypatch.setattr(smoke_co_cluster.endpoint, "request", request)
+    monkeypatch.setattr(q, "monotonic", clock)
+    return request, clock
+
+
+def _receive_report(
+    cluster: q.MoesSmokeCOCluster, command_id: int, *datapoints: tuple[int, t.enum8]
+) -> None:
+    """Deliver a serialized Tuya report through the quirk's ZCL handler."""
+    hdr = foundation.ZCLHeader.cluster(
+        tsn=1, command_id=command_id, direction=foundation.Direction.Server_to_Client
+    )
+    hdr = hdr.replace(
+        frame_control=hdr.frame_control.replace(disable_default_response=True)
+    )
+    command = TuyaCommand(
+        status=0,
+        tsn=1,
+        datapoints=[
+            TuyaDatapointData(dp=dp, data=TuyaData(value)) for dp, value in datapoints
+        ],
+    )
+    schema = cluster.client_commands[command_id].schema(data=command)
+    decoded_hdr, decoded_args = cluster.deserialize(
+        hdr.serialize() + schema.serialize()
+    )
+    cluster.handle_cluster_request(decoded_hdr, decoded_args)
 
 
 async def test_smoke_co_reports():
@@ -110,34 +163,133 @@ async def test_smoke_co_reports():
         dp = commands[0].datapoints[0]
         assert dp.dp == 16 and dp.data.dp_type == TuyaDPType.BOOL
         assert bool(dp.data.payload) is value
-    # Exercise real ZCL deserialization and dispatch, including every supported
-    # response/report command, rather than only invoking the DP mapper directly.
-    for command_id in (1, 2, 6):
+    # Verify dispatch through each supported response/report command.
+    report(1, q.SmokeState.Normal)
+    for command_id in (TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE, TUYA_ACTIVE_STATUS_RPT):
         for value, expected in ((0, True), (1, False)):
-            cmd = TuyaCommand(
-                status=0,
-                tsn=1,
-                datapoints=[TuyaDatapointData(dp=18, data=TuyaData(q.COState(value)))],
-            )
-            hdr = foundation.ZCLHeader.cluster(
-                tsn=1,
-                command_id=command_id,
-                direction=foundation.Direction.Server_to_Client,
-            )
-            hdr = hdr.replace(
-                frame_control=hdr.frame_control.replace(disable_default_response=True)
-            )
-            schema = cluster.client_commands[command_id].schema(data=cmd)
-            decoded_hdr, decoded_args = cluster.deserialize(
-                hdr.serialize() + schema.serialize()
-            )
-            cluster.handle_cluster_request(decoded_hdr, decoded_args)
+            _receive_report(cluster, command_id, (18, q.COState(value)))
             assert cluster.get("co_state") == value
             assert state("co_state") is expected
     # Muting must not clear an outstanding CO alarm.
     report(18, q.COState.Alarm)
     report(16, t.Bool(True))
     assert state("co_state") is True
+
+
+@pytest.mark.parametrize("missing_dp", [1, 14, 18])
+async def test_smoke_co_query_after_report(
+    smoke_co_cluster, query_transport, missing_dp
+):
+    """A missing state permits one follow-up after the initial response window."""
+    request, clock = query_transport
+    cluster = smoke_co_cluster
+    await cluster.endpoint.device.apply_custom_configuration()
+    initial = [
+        (1, q.SmokeState.Normal),
+        (14, q.BatteryState.High),
+        (18, q.COState.Normal),
+    ]
+    _receive_report(
+        cluster,
+        TUYA_SET_DATA_RESPONSE,
+        *(item for item in initial if item[0] != missing_dp),
+    )
+    await asyncio.sleep(0)
+    request.assert_awaited_once()
+
+    clock.return_value += q._QUERY_RESPONSE_WINDOW + 1
+    await asyncio.sleep(0)
+    request.assert_awaited_once()
+
+    for command_id in (TUYA_SET_DATA_RESPONSE, TUYA_ACTIVE_STATUS_RPT):
+        _receive_report(cluster, command_id, (9, q.CheckingResult.Check_success))
+    await asyncio.sleep(0)
+    assert request.await_count == 2
+
+    clock.return_value += q._QUERY_RESPONSE_WINDOW + 1
+    _receive_report(cluster, TUYA_GET_DATA, (9, q.CheckingResult.Check_success))
+    await asyncio.sleep(0)
+    assert request.await_count == 2
+
+    for call in request.await_args_list:
+        header, payload = foundation.ZCLHeader.deserialize(call.kwargs["data"])
+        assert call.kwargs["cluster"] == TUYA_CLUSTER_ID
+        assert header.command_id == TUYA_QUERY_DATA
+        assert header.direction == foundation.Direction.Client_to_Server
+        assert not header.frame_control.is_manufacturer_specific
+        assert not payload
+
+
+async def test_smoke_co_skip_followup_when_last_state_arrives(
+    smoke_co_cluster, query_transport
+):
+    """Apply incoming values before checking whether a query is needed."""
+    request, clock = query_transport
+    cluster = smoke_co_cluster
+    await cluster.endpoint.device.apply_custom_configuration()
+    _receive_report(
+        cluster,
+        TUYA_SET_DATA_RESPONSE,
+        (1, q.SmokeState.Detecting),
+        (18, q.COState.Alarm),
+    )
+    clock.return_value += q._QUERY_RESPONSE_WINDOW + 1
+    _receive_report(cluster, TUYA_GET_DATA, (14, q.BatteryState.Low))
+    await asyncio.sleep(0)
+    request.assert_awaited_once()
+    assert cluster.get("battery_state") == q.BatteryState.Low
+    assert cluster.get("co_state") == q.COState.Alarm
+
+
+@pytest.mark.parametrize("error", [DeliveryError, TimeoutError])
+async def test_smoke_co_query_delivery_failure(
+    smoke_co_cluster, query_transport, error
+):
+    """A failed initial query allows a single attempt on a later report."""
+    request, _clock = query_transport
+    request.side_effect = [
+        error("Initial query failed"),
+        error("Follow-up query failed"),
+    ]
+    cluster = smoke_co_cluster
+    await cluster.endpoint.device.apply_custom_configuration()
+    request.assert_awaited_once()
+    _receive_report(
+        cluster, TUYA_ACTIVE_STATUS_RPT, (9, q.CheckingResult.Check_success)
+    )
+    await asyncio.sleep(0)
+    _receive_report(
+        cluster, TUYA_ACTIVE_STATUS_RPT, (9, q.CheckingResult.Check_success)
+    )
+    await asyncio.sleep(0)
+    assert request.await_count == 2
+    assert cluster.get("smoke_state") == q.SmokeState.Unknown
+    assert cluster.get("co_state") == q.COState.Unknown
+    assert cluster.get("battery_state") == q.BatteryState.Unknown
+
+
+async def test_smoke_co_query_already_pending(smoke_co_cluster, query_transport):
+    """Reports and concurrent configuration leave one active status request."""
+    request, _clock = query_transport
+    cluster = smoke_co_cluster
+    device = cluster.endpoint.device
+    query_started, finish_query = asyncio.Event(), asyncio.Event()
+
+    async def hold_request(**_kwargs):
+        query_started.set()
+        await finish_query.wait()
+
+    request.side_effect = hold_request
+    configuration = asyncio.create_task(device.apply_custom_configuration())
+    try:
+        await query_started.wait()
+        _receive_report(cluster, TUYA_SET_DATA_RESPONSE, (1, q.SmokeState.Normal))
+        await device.apply_custom_configuration()
+        await asyncio.sleep(0)
+        request.assert_awaited_once()
+    finally:
+        finish_query.set()
+        await configuration
 
 
 def test_smoke_co_entities():
