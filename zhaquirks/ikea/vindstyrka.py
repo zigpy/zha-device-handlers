@@ -36,11 +36,6 @@ class VOCIndex(CustomCluster):
             id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
 
-
-(
-    QuirkBuilder(IKEA, "VINDSTYRKA")
-    .replaces(VOCIndex)
-    .replaces(PM25)
     .sensor(
         VOCIndex.AttributeDefs.measured_value.name,
         VOCIndex.cluster_id,
