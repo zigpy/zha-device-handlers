@@ -58,7 +58,7 @@ nodon = (
     QuirkBuilder(NODON, "SIN-4-FP-21")
     ## start added 2026/11/22
     .applies_to(NODON, "FPS-4-1-00")
-    ## end added 2026/11/22 : remaining issues : humidity is missing, temp is not correct, update via OTA to check 
+    ## end added 2026/11/22 : remaining issues : humidity is missing, temp is not correct, update via OTA to check
     .replaces(NodOnPilotWireCluster)
     .enum(
         attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
