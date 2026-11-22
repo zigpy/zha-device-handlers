@@ -4,16 +4,13 @@ from typing import Final
 
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
+from zigpy.zcl.clusters.measurement import PM25  # Import the PM2.5 cluster
 from zhaquirks.builder import (
     QuirkBuilder,
     ReportingConfig,
     SensorDeviceClass,
     SensorStateClass,
 )
-import zigpy.types as t
-from zigpy.zcl.clusters.measurement import PM25  # Import the PM2.5 cluster
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.ikea import IKEA
@@ -38,7 +35,9 @@ class VOCIndex(CustomCluster):
         max_measured_value: Final = ZCLAttributeDef(
             id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
-
+(
+    QuirkBuilder(IKEA, "VINDSTYRKA")
+    .replaces(VOCIndex)
     .sensor(
         VOCIndex.AttributeDefs.measured_value.name,
         VOCIndex.cluster_id,
