@@ -1,8 +1,12 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
 
+from datetime import UTC, datetime, timedelta
+import time
 from typing import cast
 from unittest import mock
+from zoneinfo import ZoneInfo
 
+import pytest
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -73,6 +77,80 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
         assert 0x0000 in danfoss_time_cluster._attr_cache
         assert 0x0001 in danfoss_time_cluster._attr_cache
         assert 0x0002 in danfoss_time_cluster._attr_cache
+
+
+def _capture_time_writes(time_cluster):
+    """Patch the Time cluster write and collect the attribute values sent."""
+    written: dict[str, object] = {}
+
+    def mock_write(records, manufacturer=None):
+        for record in records:
+            name = time_cluster.attributes[record.attrid].name
+            written[name] = record.value.value
+        return [[WriteAttributesStatusRecord(foundation.Status.SUCCESS)], []]
+
+    return written, mock.patch.object(
+        time_cluster, "_write_attributes", mock.AsyncMock(side_effect=mock_write)
+    )
+
+
+@pytest.fixture
+def system_timezone(monkeypatch):
+    """Switch the process to a fixed local timezone for one test."""
+
+    def set_tz(name: str) -> None:
+        monkeypatch.setenv("TZ", name)
+        time.tzset()
+
+    yield set_tz
+    monkeypatch.undo()
+    time.tzset()
+
+
+async def test_danfoss_time_zone_sign_system_local(
+    zigpy_device_from_quirk, system_timezone
+):
+    """TimeZone is written east of UTC (ZCL R8 3.12.2.2.3), from the system's local time."""
+    system_timezone("CET-1")  # UTC+1 all year, no DST rules
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    time_cluster = device.endpoints[1].time
+
+    written, patch_write = _capture_time_writes(time_cluster)
+    with patch_write:
+        await time_cluster.write_time()
+
+    # Standard Time = Time + TimeZone, so local time one hour ahead of UTC is +3600
+    assert written["time_zone"] == 3600
+    epoch = datetime(2000, 1, 1, tzinfo=UTC)
+    expected = (datetime.now(UTC) - epoch).total_seconds()
+    assert abs(written["time"] - expected) < 5
+
+
+async def test_danfoss_time_configured_timezone_with_dst(
+    zigpy_device_from_quirk, MockAppController, system_timezone
+):
+    """The application's configured timezone wins, and DST is sent in its own attributes."""
+    system_timezone("UTC0")
+    MockAppController.local_timezone = ZoneInfo("Europe/Copenhagen")
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+    time_cluster = device.endpoints[1].time
+
+    written, patch_write = _capture_time_writes(time_cluster)
+    with patch_write:
+        await time_cluster.write_time()
+
+    # Copenhagen is UTC+1 standard time, plus one hour of DST in summer
+    assert written["time_zone"] == 3600
+    assert written["dst_shift"] == 3600
+    assert written["dst_start"] <= written["dst_end"]
+
+    now = datetime.now(UTC)
+    epoch = datetime(2000, 1, 1, tzinfo=UTC)
+    local = epoch + timedelta(seconds=written["time"] + written["time_zone"])
+    if written["dst_start"] <= written["time"] <= written["dst_end"]:
+        local += timedelta(seconds=written["dst_shift"])
+    wall = now.astimezone(ZoneInfo("Europe/Copenhagen")).replace(tzinfo=UTC)
+    assert abs((local - wall).total_seconds()) < 5
 
 
 async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
