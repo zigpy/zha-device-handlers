@@ -61,6 +61,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX024")  # 91ft
     .applies_to(SIGNIFY, "LCX025")  # 45ft
     .applies_to(SIGNIFY, "LCX026")  # Likely model for 22ft
+    .applies_to(SIGNIFY, "LCX028")
     .friendly_name(
         model="Hue Festavia globe outdoor string lights",
         manufacturer="Philips",
