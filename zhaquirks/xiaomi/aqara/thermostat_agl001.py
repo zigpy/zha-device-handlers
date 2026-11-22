@@ -8,13 +8,13 @@ import struct
 from typing import Any, Final
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -203,9 +203,9 @@ class ScheduleEvent:
 
     @staticmethod
     def _validate_time(time):
-        if time <= 0:
+        if time < 0:
             raise ValueError("Time must be between 00:00 and 23:59")
-        if time > 24 * 60:
+        if time >= 24 * 60:
             raise ValueError("Time must be between 00:00 and 23:59")
 
     @staticmethod

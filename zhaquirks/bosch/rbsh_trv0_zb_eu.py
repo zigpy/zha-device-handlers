@@ -1,11 +1,7 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
@@ -14,6 +10,15 @@ from zigpy.zcl.clusters.hvac import (
     UserInterface,
 )
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
+
+from zhaquirks.builder import (
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    ReportingConfig,
+)
+from zhaquirks.clusters import CustomCluster
 
 """Bosch specific thermostat attribute ids."""
 
@@ -376,9 +381,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """system_mode special handling.
 
@@ -409,13 +412,14 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 for attr in args.attribute_reports
                 if attr.attrid != SYSTEM_MODE_ATTR.id
             ]
-            if len(update_attributes) > 0:
-                msg = foundation.GENERAL_COMMANDS[
-                    foundation.GeneralCommand.Report_Attributes
-                ].schema(attribute_reports=update_attributes)
-                return super().handle_cluster_general_request(
-                    hdr, msg, dst_addressing=dst_addressing
-                )
+            # Process even when no attributes remain, to send any requested
+            # default response
+            msg = foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Report_Attributes
+            ].schema(attribute_reports=update_attributes)
+            return super().handle_cluster_general_request(
+                hdr, msg, dst_addressing=dst_addressing
+            )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):

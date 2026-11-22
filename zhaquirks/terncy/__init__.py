@@ -2,9 +2,8 @@
 
 from collections import deque
 import math
-from typing import Any, Optional, Union
+from typing import Any
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
@@ -14,6 +13,7 @@ from zigpy.zcl.clusters.measurement import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import LocalDataCluster, OccupancyOnEvent, _Motion
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
     CLUSTER_COMMAND,
@@ -98,7 +98,7 @@ class MotionCluster(LocalDataCluster, _Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
         if self.send_occupancy_event:
             self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
@@ -152,9 +152,7 @@ class TerncyRawCluster(CustomCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: t.AddrMode | None = None,
     ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:  # click event

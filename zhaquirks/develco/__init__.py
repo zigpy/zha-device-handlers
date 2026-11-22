@@ -2,13 +2,13 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.clusters import CustomCluster
+from zhaquirks.device import CustomZigpyDevice
 
 FRIENT = "frient A/S"
 DEVELCO = "Develco Products A/S"
@@ -40,7 +40,7 @@ class DevelcoIasZone(CustomCluster, IasZone):
         )
 
 
-class ManufacturerDeviceV2(CustomDeviceV2):
+class ManufacturerDeviceV2(CustomZigpyDevice):
     """Custom device class used to remap cluster IDs in requests."""
 
     async def request(

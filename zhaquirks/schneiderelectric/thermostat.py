@@ -2,22 +2,23 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    PERCENTAGE,
-    EntityPlatform,
-    UnitOfPower,
-    UnitOfTemperature,
-    UnitOfTime,
-)
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
 
+from zhaquirks.builder import (
+    PERCENTAGE,
+    EntityPlatform,
+    EntityType,
+    NumberDeviceClass,
+    QuirkBuilder,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
 
@@ -50,6 +51,9 @@ class SEControlStatus(t.enum8):
 
     # Demand forced by "emergency" button
     LocalForceOn = 0x61
+
+    # The thermostat is switched off (system mode off)
+    Off = 0x80
 
     # The output is being driven as part of a maintenance operation
     Maintenance = 0x82
@@ -375,7 +379,7 @@ class SECycleTime(CustomCluster):
     cluster_id = 0xFF16
     name = "SECycleTime"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         se_demand_percentage: Final = ZCLAttributeDef(
@@ -422,7 +426,7 @@ class SEHeatingCoolingOutput(CustomCluster):
     cluster_id = 0xFF23
     name = "SEHeatingCoolingOutput"
 
-    class AttributeDefs(CustomCluster.AttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         se_measured_temperature: Final = ZCLAttributeDef(
@@ -640,7 +644,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SEThermostat.AttributeDefs.se_open_window_detection_threshold.name,
         translation_key="open_window_detection_threshold",
         fallback_name="Open window detection threshold",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         min_value=0,
         max_value=1.2,
@@ -689,7 +693,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SEThermostat.AttributeDefs.se_boost_amount.name,
         translation_key="boost_amount",
         fallback_name="Boost amount",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         min_value=0.5,
         max_value=10,
@@ -760,7 +764,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SETemperatureMeasurement.AttributeDefs.se_sensor_correction.name,
         translation_key="ambient_sensor_correction",
         fallback_name="Ambient sensor correction",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-10,
         max_value=10,
@@ -773,7 +777,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SETemperatureMeasurementExternal.AttributeDefs.se_sensor_correction.name,
         translation_key="external_sensor_correction",
         fallback_name="External sensor correction",
-        device_class=NumberDeviceClass.TEMPERATURE,
+        device_class=NumberDeviceClass.TEMPERATURE_DELTA,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-10,
         max_value=10,

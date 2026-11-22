@@ -3,6 +3,10 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
+from zigpy.zcl import AttributeUnsupportedEvent
+from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
@@ -28,8 +32,61 @@ async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
 
     device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
     power_cluster = device.endpoints[1].power
-    power_cluster.update_attribute(0x0020, voltage)
+    power_cluster.update_attribute(
+        PowerConfiguration.AttributeDefs.battery_voltage.id, voltage
+    )
     assert power_cluster["battery_percentage_remaining"] == bpr
+
+
+async def test_power_config_unsupported_does_not_clear_cache(zigpy_device_from_quirk):
+    """Test that reading unsupported battery_percentage_remaining doesn't clear the cached value."""
+
+    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    power_cluster = device.endpoints[1].power
+
+    # Simulate a voltage report that populates battery_percentage_remaining
+    power_cluster.update_attribute(
+        PowerConfiguration.AttributeDefs.battery_voltage.id, 28
+    )
+    assert power_cluster["battery_percentage_remaining"] == 120
+
+    # Mock _read_attributes to return UNSUPPORTED_ATTRIBUTE for
+    # battery_percentage_remaining, as a real device would during pairing
+    bpr_attr_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    unsupported_record = ReadAttributeRecord(
+        attrid=t.uint16_t(bpr_attr_id),
+        status=Status.UNSUPPORTED_ATTRIBUTE,
+    )
+    power_cluster._read_attributes = mock.AsyncMock(return_value=[[unsupported_record]])
+
+    await power_cluster.read_attributes(
+        [PowerConfiguration.AttributeDefs.battery_percentage_remaining.name]
+    )
+
+    # The cached value should be preserved
+    assert power_cluster["battery_percentage_remaining"] == 120
+
+
+async def test_power_config_other_unsupported_events_pass_through(
+    zigpy_device_from_quirk,
+):
+    """Test that unsupported events for other attributes are not suppressed."""
+
+    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    power_cluster = device.endpoints[1].power
+
+    listener = mock.MagicMock()
+    power_cluster.on_event(AttributeUnsupportedEvent.event_type, listener)
+
+    # Mark a different attribute (battery_voltage) as unsupported
+    power_cluster.add_unsupported_attribute(
+        PowerConfiguration.AttributeDefs.battery_voltage.name
+    )
+
+    # The event should have reached the listener
+    listener.assert_called_once()
+    event = listener.call_args[0][0]
+    assert event.attribute_id == PowerConfiguration.AttributeDefs.battery_voltage.id
 
 
 async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk):
