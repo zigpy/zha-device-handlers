@@ -452,7 +452,7 @@ Expose logical parts of a device, e.g. the gangs of a wall switch, as child devi
     new_child_device_id=None,
 )
 ```
-Defining child devices replaces the automatic split ZHA applies to allowlisted multi-channel devices; `.disable_child_devices()` turns that split off. The main device and each child device can have one primary entity. A new child device `translation_key` also needs a translation in Home Assistant, otherwise `fallback_name` is used.
+Defining child devices replaces the automatic split ZHA applies to allowlisted multi-channel devices; `.disable_child_devices()` turns that split off. The main device and each child device can have one primary entity; `add_to_registry()` checks this, including `change_entity_metadata` changes of the quirk's own entities (`new_child_device_id`, `new_primary`), and leaves an entity that a change with a `function` filter may match to ZHA. A new child device `translation_key` also needs a translation in Home Assistant, otherwise `fallback_name` is used.
 
 ### Tuya Devices (TuyaQuirkBuilder)
 

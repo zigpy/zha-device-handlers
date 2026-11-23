@@ -354,6 +354,66 @@ def _check_child_device_id_kwarg(kwargs: dict[str, Any]) -> None:
         )
 
 
+def _describe_entity(entity_metadata: EntityMetadata) -> str:
+    """Describe an exposed entity for an error message."""
+    name = entity_metadata.resolved_unique_id_suffix or entity_metadata.fallback_name
+    return (
+        f"the {entity_metadata.entity_platform} entity {name!r}"
+        f" on endpoint {entity_metadata.endpoint_id}"
+    )
+
+
+def _filter_matches_metadata(
+    entity_filter: EntityFilter,
+    entity_metadata: EntityMetadata,
+    *,
+    unique_ids_changed: bool,
+) -> bool | None:
+    """Return whether a filter matches the entity an `EntityMetadata` exposes.
+
+    Returns `None` when that can't be told before the entity exists: the filter has a
+    `function`, or a field the builder doesn't know for the entity.
+    """
+    if (
+        entity_filter.endpoint_id is not None
+        and entity_filter.endpoint_id != entity_metadata.endpoint_id
+    ):
+        return False
+    if entity_filter.cluster_id is not None and (
+        entity_filter.cluster_id != entity_metadata.cluster_id
+        or (
+            entity_filter.cluster_type is not None
+            and entity_filter.cluster_type != entity_metadata.cluster_type
+        )
+    ):
+        return False
+    if (
+        entity_filter.platform is not None
+        and entity_filter.platform != entity_metadata.entity_platform
+    ):
+        return False
+
+    if entity_filter.unique_id_suffix is not None:
+        # The unique ID is `{ieee}-{endpoint_id}[-{suffix}]`
+        suffix = entity_metadata.resolved_unique_id_suffix
+        tail = f"-{entity_metadata.endpoint_id}" + (f"-{suffix}" if suffix else "")
+        filter_tail = "-" + entity_filter.unique_id_suffix.removeprefix("-")
+        if unique_ids_changed or len(filter_tail) > len(tail):
+            return None
+        if not tail.endswith(filter_tail):
+            return False
+
+    if (
+        entity_filter.function is not None
+        or entity_filter.entity_cls is not None
+        or entity_filter.translation_key is not None
+        or entity_filter.device_class is not None
+    ):
+        return None
+
+    return True
+
+
 class QuirkBuilder:
     """Builder compiling a declarative quirk into a registered `ZigbeeDevice` subclass."""
 
@@ -415,10 +475,20 @@ class QuirkBuilder:
         self.entity_metadata.append(entity_metadata)
         return self
 
-    def _resolve_child_device_id(self, entity_metadata: EntityMetadata) -> str | None:
-        """Return the id of the child device an exposed entity will belong to."""
-        if entity_metadata.child_device_id is not UNDEFINED:
-            return entity_metadata.child_device_id
+    def _resolve_child_device_id(
+        self,
+        entity_metadata: EntityMetadata,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
+    ) -> str | None:
+        """Return the id of the child device an exposed entity will belong to.
+
+        An explicit `child_device_id` overrides the one of the entity metadata.
+        """
+        if child_device_id is UNDEFINED:
+            child_device_id = entity_metadata.child_device_id
+
+        if child_device_id is not UNDEFINED:
+            return child_device_id
 
         # ZHA keeps entities of device-level clusters on the main device
         if entity_metadata.cluster_id in DEVICE_LEVEL_CLUSTERS:
@@ -470,15 +540,65 @@ class QuirkBuilder:
             raise ValueError(f"Entities refer to undefined child devices: {unknown}")
 
         # The main device and each child device can have a single primary entity
-        primary_devices = [
-            self._resolve_child_device_id(entity)
-            for entity in self.entity_metadata
-            if entity.primary
-        ]
-        if len(primary_devices) != len(set(primary_devices)):
-            raise ValueError(
-                "Only one primary entity can be defined per device or child device"
+        primary_entities: dict[str | None, EntityMetadata] = {}
+        for entity in self.entity_metadata:
+            changed = self._changed_primary_and_child_device_id(entity)
+            if changed is None:
+                # A change ZHA applies at discovery may move or demote it
+                continue
+
+            primary, child_device_id = changed
+            if not primary:
+                continue
+
+            device_id = self._resolve_child_device_id(entity, child_device_id)
+            if device_id in primary_entities:
+                device = (
+                    "the main device"
+                    if device_id is None
+                    else f"child device {device_id!r}"
+                )
+                raise ValueError(
+                    "Only one primary entity can be defined per device or child"
+                    f" device, {device} has both"
+                    f" {_describe_entity(primary_entities[device_id])}"
+                    f" and {_describe_entity(entity)}"
+                )
+            primary_entities[device_id] = entity
+
+    def _changed_primary_and_child_device_id(
+        self, entity_metadata: EntityMetadata
+    ) -> tuple[bool, str | None | UndefinedType] | None:
+        """Return the primary flag and child device id of an exposed entity.
+
+        ZHA applies `change_entity_metadata` to the quirk's own entities as well, so
+        the matching changes are applied here in the same order. Returns `None` when a
+        change of either value may apply but the builder can't tell whether it does.
+        """
+        unique_ids_changed = any(
+            change.new_unique_id is not None for change in self.changed_entity_metadata
+        )
+        primary = bool(entity_metadata.primary)
+        child_device_id = entity_metadata.child_device_id
+
+        for change in self.changed_entity_metadata:
+            if change.new_primary is None and change.new_child_device_id is UNDEFINED:
+                continue
+
+            matches = _filter_matches_metadata(
+                change.filter, entity_metadata, unique_ids_changed=unique_ids_changed
             )
+            if matches is None:
+                return None
+            if not matches:
+                continue
+
+            if change.new_primary is not None:
+                primary = change.new_primary
+            if change.new_child_device_id is not UNDEFINED:
+                child_device_id = change.new_child_device_id
+
+        return primary, child_device_id
 
     @overload
     def applies_to(self, manufacturer: str, model: str) -> Self: ...

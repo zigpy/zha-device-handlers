@@ -13,6 +13,7 @@ from zha.quirks import DeviceRegistry
 from zha.zigbee.child_device import ChildDevice
 import zigpy.types as t
 from zigpy.typing import UNDEFINED
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
@@ -217,6 +218,104 @@ def test_child_device_primary_explicit_assignment() -> None:
 
     with pytest.raises(ValueError, match="Only one primary entity"):
         builder.add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_error_names_entities() -> None:
+    """Test the primary entity error names the device and both entities."""
+    builder = QuirkBuilder("manufacturer", "model").child_device(
+        "a", endpoint_id=1, fallback_name="A"
+    )
+    _switch(builder, 1, primary=True)
+    _switch(builder, 1, primary=True, unique_id_suffix="other")
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "child device 'a' has both the switch entity 'on_time' on endpoint 1"
+            " and the switch entity 'other' on endpoint 1"
+        ),
+    ):
+        builder.add_to_registry(DeviceRegistry())
+
+
+def _two_primaries_moved(**change_kwargs) -> QuirkBuilder:
+    """Return a quirk with a primary switch on endpoints 1 and 2 of child device `a`."""
+    builder = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_ids=[1, 2], fallback_name="A")
+        .child_device("b", fallback_name="B")
+    )
+    _switch(builder, 1, primary=True)
+    _switch(builder, 2, primary=True)
+    return builder.change_entity_metadata(**change_kwargs)
+
+
+def test_child_device_primary_changed_child_device() -> None:
+    """Test a quirk entity moved with `change_entity_metadata` counts where it moves."""
+    _two_primaries_moved(
+        endpoint_id=2, cluster_id=OnOff.cluster_id, new_child_device_id="b"
+    ).add_to_registry(DeviceRegistry())
+
+    # Moving it by its unique ID suffix works as well
+    _two_primaries_moved(
+        unique_id_suffix="2-on_time", new_child_device_id="b"
+    ).add_to_registry(DeviceRegistry())
+
+    # A change that matches neither entity leaves both on `a`
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            endpoint_id=2,
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            new_child_device_id="b",
+        ).add_to_registry(DeviceRegistry())
+
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            unique_id_suffix="3-on_time", new_child_device_id="b"
+        ).add_to_registry(DeviceRegistry())
+
+    # Moving both entities puts both primary entities on `b`
+    with pytest.raises(ValueError, match="child device 'b'"):
+        _two_primaries_moved(
+            cluster_id=OnOff.cluster_id, new_child_device_id="b"
+        ).add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_changed_primary() -> None:
+    """Test a quirk entity demoted with `change_entity_metadata` isn't primary."""
+    _two_primaries_moved(
+        endpoint_id=2, cluster_id=OnOff.cluster_id, new_primary=False
+    ).add_to_registry(DeviceRegistry())
+
+    # A later change applies after an earlier one, as in ZHA
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            endpoint_id=2, cluster_id=OnOff.cluster_id, new_primary=False
+        ).change_entity_metadata(
+            endpoint_id=2, cluster_id=OnOff.cluster_id, new_primary=True
+        ).add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_unknown_change() -> None:
+    """Test a change the builder can't match leaves the entity to ZHA's election."""
+    # The function decides at discovery, so the builder can't reject the quirk
+    _two_primaries_moved(
+        function=lambda entity: entity.endpoint.id == 2, new_child_device_id="b"
+    ).add_to_registry(DeviceRegistry())
+
+    # A function filter that doesn't set the child device or primary is irrelevant
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            function=lambda entity: True, new_fallback_name="Renamed"
+        ).add_to_registry(DeviceRegistry())
+
+    # A suffix filter can't be matched once a change sets a new unique ID
+    _two_primaries_moved(
+        unique_id_suffix="2-on_time", new_child_device_id="b"
+    ).change_entity_metadata(endpoint_id=3, new_unique_id="other").add_to_registry(
+        DeviceRegistry()
+    )
 
 
 def test_child_device_primary_entities_defined_later() -> None:
