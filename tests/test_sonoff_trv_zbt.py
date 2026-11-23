@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 import zigpy.application
+from zigpy.exceptions import DeliveryError
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -44,6 +45,10 @@ async def test_trv_zbt_matches_exact_model(zigpy_device_from_v2_quirk):
     assert isinstance(
         device.endpoints[1].in_clusters[Thermostat.cluster_id],
         SonoffThermostat,
+    )
+    assert (
+        trv_zbt.SONOFF_TRVZBT_QUIRK_BUILDER.custom_device_class
+        is trv_zbt.SonoffTRVZBTDevice
     )
 
 
@@ -319,36 +324,71 @@ def _trv_zbt_device(zigpy_device_from_v2_quirk):
     )
 
 
-def test_trv_zbt_delayed_reads_use_application_tasks(zigpy_device_from_v2_quirk):
-    """Delayed reads are owned by the ZHA application lifecycle."""
+def test_trv_zbt_construction_does_not_schedule_startup_reads(
+    zigpy_device_from_v2_quirk,
+):
+    """State refresh starts from ZHA initialization, not cluster construction."""
 
-    completed_task = mock.Mock()
-    completed_task.done.return_value = True
-
-    def close_task(coroutine):
-        coroutine.close()
-        return completed_task
-
-    with (
-        mock.patch.object(
-            zigpy.application.ControllerApplication,
-            "create_task",
-            side_effect=close_task,
-        ) as application_create_task,
-        mock.patch.object(
-            trv_zbt.asyncio,
-            "create_task",
-            side_effect=close_task,
-        ) as asyncio_create_task,
-    ):
+    with mock.patch.object(
+        zigpy.application.ControllerApplication, "create_task"
+    ) as application_create_task:
         zigpy_device_from_v2_quirk(
             "SONOFF",
             "TRV-ZBT",
             cluster_ids={1: {CustomSonoffCluster.cluster_id: ClusterType.Server}},
         )
 
-    assert application_create_task.call_count == 2
-    assert asyncio_create_task.call_count == 0
+    application_create_task.assert_not_called()
+
+
+async def test_trv_zbt_refreshes_state_after_zha_initialization(
+    zigpy_device_from_v2_quirk,
+):
+    """All state reads run once only after ZHA initialization succeeds."""
+
+    cluster, _ = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    device = object.__new__(trv_zbt.SonoffTRVZBTDevice)
+    device._zigpy_device = cluster.endpoint.device
+    call_order = []
+
+    async def initialize(_self, from_cache):
+        call_order.append(("initialize", from_cache))
+
+    async def refresh():
+        assert call_order == [("initialize", True)]
+        call_order.append(("refresh", None))
+
+    with (
+        mock.patch.object(trv_zbt.QuirkV2Device, "async_initialize", initialize),
+        mock.patch.object(
+            cluster, "sonoff_trvzbt_refresh_after_initialization", refresh
+        ),
+    ):
+        await device.async_initialize(from_cache=True)
+
+    assert call_order == [("initialize", True), ("refresh", None)]
+
+
+async def test_trv_zbt_initialization_refresh_is_ordered_and_isolates_failures(
+    zigpy_device_from_v2_quirk,
+):
+    """A failed optional read does not prevent the other state refreshes."""
+
+    cluster, _ = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    work_mode_name = cluster.AttributeDefs.device_work_mode.name
+    schedule_fetch = mock.AsyncMock()
+    cluster.read_attributes = mock.AsyncMock(
+        side_effect=[DeliveryError("offline"), ({work_mode_name: 3}, {})]
+    )
+
+    with mock.patch.object(cluster, "schedule_fetch", schedule_fetch):
+        await cluster.sonoff_trvzbt_refresh_after_initialization()
+
+    assert cluster.read_attributes.await_args_list == [
+        mock.call([cluster.AttributeDefs.temporary_mode.name], allow_cache=False),
+        mock.call([work_mode_name], allow_cache=False),
+    ]
+    schedule_fetch.assert_awaited_once_with()
 
 
 async def test_trv_zbt_command_paths_update_device_state(zigpy_device_from_v2_quirk):
@@ -469,11 +509,11 @@ async def test_trv_zbt_delayed_reads_and_temporary_exit(zigpy_device_from_v2_qui
     work_mode_name = cluster.AttributeDefs.device_work_mode.name
     with mock.patch.object(trv_zbt.asyncio, "sleep", sleep):
         cluster.read_attributes = mock.AsyncMock(
-            side_effect=[RuntimeError("offline"), ({temporary_name: 1}, {})]
+            side_effect=[DeliveryError("offline"), ({temporary_name: 1}, {})]
         )
         await cluster._sonoff_trvzbt_read_temporary_mode_later(delay=0)
         cluster.read_attributes = mock.AsyncMock(
-            side_effect=[RuntimeError("offline"), ({work_mode_name: 3}, {})]
+            side_effect=[DeliveryError("offline"), ({work_mode_name: 3}, {})]
         )
         await cluster._sonoff_trvzbt_read_device_work_mode_later(delay=0)
 

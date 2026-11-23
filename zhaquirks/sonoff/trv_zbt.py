@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 import logging
 
+from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -22,6 +23,7 @@ from zhaquirks.builder import (
     UnitOfTemperature,
     UnitOfTime,
 )
+from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.clusters import CustomCluster
 
 LOGGER = logging.getLogger(__name__)
@@ -1143,8 +1145,6 @@ class CustomSonoffCluster(CustomCluster):
         self._sonoff_trvzbt_temporary_mode_read_task = None
         self._sonoff_trvzbt_device_work_mode_read_task = None
         self._sonoff_trvzbt_pre_temporary_state = None
-        self._sonoff_trvzbt_schedule_temporary_mode_read(delay=60)
-        self._sonoff_trvzbt_schedule_device_work_mode_read(delay=60)
 
     def _update_attribute(self, attrid, value):
         """Keep the temporary-mode editor in sync with the device-reported state."""
@@ -1232,7 +1232,7 @@ class CustomSonoffCluster(CustomCluster):
         )
 
     def _sonoff_trvzbt_schedule_temporary_mode_read(self, delay=60):
-        """Schedule a delayed read of the current temporary mode."""
+        """Schedule a post-command temporary-mode confirmation read."""
 
         task = getattr(self, "_sonoff_trvzbt_temporary_mode_read_task", None)
         if task is not None and not task.done():
@@ -1244,7 +1244,7 @@ class CustomSonoffCluster(CustomCluster):
         )
 
     def _sonoff_trvzbt_schedule_device_work_mode_read(self, delay=60):
-        """Schedule a delayed read of the current device work mode."""
+        """Schedule a post-command device-work-mode confirmation read."""
 
         task = getattr(self, "_sonoff_trvzbt_device_work_mode_read_task", None)
         if task is not None and not task.done():
@@ -1256,72 +1256,73 @@ class CustomSonoffCluster(CustomCluster):
         )
 
     async def _sonoff_trvzbt_read_temporary_mode_later(self, delay=60):
-        """Read 0x6014 after join/startup because the device may not report it."""
+        """Confirm temporary mode after a device command has settled."""
 
-        attr_name = self.AttributeDefs.temporary_mode.name
-        for attempt in range(1, 4):
+        for _ in range(3):
             await asyncio.sleep(delay)
-            try:
-                success, failure = await self.read_attributes(
-                    [attr_name], allow_cache=False
-                )
-            except Exception as exc:
-                LOGGER.warning(
-                    "TRV-ZBT temporary mode read attempt %s failed: %s",
-                    attempt,
-                    exc,
-                )
-                continue
-
-            if attr_name in success:
-                LOGGER.info(
-                    "TRV-ZBT temporary mode read success on attempt %s: %s",
-                    attempt,
-                    success[attr_name],
-                )
+            if await self._sonoff_trvzbt_read_temporary_mode():
                 return
-
-            LOGGER.info(
-                "TRV-ZBT temporary mode read attempt %s no value: success=%s failure=%s",
-                attempt,
-                success,
-                failure,
-            )
 
     async def _sonoff_trvzbt_read_device_work_mode_later(self, delay=60):
-        """Read 0x0018 after join/startup because the device may not report it."""
+        """Confirm device work mode after a device command has settled."""
 
-        attr_name = self.AttributeDefs.device_work_mode.name
-        for attempt in range(1, 4):
+        for _ in range(3):
             await asyncio.sleep(delay)
-            try:
-                success, failure = await self.read_attributes(
-                    [attr_name], allow_cache=False
-                )
-            except Exception as exc:
-                LOGGER.warning(
-                    "TRV-ZBT device work mode read attempt %s failed: %s",
-                    attempt,
-                    exc,
-                )
-                continue
-
-            if attr_name in success:
-                LOGGER.info(
-                    "TRV-ZBT device work mode read success on attempt %s: %s",
-                    attempt,
-                    success[attr_name],
-                )
+            if await self._sonoff_trvzbt_read_device_work_mode():
                 return
+        LOGGER.warning("TRV-ZBT device work mode confirmation failed; keeping cache")
 
-            LOGGER.info(
-                "TRV-ZBT device work mode read attempt %s no value: success=%s failure=%s",
-                attempt,
-                success,
-                failure,
+    async def _sonoff_trvzbt_read_temporary_mode(self):
+        """Read the current temporary mode after ZHA initialization."""
+        attr_name = self.AttributeDefs.temporary_mode.name
+        try:
+            success, failure = await self.read_attributes(
+                [attr_name], allow_cache=False
             )
+        except (TimeoutError, ZigbeeException):
+            LOGGER.warning("TRV-ZBT temporary mode read failed", exc_info=True)
+            return False
+        if attr_name in success:
+            LOGGER.info("TRV-ZBT temporary mode read: %s", success[attr_name])
+            return True
+        LOGGER.warning(
+            "TRV-ZBT temporary mode read returned no value: success=%s failure=%s",
+            success,
+            failure,
+        )
+        return False
 
-        LOGGER.warning("TRV-ZBT device work mode read failed; keeping cached state")
+    async def _sonoff_trvzbt_read_device_work_mode(self):
+        """Read the current device work mode after ZHA initialization."""
+        attr_name = self.AttributeDefs.device_work_mode.name
+        try:
+            success, failure = await self.read_attributes(
+                [attr_name], allow_cache=False
+            )
+        except (TimeoutError, ZigbeeException):
+            LOGGER.warning("TRV-ZBT device work mode read failed", exc_info=True)
+            return False
+        if attr_name in success:
+            LOGGER.info("TRV-ZBT device work mode read: %s", success[attr_name])
+            return True
+        LOGGER.warning(
+            "TRV-ZBT device work mode read returned no value: success=%s failure=%s",
+            success,
+            failure,
+        )
+        return False
+
+    async def sonoff_trvzbt_refresh_after_initialization(self):
+        """Refresh device state only after ZHA has initialized this device."""
+
+        await self._sonoff_trvzbt_read_temporary_mode()
+        await self._sonoff_trvzbt_read_device_work_mode()
+        try:
+            await self.schedule_fetch()
+        except (TimeoutError, ZigbeeException):
+            LOGGER.warning(
+                "TRV-ZBT schedule fetch after initialization failed", exc_info=True
+            )
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -2368,8 +2369,29 @@ class CustomSonoffCluster(CustomCluster):
         return super().handle_cluster_request(hdr, args, *super_args, **kwargs)
 
 
+class SonoffTRVZBTDevice(QuirkV2Device):
+    """Run TRV-ZBT state synchronization after ZHA initialization."""
+
+    async def async_initialize(self, from_cache: bool = False) -> None:
+        """Refresh missing TRV-ZBT state after the transport is ready."""
+
+        await super().async_initialize(from_cache=from_cache)
+        endpoint = self.device.endpoints.get(1)
+        if endpoint is None:
+            LOGGER.warning("TRV-ZBT state refresh skipped: endpoint 1 is unavailable")
+            return
+        sonoff_cluster = endpoint.in_clusters.get(CustomSonoffCluster.cluster_id)
+        if not isinstance(sonoff_cluster, CustomSonoffCluster):
+            LOGGER.warning(
+                "TRV-ZBT state refresh skipped: private cluster is unavailable"
+            )
+            return
+        await sonoff_cluster.sonoff_trvzbt_refresh_after_initialization()
+
+
 SONOFF_TRVZBT_QUIRK_BUILDER = (
     QuirkBuilder("SONOFF", "TRV-ZBT")
+    .zha_device_class(SonoffTRVZBTDevice)
     .replaces(SonoffBasicCluster)
     .replaces(SonoffThermostat)
     .replaces(CustomSonoffCluster)
