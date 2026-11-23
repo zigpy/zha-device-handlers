@@ -367,12 +367,15 @@ def _filter_matches_metadata(
     entity_filter: EntityFilter,
     entity_metadata: EntityMetadata,
     *,
-    unique_ids_changed: bool,
+    unique_id_end: str | None,
+    unique_id_complete: bool,
 ) -> bool | None:
     """Return whether a filter matches the entity an `EntityMetadata` exposes.
 
-    Returns `None` when that can't be told before the entity exists: the filter has a
-    `function`, or a field the builder doesn't know for the entity.
+    `unique_id_end` is the known end of the entity's unique ID (the whole unique ID if
+    `unique_id_complete`), or `None` if it is unknown. Returns `None` when the match
+    can't be told before the entity exists: the filter has a `function`, or a field
+    the builder doesn't know for the entity.
     """
     if (
         entity_filter.endpoint_id is not None
@@ -394,13 +397,12 @@ def _filter_matches_metadata(
         return False
 
     if entity_filter.unique_id_suffix is not None:
-        # The unique ID is `{ieee}-{endpoint_id}[-{suffix}]`
-        suffix = entity_metadata.resolved_unique_id_suffix
-        tail = f"-{entity_metadata.endpoint_id}" + (f"-{suffix}" if suffix else "")
         filter_tail = "-" + entity_filter.unique_id_suffix.removeprefix("-")
-        if unique_ids_changed or len(filter_tail) > len(tail):
+        if unique_id_end is None or (
+            not unique_id_complete and len(filter_tail) > len(unique_id_end)
+        ):
             return None
-        if not tail.endswith(filter_tail):
+        if not unique_id_end.endswith(filter_tail):
             return False
 
     if (
@@ -572,27 +574,46 @@ class QuirkBuilder:
         """Return the primary flag and child device id of an exposed entity.
 
         ZHA applies `change_entity_metadata` to the quirk's own entities as well, so
-        the matching changes are applied here in the same order. Returns `None` when a
-        change of either value may apply but the builder can't tell whether it does.
+        the matching changes are applied here in the same order, following the unique
+        ID through `new_unique_id` changes for later `unique_id_suffix` filters.
+        Returns `None` when a change of either value may apply but the builder can't
+        tell whether it does.
         """
-        unique_ids_changed = any(
-            change.new_unique_id is not None for change in self.changed_entity_metadata
+        # The unique ID is `{ieee}-{endpoint_id}[-{suffix}]`
+        suffix = entity_metadata.resolved_unique_id_suffix
+        unique_id_end: str | None = f"-{entity_metadata.endpoint_id}" + (
+            f"-{suffix}" if suffix is not None else ""
         )
+        unique_id_complete = False
         primary = bool(entity_metadata.primary)
         child_device_id = entity_metadata.child_device_id
 
         for change in self.changed_entity_metadata:
-            if change.new_primary is None and change.new_child_device_id is UNDEFINED:
+            changes_device = (
+                change.new_primary is not None
+                or change.new_child_device_id is not UNDEFINED
+            )
+            if not changes_device and change.new_unique_id is None:
                 continue
 
             matches = _filter_matches_metadata(
-                change.filter, entity_metadata, unique_ids_changed=unique_ids_changed
+                change.filter,
+                entity_metadata,
+                unique_id_end=unique_id_end,
+                unique_id_complete=unique_id_complete,
             )
             if matches is None:
-                return None
+                if changes_device:
+                    return None
+                # The unique ID may have changed
+                unique_id_end = None
+                continue
             if not matches:
                 continue
 
+            if change.new_unique_id is not None:
+                unique_id_end = change.new_unique_id
+                unique_id_complete = True
             if change.new_primary is not None:
                 primary = change.new_primary
             if change.new_child_device_id is not UNDEFINED:

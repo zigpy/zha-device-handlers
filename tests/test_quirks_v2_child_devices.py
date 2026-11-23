@@ -310,12 +310,53 @@ def test_child_device_primary_unknown_change() -> None:
             function=lambda entity: True, new_fallback_name="Renamed"
         ).add_to_registry(DeviceRegistry())
 
-    # A suffix filter can't be matched once a change sets a new unique ID
+    # A suffix filter can't be matched once an unknown change may set a unique ID
     _two_primaries_moved(
-        unique_id_suffix="2-on_time", new_child_device_id="b"
-    ).change_entity_metadata(endpoint_id=3, new_unique_id="other").add_to_registry(
-        DeviceRegistry()
+        function=lambda entity: entity.endpoint.id == 2, new_unique_id="other"
+    ).change_entity_metadata(
+        unique_id_suffix="other", new_child_device_id="b"
+    ).add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_changed_unique_id() -> None:
+    """Test suffix filters follow `new_unique_id` changes of the quirk's entities."""
+    # A new unique ID on another endpoint leaves these entities' unique IDs alone
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            endpoint_id=3, new_unique_id="other"
+        ).change_entity_metadata(
+            unique_id_suffix="3-on_time", new_child_device_id="b"
+        ).add_to_registry(DeviceRegistry())
+
+    # A suffix filter matches the new unique ID, not the old one
+    _two_primaries_moved(
+        endpoint_id=2, new_unique_id="ab:cd-2-custom"
+    ).change_entity_metadata(
+        unique_id_suffix="custom", new_child_device_id="b"
+    ).add_to_registry(DeviceRegistry())
+
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        _two_primaries_moved(
+            endpoint_id=2, new_unique_id="ab:cd-2-custom"
+        ).change_entity_metadata(
+            unique_id_suffix="2-on_time", new_child_device_id="b"
+        ).add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_empty_unique_id_suffix() -> None:
+    """Test an empty unique ID suffix keeps its separator, as in ZHA."""
+    builder = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_ids=[1, 2], fallback_name="A")
+        .child_device("b", fallback_name="B")
     )
+    _switch(builder, 1, primary=True)
+    _switch(builder, 2, primary=True, unique_id_suffix="")
+
+    # The unique ID ends with `-2-`, so a `2` suffix filter doesn't match it
+    builder.change_entity_metadata(unique_id_suffix="2", new_child_device_id="b")
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
 
 
 def test_child_device_primary_entities_defined_later() -> None:
