@@ -107,6 +107,17 @@ def test_trv_zbt_schedule_group_decoding():
     assert schedule["schedule"] == "00:00/16 06:40/18"
 
 
+def test_trv_zbt_schedule_group_rejects_truncated_transitions():
+    """A schedule response must contain every transition it declares."""
+
+    assert (
+        parse_sonoff_trvzbt_schedule_group(
+            b"\x01\x00\x00\x02\x02\x01\x00\x00\x40\x06"
+        )
+        is None
+    )
+
+
 def test_trv_zbt_schedule_group_command_serialization():
     """Schedule reads and writes use the device's variable-length payload."""
 

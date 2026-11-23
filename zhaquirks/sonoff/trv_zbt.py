@@ -651,13 +651,12 @@ def parse_sonoff_trvzbt_schedule_group(value):
     transition_count = data[3]
     day_of_week = data[4]
     mode = data[5]
+    if len(data) < 6 + transition_count * 4:
+        return None
 
     transitions = []
     offset = 6
     for _ in range(transition_count):
-        if offset + 4 > len(data):
-            break
-
         minutes = int.from_bytes(data[offset : offset + 2], "little")
         heat_setpoint = int.from_bytes(
             data[offset + 2 : offset + 4], "little", signed=True
