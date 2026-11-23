@@ -1138,6 +1138,7 @@ class CustomSonoffCluster(CustomCluster):
         self._update_attribute(
             self.AttributeDefs.motor_travel_calibration_status.id, 0x00
         )
+        self._sonoff_trvzbt_pending_editor_mode = None
         self._update_attribute(
             self.AttributeDefs.temporary_mode.id, SonoffTemporaryMode.None_
         )
@@ -1165,10 +1166,18 @@ class CustomSonoffCluster(CustomCluster):
         elif mode == int(SonoffTemporaryMode.None_):
             editor_mode = SonoffTemporaryModeEditor.None_
 
-        if editor_mode is not None:
-            super()._update_attribute(
-                SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR, editor_mode
-            )
+        if editor_mode is None:
+            return
+
+        pending_mode = self._sonoff_trvzbt_pending_editor_mode
+        if pending_mode is not None:
+            if editor_mode != pending_mode:
+                return
+            self._sonoff_trvzbt_pending_editor_mode = None
+
+        super()._update_attribute(
+            SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR, editor_mode
+        )
 
     async def _sonoff_trvzbt_capture_pre_temporary_state(self, manufacturer=None):
         """Cache the state that should be restored when temporary mode exits."""
@@ -1914,7 +1923,7 @@ class CustomSonoffCluster(CustomCluster):
                         mode_attr.name: mode,
                     }
                 )
-                self._update_attribute(mode_attr.id, mode)
+                super()._update_attribute(mode_attr.id, mode)
                 LOGGER.info("TRV-ZBT Boost apply sent zero duration")
             else:
                 alternate_duration = (
@@ -1929,7 +1938,7 @@ class CustomSonoffCluster(CustomCluster):
                     }
                 )
                 self._update_attribute(duration_attr.id, alternate_duration)
-                self._update_attribute(mode_attr.id, mode)
+                super()._update_attribute(mode_attr.id, mode)
                 await super().write_attributes({duration_attr.name: duration_seconds})
                 LOGGER.info(
                     "TRV-ZBT Boost apply forced duration refresh: alternate=%s target=%s",
@@ -1949,7 +1958,7 @@ class CustomSonoffCluster(CustomCluster):
             await super().write_attributes({duration_attr.name: duration_seconds})
             self._update_attribute(duration_attr.id, duration_seconds)
             await super().write_attributes({mode_attr.name: mode})
-            self._update_attribute(mode_attr.id, mode)
+            super()._update_attribute(mode_attr.id, mode)
         self._update_attribute(
             SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_APPLY_STATUS_ATTR, "apply sent"
         )
@@ -2247,9 +2256,23 @@ class CustomSonoffCluster(CustomCluster):
             if key in temporary_mode_editor_attr_names:
                 attr = self.find_attribute(key)
                 value = remaining_attributes.pop(key)
+                if attr.id == self.AttributeDefs.temporary_mode_editor_mode.id:
+                    try:
+                        self._sonoff_trvzbt_pending_editor_mode = (
+                            SonoffTemporaryModeEditor(value)
+                        )
+                    except (TypeError, ValueError):
+                        self._sonoff_trvzbt_pending_editor_mode = None
                 self._update_attribute(attr.id, value)
             elif key in temporary_mode_editor_attr_ids:
                 value = remaining_attributes.pop(key)
+                if key == self.AttributeDefs.temporary_mode_editor_mode.id:
+                    try:
+                        self._sonoff_trvzbt_pending_editor_mode = (
+                            SonoffTemporaryModeEditor(value)
+                        )
+                    except (TypeError, ValueError):
+                        self._sonoff_trvzbt_pending_editor_mode = None
                 self._update_attribute(key, value)
 
         for key in (temporary_mode_attr_name, temporary_mode_attr_id):

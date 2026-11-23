@@ -767,6 +767,50 @@ async def test_trv_zbt_temporary_mode_retries_pre_state_before_applying(
     assert parent_write.await_count == 2
 
 
+async def test_trv_zbt_editor_mode_waits_for_device_confirmation(
+    zigpy_device_from_v2_quirk,
+):
+    """A stale device state does not overwrite the pending editor selection."""
+
+    cluster, _thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    editor_mode = cluster.AttributeDefs.temporary_mode_editor_mode
+    await cluster.write_attributes(
+        {editor_mode.name: trv_zbt.SonoffTemporaryModeEditor.Boost}
+    )
+    cluster._sonoff_trvzbt_pre_temporary_state = {
+        "occupied_heating_setpoint": 2100,
+        "system_mode": 4,
+    }
+
+    with (
+        mock.patch.object(trv_zbt.asyncio, "sleep", mock.AsyncMock()),
+        mock.patch.object(
+            trv_zbt.CustomCluster,
+            "write_attributes",
+            mock.AsyncMock(return_value=({}, {})),
+        ),
+    ):
+        await cluster.temporary_mode_apply()
+
+    assert cluster._sonoff_trvzbt_pending_editor_mode == (
+        trv_zbt.SonoffTemporaryModeEditor.Boost
+    )
+
+    cluster._update_attribute(
+        cluster.AttributeDefs.temporary_mode.id, trv_zbt.SonoffTemporaryMode.None_
+    )
+
+    assert (
+        cluster._attr_cache[editor_mode.id] == trv_zbt.SonoffTemporaryModeEditor.Boost
+    )
+
+    cluster._update_attribute(
+        cluster.AttributeDefs.temporary_mode.id, trv_zbt.SonoffTemporaryMode.Boost
+    )
+
+    assert cluster._sonoff_trvzbt_pending_editor_mode is None
+
+
 async def test_trv_zbt_thermostat_setpoint_and_boost_protection(
     zigpy_device_from_v2_quirk,
 ):
