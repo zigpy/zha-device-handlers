@@ -1,4 +1,4 @@
-"""Shelly WiFi setup cluster support."""
+"""Shelly RPC and WiFi setup cluster support."""
 
 from __future__ import annotations
 
@@ -15,6 +15,37 @@ from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 SHELLY_WIFI_SETUP_ENDPOINT_ID = 239
 SHELLY_WIFI_SETUP_PROFILE_ID = 0xC001
 SHELLY_WIFI_SETUP_CLUSTER_ID = 0xFC02
+SHELLY_RPC_CLUSTER_ID = 0xFC01
+
+
+class ShellyRpcCluster(CustomCluster):
+    """Shelly RPC cluster, carries Shelly RPC requests and responses in chunks."""
+
+    cluster_id = SHELLY_RPC_CLUSTER_ID
+    name = "Shelly RPC"
+    ep_attribute = "shelly_rpc"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Shelly RPC attribute definitions."""
+
+        data = ZCLAttributeDef(
+            id=0x0000,
+            type=t.CharacterString,
+            access="rw",
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+        )
+        tx_ctl = ZCLAttributeDef(
+            id=0x0001,
+            type=t.uint32_t,
+            access="w",
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+        )
+        rx_ctl = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint32_t,
+            access="r",
+            manufacturer_code=SHELLY_MANUFACTURER_CODE,
+        )
 
 
 class ShellyWiFiSetupCluster(CustomCluster):
@@ -115,20 +146,22 @@ class ShellyCustomProfileDevice(CustomZigpyDevice):
         return hdr, rsp_key
 
 
-def with_wifi_setup(builder: QuirkBuilder) -> QuirkBuilder:
-    """Add the WiFi setup cluster to a Shelly quirk.
+def with_rpc_and_wifi_setup(builder: QuirkBuilder) -> QuirkBuilder:
+    """Add the RPC and WiFi setup clusters to a Shelly quirk.
 
-    ZHA applies a single quirk per model, so a model that needs more than the
-    WiFi setup cluster (e.g. Presence) has its own quirk and must use this
-    too, otherwise it loses the cluster.
+    ZHA applies a single quirk per model, so a model that needs more than these
+    clusters (e.g. Presence) has its own quirk and must use this too, otherwise
+    it loses them.
     """
-    return builder.device_class(ShellyCustomProfileDevice).replaces(
-        ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID
+    return (
+        builder.device_class(ShellyCustomProfileDevice)
+        .replaces(ShellyRpcCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
+        .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
     )
 
 
-# Models that expose the WiFi setup cluster and need nothing else.
-SHELLY_WIFI_SETUP_MODELS = (
+# Models that expose the RPC and WiFi setup clusters and need nothing else.
+SHELLY_RPC_WIFI_SETUP_MODELS = (
     "1",
     "1L",
     "1PM",
@@ -139,15 +172,20 @@ SHELLY_WIFI_SETUP_MODELS = (
     "Dimmer US",
     "EM",
     "EM Mini",
+    "Fil Pilote",
     "I4",
+    "I4 Mini",
     "Mini1",
     "Mini1PM",
+    "Plug C",
+    "Plug C PM",
     "Plug US",
     "Power Strip",
+    "Power Strip US",
 )
 
-_builder = QuirkBuilder("Shelly", SHELLY_WIFI_SETUP_MODELS[0])
-for _model in SHELLY_WIFI_SETUP_MODELS[1:]:
+_builder = QuirkBuilder("Shelly", SHELLY_RPC_WIFI_SETUP_MODELS[0])
+for _model in SHELLY_RPC_WIFI_SETUP_MODELS[1:]:
     _builder = _builder.applies_to("Shelly", _model)
 
-with_wifi_setup(_builder).add_to_registry()
+with_rpc_and_wifi_setup(_builder).add_to_registry()
