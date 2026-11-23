@@ -1,0 +1,545 @@
+{
+  "version": 3,
+  "ieee": "ab:cd:ef:12:3c:52:ae:10",
+  "nwk": "0x44C8",
+  "manufacturer": "NodOn",
+  "model": "SIN-4-RS-20",
+  "friendly_manufacturer": "NodOn",
+  "friendly_model": "SIN-4-RS-20",
+  "name": "NodOn SIN-4-RS-20",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.nodon.roller_shutter:(NodOn / SIN-4-RS-20)",
+  "exposes_features": [],
+  "manufacturer_code": 4747,
+  "power_source": "Mains",
+  "lqi": 68,
+  "rssi": -83,
+  "last_seen": "2026-09-16T08:30:54.670448+00:00",
+  "available": true,
+  "device_type": "Router",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "Router",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 142,
+    "manufacturer_code": 4747,
+    "maximum_buffer_size": 82,
+    "maximum_incoming_transfer_size": 500,
+    "server_mask": 11264,
+    "maximum_outgoing_transfer_size": 500,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "WINDOW_COVERING_DEVICE",
+        "id": 514
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "NodOn"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "SIN-4-RS-20"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0102",
+          "endpoint_attribute": "window_covering",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "calibration_rotation_run_time_down",
+              "zcl_type": "uint16",
+              "value": 17000
+            },
+            {
+              "id": "0x0003",
+              "name": "calibration_rotation_run_time_up",
+              "zcl_type": "uint16",
+              "value": 17000
+            },
+            {
+              "id": "0x0002",
+              "name": "calibration_vertical_run_time_down",
+              "zcl_type": "uint16",
+              "value": 2220
+            },
+            {
+              "id": "0x0001",
+              "name": "calibration_vertical_run_time_up",
+              "zcl_type": "uint16",
+              "value": 2340
+            },
+            {
+              "id": "0x0007",
+              "name": "config_status",
+              "zcl_type": "map8",
+              "value": 3
+            },
+            {
+              "id": "0x0008",
+              "name": "current_position_lift_percentage",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0x0009",
+              "name": "current_position_tilt_percentage",
+              "zcl_type": "uint8",
+              "value": 100
+            },
+            {
+              "id": "0x0017",
+              "name": "window_covering_mode",
+              "zcl_type": "map8",
+              "value": 8
+            },
+            {
+              "id": "0x0000",
+              "name": "window_covering_type",
+              "zcl_type": "enum8",
+              "value": 8
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x1000",
+          "endpoint_attribute": "lightlink",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0003",
+          "endpoint_attribute": "identify",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 196868
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0102",
+          "endpoint_attribute": "window_covering",
+          "attributes": []
+        }
+      ]
+    },
+    "242": {
+      "profile_id": 41440,
+      "device_type": {
+        "name": "COMBO_BASIC",
+        "id": 102
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0021",
+          "endpoint_attribute": "green_power",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "NodOn",
+    "model": "SIN-4-RS-20",
+    "node_desc": {
+      "logical_type": 1,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 142,
+      "manufacturer_code": 4747,
+      "maximum_buffer_size": 82,
+      "maximum_incoming_transfer_size": 500,
+      "server_mask": 11264,
+      "maximum_outgoing_transfer_size": 500,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0202",
+        "input_clusters": [
+          "0x0000",
+          "0x0003",
+          "0x0004",
+          "0x0005",
+          "0x0102",
+          "0x1000"
+        ],
+        "output_clusters": [
+          "0x0003",
+          "0x0019",
+          "0x0102"
+        ]
+      },
+      "242": {
+        "profile_id": "0xa1e0",
+        "device_type": "0x0066",
+        "input_clusters": [
+          "0x0021"
+        ],
+        "output_clusters": [
+          "0x0021"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "button": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-3",
+        "migrate_unique_ids": [],
+        "platform": "button",
+        "class_name": "IdentifyButton",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "identify",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "command": "identify",
+        "args": [
+          5
+        ],
+        "kwargs": {}
+      }
+    ],
+    "cover": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-258",
+        "migrate_unique_ids": [],
+        "platform": "cover",
+        "class_name": "Cover",
+        "translation_key": "cover",
+        "translation_placeholders": null,
+        "device_class": "blind",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_position": 100,
+        "current_tilt_position": 0,
+        "is_opening": false,
+        "is_closing": false,
+        "is_closed": false,
+        "supported_features": 255
+      }
+    ],
+    "number": [
+      {
+        "fallback_name": "Calibration rotation run time down",
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-calibration_rotation_run_time_down",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "calibration_rotation_run_time_down",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 17000,
+        "mode": "auto",
+        "native_max_value": 65535,
+        "native_min_value": 0,
+        "native_step": 10,
+        "native_unit_of_measurement": "ms"
+      },
+      {
+        "fallback_name": "Calibration rotation run time up",
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-calibration_rotation_run_time_up",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "calibration_rotation_run_time_up",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 17000,
+        "mode": "auto",
+        "native_max_value": 65535,
+        "native_min_value": 0,
+        "native_step": 10,
+        "native_unit_of_measurement": "ms"
+      },
+      {
+        "fallback_name": "Calibration vertical run time down",
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-calibration_vertical_run_time_down",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "calibration_vertical_run_time_down",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 2220,
+        "mode": "auto",
+        "native_max_value": 65535,
+        "native_min_value": 0,
+        "native_step": 10,
+        "native_unit_of_measurement": "ms"
+      },
+      {
+        "fallback_name": "Calibration vertical run time up",
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-calibration_vertical_run_time_up",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "calibration_vertical_run_time_up",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 2340,
+        "mode": "auto",
+        "native_max_value": 65535,
+        "native_min_value": 0,
+        "native_step": 10,
+        "native_unit_of_measurement": "ms"
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": 68,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": -83,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-258-window_covering_type",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "WindowCoveringTypeSensor",
+        "translation_key": "window_covering_type",
+        "translation_placeholders": null,
+        "device_class": "enum",
+        "state_class": null,
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "Tilt_blind_tilt_and_lift",
+        "suggested_display_precision": null,
+        "unit": null,
+        "options": [
+          "Rollershade",
+          "Rollershade_two_motors",
+          "Rollershade_exterior",
+          "Rollershade_exterior_two_motors",
+          "Drapery",
+          "Awning",
+          "Shutter",
+          "Tilt_blind_tilt_only",
+          "Tilt_blind_tilt_and_lift",
+          "Projector_screen"
+        ]
+      }
+    ],
+    "switch": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-258-inverted",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "WindowCoveringInversionSwitch",
+        "translation_key": "inverted",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": false,
+        "inverted": false,
+        "attribute_name": "config_status",
+        "invert_attribute_name": null,
+        "force_inverted": false,
+        "off_value": 0,
+        "on_value": 1
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:3c:52:ae:10-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:3c:52:ae:10",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x00030104",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}

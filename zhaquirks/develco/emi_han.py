@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.builder import QuirkBuilder
@@ -11,32 +9,19 @@ from zhaquirks.clusters import CustomCluster
 
 
 class FrientMetering(CustomCluster, Metering):
-    """Frient EMI Norwegian HAN Metering cluster definition."""
+    """Frient EMI Norwegian HAN Metering cluster definition.
 
-    # fix device issue
+    The device also has a manufacturer-specific "interface mode" attribute with the
+    divisor's ID (0x0302), reported with the manufacturer-specific bit set. Since
+    zigpy 0.91, such reports no longer update the ZCL divisor, so they aren't
+    filtered anymore.
+
+    The divisor is still forced to 1000, the fixed value from the technical manual.
+    Installs from before zigpy 0.91 can have the interface mode value (512) cached as
+    the divisor, and it's unverified what the device answers to a plain divisor read.
+    """
+
     _CONSTANT_ATTRIBUTES = {Metering.AttributeDefs.divisor.id: 1000}
-
-    def handle_cluster_general_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list,
-        *,
-        dst_addressing: t.AddrMode | None = None,
-    ) -> None:
-        """Filter out incorrect divisor attribute reports from device."""
-        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
-            # Filter out divisor attribute reports
-            args.attribute_reports = [
-                attr
-                for attr in args.attribute_reports
-                if attr.attrid != Metering.AttributeDefs.divisor.id
-            ]
-
-            # Don't process if no attributes remain
-            if not args.attribute_reports:
-                return
-
-        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
 
 (
