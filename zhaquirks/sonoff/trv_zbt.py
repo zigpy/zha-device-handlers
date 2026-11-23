@@ -1,4 +1,4 @@
-"""Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
+"""Sonoff TRV-ZBT - Zigbee Thermostatic Radiator Valve."""
 
 import asyncio
 from datetime import datetime
