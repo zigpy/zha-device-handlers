@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.application
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -271,10 +272,22 @@ def _trv_zbt_device(zigpy_device_from_v2_quirk):
 
     completed_task = mock.Mock()
     completed_task.done.return_value = True
-    with mock.patch.object(
-        trv_zbt.asyncio,
-        "create_task",
-        side_effect=lambda coroutine: (coroutine.close(), completed_task)[1],
+
+    def close_task(coroutine):
+        coroutine.close()
+        return completed_task
+
+    with (
+        mock.patch.object(
+            zigpy.application.ControllerApplication,
+            "create_task",
+            side_effect=close_task,
+        ),
+        mock.patch.object(
+            trv_zbt.asyncio,
+            "create_task",
+            side_effect=close_task,
+        ),
     ):
         device = zigpy_device_from_v2_quirk(
             "SONOFF",
@@ -290,6 +303,38 @@ def _trv_zbt_device(zigpy_device_from_v2_quirk):
         device.endpoints[1].in_clusters[CustomSonoffCluster.cluster_id],
         device.endpoints[1].in_clusters[Thermostat.cluster_id],
     )
+
+
+def test_trv_zbt_delayed_reads_use_application_tasks(zigpy_device_from_v2_quirk):
+    """Delayed reads are owned by the ZHA application lifecycle."""
+
+    completed_task = mock.Mock()
+    completed_task.done.return_value = True
+
+    def close_task(coroutine):
+        coroutine.close()
+        return completed_task
+
+    with (
+        mock.patch.object(
+            zigpy.application.ControllerApplication,
+            "create_task",
+            side_effect=close_task,
+        ) as application_create_task,
+        mock.patch.object(
+            trv_zbt.asyncio,
+            "create_task",
+            side_effect=close_task,
+        ) as asyncio_create_task,
+    ):
+        zigpy_device_from_v2_quirk(
+            "SONOFF",
+            "TRV-ZBT",
+            cluster_ids={1: {CustomSonoffCluster.cluster_id: ClusterType.Server}},
+        )
+
+    assert application_create_task.call_count == 2
+    assert asyncio_create_task.call_count == 0
 
 
 async def test_trv_zbt_command_paths_update_device_state(zigpy_device_from_v2_quirk):

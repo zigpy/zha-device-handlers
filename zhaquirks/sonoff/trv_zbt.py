@@ -1248,8 +1248,10 @@ class CustomSonoffCluster(CustomCluster):
         task = getattr(self, "_sonoff_trvzbt_temporary_mode_read_task", None)
         if task is not None and not task.done():
             return
-        self._sonoff_trvzbt_temporary_mode_read_task = asyncio.create_task(
-            self._sonoff_trvzbt_read_temporary_mode_later(delay=delay)
+        self._sonoff_trvzbt_temporary_mode_read_task = (
+            self.endpoint.device.application.create_task(
+                self._sonoff_trvzbt_read_temporary_mode_later(delay=delay)
+            )
         )
 
     def _sonoff_trvzbt_schedule_device_work_mode_read(self, delay=60):
@@ -1258,8 +1260,10 @@ class CustomSonoffCluster(CustomCluster):
         task = getattr(self, "_sonoff_trvzbt_device_work_mode_read_task", None)
         if task is not None and not task.done():
             return
-        self._sonoff_trvzbt_device_work_mode_read_task = asyncio.create_task(
-            self._sonoff_trvzbt_read_device_work_mode_later(delay=delay)
+        self._sonoff_trvzbt_device_work_mode_read_task = (
+            self.endpoint.device.application.create_task(
+                self._sonoff_trvzbt_read_device_work_mode_later(delay=delay)
+            )
         )
 
     async def _sonoff_trvzbt_read_temporary_mode_later(self, delay=60):
