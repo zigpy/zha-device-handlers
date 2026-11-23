@@ -1,0 +1,98 @@
+"""Quirk for the Aqara Power Plug H2 EU (RGB), SP-P05D, model lumi.plug.aeu005.
+
+Two problems are fixed:
+
+1. Power is shown 10x too low.
+   The plug reports ElectricalMeasurement.active_power (0x050B) in whole
+   watts, but advertises ac_power_divisor (0x0605) = 10. ZHA divides the
+   reading by 10, so a ~1000 W heater shows up as ~100 W. The quirk pins
+   ac_power_multiplier and ac_power_divisor to 1.
+
+2. Energy (kWh) never updates.
+   The plug does not send attribute reports at all (it rejects the reporting
+   configuration and pushes nothing on 0xFCC0); it only answers reads. ZHA
+   already polls active_power every 30 s for this device, but nothing reads
+   Metering.current_summ_delivered (0x0000), so the energy sensor keeps the
+   value it read at startup. The value itself is correct when read
+   (multiplier 1, divisor 1000 -> kWh). The quirk reads it right after a
+   power poll, at most once per SUMMATION_REFRESH_INTERVAL seconds.
+
+Verified on firmware 0x00000015:
+- heater switched on: grid import rose by ~1055 W; the plug reported raw
+  active_power 997 (shown as 99.7 W without the quirk, 997 W with it);
+- current_summ_delivered read 2014 -> 2413 over ~25 min at ~982 W
+  (0.399 kWh, expected ~0.41 kWh).
+
+Note: the device identifies as manufacturer "Aqara" (not "LUMI"), so the
+existing Xiaomi/LUMI quirks do not match it.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
+
+_LOGGER = logging.getLogger(__name__)
+
+SUMMATION_REFRESH_INTERVAL = 60  # seconds
+
+
+class AqaraH2PlugElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """ElectricalMeasurement with corrected scaling and energy refresh."""
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster."""
+        super().__init__(*args, **kwargs)
+        self._last_summation_refresh: float | None = None
+        self._summation_task: asyncio.Task | None = None
+
+    def _update_attribute(self, attrid, value):
+        """Refresh the energy counter after an active_power update."""
+        super()._update_attribute(attrid, value)
+
+        if attrid != ElectricalMeasurement.AttributeDefs.active_power.id:
+            return
+        if self._summation_task is not None and not self._summation_task.done():
+            return
+
+        now = time.monotonic()
+        if (
+            self._last_summation_refresh is not None
+            and now - self._last_summation_refresh < SUMMATION_REFRESH_INTERVAL
+        ):
+            return
+
+        self._last_summation_refresh = now
+        self._summation_task = asyncio.get_running_loop().create_task(
+            self._refresh_summation()
+        )
+
+    async def _refresh_summation(self) -> None:
+        """Read current_summ_delivered from the Metering cluster."""
+        metering = self.endpoint.in_clusters.get(Metering.cluster_id)
+        if metering is None:
+            return
+        try:
+            await metering.read_attributes(
+                [Metering.AttributeDefs.current_summ_delivered.id]
+            )
+        except Exception as exc:  # noqa: BLE001 - a failed poll must not break the device
+            _LOGGER.debug("Failed to refresh current_summ_delivered: %s", exc)
+
+
+(
+    QuirkBuilder("Aqara", "lumi.plug.aeu005")
+    .replaces(AqaraH2PlugElectricalMeasurement)
+    .add_to_registry()
+)
