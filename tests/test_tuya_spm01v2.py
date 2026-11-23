@@ -1,10 +1,10 @@
 """Tests for the Zemismart SPM01V2 quirk."""
 
 import pytest
-import zhaquirks
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener
+import zhaquirks
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 zhaquirks.setup()
