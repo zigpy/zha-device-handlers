@@ -1219,6 +1219,15 @@ class CustomSonoffCluster(CustomCluster):
                     system_mode_attr.name, success.get(system_mode_attr.id)
                 )
 
+        if setpoint is None or system_mode is None:
+            LOGGER.warning(
+                "TRV-ZBT pre-temporary state incomplete: "
+                "occupied_heating_setpoint=%s system_mode=%s",
+                setpoint,
+                system_mode,
+            )
+            return
+
         self._sonoff_trvzbt_pre_temporary_state = {
             "occupied_heating_setpoint": setpoint,
             "system_mode": system_mode,
