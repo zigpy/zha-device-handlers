@@ -33,10 +33,11 @@ import asyncio
 import logging
 import time
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.builder import QuirkBuilder
+from zhaquirks.clusters import CustomCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,14 +81,11 @@ class AqaraH2PlugElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
     async def _refresh_summation(self) -> None:
         """Read current_summ_delivered from the Metering cluster."""
-        metering = self.endpoint.in_clusters.get(Metering.cluster_id)
-        if metering is None:
-            return
         try:
-            await metering.read_attributes(
+            await self.endpoint.smartenergy_metering.read_attributes(
                 [Metering.AttributeDefs.current_summ_delivered.id]
             )
-        except Exception as exc:  # noqa: BLE001 - a failed poll must not break the device
+        except Exception as exc:  # noqa: BLE001 - never break the device on a poll
             _LOGGER.debug("Failed to refresh current_summ_delivered: %s", exc)
 
 
