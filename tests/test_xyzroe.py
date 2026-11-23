@@ -1,13 +1,15 @@
 """Tests for the XYZROE / DIYRuZ intercom adapter."""
 
 import asyncio
-import time
 from unittest.mock import AsyncMock
 
 import pytest
 from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
-from zigpy.exceptions import DeliveryError
+from zha.zigbee.cluster_config import (
+    aggregate_cluster_configs,
+    configure_cluster_configs,
+)
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic, OnOff, PowerConfiguration
 
@@ -109,64 +111,15 @@ async def test_battery_report_and_unknown_cache(intercom) -> None:
     assert power.get("battery_percentage_remaining") is None
 
 
-async def test_idle_battery_refresh_coalesces_and_never_writes(intercom) -> None:
-    """Read once after an Idle update without sending any control command."""
-    cluster = intercom.endpoints[1].zintercom
-    power = intercom.endpoints[1].power
-    power.read_attributes = AsyncMock(
-        return_value=({"battery_voltage": 32, "battery_percentage_remaining": 200}, {})
-    )
-    cluster.write_attributes = AsyncMock()
-    for _ in range(3):
-        cluster.update_attribute(cluster.AttributeDefs.state.id, ZintercomState.Idle)
-    await asyncio.sleep(0.08)
-    power.read_attributes.assert_awaited_once_with(
-        ["battery_voltage", "battery_percentage_remaining"], allow_cache=False
-    )
-    cluster.write_attributes.assert_not_called()
-    assert cluster._battery_last_success is not None
-
-
-@pytest.mark.parametrize(
-    "state", [ZintercomState.Ring, ZintercomState.Talk, ZintercomState.Open]
-)
-async def test_active_call_does_not_read_battery(intercom, state) -> None:
-    """Do not compete with the opening command during an active call."""
-    cluster = intercom.endpoints[1].zintercom
+@pytest.mark.parametrize("state", list(ZintercomState))
+async def test_state_updates_do_not_poll_battery(intercom, state) -> None:
+    """Leave battery delivery to standard reporting, even after Idle."""
     power = intercom.endpoints[1].power
     power.read_attributes = AsyncMock()
-    cluster.update_attribute(cluster.AttributeDefs.state.id, state)
-    await asyncio.sleep(0.08)
-    power.read_attributes.assert_not_called()
-
-
-async def test_sleep_timeout_preserves_state_and_rate_limits(intercom) -> None:
-    """A sleeping device remains Idle and is not hammered with retries."""
-    cluster = intercom.endpoints[1].zintercom
-    power = intercom.endpoints[1].power
-    power.read_attributes = AsyncMock(side_effect=DeliveryError("Device asleep"))
-    cluster.update_attribute(cluster.AttributeDefs.state.id, ZintercomState.Idle)
-    await asyncio.sleep(0.08)
-    assert not cluster._battery_read_pending
-    assert cluster._battery_last_success is None
-    assert cluster.get("state") == ZintercomState.Idle
-    cluster.update_attribute(cluster.AttributeDefs.state.id, ZintercomState.Idle)
-    await asyncio.sleep(0.08)
-    assert power.read_attributes.await_count == 1
-
-
-async def test_successful_battery_refresh_rate_limit(intercom) -> None:
-    """A known battery measurement does not cause a read on every Idle report."""
-    cluster = intercom.endpoints[1].zintercom
-    power = intercom.endpoints[1].power
-    power.update_attribute(
-        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id, 200
+    intercom.endpoints[1].zintercom.update_attribute(
+        DIYZintercomDoorLockCluster.AttributeDefs.state.id, state
     )
-    power.read_attributes = AsyncMock()
-    cluster._battery_last_success = time.monotonic()
-    cluster._battery_last_attempt = time.monotonic() - 301
-    cluster.update_attribute(cluster.AttributeDefs.state.id, ZintercomState.Idle)
-    await asyncio.sleep(0.08)
+    await asyncio.sleep(0)
     power.read_attributes.assert_not_called()
 
 
@@ -207,6 +160,33 @@ async def test_entities_from_device_diagnostics() -> None:
         ]
         assert len(batteries) == 1
         assert batteries[0].native_value == 100
+        # The standard battery entity binds Power Configuration and configures
+        # both firmware-reportable measurements without custom wake polling.
+        configs = aggregate_cluster_configs(device.platform_entities.values())
+        power_config = configs[(1, PowerConfiguration.cluster_id, True)]
+        assert power_config.bind
+        for name in ("battery_voltage", "battery_percentage_remaining"):
+            config = power_config.attributes[name]
+            assert config.read_on_startup
+            assert config.reporting is not None
+            assert config.reporting.min_interval == 3600
+            assert config.reporting.max_interval == 10800
+            assert config.reporting.reportable_change == 1
+        power = device.device.endpoints[1].power
+        power.bind.reset_mock()
+        power.configure_reporting_multiple.reset_mock()
+        await configure_cluster_configs(
+            device, {(1, PowerConfiguration.cluster_id, True): power_config}
+        )
+        power.bind.assert_awaited_once()
+        reports = power.configure_reporting_multiple.call_args.args[0]
+        assert {attribute.name for attribute in reports} == {
+            "battery_voltage",
+            "battery_percentage_remaining",
+        }
+        header, report = power.deserialize(bytes.fromhex("18 03 0a 21 00 20 96"))
+        power.handle_message(header, report)
+        assert batteries[0].native_value == 75
         timer = device.get_platform_entity(Platform.NUMBER, f"{ieee}-1-time_talk")
         assert timer.native_min_value == 1
         assert timer.native_max_value == 32

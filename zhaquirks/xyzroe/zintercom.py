@@ -8,11 +8,8 @@ Protocol reference: xyzroe/Zintercom, commit
 5b2db2f803adb25d47cef93e337922eb1e34eefe, Source/zcl_app_data.c.
 """
 
-import asyncio
-import time
 from typing import Any, Final
 
-from zigpy.exceptions import ZigbeeException
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
@@ -53,64 +50,6 @@ class DIYZintercomDoorLockCluster(CustomCluster):
 
     cluster_id = 0x0101
     ep_attribute = "zintercom"
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize wake-read bookkeeping."""
-        self._battery_read_pending = False
-        self._battery_last_attempt: float | None = None
-        self._battery_last_success: float | None = None
-        super().__init__(*args, **kwargs)
-
-    def _update_attribute(self, attrid: int | ZCLAttributeDef, value: Any) -> None:
-        """Refresh battery only after an Idle update, never during opening."""
-        super()._update_attribute(attrid, value)
-        attribute_id = attrid if isinstance(attrid, int) else attrid.id
-        # An Idle update is received both after a call and in periodic reports.
-        # The radio has just been awake. Do not compete with Once during Ring.
-        if attribute_id == self.AttributeDefs.state.id and value == ZintercomState.Idle:
-            self._refresh_battery_when_awake()
-
-    def _refresh_battery_when_awake(self) -> None:
-        """Read battery measurements when an Idle report indicates a wake window."""
-        power = self.endpoint.in_clusters.get(PowerConfiguration.cluster_id)
-        if power is None or self._battery_read_pending:
-            return
-        now = time.monotonic()
-        if (
-            self._battery_last_attempt is not None
-            and now - self._battery_last_attempt < 300
-        ):
-            return
-        percentage = power.get("battery_percentage_remaining")
-        if (
-            percentage is not None
-            and percentage != 0xFF
-            and self._battery_last_success is not None
-            and now - self._battery_last_success < 21600
-        ):
-            return
-        self._battery_last_attempt = now
-        self._battery_read_pending = True
-        self.create_catching_task(self._read_awake_battery(power))
-
-    async def _read_awake_battery(self, power: PowerConfiguration) -> None:
-        """Refresh real measurements without writing any intercom attributes."""
-        try:
-            # RingEnd updates the measurement in the same firmware task.
-            await asyncio.sleep(0.05)
-            success, _ = await power.read_attributes(
-                ["battery_voltage", "battery_percentage_remaining"],
-                allow_cache=False,
-            )
-            percentage = success.get("battery_percentage_remaining")
-            if percentage is not None and 0 <= percentage <= 200:
-                self._battery_last_success = time.monotonic()
-        except (ZigbeeException, TimeoutError):
-            # A sleepy device may already be asleep again. Retry on a later
-            # natural Idle report, subject to the cooldown; never wake/reset it.
-            self.debug("Battery refresh missed the wake window")
-        finally:
-            self._battery_read_pending = False
 
     class AttributeDefs(BaseAttributeDefs):
         """Use the exact ZCL types declared by the firmware."""
