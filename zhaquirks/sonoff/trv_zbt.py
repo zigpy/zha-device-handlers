@@ -1242,9 +1242,6 @@ class CustomSonoffCluster(CustomCluster):
     def _sonoff_trvzbt_schedule_temporary_mode_read(self, delay=60):
         """Schedule a delayed read of the current temporary mode."""
 
-        super()._update_attribute(
-            self.AttributeDefs.temporary_mode.id, SonoffTemporaryMode.None_
-        )
         task = getattr(self, "_sonoff_trvzbt_temporary_mode_read_task", None)
         if task is not None and not task.done():
             return

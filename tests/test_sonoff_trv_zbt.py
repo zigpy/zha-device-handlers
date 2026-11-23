@@ -463,6 +463,19 @@ async def test_trv_zbt_delayed_reads_and_temporary_exit(zigpy_device_from_v2_qui
         )
         await cluster._sonoff_trvzbt_read_device_work_mode_later(delay=0)
 
+        cluster._update_attribute(
+            cluster.AttributeDefs.temporary_mode.id,
+            trv_zbt.SonoffTemporaryMode.Boost,
+        )
+        pending_task = mock.Mock()
+        pending_task.done.return_value = False
+        cluster._sonoff_trvzbt_temporary_mode_read_task = pending_task
+        cluster._sonoff_trvzbt_schedule_temporary_mode_read(delay=5)
+        assert (
+            cluster._attr_cache[cluster.AttributeDefs.temporary_mode.id]
+            == trv_zbt.SonoffTemporaryMode.Boost
+        )
+
         thermostat.sonoff_trvzbt_send_setpoint_signal = mock.AsyncMock(
             return_value=1950
         )
