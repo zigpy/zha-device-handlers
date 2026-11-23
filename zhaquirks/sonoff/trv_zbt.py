@@ -1197,48 +1197,56 @@ class CustomSonoffCluster(CustomCluster):
         setpoint = thermostat_cluster._attr_cache.get(setpoint_attr.id)
         system_mode = thermostat_cluster._attr_cache.get(system_mode_attr.id)
 
-        missing = []
-        if setpoint is None:
-            missing.append(setpoint_attr.name)
-        if system_mode is None:
-            missing.append(system_mode_attr.name)
-        if missing:
-            try:
-                success, _ = await thermostat_cluster.read_attributes(
-                    missing, allow_cache=False, manufacturer=manufacturer
-                )
-            except Exception as exc:
-                LOGGER.warning("TRV-ZBT pre-temporary state read failed: %s", exc)
-                success = {}
+        for attempt in range(3):
+            missing = []
             if setpoint is None:
-                setpoint = success.get(
-                    setpoint_attr.name, success.get(setpoint_attr.id)
-                )
+                missing.append(setpoint_attr.name)
             if system_mode is None:
-                system_mode = success.get(
-                    system_mode_attr.name, success.get(system_mode_attr.id)
+                missing.append(system_mode_attr.name)
+            if missing:
+                try:
+                    success, _ = await thermostat_cluster.read_attributes(
+                        missing, allow_cache=False, manufacturer=manufacturer
+                    )
+                except Exception as exc:
+                    LOGGER.warning(
+                        "TRV-ZBT pre-temporary state read %s/3 failed: %s",
+                        attempt + 1,
+                        exc,
+                    )
+                    success = {}
+                if setpoint is None:
+                    setpoint = success.get(
+                        setpoint_attr.name, success.get(setpoint_attr.id)
+                    )
+                if system_mode is None:
+                    system_mode = success.get(
+                        system_mode_attr.name, success.get(system_mode_attr.id)
+                    )
+
+            if setpoint is not None and system_mode is not None:
+                self._sonoff_trvzbt_pre_temporary_state = {
+                    "occupied_heating_setpoint": setpoint,
+                    "system_mode": system_mode,
+                }
+                LOGGER.info(
+                    "TRV-ZBT captured pre-temporary state: "
+                    "occupied_heating_setpoint=%s system_mode=%s",
+                    setpoint,
+                    system_mode,
                 )
+                return True
 
-        if setpoint is None or system_mode is None:
-            LOGGER.warning(
-                "TRV-ZBT pre-temporary state incomplete: "
-                "occupied_heating_setpoint=%s system_mode=%s",
-                setpoint,
-                system_mode,
-            )
-            return False
+            if attempt < 2:
+                await asyncio.sleep(0.2)
 
-        self._sonoff_trvzbt_pre_temporary_state = {
-            "occupied_heating_setpoint": setpoint,
-            "system_mode": system_mode,
-        }
-        LOGGER.info(
-            "TRV-ZBT captured pre-temporary state: occupied_heating_setpoint=%s "
-            "system_mode=%s",
+        LOGGER.warning(
+            "TRV-ZBT pre-temporary state incomplete after 3 reads: "
+            "occupied_heating_setpoint=%s system_mode=%s",
             setpoint,
             system_mode,
         )
-        return True
+        return False
 
     def _sonoff_trvzbt_schedule_temporary_mode_read(self, delay=60):
         """Schedule a post-command temporary-mode confirmation read."""
