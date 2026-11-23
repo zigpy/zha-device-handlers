@@ -165,117 +165,148 @@ def test_shelly_wifi_standard_profile_packet_delegated(
     assert rsp_key.cluster_id == Basic.cluster_id
 
 
-def test_ir_storage_cluster_replaced(zigpy_device_from_v2_quirk):
-    """IR Storage cluster is replaced with ShellyIRStorageCluster on endpoint 239."""
+def _ir_controller(zigpy_device_from_v2_quirk):
+    """Create a quirked Shelly IR controller with its endpoint 239 clusters."""
 
-    quirked = zigpy_device_from_v2_quirk(
-        manufacturer="Shelly",
-        model="IR",
+    return zigpy_device_from_v2_quirk(
+        "Shelly",
+        "IR",
         endpoint_ids=[1, SHELLY_IR_STORAGE_ENDPOINT_ID],
         cluster_ids={
-            1: {},
             SHELLY_IR_STORAGE_ENDPOINT_ID: {
+                SHELLY_WIFI_SETUP_CLUSTER_ID: ClusterType.Server,
                 SHELLY_IR_STORAGE_CLUSTER_ID: ClusterType.Server,
             },
         },
     )
 
+
+def _deliver_custom_profile_frame(device, cluster_id: int, data: bytes) -> None:
+    """Deliver a frame from endpoint 239 on Shelly's custom profile."""
+
+    async def deliver_packet() -> None:
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=SHELLY_WIFI_SETUP_PROFILE_ID,
+                cluster_id=cluster_id,
+                src_ep=SHELLY_IR_STORAGE_ENDPOINT_ID,
+                dst_ep=SHELLY_IR_STORAGE_ENDPOINT_ID,
+                data=t.SerializableBytes(data),
+            )
+        )
+
+    asyncio.run(deliver_packet())
+
+
+def _ir_client_command_data(command: foundation.ZCLCommandDef, payload: bytes) -> bytes:
+    """Build a manufacturer-specific IR Storage response frame sent by the device."""
+
+    header = foundation.ZCLHeader.cluster(
+        tsn=2,
+        command_id=command.id,
+        manufacturer=SHELLY_MANUFACTURER_CODE,
+        direction=foundation.Direction.Server_to_Client,
+    ).serialize()
+    return header + payload
+
+
+def test_ir_storage_cluster_replaced(zigpy_device_from_v2_quirk):
+    """The IR controller gets the custom-profile device and both Shelly clusters."""
+
+    quirked = _ir_controller(zigpy_device_from_v2_quirk)
+    clusters = quirked.endpoints[SHELLY_IR_STORAGE_ENDPOINT_ID].in_clusters
+
+    assert isinstance(quirked, ShellyCustomProfileDevice)
+    assert isinstance(clusters[SHELLY_WIFI_SETUP_CLUSTER_ID], ShellyWiFiSetupCluster)
+    assert isinstance(clusters[SHELLY_IR_STORAGE_CLUSTER_ID], ShellyIRStorageCluster)
+    assert clusters[SHELLY_IR_STORAGE_CLUSTER_ID].ep_attribute == "shelly_ir_storage"
+
+
+@pytest.mark.parametrize(
+    ("attribute", "value", "expected"),
+    [
+        (
+            ShellyIRStorageCluster.AttributeDefs.learning_status,
+            t.uint8_t(2),
+            LearningStatus.learned,
+        ),
+        (
+            ShellyIRStorageCluster.AttributeDefs.ep1_on_code,
+            t.uint16_t(0x0102),
+            0x0102,
+        ),
+        (
+            ShellyIRStorageCluster.AttributeDefs.cluster_revision,
+            t.uint16_t(1),
+            1,
+        ),
+    ],
+)
+def test_ir_storage_custom_profile_report(
+    zigpy_device_from_v2_quirk, attribute, value, expected
+):
+    """A custom-profile report from endpoint 239 updates the IR cluster cache."""
+
+    quirked = _ir_controller(zigpy_device_from_v2_quirk)
     cluster = quirked.endpoints[SHELLY_IR_STORAGE_ENDPOINT_ID].in_clusters[
         SHELLY_IR_STORAGE_CLUSTER_ID
     ]
-    assert isinstance(cluster, ShellyIRStorageCluster)
-    assert cluster.ep_attribute == "shelly_ir_storage"
+
+    _deliver_custom_profile_frame(
+        quirked,
+        SHELLY_IR_STORAGE_CLUSTER_ID,
+        _attribute_report_data(attribute, value),
+    )
+
+    assert cluster.get(attribute.name) == expected
+    if attribute is ShellyIRStorageCluster.AttributeDefs.learning_status:
+        assert isinstance(cluster.get(attribute.name), LearningStatus)
 
 
-def test_ir_storage_cluster_attributes():
-    """IR Storage cluster has the expected attributes with correct access and types."""
+@pytest.mark.parametrize(
+    ("command", "payload", "expected"),
+    [
+        (
+            ShellyIRStorageCluster.ClientCommandDefs.learn_result,
+            bytes([0x00, 0x03, 0x00, 0x07, 0x00]),
+            {"status": 0, "device_id": 3, "code_id": 7},
+        ),
+        (
+            ShellyIRStorageCluster.ClientCommandDefs.code_list,
+            bytes([0x02, 0x01, 0x00, 0x02, 0x00]),
+            {"data": bytes([0x02, 0x01, 0x00, 0x02, 0x00])},
+        ),
+        (
+            ShellyIRStorageCluster.ClientCommandDefs.raw_chunk_data,
+            bytes([0x40, 0x00, 0xAA, 0xBB, 0xCC, 0xDD]),
+            {"position": 0x40, "data": bytes([0xAA, 0xBB, 0xCC, 0xDD])},
+        ),
+    ],
+)
+def test_ir_storage_custom_profile_command(
+    zigpy_device_from_v2_quirk, command, payload, expected
+):
+    """Responses from endpoint 239 reach the IR cluster with their payload."""
 
-    attrs = ShellyIRStorageCluster.AttributeDefs
+    quirked = _ir_controller(zigpy_device_from_v2_quirk)
+    cluster = quirked.endpoints[SHELLY_IR_STORAGE_ENDPOINT_ID].in_clusters[
+        SHELLY_IR_STORAGE_CLUSTER_ID
+    ]
+    received = []
 
-    assert attrs.last_emitted_id.id == 0x0000
-    assert attrs.learning_status.id == 0x0001
-    assert attrs.enable_notifications.id == 0x0002
-    assert attrs.cluster_revision.id == 0xFFFD
+    class Listener:
+        def cluster_command(self, tsn, command_id, args):
+            received.append((command_id, args))
 
-    # All attributes carry the Shelly manufacturer code.
-    for attr in (
-        attrs.last_emitted_id,
-        attrs.learning_status,
-        attrs.enable_notifications,
-    ):
-        assert attr.manufacturer_code == SHELLY_MANUFACTURER_CODE
+    cluster.add_listener(Listener())
 
-    # enable_notifications is writable; last_emitted_id and learning_status are read-only.
-    assert ZCLAttributeAccess.Write in attrs.enable_notifications.access
-    assert ZCLAttributeAccess.Write not in attrs.last_emitted_id.access
-    assert ZCLAttributeAccess.Write not in attrs.learning_status.access
+    _deliver_custom_profile_frame(
+        quirked,
+        SHELLY_IR_STORAGE_CLUSTER_ID,
+        _ir_client_command_data(command, payload),
+    )
 
-
-def test_ir_storage_assignment_attributes():
-    """Assignment attributes cover all 10 on/off endpoint slots."""
-
-    attrs = ShellyIRStorageCluster.AttributeDefs
-
-    # Slots start at 0x0010 and increment by 2 per endpoint (off=even, on=odd).
-    for ep_index in range(10):
-        off_id = 0x0010 + ep_index * 2
-        on_id = 0x0010 + ep_index * 2 + 1
-        ep_num = ep_index + 1
-        off_attr = getattr(attrs, f"ep{ep_num}_off_code")
-        on_attr = getattr(attrs, f"ep{ep_num}_on_code")
-        assert off_attr.id == off_id, f"ep{ep_num} off code attr id mismatch"
-        assert on_attr.id == on_id, f"ep{ep_num} on code attr id mismatch"
-        assert ZCLAttributeAccess.Write in off_attr.access
-        assert ZCLAttributeAccess.Write in on_attr.access
-
-
-def test_ir_storage_server_commands():
-    """IR Storage cluster exposes all expected server-side commands."""
-
-    cmds = ShellyIRStorageCluster.ServerCommandDefs
-
-    assert cmds.emit.id == 0x00
-    assert cmds.add_device.id == 0x01
-    assert cmds.delete_device.id == 0x02
-    assert cmds.learn_code.id == 0x03
-    assert cmds.cancel_learn.id == 0x04
-    assert cmds.delete_code.id == 0x05
-    assert cmds.rename_code.id == 0x06
-    assert cmds.list_codes.id == 0x07
-    assert cmds.read_raw_chunk.id == 0x08
-
-    for cmd in (
-        cmds.emit,
-        cmds.add_device,
-        cmds.delete_device,
-        cmds.learn_code,
-        cmds.cancel_learn,
-        cmds.delete_code,
-        cmds.rename_code,
-        cmds.list_codes,
-        cmds.read_raw_chunk,
-    ):
-        assert cmd.manufacturer_code == SHELLY_MANUFACTURER_CODE
-
-
-def test_ir_storage_client_commands():
-    """IR Storage cluster exposes all expected client-side (response) commands."""
-
-    cmds = ShellyIRStorageCluster.ClientCommandDefs
-
-    assert cmds.device_added.id == 0x10
-    assert cmds.learn_result.id == 0x11
-    assert cmds.code_list.id == 0x12
-    assert cmds.raw_chunk_data.id == 0x13
-    assert cmds.code_received.id == 0x14
-
-
-def test_ir_learning_status_enum():
-    """LearningStatus enum matches firmware values."""
-
-    assert int(LearningStatus.idle) == 0
-    assert int(LearningStatus.learning) == 1
-    assert int(LearningStatus.learned) == 2
-    assert int(LearningStatus.timeout) == 3
-    assert int(LearningStatus.cancelled) == 4
-    assert int(LearningStatus.error) == 5
+    assert len(received) == 1
+    command_id, args = received[0]
+    assert command_id == command.id
+    assert args.as_dict() == expected

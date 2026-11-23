@@ -6,6 +6,7 @@ from zigpy import types
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
+    DataTypeId,
     ZCLAttributeDef,
     ZCLCommandDef,
 )
@@ -13,33 +14,27 @@ from zigpy.zcl.foundation import (
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
+from zhaquirks.shelly.wifi import (
+    SHELLY_WIFI_SETUP_ENDPOINT_ID,
+    ShellyCustomProfileDevice,
+    ShellyWiFiSetupCluster,
+)
 
 SHELLY_IR_STORAGE_CLUSTER_ID = 0xFC05
 
-# learning_status attribute values (attr 0x0001)
-LEARNING_STATUS_IDLE = 0
-LEARNING_STATUS_LEARNING = 1
-LEARNING_STATUS_LEARNED = 2
-LEARNING_STATUS_TIMEOUT = 3
-LEARNING_STATUS_CANCELLED = 4
-LEARNING_STATUS_ERROR = 5
-
-# Sentinel: no code assigned to an on/off endpoint slot
-IR_CODE_UNASSIGNED = 0xFFFF
-
-# Number of IR on/off virtual endpoints (endpoints 1..10)
-IR_ONOFF_ENDPOINT_COUNT = 10
+# The IR Storage cluster sits on the Shelly endpoint (239).
+SHELLY_IR_STORAGE_ENDPOINT_ID = 239
 
 
 class LearningStatus(types.enum8):
     """IR learning state machine values."""
 
-    idle = LEARNING_STATUS_IDLE
-    learning = LEARNING_STATUS_LEARNING
-    learned = LEARNING_STATUS_LEARNED
-    timeout = LEARNING_STATUS_TIMEOUT
-    cancelled = LEARNING_STATUS_CANCELLED
-    error = LEARNING_STATUS_ERROR
+    idle = 0
+    learning = 1
+    learned = 2
+    timeout = 3
+    cancelled = 4
+    error = 5
 
 
 class ShellyIRStorageCluster(CustomCluster):
@@ -71,7 +66,8 @@ class ShellyIRStorageCluster(CustomCluster):
         )
         learning_status = ZCLAttributeDef(
             id=0x0001,
-            type=types.uint8_t,
+            type=LearningStatus,
+            zcl_type=DataTypeId.uint8,
             access="rp",
             manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
@@ -90,6 +86,7 @@ class ShellyIRStorageCluster(CustomCluster):
         # Assignment attributes: pairs of (off_code_id, on_code_id) for each
         # of the 10 IR on/off endpoints. Attr IDs start at 0x0010 and alternate
         # off/on: 0x0010=ep1_off, 0x0011=ep1_on, 0x0012=ep2_off, …
+        # 0xFFFF means no code is assigned to the slot.
         ep1_off_code = ZCLAttributeDef(
             id=0x0010,
             type=types.uint16_t,
@@ -281,14 +278,17 @@ class ShellyIRStorageCluster(CustomCluster):
             },
             manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
+        # The payload layout of the next two responses isn't modeled field by
+        # field yet: `types.Bytes` keeps the rest of the frame instead of
+        # letting zigpy drop it as trailing data.
         code_list = ZCLCommandDef(
             id=0x12,
-            schema={},
+            schema={"data": types.Bytes},
             manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
         raw_chunk_data = ZCLCommandDef(
             id=0x13,
-            schema={"position": types.uint16_t},
+            schema={"position": types.uint16_t, "data": types.Bytes},
             manufacturer_code=SHELLY_MANUFACTURER_CODE,
         )
         code_received = ZCLCommandDef(
@@ -302,11 +302,10 @@ class ShellyIRStorageCluster(CustomCluster):
         )
 
 
-# The IR Storage cluster sits on the Shelly endpoint (239).
-SHELLY_IR_STORAGE_ENDPOINT_ID = 239
-
 (
     QuirkBuilder("Shelly", "IR")
+    .zigpy_device_class(ShellyCustomProfileDevice)
+    .replaces(ShellyWiFiSetupCluster, endpoint_id=SHELLY_WIFI_SETUP_ENDPOINT_ID)
     .replaces(ShellyIRStorageCluster, endpoint_id=SHELLY_IR_STORAGE_ENDPOINT_ID)
     .add_to_registry()
 )
