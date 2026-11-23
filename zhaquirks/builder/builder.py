@@ -577,7 +577,7 @@ class QuirkBuilder:
         the matching changes are applied here in the same order, following the unique
         ID through `new_unique_id` changes for later `unique_id_suffix` filters.
         Returns `None` when a change of either value may apply but the builder can't
-        tell whether it does.
+        tell whether it does, or when `removes_entity` may remove the entity.
         """
         # The unique ID is `{ieee}-{endpoint_id}[-{suffix}]`
         suffix = entity_metadata.resolved_unique_id_suffix
@@ -585,6 +585,20 @@ class QuirkBuilder:
             f"-{suffix}" if suffix is not None else ""
         )
         unique_id_complete = False
+
+        # ZHA drops removed entities before it applies the changes
+        for entity_filter in self.disabled_default_entities:
+            if (
+                _filter_matches_metadata(
+                    entity_filter,
+                    entity_metadata,
+                    unique_id_end=unique_id_end,
+                    unique_id_complete=unique_id_complete,
+                )
+                is not False
+            ):
+                return None
+
         primary = bool(entity_metadata.primary)
         child_device_id = entity_metadata.child_device_id
 

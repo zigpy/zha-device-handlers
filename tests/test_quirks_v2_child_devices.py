@@ -18,7 +18,7 @@ from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import EntityFilter, QuirkBuilder
 from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.builder.discovery import _generic_kwargs
 from zhaquirks.builder.metadata import ChildDeviceMetadata, QuirkDefinition
@@ -312,10 +312,49 @@ def test_child_device_primary_unknown_change() -> None:
 
     # A suffix filter can't be matched once an unknown change may set a unique ID
     _two_primaries_moved(
-        function=lambda entity: entity.endpoint.id == 2, new_unique_id="other"
+        function=lambda entity: entity.endpoint.id == 2, new_unique_id="ab:cd-2-other"
     ).change_entity_metadata(
         unique_id_suffix="other", new_child_device_id="b"
     ).add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_changed_primary_promotes() -> None:
+    """Test a `new_primary=True` change that matches two quirk entities is rejected."""
+    builder = QuirkBuilder("manufacturer", "model").child_device(
+        "a", endpoint_id=1, fallback_name="A"
+    )
+    _switch(builder, 1, unique_id_suffix="first")
+    _switch(builder, 1, unique_id_suffix="second")
+    builder.change_entity_metadata(cluster_id=OnOff.cluster_id, new_primary=True)
+
+    # ZHA would elect neither of them
+    with pytest.raises(ValueError, match="child device 'a'"):
+        builder.add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_removed_entity() -> None:
+    """Test a quirk entity that `removes_entity` removes doesn't count."""
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1, unique_id_suffix="kept-control")
+    _switch(builder, 1, unique_id_suffix="removed-control")
+    builder.removes_entity(EntityFilter(unique_id_suffix="removed-control"))
+    builder.change_entity_metadata(unique_id_suffix="control", new_primary=True)
+    builder.add_to_registry(DeviceRegistry())
+
+    # An entity a filter may remove is left to ZHA as well
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1, primary=True)
+    _switch(builder, 1, primary=True, unique_id_suffix="other")
+    builder.removes_entity(EntityFilter(function=lambda entity: True))
+    builder.add_to_registry(DeviceRegistry())
+
+    # A filter that doesn't match the entity leaves it counted
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1, primary=True)
+    _switch(builder, 1, primary=True, unique_id_suffix="other")
+    builder.removes_entity(EntityFilter(endpoint_id=2))
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
 
 
 def test_child_device_primary_changed_unique_id() -> None:
