@@ -9,7 +9,7 @@ from zha.units import (
 )
 import zigpy.types as t
 
-from zhaquirks.builder import SensorDeviceClass, SensorStateClass
+from zhaquirks.builder import PERCENTAGE, SensorDeviceClass, SensorStateClass
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 (
@@ -30,12 +30,13 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
     # Total reverse active energy
     .tuya_sensor(
         dp_id=2,
-        attribute_name="produced_energy",
+        attribute_name="energy_produced",
         type=t.uint32_t,
         divisor=100,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
+        translation_key="energy_produced",
         fallback_name="Produced energy",
     )
     # Power factor: raw value in percent
@@ -45,7 +46,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         type=t.uint32_t,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="%",
+        unit=PERCENTAGE,
         fallback_name="Power factor",
     )
     # AC frequency

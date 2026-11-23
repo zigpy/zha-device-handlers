@@ -1,10 +1,13 @@
 """Tests for the Zemismart SPM01V2 quirk."""
 
 import pytest
+import zhaquirks
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+zhaquirks.setup()
 
 MANUFACTURER = "_TZE200_qhlxve78"
 MODEL = "TS0601"
@@ -42,7 +45,7 @@ def test_spm01v2_cluster(spm01v2):
         # DP1: 169348 / 100 = 1693.48 kWh
         (bytes.fromhex("00390102000400029584"), "energy", 169348),
         # DP2: 12345 / 100 = 123.45 kWh
-        (bytes.fromhex("003A0202000400003039"), "produced_energy", 12345),
+        (bytes.fromhex("003A0202000400003039"), "energy_produced", 12345),
         # DP15: 100 %
         (bytes.fromhex("003C0F02000400000064"), "power_factor", 100),
         # DP101: 5000 / 100 = 50 Hz
