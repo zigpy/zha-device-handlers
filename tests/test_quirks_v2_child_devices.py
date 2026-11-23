@@ -8,7 +8,7 @@ import pytest
 from zha.application import EntityPlatform, Platform
 from zha.application.platforms import ZclPlatformEntity
 from zha.application.platforms.sensor import BaseSensor, Temperature
-from zha.application.platforms.switch import Switch
+from zha.application.platforms.switch import ConfigurableAttributeSwitch, Switch
 from zha.quirks import DeviceRegistry
 from zha.zigbee.child_device import ChildDevice
 import zigpy.types as t
@@ -334,11 +334,21 @@ def test_child_device_primary_changed_primary_promotes() -> None:
 
 def test_child_device_primary_removed_entity() -> None:
     """Test a quirk entity that `removes_entity` removes doesn't count."""
-    builder = QuirkBuilder("manufacturer", "model")
+    builder = QuirkBuilder("manufacturer", "model").disable_child_devices()
     _switch(builder, 1, unique_id_suffix="kept-control")
     _switch(builder, 1, unique_id_suffix="removed-control")
-    builder.removes_entity(EntityFilter(unique_id_suffix="removed-control"))
     builder.change_entity_metadata(unique_id_suffix="control", new_primary=True)
+    with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
+
+    builder.removes_entity(EntityFilter(unique_id_suffix="removed-control"))
+    builder.add_to_registry(DeviceRegistry())
+
+    # Removing every entity of the cluster removes the quirk's own ones too
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1, primary=True)
+    _switch(builder, 1, primary=True, unique_id_suffix="other")
+    builder.prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     builder.add_to_registry(DeviceRegistry())
 
     # An entity a filter may remove is left to ZHA as well
@@ -395,6 +405,52 @@ def test_child_device_primary_empty_unique_id_suffix() -> None:
     # The unique ID ends with `-2-`, so a `2` suffix filter doesn't match it
     builder.change_entity_metadata(unique_id_suffix="2", new_child_device_id="b")
     with pytest.raises(ValueError, match="Only one primary entity"):
+        builder.add_to_registry(DeviceRegistry())
+
+
+@pytest.mark.parametrize(
+    ("entity_filter", "removed"),
+    [
+        (EntityFilter(entity_cls=Temperature), False),
+        (EntityFilter(entity_cls=ConfigurableAttributeSwitch), True),
+        (
+            EntityFilter(entity_cls=ConfigurableAttributeSwitch, unique_id_suffix="x"),
+            False,
+        ),
+        (EntityFilter(translation_key="other"), False),
+        (EntityFilter(translation_key="on_time"), True),
+        (EntityFilter(platform=EntityPlatform.SENSOR), False),
+    ],
+)
+def test_child_device_primary_removed_entity_filters(
+    entity_filter: EntityFilter, removed: bool
+) -> None:
+    """Test removal filters on entity class and translation key are decided."""
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1, primary=True)
+    _switch(builder, 1, primary=True, unique_id_suffix="other")
+    builder.removes_entity(entity_filter)
+
+    if removed:
+        builder.add_to_registry(DeviceRegistry())
+    else:
+        with pytest.raises(ValueError, match="Only one primary entity"):
+            builder.add_to_registry(DeviceRegistry())
+
+
+def test_child_device_primary_promoted_automatic_split() -> None:
+    """Test a promotion is left to ZHA when ZHA may split the device on its own."""
+    builder = QuirkBuilder("manufacturer", "model")
+    _switch(builder, 1)
+    _switch(builder, 2)
+    builder.change_entity_metadata(cluster_id=OnOff.cluster_id, new_primary=True)
+
+    # ZHA may put each one on a child device of its own
+    builder.add_to_registry(DeviceRegistry())
+
+    # Without child devices, both are on the main device
+    builder.disable_child_devices()
+    with pytest.raises(ValueError, match="the main device"):
         builder.add_to_registry(DeviceRegistry())
 
 

@@ -49,6 +49,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
+from zhaquirks.builder.discovery import QUIRKS_ENTITY_META_TO_ENTITY_CLASS
 from zhaquirks.builder.metadata import (
     AddedEntityMetadata,
     BinarySensorMetadata,
@@ -369,13 +370,15 @@ def _filter_matches_metadata(
     *,
     unique_id_end: str | None,
     unique_id_complete: bool,
+    translation_key: str | None,
 ) -> bool | None:
     """Return whether a filter matches the entity an `EntityMetadata` exposes.
 
     `unique_id_end` is the known end of the entity's unique ID (the whole unique ID if
-    `unique_id_complete`), or `None` if it is unknown. Returns `None` when the match
-    can't be told before the entity exists: the filter has a `function`, or a field
-    the builder doesn't know for the entity.
+    `unique_id_complete`) and `translation_key` its translation key, each `None` if
+    it is unknown. Returns `None` when the match can't be told before the entity
+    exists: the filter has a `function`, or a field the builder doesn't know for the
+    entity.
     """
     if (
         entity_filter.endpoint_id is not None
@@ -405,12 +408,25 @@ def _filter_matches_metadata(
         if not unique_id_end.endswith(filter_tail):
             return False
 
-    if (
-        entity_filter.function is not None
-        or entity_filter.entity_cls is not None
-        or entity_filter.translation_key is not None
-        or entity_filter.device_class is not None
-    ):
+    if entity_filter.entity_cls is not None:
+        entity_cls = QUIRKS_ENTITY_META_TO_ENTITY_CLASS.get(
+            (
+                Platform(entity_metadata.entity_platform.value),
+                type(entity_metadata),
+            )
+        )
+        if entity_cls is None:
+            return None
+        if entity_cls is not entity_filter.entity_cls:
+            return False
+
+    if entity_filter.translation_key is not None:
+        if translation_key is None:
+            return None
+        if translation_key != entity_filter.translation_key:
+            return False
+
+    if entity_filter.function is not None or entity_filter.device_class is not None:
         return None
 
     return True
@@ -577,7 +593,8 @@ class QuirkBuilder:
         the matching changes are applied here in the same order, following the unique
         ID through `new_unique_id` changes for later `unique_id_suffix` filters.
         Returns `None` when a change of either value may apply but the builder can't
-        tell whether it does, or when `removes_entity` may remove the entity.
+        tell whether it does, when `removes_entity` may remove the entity, or when a
+        change makes it primary while ZHA may split the device on its own.
         """
         # The unique ID is `{ieee}-{endpoint_id}[-{suffix}]`
         suffix = entity_metadata.resolved_unique_id_suffix
@@ -585,6 +602,8 @@ class QuirkBuilder:
             f"-{suffix}" if suffix is not None else ""
         )
         unique_id_complete = False
+        # Without a translation key of its own, the entity may have a class default
+        translation_key = entity_metadata.translation_key or None
 
         # ZHA drops removed entities before it applies the changes
         for entity_filter in self.disabled_default_entities:
@@ -594,6 +613,7 @@ class QuirkBuilder:
                     entity_metadata,
                     unique_id_end=unique_id_end,
                     unique_id_complete=unique_id_complete,
+                    translation_key=translation_key,
                 )
                 is not False
             ):
@@ -607,7 +627,11 @@ class QuirkBuilder:
                 change.new_primary is not None
                 or change.new_child_device_id is not UNDEFINED
             )
-            if not changes_device and change.new_unique_id is None:
+            if (
+                not changes_device
+                and change.new_unique_id is None
+                and change.new_translation_key is None
+            ):
                 continue
 
             matches = _filter_matches_metadata(
@@ -615,12 +639,16 @@ class QuirkBuilder:
                 entity_metadata,
                 unique_id_end=unique_id_end,
                 unique_id_complete=unique_id_complete,
+                translation_key=translation_key,
             )
             if matches is None:
                 if changes_device:
                     return None
-                # The unique ID may have changed
-                unique_id_end = None
+                # The unique ID or translation key may have changed
+                if change.new_unique_id is not None:
+                    unique_id_end = None
+                if change.new_translation_key is not None:
+                    translation_key = None
                 continue
             if not matches:
                 continue
@@ -628,10 +656,16 @@ class QuirkBuilder:
             if change.new_unique_id is not None:
                 unique_id_end = change.new_unique_id
                 unique_id_complete = True
+            if change.new_translation_key is not None:
+                translation_key = change.new_translation_key
             if change.new_primary is not None:
                 primary = change.new_primary
             if change.new_child_device_id is not UNDEFINED:
                 child_device_id = change.new_child_device_id
+
+        if primary and not entity_metadata.primary and self.child_devices is None:
+            # Promoted, on child devices ZHA may split off on its own
+            return None
 
         return primary, child_device_id
 
