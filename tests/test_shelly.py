@@ -31,7 +31,7 @@ zhaquirks.setup()
 def _attribute_report_data(
     attribute: foundation.ZCLAttributeDef, value: object
 ) -> bytes:
-    """Build a typed ZCL attribute report payload for Shelly WiFi attributes."""
+    """Build a typed, manufacturer-specific ZCL attribute report payload."""
 
     header = foundation.ZCLHeader.general(
         tsn=1,
