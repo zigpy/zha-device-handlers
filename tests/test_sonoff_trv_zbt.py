@@ -484,16 +484,35 @@ async def test_trv_zbt_delayed_reads_and_temporary_exit(zigpy_device_from_v2_qui
             "occupied_heating_setpoint": 1950,
             "system_mode": 1,
         }
+        cluster._update_attribute(cluster.AttributeDefs.temporary_mode_duration.id, 300)
+        cluster._update_attribute(
+            trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 300
+        )
         with (
-            mock.patch.object(cluster, "_sonoff_trvzbt_schedule_temporary_mode_read"),
-            mock.patch.object(cluster, "_sonoff_trvzbt_schedule_device_work_mode_read"),
+            mock.patch.object(
+                cluster,
+                "_sonoff_trvzbt_schedule_temporary_mode_read",
+            ) as temporary_scheduler,
+            mock.patch.object(
+                cluster,
+                "_sonoff_trvzbt_schedule_device_work_mode_read",
+            ) as work_mode_scheduler,
         ):
             await cluster.temporary_mode_exit()
 
     thermostat.sonoff_trvzbt_send_setpoint_signal.assert_awaited_once_with(
         setpoint=1950
     )
-    assert cluster._attr_cache[cluster.AttributeDefs.temporary_mode.id] == 255
+    assert cluster._attr_cache[cluster.AttributeDefs.temporary_mode.id] == (
+        trv_zbt.SonoffTemporaryMode.Boost
+    )
+    assert cluster._attr_cache[cluster.AttributeDefs.temporary_mode_duration.id] == 300
+    assert (
+        cluster._attr_cache[trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR]
+        == 300
+    )
+    temporary_scheduler.assert_called_once_with(delay=5)
+    work_mode_scheduler.assert_called_once_with(delay=5)
     assert cluster._sonoff_trvzbt_pre_temporary_state is None
 
 

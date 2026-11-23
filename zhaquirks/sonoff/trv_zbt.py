@@ -1979,11 +1979,6 @@ class CustomSonoffCluster(CustomCluster):
                     exc,
                 )
         self._update_attribute(
-            self.AttributeDefs.temporary_mode.id, SonoffTemporaryMode.None_
-        )
-        self._update_attribute(self.AttributeDefs.temporary_mode_duration.id, 0)
-        self._update_attribute(SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 0)
-        self._update_attribute(
             SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_APPLY_STATUS_ATTR, "exit sent"
         )
         self._sonoff_trvzbt_schedule_temporary_mode_read(delay=5)
