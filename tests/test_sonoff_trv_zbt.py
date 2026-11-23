@@ -694,6 +694,38 @@ async def test_trv_zbt_does_not_cache_incomplete_pre_temporary_state(
     }
 
 
+async def test_trv_zbt_temporary_mode_requires_complete_pre_state(
+    zigpy_device_from_v2_quirk,
+):
+    """Temporary mode must not start without a restorable thermostat state."""
+
+    cluster, thermostat = _trv_zbt_device(zigpy_device_from_v2_quirk)
+    setpoint_attr = thermostat.AttributeDefs.occupied_heating_setpoint
+    system_mode_attr = thermostat.AttributeDefs.system_mode
+    thermostat._update_attribute(setpoint_attr.id, None)
+    thermostat._update_attribute(system_mode_attr.id, None)
+    thermostat.read_attributes = mock.AsyncMock(
+        return_value=({setpoint_attr.name: 2100}, {system_mode_attr.name: 1})
+    )
+    cluster._update_attribute(
+        trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_MODE_ATTR,
+        trv_zbt.SonoffTemporaryModeEditor.Boost,
+    )
+    cluster._update_attribute(
+        trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 60
+    )
+    parent_write = mock.AsyncMock(return_value=({}, {}))
+
+    with (
+        mock.patch.object(trv_zbt.asyncio, "sleep", mock.AsyncMock()),
+        mock.patch.object(trv_zbt.CustomCluster, "write_attributes", parent_write),
+        pytest.raises(ValueError, match="pre-temporary thermostat state"),
+    ):
+        await cluster.temporary_mode_apply()
+
+    parent_write.assert_not_awaited()
+
+
 async def test_trv_zbt_thermostat_setpoint_and_boost_protection(
     zigpy_device_from_v2_quirk,
 ):
@@ -751,6 +783,10 @@ async def test_trv_zbt_temporary_mode_and_attribute_error_paths(
         cluster._update_attribute(
             trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 181 * 60
         )
+        cluster._sonoff_trvzbt_pre_temporary_state = {
+            "occupied_heating_setpoint": 2000,
+            "system_mode": 4,
+        }
         parent_write = mock.AsyncMock(return_value=({}, {}))
         with mock.patch.object(trv_zbt.CustomCluster, "write_attributes", parent_write):
             await cluster.temporary_mode_apply()
@@ -896,6 +932,10 @@ async def test_trv_zbt_temporary_mode_zero_duration_and_local_failures(
         cluster._update_attribute(
             trv_zbt.SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR, 0
         )
+        cluster._sonoff_trvzbt_pre_temporary_state = {
+            "occupied_heating_setpoint": 2000,
+            "system_mode": 4,
+        }
         await cluster.temporary_mode_apply()
 
         exit_mode = mock.AsyncMock()

@@ -1174,7 +1174,7 @@ class CustomSonoffCluster(CustomCluster):
         """Cache the state that should be restored when temporary mode exits."""
 
         if self._sonoff_trvzbt_pre_temporary_state is not None:
-            return
+            return True
 
         current_mode = self._attr_cache.get(self.AttributeDefs.temporary_mode.id)
         try:
@@ -1182,7 +1182,7 @@ class CustomSonoffCluster(CustomCluster):
                 int(SonoffTemporaryMode.Boost),
                 int(SonoffTemporaryMode.Timer),
             ):
-                return
+                return True
         except (TypeError, ValueError):
             pass
 
@@ -1190,7 +1190,7 @@ class CustomSonoffCluster(CustomCluster):
             SonoffThermostat.cluster_id
         )
         if thermostat_cluster is None:
-            return
+            return False
 
         setpoint_attr = SonoffThermostat.AttributeDefs.occupied_heating_setpoint
         system_mode_attr = SonoffThermostat.AttributeDefs.system_mode
@@ -1226,7 +1226,7 @@ class CustomSonoffCluster(CustomCluster):
                 setpoint,
                 system_mode,
             )
-            return
+            return False
 
         self._sonoff_trvzbt_pre_temporary_state = {
             "occupied_heating_setpoint": setpoint,
@@ -1238,6 +1238,7 @@ class CustomSonoffCluster(CustomCluster):
             setpoint,
             system_mode,
         )
+        return True
 
     def _sonoff_trvzbt_schedule_temporary_mode_read(self, delay=60):
         """Schedule a post-command temporary-mode confirmation read."""
@@ -1873,8 +1874,6 @@ class CustomSonoffCluster(CustomCluster):
                 "temporary_mode_duration must be a whole number of minutes"
             )
 
-        await self._sonoff_trvzbt_capture_pre_temporary_state()
-
         duration_attr = self.AttributeDefs.temporary_mode_duration
         mode_attr = self.AttributeDefs.temporary_mode
         if mode == int(SonoffTemporaryMode.Boost):
@@ -1885,6 +1884,21 @@ class CustomSonoffCluster(CustomCluster):
                     SONOFF_TRVZBT_TEMPORARY_MODE_EDITOR_DURATION_ATTR,
                     duration_seconds,
                 )
+        else:
+            max_seconds = 1440 * 60
+            if duration_seconds > max_seconds:
+                raise ValueError(
+                    "temporary_mode_duration must be 0-1440 minutes while Timer mode is active"
+                )
+            if target_temperature < 500 or target_temperature > 3000:
+                raise ValueError("timer_mode_target_temperature must be 5-30 C")
+
+        if not await self._sonoff_trvzbt_capture_pre_temporary_state():
+            raise ValueError(
+                "Unable to capture a complete pre-temporary thermostat state"
+            )
+
+        if mode == int(SonoffTemporaryMode.Boost):
             if duration_seconds == 0:
                 await super().write_attributes(
                     {
@@ -1916,13 +1930,6 @@ class CustomSonoffCluster(CustomCluster):
                 )
             self._update_attribute(duration_attr.id, duration_seconds)
         else:
-            max_seconds = 1440 * 60
-            if duration_seconds > max_seconds:
-                raise ValueError(
-                    "temporary_mode_duration must be 0-1440 minutes while Timer mode is active"
-                )
-            if target_temperature < 500 or target_temperature > 3000:
-                raise ValueError("timer_mode_target_temperature must be 5-30 C")
             await super().write_attributes(
                 {
                     self.AttributeDefs.timer_mode_target_temperature.name: target_temperature,
