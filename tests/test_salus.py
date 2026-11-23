@@ -3,10 +3,14 @@
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms import EntityCategory
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.salus import COMPUTIME_MANUFACTURER_CODE
 from zhaquirks.salus.st100zb import (
@@ -218,3 +222,74 @@ async def test_st100zb_heat_cool_option_write(st100zb):
         attrs.fan_coil_type.id: SalusFanCoilType.FourPipe,
         attrs.heat_cool_option.id: SalusHeatCoolOption.ManualChangeover,
     }
+
+
+async def test_st100zb_entities():
+    """Test the quirk's entities when the device joins ZHA."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "salus-st100zb-0x00230012.json", DEVICE_REGISTRY
+        )
+
+        expected = {
+            (Platform.BINARY_SENSOR, "ac_error_code"): (
+                None,
+                EntityCategory.DIAGNOSTIC,
+                True,
+            ),
+            (Platform.SWITCH, "remote_sensing"): (
+                "external_temperature_sensor",
+                EntityCategory.CONFIG,
+                True,
+            ),
+            (Platform.NUMBER, "min_cool_setpoint_limit"): (
+                "min_cool_setpoint_limit",
+                EntityCategory.CONFIG,
+                True,
+            ),
+            (Platform.NUMBER, "max_cool_setpoint_limit"): (
+                "max_cool_setpoint_limit",
+                EntityCategory.CONFIG,
+                True,
+            ),
+            (Platform.SELECT, "temperature_display_mode"): (
+                "temperature_display_mode",
+                EntityCategory.CONFIG,
+                True,
+            ),
+            (Platform.SELECT, "hold_type"): ("hold_type", EntityCategory.CONFIG, True),
+            (Platform.SELECT, "time_format"): (
+                "time_format",
+                EntityCategory.CONFIG,
+                True,
+            ),
+            (Platform.SELECT, "fan_coil_type"): (
+                "fan_coil_type",
+                EntityCategory.CONFIG,
+                False,
+            ),
+            (Platform.SELECT, "heat_cool_option"): (
+                "heat_cool_option",
+                EntityCategory.CONFIG,
+                False,
+            ),
+        }
+
+        for (platform, suffix), (key, category, enabled) in expected.items():
+            entity = device.get_platform_entity(
+                platform, unique_id=f"{device.ieee}-9-{suffix}"
+            )
+            assert entity.translation_key == key
+            assert entity.entity_category == category
+            assert entity.entity_registry_enabled_default is enabled
+
+        climate = device.get_platform_entity(
+            Platform.CLIMATE, unique_id=f"{device.ieee}-9"
+        )
+        assert climate.min_temp == 5.0
+        assert climate.max_temp == 35.0
+
+        time_format = device.get_platform_entity(
+            Platform.SELECT, unique_id=f"{device.ieee}-9-time_format"
+        )
+        assert time_format.current_option == "Format 12h"
