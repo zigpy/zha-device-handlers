@@ -1040,14 +1040,6 @@ class SonoffThermostat(CustomCluster, Thermostat):
     class AttributeDefs(Thermostat.AttributeDefs):
         """TRV-ZBT thermostat attributes."""
 
-        system_mode = ZCLAttributeDef(
-            id=Thermostat.AttributeDefs.system_mode.id,
-            type=SonoffSystemMode,
-            zcl_type=DataTypeId.enum8,
-            access=Thermostat.AttributeDefs.system_mode.access,
-            mandatory=Thermostat.AttributeDefs.system_mode.mandatory,
-            manufacturer_code=Thermostat.AttributeDefs.system_mode.manufacturer_code,
-        )
         min_heat_setpoint_limit = ZCLAttributeDef(
             id=Thermostat.AttributeDefs.min_heat_setpoint_limit.id,
             type=t.int16s,

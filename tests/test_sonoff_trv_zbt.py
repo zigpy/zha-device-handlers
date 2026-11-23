@@ -47,6 +47,20 @@ async def test_trv_zbt_matches_exact_model(zigpy_device_from_v2_quirk):
     )
 
 
+def test_trv_zbt_keeps_standard_climate_system_mode_type():
+    """Climate consumes the standard Thermostat system-mode enum."""
+
+    assert SonoffThermostat.AttributeDefs.system_mode.type is Thermostat.SystemMode
+    assert (
+        trv_zbt.SonoffSystemMode(Thermostat.SystemMode.Auto)
+        is trv_zbt.SonoffSystemMode.Auto
+    )
+    assert (
+        trv_zbt.SonoffSystemMode(Thermostat.SystemMode.Heat)
+        is trv_zbt.SonoffSystemMode.Manual
+    )
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
