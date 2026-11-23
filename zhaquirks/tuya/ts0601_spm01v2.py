@@ -37,7 +37,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
         state_class=SensorStateClass.TOTAL_INCREASING,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         translation_key="energy_produced",
-        fallback_name="Produced energy",
+        fallback_name="Energy produced",
     )
     # Power factor: raw value in percent
     .tuya_sensor(
