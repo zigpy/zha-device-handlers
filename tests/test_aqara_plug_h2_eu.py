@@ -114,3 +114,31 @@ async def test_failed_refresh_is_swallowed(zigpy_device_from_v2_quirk):
 
     assert em._summation_task.done()
     assert em._summation_task.exception() is None
+
+
+async def test_no_new_refresh_while_previous_is_pending(zigpy_device_from_v2_quirk):
+    """A refresh still in flight blocks a new one, even past the interval."""
+    em, metering = _device(zigpy_device_from_v2_quirk)
+    release = asyncio.Event()
+
+    async def slow_read(*args, **kwargs):
+        await release.wait()
+        return {}, {}
+
+    with (
+        mock.patch.object(
+            metering, "read_attributes", mock.AsyncMock(side_effect=slow_read)
+        ) as read,
+        mock.patch.object(aqara_plug_h2_eu.time, "monotonic") as monotonic,
+    ):
+        monotonic.return_value = 1000.0
+        em._update_attribute(EM.active_power.id, 982)
+        await asyncio.sleep(0)
+
+        monotonic.return_value = 2000.0  # well past the interval, but still pending
+        em._update_attribute(EM.active_power.id, 982)
+        await asyncio.sleep(0)
+        assert read.await_count == 1
+
+        release.set()
+        await em._summation_task
