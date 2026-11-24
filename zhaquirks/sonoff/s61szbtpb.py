@@ -1,19 +1,33 @@
 """SONOFF S61SZBTPB - Smart Socket with power measurement fix."""
 
+# ============================================================
+# Quirk Metadata
+# ============================================================
+QUIRK_METADATA = {
+    "name": "SONOFF S61SZBTPB",
+    "model": "S61SZBTPB",
+    "version": "1.0",
+    "update_date": "2026-11-17",
+    "author": "Embhonly",
+    "manufacturer": "SONOFF",
+    "description": "SONOFF S61SZBTPB - Smart Socket with power measurement fix.",
+}
+
 from typing import Any, Final
 
-from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    NumberDeviceClass,
+    QuirkBuilder,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+from zhaquirks.clusters import CustomCluster
 
 
 class SonoffCustomCluster(CustomCluster):
