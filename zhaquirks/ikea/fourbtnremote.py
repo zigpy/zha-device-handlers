@@ -1,7 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import LevelControl, OnOff, Scenes
+from zigpy.zcl.clusters.general import OnOff, Scenes
 
 from zhaquirks import LevelControlWithMoveDirection
 from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
@@ -17,8 +17,6 @@ from zhaquirks.const import (
     COMMAND_ON,
     COMMAND_PRESS,
     COMMAND_RELEASE,
-    COMMAND_STOP,
-    COMMAND_STOP_ON_OFF,
     DIM_DOWN,
     DIM_UP,
     ENDPOINT_ID,
@@ -124,26 +122,9 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
                 event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, DIM_UP),
             ),
-            # Older firmware ends both holds with a stop_with_on_off, newer firmware
-            # the off hold with a stop (zigpy/zha-device-handlers#2028, deCONZ's
-            # ikeaStyrbarMap), so either stop ends the hold of the button held
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_END,
-                event_data={
-                    COMMAND: COMMAND_STOP_ON_OFF,
-                    CLUSTER_ID: LevelControl.cluster_id,
-                    ENDPOINT_ID: 1,
-                },
-                while_held=True,
-            ),
-            ButtonEvent(
-                event_type=ButtonEventType.LONG_PRESS_END,
-                event_data={
-                    COMMAND: COMMAND_STOP,
-                    CLUSTER_ID: LevelControl.cluster_id,
-                    ENDPOINT_ID: 1,
-                },
-                while_held=True,
+                trigger=(LONG_RELEASE, DIM_UP),
             ),
         ],
         cluster_id=OnOff.cluster_id,
@@ -161,26 +142,9 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
                 event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, DIM_DOWN),
             ),
-            # Older firmware ends both holds with a stop_with_on_off, newer firmware
-            # the off hold with a stop (zigpy/zha-device-handlers#2028, deCONZ's
-            # ikeaStyrbarMap), so either stop ends the hold of the button held
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_END,
-                event_data={
-                    COMMAND: COMMAND_STOP_ON_OFF,
-                    CLUSTER_ID: LevelControl.cluster_id,
-                    ENDPOINT_ID: 1,
-                },
-                while_held=True,
-            ),
-            ButtonEvent(
-                event_type=ButtonEventType.LONG_PRESS_END,
-                event_data={
-                    COMMAND: COMMAND_STOP,
-                    CLUSTER_ID: LevelControl.cluster_id,
-                    ENDPOINT_ID: 1,
-                },
-                while_held=True,
+                trigger=(LONG_RELEASE, DIM_DOWN),
             ),
         ],
         cluster_id=OnOff.cluster_id,

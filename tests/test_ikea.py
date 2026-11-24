@@ -394,7 +394,7 @@ async def test_styrbar_button_events(zigpy_device_from_v2_quirk):
     send(OnOff.cluster_id, "off")
     send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
     send(LevelControl.cluster_id, "stop")
-    # Either stop ends the hold of the button held, and a stop without one nothing
+    # Either stop ends the hold of the button held, and a stop without a move nothing
     send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
     send(LevelControl.cluster_id, "stop_with_on_off")
     send(LevelControl.cluster_id, "stop")
@@ -406,6 +406,17 @@ async def test_styrbar_button_events(zigpy_device_from_v2_quirk):
         ("button_off", "press_end"),
         ("button_off", "long_press_start"),
         ("button_off", "long_press_end"),
+        ("button_off", "long_press_start"),
+        ("button_off", "long_press_end"),
+    ]
+
+    # The release ends only the hold of the button whose move came last, so a lost
+    # release doesn't end the other button's hold
+    send(LevelControl.cluster_id, "move_with_on_off", LevelControl.MoveMode.Up, 83)
+    send(LevelControl.cluster_id, "move", LevelControl.MoveMode.Down, 83)
+    send(LevelControl.cluster_id, "stop")
+    assert recorder.pop() == [
+        ("button_on", "long_press_start"),
         ("button_off", "long_press_start"),
         ("button_off", "long_press_end"),
     ]
