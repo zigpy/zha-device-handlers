@@ -1,18 +1,5 @@
 """SONOFF S61SZBTPB - Smart Socket with power measurement fix."""
 
-# ============================================================
-# Quirk Metadata
-# ============================================================
-QUIRK_METADATA = {
-    "name": "SONOFF S61SZBTPB",
-    "model": "S61SZBTPB",
-    "version": "1.0",
-    "update_date": "2026-11-17",
-    "author": "Embhonly",
-    "manufacturer": "SONOFF",
-    "description": "SONOFF S61SZBTPB - Smart Socket with power measurement fix.",
-}
-
 from typing import Any, Final
 
 import zigpy.types as t
@@ -28,6 +15,19 @@ from zhaquirks.builder import (
     UnitOfPower,
 )
 from zhaquirks.clusters import CustomCluster
+
+# ============================================================
+# Quirk Metadata
+# ============================================================
+QUIRK_METADATA = {
+    "name": "SONOFF S61SZBTPB",
+    "model": "S61SZBTPB",
+    "version": "1.0",
+    "update_date": "2026-11-17",
+    "author": "Embhonly",
+    "manufacturer": "SONOFF",
+    "description": "SONOFF S61SZBTPB - Smart Socket with power measurement fix.",
+}
 
 
 class SonoffCustomCluster(CustomCluster):
