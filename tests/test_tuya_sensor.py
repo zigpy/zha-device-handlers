@@ -200,6 +200,16 @@ async def test_soil_sensor_0ints6wl_humidity_and_battery_size(
     assert ep.power.get("battery_quantity") == 2
 
 
+@pytest.mark.parametrize("manuf", ["_TZE284_nhgdf6qr", "_TZE2841000000_nhgdf6qr"])
+def test_soil_sensor_giex_gx04_battery_size(zigpy_device_from_v2_quirk, manuf):
+    """Test the Giex GX04 soil sensor reports 2x AAA batteries."""
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
+    ep = quirked.endpoints[1]
+
+    assert ep.power.get("battery_size") == BatterySize.AAA
+    assert ep.power.get("battery_quantity") == 2
+
+
 def test_valid_attributes(zigpy_device_from_v2_quirk):
     """Test that valid attributes on virtual clusters are populated by Tuya datapoints mappings."""
     quirked = zigpy_device_from_v2_quirk("_TZE200_bjawzodf", "TS0601")
