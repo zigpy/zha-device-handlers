@@ -79,3 +79,40 @@ async def test_local_temperature_follows_active_sensor(
     )
 
     assert cluster.get("local_temperature") == expected
+
+
+@pytest.mark.parametrize(
+    "active_sensor, expected",
+    [
+        (ActiveSensor.AIR, 2150),
+        (ActiveSensor.FLOOR, 1900),
+        (ActiveSensor.PROTECTION, 2150),
+    ],
+)
+async def test_local_temperature_follows_restored_active_sensor(
+    zigpy_device_from_quirk, active_sensor, expected
+):
+    """An active sensor restored from the database applies without a new report."""
+    device = zigpy_device_from_quirk(ElkoSuperTRThermostat)
+    cluster = device.endpoints[1].thermostat
+
+    # On startup the database fills the cache directly with a plain int,
+    # without calling _update_attribute
+    cluster._attr_cache.set_value(
+        ElkoSuperTRThermostatCluster.AttributeDefs.active_sensor,
+        int(active_sensor),
+    )
+
+    _report(
+        device,
+        {
+            ElkoSuperTRThermostatCluster.AttributeDefs.local_temperature.id: (
+                foundation.TypeValue(type=0x29, value=t.int16s(2150))
+            ),
+            ElkoSuperTRThermostatCluster.AttributeDefs.floor_sensor_temperature.id: (
+                foundation.TypeValue(type=0x29, value=t.int16s(1900))
+            ),
+        },
+    )
+
+    assert cluster.get("local_temperature") == expected
