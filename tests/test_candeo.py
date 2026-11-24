@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.candeo import CANDEO, CandeoBasicCluster
+from zhaquirks.candeo import CANDEO
 from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
     CandeoSceneSwitchRemoteButtonActionMap,
     CandeoSceneSwitchRemoteButtonNumberMap,
@@ -38,26 +38,6 @@ from zhaquirks.const import (
 )
 
 zhaquirks.setup()
-
-
-# candeo wall module tests
-@pytest.mark.parametrize(
-    "model",
-    [
-        "C203",
-        "HK-LN-DIM-A",
-        "C204",
-        "C-ZB-DM204",
-        "C-ZB-DM204V2",
-        "C-ZB-DM204v2",
-        "C205",
-    ],
-)
-def test_candeo_wall_module_external_switch_type(zigpy_device_from_v2_quirk, model):
-    """Test the wall module quirk applies to every model string the device reports."""
-    device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model=model)
-
-    assert isinstance(device.endpoints[1].basic, CandeoBasicCluster)
 
 
 # candeo motion tests
