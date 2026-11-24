@@ -414,3 +414,123 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
             },
         },
     }
+
+
+class TuyaTS0044SixEndpointRemote(CustomDevice, Tuya4ButtonTriggers):
+    """Tuya 4-button remote reporting six endpoints after a firmware update.
+
+    The remote physically has four buttons, but the updated firmware (tested with
+    version 0x48) reports endpoints 5 and 6 as On/Off switches as well. Only
+    endpoints 1 through 4 are replaced below, so the extra endpoints are dropped.
+    """
+
+    signature = {
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6, 57344], output_clusters=[10, 25]))
+        # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
+        # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
+        # SizePrefixedSimpleDescriptor(endpoint=4, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
+        # SizePrefixedSimpleDescriptor(endpoint=5, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
+        # SizePrefixedSimpleDescriptor(endpoint=6, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
+        MODEL: "TS0044",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
+                    TuyaSmartRemoteOnOffCluster,
+                    TuyaZBE000Cluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    TuyaNoBindPowerConfigurationCluster,
+                    TuyaSmartRemoteOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    TuyaNoBindPowerConfigurationCluster,
+                    TuyaSmartRemoteOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    TuyaNoBindPowerConfigurationCluster,
+                    TuyaSmartRemoteOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
