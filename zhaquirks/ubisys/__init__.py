@@ -34,10 +34,16 @@ class UbisysCluster(CustomCluster):
         """Ubisys attribute definitions."""
 
         input_configurations: Final = ZCLAttributeDef(
-            id=0x0000, type=t.LVList[t.uint8_t, t.uint16_t], manufacturer_code=None
+            id=0x0000,
+            type=t.LVList[t.uint8_t, t.uint16_t],
+            zcl_type=foundation.DataTypeId.array,
+            manufacturer_code=None,
         )
         input_actions: Final = ZCLAttributeDef(
-            id=0x0001, type=t.LVList[t.LVBytes, t.uint16_t], manufacturer_code=None
+            id=0x0001,
+            type=t.LVList[t.LVBytes, t.uint16_t],
+            zcl_type=foundation.DataTypeId.array,
+            manufacturer_code=None,
         )
         cluster_revision: Final = ZCLAttributeDef(
             id=0xFFFD, type=t.uint16_t, manufacturer_code=None
