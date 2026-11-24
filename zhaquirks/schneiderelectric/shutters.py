@@ -2,7 +2,12 @@
 
 from zigpy.zcl import ClusterType
 
-from zhaquirks.builder import QuirkBuilder, UnitOfTime
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    UnitOfTime,
+)
 from zhaquirks.schneiderelectric import (
     SE_MANUF_NAME,
     SEBasic,
@@ -82,6 +87,23 @@ from zhaquirks.schneiderelectric import (
         translation_key="tilt_position_percentage_after_move_to_level",
         fallback_name="Tilt position percentage after move to level",
     )
+    .binary_sensor(
+        attribute_name=SEWindowCovering.AttributeDefs.se_sun_protection_status.name,
+        cluster_id=SEWindowCovering.cluster_id,
+        endpoint_id=5,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="sun_protection_active",
+        fallback_name="Sun protection active",
+    )
+    .binary_sensor(
+        attribute_name=SEWindowCovering.AttributeDefs.se_sun_protection_sensor.name,
+        cluster_id=SEWindowCovering.cluster_id,
+        endpoint_id=5,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        translation_key="sun_protection_sensor_connected",
+        fallback_name="Sun protection sensor connected",
+    )
     .add_to_registry()
 )
 
@@ -125,6 +147,23 @@ from zhaquirks.schneiderelectric import (
         step=1,
         translation_key="tilt_position_percentage_after_move_to_level",
         fallback_name="Tilt position percentage after move to level",
+    )
+    .binary_sensor(
+        attribute_name=SEWindowCovering.AttributeDefs.se_sun_protection_status.name,
+        cluster_id=SEWindowCovering.cluster_id,
+        endpoint_id=5,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="sun_protection_active",
+        fallback_name="Sun protection active",
+    )
+    .binary_sensor(
+        attribute_name=SEWindowCovering.AttributeDefs.se_sun_protection_sensor.name,
+        cluster_id=SEWindowCovering.cluster_id,
+        endpoint_id=5,
+        entity_type=EntityType.DIAGNOSTIC,
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        translation_key="sun_protection_sensor_connected",
+        fallback_name="Sun protection sensor connected",
     )
     .add_to_registry()
 )
