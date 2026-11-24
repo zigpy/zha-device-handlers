@@ -698,3 +698,10 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
 - Tests should verify entity creation
+
+## AI policy
+
+This project follows the [Open Home Foundation AI Policy](AI_POLICY.md). In
+short: AI tools are welcome as an aid, but you must fully understand and be
+able to explain every change you submit. Contributions made by autonomous
+agents are not accepted.

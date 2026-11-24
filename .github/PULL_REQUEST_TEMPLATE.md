@@ -35,3 +35,10 @@
 - [ ] `pre-commit` checks pass / the code has been formatted using Black
 - [ ] Tests have been added to verify that the new code works
 - [ ] Device diagnostics data has been attached
+
+## AI policy
+
+This project follows the [Open Home Foundation AI Policy](AI_POLICY.md). In
+short: AI tools are welcome as an aid, but you must fully understand and be
+able to explain every change you submit. Contributions made by autonomous
+agents are not accepted.
