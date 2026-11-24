@@ -371,7 +371,7 @@ async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
     recorder = await ButtonEventRecorder.create(device)
 
     assert recorder.event_types() == {
-        "button": ["single_press", "multi_press", "long_press_end"]
+        "button": ["single_press", "multi_press", "long_press_start"]
     }
 
     send_command(device, 1, OnOff.cluster_id, "toggle")
@@ -383,7 +383,7 @@ async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
     assert recorder.pop() == [
         ("button", "single_press"),
         ("button", "multi_press", {"press_count": 2}),
-        ("button", "long_press_end"),
+        ("button", "long_press_start"),
     ]
 
 

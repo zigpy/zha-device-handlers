@@ -27,7 +27,8 @@ from zhaquirks.const import (
         }
     )
     # The button counts its presses, so its single press is a resolved gesture. The
-    # long press is one event with no release, classified as sent on release.
+    # long press is one event sent when the hold reaches its threshold, with no
+    # release, so it starts the hold
     .button_event(
         events=[
             ButtonEvent(
@@ -40,7 +41,7 @@ from zhaquirks.const import (
                 press_count=2,
             ),
             ButtonEvent(
-                event_type=ButtonEventType.LONG_PRESS_END,
+                event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, BUTTON),
             ),
         ],
