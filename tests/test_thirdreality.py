@@ -3,11 +3,16 @@
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.application.platforms import ZclPlatformEntity
+from zha.quirks import DEVICE_REGISTRY
+from zha.zigbee.child_device import DEVICE_LEVEL_CLUSTERS, ChildDevice
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.thirdreality.button import MultistateInputCluster
 import zhaquirks.thirdreality.night_light
@@ -134,3 +139,75 @@ async def test_third_reality_three_button_v2_ignores_unknown_press_type(
 
     multistate_cluster.update_attribute(0x0055, 42)
     assert listener.zha_send_event.call_count == 0
+
+
+@pytest.mark.parametrize(
+    ("diagnostics", "child_device_ids"),
+    [
+        ("third-reality-inc-3rdp01072z-0x00000036.json", ("left", "right")),
+        ("third-reality-inc-3rwp01073z-0x00000036.json", ("bottom", "top")),
+    ],
+)
+async def test_third_reality_dual_plug_child_devices(diagnostics, child_device_ids):
+    """Test each outlet of the dual plugs is a child device."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, diagnostics, DEVICE_REGISTRY
+        )
+
+        first, second = child_device_ids
+        assert device.child_devices == {
+            first: ChildDevice(
+                id=first,
+                endpoint_ids=frozenset({1}),
+                translation_key=first,
+                fallback_name=first.capitalize(),
+            ),
+            second: ChildDevice(
+                id=second,
+                endpoint_ids=frozenset({2}),
+                translation_key=second,
+                fallback_name=second.capitalize(),
+            ),
+        }
+
+        for entity in device.platform_entities.values():
+            if entity.PLATFORM == Platform.VIRTUAL:
+                continue
+
+            if (
+                isinstance(entity, ZclPlatformEntity)
+                and entity.cluster.cluster_id not in DEVICE_LEVEL_CLUSTERS
+            ):
+                # Everything of an outlet, including its meter and its settings
+                expected = child_device_ids[entity.endpoint.id - 1]
+            else:
+                # The LED brightness (Basic), identify, firmware and signal strength
+                expected = None
+
+            assert entity.state.child_device_id == expected, entity
+
+        # The outlets' entities have the same names, the child device tells them apart
+        for unique_id_suffix, translation_key in (
+            ("reset_summation_delivered", "reset_total_energy"),
+            ("on_to_off_delay", "countdown_to_turn_off"),
+            ("off_to_on_delay", "countdown_to_turn_on"),
+        ):
+            entities = [
+                entity
+                for entity in device.platform_entities.values()
+                if entity.unique_id.endswith(f"-{unique_id_suffix}")
+            ]
+            assert len(entities) == 2
+            assert {entity.translation_key for entity in entities} == {translation_key}
+
+        # The outlet's switch is the primary entity of its child device
+        switches = [
+            entity
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM == Platform.SWITCH and entity.primary
+        ]
+        assert sorted(entity.state.child_device_id for entity in switches) == sorted(
+            child_device_ids
+        )
+        assert device.primary_entity is None
