@@ -9,7 +9,10 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.xiaomi.aqara import aqara_plug_h2_eu
-from zhaquirks.xiaomi.aqara.aqara_plug_h2_eu import AqaraH2PlugElectricalMeasurement
+from zhaquirks.xiaomi.aqara.aqara_plug_h2_eu import (
+    AqaraH2PlugElectricalMeasurement,
+    AqaraH2PlugMetering,
+)
 
 zhaquirks.setup()
 
@@ -142,3 +145,29 @@ async def test_no_new_refresh_while_previous_is_pending(zigpy_device_from_v2_qui
 
         release.set()
         await em._summation_task
+
+
+def test_metering_is_replaced(zigpy_device_from_v2_quirk):
+    """The quirk replaces the Metering cluster."""
+    _, metering = _device(zigpy_device_from_v2_quirk)
+    assert isinstance(metering, AqaraH2PlugMetering)
+
+
+def test_spurious_zero_summation_is_ignored(zigpy_device_from_v2_quirk):
+    """A 0 after a real reading keeps the last known energy counter."""
+    _, metering = _device(zigpy_device_from_v2_quirk)
+
+    metering._update_attribute(SUMM, 30088)
+    metering._update_attribute(SUMM, 0)
+    assert metering.get(SUMM) == 30088
+
+    metering._update_attribute(SUMM, 30185)
+    assert metering.get(SUMM) == 30185
+
+
+def test_first_zero_summation_is_accepted(zigpy_device_from_v2_quirk):
+    """A brand-new plug may legitimately start at 0."""
+    _, metering = _device(zigpy_device_from_v2_quirk)
+
+    metering._update_attribute(SUMM, 0)
+    assert metering.get(SUMM) == 0
