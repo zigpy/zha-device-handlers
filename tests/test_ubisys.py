@@ -8,7 +8,7 @@ from zigpy.zcl import AttributeWrittenEvent, ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import DataTypeId, Status
+from zigpy.zcl.foundation import Status
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -1319,7 +1319,6 @@ async def test_j1_config_sync_skips_failed_write(ubisys_j1):
             attribute_name="window_covering_type_config",
             attribute_id=0x0000,
             manufacturer_code=0x10F2,
-            data_type=DataTypeId.enum8,
             value=WindowCovering.WindowCoveringType.Shutter,
             status=Status.UNSUPPORTED_ATTRIBUTE,
         )
