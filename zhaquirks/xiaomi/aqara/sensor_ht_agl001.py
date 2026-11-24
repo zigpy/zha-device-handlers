@@ -291,13 +291,10 @@ class W100AqaraCluster(XiaomiAqaraE1Cluster):
         value = super().get(key, default)
         if value is not default:
             return value
-        try:
-            attr_id = self.find_attribute(key).id
-        except KeyError:
-            return value
-        sensor_mode = super().get(self.AttributeDefs.sensor_mode.id)
-        if attr_id == self.AttributeDefs.thermostat_mode.id and sensor_mode is not None:
-            return ThermostatMode.On if sensor_mode & 1 else ThermostatMode.Off
+        if self.find_attribute(key).id == self.AttributeDefs.thermostat_mode.id:
+            sensor_mode = super().get(self.AttributeDefs.sensor_mode.id)
+            if sensor_mode is not None:
+                return ThermostatMode.On if sensor_mode & 1 else ThermostatMode.Off
         return value
 
     async def _write_device(self, attributes: dict[int, Any]) -> None:
