@@ -427,6 +427,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.plug.maeu01",
             "lumi.plug.mmeu01",
             "lumi.relay.c2acn01",
+            "lumi.switch.b2nacn02",
             "lumi.switch.n0agl1",
             "lumi.switch.n0acn2",
             "lumi.switch.acn047",

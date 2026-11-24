@@ -1,4 +1,4 @@
-"""Xiaomi aqara single key wall switch devices."""
+"""Xiaomi Aqara wall switches with neutral."""
 
 from typing import Final
 
@@ -232,5 +232,48 @@ class CtrlLn(XiaomiCustomDevice):
             CLUSTER_ID: 18,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 2},
+        },
+    }
+
+
+class SwitchD1DoubleNeutral(CtrlLn):
+    """Aqara D1 double rocker wall switch with neutral (QBKG24LM).
+
+    It has the same endpoints and clusters as lumi.ctrl_ln2.aq1, but is switched
+    with standard On/Off commands and keeps ZHA's binding and reporting setup.
+    """
+
+    signature = {
+        **CtrlLn.signature,
+        MODELS_INFO: [(LUMI, "lumi.switch.b2nacn02")],
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            **CtrlLn.replacement[ENDPOINTS],
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    CtrlLn.BasicClusterDecoupled,
+                    XiaomiPowerConfiguration,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Time.cluster_id,
+                    BinaryOutput.cluster_id,
+                    ElectricalMeasurementCluster,
+                    MeteringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [OnOff.cluster_id, BinaryOutput.cluster_id],
+                OUTPUT_CLUSTERS: [],
+            },
         },
     }
