@@ -112,6 +112,8 @@ base_quirk.clone().applies_to("Manufacturer", "ModelB").add_to_registry()
 ```
 If the models need nothing different, use one builder with several `.applies_to()` calls instead.
 
+For variants of the *same* model (e.g. a firmware split), build the base with manufacturer/model and register each variant with `.clone(omit_man_model_data=False)` plus its own firmware filter (see `zhaquirks/sonoff/s60zbtpf.py`).
+
 ## Pitfalls
 
 Each of these has shipped in a PR before; check the ones that apply.
