@@ -388,7 +388,8 @@ def _illumination_reads(cluster) -> int:
 async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monkeypatch):
     """The illumination sensor is kept when a read marked 0x2001 unsupported."""
     # Diagnostics of a device whose read of 0x2001 was answered with
-    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in #5473
+    # UNSUPPORTED_ATTRIBUTE before a value was reported, like the one in
+    # zigpy/zha-device-handlers#5473
     _snzb06p_diagnostics(
         tmp_path,
         monkeypatch,

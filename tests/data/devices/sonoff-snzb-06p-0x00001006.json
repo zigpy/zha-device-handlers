@@ -8,7 +8,7 @@
   "friendly_model": "SNZB-06P",
   "name": "SONOFF SNZB-06P",
   "quirk_applied": true,
-  "quirk_class": "zhaquirks.sonoff.snzb06p:SonoffPresenceSenorSNZB06P",
+  "quirk_class": "zhaquirks.sonoff.snzb06p:(SONOFF / SNZB-06P)",
   "exposes_features": [],
   "manufacturer_code": 4742,
   "power_source": "Mains",
@@ -123,6 +123,11 @@
               "value": 4102
             }
           ]
+        },
+        {
+          "cluster_id": "0x0025",
+          "endpoint_attribute": "keep_alive",
+          "attributes": []
         }
       ]
     }
