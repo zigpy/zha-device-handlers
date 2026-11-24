@@ -87,3 +87,27 @@ async def test_keypad_lockout_write_failure(zigpy_device_from_quirk):
     write_raw.assert_awaited_once()
     assert result[0][0].status == foundation.Status.READ_ONLY
     assert ui.get("keypad_lockout") is None
+
+
+async def test_other_ui_attributes_stay_local(zigpy_device_from_quirk):
+    """Other user interface attributes are written locally, not to the device."""
+    device = zigpy_device_from_quirk(ElkoSuperTRThermostat)
+    thermostat = device.endpoints[1].thermostat
+    ui = device.endpoints[1].thermostat_ui
+
+    with mock.patch.object(thermostat, "write_attributes_raw") as write_raw:
+        result = await ui.write_attributes(
+            {
+                UserInterface.AttributeDefs.temperature_display_mode.name: (
+                    UserInterface.TemperatureDisplayMode.Imperial
+                )
+            }
+        )
+
+    write_raw.assert_not_called()
+    assert result[0][0].status == foundation.Status.SUCCESS
+    assert (
+        ui.get(UserInterface.AttributeDefs.temperature_display_mode.name)
+        == UserInterface.TemperatureDisplayMode.Imperial
+    )
+    assert ui.get(UserInterface.AttributeDefs.keypad_lockout.name) is None
