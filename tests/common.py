@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 from zha.application.platforms.event import EntityEventTriggeredEvent, ZhaEventButton
 from zha.application.platforms.light import Light
-from zha.zigbee.device import Device
+from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
 import zigpy.profiles.zha
 import zigpy.types as t
@@ -80,7 +80,7 @@ class ButtonEventRecorder:
     their unique ID suffix.
     """
 
-    def __init__(self, zha_device: Device) -> None:
+    def __init__(self, zha_device: ZigbeeDevice) -> None:
         """Start recording the button events of a ZHA device's entities."""
         self.zha_device = zha_device
         self.entities: dict[str, ZhaEventButton] = {}
@@ -113,7 +113,7 @@ class ButtonEventRecorder:
         gateway.async_create_background_task.side_effect = (
             lambda coro, *args, **kwargs: coro.close()
         )
-        zha_device = Device.new(zigpy_device, gateway)
+        zha_device = ZigbeeDevice.new(zigpy_device, gateway)
 
         # A light logs the polling interval its polling task sets when it starts
         with patch.object(Light, "start_polling"):

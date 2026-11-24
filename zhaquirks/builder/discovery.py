@@ -17,7 +17,7 @@ from zha.application import Platform
 from zha.application.platforms import (
     AttrConfig,
     ClusterConfig,
-    PlatformEntity,
+    ZclPlatformEntity,
     binary_sensor,
     button,
     event,
@@ -42,12 +42,13 @@ from zhaquirks.builder.metadata import (
 )
 
 if TYPE_CHECKING:
-    from zha.zigbee.device import Device
+    from zha.zigbee.device import ZigbeeDevice
+    from zha.zigbee.endpoint import Endpoint
 
 _LOGGER = logging.getLogger(__name__)
 
 QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
-    tuple[Platform, type], type[PlatformEntity]
+    tuple[Platform, type], type[ZclPlatformEntity]
 ] = {
     (Platform.BUTTON, WriteAttributeButtonMetadata): button.WriteAttributeButton,
     (Platform.BUTTON, ZCLCommandButtonMetadata): button.Button,
@@ -61,10 +62,16 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
 }
 
 
+def quirk_unique_id_base(device: ZigbeeDevice, endpoint: Endpoint) -> str:
+    """Return the unique ID base of quirk entities, which omits the cluster ID."""
+    return f"{device.ieee}-{endpoint.id}"
+
+
 def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     """Return the keyword arguments common to every quirk entity."""
     return {
-        "from_quirk": True,
+        # The entity classes' support checks are written for ZHA's discovery
+        "force_create": True,
         "fallback_name": entity_metadata.fallback_name,
         "translation_key": entity_metadata.translation_key,
         "translation_placeholders": entity_metadata.translation_placeholders or None,
@@ -76,7 +83,7 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
 
 
 def _button_event_matches(
-    entity_metadata: ButtonEventMetadata, device: Device
+    entity_metadata: ButtonEventMetadata, device: ZigbeeDevice
 ) -> list[event.ZhaEventMatch]:
     """Return the `zha_event` matches of a button event entity."""
     triggers = device.device_automation_triggers
@@ -112,7 +119,9 @@ def _button_event_matches(
     return event_matches
 
 
-def _platform_kwargs(entity_metadata: EntityMetadata, device: Device) -> dict[str, Any]:
+def _platform_kwargs(
+    entity_metadata: EntityMetadata, device: ZigbeeDevice
+) -> dict[str, Any]:
     """Return the platform-specific keyword arguments for a quirk entity."""
     if isinstance(entity_metadata, ZCLSensorMetadata):
         return {
@@ -170,7 +179,7 @@ def _platform_kwargs(entity_metadata: EntityMetadata, device: Device) -> dict[st
     return {}
 
 
-def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
+def discover_quirks_v2_entities(device: ZigbeeDevice) -> Iterator[ZclPlatformEntity]:
     """Discover entities exposed by a device's quirks v2 metadata."""
     quirk_metadata = device.quirk_metadata
     if quirk_metadata is None or not quirk_metadata.entity_metadata:
@@ -236,6 +245,7 @@ def discover_quirks_v2_entities(device: Device) -> Iterator[PlatformEntity]:
                 endpoint=endpoint,
                 device=device,
                 cluster=cluster,
+                unique_id=quirk_unique_id_base(device, endpoint),
                 **_generic_kwargs(entity_metadata),
                 **_platform_kwargs(entity_metadata, device),
             )

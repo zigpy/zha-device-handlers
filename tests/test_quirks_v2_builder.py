@@ -277,7 +277,7 @@ async def test_quirks_v2_with_custom_device_class_raises(device_mock):
     registry = DeviceRegistry()
 
     class CustomTestDevice:
-        """Neither a ZHA `Device` nor a zigpy `BaseCustomDevice`."""
+        """Neither a ZHA `ZigbeeDevice` nor a zigpy `BaseCustomDevice`."""
 
     with pytest.raises(
         TypeError,
@@ -372,6 +372,164 @@ async def test_quirks_v2_replace_occurrences(device_mock):
     assert isinstance(
         quirked.endpoints[3].out_clusters[Identify.cluster_id], CustomIdentifyCluster
     )
+
+
+@pytest.mark.parametrize("cluster_type", [ClusterType.Server, ClusterType.Client])
+async def test_quirks_v2_replace_keeps_cluster_position(device_mock, cluster_type):
+    """Test that a replaced cluster keeps its position on the endpoint.
+
+    ZHA binds clusters and configures reporting in endpoint cluster order, so a
+    replacement must not move behind the clusters that followed it.
+    """
+    registry = DeviceRegistry()
+    is_server = cluster_type == ClusterType.Server
+
+    endpoint = device_mock.add_endpoint(2)
+    endpoint.profile_id = 255
+    endpoint.device_type = 255
+    for cluster_id in (
+        Basic.cluster_id,
+        OnOff.cluster_id,
+        LevelControl.cluster_id,
+        PowerConfiguration.cluster_id,
+        Identify.cluster_id,
+    ):
+        if is_server:
+            endpoint.add_input_cluster(cluster_id)
+        else:
+            endpoint.add_output_cluster(cluster_id)
+
+    raw_clusters = endpoint.in_clusters if is_server else endpoint.out_clusters
+    raw_clusters[OnOff.cluster_id].update_attribute(OnOff.AttributeDefs.on_off.id, True)
+
+    class CustomOnOffCluster(CustomCluster, OnOff):
+        """Custom on/off cluster replacing the device's on/off cluster."""
+
+    class ManufacturerCluster(CustomCluster):
+        """Manufacturer cluster replacing the device's level control cluster."""
+
+        cluster_id = 0xFC00
+        ep_attribute = "manufacturer_fc00"
+
+    class AbsentReplacementCluster(CustomCluster):
+        """Manufacturer cluster replacing a cluster the device does not have."""
+
+        cluster_id = 0xFC01
+        ep_attribute = "manufacturer_fc01"
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .replaces(CustomOnOffCluster, cluster_type=cluster_type, endpoint_id=2)
+        .replaces(
+            ManufacturerCluster,
+            cluster_id=LevelControl.cluster_id,
+            cluster_type=cluster_type,
+            endpoint_id=2,
+        )
+        .replaces(
+            AbsentReplacementCluster,
+            cluster_id=0xFC02,
+            cluster_type=cluster_type,
+            endpoint_id=2,
+        )
+        .add_to_registry(registry)
+    )
+
+    quirked: CustomZigpyDevice = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+
+    quirked_endpoint = quirked.endpoints[2]
+    clusters = (
+        quirked_endpoint.in_clusters if is_server else quirked_endpoint.out_clusters
+    )
+
+    # replacements take the replaced cluster's position, a replacement for a
+    # missing cluster is appended
+    assert list(clusters) == [
+        Basic.cluster_id,
+        OnOff.cluster_id,
+        ManufacturerCluster.cluster_id,
+        PowerConfiguration.cluster_id,
+        Identify.cluster_id,
+        AbsentReplacementCluster.cluster_id,
+    ]
+    assert isinstance(clusters[OnOff.cluster_id], CustomOnOffCluster)
+    assert isinstance(clusters[ManufacturerCluster.cluster_id], ManufacturerCluster)
+
+    # cached attribute values still carry over to the replacement
+    assert clusters[OnOff.cluster_id].get(OnOff.AttributeDefs.on_off.name) is True
+
+    if is_server:
+        assert quirked_endpoint.on_off is clusters[OnOff.cluster_id]
+        assert (
+            quirked_endpoint.manufacturer_fc00
+            is clusters[ManufacturerCluster.cluster_id]
+        )
+
+
+@pytest.mark.parametrize(
+    ("raw_cluster_ids", "expected_cluster_ids"),
+    [
+        # the replacement's id is already used before the replaced cluster
+        (
+            [
+                Basic.cluster_id,
+                OnOff.cluster_id,
+                LevelControl.cluster_id,
+                Identify.cluster_id,
+            ],
+            [Basic.cluster_id, OnOff.cluster_id, Identify.cluster_id],
+        ),
+        (
+            [
+                OnOff.cluster_id,
+                Basic.cluster_id,
+                LevelControl.cluster_id,
+                Identify.cluster_id,
+            ],
+            [Basic.cluster_id, OnOff.cluster_id, Identify.cluster_id],
+        ),
+        # the replacement's id is already used after the replaced cluster
+        (
+            [
+                Basic.cluster_id,
+                LevelControl.cluster_id,
+                Identify.cluster_id,
+                OnOff.cluster_id,
+            ],
+            [Basic.cluster_id, OnOff.cluster_id, Identify.cluster_id],
+        ),
+    ],
+)
+async def test_quirks_v2_replace_with_existing_cluster_id(
+    device_mock, raw_cluster_ids, expected_cluster_ids
+):
+    """Test a replacement whose id is already used takes the replaced position."""
+    registry = DeviceRegistry()
+
+    endpoint = device_mock.add_endpoint(2)
+    endpoint.profile_id = 255
+    endpoint.device_type = 255
+    for cluster_id in raw_cluster_ids:
+        endpoint.add_input_cluster(cluster_id)
+
+    class CustomOnOffCluster(CustomCluster, OnOff):
+        """Custom on/off cluster replacing the device's level control cluster."""
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .replaces(CustomOnOffCluster, cluster_id=LevelControl.cluster_id, endpoint_id=2)
+        .add_to_registry(registry)
+    )
+
+    quirked: CustomZigpyDevice = registry.resolve(device_mock)
+    quirked_endpoint = quirked.endpoints[2]
+
+    assert list(quirked_endpoint.in_clusters) == expected_cluster_ids
+    assert isinstance(
+        quirked_endpoint.in_clusters[OnOff.cluster_id], CustomOnOffCluster
+    )
+    assert quirked_endpoint.on_off is quirked_endpoint.in_clusters[OnOff.cluster_id]
 
 
 async def test_quirks_v2_skip_configuration(device_mock):
