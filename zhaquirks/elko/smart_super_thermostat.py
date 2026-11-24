@@ -123,14 +123,14 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         elif attrid == LOCAL_TEMP:
             if (
                 self.active_sensor is not None
-                and self.active_sensor == self.Sensor.FLOOR
+                and self.active_sensor == ActiveSensor.FLOOR
             ):
                 # Ignore the air sensor reading if the floor sensor is selected
                 return
         elif attrid == FLOOR_SENSOR_TEMPERATURE:
             if (
                 self.active_sensor is not None
-                and self.active_sensor == self.Sensor.FLOOR
+                and self.active_sensor == ActiveSensor.FLOOR
             ):
                 attrid = LOCAL_TEMP
         elif attrid == POWER_CONSUMPTION:
