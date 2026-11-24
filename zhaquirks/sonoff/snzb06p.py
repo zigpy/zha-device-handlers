@@ -2,7 +2,6 @@
 
 from types import MappingProxyType
 
-from zha.application.platforms import ZclPlatformEntity
 from zha.application.platforms.sensor import SonoffPresenceSenorIlluminationStatus
 from zha.application.platforms.virtual import SonoffPresenceSensorInit
 import zigpy.types as t
@@ -41,16 +40,6 @@ class SonoffFC11Cluster(CustomCluster):
         )
 
 
-class SonoffLastIlluminationStateSensor(SonoffPresenceSenorIlluminationStatus):
-    """Last illumination state, also when a read marked it unsupported."""
-
-    def _is_supported(self) -> bool:
-        # The device only measures the illumination when it detects presence, and
-        # answers reads of it with UNSUPPORTED_ATTRIBUTE otherwise. The quirk's
-        # SonoffFC11Cluster always defines the attribute, so skip all Sensor checks.
-        return ZclPlatformEntity._is_supported(self)
-
-
 class SonoffPresenceSensorInitWithoutRead(SonoffPresenceSensorInit):
     """ZHA's SNZB-06P cluster setup, without reading the last illumination state.
 
@@ -75,11 +64,15 @@ class SonoffPresenceSensorInitWithoutRead(SonoffPresenceSensorInit):
         endpoint_id=1,
         cluster_id=SonoffFC11Cluster.cluster_id,
     )
+    # The device only measures the illumination when it detects presence, and answers
+    # reads of it with UNSUPPORTED_ATTRIBUTE otherwise. Create ZHA's sensor even when
+    # such a read marked the attribute unsupported.
     .replaces_entity(
         SonoffPresenceSenorIlluminationStatus,
-        SonoffLastIlluminationStateSensor,
+        SonoffPresenceSenorIlluminationStatus,
         endpoint_id=1,
         cluster_id=SonoffFC11Cluster.cluster_id,
+        force_create=True,
     )
     .add_to_registry()
 )

@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 from zha.application import Platform
 from zha.application.platforms import AttrConfig, ClusterConfig
+from zha.application.platforms.sensor import SonoffPresenceSenorIlluminationStatus
 from zha.application.platforms.virtual import SonoffPresenceSensorInit
 from zha.const import STATE_CHANGED
 from zha.quirks import DEVICE_REGISTRY
@@ -22,7 +23,6 @@ from zhaquirks.sonoff.snzb01m import SonoffButtonCluster
 from zhaquirks.sonoff.snzb06p import (
     IlluminationStatus,
     SonoffFC11Cluster,
-    SonoffLastIlluminationStateSensor,
     SonoffPresenceSensorInitWithoutRead,
 )
 from zhaquirks.sonoff.zbm5 import (
@@ -410,11 +410,12 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
         assert isinstance(cluster, SonoffFC11Cluster)
         assert cluster.is_attribute_unsupported("last_illumination_state")
 
-        # The quirk's sensor replaces ZHA's, with the same unique ID, and has no value
+        # ZHA's sensor is force-created, with the same unique ID, and has no value
         entity = device.get_platform_entity(
             Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
         )
-        assert type(entity) is SonoffLastIlluminationStateSensor
+        assert type(entity) is SonoffPresenceSenorIlluminationStatus
+        assert entity.force_create
         assert entity.native_value is None
 
         # The device reports the illumination after detecting presence
@@ -443,7 +444,6 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
         # No state change is published, HA keeps showing the last value until then
         assert state_listener.call_count == 0
         assert cluster.is_attribute_unsupported("last_illumination_state")
-        assert entity.is_supported()
         assert (
             device.get_platform_entity(
                 Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
@@ -457,6 +457,18 @@ async def test_snzb06p_illumination_sensor_with_unsupported_mark(tmp_path, monke
 
         # The published state was `Light` all along
         assert state_listener.call_count == 0
+
+        # The sensor is kept when ZHA recomputes the entities with 0x2001 marked
+        await cluster.read_attributes(["last_illumination_state"], allow_cache=False)
+        assert cluster.is_attribute_unsupported("last_illumination_state")
+        assert not entity.is_supported()
+        await device.recompute_entities()
+        assert (
+            device.get_platform_entity(
+                Platform.SENSOR, unique_id=SNZB06P_ILLUMINATION_UNIQUE_ID
+            )
+            is entity
+        )
 
 
 def test_snzb06p_zha_init_only_reads_illumination_state():
