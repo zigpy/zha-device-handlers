@@ -61,6 +61,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "LCX024")  # 91ft
     .applies_to(SIGNIFY, "LCX025")  # 45ft
     .applies_to(SIGNIFY, "LCX026")  # Likely model for 22ft
+    .applies_to(SIGNIFY, "LCX028")
     .friendly_name(
         model="Hue Festavia globe outdoor string lights",
         manufacturer="Philips",
@@ -98,6 +99,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     QuirkBuilder()
     .applies_to(SIGNIFY, "4080248U9")
     .applies_to(SIGNIFY, "915005987101")
+    .applies_to(PHILIPS, "915005987101")
     .applies_to(SIGNIFY, "915005987201")
     .applies_to(SIGNIFY, "915005987501")
     .applies_to(SIGNIFY, "915005987601")
