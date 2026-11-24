@@ -6,9 +6,20 @@ from collections.abc import Callable
 from typing import Any
 
 from zigpy import types as t
-from zigpy.zcl import AttributeReadEvent, AttributeReportedEvent, Cluster, foundation
+from zigpy.zcl import (
+    AttributeReadEvent,
+    AttributeReportedEvent,
+    AttributeUpdatedEvent,
+    Cluster,
+    foundation,
+)
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import AnalogOutput, MultistateOutput, OnOff
+from zigpy.zcl.clusters.general import (
+    AnalogOutput,
+    MultistateOutput,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
@@ -42,6 +53,64 @@ class AqaraRollerControl(t.enum8):
     Close = 0x00
     Open = 0x01
     Stop = 0x02
+
+
+class RedirectAttributesCluster(CustomCluster):
+    """Cluster that redirects attribute reads to another cluster."""
+
+    _REDIRECT_ATTRIBUTES: dict[
+        ZCLAttributeDef, tuple[ZCLAttributeDef, type[Cluster], Callable]
+    ] = {}
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str | foundation.ZCLAttributeDef],
+        **kwargs,
+    ) -> Any:
+        """Redirect attribute reads to another cluster."""
+        success = {}
+        failure = {}
+
+        # Attribute reads reply with the attribute format as provided during the read
+        attributes = list(attributes)
+        attr_defs = {self.find_attribute(attr): attr for attr in attributes}
+
+        for redirected_attr_def, (
+            target_attr,
+            target_cluster,
+            format_func,
+        ) in self._REDIRECT_ATTRIBUTES.items():
+            if redirected_attr_def not in attr_defs:
+                continue
+
+            # Skip this attribute and read it from the other cluster
+            other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
+            other_success, other_failure = await other_cluster.read_attributes(
+                [target_attr], **kwargs
+            )
+
+            if kwargs.get("only_cache") and target_attr not in other_success:
+                # No value cached on the other cluster, use this cluster's cache
+                continue
+
+            # Remove it from the remaining attributes
+            attr_key = attr_defs.pop(redirected_attr_def)
+            attributes.remove(attr_key)
+
+            if target_attr in other_success:
+                success[attr_key] = format_func(other_success[target_attr])
+
+            if target_attr in other_failure:
+                failure[attr_key] = other_failure[target_attr]
+
+        # Read the remaining ones directly
+        other_success, other_failure = await super().read_attributes(
+            attributes, **kwargs
+        )
+        success.update(other_success)
+        failure.update(other_failure)
+
+        return success, failure
 
 
 class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
@@ -87,11 +156,31 @@ class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
+        battery_percentage = ZCLAttributeDef(
+            id=0x040A,
+            type=t.uint8_t,
+            access="rp",
+            manufacturer_code=0x115F,
+        )
+
         aqara_attributes = ZCLAttributeDef(
             id=0x00F7,
             type=t.LVBytes,
             is_manufacturer_specific=True,
         )
+
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent | AttributeReadEvent
+    ) -> None:
+        """Forward the battery percentage to the power cluster."""
+        super()._handle_attribute_event(event)
+
+        if (
+            event.attribute_id == self.AttributeDefs.battery_percentage.id
+            and event.value is not None
+            and 0 <= event.value <= 100
+        ):
+            self.endpoint.power.battery_percent_reported(event.value)
 
 
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
@@ -129,7 +218,7 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
             )
 
 
-class WindowCoveringRollerE1(CustomCluster, WindowCovering):
+class WindowCoveringRollerE1(RedirectAttributesCluster, WindowCovering):
     """Window covering cluster for handling motor commands."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -146,6 +235,32 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
             lambda x: t.uint8_t(100 - x),
         ),
     }
+
+    def handle_cluster_general_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: t.AddrMode | None = None,
+    ) -> None:
+        """Filter out 'current_position_lift_percentage' reports sent by the device.
+
+        The device reports this attribute itself, but its value does not track the actual
+        position, so it would overwrite the position derived from the AnalogOutput
+        'present_value'. Reads are already redirected to the AnalogOutput cluster, so the
+        device's own value is never used.
+        """
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            args = args.replace(
+                attribute_reports=[
+                    attr
+                    for attr in args.attribute_reports
+                    if attr.attrid
+                    != self.AttributeDefs.current_position_lift_percentage.id
+                ]
+            )
+
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
 
     async def command(
         self,
@@ -218,50 +333,26 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
-    async def read_attributes(
-        self,
-        attributes: list[int | str | foundation.ZCLAttributeDef],
-        **kwargs,
-    ) -> Any:
-        """Redirect attribute reads to another cluster."""
-        success = {}
-        failure = {}
 
-        # Attribute reads reply with the attribute format as provided during the read
-        attr_defs = {self.find_attribute(attr): attr for attr in attributes}
+class PowerConfigurationRollerE1(
+    RedirectAttributesCluster, XiaomiPowerConfigurationPercent
+):
+    """Power cluster that reads the battery percentage from the Aqara cluster.
 
-        for redirected_attr_def, (
-            target_attr,
-            target_cluster,
-            format_func,
-        ) in self._REDIRECT_ATTRIBUTES.items():
-            if redirected_attr_def not in attr_defs:
-                continue
+    The device doesn't support the ZCL battery attributes. It only has the battery
+    percentage on the Aqara cluster, which is forwarded here when it's read or reported.
+    """
 
-            # Skip this attribute and read it from the other cluster
-            other_cluster = getattr(self.endpoint, target_cluster.ep_attribute)
-            other_success, other_failure = await other_cluster.read_attributes(
-                [target_attr], **kwargs
-            )
-
-            # Remove it from the remaining attributes
-            attr_key = attr_defs.pop(redirected_attr_def)
-            attributes.remove(attr_key)
-
-            if target_attr in other_success:
-                success[attr_key] = format_func(other_success[target_attr])
-
-            if target_attr in other_failure:
-                failure[attr_key] = other_failure[target_attr]
-
-        # Read the remaining ones directly
-        other_success, other_failure = await super().read_attributes(
-            attributes, **kwargs
-        )
-        success.update(other_success)
-        failure.update(other_failure)
-
-        return success, failure
+    _REDIRECT_ATTRIBUTES: dict[
+        ZCLAttributeDef, tuple[ZCLAttributeDef, type[Cluster], Callable]
+    ] = {
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining: (
+            XiaomiAqaraRollerE1.AttributeDefs.battery_percentage,
+            XiaomiAqaraRollerE1,
+            # ZCL battery percentage is in 0.5% steps, 0xFF is invalid
+            lambda x: x * 2 if 0 <= x <= 100 else 0xFF,
+        ),
+    }
 
 
 (
@@ -277,7 +368,7 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .replaces(AnalogOutputRollerE1, endpoint_id=1)
     .replaces(BasicCluster, endpoint_id=1)
-    .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
+    .replaces(PowerConfigurationRollerE1, endpoint_id=1)
     .replaces(WindowCoveringRollerE1, endpoint_id=1)
     .replaces(XiaomiAqaraRollerE1, endpoint_id=1)
     .enum(
