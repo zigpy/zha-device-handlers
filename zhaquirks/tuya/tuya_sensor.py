@@ -191,7 +191,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=10,
         attribute_name="alarm_temperature_max",
-        type=t.uint16_t,
+        type=t.int16s,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
         max_value=60,
@@ -204,7 +204,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=11,
         attribute_name="alarm_temperature_min",
-        type=t.uint16_t,
+        type=t.int16s,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
         max_value=60,
