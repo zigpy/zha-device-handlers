@@ -23,13 +23,17 @@ from zha.application import (  # noqa: F401
     discovery,
 )
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
+from zha.application.platforms.binary_sensor import DeviceValueBinarySensor
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
+from zha.application.platforms.number import DeviceValueNumber
 from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.select import DeviceValueSelect
 from zha.application.platforms.sensor import DeviceValueSensor
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zha.application.platforms.switch import DeviceValueSwitch
 from zha.quirks import (
     DEVICE_REGISTRY,
     DeviceMatch,
@@ -80,6 +84,7 @@ from zhaquirks.builder.metadata import (
 from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
 
 if TYPE_CHECKING:
+    from zha.zigbee.store import DeviceValueWriter
     from zigpy.store import StoredValue
 
 _LOGGER = logging.getLogger(__name__)
@@ -1498,6 +1503,190 @@ class QuirkBuilder:
                 unique_id_suffix if unique_id_suffix is not None else value.key
             ),
         )
+
+    def device_value_number(
+        self,
+        value: StoredValue[Any],
+        *,
+        writer: DeviceValueWriter[Any] | None = None,
+        unique_id_suffix: str | None = None,
+        min_value: float | None = None,
+        max_value: float | None = None,
+        step: float | None = None,
+        unit: str | None = None,
+        mode: str | None = None,
+        multiplier: float | None = None,
+        entity_type: EntityType = EntityType.CONFIG,
+        device_class: NumberDeviceClass | None = None,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+        primary: bool | None = None,
+    ) -> Self:
+        """Add a number showing and setting a device value.
+
+        With a `writer` (`zha.zigbee.store.DeviceValueWriter`), setting the number
+        sends the value to the device and the writer stores it. Without one, the value
+        is a setting only the host keeps and is stored directly. The value is kept
+        unscaled, and its unique ID suffix defaults to the key, as for
+        `device_value_sensor`.
+        """
+        self._check_device_value_entity(value, translation_key, device_class)
+
+        return self.adds_entity(
+            DeviceValueNumber,
+            value=value,
+            writer=writer,
+            min_value=min_value,
+            max_value=max_value,
+            step=step,
+            unit=unit,
+            mode=mode,
+            multiplier=multiplier,
+            entity_type=entity_type,
+            device_class=device_class,
+            initially_disabled=initially_disabled,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+            primary=primary,
+            unique_id_suffix=(
+                unique_id_suffix if unique_id_suffix is not None else value.key
+            ),
+        )
+
+    def device_value_switch(
+        self,
+        value: StoredValue[Any],
+        *,
+        writer: DeviceValueWriter[Any] | None = None,
+        unique_id_suffix: str | None = None,
+        force_inverted: bool = False,
+        off_value: int = 0,
+        on_value: int = 1,
+        entity_type: EntityType = EntityType.CONFIG,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+        primary: bool | None = None,
+    ) -> Self:
+        """Add a switch showing and setting a device value.
+
+        The switch writes `on_value` and `off_value`; `writer` is as for
+        `device_value_number`.
+        """
+        self._check_device_value_entity(value, translation_key, None)
+
+        return self.adds_entity(
+            DeviceValueSwitch,
+            value=value,
+            writer=writer,
+            force_inverted=force_inverted,
+            off_value=off_value,
+            on_value=on_value,
+            entity_type=entity_type,
+            initially_disabled=initially_disabled,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+            primary=primary,
+            unique_id_suffix=(
+                unique_id_suffix if unique_id_suffix is not None else value.key
+            ),
+        )
+
+    def device_value_select(
+        self,
+        value: StoredValue[Any],
+        enum_class: type[Enum],
+        *,
+        writer: DeviceValueWriter[Any] | None = None,
+        unique_id_suffix: str | None = None,
+        entity_type: EntityType = EntityType.CONFIG,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+        primary: bool | None = None,
+    ) -> Self:
+        """Add a select showing and setting a device value as a member of an enum.
+
+        Selecting an option writes the enum member, which is stored as its int
+        value; `writer` is as for `device_value_number`.
+        """
+        self._check_device_value_entity(value, translation_key, None)
+
+        if not issubclass(enum_class, int):
+            raise TypeError(
+                f"A device value select needs an int enum, not {enum_class!r}: "
+                "members are stored as JSON"
+            )
+
+        return self.adds_entity(
+            DeviceValueSelect,
+            value=value,
+            enum=enum_class,
+            writer=writer,
+            entity_type=entity_type,
+            initially_disabled=initially_disabled,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+            primary=primary,
+            unique_id_suffix=(
+                unique_id_suffix if unique_id_suffix is not None else value.key
+            ),
+        )
+
+    def device_value_binary_sensor(
+        self,
+        value: StoredValue[Any],
+        *,
+        unique_id_suffix: str | None = None,
+        value_converter: Callable[[Any], Any] | None = None,
+        entity_type: EntityType = EntityType.DIAGNOSTIC,
+        device_class: BinarySensorDeviceClass | None = None,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+        primary: bool | None = None,
+    ) -> Self:
+        """Add a binary sensor showing a device value, as `device_value_sensor` does."""
+        self._check_device_value_entity(value, translation_key, device_class)
+
+        return self.adds_entity(
+            DeviceValueBinarySensor,
+            value=value,
+            value_converter=value_converter,
+            entity_type=entity_type,
+            device_class=device_class,
+            initially_disabled=initially_disabled,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+            primary=primary,
+            unique_id_suffix=(
+                unique_id_suffix if unique_id_suffix is not None else value.key
+            ),
+        )
+
+    @staticmethod
+    def _check_device_value_entity(
+        value: StoredValue[Any], translation_key: str | None, device_class: Any
+    ) -> None:
+        """Require a translation key or device class, as quirk entity metadata does.
+
+        Home Assistant could name the entity by its fallback name alone, but quirk
+        entities are translated, as `EntityMetadata` and `device_value_sensor` require.
+        """
+        if translation_key is None and device_class is None:
+            raise ValueError(
+                "A device value entity needs a translation_key or device_class: "
+                f"{value}"
+            )
 
     def replaces_entity(
         self,

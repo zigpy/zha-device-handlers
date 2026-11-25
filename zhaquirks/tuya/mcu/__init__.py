@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 import datetime
 import logging
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
+from zha.exceptions import ZHAException
+from zha.zigbee.store import get_device_store
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -32,6 +35,11 @@ from zhaquirks.tuya import (
     TuyaNewManufCluster,
     TuyaTimePayload,
 )
+
+if TYPE_CHECKING:
+    from zha.zigbee.store import DeviceValueWriter
+    import zigpy.device
+    from zigpy.store import DeviceStore, StoredValue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -323,6 +331,130 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         cluster = getattr(endpoint, cluster_data.cluster_name)
         cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
 
+    def maps_device_value(self, value: StoredValue[Any]) -> bool:
+        """Return whether a datapoint of this cluster maps the device value."""
+        return any(
+            isinstance(mapping, DPToDeviceValueMapping) and mapping.maps(value)
+            for mappings in self._dp_to_attributes.values()
+            for mapping in mappings
+        )
+
+    async def write_device_value(self, value: StoredValue[Any], new_value: Any) -> None:
+        """Send a device value to the device, setting it in the device's store.
+
+        Every datapoint mapping the value is sent. A datapoint with a `dp_converter`
+        is built from all its mappings, the other values read from the store and the
+        attributes from their clusters, as for an attribute write. Otherwise the value
+        is cast to the mapping's `wire_type`, and the cast value is what is stored.
+
+        Tuya acknowledges nothing, so, as an attribute write updates the cache, the
+        value is stored when the commands are built, before anything is awaited. Any
+        write that builds the same datapoint later, of a device value or of an
+        attribute, then reads this value. The commands are sent from tasks, as the
+        attribute path sends them, so a command built earlier is not sent after this
+        one, as for the attribute path. Unlike that path, the sends are awaited and a
+        failure reaches the caller; the value stays stored, as an attribute stays in
+        the cache, until the device's next report corrects it. With several
+        datapoints, the ones that were sent stay sent.
+        """
+        store = get_device_store(self.endpoint.device)
+
+        if store is None:
+            raise ZHAException(f"Cannot write {value.key}: the device has no store")
+
+        tuya_commands, stored = self._device_value_commands(store, value, new_value)
+        store[value] = stored
+
+        # Tasks start in the order they are created, like the attribute path's sends
+        sends = [
+            asyncio.create_task(
+                self.command(self.mcu_write_command, tuya_command, expect_reply=False)
+            )
+            for tuya_command in tuya_commands
+        ]
+
+        for result in await asyncio.gather(*sends, return_exceptions=True):
+            if isinstance(result, BaseException):
+                raise result
+
+    def _device_value_commands(
+        self, store: DeviceStore, value: StoredValue[Any], new_value: Any
+    ) -> tuple[list[TuyaCommand], Any]:
+        """Return the commands writing a device value, and the value to store."""
+        tuya_commands: list[TuyaCommand] = []
+        stored = new_value
+
+        for dp, mappings in self._dp_to_attributes.items():
+            mapping = next(
+                (
+                    mapping
+                    for mapping in mappings
+                    if isinstance(mapping, DPToDeviceValueMapping)
+                    and mapping.maps(value)
+                ),
+                None,
+            )
+
+            if mapping is None:
+                continue
+
+            if dp_converter := self._attributes_to_dp_converters.get(dp):
+                payload = dp_converter(
+                    *(
+                        self._dp_converter_arg(store, sibling, value, new_value)
+                        for sibling in mappings
+                    )
+                )
+            elif mapping.converter is not None:
+                # The converter decodes reports and cannot be inverted for a write
+                raise ZHAException(
+                    f"Cannot write {value.key}: datapoint {dp} is read through a"
+                    " converter and has no dp_converter"
+                )
+            elif mapping.wire_type is not None:
+                try:
+                    payload = stored = mapping.wire_type(new_value)
+                except (OverflowError, TypeError, ValueError) as exc:
+                    raise ZHAException(
+                        f"Cannot write {new_value!r} to {value.key}: {exc}"
+                    ) from exc
+            else:
+                payload = new_value
+
+            self.debug("write_device_value: dp %s = %r", dp, payload)
+            tuya_commands.append(
+                TuyaCommand(
+                    status=0,
+                    tsn=self.endpoint.device.application.get_sequence(),
+                    datapoints=[TuyaDatapointData(dp, payload)],
+                )
+            )
+
+        if not tuya_commands:
+            raise ZHAException(f"No datapoint maps device value {value.key!r}")
+
+        return tuya_commands, stored
+
+    def _dp_converter_arg(
+        self,
+        store: DeviceStore,
+        mapping: DPToAttributeMapping | DPToDeviceValueMapping,
+        value: StoredValue[Any],
+        new_value: Any,
+    ) -> Any:
+        """Return what a mapping passes to its datapoint's `dp_converter`."""
+        if isinstance(mapping, DPToDeviceValueMapping):
+            if mapping.maps(value):
+                return new_value
+
+            return store.get(mapping.value)
+
+        endpoint = self.endpoint
+        if mapping.endpoint_id:
+            endpoint = endpoint.device.endpoints[mapping.endpoint_id]
+        cluster = getattr(endpoint, mapping.ep_attribute)
+        return cluster.get(mapping.attribute_name)
+
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
     ) -> dict[int, DPToAttributeMapping]:
@@ -397,6 +529,31 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         )
 
         return foundation.Status.SUCCESS
+
+
+def tuya_device_value_writer(value: StoredValue[Any]) -> DeviceValueWriter[Any]:
+    """Return a writer sending a device value through the device's Tuya MCU cluster.
+
+    Entities on a datapoint mapped with `DPToDeviceValueMapping` write through it. It
+    finds the `TuyaMCUCluster` mapping the value when called, so it works for any
+    device the quirk applies to; see `TuyaMCUCluster.write_device_value`.
+    """
+
+    async def write(device: zigpy.device.Device, new_value: Any) -> None:
+        for endpoint_id, endpoint in device.endpoints.items():
+            if endpoint_id == 0:  # ZDO
+                continue
+
+            for cluster in endpoint.in_clusters.values():
+                if isinstance(cluster, TuyaMCUCluster) and cluster.maps_device_value(
+                    value
+                ):
+                    await cluster.write_device_value(value, new_value)
+                    return
+
+        raise ZHAException(f"No Tuya MCU cluster maps device value {value.key!r}")
+
+    return write
 
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):

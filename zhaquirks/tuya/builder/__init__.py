@@ -10,6 +10,7 @@ from typing import Any, Self
 from zha.quirks import QuirkRegistryEntry
 from zha.zigbee.store import device_value
 from zigpy.profiles import zha
+from zigpy.store import StoredValue
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import foundation
@@ -53,6 +54,7 @@ from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
     TuyaOnOffNM,
     TuyaWindowCovering,
+    tuya_device_value_writer,
 )
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
@@ -680,6 +682,16 @@ class TuyaQuirkBuilder(QuirkBuilder):
             if not isinstance(mapping, DPToDeviceValueMapping):
                 continue
 
+            if (
+                mapping.converter is not None
+                and mapping.wire_type is not None
+                and dp_converter is None
+            ):
+                raise ValueError(
+                    f"Device value {mapping.value.key!r} is read through a converter,"
+                    " which a write cannot invert: give the datapoint a dp_converter"
+                )
+
             value_id = (mapping.value.namespace, mapping.value.key)
 
             if value_id in mapped_values:
@@ -727,6 +739,40 @@ class TuyaQuirkBuilder(QuirkBuilder):
         )
         return self
 
+    def _tuya_device_value(
+        self,
+        dp_id: int,
+        attribute_name: str,
+        *,
+        converter: Callable[[Any], Any] | None = None,
+        wire_type: Callable[[Any], Any] | None = None,
+        fallback_name: str | None,
+        attribute_initialized_from_cache: bool,
+    ) -> StoredValue[Any]:
+        """Map a datapoint to a device value named `attribute_name` and return it.
+
+        This is the `as_device_value` path of the entity helpers: no invented
+        attribute is added to the Tuya cluster.
+        """
+        if fallback_name is None:
+            raise ValueError(f"A device value entity needs a fallback_name: {dp_id}")
+
+        if not attribute_initialized_from_cache:
+            raise ValueError(
+                "A device value cannot be read from the device, so it cannot be "
+                f"read at startup (attribute_initialized_from_cache=False): {dp_id}"
+            )
+
+        # Kept as the converter returns it: the wire type need not fit a converted
+        # value (a float, a signed value)
+        value = device_value(attribute_name, _as_stored)
+        self.tuya_dp_multi(
+            dp_id,
+            [DPToDeviceValueMapping(value, converter=converter, wire_type=wire_type)],
+        )
+
+        return value
+
     def tuya_switch(
         self,
         dp_id: int,
@@ -744,12 +790,52 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        as_device_value: bool = False,
         child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
         This method allows exposing a switch entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster, and the switch writes it through the Tuya cluster. The
+        switch keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            if invert_attribute_name is not None:
+                raise ValueError(
+                    "A device value switch cannot be inverted by an attribute: "
+                    f"{invert_attribute_name}"
+                )
+
+            if entity_platform != EntityPlatform.SWITCH:
+                raise ValueError(
+                    f"A device value switch is a switch, not a {entity_platform}"
+                )
+
+            value = self._tuya_device_value(
+                dp_id,
+                attribute_name,
+                wire_type=t.Bool,
+                fallback_name=fallback_name,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+            )
+
+            return self.device_value_switch(
+                value,
+                writer=tuya_device_value_writer(value),
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                force_inverted=force_inverted,
+                off_value=off_value,
+                on_value=on_value,
+                entity_type=entity_type,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
+
         self.tuya_dp_attribute(
             dp_id=dp_id,
             attribute_name=attribute_name,
@@ -792,12 +878,53 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        as_device_value: bool = False,
         child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ZCLEnumMetadata and return self.
 
         This method allows exposing an enum based entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster, and the select writes it through the Tuya cluster. The
+        select keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            if entity_platform != EntityPlatform.SELECT:
+                raise ValueError(
+                    "Only a select can show an enum device value so far, not a "
+                    f"{entity_platform}"
+                )
+
+            if not access & foundation.ZCLAttributeAccess.Write:
+                raise ValueError(f"A device value select must be writable: {access!r}")
+
+            if not issubclass(enum_class, int):
+                raise TypeError(
+                    f"An enum datapoint needs an int enum, not {enum_class!r}"
+                )
+
+            value = self._tuya_device_value(
+                dp_id,
+                attribute_name,
+                wire_type=enum_class,
+                fallback_name=fallback_name,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+            )
+
+            return self.device_value_select(
+                value,
+                enum_class,
+                writer=tuya_device_value_writer(value),
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                entity_type=entity_type,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
+
         self.tuya_dp_attribute(
             dp_id=dp_id,
             attribute_name=attribute_name,
@@ -843,12 +970,48 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        as_device_value: bool = False,
         child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing NumberMetadata and return self.
 
         This method allows exposing a number entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster, and the number writes it through the Tuya cluster, cast to
+        `type`. The number keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            if not access & foundation.ZCLAttributeAccess.Write:
+                raise ValueError(f"A device value number must be writable: {access!r}")
+
+            value = self._tuya_device_value(
+                dp_id,
+                attribute_name,
+                wire_type=type,
+                fallback_name=fallback_name,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+            )
+
+            return self.device_value_number(
+                value,
+                writer=tuya_device_value_writer(value),
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                min_value=min_value,
+                max_value=max_value,
+                step=step,
+                unit=unit,
+                mode=mode,
+                multiplier=multiplier,
+                entity_type=entity_type,
+                device_class=device_class,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
+
         self.tuya_dp_attribute(
             dp_id=dp_id,
             attribute_name=attribute_name,
@@ -890,12 +1053,36 @@ class TuyaQuirkBuilder(QuirkBuilder):
         fallback_name: str | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        as_device_value: bool = False,
         child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing BinarySensorMetadata and return self.
 
         This method allows exposing a binary sensor entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster. The binary sensor keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            value = self._tuya_device_value(
+                dp_id,
+                attribute_name,
+                fallback_name=fallback_name,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
+            )
+
+            return self.device_value_binary_sensor(
+                value,
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                entity_type=entity_type,
+                device_class=device_class,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
+
         self.tuya_dp_attribute(
             dp_id=dp_id,
             attribute_name=attribute_name,
@@ -954,19 +1141,17 @@ class TuyaQuirkBuilder(QuirkBuilder):
             if dp_converter is not None:
                 raise ValueError("A device value sensor is read-only: no dp_converter")
 
-            if fallback_name is None:
-                raise ValueError("A device value sensor needs a fallback_name")
-
             if translation_key is None and device_class is None:
                 raise ValueError(
                     "A device value sensor needs a translation_key or device_class"
                 )
 
-            # Kept as the converter returns it: `type` is the datapoint's wire type,
-            # which a converted value (a float, a signed value) need not fit
-            value = device_value(attribute_name, _as_stored)
-            self.tuya_dp_multi(
-                dp_id, [DPToDeviceValueMapping(value, converter=converter)]
+            value = self._tuya_device_value(
+                dp_id,
+                attribute_name,
+                converter=converter,
+                fallback_name=fallback_name,
+                attribute_initialized_from_cache=attribute_initialized_from_cache,
             )
 
             return self.device_value_sensor(

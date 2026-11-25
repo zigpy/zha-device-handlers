@@ -1648,6 +1648,11 @@ class DPToDeviceValueMapping:
     A device value is not a ZCL attribute, so there is no cluster, endpoint or
     attribute to update. Datapoints used to be mapped to invented attributes on the
     Tuya cluster for this.
+
+    `wire_type` is what a written value is cast to before it is sent, unless the
+    datapoint has a `dp_converter`. Its Python type selects the datapoint type (a
+    `t.Bool` is a bool datapoint, an enum an enum datapoint, an int a value
+    datapoint), as the type of the invented attribute did.
     """
 
     ep_attribute: None = None
@@ -1658,10 +1663,17 @@ class DPToDeviceValueMapping:
         self,
         value: StoredValue[Any],
         converter: Callable[[Any], Any] | None = None,
+        *,
+        wire_type: Callable[[Any], Any] | None = None,
     ) -> None:
         """Init DPToDeviceValueMapping."""
         self.value = value
         self.converter = converter
+        self.wire_type = wire_type
+
+    def maps(self, value: StoredValue[Any]) -> bool:
+        """Return whether this mapping is for the device value `value`."""
+        return (self.value.namespace, self.value.key) == (value.namespace, value.key)
 
     def decompose_attributes(self) -> list[DPToDeviceValueMapping]:
         """Return the mapping, which never maps to several values."""
