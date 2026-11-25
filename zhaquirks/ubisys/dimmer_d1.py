@@ -159,10 +159,12 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
         input_mode_2: Final = ZCLAttributeDef(id=0x0002, type=DimmerInputMode)
         detached_2: Final = ZCLAttributeDef(id=0x0003, type=t.Bool)
 
+    # Factory configuration (ubisys D1 technical reference, InputActions): both
+    # inputs are single push-button dimmers, and only input 1 (EP2) is bound to EP1
     _DEFAULT_VALUES: dict[int, Any] = {
-        AttributeDefs.input_mode_1.id: DimmerInputMode.Toggle,
+        AttributeDefs.input_mode_1.id: DimmerInputMode.Dimmer_single,
         AttributeDefs.detached_1.id: t.Bool.false,
-        AttributeDefs.input_mode_2.id: DimmerInputMode.Toggle,
+        AttributeDefs.input_mode_2.id: DimmerInputMode.Dimmer_single,
         AttributeDefs.detached_2.id: t.Bool.true,
     }
 
@@ -187,7 +189,9 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
             else:
                 attr_def = self.find_attribute(attr_name)
                 modes.append(
-                    DimmerInputMode(self.get(attr_def.id, DimmerInputMode.Toggle))
+                    DimmerInputMode(
+                        self.get(attr_def.id, DimmerInputMode.Dimmer_single)
+                    )
                 )
         return modes
 
@@ -234,7 +238,7 @@ class UbisysD1InputConfigCluster(UbisysInputConfigCluster):
                     )
                     other_attr = self.find_attribute(other_attr_name)
                     other_mode = DimmerInputMode(
-                        self.get(other_attr.id, DimmerInputMode.Toggle)
+                        self.get(other_attr.id, DimmerInputMode.Dimmer_single)
                     )
 
                     if (
