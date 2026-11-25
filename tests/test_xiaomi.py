@@ -3483,3 +3483,43 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+def test_aqara_d1_triple_rocker_telemetry(zigpy_device_from_v2_quirk):
+    """Test lumi.switch.n3acn3 routes attribute 0x00F7 telemetry to electrical measurement and metering clusters."""
+    device = zigpy_device_from_v2_quirk(
+        "LUMI", "lumi.switch.n3acn3", endpoint_ids=[1, 2, 3]
+    )
+    opple_cluster = device.endpoints[1].opple_cluster
+    elec_cluster = device.endpoints[1].electrical_measurement
+    meter_cluster = device.endpoints[1].smartenergy_metering
+
+    elec_listener = ClusterListener(elec_cluster)
+    meter_listener = ClusterListener(meter_cluster)
+
+    # 149 -> CONSUMPTION (kWh)
+    # 150 -> VOLTAGE (0.1 V)
+    # 152 -> POWER (W)
+    report = (
+        bytes([149])
+        + foundation.TypeValue(0x39, t.Single(1.321)).serialize()
+        + bytes([150])
+        + foundation.TypeValue(0x21, t.uint16_t(2370)).serialize()
+        + bytes([152])
+        + foundation.TypeValue(0x39, t.Single(45.5)).serialize()
+    )
+
+    opple_cluster.update_attribute(XIAOMI_AQARA_ATTRIBUTE_E1, report)
+
+    assert (
+        ElectricalMeasurement.AttributeDefs.rms_voltage.id,
+        237.0,
+    ) in elec_listener.attribute_updates
+    assert (
+        ElectricalMeasurement.AttributeDefs.active_power.id,
+        455,
+    ) in elec_listener.attribute_updates
+    assert (
+        Metering.AttributeDefs.current_summ_delivered.id,
+        1321,
+    ) in meter_listener.attribute_updates
