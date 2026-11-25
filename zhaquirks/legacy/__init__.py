@@ -29,6 +29,9 @@ import zigpy.device
 from zhaquirks.device import BaseCustomDevice
 from zhaquirks.legacy.registry import LegacyDeviceRegistry
 
+if typing.TYPE_CHECKING:
+    from zhaquirks.builder.metadata import ButtonEventMetadata
+
 _LOGGER = logging.getLogger(__name__)
 
 DEVICE_REGISTRY = LegacyDeviceRegistry()
@@ -71,6 +74,9 @@ class CustomDevice(BaseCustomDevice):
     """Implementation of a quirks v1 custom device."""
 
     signature: dict[str, Any] | None = None
+
+    # Button event entities exposed by the quirk, see `QuirkBuilder.button_event()`
+    button_event_entities: tuple[ButtonEventMetadata, ...] = ()
 
     def __init_subclass__(cls) -> None:
         """Register a quirk subclass that defines a signature."""
