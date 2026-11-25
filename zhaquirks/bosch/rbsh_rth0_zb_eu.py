@@ -369,8 +369,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .number(
         BoschThermostatCluster.AttributeDefs.min_cool_setpoint_limit.name,
         BoschThermostatCluster.cluster_id,
-        min_value=-500,
-        max_value=3000,
+        min_value=-5,
+        max_value=30,
         step=0.5,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
@@ -382,8 +382,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .number(
         BoschThermostatCluster.AttributeDefs.max_cool_setpoint_limit.name,
         BoschThermostatCluster.cluster_id,
-        min_value=-500,
-        max_value=3000,
+        min_value=-5,
+        max_value=30,
         step=0.5,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
@@ -432,8 +432,10 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .number(
         BoschThermostatCluster.AttributeDefs.outdoor_temperature.name,
         BoschThermostatCluster.cluster_id,
-        min_value=-32768,
-        max_value=32767,
+        # The int16 range in 0.01 °C, on the 0.1 °C step: the screen shows
+        # -99.9 to 99.9 °C, "Lo" at -100 °C and below, nothing at 100 °C and above.
+        min_value=-327.6,
+        max_value=327.6,
         step=0.1,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
