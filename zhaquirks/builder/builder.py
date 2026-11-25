@@ -264,9 +264,10 @@ class AddEndpoint:
         endpoint = device.add_endpoint(self.endpoint_id)
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
-        # The device never reports this endpoint, so the interview never initializes
-        # it. Mark it initialized, as v1 replacement endpoints are, or the device
-        # never counts as initialized and zigpy drops its ZCL frames.
+        # The device doesn't report this endpoint, so the interview doesn't initialize
+        # it. Mark it initialized, as v1 replacement endpoints are: otherwise the
+        # quirked device doesn't count as initialized, and zigpy drops its ZCL frames
+        # and runs another initialization pass after every start or join.
         endpoint.status = zigpy.endpoint.Status.ZDO_INIT
 
         return device
@@ -299,8 +300,8 @@ class ReplaceEndpoint:
             endpoint = device.endpoints[self.endpoint_id]
         else:
             endpoint = device.add_endpoint(self.endpoint_id)
-            # see `AddEndpoint`: an endpoint the device doesn't report is never
-            # initialized by the interview
+            # see `AddEndpoint`: the interview doesn't initialize an endpoint the
+            # device doesn't report
             endpoint.status = zigpy.endpoint.Status.ZDO_INIT
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
