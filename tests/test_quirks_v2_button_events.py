@@ -1,5 +1,6 @@
 """Tests for button event entities of quirks v2."""
 
+import copy
 import pathlib
 import sys
 from typing import Any
@@ -732,7 +733,10 @@ def _device_snapshot(recorder: ButtonEventRecorder) -> dict[str, Any]:
             (platform, unique_id): (
                 type(entity),
                 entity.translation_key,
+                entity.translation_placeholders,
+                entity.fallback_name,
                 entity.device_class,
+                entity.state_class,
                 entity.entity_category,
                 entity.entity_registry_enabled_default,
             )
@@ -742,8 +746,9 @@ def _device_snapshot(recorder: ButtonEventRecorder) -> dict[str, Any]:
     }
 
 
+@pytest.mark.parametrize("skip_configuration", [False, True])
 async def test_v1_button_event_entities_change_nothing_else(
-    MockAppController,
+    MockAppController, skip_configuration: bool
 ) -> None:
     """Test that button event entities leave the rest of a v1 quirk's device as is.
 
@@ -755,14 +760,15 @@ async def test_v1_button_event_entities_change_nothing_else(
     def build_quirk(**attributes: Any) -> type[CustomDevice]:
         quirk = v1_remote_quirk(
             quirk_id="remote_feature",
-            device_automation_triggers=TRIGGERS,
+            # A copy each, so a change to one quirk's triggers can't show in both
+            device_automation_triggers=copy.deepcopy(TRIGGERS),
             **attributes,
         )
         for config in (quirk.signature, quirk.replacement):
             config[ENDPOINTS][1][INPUT_CLUSTERS].extend(
                 [PowerConfiguration.cluster_id, TemperatureMeasurement.cluster_id]
             )
-        quirk.replacement[SKIP_CONFIGURATION] = True
+        quirk.replacement[SKIP_CONFIGURATION] = skip_configuration
         return quirk
 
     async def build_device(quirk: type[CustomDevice]) -> ButtonEventRecorder:
@@ -787,6 +793,8 @@ async def test_v1_button_event_entities_change_nothing_else(
         return await ButtonEventRecorder.create(quirked)
 
     plain = await build_device(build_quirk())
+    # Taken before the second device is built, which can't change it then
+    snapshot = _device_snapshot(plain)
     with_entities = await build_device(
         build_quirk(button_event_entities=V1_BUTTON_EVENT_ENTITIES)
     )
@@ -796,10 +804,9 @@ async def test_v1_button_event_entities_change_nothing_else(
     assert not plain.entities
     assert list(with_entities.entities) == ["button_on"]
 
-    snapshot = _device_snapshot(plain)
     # Make sure the comparison covers what the quirk sets
     assert snapshot["exposes_features"] == {"remote_feature"}
-    assert snapshot["skip_configuration"]
+    assert snapshot["skip_configuration"] is skip_configuration
     assert snapshot["primary_entity"] == "01:02:03:04:05:06:07:08-1-1026"
     assert (Platform.SENSOR, "01:02:03:04:05:06:07:08-1-1") in snapshot["entities"]
 
