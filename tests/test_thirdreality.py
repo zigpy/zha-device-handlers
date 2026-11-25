@@ -220,8 +220,9 @@ async def test_third_reality_three_button_event_entities(zigpy_device_from_v2_qu
         "button_3": GESTURES,
     }
 
+    # a hold repeated while held fires once
     for endpoint_id in (1, 2, 3):
-        for value in (1, 255, 2, 0, 255, 255, 42):
+        for value in (1, 255, 2, 0, 0, 255, 255, 42):
             report_present_value(device, endpoint_id, value)
 
     assert recorder.pop() == [
