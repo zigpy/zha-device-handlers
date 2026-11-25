@@ -39,9 +39,11 @@ dev = [
 ]
 
 [tool.uv]
-# zha 2.5.0 isn't released yet: build against its dev commit until it is
+# zha 2.5.0 isn't released yet: build against the head of zigpy/zha#1091 (rotary
+# event entities, on top of the zha dev commit used before), and move to zha dev
+# once zigpy/zha#1091 is merged
 override-dependencies = [
-    "zha @ git+https://github.com/zigpy/zha@6ff7e8d392773a3033a3a57db512be454648bd99",
+    "zha @ git+https://github.com/zigpy/zha@197f4291c2a51c9d23ceebda93e96a5cccaebf92",
 ]
 
 [tool.setuptools-git-versioning]

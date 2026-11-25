@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [manifest]
-overrides = [{ name = "zha", git = "https://github.com/zigpy/zha?rev=6ff7e8d392773a3033a3a57db512be454648bd99" }]
+overrides = [{ name = "zha", git = "https://github.com/zigpy/zha?rev=197f4291c2a51c9d23ceebda93e96a5cccaebf92" }]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -2111,8 +2111,8 @@ wheels = [
 
 [[package]]
 name = "zha"
-version = "2.4.3.post19+git.6ff7e8d3"
-source = { git = "https://github.com/zigpy/zha?rev=6ff7e8d392773a3033a3a57db512be454648bd99#6ff7e8d392773a3033a3a57db512be454648bd99" }
+version = "2.4.3.post25+git.197f4291"
+source = { git = "https://github.com/zigpy/zha?rev=197f4291c2a51c9d23ceebda93e96a5cccaebf92#197f4291c2a51c9d23ceebda93e96a5cccaebf92" }
 dependencies = [
     { name = "attrs" },
     { name = "bellows" },
