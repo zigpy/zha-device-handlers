@@ -791,7 +791,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             manufacturer_code=None,
         )
         hvac_message_notification: Final = ZCLAttributeDef(
-            id=0x6030, type=RawBytes, access="rp", manufacturer_code=None
+            id=0x6030,
+            type=RawBytes,
+            zcl_type=DataTypeId.array,
+            access="rp",
+            manufacturer_code=None,
         )
         current_ntc_temperature_raw: Final = ZCLAttributeDef(
             id=0x6031, type=t.int16s, access="rp", manufacturer_code=None

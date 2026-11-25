@@ -41,6 +41,15 @@ def tp_wgzba_device(zigpy_device_from_v2_quirk):
     )
 
 
+def test_tp_wgzba_hvac_message_declares_array_type():
+    """Declare the firmware's wire type for the custom raw HVAC payload."""
+    # Custom bytes types cannot provide a ZCL data type for zigpy to infer.
+    assert (
+        SonoffTPWGZBAPrivateCluster.AttributeDefs.hvac_message_notification.zcl_type
+        == DataTypeId.array
+    )
+
+
 def test_tp_wgzba_replaces_clusters_and_exposes_entities(zigpy_device_from_v2_quirk):
     """Test the thermostat and private clusters plus representative entities."""
     device = zigpy_device_from_v2_quirk(
