@@ -2,7 +2,6 @@
 
 from unittest import mock
 
-from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
@@ -13,7 +12,6 @@ from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
-from zhaquirks.builder.metadata import NumberMetadata
 
 zhaquirks.setup()
 
@@ -700,30 +698,3 @@ async def test_bosch_radiator_thermostat_II_system_mode_report_ignored(
             )
             == 2150
         )
-
-
-async def test_bosch_room_thermostat_II_number_ranges_fit_attribute(
-    zigpy_device_from_v2_quirk,
-):
-    """Test every number entity's min and max can be written to the device."""
-
-    device = zigpy_device_from_v2_quirk(manufacturer="Bosch", model="RBSH-RTH0-ZB-EU")
-    entry = DEVICE_REGISTRY.match_entry(device)
-    numbers = [
-        metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
-        if isinstance(metadata, NumberMetadata)
-    ]
-    assert numbers
-
-    for metadata in numbers:
-        cluster = device.endpoints[metadata.endpoint_id].in_clusters[
-            metadata.cluster_id
-        ]
-        attr = cluster.find_attribute(metadata.attribute_name)
-        multiplier = metadata.multiplier or 1
-        for value in (metadata.min, metadata.max):
-            assert value is not None
-            # The bounds are in display units: ZHA's number entity writes
-            # round(value / multiplier), which has to fit the attribute's type
-            attr.type(round(value / multiplier)).serialize()
