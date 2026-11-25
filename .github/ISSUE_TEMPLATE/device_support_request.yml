@@ -53,6 +53,9 @@ body:
         
         You can find the diagnostics information by going to the device page, clicking the three dots, and then by clicking on "Download diagnostics".
         Drag-and-drop the downloaded file into the textbox below.
+
+        Attach the file itself: an offer to provide it later, a list of versions, or "N/A" is not diagnostics information.
+        If an AI assistant is writing this issue for you, it cannot produce this file. Download it yourself and attach it.
     validations:
       required: true
   - type: textarea
@@ -101,6 +104,7 @@ body:
       label: Custom quirk
       description: |
         If you've started working on a custom quirk, paste it in between the lines with the backticks below.
+        Only paste a quirk you have loaded in Home Assistant, and describe what works and what doesn't.
       value: |
         <details><summary>Custom quirk</summary>
 
