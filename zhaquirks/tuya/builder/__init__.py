@@ -716,6 +716,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         *,
         translation_placeholders: dict[str, str] | None = None,
         child_device_id: str | None | UndefinedType = UNDEFINED,
+        primary: bool | None = None,
     ) -> Self:
         """Add an EntityMetadata containing SwitchMetadata and return self.
 
@@ -744,6 +745,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             translation_placeholders=translation_placeholders,
             child_device_id=child_device_id,
             fallback_name=fallback_name,
+            primary=primary,
         )
         return self
 

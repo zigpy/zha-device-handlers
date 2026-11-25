@@ -5,10 +5,13 @@ from unittest import mock
 
 import pytest
 import time_machine
+from zha.application import Platform
 from zha.quirks import DEVICE_REGISTRY
+from zha.zigbee.child_device import ChildDevice
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.builder.metadata import EntityMetadata
 import zhaquirks.tuya
@@ -243,3 +246,53 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+async def test_giex_dual_valve_child_devices():
+    """Test each valve of the Giex dual valve is a child device."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "tze284-fhvpaltk-ts0601.json", DEVICE_REGISTRY
+        )
+
+        assert device.child_devices == {
+            valve: ChildDevice(
+                id=valve,
+                translation_key="valve",
+                translation_placeholders={"index": valve},
+                fallback_name=f"Valve {valve}",
+            )
+            for valve in ("1", "2")
+        }
+
+        child_device_ids = {
+            entity.unique_id.removeprefix(f"{device.ieee}-1-"): (
+                entity.state.child_device_id
+            )
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM != Platform.VIRTUAL
+        }
+        # The unique IDs stay the same, only the child device is new
+        assert child_device_ids == {
+            "valve_on_off_1": "1",
+            "valve_countdown_1": "1",
+            "valve_duration_1": "1",
+            "valve_status_1": "1",
+            "valve_on_off_2": "2",
+            "valve_countdown_2": "2",
+            "valve_duration_2": "2",
+            "valve_status_2": "2",
+            "1": None,  # battery
+            "0-lqi": None,
+            "0-rssi": None,
+            "25-firmware_update": None,
+        }
+
+        # Each valve's switch is the primary entity of its child device
+        primaries = {
+            entity.state.child_device_id
+            for entity in device.platform_entities.values()
+            if entity.primary
+        }
+        assert primaries == {"1", "2"}
+        assert device.primary_entity is None
