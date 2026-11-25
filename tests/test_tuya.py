@@ -7,13 +7,14 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zha.quirks import DEVICE_REGISTRY
+from zha.quirks import DEVICE_REGISTRY, QUIRK_REGISTRY_ENTRY_ATTR
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
+    Groups,
     LevelControl,
     OnOff,
     PowerConfiguration,
@@ -59,6 +60,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.mcu import TuyaOnOffManufCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
@@ -192,15 +194,16 @@ async def test_ts0021_remote(
     )
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
-async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
+async def test_doubleswitch_state_report(zigpy_device_from_v2_quirk):
     """Test tuya double switch."""
 
     ZCL_TUYA_SWITCH_COMMAND_03 = b"\tQ\x03\x006\x01\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_OFF = b"\tQ\x02\x006\x02\x01\x00\x01\x00"
 
-    switch_dev = zigpy_device_from_quirk(quirk)
+    switch_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_nkjintbl", "TS0601", cluster_ids=_ts0601_switch_clusters()
+    )
 
     switch1_cluster = switch_dev.endpoints[1].on_off
     switch1_listener = ClusterListener(switch1_cluster)
@@ -264,6 +267,126 @@ async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
     # no switch attribute updated (TUYA_SET_TIME command)
     assert len(switch1_listener.attribute_updates) == 2
     assert len(switch2_listener.attribute_updates) == 2
+
+
+def _ts0601_switch_clusters(
+    green_power_endpoint: bool = False,
+) -> dict[int, dict[int, ClusterType]]:
+    """Return the server clusters of a TS0601 multi-gang switch as it reports them."""
+    clusters = {1: {TuyaOnOffManufCluster.cluster_id: ClusterType.Server}}
+    if green_power_endpoint:
+        clusters[242] = {GreenPowerProxy.cluster_id: ClusterType.Client}
+    return clusters
+
+
+@pytest.mark.parametrize(
+    "manufacturer, gangs",
+    (
+        ("_TZE200_g1ib5ldv", 2),
+        ("_TZE200_wunufsil", 2),
+        ("_TZE200_nkjintbl", 2),
+        ("_TZE204_wvovwe9h", 2),
+        ("_TZE200_7deq70b8", 2),
+        ("_TZE200_nh9m9emk", 2),
+        ("_TZE204_nh9m9emk", 2),
+        ("_TZE200_wvovwe9h", 2),
+        ("_TZE200_tz32mtza", 3),
+        ("_TZE200_vhy3iakz", 3),
+        ("_TZE200_2hf7x9n3", 3),
+        ("_TZE200_go3tvswy", 3),
+        ("_TZE204_2imwyigp", 3),
+        ("_TZE200_kyfqmmyl", 3),
+        ("_TZE200_aqnazj70", 4),
+        ("_TZE200_1ozguk6x", 4),
+        ("_TZE200_k6jhsr0q", 4),
+        ("_TZE200_1n2kyphz", 4),
+        ("_TZE200_mexisfik", 4),
+        ("_TZE204_58of2pfn", 4),
+        ("_TZE200_leaqthqq", 5),
+        ("_TZE200_jwsjbxjs", 5),
+        ("_TZE200_9mahtqtg", 6),
+        ("_TZE200_wnp4d4va", 6),
+        ("_TZE200_emxxanvi", 6),
+        ("_TZE200_wktrysab", 8),
+        ("_TZE204_wktrysab", 8),
+        ("_TZE204_dqolcpcp", 12),
+        ("_TZE204_vmcgja59", 16),
+    ),
+)
+@pytest.mark.parametrize("green_power_endpoint", (False, True))
+async def test_ts0601_multi_gang_switch(
+    zigpy_device_from_v2_quirk, manufacturer, gangs, green_power_endpoint
+):
+    """Test that the on/off DP of the last gang updates only its own endpoint."""
+
+    switch = zigpy_device_from_v2_quirk(
+        manufacturer,
+        "TS0601",
+        cluster_ids=_ts0601_switch_clusters(green_power_endpoint),
+    )
+    tuya_cluster = switch.endpoints[1].tuya_manufacturer
+
+    onoff_dp = gangs if gangs <= 6 else 0x64 + gangs - 6
+    listeners = {
+        ep_id: ClusterListener(switch.endpoints[ep_id].on_off)
+        for ep_id in range(1, gangs + 1)
+    }
+
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x01\x02\x00\x01" + bytes([onoff_dp]) + b"\x01\x00\x01\x01"
+    )
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    for ep_id, listener in listeners.items():
+        if ep_id == gangs:
+            assert listener.attribute_updates == [(OnOff.AttributeDefs.on_off.id, True)]
+        else:
+            assert listener.attribute_updates == []
+
+
+@pytest.mark.parametrize(
+    "cluster_ids",
+    (
+        # an endpoint with an OnOff cluster per gang (zha snapshot: wktrysab)
+        {
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                **(
+                    {TuyaOnOffManufCluster.cluster_id: ClusterType.Server}
+                    if ep_id == 1
+                    else {}
+                ),
+            }
+            for ep_id in range(1, 9)
+        },
+        # the Tuya MCU cluster on endpoint 1 and an endpoint per gang
+        {
+            1: {TuyaOnOffManufCluster.cluster_id: ClusterType.Server},
+            **{ep_id: {OnOff.cluster_id: ClusterType.Server} for ep_id in range(2, 9)},
+        },
+        # one endpoint with an OnOff cluster of its own
+        {
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                TuyaOnOffManufCluster.cluster_id: ClusterType.Server,
+            }
+        },
+        # one endpoint without the Tuya MCU cluster
+        {1: {Groups.cluster_id: ClusterType.Server}},
+    ),
+)
+async def test_ts0601_multi_gang_switch_other_layouts(
+    zigpy_device_from_v2_quirk, cluster_ids
+):
+    """Test that a unit not reporting its gangs on one Tuya MCU endpoint is unquirked."""
+
+    switch = zigpy_device_from_v2_quirk(
+        "_TZE200_wktrysab", "TS0601", cluster_ids=cluster_ids
+    )
+    assert not hasattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
+    for ep_id, clusters in cluster_ids.items():
+        if OnOff.cluster_id in clusters:
+            assert type(switch.endpoints[ep_id].on_off) is OnOff
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
