@@ -9,7 +9,16 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya.mcu import TuyaClusterData, TuyaLevelControl, TuyaMCUCluster
+from zhaquirks.tuya.mcu import (
+    TuyaClusterData,
+    TuyaInWallLevelControl,
+    TuyaLevelControl,
+    TuyaLevelControlManufCluster,
+    TuyaMCUCluster,
+    TuyaOnOff,
+    TuyaOnOffNM,
+)
+from zhaquirks.tuya.ts0601_dimmer import TuyaInWallLevelControlNM
 
 zhaquirks.setup()
 
@@ -52,13 +61,10 @@ async def test_moes_zs_d1(zigpy_device_from_v2_quirk, manufacturer):
     assert commands[0].datapoints[0].data.payload == 800
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_command(zigpy_device_from_quirk, quirk):
+async def test_command(zigpy_device_from_v2_quirk):
     """Test write cluster attributes."""
 
-    dimmer_dev = zigpy_device_from_quirk(quirk)
+    dimmer_dev = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
     tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
     dimmer1_cluster = dimmer_dev.endpoints[1].level
     switch1_cluster = dimmer_dev.endpoints[1].on_off
@@ -203,13 +209,10 @@ async def test_command(zigpy_device_from_quirk, quirk):
         assert rsp.status == foundation.Status.SUCCESS
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_write_attr(zigpy_device_from_quirk, quirk):
+async def test_write_attr(zigpy_device_from_v2_quirk):
     """Test write cluster attributes."""
 
-    dimmer_dev = zigpy_device_from_quirk(quirk)
+    dimmer_dev = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
     tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
     dimmer1_cluster = dimmer_dev.endpoints[1].level
 
@@ -246,13 +249,10 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
     # assert succ["minimum_level"] == 25
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_dim_values(zigpy_device_from_quirk, quirk):
+async def test_dim_values(zigpy_device_from_v2_quirk):
     """Test dimming values."""
 
-    dimmer_dev = zigpy_device_from_quirk(quirk)
+    dimmer_dev = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     dimmer2_cluster = dimmer_dev.endpoints[2].level
     dimmer2_listener = ClusterListener(dimmer2_cluster)
@@ -323,16 +323,13 @@ async def test_dim_values(zigpy_device_from_quirk, quirk):
     assert succ["current_level"] == 86
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_doubledimmer_state_report(zigpy_device_from_quirk, quirk):
+async def test_doubledimmer_state_report(zigpy_device_from_v2_quirk):
     """Test tuya double switch."""
 
     TUYA_EP2_DIMM_1 = b"\tV\x02\x01y\x08\x02\x00\x04\x00\x00\x02\xc5"
     TUYA_EP2_DIMM_2 = b"\tW\x02\x01z\x08\x02\x00\x04\x00\x00\x02\x9e"
 
-    dimmer_dev = zigpy_device_from_quirk(quirk)
+    dimmer_dev = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     dimmer1_cluster = dimmer_dev.endpoints[1].level
     dimmer1_listener = ClusterListener(dimmer1_cluster)
@@ -362,3 +359,68 @@ async def test_doubledimmer_state_report(zigpy_device_from_quirk, quirk):
     assert len(dimmer2_listener.attribute_updates) == 2
     assert dimmer2_listener.attribute_updates[1][0] == 0x0000
     assert dimmer2_listener.attribute_updates[1][1] == 170
+
+
+@pytest.mark.parametrize(
+    "manufacturer, gangs, onoff_cls, level_cls",
+    (
+        ("_TZE200_e3oitdyu", 2, TuyaOnOff, TuyaInWallLevelControl),
+        ("_TZE204_bxoo2swd", 2, TuyaOnOff, TuyaInWallLevelControl),
+        ("_TZE200_fjjbhx9d", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE200_gwkapsoq", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE204_zenj4lxv", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE204_o9gyszw2", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE204_jtbgusdc", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE200_vm1gyrso", 3, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE204_1v1dxkck", 3, TuyaOnOffNM, TuyaInWallLevelControlNM),
+    ),
+)
+async def test_multi_gang_dimmer(
+    zigpy_device_from_v2_quirk, manufacturer, gangs, onoff_cls, level_cls
+):
+    """Test that each gang of a multi-gang dimmer gets its own light endpoint."""
+
+    dimmer = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    assert sorted(ep_id for ep_id in dimmer.endpoints if ep_id != 0) == list(
+        range(1, gangs + 1)
+    )
+
+    tuya_cluster = dimmer.endpoints[1].tuya_manufacturer
+    assert type(tuya_cluster) is TuyaLevelControlManufCluster
+
+    for ep_id in range(1, gangs + 1):
+        endpoint = dimmer.endpoints[ep_id]
+        assert endpoint.device_type == zha.DeviceType.ON_OFF_LIGHT
+        assert type(endpoint.on_off) is onoff_cls
+        assert type(endpoint.level) is level_cls
+
+    # the on/off and brightness DPs of the last gang update only its own endpoint
+    onoff_dp, level_dp = {2: (7, 8), 3: (15, 16)}[gangs]
+    listeners = {
+        ep_id: (
+            ClusterListener(dimmer.endpoints[ep_id].on_off),
+            ClusterListener(dimmer.endpoints[ep_id].level),
+        )
+        for ep_id in range(1, gangs + 1)
+    }
+
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x01\x02\x00\x01" + bytes([onoff_dp]) + b"\x01\x00\x01\x01"
+    )
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x02\x02\x00\x02" + bytes([level_dp]) + b"\x02\x00\x04\x00\x00\x03\x20"
+    )
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    for ep_id, (onoff_listener, level_listener) in listeners.items():
+        if ep_id == gangs:
+            assert onoff_listener.attribute_updates == [
+                (OnOff.AttributeDefs.on_off.id, True)
+            ]
+            assert level_listener.attribute_updates == [
+                (LevelControl.AttributeDefs.current_level.id, 204)
+            ]
+        else:
+            assert onoff_listener.attribute_updates == []
+            assert level_listener.attribute_updates == []
