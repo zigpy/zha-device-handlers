@@ -12,6 +12,7 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, OnOff
 
 from zhaquirks.builder import QuirkBuilder, TextMode
+from zhaquirks.builder.discovery import _generic_kwargs
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     ChangedEntityMetadata,
@@ -202,6 +203,26 @@ def test_quirks_v2_text():
     assert text_metadata.pattern == r"^[A-Za-z ]*$"
     assert text_metadata.mode is TextMode.PASSWORD
     assert text_metadata.resolved_unique_id_suffix == "location_desc"
+
+
+def test_quirks_v2_text_child_device():
+    """Test a text entity can be assigned to a child device explicitly."""
+    entry = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_id=2, fallback_name="A")
+        .text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            translation_key="location",
+            fallback_name="Location",
+            child_device_id="a",
+        )
+        .add_to_registry(DeviceRegistry())
+    )
+
+    (text_metadata,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert text_metadata.child_device_id == "a"
+    assert _generic_kwargs(text_metadata)["child_device_id"] == "a"
 
 
 @pytest.mark.parametrize(

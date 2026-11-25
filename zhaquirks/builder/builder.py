@@ -1133,6 +1133,7 @@ class QuirkBuilder:
         primary: bool | None = None,
         *,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing TextMetadata and return self.
 
@@ -1153,6 +1154,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 attribute_name=attribute_name,
                 min_length=min_length,
