@@ -233,13 +233,13 @@ class AuroraDimmerBatteryPowered(CustomDevice):
         (COLOR_UP, LEFT): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,
-            ENDPOINT_ID: 1,
+            ENDPOINT_ID: 2,
             PARAMS: {"step_mode": 3},
         },
         (COLOR_DOWN, LEFT): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,
-            ENDPOINT_ID: 1,
+            ENDPOINT_ID: 2,
             PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, RIGHT): {

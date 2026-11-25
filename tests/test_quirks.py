@@ -773,17 +773,6 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
 
 KNOWN_DUPLICATE_TRIGGERS = {
-    zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
-        [
-            # XXX: why is this constant defined in the module?
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.LEFT),
-        ],
-        [
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
-        ],
-    ],
     zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
         [
             (const.LONG_RELEASE, const.BUTTON_1),
