@@ -1259,6 +1259,7 @@ class QuirkBuilder:
         initially_disabled: bool = False,
         primary: bool | None = None,
         translation_placeholders: dict[str, str] | None = None,
+        child_device_id: str | None | UndefinedType = UNDEFINED,
     ) -> Self:
         """Add an EntityMetadata containing ButtonEventMetadata and return self.
 
@@ -1278,6 +1279,7 @@ class QuirkBuilder:
                 unique_id_suffix=unique_id_suffix,
                 translation_key=translation_key,
                 translation_placeholders=translation_placeholders or {},
+                child_device_id=child_device_id,
                 fallback_name=fallback_name,
                 events=events,
                 primary=primary,
