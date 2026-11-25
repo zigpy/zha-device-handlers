@@ -1,0 +1,177 @@
+{
+  "version": 3,
+  "manufacturer": "xyzroe",
+  "model": "DIY_Zintercom",
+  "manufacturer_code": 0,
+  "power_source": "Battery or Unknown",
+  "device_type": "EndDevice",
+  "node_descriptor": {
+    "logical_type": "EndDevice",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 128,
+    "manufacturer_code": 0,
+    "maximum_buffer_size": 80,
+    "maximum_incoming_transfer_size": 160,
+    "server_mask": 0,
+    "maximum_outgoing_transfer_size": 160,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "SIMPLE_SENSOR",
+        "id": 12
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "xyzroe"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "DIY_Zintercom"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0001",
+          "endpoint_attribute": "power",
+          "attributes": [
+            {
+              "id": "0x0021",
+              "name": "battery_percentage_remaining",
+              "zcl_type": "uint8",
+              "value": 200
+            },
+            {
+              "id": "0x0033",
+              "name": "battery_quantity",
+              "zcl_type": "uint8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0031",
+              "name": "battery_size",
+              "zcl_type": "enum8",
+              "unsupported": true
+            },
+            {
+              "id": "0x0020",
+              "name": "battery_voltage",
+              "zcl_type": "uint8",
+              "value": 32
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0101",
+          "endpoint_attribute": "zintercom",
+          "attributes": [
+            {
+              "id": "0x0051",
+              "name": "mode",
+              "zcl_type": "enum8",
+              "value": 0
+            },
+            {
+              "id": "0x0052",
+              "name": "sound",
+              "zcl_type": "bool",
+              "value": 1
+            },
+            {
+              "id": "0x0050",
+              "name": "state",
+              "zcl_type": "enum8",
+              "value": 0
+            },
+            {
+              "id": "0x0057",
+              "name": "time_bell",
+              "zcl_type": "uint8",
+              "value": 3
+            },
+            {
+              "id": "0x0055",
+              "name": "time_open",
+              "zcl_type": "uint8",
+              "value": 3
+            },
+            {
+              "id": "0x0056",
+              "name": "time_report",
+              "zcl_type": "uint8",
+              "value": 60
+            },
+            {
+              "id": "0x0053",
+              "name": "time_ring",
+              "zcl_type": "uint8",
+              "value": 3
+            },
+            {
+              "id": "0x0054",
+              "name": "time_talk",
+              "zcl_type": "uint8",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0101",
+          "endpoint_attribute": "door_lock",
+          "attributes": []
+        }
+      ]
+    }
+  },
+  "ieee": "00:11:22:33:44:55:66:77",
+  "nwk": "0x1234",
+  "last_seen": "2026-11-22T12:00:00+00:00",
+  "available": true,
+  "active_coordinator": false,
+  "original_signature": {
+    "manufacturer": "xyzroe",
+    "model": "DIY_Zintercom",
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x000c",
+        "input_clusters": [
+          "0x0000"
+        ],
+        "output_clusters": [
+          "0x0101",
+          "0x0006"
+        ]
+      }
+    }
+  }
+}
