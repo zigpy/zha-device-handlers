@@ -541,6 +541,12 @@ def test_custom_quirk_registration_error(tmp_path: Path, caplog) -> None:
             "__MODEL_INFO__", "(None, None)"
         )
     )
+    # The registry rejects the second model after indexing the first one
+    (custom_quirks / "mixed_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "MixedRemote").replace(
+            "__MODEL_INFO__", '("custom", "MixedRemote"), (None, None)'
+        )
+    )
     (custom_quirks / "good_remote.py").write_text(
         CUSTOM_V1_QUIRK.replace("__NAME__", "GoodRemote").replace(
             "__MODEL_INFO__", '("custom", "GoodRemote")'
@@ -557,6 +563,7 @@ def test_custom_quirk_registration_error(tmp_path: Path, caplog) -> None:
         labels = {entry.source.label for entry in zhaquirks.ZHA_DEVICE_REGISTRY}
         assert "GoodRemote" in labels
         assert "BadRemote" not in labels
+        assert "MixedRemote" not in labels
     finally:
         # Purge the custom quirks again, so they don't leak into other tests
         for path in custom_quirks.glob("*.py"):
@@ -564,6 +571,7 @@ def test_custom_quirk_registration_error(tmp_path: Path, caplog) -> None:
         zhaquirks.setup(custom_quirks_path=str(custom_quirks))
         sys.modules.pop("good_remote", None)
         sys.modules.pop("bad_remote", None)
+        sys.modules.pop("mixed_remote", None)
 
 
 def test_register_pending_quirks_error_handling(
