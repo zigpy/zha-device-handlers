@@ -3,6 +3,8 @@
 import asyncio
 
 import pytest
+from zha.quirks import DEVICE_REGISTRY, QUIRK_REGISTRY_ENTRY_ATTR
+from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -12,11 +14,13 @@ from zigpy.zcl.foundation import ZCLAttributeAccess
 import zhaquirks
 from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 from zhaquirks.shelly.wifi import (
+    SHELLY_ROUTING_ISSUE_MESSAGE,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
     ShellyCustomProfileDevice,
     ShellyWiFiSetupCluster,
+    _has_shelly_routing_issue,
 )
 
 zhaquirks.setup()
@@ -157,3 +161,54 @@ def test_shelly_wifi_standard_profile_packet_delegated(
     assert rsp_key is not None
     assert rsp_key.endpoint_id == 1
     assert rsp_key.cluster_id == Basic.cluster_id
+
+
+@pytest.mark.parametrize("model", ["1PM", "2PM", "Mini1PM"])
+@pytest.mark.parametrize(
+    ("software_build_id", "expect_alert"),
+    [
+        (None, False),
+        ("1.7.5", False),
+        ("2.0.0", True),
+        ("2.0.1-beta1", True),
+        ("2.1.1", True),
+        ("2.2.0", False),
+        ("invalid", False),
+    ],
+)
+def test_shelly_routing_issue_alert(
+    MockAppController, ieee_mock, model, software_build_id, expect_alert
+) -> None:
+    """Warn only for Shelly models and firmware affected by the routing issue."""
+    raw_device = Device(MockAppController, ieee_mock, t.NWK(0x1234))
+    raw_device.manufacturer = "Shelly"
+    raw_device.model = model
+    endpoint = raw_device.add_endpoint(1)
+    endpoint.add_input_cluster(Basic.cluster_id)
+    wifi_endpoint = raw_device.add_endpoint(SHELLY_WIFI_SETUP_ENDPOINT_ID)
+    wifi_endpoint.add_input_cluster(SHELLY_WIFI_SETUP_CLUSTER_ID)
+
+    if software_build_id is not None:
+        raw_device.endpoints[1].in_clusters[Basic.cluster_id].update_attribute(
+            Basic.AttributeDefs.sw_build_id.id, software_build_id
+        )
+
+    quirked = DEVICE_REGISTRY.resolve(raw_device)
+    entry = getattr(quirked, QUIRK_REGISTRY_ENTRY_ATTR)
+    alerts = entry.zha_device_factory.quirk_definition.device_alerts
+
+    if expect_alert:
+        assert len(alerts) == 1
+        assert alerts[0].message == SHELLY_ROUTING_ISSUE_MESSAGE
+        assert alerts[0].level.value == "warning"
+    else:
+        assert alerts == ()
+
+
+def test_shelly_routing_issue_filter_without_basic_cluster(
+    MockAppController, ieee_mock
+) -> None:
+    """Do not warn when a device has no Basic cluster firmware information."""
+    raw_device = Device(MockAppController, ieee_mock, t.NWK(0x1234))
+
+    assert _has_shelly_routing_issue(raw_device) is False
