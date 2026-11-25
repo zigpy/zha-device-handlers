@@ -1,4 +1,4 @@
-"""Sonoff SNZB-03P – stable ZHA quirk (practical version)."""
+"""Sonoff SNZB-03P quirk."""
 
 from zha.application.platforms.number import SonoffPresenceSenorTimeout
 import zigpy.types as t
