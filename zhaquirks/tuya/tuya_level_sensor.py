@@ -102,8 +102,8 @@ base_level_quirk = (
         min_value=10,
         max_value=400,
         step=1,
-        translation_key="liquid_depth_max",
-        fallback_name="Height from sensor to liquid level",
+        translation_key="liquid_depth_max_me201wz",
+        fallback_name="Maximum liquid depth",
     )
     .add_to_registry()
 )
