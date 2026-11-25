@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.foundation import ZCLAttributeDef
 
+from zhaquirks.builder import EntityType, SensorDeviceClass, UnitOfTime
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,7 +30,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    SwitchBackLight,
+    TuyaZBExternalSwitchTypeCluster,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
@@ -729,3 +736,72 @@ class TuyaTS130F_EST_MCU(CustomDevice):
             },
         },
     }
+
+
+class TuyaOnOffEnum(t.enum8):
+    """On/off setting sent as a Tuya enum datapoint, with 0 meaning on."""
+
+    On = 0x00
+    Off = 0x01
+
+
+class TuyaMotorDirection(t.enum8):
+    """Motor direction values."""
+
+    Normal = 0x00
+    Reversed = 0x01
+
+
+(
+    # Curtain switch that only has the Tuya MCU cluster, no WindowCovering cluster
+    TuyaQuirkBuilder("_TZE20C_xbexmf8h", "TS130F")
+    .tuya_cover(control_dp=1, position_state_dp=2)
+    .tuya_dp_attribute(
+        dp_id=3,
+        attribute_name="calibration",
+        type=TuyaOnOffEnum,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .switch(
+        attribute_name="calibration",
+        cluster_id=TUYA_CLUSTER_ID,
+        on_value=TuyaOnOffEnum.On,
+        off_value=TuyaOnOffEnum.Off,
+        translation_key="calibration_mode",
+        fallback_name="Calibration mode",
+    )
+    .tuya_enum(
+        dp_id=8,
+        attribute_name="motor_direction",
+        enum_class=TuyaMotorDirection,
+        translation_key="motor_direction",
+        fallback_name="Motor direction",
+    )
+    .tuya_sensor(
+        dp_id=10,
+        attribute_name="calibration_time",
+        type=t.uint32_t,
+        divisor=10,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="calibration_time",
+        fallback_name="Calibration time",
+    )
+    .tuya_dp_attribute(
+        dp_id=14,
+        attribute_name="backlight",
+        type=TuyaOnOffEnum,
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
+    .switch(
+        attribute_name="backlight",
+        cluster_id=TUYA_CLUSTER_ID,
+        on_value=TuyaOnOffEnum.On,
+        off_value=TuyaOnOffEnum.Off,
+        translation_key="backlight",
+        fallback_name="Backlight",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)

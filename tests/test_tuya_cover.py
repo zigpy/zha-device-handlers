@@ -8,9 +8,11 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.device import CustomZigpyDevice
-from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaDatapointData, TuyaDPType
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaWindowCovering
 from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
+from zhaquirks.tuya.ts130f import TuyaMotorDirection, TuyaOnOffEnum
 
 zhaquirks.setup()
 
@@ -223,3 +225,137 @@ async def test_zemismart_zm16b_battery_report(zigpy_device_from_v2_quirk):
     # Battery percentage should be scaled by 2 (default tuya_battery scale)
     power_cluster = ep.power
     assert power_cluster.get("battery_percentage_remaining") == 170
+
+
+def _sent_datapoints(tuya_cluster, req_mock) -> list[TuyaDatapointData]:
+    """Return the datapoints of every Tuya command sent through the mocked request."""
+    datapoints = []
+    for call in req_mock.call_args_list:
+        _hdr, args = tuya_cluster.deserialize(call[1]["data"])
+        datapoints.extend(args.data.datapoints)
+    return datapoints
+
+
+async def test_ts130f_xbexmf8h_position(zigpy_device_from_v2_quirk):
+    """Test the TS130F _TZE20C_xbexmf8h cover reports and sets position with DP 2."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE20C_xbexmf8h", "TS130F")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+    assert isinstance(cover_cluster, TuyaWindowCovering)
+    assert isinstance(tuya_cluster, TuyaMCUCluster)
+
+    # the device reports 70 % open, which is 30 % closed in ZCL terms
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[TuyaDatapointData(2, TuyaData(70))],
+        )
+    )
+    assert (
+        cover_cluster.get(
+            WindowCovering.AttributeDefs.current_position_lift_percentage.name
+        )
+        == 30
+    )
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await cover_cluster.command(
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 25
+        )
+        await wait_for_zigpy_tasks()
+
+    # a single command on DP 2 with the inverted position
+    datapoints = _sent_datapoints(tuya_cluster, req_mock)
+    assert [(dp.dp, dp.data.payload) for dp in datapoints] == [(2, 75)]
+
+
+async def test_ts130f_xbexmf8h_cover_commands(zigpy_device_from_v2_quirk):
+    """Test the TS130F _TZE20C_xbexmf8h open/stop/close commands use DP 1."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE20C_xbexmf8h", "TS130F")
+    ep = quirked.endpoints[1]
+
+    cover_cluster = ep.window_covering
+    tuya_cluster = ep.tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        for command in (
+            WindowCovering.ServerCommandDefs.up_open,
+            WindowCovering.ServerCommandDefs.stop,
+            WindowCovering.ServerCommandDefs.down_close,
+        ):
+            await cover_cluster.command(command.id)
+        await wait_for_zigpy_tasks()
+
+    datapoints = _sent_datapoints(tuya_cluster, req_mock)
+    assert [(dp.dp, dp.data.dp_type, dp.data.payload) for dp in datapoints] == [
+        (1, TuyaDPType.ENUM, 0),
+        (1, TuyaDPType.ENUM, 1),
+        (1, TuyaDPType.ENUM, 2),
+    ]
+
+
+async def test_ts130f_xbexmf8h_settings(zigpy_device_from_v2_quirk):
+    """Test the TS130F _TZE20C_xbexmf8h calibration, direction and backlight DPs."""
+
+    quirked = zigpy_device_from_v2_quirk("_TZE20C_xbexmf8h", "TS130F")
+    ep = quirked.endpoints[1]
+    tuya_cluster = ep.tuya_manufacturer
+
+    tuya_cluster.handle_get_data(
+        TuyaCommand(
+            status=0,
+            tsn=1,
+            datapoints=[
+                TuyaDatapointData(3, TuyaData(TuyaOnOffEnum.Off)),
+                TuyaDatapointData(8, TuyaData(TuyaMotorDirection.Reversed)),
+                TuyaDatapointData(10, TuyaData(304)),
+                TuyaDatapointData(14, TuyaData(TuyaOnOffEnum.On)),
+            ],
+        )
+    )
+    assert tuya_cluster.get("calibration") == TuyaOnOffEnum.Off
+    assert tuya_cluster.get("motor_direction") == TuyaMotorDirection.Reversed
+    assert tuya_cluster.get("calibration_time") == 304
+    assert tuya_cluster.get("backlight") == TuyaOnOffEnum.On
+
+    # the calibration and backlight settings are enum DPs, with 0 meaning on
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as req_mock:
+        await tuya_cluster.write_attributes({"calibration": TuyaOnOffEnum.On})
+        await tuya_cluster.write_attributes({"backlight": TuyaOnOffEnum.Off})
+        await tuya_cluster.write_attributes(
+            {"motor_direction": TuyaMotorDirection.Normal}
+        )
+        await wait_for_zigpy_tasks()
+
+    datapoints = _sent_datapoints(tuya_cluster, req_mock)
+    assert [(dp.dp, dp.data.dp_type, dp.data.payload) for dp in datapoints] == [
+        (3, TuyaDPType.ENUM, 0),
+        (14, TuyaDPType.ENUM, 1),
+        (8, TuyaDPType.ENUM, 0),
+    ]
+
+
+def test_tuya_cover_same_position_dp():
+    """Test tuya_cover maps a shared position DP once."""
+
+    for position_control_dp in (None, 2):
+        builder = TuyaQuirkBuilder("_TZE200_test_cover", "TS0601").tuya_cover(
+            control_dp=1, position_state_dp=2, position_control_dp=position_control_dp
+        )
+        assert set(builder.tuya_dp_to_attribute) == {1, 2}
+
+    builder = TuyaQuirkBuilder("_TZE200_test_cover", "TS0601").tuya_cover(
+        control_dp=1, position_state_dp=8, position_control_dp=9
+    )
+    assert set(builder.tuya_dp_to_attribute) == {1, 8, 9}

@@ -467,7 +467,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         control_dp: int,
         position_state_dp: int,
-        position_control_dp: int,
+        position_control_dp: int | None = None,
         invert: bool = True,
         cover_cfg: type[TuyaLocalCluster] = TuyaWindowCovering,
     ) -> Self:
@@ -476,6 +476,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         :param control_dp: DP ID for open/stop/close control (enum).
         :param position_state_dp: DP ID for current position reports (0-100).
         :param position_control_dp: DP ID for setting target position (0-100).
+            Leave it out, or pass ``position_state_dp``, for devices that
+            report and set the position with the same DP.
         :param invert: Invert position values (most Tuya covers report
             0=closed, 100=open which is opposite to ZCL convention).
         :param cover_cfg: Custom WindowCovering cluster class to use.
@@ -495,13 +497,14 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=converter,
             dp_converter=dp_converter,
         )
-        self.tuya_dp(
-            position_control_dp,
-            cover_cfg.ep_attribute,
-            WindowCovering.AttributeDefs.current_position_lift_percentage.name,
-            converter=converter,
-            dp_converter=dp_converter,
-        )
+        if position_control_dp not in (None, position_state_dp):
+            self.tuya_dp(
+                position_control_dp,
+                cover_cfg.ep_attribute,
+                WindowCovering.AttributeDefs.current_position_lift_percentage.name,
+                converter=converter,
+                dp_converter=dp_converter,
+            )
         self.adds(cover_cfg)
         self.replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
         return self
