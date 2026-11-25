@@ -1379,6 +1379,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # iHseno Tuya Human Presence Sensor
 (
     TuyaQuirkBuilder("_TZE284_debczeci", "TS0601")
@@ -1391,7 +1392,7 @@ base_tuya_motion = (
         converter=lambda x: x == 0,
     )
     .adds(TuyaOccupancySensing)
-    .tuya_battery(dp_id=4, battery_qty=2)
+    .tuya_battery(dp_id=4)
     .tuya_enum(
         dp_id=9,
         attribute_name="presence_sensitivity",
