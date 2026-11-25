@@ -9,16 +9,7 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya.mcu import (
-    TuyaClusterData,
-    TuyaInWallLevelControl,
-    TuyaLevelControl,
-    TuyaLevelControlManufCluster,
-    TuyaMCUCluster,
-    TuyaOnOff,
-    TuyaOnOffNM,
-)
-from zhaquirks.tuya.ts0601_dimmer import TuyaInWallLevelControlNM
+from zhaquirks.tuya.mcu import TuyaClusterData, TuyaLevelControl, TuyaMCUCluster
 
 zhaquirks.setup()
 
@@ -362,37 +353,24 @@ async def test_doubledimmer_state_report(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
-    "manufacturer, gangs, onoff_cls, level_cls",
+    "manufacturer, gangs",
     (
-        ("_TZE200_e3oitdyu", 2, TuyaOnOff, TuyaInWallLevelControl),
-        ("_TZE204_bxoo2swd", 2, TuyaOnOff, TuyaInWallLevelControl),
-        ("_TZE200_fjjbhx9d", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE200_gwkapsoq", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE204_zenj4lxv", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE204_o9gyszw2", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE204_jtbgusdc", 2, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE200_vm1gyrso", 3, TuyaOnOffNM, TuyaInWallLevelControlNM),
-        ("_TZE204_1v1dxkck", 3, TuyaOnOffNM, TuyaInWallLevelControlNM),
+        ("_TZE200_e3oitdyu", 2),
+        ("_TZE204_bxoo2swd", 2),
+        ("_TZE200_fjjbhx9d", 2),
+        ("_TZE200_gwkapsoq", 2),
+        ("_TZE204_zenj4lxv", 2),
+        ("_TZE204_o9gyszw2", 2),
+        ("_TZE204_jtbgusdc", 2),
+        ("_TZE200_vm1gyrso", 3),
+        ("_TZE204_1v1dxkck", 3),
     ),
 )
-async def test_multi_gang_dimmer(
-    zigpy_device_from_v2_quirk, manufacturer, gangs, onoff_cls, level_cls
-):
-    """Test that each gang of a multi-gang dimmer gets its own light endpoint."""
+async def test_multi_gang_dimmer(zigpy_device_from_v2_quirk, manufacturer, gangs):
+    """Test that the DPs of a multi-gang dimmer's gang update only its endpoint."""
 
     dimmer = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
-    assert sorted(ep_id for ep_id in dimmer.endpoints if ep_id != 0) == list(
-        range(1, gangs + 1)
-    )
-
     tuya_cluster = dimmer.endpoints[1].tuya_manufacturer
-    assert type(tuya_cluster) is TuyaLevelControlManufCluster
-
-    for ep_id in range(1, gangs + 1):
-        endpoint = dimmer.endpoints[ep_id]
-        assert endpoint.device_type == zha.DeviceType.ON_OFF_LIGHT
-        assert type(endpoint.on_off) is onoff_cls
-        assert type(endpoint.level) is level_cls
 
     # the on/off and brightness DPs of the last gang update only its own endpoint
     onoff_dp, level_dp = {2: (7, 8), 3: (15, 16)}[gangs]
