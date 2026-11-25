@@ -1,6 +1,7 @@
 """Aqara H1 single rocker switch quirks. Also see opple_switch.py for similar double rocker switches."""
 
 from zigpy.profiles import zgp, zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -16,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTR_ID,
@@ -79,6 +81,31 @@ class AqaraH1SingleRockerBase(CustomDevice):
             ARGS: {ATTR_ID: 0x00FC, PRESS_TYPE: COMMAND_HOLD, VALUE: 0},
         },
     }
+
+    # The switch counts the presses itself in multi-click mode and only reports
+    # single presses in fast mode. Its "hold" is the warning it sends before leaving
+    # the network when the button is held long, so it stays a device trigger.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, BUTTON),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, BUTTON),
+                    press_count=2,
+                ),
+            ],
+            cluster_id=MultistateInput.cluster_id,
+            cluster_type=ClusterType.Server,
+            endpoint_id=41,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
 
 
 class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):

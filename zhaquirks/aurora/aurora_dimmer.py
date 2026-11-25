@@ -1,6 +1,8 @@
 """Device handler for Aurora dimmer switch, battery powered."""
 
 from zigpy.profiles import zgp, zha
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -36,7 +38,6 @@ from zhaquirks.legacy import CustomDevice
 
 COLOR_UP = "color_up"
 COLOR_DOWN = "color_down"
-CURRENT_LEVEL = "current_level"
 
 
 class AuroraDimmerBatteryPowered(CustomDevice):
@@ -56,13 +57,30 @@ class AuroraDimmerBatteryPowered(CustomDevice):
     class WallSwitchLevelControlCluster(EventableCluster, LevelControl):
         """WallSwitchLevelControlCluster: fire events corresponding to level changes."""
 
-        # the value reported by the device is always 254, so we may as well
-        # throw away this report
-        def _update_attribute(self, attrid, value):
-            if attrid == CURRENT_LEVEL:
-                return
-            else:
-                super()._update_attribute(attrid, value)
+        def handle_cluster_general_request(
+            self,
+            hdr: foundation.ZCLHeader,
+            args: list,
+            *,
+            dst_addressing: t.AddrMode | None = None,
+        ) -> None:
+            """Throw away the device's current_level reports.
+
+            The device reports current_level after each step, and the value is
+            always 254, so it would only fire a meaningless attribute event.
+            """
+            if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+                args = args.replace(
+                    attribute_reports=[
+                        attr
+                        for attr in args.attribute_reports
+                        if attr.attrid != self.AttributeDefs.current_level.id
+                    ]
+                )
+
+            super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
     class WallSwitchColorCluster(EventableCluster, Color):
         """WallSwitchColorCluster: fire events corresponding to color changes."""

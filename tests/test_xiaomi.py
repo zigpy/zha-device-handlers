@@ -100,6 +100,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FeedingSource,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.illumination
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
@@ -128,6 +129,7 @@ import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.sensor_switch
 import zhaquirks.xiaomi.mija.smoke
 
 zhaquirks.setup()
@@ -498,6 +500,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
         (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.illumination.Illumination, BatterySize.CR2450),
         (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
         (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
         (zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1, BatterySize.CR1632),
@@ -3350,6 +3353,36 @@ def test_air_monitor_attribute_scaling(zigpy_device_from_v2_quirk):
     temp = device.endpoints[1].device_temperature
     temp._update_attribute(DeviceTemperature.AttributeDefs.current_temperature.id, 25)
     assert temp.get("current_temperature") == 2500
+
+
+async def test_mija_button_up_event(zigpy_device_from_quirk):
+    """Test the Mija wireless switch sends a button_up event for every release."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.sensor_switch.MijaButton)
+    on_off_cluster = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    zha_listener = mock.MagicMock()
+    on_off_cluster.add_listener(zha_listener)
+
+    on_off = OnOff.AttributeDefs.on_off.id
+
+    # A short press, a double press, and a hold
+    on_off_cluster.update_attribute(on_off, t.Bool.false)
+    on_off_cluster.update_attribute(on_off, t.Bool.true)
+    on_off_cluster.update_attribute(0x8000, t.uint8_t(2))
+    on_off_cluster.update_attribute(on_off, t.Bool.false)
+    # The hold timer runs out
+    on_off_cluster._timer_handle.cancel()
+    on_off_cluster._hold_timeout()
+    on_off_cluster.update_attribute(on_off, t.Bool.true)
+
+    # The derived click and hold events are unchanged
+    assert zha_listener.zha_send_event.mock_calls == [
+        mock.call("button_up", []),
+        mock.call("click", {"click_type": "single"}),
+        mock.call("click", {"click_type": "double"}),
+        mock.call("hold", []),
+        mock.call("button_up", []),
+        mock.call("release", []),
+    ]
 
 
 def test_w100_signature_and_clusters(zigpy_device_from_v2_quirk):

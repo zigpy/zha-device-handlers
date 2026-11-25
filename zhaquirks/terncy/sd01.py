@@ -19,7 +19,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.legacy import CustomDevice
-from zhaquirks.terncy import BUTTON_TRIGGERS, KNOB_TRIGGERS, TerncyRawCluster
+from zhaquirks.terncy import (
+    BUTTON_EVENT_ENTITIES,
+    BUTTON_TRIGGERS,
+    KNOB_TRIGGERS,
+    TerncyRawCluster,
+)
 
 TERNCY_KNOB_DEVICE_TYPE = 0x01F2
 
@@ -64,3 +69,5 @@ class TerncyKnobSmartDimmer(CustomDevice):
     }
 
     device_automation_triggers = {**BUTTON_TRIGGERS, **KNOB_TRIGGERS}
+
+    button_event_entities = BUTTON_EVENT_ENTITIES
