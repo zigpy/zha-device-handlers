@@ -6,6 +6,21 @@ from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 
+# ============================================================
+# Quirk Metadata
+# ============================================================
+QUIRK_METADATA = {
+    "name": "SONOFF MINI-ZBRBS",
+    "model": "MINI-ZBRBS",
+    "version": "1.0",
+    "update_date": "2026-11-24",
+    "author": "SONOFF",
+    "manufacturer": "SONOFF",
+    "description": "SONOFF MINI-ZBRBS - Window covering roller shutter motor controller.",
+}
+
+
+
 
 class SonoffCoverCalibrationStatus(t.enum8):
     """Cover calibration status."""
@@ -43,6 +58,12 @@ class SonoffCluster(CustomCluster):
             zcl_type=DataTypeId.uint8,
             manufacturer_code=None,
         )
+        single_switch_mode = ZCLAttributeDef(
+            id=0x6038,
+            type=t.Bool,
+            zcl_type=DataTypeId.bool_,
+            manufacturer_code=None,
+        )
         cover_calibrated = ZCLAttributeDef(
             id=0x5012,
             type=SonoffCoverCalibrationStatus,
@@ -78,6 +99,33 @@ class SonoffCluster(CustomCluster):
             manufacturer_code=None,
         )
 
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Enforce rules between external trigger mode (0x0016) and single switch mode (0x6038).
+
+        - Single switch mode is only usable with pulse (momentary) switches.
+        - Switching to edge trigger mode disables single switch mode.
+        - Enabling single switch mode switches the external trigger mode back to pulse.
+        """
+        normalized = {}
+        for key, value in attributes.items():
+            if isinstance(key, str):
+                attr_def = self.attributes_by_name.get(key)
+                key = attr_def.id if attr_def is not None else key
+            normalized[key] = value
+
+        trigger_id = self.AttributeDefs.external_trigger_mode.id
+        single_switch_id = self.AttributeDefs.single_switch_mode.id
+
+        # Enabling single switch mode: force the external switch back to pulse (momentary).
+        if normalized.get(single_switch_id):
+            normalized[trigger_id] = SonoffExternalSwitchTriggerType.pulse_trigger
+
+        # Edge (maintained) switches are incompatible: disable single switch mode.
+        if normalized.get(trigger_id) == SonoffExternalSwitchTriggerType.edge_trigger:
+            normalized[single_switch_id] = False
+
+        return await super().write_attributes(normalized, manufacturer)
+
 
 (
     QuirkBuilder("SONOFF", "MINI-ZBRBS")
@@ -88,6 +136,12 @@ class SonoffCluster(CustomCluster):
         SonoffCluster.cluster_id,
         translation_key="external_trigger_mode",
         fallback_name="External trigger mode",
+    )
+    .switch(
+        SonoffCluster.AttributeDefs.single_switch_mode.name,
+        SonoffCluster.cluster_id,
+        translation_key="single_switch_mode",
+        fallback_name="Single switch mode",
     )
     .enum(
         SonoffCluster.AttributeDefs.cover_calibrated.name,
