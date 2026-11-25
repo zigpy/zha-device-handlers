@@ -165,9 +165,13 @@ class PhilipsRemoteCluster(CustomCluster):
     BUTTONS: dict[int, Button] = {}
 
     PRESS_TYPES: dict[int, PressType] = {
-        # We omit "short_press" and "short_release" on purpose, so it
-        # won't interfere with simulated multi-press events. We emit
-        # them in the multi-press code later on.
+        # SHORT_PRESS (0) and SHORT_RELEASE (2) are intentionally not
+        # in PRESS_TYPES — they are emitted via SIMULATE_SHORT_EVENTS
+        # below. SHORT_PRESS fires immediately when the firmware sends
+        # press_type=0 (instant feedback), while SHORT_RELEASE is
+        # delayed by ButtonPressQueue so multi-press events
+        # (DOUBLE_PRESS, TRIPLE_PRESS, …) can be derived from
+        # successive release events without missing any.
         # 0: SHORT_PRESS,
         1: PressType(LONG_PRESS, COMMAND_HOLD),
         # 2: SHORT_RELEASE,
@@ -176,8 +180,9 @@ class PhilipsRemoteCluster(CustomCluster):
 
     # The press types the device reports when the button goes down (0) and when it
     # is released after a short press (2). They are sent as they arrive, under their
-    # own names, as the press and short release events are only sent once the
-    # multi-press window has passed. Press types in `PRESS_TYPES` are sent already.
+    # own names, for the button event entities, as the short release and multi-press
+    # events are only sent once the multi-press window has passed. Press types in
+    # `PRESS_TYPES` are sent already.
     NATIVE_PRESS_TYPES: dict[int, str] = {
         0: COMMAND_M_INITIAL_PRESS,
         2: COMMAND_PRESS_RELEASE,
@@ -246,12 +251,11 @@ class PhilipsRemoteCluster(CustomCluster):
             )
 
         press_type = self.PRESS_TYPES.get(args[2])
-        if (
-            press_type is None
-            and self.SIMULATE_SHORT_EVENTS is not None
-            and args[2] == 2
-        ):
-            press_type = self.SIMULATE_SHORT_EVENTS[1]
+        if press_type is None and self.SIMULATE_SHORT_EVENTS is not None:
+            if args[2] == 0:
+                press_type = self.SIMULATE_SHORT_EVENTS[0]
+            elif args[2] == 2:
+                press_type = self.SIMULATE_SHORT_EVENTS[1]
         if press_type is None:
             _LOGGER.debug(
                 "%s - handle_cluster_request unknown button press type: [%s]",
@@ -282,11 +286,19 @@ class PhilipsRemoteCluster(CustomCluster):
                 self.__class__.__name__,
                 click_count,
             )
+            # SHORT_PRESS is emitted instantly when the firmware sends
+            # press_type=0 (see dispatcher above). Here we only emit
+            # the corresponding SHORT_RELEASE once the queue resolves
+            # (click_count == 1), or a multi-press event when several
+            # release events were collapsed (click_count > 1).
             press_type = None
+            args_press_type_code = 0
             if click_count == 1:
-                press_type = self.PRESS_TYPES.get(0) or self.SIMULATE_SHORT_EVENTS[0]
+                press_type = self.PRESS_TYPES.get(2) or self.SIMULATE_SHORT_EVENTS[1]
+                args_press_type_code = 2
             elif click_count > 1:
                 press_type = self.MULTI_PRESS_EVENTS[min(click_count, 5)]
+                args_press_type_code = 2 + min(click_count, 5)
 
             _LOGGER.debug(
                 "%s - send_press_event evaluated press_type: [%s]",
@@ -297,7 +309,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 # Override PRESS_TYPE
                 event_args[PRESS_TYPE] = press_type.arg
                 event_args[ARGS] = list(event_args[ARGS])
-                event_args[ARGS][2] = 0 if click_count < 2 else 2 + min(click_count, 5)
+                event_args[ARGS][2] = args_press_type_code
                 action = f"{button.action}_{press_type.action}"
                 _LOGGER.debug(
                     "%s - send_press_event emitting action: [%s] event_args: %s",
@@ -306,25 +318,6 @@ class PhilipsRemoteCluster(CustomCluster):
                     event_args,
                 )
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
-
-            # simulate short release event, if needed for this device type
-            if (
-                press_type.name == SHORT_PRESS
-                and self.SIMULATE_SHORT_EVENTS is not None
-            ):
-                press_type = self.PRESS_TYPES.get(2) or self.SIMULATE_SHORT_EVENTS[1]
-                sim_event_args = event_args.copy()
-                sim_event_args[PRESS_TYPE] = press_type.arg
-                sim_event_args[ARGS] = sim_event_args[ARGS].copy()
-                sim_event_args[ARGS][2] = 2
-                action = f"{button.action}_{press_type.action}"
-                _LOGGER.debug(
-                    "%s - send_press_event emitting simulated action: [%s], event_args: %s",
-                    self.__class__.__name__,
-                    action,
-                    sim_event_args,
-                )
-                self.listener_event(ZHA_SEND_EVENT, action, sim_event_args)
 
         # Derive Multiple Presses
         if press_type.name == SHORT_RELEASE:
@@ -365,8 +358,8 @@ class PhilipsRemoteCluster(CustomCluster):
 
         The device reports when a button goes down, when it is released after a
         short press, while it is held (repeatedly) and when it is released after
-        being held. The press and multi-press events derived with the press queue
-        are not used, as they are only sent after a delay.
+        being held. The short release and multi-press events derived with the
+        press queue are not used, as they are only sent after a delay.
 
         `names` holds the entity naming (`unique_id_suffix`, `translation_key`,
         `fallback_name` and `translation_placeholders`) of each button.

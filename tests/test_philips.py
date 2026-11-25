@@ -399,7 +399,7 @@ def test_PhilipsRemoteCluster_short_press(
     assert listener.zha_send_event.call_count == 4
 
     calls = [
-        # The press and release as the device reports them
+        # The press as the device reports it
         mock.call(
             f"{button}_initial_press",
             {
@@ -410,17 +410,7 @@ def test_PhilipsRemoteCluster_short_press(
                 "args": [1, 0, 0, 0, 0],
             },
         ),
-        mock.call(
-            f"{button}_press_release",
-            {
-                "button": button,
-                "press_type": "press_release",
-                "command_id": None,
-                "duration": 0,
-                "args": [1, 0, 2, 0, 0],
-            },
-        ),
-        # The press and release sent once the multi-press window has passed
+        # The press, sent immediately
         mock.call(
             f"{button}_{events[0]}",
             {
@@ -431,6 +421,18 @@ def test_PhilipsRemoteCluster_short_press(
                 "args": [1, 0, 0, 0, 0],
             },
         ),
+        # The release as the device reports it
+        mock.call(
+            f"{button}_press_release",
+            {
+                "button": button,
+                "press_type": "press_release",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 2, 0, 0],
+            },
+        ),
+        # The release sent once the multi-press window has passed
         mock.call(
             f"{button}_{events[1]}",
             {
@@ -512,26 +514,40 @@ def test_PhilipsRemoteCluster_multi_press(
     for q in cluster.button_press_queue.values():
         q.fire()
 
-    # An initial press and a press release for every press, then the multi-press
-    assert listener.zha_send_event.call_count == 2 * count + 1
+    # Each press emits the native initial press, an immediate SHORT_PRESS event
+    # and the native press release; once the queue resolves a single
+    # multi-press event is emitted.
+    assert listener.zha_send_event.call_count == 3 * count + 1
     assert [c.args[0] for c in listener.zha_send_event.call_args_list[:-1]] == [
         f"{button}_initial_press",
+        f"{button}_press",
         f"{button}_press_release",
     ] * count
-    args_button_id = count + 2
-    listener.zha_send_event.assert_has_calls(
-        [
+    assert (
+        listener.zha_send_event.call_args_list[1::3]
+        == [
             mock.call(
-                f"{button}_{action_press_type}",
+                f"{button}_press",
                 {
                     "button": button,
-                    "press_type": action_press_type,
+                    "press_type": "press",
                     "command_id": None,
                     "duration": 0,
-                    "args": [1, 0, args_button_id, 0, 0],
+                    "args": [1, 0, 0, 0, 0],
                 },
-            ),
+            )
         ]
+        * count
+    )
+    assert listener.zha_send_event.call_args_list[-1] == mock.call(
+        f"{button}_{action_press_type}",
+        {
+            "button": button,
+            "press_type": action_press_type,
+            "command_id": None,
+            "duration": 0,
+            "args": [1, 0, count + 2, 0, 0],
+        },
     )
 
 
@@ -633,7 +649,10 @@ def test_PhilipsRemoteCluster_long_press(
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 3, 0, count * 40 + 10])
     cluster.button_press_queue.fire()
 
-    assert listener.zha_send_event.call_count == count + 2
+    # The initial press_type=0 notification fires the native initial press and,
+    # for instant feedback, a SHORT_PRESS immediately, so the total event count
+    # includes both in addition to the holds and long_release.
+    assert listener.zha_send_event.call_count == count + 3
 
     calls = [
         mock.call(
@@ -645,7 +664,17 @@ def test_PhilipsRemoteCluster_long_press(
                 "duration": 0,
                 "args": [1, 0, 0, 0, 0],
             },
-        )
+        ),
+        mock.call(
+            f"{button}_press",
+            {
+                "button": button,
+                "press_type": "press",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 0, 0, 0],
+            },
+        ),
     ]
     for i in range(0, count):
         calls.append(
@@ -818,14 +847,17 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
                     b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
                 ],
             ),
+            # SHORT_PRESS fires immediately on the firmware press_type=0
+            # notification, so it's emitted before the release queue
+            # resolves for either button.
             [
                 "left_initial_press",
+                "left_press",
                 "left_press_release",
                 "right_initial_press",
-                "right_press_release",
-                "left_press",
-                "left_short_release",
                 "right_press",
+                "right_press_release",
+                "left_short_release",
                 "right_short_release",
             ],
         ),
@@ -919,11 +951,11 @@ async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     )
     device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
 
-    # we emit those from PhilipsRdm002RemoteCluster. One initial press, one hold, one
-    # long_press_release event.
-    assert listener.zha_send_event.call_count == 3
+    # we emit those from PhilipsRdm002RemoteCluster: one initial press, one
+    # immediate SHORT_PRESS, one HOLD, one LONG_RELEASE.
+    assert listener.zha_send_event.call_count == 4
 
-    # one for each frame received, except for the one we balckhole, so 4 - 1
+    # one for each frame received, except for the one we blackhole, so 4 - 1
     assert listener.cluster_command.call_count == 3
 
 
@@ -1020,7 +1052,6 @@ def test_PhilipsRemoteCluster_native_press_types_when_mapped(zigpy_device_from_q
         "on_initial_press",
         "on_press",
         "on_press_release",
-        "on_press",
         "on_short_release",
     ]
     assert listener.zha_send_event.call_args_list[0].args[1]["press_type"] == (
