@@ -49,6 +49,7 @@ TUYA_GET_DATA = 0x01
 TUYA_SET_DATA_RESPONSE = 0x02
 TUYA_QUERY_DATA = 0x03
 TUYA_SEND_DATA = 0x04
+TUYA_ACTIVE_STATUS_RPT_ALT = 0x05
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
 # TODO: To be checked
@@ -1626,6 +1627,11 @@ class TuyaNewManufCluster(CustomCluster):
             schema={"data": TuyaCommand},
             manufacturer_code=None,
         )
+        active_status_report_alt = foundation.ZCLCommandDef(
+            id=TUYA_ACTIVE_STATUS_RPT_ALT,
+            schema={"data": TuyaCommand},
+            manufacturer_code=None,
+        )
         active_status_report = foundation.ZCLCommandDef(
             id=TUYA_ACTIVE_STATUS_RPT,
             schema={"data": TuyaCommand},
@@ -1756,6 +1762,7 @@ class TuyaNewManufCluster(CustomCluster):
 
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
+    handle_active_status_report_alt = handle_get_data
 
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle Time set request."""
