@@ -50,6 +50,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
+    LIGHT_BUTTON_EVENT_ENTITIES,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
     SINOPE_MANUFACTURER_CLUSTER_ID,
@@ -173,20 +174,24 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             args,
         )
 
-        if hdr.command_id != foundation.GeneralCommand.Report_Attributes:
-            return super().handle_cluster_general_request(
-                hdr, args, dst_addressing=dst_addressing
-            )
+        if hdr.command_id == foundation.GeneralCommand.Report_Attributes:
+            remaining_reports = []
 
-        attr = args[0][0]
+            for attr in args.attribute_reports:
+                if attr.attrid != self.AttributeDefs.action_report.id:
+                    remaining_reports.append(attr)
+                    continue
 
-        if attr.attrid != self.AttributeDefs.action_report.id:
-            return super().handle_cluster_general_request(
-                hdr, args, dst_addressing=dst_addressing
-            )
+                self._handle_action_report(self.Action(attr.value.value))
 
-        action = self.Action(attr.value.value)
+            # Button actions are sent as events, pass on everything else
+            args.attribute_reports = remaining_reports
 
+        # Always process the request, to send any requested default response
+        super().handle_cluster_general_request(hdr, args, dst_addressing=dst_addressing)
+
+    def _handle_action_report(self, action: ButtonAction) -> None:
+        """Send a button action as a ZHA event."""
         command, button = self._get_command_from_action(action)
         if not command or not button:
             return
@@ -299,6 +304,7 @@ class SinopeTechnologieslight(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES
 
 
 class SinopeDM2500ZB(CustomDevice):
@@ -364,6 +370,7 @@ class SinopeDM2500ZB(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES
 
 
 class SinopeDM2550ZB(CustomDevice):
@@ -433,3 +440,4 @@ class SinopeDM2550ZB(CustomDevice):
     }
 
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    button_event_entities = LIGHT_BUTTON_EVENT_ENTITIES

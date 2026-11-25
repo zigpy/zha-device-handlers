@@ -5,7 +5,7 @@ import math
 from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.measurement import (
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import LocalDataCluster, OccupancyOnEvent, _Motion
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
@@ -54,6 +55,39 @@ KNOB_TRIGGERS = {
     (ROTATED, LEFT): {COMMAND: ROTATE_LEFT},
 }
 ZONE_TYPE = 0x0001
+
+# The button counts its presses. The quintuple press stands for five to nine
+# presses, so it has no exact press count and stays a device trigger only.
+BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, BUTTON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, BUTTON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, BUTTON),
+                press_count=3,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(QUADRUPLE_PRESS, BUTTON),
+                press_count=4,
+            ),
+        ],
+        cluster_id=MANUFACTURER_SPECIFIC_CLUSTER_ID,
+        cluster_type=ClusterType.Server,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    ),
+)
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
@@ -98,7 +132,7 @@ class MotionCluster(LocalDataCluster, _Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
         if self.send_occupancy_event:
             self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)

@@ -1,16 +1,25 @@
 """Ikea module."""
 
 import logging
-from typing import Any
 
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, PowerConfiguration, Scenes
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
-from zhaquirks.const import ZHA_SEND_EVENT, BatterySize
+from zhaquirks.const import (
+    COMMAND,
+    COMMAND_M_MULTI_PRESS_COMPLETE,
+    ENDPOINT_ID,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PARAMS,
+    SHORT_PRESS,
+    BatterySize,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,51 +60,6 @@ class ScenesCluster(CustomCluster, Scenes):
             schema={"param1": t.int16s},
             is_manufacturer_specific=True,
         )
-
-
-class IkeaBilresaLevelControl(CustomCluster, LevelControl):
-    """Custom LevelControl cluster for IKEA remotes to track direction."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize instance."""
-        super().__init__(*args, **kwargs)
-        self._last_move_direction: int | None = None
-
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list[Any],
-        *,
-        # This parameter is unused and kept only for backwards compatibility
-        dst_addressing: t.AddrMode | None = None,
-    ):
-        """Handle cluster specific commands.
-
-        Track move commands to remember direction for stop commands.
-        """
-        if hdr.command_id in (
-            LevelControl.ServerCommandDefs.move.id,
-            LevelControl.ServerCommandDefs.move_with_on_off.id,
-        ):
-            move_mode = args[0]
-            self._last_move_direction = move_mode
-        elif (
-            hdr.command_id
-            in (
-                LevelControl.ServerCommandDefs.stop.id,
-                LevelControl.ServerCommandDefs.stop_with_on_off.id,
-            )
-            and self._last_move_direction is not None
-        ):
-            event = (
-                "move_up_release"
-                if self._last_move_direction == 0
-                else "move_down_release"
-            )
-            self.listener_event(ZHA_SEND_EVENT, event, [])
-            self._last_move_direction = None
-
-        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class ShortcutV1Cluster(EventableCluster):
@@ -175,6 +139,49 @@ class ShortcutV2Cluster(EventableCluster):
             },
             is_manufacturer_specific=True,
         )
+
+
+def shortcut_v2_button_event_entity(
+    button: str, endpoint_id: int, number: int
+) -> ButtonEventMetadata:
+    """Return the button event entity of a dot button sending Shortcut V2 commands.
+
+    The button sends an initial_press for the first press only, then a
+    short_release once no second press followed, a multi_press_complete counting
+    two presses for a double press, or a long_press and a long_release.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            # The double press trigger fires for any count, but IKEA sends two
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                event_data={
+                    COMMAND: COMMAND_M_MULTI_PRESS_COMPLETE,
+                    ENDPOINT_ID: endpoint_id,
+                    PARAMS: {"total_number_of_presses_counted": 2},
+                },
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, button),
+            ),
+        ],
+        cluster_id=IKEA_MATTER_SWITCH_CLUSTER_ID,
+        cluster_type=ClusterType.Client,
+        endpoint_id=endpoint_id,
+        unique_id_suffix=f"button_{number}",
+        translation_key="button_numbered",
+        translation_placeholders={"number": str(number)},
+        fallback_name=f"Button {number}",
+    )
 
 
 # ZCL compliant IKEA power configuration clusters:
@@ -282,11 +289,12 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
 
         # check if sw_build_id was read successfully and old firmware is installed
-        # if so, update cache with reported battery percentage (doubled)
+        # if so, update cache with reported battery percentage again,
+        # _update_attribute doubles it now that the firmware is known to be old
         if not self._is_firmware_new():
             self._update_attribute(
                 PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
-                reported_battery_pct * 2,
+                reported_battery_pct,
             )
 
     def _update_attribute(self, attrid, value):

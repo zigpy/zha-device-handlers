@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
 from zigpy.profiles import zha, zll
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -15,15 +16,17 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_OFF,
     COMMAND_ON,
-    COMMAND_STOP,
-    COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -47,6 +50,52 @@ from zhaquirks.ikea import (
     PowerConfig1AAACluster,
 )
 from zhaquirks.legacy import CustomDevice
+
+# Newer firmware ends a hold with a stop_with_on_off and older firmware may use a
+# plain stop. `LevelControlWithMoveDirection` turns either into the release of the
+# direction held, so each button ends its hold with its own release.
+ON_OFF_BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_OFF)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_DOWN),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
+    ),
+)
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
@@ -102,7 +151,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -120,7 +169,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             PARAMS: {"move_mode": 0},
         },
         (LONG_RELEASE, DIM_UP): {
-            COMMAND: COMMAND_STOP_ON_OFF,
+            COMMAND: COMMAND_MOVE_UP_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -132,11 +181,13 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             PARAMS: {"move_mode": 1},
         },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_MOVE_DOWN_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
     }
+
+    button_event_entities = ON_OFF_BUTTON_EVENT_ENTITIES
 
 
 class IkeaTradfriRemote2BtnZLL(CustomDevice):
@@ -191,7 +242,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -201,6 +252,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
     }
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
+    button_event_entities = ON_OFF_BUTTON_EVENT_ENTITIES
 
 
 class IkeaRodretRemote2Btn(CustomDevice):
@@ -253,7 +305,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -262,6 +314,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
     }
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
+    button_event_entities = ON_OFF_BUTTON_EVENT_ENTITIES
 
 
 class IkeaRodretRemote2BtnNew(CustomDevice):
@@ -315,7 +368,7 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -324,3 +377,4 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
     }
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
+    button_event_entities = ON_OFF_BUTTON_EVENT_ENTITIES

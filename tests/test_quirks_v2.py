@@ -1,13 +1,17 @@
 """General quirk v2 tests."""
 
 import collections
+from collections.abc import Mapping
+from typing import Any
 
 from zha.application import EntityPlatform, EntityType
-from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry
+from zha.application.platforms import PlatformEntity
+from zha.quirks import DEVICE_REGISTRY, QuirkRegistryEntry, ReplaceZigpyDevice
 
 import zhaquirks
 from zhaquirks.builder.device import QuirkV2Factory
 from zhaquirks.builder.metadata import QuirkDefinition, ZCLEnumMetadata
+from zhaquirks.legacy import CustomDevice
 
 zhaquirks.setup()
 
@@ -17,6 +21,17 @@ ALL_QUIRK_V2: list[tuple[QuirkRegistryEntry, QuirkDefinition]] = [
     for entry in DEVICE_REGISTRY
     if isinstance(entry.zha_device_factory, QuirkV2Factory)
 ]
+
+
+def _entity_name_attr(
+    entity_cls: type[PlatformEntity], kwargs: Mapping[str, Any], name: str
+) -> Any:
+    """Return an entity's naming kwarg, or the class's value if not passed."""
+    if name in kwargs:
+        return kwargs[name]
+
+    # Not every entity class defines a translation key
+    return getattr(entity_cls, f"_attr_{name}", None)
 
 
 def test_translation_key_and_fallback_name_match() -> None:
@@ -31,6 +46,8 @@ def test_translation_key_and_fallback_name_match() -> None:
 
     # collect all translation keys and their quirk location and fallback names
     for entry, definition in ALL_QUIRK_V2:
+        quirk_location = f"{entry.source.file}:{entry.source.line}"
+
         for entity_metadata in definition.entity_metadata:
             if (translation_key := entity_metadata.translation_key) is None:
                 continue
@@ -38,9 +55,27 @@ def test_translation_key_and_fallback_name_match() -> None:
             # the same translation key with different fallback names
             if entity_metadata.translation_placeholders:
                 continue
-            quirk_location = f"{entry.source.file}:{entry.source.line}"
             translation_key_map[translation_key].add(
                 (quirk_location, entity_metadata.fallback_name)
+            )
+
+        # added and replacement entities are named by their kwargs or their class
+        entity_classes = [
+            *((a.entity_cls, a.kwargs) for a in definition.added_entities),
+            *((r.entity_cls, r.kwargs) for r in definition.replaced_entities),
+        ]
+
+        for entity_cls, kwargs in entity_classes:
+            translation_key = _entity_name_attr(entity_cls, kwargs, "translation_key")
+            if translation_key is None:
+                continue
+            if _entity_name_attr(entity_cls, kwargs, "translation_placeholders"):
+                continue
+            translation_key_map[translation_key].add(
+                (
+                    quirk_location,
+                    _entity_name_attr(entity_cls, kwargs, "fallback_name"),
+                )
             )
 
     # check that if multiple entity metadata entries exist for the same translation key,
@@ -55,6 +90,15 @@ def test_translation_key_and_fallback_name_match() -> None:
             )
 
 
+def is_v1_quirk(entry: QuirkRegistryEntry) -> bool:
+    """Return whether a registry entry is a v1 quirk exposing button event entities."""
+    return any(
+        isinstance(transform, ReplaceZigpyDevice)
+        and issubclass(transform.device_cls, CustomDevice)
+        for transform in entry.zigpy_transforms
+    )
+
+
 def test_manufacturer_model_metadata_unique() -> None:
     """Ensure that each manufacturer-model pair is unique across all v2 quirks."""
     # quirk_locations is a list and not a set below,
@@ -66,6 +110,10 @@ def test_manufacturer_model_metadata_unique() -> None:
     )
 
     for entry, _definition in ALL_QUIRK_V2:
+        # v1 quirks match by signature, so variants share the manufacturer and model
+        if is_v1_quirk(entry):
+            continue
+
         match = entry.device_match
         if (
             match.firmware_version_min is not None

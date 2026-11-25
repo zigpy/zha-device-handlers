@@ -14,7 +14,15 @@ from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, Status, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.builder import EntityPlatform, EntityType, QuirkBuilder
+from zhaquirks.builder import (
+    BinarySensorDeviceClass,
+    ButtonEvent,
+    ButtonEventType,
+    EntityFilter,
+    EntityPlatform,
+    EntityType,
+    QuirkBuilder,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -139,6 +147,44 @@ class SonoffInputConfigCluster(LocalDataCluster):
         return await self.endpoint.sonoff_cluster.write_attributes({mask_attr_id: mask})
 
 
+def _button_event(
+    builder: QuirkBuilder, endpoint_id: int, button: str, *, numbered: bool = True
+) -> QuirkBuilder:
+    """Add the button event entity of a gang's button and return the builder.
+
+    The button reports each press as a single toggle, with no hold or multi press.
+    Whether the toggle is sent when the button goes down or when it is released is not
+    confirmed on hardware, so it is a `single_press`, which holds either way.
+    """
+    naming: dict[str, Any]
+    if numbered:
+        naming = {
+            "unique_id_suffix": f"button_{endpoint_id}",
+            "translation_key": "button_numbered",
+            "fallback_name": f"Button {endpoint_id}",
+            "translation_placeholders": {"number": str(endpoint_id)},
+        }
+    else:
+        naming = {
+            "unique_id_suffix": "button",
+            "translation_key": "button",
+            "fallback_name": "Button",
+        }
+
+    return builder.button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, button),
+            )
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=endpoint_id,
+        **naming,
+    )
+
+
 # Base quirk for 1-channel device
 zbm_1c_quirk = (
     QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
@@ -146,10 +192,12 @@ zbm_1c_quirk = (
     .replaces(SonoffCluster)
     .adds(SonoffInputConfigCluster)
     .adds(OnOff, cluster_type=ClusterType.Client)
-    .prevent_default_entity_creation(
-        endpoint_id=1,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.device_class == "opening",
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=1,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
     )
     .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
@@ -171,17 +219,22 @@ zbm_1c_quirk = (
         {(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1}}
     )
 )
-zbm_1c_quirk.add_to_registry()
+# The only button of the 1-gang switch is not numbered, the multi-gang ones are
+_button_event(
+    zbm_1c_quirk.clone(omit_man_model_data=False), 1, BUTTON_1, numbered=False
+).add_to_registry()
 
 zbm_2c_quirk = (
-    zbm_1c_quirk.clone()
+    _button_event(zbm_1c_quirk.clone(), 1, BUTTON_1)
     .applies_to("SONOFF", "ZBM5-2C-80/86")
     .applies_to("SONOFF", "ZBM5-2C-120")
     .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
-    .prevent_default_entity_creation(
-        endpoint_id=2,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.device_class == "opening",
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=2,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
     )
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
@@ -194,6 +247,7 @@ zbm_2c_quirk = (
         {(SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 2}}
     )
 )
+_button_event(zbm_2c_quirk, 2, BUTTON_2)
 zbm_2c_quirk.add_to_registry()
 
 zbm_3c_quirk = (
@@ -201,10 +255,12 @@ zbm_3c_quirk = (
     .applies_to("SONOFF", "ZBM5-3C-80/86")
     .applies_to("SONOFF", "ZBM5-3C-120")
     .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
-    .prevent_default_entity_creation(
-        endpoint_id=3,
-        cluster_id=OnOff.cluster_id,
-        function=lambda entity: entity.device_class == "opening",
+    .removes_entity(
+        EntityFilter(
+            endpoint_id=3,
+            cluster_id=OnOff.cluster_id,
+            device_class=BinarySensorDeviceClass.OPENING,
+        )
     )
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
@@ -217,4 +273,5 @@ zbm_3c_quirk = (
         {(SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 3}}
     )
 )
+_button_event(zbm_3c_quirk, 3, BUTTON_3)
 zbm_3c_quirk.add_to_registry()

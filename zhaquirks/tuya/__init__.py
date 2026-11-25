@@ -11,7 +11,7 @@ from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
-from zigpy.zcl import BaseAttributeDefs, foundation
+from zigpy.zcl import BaseAttributeDefs, ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -20,11 +20,15 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
+    BUTTON,
     DOUBLE_PRESS,
+    ENDPOINTS,
     LEFT,
     LONG_PRESS,
+    OUTPUT_CLUSTERS,
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
@@ -49,6 +53,7 @@ TUYA_GET_DATA = 0x01
 TUYA_SET_DATA_RESPONSE = 0x02
 TUYA_QUERY_DATA = 0x03
 TUYA_SEND_DATA = 0x04
+TUYA_ACTIVE_STATUS_RPT_ALT = 0x05
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
 # TODO: To be checked
@@ -238,6 +243,20 @@ class TuyaData:
             self.raw = value.serialize()
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __repr__(self) -> str:
+        """Show the type and raw bytes, plus the payload if it decodes and differs from raw."""
+        fields = (
+            f"dp_type={self.dp_type!r}, function={self.function!r}, raw={self.raw!r}"
+        )
+        try:
+            payload = self.payload
+        except (AttributeError, TypeError, ValueError):
+            payload = None
+        # a RAW payload is `raw` itself, so don't show the same bytes twice
+        if payload is not None and self.dp_type != TuyaDPType.RAW:
+            fields += f", *payload={payload!r}"
+        return f"{type(self).__name__}({fields})"
 
     def serialize(self) -> bytes:
         """Serialize Tuya data."""
@@ -527,6 +546,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     ) -> Any:
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
+        kwargs.pop("allow_cache", None)
+        kwargs.pop("only_cache", None)
+
         return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, **kwargs
         )
@@ -589,7 +611,7 @@ class BaseEnchantedDevice(BaseCustomDevice):
         )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-        await basic_cluster.read_attributes(attr_to_read)
+        await basic_cluster.read_attributes(attr_to_read, split_requests=False)
         self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
 
     async def spell_data_query(self):
@@ -1122,6 +1144,76 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+def smart_remote_button_events(
+    replacement: dict[str, Any], buttons: int, *, hold: bool = True
+) -> tuple[ButtonEventMetadata, ...]:
+    """Return the button event entities of a Tuya scene remote.
+
+    Button N reports its presses from endpoint N with the `press_type` command of
+    `TuyaSmartRemoteOnOffCluster`, which fires the `SHORT_PRESS`, `DOUBLE_PRESS` and
+    `LONG_PRESS` triggers of subtype `button_N`. The remote resolves single and double
+    presses itself. A hold is reported once, after the button is released: observed on
+    TS0041-TS0044 and assumed for the TS0046, the same remote family. The TS004F
+    remotes pass `hold=False`, which leaves the hold out of the entities, since their
+    hold timing isn't confirmed.
+    """
+    entities = []
+
+    for button in range(1, buttons + 1):
+        subtype = f"{BUTTON}_{button}"
+        endpoint = replacement[ENDPOINTS][button]
+        cluster_type = (
+            ClusterType.Client
+            if TuyaSmartRemoteOnOffCluster in endpoint.get(OUTPUT_CLUSTERS, [])
+            else ClusterType.Server
+        )
+
+        if buttons == 1:
+            names: dict[str, Any] = {
+                "unique_id_suffix": BUTTON,
+                "translation_key": BUTTON,
+                "fallback_name": "Button",
+            }
+        else:
+            names = {
+                "unique_id_suffix": subtype,
+                "translation_key": "button_numbered",
+                "translation_placeholders": {"number": str(button)},
+                "fallback_name": f"Button {button}",
+            }
+
+        events = [
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, subtype),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, subtype),
+                press_count=2,
+            ),
+        ]
+        if hold:
+            events.append(
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_PRESS, subtype),
+                )
+            )
+
+        entities.append(
+            ButtonEventMetadata(
+                events=events,
+                cluster_id=TuyaSmartRemoteOnOffCluster.cluster_id,
+                cluster_type=cluster_type,
+                endpoint_id=button,
+                **names,
+            )
+        )
+
+    return tuple(entities)
+
+
 MULTIPLIER = 0x0301
 DIVISOR = 0x0302
 
@@ -1609,6 +1701,11 @@ class TuyaNewManufCluster(CustomCluster):
             schema={"data": TuyaCommand},
             manufacturer_code=None,
         )
+        active_status_report_alt = foundation.ZCLCommandDef(
+            id=TUYA_ACTIVE_STATUS_RPT_ALT,
+            schema={"data": TuyaCommand},
+            manufacturer_code=None,
+        )
         active_status_report = foundation.ZCLCommandDef(
             id=TUYA_ACTIVE_STATUS_RPT,
             schema={"data": TuyaCommand},
@@ -1707,6 +1804,12 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle get_data response (report)."""
         dp_error = False
         for record in command.datapoints:
+            self.debug(
+                "Received datapoint %s (%s, raw %s)",
+                record.dp,
+                record.data.dp_type,
+                record.data.raw,
+            )
             try:
                 dp_handler = self.data_point_handlers[record.dp]
                 getattr(self, dp_handler)(record)
@@ -1714,15 +1817,16 @@ class TuyaNewManufCluster(CustomCluster):
                 self.debug("No datapoint handler for %s", record)
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
-
-        _LOGGER.debug(
-            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
-            self.endpoint.device.nwk,
-            self.endpoint.endpoint_id,
-            self.cluster_id,
-            record.data.payload,
-            record.dp,
-        )
+            except ValueError as exc:
+                # Some devices send malformed datapoints, e.g. a VALUE with 1 byte.
+                # Skip them, so the command is still acknowledged.
+                self.warning(
+                    "Ignoring invalid datapoint %s (%s, raw %s): %s",
+                    record.dp,
+                    record.data.dp_type,
+                    record.data.raw.hex(),
+                    exc,
+                )
 
         return (
             foundation.Status.SUCCESS
@@ -1732,6 +1836,7 @@ class TuyaNewManufCluster(CustomCluster):
 
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
+    handle_active_status_report_alt = handle_get_data
 
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle Time set request."""

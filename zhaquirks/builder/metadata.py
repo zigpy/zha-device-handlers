@@ -9,14 +9,16 @@ classes take plain keyword arguments and know nothing about it.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from enum import Enum
 from typing import Any
 
 import attrs
 from frozendict import frozendict
 from zha.application import EntityPlatform, EntityType
+from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
+from zha.application.platforms.event.const import ButtonEventType
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
@@ -156,6 +158,327 @@ class ZCLCommandButtonMetadata(EntityMetadata):
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
+# The `zha_event` data keys a button event can match: ZHA sends these for a cluster
+# command and for a quirk's `zha_send_event`. Its `unique_id` is left out: it holds
+# the device's IEEE address, so a quirk can't match it.
+ZHA_EVENT_DATA_KEYS = frozenset(
+    {"command", "cluster_id", "endpoint_id", "args", "params"}
+)
+
+
+def _validate_zha_event_data(event_data: Any, source: object) -> None:
+    """Validate that event data can match a `zha_event`."""
+    if not isinstance(event_data, Mapping):
+        raise TypeError(
+            f"Event data is a mapping of zha_event keys, not {event_data!r}: {source}"
+        )
+
+    if unknown := set(event_data) - ZHA_EVENT_DATA_KEYS:
+        raise ValueError(
+            f"Event data has keys a zha_event does not have"
+            f" ({', '.join(sorted(map(repr, unknown)))}), so it never matches: {source}"
+        )
+
+    if any(_has_empty_mapping(value) for value in event_data.values()):
+        raise ValueError(
+            f"Event data with an empty mapping matches any mapping in its place: {source}"
+        )
+
+
+def _has_empty_mapping(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return not value or any(map(_has_empty_mapping, value.values()))
+
+    if isinstance(value, list | tuple):
+        return any(map(_has_empty_mapping, value))
+
+    return False
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ButtonEvent:
+    """An event type a button event entity fires, and the `zha_event` firing it.
+
+    The `zha_event` is given either as the key of one of the quirk's device
+    automation triggers, so the event fires for the `zha_event`s that trigger's data
+    matches, or as `event_data` matched like the data of such a trigger.
+    """
+
+    event_type: ButtonEventType = attrs.field(converter=ButtonEventType)
+    trigger: tuple[str, str] | None = attrs.field(
+        default=None,
+        converter=lambda t: (
+            tuple(t) if isinstance(t, Iterable) and not isinstance(t, str) else t
+        ),
+    )
+    event_data: frozendict[str, Any] | None = attrs.field(
+        default=None, converter=lambda d: None if d is None else recursive_freeze(d)
+    )
+    # The number of presses of a `multi_press`
+    press_count: int | None = attrs.field(default=None)
+    # The device repeats this `long_press_start` while the button is held
+    repeats: bool = attrs.field(default=False)
+    # Only match while the button is held, to classify a `long_press_end` the device
+    # does not tell apart, by button or from a short press
+    while_held: bool = attrs.field(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the button event."""
+        if (self.trigger is None) == (self.event_data is None):
+            raise ValueError(
+                f"A button event needs either a trigger or event data: {self}"
+            )
+
+        if self.trigger is not None and (
+            not isinstance(self.trigger, tuple)
+            or len(self.trigger) != 2
+            or not all(isinstance(part, str) for part in self.trigger)
+        ):
+            raise ValueError(
+                f"A trigger is a (type, subtype) pair of strings: {self.trigger!r}"
+            )
+
+        if self.event_data is not None:
+            _validate_zha_event_data(self.event_data, self)
+
+            if not self.event_data:
+                raise ValueError(f"Empty event data matches every zha_event: {self}")
+
+        if (self.event_type == ButtonEventType.MULTI_PRESS) != (
+            self.press_count is not None
+        ):
+            raise ValueError(
+                f"A press count is required for '{ButtonEventType.MULTI_PRESS}' and"
+                f" only allowed there: {self}"
+            )
+
+        if self.repeats and self.event_type != ButtonEventType.LONG_PRESS_START:
+            raise ValueError(
+                f"Only '{ButtonEventType.LONG_PRESS_START}' can repeat: {self}"
+            )
+
+        if self.while_held and self.event_type != ButtonEventType.LONG_PRESS_END:
+            raise ValueError(
+                f"Only '{ButtonEventType.LONG_PRESS_END}' can match while held: {self}"
+            )
+
+        if self.press_count is not None and (
+            isinstance(self.press_count, bool)
+            or not isinstance(self.press_count, int)
+            or self.press_count < 2
+        ):
+            raise ValueError(f"A multi press needs at least two presses: {self}")
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ButtonEventMetadata(EntityMetadata):
+    """Metadata for an exposed button event entity.
+
+    v1 quirks expose these in their `button_event_entities` class attribute.
+    """
+
+    entity_platform: EntityPlatform = attrs.field(default=EntityPlatform.EVENT)
+    entity_type: EntityType = attrs.field(default=EntityType.STANDARD)
+    # Required: most buttons are on client clusters, and there is no attribute or
+    # command name to derive a unique ID suffix from
+    cluster_type: ClusterType = attrs.field(converter=ClusterType)
+    unique_id_suffix: str = attrs.field(
+        validator=[attrs.validators.instance_of(str), attrs.validators.min_len(1)]
+    )
+    events: tuple[ButtonEvent, ...] = attrs.field(converter=tuple)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the button event metadata."""
+        super().__attrs_post_init__()
+
+        if not self.events:
+            raise ValueError(f"A button event entity needs events: {self}")
+
+        event_types = {event.event_type for event in self.events}
+        if (
+            ButtonEventType.MULTI_PRESS in event_types
+            and ButtonEventType.SINGLE_PRESS not in event_types
+        ):
+            raise ValueError(
+                f"'{ButtonEventType.MULTI_PRESS}' is only allowed together with"
+                f" '{ButtonEventType.SINGLE_PRESS}': {self}"
+            )
+
+        # A repeated hold is only fired again after another event of the entity
+        if any(event.repeats for event in self.events) and event_types == {
+            ButtonEventType.LONG_PRESS_START
+        }:
+            raise ValueError(
+                f"A repeated '{ButtonEventType.LONG_PRESS_START}' needs another event"
+                f" type ending the hold: {self}"
+            )
+
+        if (
+            any(event.while_held for event in self.events)
+            and ButtonEventType.LONG_PRESS_START not in event_types
+        ):
+            raise ValueError(
+                f"Matching while held needs a '{ButtonEventType.LONG_PRESS_START}':"
+                f" {self}"
+            )
+
+
+def validate_button_event_triggers(
+    entity_metadata: ButtonEventMetadata,
+    device_automation_triggers: dict[tuple[str, str], Any],
+) -> None:
+    """Validate that a button event entity only uses triggers the quirk defines."""
+    for event in entity_metadata.events:
+        if event.trigger is None:
+            continue
+
+        if event.trigger not in device_automation_triggers:
+            raise ValueError(
+                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                " device automation trigger the quirk does not define"
+            )
+
+        if not device_automation_triggers[event.trigger]:
+            raise ValueError(
+                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                " device automation trigger without data, which matches every"
+                " zha_event"
+            )
+
+        _validate_zha_event_data(
+            device_automation_triggers[event.trigger],
+            f"trigger {event.trigger} of {entity_metadata.unique_id_suffix!r}",
+        )
+
+
+def _is_sequence(value: Any) -> bool:
+    return isinstance(value, list | tuple)
+
+
+def _event_data_covers(expected: Mapping[str, Any], other: Mapping[str, Any]) -> bool:
+    """Return whether every `zha_event` matching `other` also matches `expected`.
+
+    This follows ZHA's matching of button event data: every expected key with an
+    equal value, nested mappings as a subset, sequences item by item.
+    """
+    return all(
+        key in other and _event_value_covers(value, other[key])
+        for key, value in expected.items()
+    )
+
+
+def _event_value_covers(expected: Any, other: Any) -> bool:
+    if isinstance(expected, Mapping):
+        return isinstance(other, Mapping) and _event_data_covers(expected, other)
+
+    if _is_sequence(expected) and _is_sequence(other):
+        return len(expected) == len(other) and all(
+            map(_event_value_covers, expected, other)
+        )
+
+    return bool(expected == other)
+
+
+def _event_data_overlap(first: Mapping[str, Any], second: Mapping[str, Any]) -> bool:
+    """Return whether a `zha_event` can match both event data."""
+    return all(
+        _event_value_overlap(first[key], second[key])
+        for key in first.keys() & second.keys()
+    )
+
+
+def _event_value_overlap(first: Any, second: Any) -> bool:
+    if isinstance(first, Mapping) and isinstance(second, Mapping):
+        return _event_data_overlap(first, second)
+
+    if _is_sequence(first) and _is_sequence(second):
+        return len(first) == len(second) and all(
+            map(_event_value_overlap, first, second)
+        )
+
+    if isinstance(first, Mapping) or isinstance(second, Mapping):
+        return False
+
+    return bool(first == second)
+
+
+def validate_button_event_matches(
+    entities: Iterable[EntityMetadata],
+    device_automation_triggers: Mapping[tuple[str, str], Any],
+) -> None:
+    """Validate that one `zha_event` fires at most one button event of a quirk.
+
+    An entity fires its first match for a `zha_event`, trying the matches while held
+    first, so a match an earlier one covers never fires. Each entity fires its own
+    match, so the matches of two entities must not overlap, or one press would fire
+    both buttons. Only matches while held may overlap across entities: they fire
+    for the held button only.
+    """
+    matches: list[tuple[str, ButtonEvent, Mapping[str, Any]]] = []
+
+    for entity_metadata in entities:
+        if not isinstance(entity_metadata, ButtonEventMetadata):
+            continue
+
+        # Entities on different endpoints may share a suffix
+        suffix = (
+            f"{entity_metadata.unique_id_suffix!r}"
+            f" (endpoint {entity_metadata.endpoint_id})"
+        )
+        entity_matches = []
+        for event in entity_metadata.events:
+            if event.trigger is None:
+                assert event.event_data is not None
+                entity_matches.append((suffix, event, event.event_data))
+            elif event.trigger in device_automation_triggers:
+                entity_matches.append(
+                    (suffix, event, device_automation_triggers[event.trigger])
+                )
+
+        # ZHA tries the matches while held first, keeping the order otherwise
+        entity_matches.sort(key=lambda match: not match[1].while_held)
+        for index, (_, earlier, earlier_data) in enumerate(entity_matches):
+            for _, later, later_data in entity_matches[index + 1 :]:
+                if _event_data_covers(earlier_data, later_data) and (
+                    later.while_held or not earlier.while_held
+                ):
+                    raise ValueError(
+                        f"Button event {later} of {suffix} never fires: {earlier}"
+                        " matches every zha_event it matches"
+                    )
+
+        matches.extend(entity_matches)
+
+    for index, (suffix, event, data) in enumerate(matches):
+        for other_suffix, other, other_data in matches[index + 1 :]:
+            if (
+                other_suffix != suffix
+                and not (event.while_held and other.while_held)
+                and _event_data_overlap(data, other_data)
+            ):
+                raise ValueError(
+                    f"Button events {event} of {suffix} and {other} of"
+                    f" {other_suffix} can match the same zha_event, which would"
+                    " fire both"
+                )
+
+
+def validate_button_event_entities(entities: Iterable[EntityMetadata]) -> None:
+    """Validate that a quirk's button event entities have unique IDs."""
+    seen: set[tuple[int, str]] = set()
+
+    for entity_metadata in entities:
+        if not isinstance(entity_metadata, ButtonEventMetadata):
+            continue
+
+        key = (entity_metadata.endpoint_id, entity_metadata.unique_id_suffix)
+        if key in seen:
+            raise ValueError(
+                f"Button event entity {key[1]!r} on endpoint {key[0]} is defined twice"
+            )
+        seen.add(key)
+
+
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class FriendlyNameMetadata:
     """Metadata to rename a device."""
@@ -189,25 +512,82 @@ class DeviceAlertMetadata:
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
-class PreventDefaultEntityCreationMetadata:
-    """Metadata to prevent the default creation of an entity."""
+class EntityFilter:
+    """Match entities. Every field that is set must match."""
 
+    entity_cls: type[PlatformEntity] | None = attrs.field(default=None)
+    platform: EntityPlatform | None = attrs.field(default=None)
+    endpoint_id: int | None = attrs.field(default=None)
+    cluster_id: int | None = attrs.field(default=None)
+    cluster_type: ClusterType | None = attrs.field(default=None)
+    unique_id_suffix: str | None = attrs.field(default=None)
+    translation_key: str | None = attrs.field(default=None)
+    device_class: str | None = attrs.field(default=None)
+    function: Callable[[PlatformEntity], bool] | None = attrs.field(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the filter."""
+        if self.cluster_type is not None and self.cluster_id is None:
+            raise ValueError("`cluster_type` requires a `cluster_id`")
+
+    def matches(self, entity: PlatformEntity) -> bool:
+        """Return whether the entity matches the filter."""
+        if self.entity_cls is not None and type(entity) is not self.entity_cls:
+            return False
+        if self.platform is not None and self.platform != entity.PLATFORM:
+            return False
+        if self.endpoint_id is not None or self.cluster_id is not None:
+            # Only ZCL entities are bound to an endpoint and a cluster
+            if not isinstance(entity, ZclPlatformEntity):
+                return False
+            if self.endpoint_id is not None and entity.endpoint.id != self.endpoint_id:
+                return False
+            if self.cluster_id is not None and not entity.targets_cluster(
+                self.cluster_id, cluster_type=self.cluster_type
+            ):
+                return False
+        if self.unique_id_suffix is not None and not entity.unique_id.endswith(
+            "-" + self.unique_id_suffix.removeprefix("-")
+        ):
+            return False
+        if (
+            self.translation_key is not None
+            and entity.translation_key != self.translation_key
+        ):
+            return False
+        if self.device_class is not None and entity.device_class != self.device_class:
+            return False
+        if self.function is not None and not self.function(entity):
+            return False
+        return True
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class AddedEntityMetadata:
+    """Metadata to add an entity of a given class."""
+
+    entity_cls: type[PlatformEntity] = attrs.field()
     endpoint_id: int | None = attrs.field()
     cluster_id: int | None = attrs.field()
-    cluster_type: ClusterType | None = attrs.field()
-    unique_id_suffix: str | None = attrs.field()
-    function: Callable[[Any], bool] | None = attrs.field()
+    cluster_type: ClusterType = attrs.field()
+    kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ReplacedEntityMetadata:
+    """Metadata to replace the default entity of exactly `base_cls` matching a filter."""
+
+    base_cls: type[PlatformEntity] = attrs.field()
+    filter: EntityFilter = attrs.field()
+    entity_cls: type[PlatformEntity] = attrs.field()
+    kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ChangedEntityMetadata:
     """Metadata to change entity metadata for matching entities."""
 
-    endpoint_id: int | None = attrs.field()
-    cluster_id: int | None = attrs.field()
-    cluster_type: ClusterType | None = attrs.field()
-    unique_id_suffix: str | None = attrs.field()
-    function: Callable[[Any], bool] | None = attrs.field()
+    filter: EntityFilter = attrs.field()
     # Entity metadata changes
     new_primary: bool | None = attrs.field(default=None)
     new_unique_id: str | None = attrs.field(default=None)
@@ -226,7 +606,7 @@ class ChangedEntityMetadata:
 
 def recursive_freeze(obj: Any) -> Any:
     """Recursively convert mutable collections to immutable ones."""
-    if isinstance(obj, dict):
+    if isinstance(obj, Mapping):
         return frozendict({k: recursive_freeze(v) for k, v in obj.items()})
     if isinstance(obj, tuple | list | set):
         return tuple(recursive_freeze(v) for v in obj)
@@ -246,13 +626,13 @@ class QuirkDefinition:
     friendly_name: FriendlyNameMetadata | None = attrs.field(default=None)
     exposes_features: tuple[ExposesFeatureMetadata, ...] = attrs.field(factory=tuple)
     device_alerts: tuple[DeviceAlertMetadata, ...] = attrs.field(factory=tuple)
-    disabled_default_entities: tuple[PreventDefaultEntityCreationMetadata, ...] = (
-        attrs.field(factory=tuple)
-    )
+    disabled_default_entities: tuple[EntityFilter, ...] = attrs.field(factory=tuple)
     changed_entity_metadata: tuple[ChangedEntityMetadata, ...] = attrs.field(
         factory=tuple
     )
     entity_metadata: tuple[EntityMetadata, ...] = attrs.field(factory=tuple)
+    added_entities: tuple[AddedEntityMetadata, ...] = attrs.field(factory=tuple)
+    replaced_entities: tuple[ReplacedEntityMetadata, ...] = attrs.field(factory=tuple)
     device_automation_triggers: frozendict[tuple[str, str], frozendict[str, str]] = (
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )

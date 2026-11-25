@@ -1,6 +1,8 @@
 """Innr SP 120 plug."""
 
 from zigpy.profiles import zll
+import zigpy.types as t
+from zigpy.zcl import AttributeReportedEvent
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -14,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -29,6 +32,37 @@ from zhaquirks.innr import (
     MeteringClusterInnrOld,
 )
 from zhaquirks.legacy import CustomDevice
+
+
+class MeteringClusterInnrSP120(MeteringClusterInnrOld):
+    """SP 120 metering that recovers the manufacturer-framed summation report.
+
+    The firmware reports the standard ``current_summ_delivered`` (0x0000) with
+    the manufacturer-specific bit set (Innr code 0x1166), so zigpy drops it
+    instead of applying it to the ZCL attribute. Define the attribute the device
+    reports and mirror its value onto the standard ZCL attribute.
+    """
+
+    class AttributeDefs(Metering.AttributeDefs):
+        """Metering attributes plus the manufacturer-specific summation reported."""
+
+        current_mfg_summ_delivered = ZCLAttributeDef(
+            id=0x0000,
+            type=t.uint48_t,
+            manufacturer_code=0x1166,
+        )
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Listen for the manufacturer-specific summation reports."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._mirror_summation)
+
+    def _mirror_summation(self, event: AttributeReportedEvent) -> None:
+        """Mirror the manufacturer-specific summation onto the ZCL attribute."""
+        if event.attribute_name == self.AttributeDefs.current_mfg_summ_delivered.name:
+            self.update_attribute(
+                Metering.AttributeDefs.current_summ_delivered, event.value
+            )
 
 
 class SP120(CustomDevice):
@@ -79,7 +113,7 @@ class SP120(CustomDevice):
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
-                    MeteringClusterInnrOld,
+                    MeteringClusterInnrSP120,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,

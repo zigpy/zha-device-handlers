@@ -15,6 +15,7 @@ from typing import Any
 from zha.quirks import (
     DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
     DeviceMatch,
+    DeviceRegistry,
     ModelInfo,
     QuirkRegistryEntry,
     QuirkSource,
@@ -32,11 +33,18 @@ from zigpy.zcl import (
     AttributeUpdatedEvent,
     foundation,
 )
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
+from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
+from zhaquirks.builder.metadata import (
+    QuirkDefinition,
+    validate_button_event_entities,
+    validate_button_event_matches,
+    validate_button_event_triggers,
+)
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.legacy import (
     DEVICE_REGISTRY,
@@ -50,6 +58,8 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_MOVE_DOWN_RELEASE,
+    COMMAND_MOVE_UP_RELEASE,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -92,7 +102,6 @@ class LocalDataCluster(CustomCluster):
     These are attributes that should be populated later.
     """
 
-    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _DEFAULT_VALUES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
@@ -133,12 +142,9 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            if record.attrid in self._CONSTANT_ATTRIBUTES:
-                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
-            else:
-                record.value.value = self._attr_cache.get(
-                    record.attrid, self._DEFAULT_VALUES.get(record.attrid)
-                )
+            record.value.value = self._attr_cache.get(
+                record.attrid, self._DEFAULT_VALUES.get(record.attrid)
+            )
             if (
                 record.value.value is not None
                 or record.attrid in self._VALID_ATTRIBUTES
@@ -217,6 +223,58 @@ class EventableCluster(CustomCluster):
                 VALUE: event.value,
             },
         )
+
+
+class LevelControlWithMoveDirection(CustomCluster, LevelControl):
+    """LevelControl cluster that tells the release of a dim button hold apart.
+
+    Several remotes send the same stop command for both dim buttons, so the stop alone
+    does not say which button was released. This tracks the direction of the move that
+    started the hold and emits a `move_up_release` or `move_down_release` event for the
+    stop, which a quirk's long release triggers can match. No event is emitted for a
+    stop that follows no move, for instance after a restart in the middle of a hold.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._last_move_direction: int | None = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        # This parameter is unused and kept only for backwards compatibility
+        dst_addressing: t.AddrMode | None = None,
+    ):
+        """Handle cluster specific commands.
+
+        Track move commands to remember direction for stop commands.
+        """
+        if hdr.command_id in (
+            LevelControl.ServerCommandDefs.move.id,
+            LevelControl.ServerCommandDefs.move_with_on_off.id,
+        ):
+            move_mode = args[0]
+            self._last_move_direction = move_mode
+        elif (
+            hdr.command_id
+            in (
+                LevelControl.ServerCommandDefs.stop.id,
+                LevelControl.ServerCommandDefs.stop_with_on_off.id,
+            )
+            and self._last_move_direction is not None
+        ):
+            event = (
+                COMMAND_MOVE_UP_RELEASE
+                if self._last_move_direction == LevelControl.MoveMode.Up
+                else COMMAND_MOVE_DOWN_RELEASE
+            )
+            self.listener_event(ZHA_SEND_EVENT, event, [])
+            self._last_move_direction = None
+
+        super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
 
 class GroupBoundCluster(CustomCluster):
@@ -327,6 +385,11 @@ class _Motion(CustomCluster, IasZone):
         self._loop = asyncio.get_running_loop()
         self._timer_handle = None
 
+    @property
+    def reset_after(self) -> int:
+        """Seconds before resetting motion; override to derive from an attribute."""
+        return self.reset_s
+
     def _turn_off(self):
         self._timer_handle = None
         self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
@@ -355,7 +418,7 @@ class MotionWithReset(_Motion):
         if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
             if self.send_occupancy_event:
                 self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
 
@@ -381,7 +444,7 @@ class MotionOnEvent(_Motion):
         if self._timer_handle:
             self._timer_handle.cancel()
 
-        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+        self._timer_handle = self._loop.call_later(self.reset_after, self._turn_off)
 
 
 class _Occupancy(CustomCluster, OccupancySensing):
@@ -548,32 +611,50 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
             filters=(signature_matches(signature),),
         ),
         zigpy_transforms=(ReplaceZigpyDevice(cls),),
-        zha_device_factory=None,
+        zha_device_factory=_legacy_zha_device_factory(cls),
         source=QuirkSource.from_class(cls),
     )
 
 
-def _register_pending_quirks() -> None:
-    """Drain quirks queued by a round of imports into ZHA's unified registry."""
+def _legacy_zha_device_factory(cls: type[CustomDevice]) -> QuirkV2Factory | None:
+    """Return the ZHA device factory exposing a v1 quirk's button event entities.
 
-    # Imported lazily: `zhaquirks.builder` pulls in `zha.application` (discovery and the
-    # platform modules), which participates in an import cycle and so must not be
-    # imported while `zhaquirks` itself is still being imported.
-    from zhaquirks.builder import UNBUILT_QUIRK_BUILDERS  # noqa: PLC0415
+    v1 quirks have no ZHA-level metadata otherwise, so a quirk without button event
+    entities keeps the plain ZHA device.
+    """
+    entities = tuple(cls.button_event_entities)
+    if not entities:
+        return None
 
-    # TODO: remove this hack. Adding to the registry was only missing from the public
-    # API for a short period of time. We don't need to keep this around forever.
-    for builder in list(UNBUILT_QUIRK_BUILDERS):
-        if builder.manufacturer_model_metadata:
-            _LOGGER.warning(
-                "Found a v2 quirk that was not added to the registry: %s", builder
-            )
-            builder.add_to_registry()
+    triggers = getattr(cls, "device_automation_triggers", {})
+    validate_button_event_entities(entities)
+    for entity_metadata in entities:
+        validate_button_event_triggers(entity_metadata, triggers)
+    validate_button_event_matches(entities, triggers)
 
-    UNBUILT_QUIRK_BUILDERS.clear()
+    return QuirkV2Factory(QuirkV2Device, QuirkDefinition(entity_metadata=entities))
+
+
+def _register_pending_quirks(*, swallow_errors: bool = False) -> None:
+    """Drain legacy v1 quirks queued by imports into ZHA's unified registry.
+
+    With `swallow_errors`, a quirk that fails to register is logged and skipped instead
+    of raising, so one broken custom quirk cannot keep ZHA from starting.
+    """
 
     for cls in PENDING_LEGACY_QUIRKS:
-        ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+        try:
+            entry = _legacy_quirk_to_registry_entry(cls)
+            if swallow_errors:
+                # `register` can index some of an entry's models before it rejects
+                # another one, so try it on an empty registry first: a skipped
+                # quirk must not stay registered for part of its models
+                DeviceRegistry().register(entry)
+            ZHA_DEVICE_REGISTRY.register(entry)
+        except Exception:
+            if not swallow_errors:
+                raise
+            _LOGGER.exception("Failed to register custom quirk %r", cls)
 
     PENDING_LEGACY_QUIRKS.clear()
 
@@ -583,10 +664,8 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     Imports every `zhaquirks` module (firing the registration side effects of v1
     `CustomDevice` subclasses into zigpy's registry and v2 `QuirkBuilder`
-    definitions into ZHA's), flushes any v2 builders that defined a
-    manufacturer/model but were never added to the registry, and loads custom
-    quirks from `custom_quirks_path`. Owned here (rather than ZHA's gateway) so
-    ZHA never imports zhaquirks.
+    definitions into ZHA's) and loads custom quirks from `custom_quirks_path`.
+    Owned here (rather than ZHA's gateway) so ZHA never imports zhaquirks.
     """
     if custom_quirks_path is not None:
         path = pathlib.Path(custom_quirks_path)
@@ -630,7 +709,8 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     # Custom quirks queued new v1/v2 registrations during the import above; drain
     # them too, or they never reach ZHA's registry and silently fail to resolve.
-    _register_pending_quirks()
+    # A broken custom quirk is logged and skipped rather than failing startup.
+    _register_pending_quirks(swallow_errors=True)
 
     if loaded:
         _LOGGER.warning(

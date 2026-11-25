@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
 from zigpy.profiles import zha, zll
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -16,18 +17,21 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
     COMMAND_MOVE,
+    COMMAND_MOVE_DOWN_RELEASE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_TO_LEVEL_ON_OFF,
+    COMMAND_MOVE_UP_RELEASE,
     COMMAND_PRESS,
     COMMAND_RELEASE,
     COMMAND_STEP,
     COMMAND_STEP_ON_OFF,
-    COMMAND_STOP,
-    COMMAND_STOP_ON_OFF,
     COMMAND_TOGGLE,
     DEVICE_TYPE,
     DIM_DOWN,
@@ -55,6 +59,117 @@ from zhaquirks.ikea import (
     ScenesCluster,
 )
 from zhaquirks.legacy import CustomDevice
+
+# The arrows send the same release, so it ends the hold of the arrow held
+ARROW_HOLD_RELEASE = ButtonEvent(
+    event_type=ButtonEventType.LONG_PRESS_END,
+    event_data={
+        COMMAND: COMMAND_RELEASE,
+        CLUSTER_ID: Scenes.cluster_id,
+        ENDPOINT_ID: 1,
+    },
+    while_held=True,
+)
+
+FIVE_BUTTON_EVENT_ENTITIES = (
+    # The center button sends a toggle as soon as it is pressed, then a
+    # move_to_level_with_on_off when held, and nothing when released
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_START,
+                trigger=(SHORT_PRESS, TURN_ON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                },
+                repeats=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_toggle",
+        translation_key="toggle_button",
+        fallback_name="Toggle button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, DIM_UP)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=LevelControl.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_dim_up",
+        translation_key="dim_up_button",
+        fallback_name="Dim up button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, DIM_DOWN)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_DOWN),
+            ),
+        ],
+        cluster_id=LevelControl.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_dim_down",
+        translation_key="dim_down_button",
+        fallback_name="Dim down button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, LEFT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, LEFT)
+            ),
+            ARROW_HOLD_RELEASE,
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_left",
+        translation_key="left_button",
+        fallback_name="Left button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, RIGHT)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, RIGHT),
+            ),
+            ARROW_HOLD_RELEASE,
+        ],
+        cluster_id=Scenes.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_right",
+        translation_key="right_button",
+        fallback_name="Right button",
+    ),
+)
 
 
 class IkeaTradfriRemote1(CustomDevice):
@@ -109,7 +224,7 @@ class IkeaTradfriRemote1(CustomDevice):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -142,7 +257,7 @@ class IkeaTradfriRemote1(CustomDevice):
             PARAMS: {"move_mode": 0},
         },
         (LONG_RELEASE, DIM_UP): {
-            COMMAND: COMMAND_STOP_ON_OFF,
+            COMMAND: COMMAND_MOVE_UP_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -159,7 +274,7 @@ class IkeaTradfriRemote1(CustomDevice):
             PARAMS: {"move_mode": 1},
         },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_MOVE_DOWN_RELEASE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -202,6 +317,8 @@ class IkeaTradfriRemote1(CustomDevice):
             },
         },
     }
+
+    button_event_entities = FIVE_BUTTON_EVENT_ENTITIES
 
 
 class IkeaTradfriRemote2(IkeaTradfriRemote1):
@@ -255,7 +372,7 @@ class IkeaTradfriRemote2(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -315,7 +432,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -376,7 +493,7 @@ class IkeaTradfriRemote4(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -439,7 +556,7 @@ class IkeaTradfriRemote5(IkeaTradfriRemote1):
                     Groups.cluster_id,
                     ScenesCluster,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlWithMoveDirection,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],

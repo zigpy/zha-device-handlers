@@ -10,8 +10,8 @@ from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeAccess
 
 import zhaquirks
+from zhaquirks.shelly import SHELLY_MANUFACTURER_CODE
 from zhaquirks.shelly.wifi import (
-    SHELLY_MANUFACTURER_CODE,
     SHELLY_WIFI_SETUP_CLUSTER_ID,
     SHELLY_WIFI_SETUP_ENDPOINT_ID,
     SHELLY_WIFI_SETUP_PROFILE_ID,
