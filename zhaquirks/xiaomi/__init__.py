@@ -67,6 +67,7 @@ AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"
+BATTERY_QUANTITY = "battery_quantity"
 BATTERY_SIZE = "battery_size"
 BATTERY_SIZE_ATTR = 0x0031
 BATTERY_QUANTITY_ATTR = 0x0033
@@ -573,7 +574,7 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self._CONSTANT_ATTRIBUTES = {
-            BATTERY_QUANTITY_ATTR: 1,
+            BATTERY_QUANTITY_ATTR: getattr(self.endpoint.device, BATTERY_QUANTITY, 1),
             BATTERY_SIZE_ATTR: getattr(
                 self.endpoint.device, BATTERY_SIZE, BatterySize.Unknown
             ),
