@@ -89,108 +89,53 @@ class CustomUserInterfaceCluster(CustomCluster, UserInterface):
         )
 
 
-(
-    QuirkBuilder("MiaoMiaoCe", "MHO-C401N-z")
-    .applies_to("MiaMiaoCe", "MHO-C401N-z")  # typo until v. 1.2.2
-    .applies_to("MiaoMiaoCe", "MHO-C401-z")
-    .applies_to("MiaoMiaoCe", "MHO-C122-z")
-    .applies_to("MiaMiaoCe", "MHO-C122-z")  # typo until v. 1.2.2
-    .applies_to("Xiaomi", "LYWSD03MMC-z")
-    .applies_to("Xiaomi", "MJWSD06MMC-z")
-    .applies_to("Tuya", "TS0201-z")
-    .applies_to("Tuya", "TH03Z-z")
-    .applies_to("Tuya", "ZTH01-z")
-    .applies_to("Tuya", "ZTH02-z")
-    .applies_to("Tuya", "LKTMZL02-z")
-    .applies_to("Tuya", "ZY-ZTH02-z")
-    .applies_to("Tuya", "ZG-227Z-z")
-    .applies_to("Sonoff", "TH03-z")
-    .applies_to("Qingping", "CGDK2-z")
-    .removes(CustomUserInterfaceCluster.cluster_id, cluster_type=ClusterType.Client)
-    .adds(CustomUserInterfaceCluster)
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.temperature_offset.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=-327.67,
-        max_value=327.67,
-        step=0.01,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="temperature_offset",
-        fallback_name="Temperature offset",
-        multiplier=0.01,
-        mode="box",
+def _add_common(builder: QuirkBuilder) -> QuirkBuilder:
+    """Add the cluster and the entities every firmware build supports."""
+    return (
+        builder.removes(
+            CustomUserInterfaceCluster.cluster_id, cluster_type=ClusterType.Client
+        )
+        .adds(CustomUserInterfaceCluster)
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.temperature_offset.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=-327.67,
+            max_value=327.67,
+            step=0.01,
+            unit=UnitOfTemperature.CELSIUS,
+            translation_key="temperature_offset",
+            fallback_name="Temperature offset",
+            multiplier=0.01,
+            mode="box",
+        )
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.humidity_offset.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=-327.67,
+            max_value=327.67,
+            step=0.01,
+            unit=PERCENTAGE,
+            translation_key="humidity_offset",
+            fallback_name="Humidity offset",
+            multiplier=0.01,
+            mode="box",
+        )
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.measurement_interval.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=3,
+            max_value=255,
+            unit=UnitOfTime.SECONDS,
+            translation_key="measurement_interval",
+            fallback_name="Measurement interval",
+            mode="box",
+        )
     )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.humidity_offset.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=-327.67,
-        max_value=327.67,
-        step=0.01,
-        unit=PERCENTAGE,
-        translation_key="humidity_offset",
-        fallback_name="Humidity offset",
-        multiplier=0.01,
-        mode="box",
-    )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.comfort_temperature_min.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=-327.67,
-        max_value=327.67,
-        step=0.01,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="comfort_temperature_min",
-        fallback_name="Comfort temperature min",
-        multiplier=0.01,
-        mode="box",
-    )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.comfort_temperature_max.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=-327.67,
-        max_value=327.67,
-        step=0.01,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="comfort_temperature_max",
-        fallback_name="Comfort temperature max",
-        multiplier=0.01,
-        mode="box",
-    )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.comfort_humidity_min.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=0,
-        max_value=99,
-        step=1,
-        unit=PERCENTAGE,
-        translation_key="comfort_humidity_min",
-        fallback_name="Comfort humidity min",
-        multiplier=0.01,
-        mode="box",
-    )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.comfort_humidity_max.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=0,
-        max_value=99,
-        step=1,
-        unit=PERCENTAGE,
-        translation_key="comfort_humidity_max",
-        fallback_name="Comfort humidity max",
-        multiplier=0.01,
-        mode="box",
-    )
-    .number(
-        CustomUserInterfaceCluster.AttributeDefs.measurement_interval.name,
-        CustomUserInterfaceCluster.cluster_id,
-        min_value=3,
-        max_value=255,
-        unit=UnitOfTime.SECONDS,
-        translation_key="measurement_interval",
-        fallback_name="Measurement interval",
-        mode="box",
-    )
-    .switch(
+
+
+def _add_display(builder: QuirkBuilder) -> QuirkBuilder:
+    """Add the display switch, for firmware builds with a display."""
+    return builder.switch(
         CustomUserInterfaceCluster.AttributeDefs.display.name,
         CustomUserInterfaceCluster.cluster_id,
         off_value=1,
@@ -198,13 +143,101 @@ class CustomUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="display_enabled",
         fallback_name="Display enabled",
     )
-    .switch(
-        CustomUserInterfaceCluster.AttributeDefs.schedule_programming_visibility.name,
-        CustomUserInterfaceCluster.cluster_id,
-        translation_key="show_smiley",
-        fallback_name="Show smiley",
-        off_value=ScheduleProgrammingVisibility.Disabled,
-        on_value=ScheduleProgrammingVisibility.Enabled,
+
+
+def _add_comfort(builder: QuirkBuilder) -> QuirkBuilder:
+    """Add the comfort indicator entities, for firmware builds that show one."""
+    return (
+        builder.number(
+            CustomUserInterfaceCluster.AttributeDefs.comfort_temperature_min.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=-327.67,
+            max_value=327.67,
+            step=0.01,
+            unit=UnitOfTemperature.CELSIUS,
+            translation_key="comfort_temperature_min",
+            fallback_name="Comfort temperature min",
+            multiplier=0.01,
+            mode="box",
+        )
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.comfort_temperature_max.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=-327.67,
+            max_value=327.67,
+            step=0.01,
+            unit=UnitOfTemperature.CELSIUS,
+            translation_key="comfort_temperature_max",
+            fallback_name="Comfort temperature max",
+            multiplier=0.01,
+            mode="box",
+        )
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.comfort_humidity_min.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=0,
+            max_value=99,
+            step=1,
+            unit=PERCENTAGE,
+            translation_key="comfort_humidity_min",
+            fallback_name="Comfort humidity min",
+            multiplier=0.01,
+            mode="box",
+        )
+        .number(
+            CustomUserInterfaceCluster.AttributeDefs.comfort_humidity_max.name,
+            CustomUserInterfaceCluster.cluster_id,
+            min_value=0,
+            max_value=99,
+            step=1,
+            unit=PERCENTAGE,
+            translation_key="comfort_humidity_max",
+            fallback_name="Comfort humidity max",
+            multiplier=0.01,
+            mode="box",
+        )
+        .switch(
+            CustomUserInterfaceCluster.AttributeDefs.schedule_programming_visibility.name,
+            CustomUserInterfaceCluster.cluster_id,
+            translation_key="show_smiley",
+            fallback_name="Show smiley",
+            off_value=ScheduleProgrammingVisibility.Disabled,
+            on_value=ScheduleProgrammingVisibility.Enabled,
+        )
     )
-    .add_to_registry()
-)
+
+
+# The firmware leaves the display attribute out of builds without a display
+# (`USE_DISPLAY`) and the comfort attributes out of builds without the comfort
+# indicator (`SHOW_SMILEY`), see the board headers of the firmware.
+
+# Display and comfort indicator
+_add_comfort(
+    _add_display(
+        _add_common(
+            QuirkBuilder("MiaoMiaoCe", "MHO-C401N-z")
+            .applies_to("MiaMiaoCe", "MHO-C401N-z")  # typo until v. 1.2.2
+            .applies_to("MiaoMiaoCe", "MHO-C401-z")
+            .applies_to("MiaoMiaoCe", "MHO-C122-z")
+            .applies_to("MiaMiaoCe", "MHO-C122-z")  # typo until v. 1.2.2
+            .applies_to("Xiaomi", "LYWSD03MMC-z")
+            .applies_to("Xiaomi", "MJWSD06MMC-z")
+            .applies_to("Sonoff", "TH03-z")
+        )
+    )
+).add_to_registry()
+
+# Display without the comfort indicator
+_add_display(
+    _add_common(QuirkBuilder("Tuya", "LKTMZL02-z").applies_to("Qingping", "CGDK2-z"))
+).add_to_registry()
+
+# No display
+_add_common(
+    QuirkBuilder("Tuya", "TS0201-z")
+    .applies_to("Tuya", "TH03Z-z")
+    .applies_to("Tuya", "ZTH01-z")
+    .applies_to("Tuya", "ZTH02-z")
+    .applies_to("Tuya", "ZY-ZTH02-z")
+    .applies_to("Tuya", "ZG-227Z-z")
+).add_to_registry()
