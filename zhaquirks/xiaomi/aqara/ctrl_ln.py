@@ -119,7 +119,7 @@ class CtrlLn(XiaomiCustomDevice):
         """WallSwitchMultistateInputCluster: fire events corresponding to press type."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1"), (LUMI, "lumi.ctrl_ln2.aq1")],
+        MODELS_INFO: [(LUMI, "lumi.ctrl_ln2.aq1")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -275,10 +275,24 @@ class CtrlLn(XiaomiCustomDevice):
         },
     }
 
-    # The switch counts the presses itself. The single rocker version only has
-    # button 1, the double rocker one reports pressing both rockers as button 3.
+    # The switch counts the presses itself. It reports pressing both rockers as
+    # button 3.
     button_event_entities = (
         _button_event_entity(BUTTON_1, 5, 1),
         _button_event_entity(BUTTON_2, 6, 2),
         _button_event_entity(BUTTON_3, 7, None),
     )
+
+
+class CtrlLn1(CtrlLn):
+    """Aqara single key switch device.
+
+    It only has button 1, so it gets no entities for button 2 or both buttons.
+    """
+
+    signature = {
+        **CtrlLn.signature,
+        MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1")],
+    }
+
+    button_event_entities = (_button_event_entity(BUTTON_1, 5, 1),)
