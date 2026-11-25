@@ -18,7 +18,6 @@ from zhaquirks.builder import (
     BinarySensorDeviceClass,
     ButtonEvent,
     ButtonEventType,
-    EntityFilter,
     EntityPlatform,
     EntityType,
     QuirkBuilder,
@@ -193,11 +192,9 @@ zbm_1c_quirk = (
     .adds(SonoffInputConfigCluster)
     .adds(OnOff, cluster_type=ClusterType.Client)
     .removes_entity(
-        EntityFilter(
-            endpoint_id=1,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        device_class=BinarySensorDeviceClass.OPENING,
     )
     .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
@@ -230,11 +227,9 @@ zbm_2c_quirk = (
     .applies_to("SONOFF", "ZBM5-2C-120")
     .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
     .removes_entity(
-        EntityFilter(
-            endpoint_id=2,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
+        endpoint_id=2,
+        cluster_id=OnOff.cluster_id,
+        device_class=BinarySensorDeviceClass.OPENING,
     )
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_2_detached.name,
@@ -256,11 +251,9 @@ zbm_3c_quirk = (
     .applies_to("SONOFF", "ZBM5-3C-120")
     .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
     .removes_entity(
-        EntityFilter(
-            endpoint_id=3,
-            cluster_id=OnOff.cluster_id,
-            device_class=BinarySensorDeviceClass.OPENING,
-        )
+        endpoint_id=3,
+        cluster_id=OnOff.cluster_id,
+        device_class=BinarySensorDeviceClass.OPENING,
     )
     .switch(
         SonoffInputConfigCluster.AttributeDefs.relay_3_detached.name,
