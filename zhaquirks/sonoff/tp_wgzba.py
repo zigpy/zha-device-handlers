@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from contextlib import suppress
 from datetime import datetime
 from enum import IntEnum
 from typing import Any, Final
@@ -480,7 +479,6 @@ class SonoffTPWGZBAThermostatCluster(CustomCluster, Thermostat):
                     SonoffTPWGZBAPrivateCluster.AttributeDefs.tp_wgzba_ui_system_mode.id,
                     TPWGZBASystemMode(int(value)),
                 )
-                private_cluster._update_device_work_mode_from_system(value)
             value = self._system_mode_to_ha(value)
         super()._update_attribute(attrid, value)
 
@@ -1061,10 +1059,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
         self._update_attribute(
             self.AttributeDefs.temporary_temperature_mode_settings.id,
             t.uint8_t(int(TemporaryTemperatureModeSettings.Idle)),
-        )
-        self._update_attribute(
-            self.AttributeDefs.device_work_mode.id,
-            TPWGZBADeviceWorkMode.Schedule,
         )
         self._update_attribute(
             self.AttributeDefs.current_ntc_temperature_state.id,
@@ -2030,41 +2024,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             return TemporaryTemperatureModeState.Timer
         return TemporaryTemperatureModeState.Idle
 
-    @staticmethod
-    def _device_work_mode_from_system(system_mode: Any) -> TPWGZBADeviceWorkMode:
-        """Map the raw thermostat system mode to the display work mode."""
-
-        mode = TPWGZBASystemMode(int(system_mode))
-        if mode == TPWGZBASystemMode.Off:
-            return TPWGZBADeviceWorkMode.Frost_Protection
-        if mode == TPWGZBASystemMode.Schedule:
-            return TPWGZBADeviceWorkMode.Schedule
-        return TPWGZBADeviceWorkMode.Manual
-
-    def _refresh_device_work_mode(self) -> None:
-        """Refresh the display work mode from the cached standard system mode."""
-
-        current_mode = self.get(self.AttributeDefs.tp_wgzba_ui_system_mode.name)
-        if current_mode is None:
-            thermostat_cluster = getattr(self.endpoint, "thermostat", None)
-            if thermostat_cluster is None:
-                return
-            current_mode = thermostat_cluster.get(
-                Thermostat.AttributeDefs.system_mode.name
-            )
-        if current_mode is None:
-            return
-
-        self._update_device_work_mode_from_system(current_mode)
-
-    def _update_device_work_mode_from_system(self, system_mode: Any) -> None:
-        """Update the display work mode from a raw thermostat system mode."""
-
-        super()._update_attribute(
-            self.AttributeDefs.device_work_mode.id,
-            self._device_work_mode_from_system(system_mode),
-        )
-
     @classmethod
     def _format_ntc_current_temperature_display(
         cls, current_temp: int | None, current_state: NtcCurrentTemperatureState
@@ -2182,16 +2141,11 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
         elif attrid == self.AttributeDefs.device_work_mode_source.id:
             # 0x0018 is the firmware's actual DeviceWorkMode report, including Holiday.
-            try:
-                display_mode = TPWGZBADeviceWorkMode(int(value))
-            except ValueError:
-                display_mode = self._device_work_mode_from_system(
-                    self.get(self.AttributeDefs.tp_wgzba_ui_system_mode.name)
-                    or TPWGZBASystemMode.Schedule
-                )
+            if value not in tuple(TPWGZBADeviceWorkMode):
+                return
             super()._update_attribute(
                 self.AttributeDefs.device_work_mode.id,
-                display_mode,
+                TPWGZBADeviceWorkMode(int(value)),
             )
 
     async def _read_real_system_mode(
@@ -2230,12 +2184,9 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
     async def _read_device_work_mode(
         self, manufacturer: int | None = None
-    ) -> TPWGZBADeviceWorkMode:
-        """Read the display work mode from standard mode and temporary reports."""
+    ) -> TPWGZBADeviceWorkMode | None:
+        """Read the display work mode exclusively from the firmware's 0x0018."""
 
-        mode = await self._read_real_system_mode(manufacturer=manufacturer)
-
-        mode_source = self.get(self.AttributeDefs.device_work_mode_source.name)
         raw_success, _ = self._split_read_results(
             await super().read_attributes_raw(
                 [self.AttributeDefs.device_work_mode_source.id],
@@ -2243,18 +2194,13 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             )
         )
         if raw_success and raw_success[0].status == foundation.Status.SUCCESS:
-            mode_source = t.uint8_t(int(raw_success[0].value.value))
             self._update_attribute(
                 self.AttributeDefs.device_work_mode_source.id,
-                mode_source,
+                raw_success[0].value.value,
             )
 
-        display_mode = self._device_work_mode_from_system(mode)
-        if mode_source is not None:
-            with suppress(ValueError):
-                display_mode = TPWGZBADeviceWorkMode(int(mode_source))
-        super()._update_attribute(self.AttributeDefs.device_work_mode.id, display_mode)
-        return display_mode
+        # Retain only a valid 0x0018-derived state if the read fails or is unknown.
+        return self.get(self.AttributeDefs.device_work_mode.name)
 
     async def read_attributes_raw(
         self, attributes: list[int], manufacturer: int | None = None, **kwargs
@@ -2331,7 +2277,13 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
             remaining.remove(self.AttributeDefs.device_work_mode.id)
             mode = await self._read_device_work_mode(manufacturer=manufacturer)
             success.append(
-                self._read_record(self.AttributeDefs.device_work_mode.id, mode)
+                self._read_record(
+                    self.AttributeDefs.device_work_mode.id,
+                    mode,
+                    foundation.Status.FAILURE
+                    if mode is None
+                    else foundation.Status.SUCCESS,
+                )
             )
 
         temporary_mode_ui_ids = {
@@ -2623,7 +2575,6 @@ class SonoffTPWGZBAPrivateCluster(CustomCluster):
 
         if _write_succeeded(result):
             self._update_attribute(self.AttributeDefs.tp_wgzba_ui_system_mode.id, mode)
-            self._update_device_work_mode_from_system(mode)
         return result
 
     async def _write_remote_temperature_attributes(

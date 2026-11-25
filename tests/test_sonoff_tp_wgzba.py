@@ -361,9 +361,188 @@ async def test_tp_wgzba_system_mode_read_preserves_schedule_mode(
         await thermostat_cluster.read_attributes([mode_attribute.id])
 
     assert (
-        private_cluster.get(private_cluster.AttributeDefs.device_work_mode.name)
+        private_cluster.get(private_cluster.AttributeDefs.device_work_mode.name) is None
+    )
+
+
+@pytest.mark.parametrize("work_mode", [2, 3, 4, 5, 6])
+@pytest.mark.parametrize("system_mode", list(TPWGZBASystemMode))
+async def test_tp_wgzba_system_mode_does_not_change_work_mode(
+    tp_wgzba_device, work_mode, system_mode
+):
+    """Keep all firmware work modes independent of standard mode updates and reads."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    private_cluster = endpoint.sonoff_private
+    defs = private_cluster.AttributeDefs
+    mode_attribute = Thermostat.AttributeDefs.system_mode
+    private_cluster._update_attribute(defs.device_work_mode_source.id, work_mode)
+
+    # Repeated standard updates must never replace the firmware's precise state.
+    for _ in range(2):
+        endpoint.thermostat._update_attribute(mode_attribute.id, system_mode)
+        assert private_cluster.get(defs.device_work_mode.name) == work_mode
+
+    record = foundation.ReadAttributeRecord(
+        attrid=mode_attribute.id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(type=mode_attribute.zcl_type, value=system_mode),
+    )
+    with (
+        mock.patch.object(
+            endpoint.thermostat,
+            "_read_attributes",
+            mock.AsyncMock(return_value=([record],)),
+        ),
+        mock.patch.object(
+            private_cluster, "_read_attributes", mock.AsyncMock()
+        ) as private_read,
+    ):
+        await endpoint.thermostat.read_attributes([mode_attribute.id])
+        private_read.assert_not_awaited()
+    assert private_cluster.get(defs.device_work_mode.name) == work_mode
+    assert private_cluster.get(defs.tp_wgzba_ui_system_mode.name) == system_mode
+    assert endpoint.thermostat.get(mode_attribute.name) == (
+        Thermostat.SystemMode.Off
+        if system_mode == TPWGZBASystemMode.Off
+        else Thermostat.SystemMode.Heat
+    )
+
+    # A source report, including an exit to Schedule, must still update immediately.
+    private_cluster._update_attribute(
+        defs.device_work_mode_source.id, tp_wgzba.TPWGZBADeviceWorkMode.Schedule
+    )
+    assert (
+        private_cluster.get(defs.device_work_mode.name)
         == tp_wgzba.TPWGZBADeviceWorkMode.Schedule
     )
+
+
+@pytest.mark.parametrize("system_mode", list(TPWGZBASystemMode))
+async def test_tp_wgzba_mode_write_waits_for_work_mode_report(
+    tp_wgzba_device, system_mode
+):
+    """Keep the work mode source-derived after successful standard mode writes."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    private_cluster = endpoint.sonoff_private
+    defs = private_cluster.AttributeDefs
+    work_mode = tp_wgzba.TPWGZBADeviceWorkMode.Temporary_Manual
+    private_cluster._update_attribute(defs.device_work_mode_source.id, work_mode)
+    success = [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    # Successful writes update the control mode but await 0x0018 for actual work state.
+    with mock.patch.object(
+        endpoint.thermostat,
+        "write_attributes_raw",
+        mock.AsyncMock(return_value=success),
+    ) as write_raw:
+        await private_cluster.write_attributes(
+            {defs.tp_wgzba_ui_system_mode.name: system_mode}
+        )
+    write_raw.assert_awaited_once()
+    assert private_cluster.get(defs.tp_wgzba_ui_system_mode.name) == system_mode
+    assert private_cluster.get(defs.device_work_mode.name) == work_mode
+
+
+def test_tp_wgzba_work_mode_initially_unknown(tp_wgzba_device):
+    """Leave a newly constructed cluster's work mode unknown until 0x0018 arrives."""
+    # Construct directly because the shared fixture clears initial attribute caches.
+    private_cluster = SonoffTPWGZBAPrivateCluster(
+        tp_wgzba_device.endpoints[1], is_server=True
+    )
+    assert (
+        private_cluster.get(private_cluster.AttributeDefs.device_work_mode.name) is None
+    )
+
+
+@pytest.mark.parametrize("mode_source", [None, 0xFF])
+def test_tp_wgzba_system_mode_without_work_mode_source(tp_wgzba_device, mode_source):
+    """Leave the work mode unknown without a valid firmware source."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    private_cluster = endpoint.sonoff_private
+    defs = private_cluster.AttributeDefs
+
+    # Neither an unknown source nor any standard mode may invent a work mode.
+    if mode_source is not None:
+        private_cluster._update_attribute(defs.device_work_mode_source.id, mode_source)
+    for system_mode in TPWGZBASystemMode:
+        endpoint.thermostat._update_attribute(
+            Thermostat.AttributeDefs.system_mode.id, system_mode
+        )
+        assert private_cluster.get(defs.device_work_mode.name) is None
+
+
+@pytest.mark.parametrize("work_mode", [2, 3, 4, 5, 6])
+async def test_tp_wgzba_work_mode_reads_only_source(tp_wgzba_device, work_mode):
+    """Initialize the display by reading only the firmware work-mode attribute."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    private_cluster = endpoint.sonoff_private
+    defs = private_cluster.AttributeDefs
+    record = foundation.ReadAttributeRecord(
+        attrid=defs.device_work_mode_source.id,
+        status=foundation.Status.SUCCESS,
+        value=foundation.TypeValue(type=DataTypeId.uint8, value=work_mode),
+    )
+
+    # A work-mode read must not query or synthesize the standard system mode.
+    with (
+        mock.patch.object(
+            private_cluster,
+            "_read_attributes",
+            mock.AsyncMock(return_value=([record],)),
+        ) as private_read,
+        mock.patch.object(
+            endpoint.thermostat, "_read_attributes", mock.AsyncMock()
+        ) as standard_read,
+    ):
+        success, failure = await private_cluster.read_attributes(
+            [defs.device_work_mode.name]
+        )
+    assert success == {defs.device_work_mode.name: work_mode}
+    assert not failure
+    assert private_cluster.get(defs.device_work_mode_source.name) == work_mode
+    private_read.assert_awaited_once()
+    assert private_read.await_args.args == ([defs.device_work_mode_source.id],)
+    standard_read.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "cached_mode", [None, tp_wgzba.TPWGZBADeviceWorkMode.Temporary_Manual]
+)
+@pytest.mark.parametrize(
+    "status", [foundation.Status.FAILURE, foundation.Status.SUCCESS]
+)
+async def test_tp_wgzba_work_mode_read_failure_keeps_source_cache(
+    tp_wgzba_device, cached_mode, status
+):
+    """Preserve source-derived state on failed reads or unknown firmware values."""
+    endpoint = tp_wgzba_device.endpoints[1]
+    private_cluster = endpoint.sonoff_private
+    defs = private_cluster.AttributeDefs
+    if cached_mode is not None:
+        private_cluster._update_attribute(defs.device_work_mode_source.id, cached_mode)
+    endpoint.thermostat._update_attribute(
+        Thermostat.AttributeDefs.system_mode.id, TPWGZBASystemMode.Manual
+    )
+    record = foundation.ReadAttributeRecord(
+        attrid=defs.device_work_mode_source.id,
+        status=status,
+        value=foundation.TypeValue(type=DataTypeId.uint8, value=0xFF),
+    )
+
+    # Failed reads and unrecognized values may not fall back to Manual or Schedule.
+    with mock.patch.object(
+        private_cluster, "_read_attributes", mock.AsyncMock(return_value=([record],))
+    ):
+        success, failure = await private_cluster.read_attributes(
+            [defs.device_work_mode.name]
+        )
+    assert private_cluster.get(defs.device_work_mode.name) == cached_mode
+    if cached_mode is None:
+        assert not success
+        assert failure == {defs.device_work_mode.name: foundation.Status.FAILURE}
+    else:
+        assert success == {defs.device_work_mode.name: cached_mode}
+        assert not failure
 
 
 def test_tp_wgzba_schedule_response_updates_ui_values(zigpy_device_from_v2_quirk):
@@ -714,7 +893,10 @@ def test_tp_wgzba_private_mode_ui_values(tp_wgzba_device):
         1,
         3000,
     )
-    private_cluster._update_device_work_mode_from_system(TPWGZBASystemMode.Manual)
+    private_cluster._update_attribute(
+        private_cluster.AttributeDefs.device_work_mode_source.id,
+        tp_wgzba.TPWGZBADeviceWorkMode.Manual,
+    )
     assert (
         private_cluster.get("device_work_mode") == tp_wgzba.TPWGZBADeviceWorkMode.Manual
     )
@@ -1599,17 +1781,6 @@ def test_tp_wgzba_helper_edge_cases(tp_wgzba_device):
         for index, attr_def in enumerate(private_cluster._WEEKLY_TIME_ATTRS)
     }
     assert private_cluster._validate_weekly_schedule_ui_updates(updates) == 12
-
-    private_cluster._update_attribute(
-        private_cluster.AttributeDefs.tp_wgzba_ui_system_mode.id, None
-    )
-    private_cluster.endpoint.thermostat._update_attribute(
-        Thermostat.AttributeDefs.system_mode.id, TPWGZBASystemMode.Manual
-    )
-    private_cluster._refresh_device_work_mode()
-    assert (
-        private_cluster.get("device_work_mode") == tp_wgzba.TPWGZBADeviceWorkMode.Manual
-    )
 
 
 async def test_tp_wgzba_private_ui_mode_write_and_read_failure(tp_wgzba_device):
