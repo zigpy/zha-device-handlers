@@ -11,6 +11,7 @@ from tests.common import ClusterListener
 import zhaquirks
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_motion import TuyaPresenceStateV03
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
@@ -203,3 +204,26 @@ async def test_hobeian_zg204zl_config_dps(zigpy_device_from_v2_quirk):
 
     assert ep.tuya_manufacturer.get("presence_sensitivity") == 2
     assert ep.tuya_manufacturer.get("fading_time") == 3
+
+
+@pytest.mark.parametrize("manuf", ["_TZE200_gkfbdvyx", "_TZE204_gkfbdvyx"])
+@pytest.mark.parametrize(
+    "dp_value,occupied,presence",
+    [
+        (0, False, TuyaPresenceStateV03.Unoccupied),
+        (1, True, TuyaPresenceStateV03.Presence),
+        (2, True, TuyaPresenceStateV03.Movement),
+    ],
+)
+async def test_gkfbdvyx_presence_state(
+    zigpy_device_from_v2_quirk, manuf, dp_value, occupied, presence
+):
+    """DP 1 sets both occupancy and the presence state."""
+    ep = zigpy_device_from_v2_quirk(manuf, "TS0601").endpoints[1]
+
+    msg = b"\tL\x01\x00\x05\x01\x04\x00\x01" + bytes([dp_value])  # DP 1, enum
+    hdr, data = ep.tuya_manufacturer.deserialize(msg)
+    assert ep.tuya_manufacturer.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    assert ep.occupancy.get(OccupancySensing.AttributeDefs.occupancy.name) == occupied
+    assert ep.tuya_manufacturer.get("presence") == presence

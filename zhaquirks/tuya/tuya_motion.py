@@ -21,6 +21,7 @@ from zhaquirks.builder import (
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -91,6 +92,14 @@ class TuyaPresenceStateV02(t.enum8):
     Small = 0x03
     Huge = 0x04
     Gigantic = 0x05
+
+
+class TuyaPresenceStateV03(t.enum8):
+    """Tuya presence state enum, variation 03."""
+
+    Unoccupied = 0x00
+    Presence = 0x01
+    Movement = 0x02
 
 
 class TuyaBreakerMode(t.enum8):
@@ -301,11 +310,35 @@ base_tuya_motion = (
     TuyaQuirkBuilder("_TZE200_gkfbdvyx", "TS0601")
     .applies_to("_TZE204_gkfbdvyx", "TS0601")
     .adds(TuyaOccupancySensing)
-    .tuya_dp(
+    # DP 1: 0 = unoccupied, 1 = presence (still), 2 = movement
+    .tuya_dp_multi(
         dp_id=1,
-        ep_attribute=TuyaOccupancySensing.ep_attribute,
-        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: True if x in (1, 2) else False,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=TuyaOccupancySensing.ep_attribute,
+                attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+                converter=lambda x: x in (1, 2),
+            ),
+            DPToAttributeMapping(
+                ep_attribute=TuyaMCUCluster.ep_attribute,
+                attribute_name="presence",
+                converter=TuyaPresenceStateV03,
+            ),
+        ],
+    )
+    .tuya_attribute(
+        dp_id=1,
+        attribute_name="presence",
+        type=TuyaPresenceStateV03,
+    )
+    .enum(
+        attribute_name="presence",
+        enum_class=TuyaPresenceStateV03,
+        cluster_id=TuyaMCUCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="presence_state",
+        fallback_name="Presence state",
     )
     .tuya_number(
         dp_id=2,
