@@ -52,9 +52,8 @@ Quirks are organized by manufacturer in `zhaquirks/<manufacturer>/`. Every such 
 
 ## Tests
 
-- Purely declarative quirks need no tests: `QuirkBuilder` definitions, `.applies_to()` additions, triggers, `_CONSTANT_ATTRIBUTES`, existing custom clusters. `tests/test_quirks.py` and `tests/test_quirks_v2.py` validate every quirk, and once a device's diagnostics are in ZHA's test data, ZHA's snapshot tests cover the entities its quirk creates.
-- Add tests for custom logic: overridden cluster methods (`handle_cluster_request`, `_update_attribute`, `write_attributes`), value parsing, command handling, non-trivial filters, custom entity classes.
-- Don't add signature match tests (`assert_signature_matches_quirk`) or tests that only assert what the builder produced.
+- **Test code, not definitions.** Only add tests for custom code: custom cluster methods (`handle_cluster_request`, `_update_attribute`, `write_attributes`), custom filter functions and custom entity classes. Test what that code does, not that the entities exist.
+- A quirk without custom code gets no test. Don't write tests for entity creation, quirk matching, signatures (`assert_signature_matches_quirk`) or other definitions: they are long and fragile, and aren't accepted. `tests/test_quirks.py` and `tests/test_quirks_v2.py` validate every quirk, and ZHA covers definitions with snapshot tests of the device diagnostics JSON.
 - Fixtures: `zigpy_device_from_v2_quirk(manufacturer, model)` for v2 quirks, `zigpy_device_from_quirk(QuirkClass)` for v1. Details in the `zha-quirks` skill.
 
 ## Pull requests and issues
@@ -68,6 +67,7 @@ When writing a PR or issue on a user's behalf:
 - **PR title:** a changelog line with a leading verb, no `Device:` prefix, no trailing period ("Add Sonoff SNZB-01M scene remote").
 - **PR description:** describe the final diff, link the issue (`Fixes #N` only for a real fix), and list what wasn't tested on real hardware. Keep it short; no tool footers, session links or emoji.
 - **Issues:** check the latest release, existing issues and PRs first. Keep what you observed apart from what you suspect; don't name ZHA/zigpy code you haven't read. Say whether custom quirks are loaded. Only post a custom quirk the user has actually run.
+- **Translations:** don't open a Home Assistant Core PR to add translations for new `translation_key` values. Maintainers add them in the Core PR that bumps the `zha-quirks` package.
 - Run `uv run pre-commit run --all-files` before pushing.
 
 ## Skills

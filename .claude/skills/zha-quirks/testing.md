@@ -10,9 +10,7 @@ quirked = zigpy_device_from_quirk(quirk_class)
 quirked = zigpy_device_from_v2_quirk(manufacturer, model)
 ```
 
-Don't add new signature match tests (`assert_signature_matches_quirk`); they only exist for old v1 quirks.
-
-**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, `_CONSTANT_ATTRIBUTES`, or other pure definitions. Adding `.applies_to()` to an existing quirk doesn't need a test either. Once a device's diagnostics are in ZHA's test data, ZHA's snapshot tests cover the entities its quirk creates, so don't write tests that only assert what the builder produced. Example:
+**Test code, not definitions.** Only write tests for the custom code listed below. If a quirk has none, do not write a test for it. Do not write tests for entity creation, quirk matching, signatures, or other definitions. These tests are long and fragile, and we do not accept them. ZHA already covers definitions with snapshot tests of the device diagnostics JSON. Example of a quirk that must not have a test:
 
 ```python
 (
@@ -27,7 +25,7 @@ Don't add new signature match tests (`assert_signature_matches_quirk`); they onl
 )
 ```
 
-Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `_update_attribute`, `write_attributes`), value parsing or command handling, non-trivial filter functions, or custom entity classes. A one-line `attribute_converter` lambda doesn't need its own test.
+Tests **are** needed for custom cluster methods (e.g., `handle_cluster_request`, `_update_attribute`, `write_attributes`), custom filter functions, and custom entity classes. Test what that code does, not that the entities exist.
 
 **End-to-end tests:** if your quirk is complex, its high-level behavior should be tested. Use `tests/zha_helpers.py` with diagnostics for your device:
 ```python

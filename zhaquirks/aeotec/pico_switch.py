@@ -2,7 +2,9 @@
 
 from typing import Final
 
+from zha.application.platforms.sensor import DeviceTemperature
 import zigpy.types as t
+from zigpy.zcl.clusters.general import DeviceTemperature as DeviceTemperatureCluster
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.builder import QuirkBuilder
@@ -64,11 +66,25 @@ class AeotecSwitchTypeConfigCluster(CustomCluster):
         )
 
 
+class WholeDegreeDeviceTemperature(DeviceTemperature):
+    """Device temperature in whole degrees."""
+
+    _divisor = None  # Setting it to `1` would make the temperature a float
+    _attr_suggested_display_precision = 0
+    _attr_fallback_name = "Device temperature"
+
+
 (
     QuirkBuilder("AEOTEC", "ZGA002")
     .friendly_name(manufacturer="Aeotec", model="Pico Switch")
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=2)
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=3)
+    .replaces_entity(
+        DeviceTemperature,
+        WholeDegreeDeviceTemperature,
+        endpoint_id=1,
+        cluster_id=DeviceTemperatureCluster.cluster_id,
+    )
     .enum(
         attribute_name=AeotecSwitchTypeConfigCluster.AttributeDefs.switch_type.name,
         enum_class=AeotecSwitchType,
