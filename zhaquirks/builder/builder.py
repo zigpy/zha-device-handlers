@@ -70,6 +70,7 @@ from zhaquirks.builder.metadata import (
     ZCLEnumMetadata,
     ZCLSensorMetadata,
     validate_button_event_entities,
+    validate_button_event_matches,
     validate_button_event_triggers,
 )
 from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
@@ -1236,6 +1237,9 @@ class QuirkBuilder:
                 validate_button_event_triggers(
                     entity_metadata, self.device_automation_triggers_metadata
                 )
+        validate_button_event_matches(
+            self.entity_metadata, self.device_automation_triggers_metadata
+        )
 
         manufacturer, model = self.manufacturer_model_metadata[0]
 
