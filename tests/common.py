@@ -16,8 +16,10 @@ from zigpy.zcl import (
     AttributeReportedEvent,
     AttributeUpdatedEvent,
     AttributeWrittenEvent,
+    ClusterType,
     foundation,
 )
+from zigpy.zcl.helpers import AttributeCacheLoadResult, AttributeCacheRow
 
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
 ZCL_OCC_ATTR_RPT_OCC = b"\x18d\n\x00\x00\x18\x01"
@@ -68,6 +70,37 @@ async def wait_for_zigpy_tasks() -> None:
             tasks.append(task)
 
     await asyncio.gather(*tasks)
+
+
+def attribute_cache_row(
+    device,
+    cluster_id: int,
+    attr_id: int,
+    value: Any,
+    data_type: foundation.DataTypeId | None = None,
+    *,
+    endpoint_id: int = 1,
+    manufacturer_code: int | None = None,
+    last_updated: float = 0,
+) -> AttributeCacheRow:
+    """Build a server cluster attribute row as zigpy loads it from its database."""
+    return AttributeCacheRow(
+        ieee=device.ieee,
+        endpoint_id=endpoint_id,
+        cluster_type=ClusterType.Server,
+        cluster_id=cluster_id,
+        attr_id=attr_id,
+        manufacturer_code=manufacturer_code,
+        status=foundation.Status.SUCCESS,
+        value=value,
+        data_type=data_type,
+        last_updated=last_updated,
+    )
+
+
+def deleted_rows(result: AttributeCacheLoadResult) -> list[AttributeCacheRow]:
+    """Return the rows a load deleted from the attribute table, such as migrated ones."""
+    return [change.old for change in result.changes if change.new is None]
 
 
 class ButtonEventRecorder:

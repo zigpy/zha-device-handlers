@@ -17,9 +17,10 @@ from zha.zigbee.store import device_value
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from tests.common import wait_for_zigpy_tasks
+from tests.common import attribute_cache_row, deleted_rows, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
     TUYA_SEND_DATA,
     TUYA_SET_DATA,
     TuyaCommand,
@@ -34,7 +35,7 @@ from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
     tuya_device_value_writer,
 )
-from zhaquirks.tuya.tuya_fingerbot import FingerBotMode
+from zhaquirks.tuya.tuya_fingerbot import FingerBotMode, FingerBotReverse
 
 zhaquirks.setup()
 
@@ -661,3 +662,64 @@ async def test_tuya_fingerbot_device_values(zigpy_device_from_v2_quirk):
         (TUYA_SEND_DATA, 107, TuyaDPType.BOOL, t.Bool.true),
     ]
     assert device.store[mode] == FingerBotMode.CLICK
+
+
+@pytest.mark.parametrize("typed", [True, False])
+async def test_tuya_fingerbot_attributes_migrated(zigpy_device_from_v2_quirk, typed):
+    """The fingerbot's old settings attributes move into its device values.
+
+    They read back as a report would have stored them: the switch and enums as ints.
+    """
+    device = zigpy_device_from_v2_quirk("_TZ3210_dse8ogfy", "TS0001")
+    cluster = device.endpoints[1].tuya_manufacturer
+    definition = DEVICE_REGISTRY.match_entry(device).zha_device_factory.quirk_definition
+    values = {
+        a.kwargs["value"].key: a.kwargs["value"] for a in definition.added_entities
+    }
+
+    # The invented attributes the quirk had: ID, type and value
+    old_attributes = {
+        "mode": (0xEF65, FingerBotMode.PROGRAM),
+        "down_movement": (0xEF66, t.uint16_t(80)),
+        "sustain_time": (0xEF67, t.uint16_t(3)),
+        "reverse": (0xEF68, FingerBotReverse.UP_OFF),
+        "up_movement": (0xEF6A, t.uint16_t(20)),
+        "touch_control": (0xEF6B, t.Bool.true),
+    }
+    rows = [
+        attribute_cache_row(
+            device,
+            TUYA_CLUSTER_ID,
+            attr_id,
+            value.serialize() if typed else int(value),
+            foundation.DataType.from_python_type(type(value)).type_id
+            if typed
+            else None,
+            manufacturer_code=device.manufacturer_id,
+        )
+        for attr_id, value in old_attributes.values()
+    ]
+
+    result = device.load_attribute_cache(rows, migrate=True)
+    assert len(deleted_rows(result)) == len(rows)
+
+    stored = {key: device.store.get(values[key]) for key in old_attributes}
+    assert stored == {
+        "mode": 2,
+        "down_movement": 80,
+        "sustain_time": 3,
+        "reverse": 1,
+        "up_movement": 20,
+        "touch_control": 1,
+    }
+    assert all(type(value) is int for value in stored.values())
+
+    # As the entities read them
+    assert FingerBotMode(stored["mode"]) is FingerBotMode.PROGRAM
+    assert FingerBotReverse(stored["reverse"]) is FingerBotReverse.UP_OFF
+    assert bool(stored["touch_control"]) is True
+
+    # A report of the switch datapoint stores the same: 107, bool, on
+    hdr, args = cluster.deserialize(b"\x09\x10\x02\x00\x10\x6b\x01\x00\x01\x01")
+    cluster.handle_message(hdr, args)
+    assert device.store.get(values["touch_control"]) == 1
