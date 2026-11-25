@@ -87,9 +87,9 @@ snzb01m_quirk = (
 )
 
 # Each button counts its presses, so its single press is a resolved gesture. The
-# long press is one event with no release, classified as sent on release, as deCONZ
-# labels it. Not confirmed on hardware: if the device sends it at the hold threshold
-# instead, as the SNZB-01 family does, it is a `long_press_start`.
+# long press is one event with no release, and whether it is sent at the hold
+# threshold or on release is not confirmed on hardware, so it is left out of the
+# button event entities for now.
 for ep, button in BUTTONS.items():
     snzb01m_quirk.button_event(
         events=[
@@ -106,10 +106,6 @@ for ep, button in BUTTONS.items():
                 event_type=ButtonEventType.MULTI_PRESS,
                 trigger=(TRIPLE_PRESS, button),
                 press_count=3,
-            ),
-            ButtonEvent(
-                event_type=ButtonEventType.LONG_PRESS_END,
-                trigger=(LONG_PRESS, button),
             ),
         ],
         cluster_id=SonoffButtonCluster.cluster_id,

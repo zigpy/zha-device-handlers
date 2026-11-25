@@ -361,8 +361,15 @@ async def test_zbm5_button_events(zigpy_device_from_v2_quirk, model, buttons):
     assert recorder.pop() == [(button, "single_press") for button in buttons]
 
 
-@pytest.mark.parametrize("model", ["WB01", "SNZB-01P", "CK-TLSR8656-SS5-01(7000)"])
-async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
+@pytest.mark.parametrize(
+    ("model", "hold"),
+    [
+        ("WB01", False),
+        ("SNZB-01P", True),
+        ("CK-TLSR8656-SS5-01(7000)", False),
+    ],
+)
+async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model, hold):
     """Test the button event entity of the eWeLink/SONOFF wireless buttons."""
     device = zigpy_device_from_v2_quirk(
         "eWeLink", model, cluster_ids={1: {OnOff.cluster_id: ClusterType.Client}}
@@ -370,8 +377,9 @@ async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
     with_profile(device)
     recorder = await ButtonEventRecorder.create(device)
 
+    hold_events = ["long_press_start"] if hold else []
     assert recorder.event_types() == {
-        "button": ["single_press", "multi_press", "long_press_start"]
+        "button": ["single_press", "multi_press", *hold_events]
     }
 
     send_command(device, 1, OnOff.cluster_id, "toggle")
@@ -383,7 +391,7 @@ async def test_ewelink_button_events(zigpy_device_from_v2_quirk, model):
     assert recorder.pop() == [
         ("button", "single_press"),
         ("button", "multi_press", {"press_count": 2}),
-        ("button", "long_press_start"),
+        *[("button", event_type) for event_type in hold_events],
     ]
 
 
@@ -400,7 +408,7 @@ async def test_snzb01m_button_event_entities(zigpy_device_from_v2_quirk):
     with_profile(device)
     recorder = await ButtonEventRecorder.create(device)
 
-    gestures = ["single_press", "multi_press", "long_press_end"]
+    gestures = ["single_press", "multi_press"]
     assert recorder.event_types() == {
         "button_1": gestures,
         "button_2": gestures,
@@ -426,7 +434,6 @@ async def test_snzb01m_button_event_entities(zigpy_device_from_v2_quirk):
             (button, "single_press"),
             (button, "multi_press", {"press_count": 2}),
             (button, "multi_press", {"press_count": 3}),
-            (button, "long_press_end"),
         )
     ]
 
