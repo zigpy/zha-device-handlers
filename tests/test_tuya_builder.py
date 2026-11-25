@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zha.quirks import DeviceRegistry
+from zha.quirks import DEVICE_REGISTRY, DeviceRegistry
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
@@ -150,6 +150,33 @@ async def test_battery_methods(
     assert ep.power.get("battery_size") == expected_size
     assert ep.power.get("battery_quantity") == expected_qty
     assert ep.power.get("battery_rated_voltage") == expected_voltage
+
+
+def test_tuya_quirkbuilder_source(device_mock):
+    """Test the quirk source names the module defining the quirk, not the builder."""
+
+    registry = DeviceRegistry()
+
+    entry = (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_temperature(dp_id=5, scale=10)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    assert entry.source.module == __name__
+    assert entry.source.file == __file__
+
+
+def test_tuya_builtin_quirk_source(zigpy_device_from_v2_quirk):
+    """Test a built-in Tuya quirk reports its own module as source."""
+
+    device = zigpy_device_from_v2_quirk("_TZE284_aao3yzhs", "TS0601")
+    entry = DEVICE_REGISTRY.match_entry(device)
+
+    assert entry is not None
+    assert entry.source.module == "zhaquirks.tuya.tuya_sensor"
+    assert entry.source.label == "(_TZE284_aao3yzhs / TS0601)"
 
 
 async def test_tuya_quirkbuilder(device_mock):
