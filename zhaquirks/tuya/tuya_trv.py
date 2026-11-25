@@ -408,24 +408,9 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
 )
 
 
-(
-    TuyaQuirkBuilder("_TZE200_bvu2wnxz", "TS0601")
-    .applies_to("_TZE200_6rdj8dzm", "TS0601")
-    .applies_to("_TZE200_9xfjixap", "TS0601")
-    .applies_to("_TZE200_p3dbf6qs", "TS0601")
-    .applies_to("_TZE200_rxntag7i", "TS0601")
-    .applies_to("_TZE200_yqgbrdyo", "TS0601")
-    .applies_to("_TZE284_p3dbf6qs", "TS0601")
-    .applies_to("_TZE200_rxq4iti9", "TS0601")
-    .applies_to("_TZE200_d3z1ukqw", "TS0601")
-    .applies_to("_TZE200_hvaxb2tc", "TS0601")
-    .applies_to("_TZE284_o3x45p96", "TS0601")
-    .applies_to("_TZE284_c6wv4xyo", "TS0601")
-    .applies_to("_TZE204_o3x45p96", "TS0601")
-    .applies_to("_TZE204_ogx8u5z6", "TS0601")
-    .applies_to("_TZE284_ogx8u5z6", "TS0601")
-    .applies_to("_TZE200_4utwozi2", "TS0601")
-    .applies_to("_TZE200_ow09xlxm", "TS0601")
+# AVATTO ME167/ME168/TRV06 family, registered below with its calibration DP
+avatto_trv_base = (
+    TuyaQuirkBuilder()
     .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,
@@ -460,17 +445,6 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
-    .tuya_number(
-        dp_id=47,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        type=t.int32s,
-        min_value=-6,
-        max_value=6,
-        unit=UnitOfTemperature.CELSIUS,
-        step=1,
-        translation_key="local_temperature_calibration",
-        fallback_name="Local temperature calibration",
-    )
     .tuya_switch(
         dp_id=7,
         attribute_name="child_lock",
@@ -498,6 +472,60 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     )
     .adds(TuyaThermostatV2)
     .skip_configuration()
+)
+
+
+(
+    avatto_trv_base.clone()
+    .applies_to("_TZE200_bvu2wnxz", "TS0601")
+    .applies_to("_TZE200_6rdj8dzm", "TS0601")
+    .applies_to("_TZE200_9xfjixap", "TS0601")
+    .applies_to("_TZE200_p3dbf6qs", "TS0601")
+    .applies_to("_TZE200_rxntag7i", "TS0601")
+    .applies_to("_TZE200_yqgbrdyo", "TS0601")
+    .applies_to("_TZE284_p3dbf6qs", "TS0601")
+    .applies_to("_TZE200_rxq4iti9", "TS0601")
+    .applies_to("_TZE200_d3z1ukqw", "TS0601")
+    .applies_to("_TZE200_hvaxb2tc", "TS0601")
+    .applies_to("_TZE284_o3x45p96", "TS0601")
+    .applies_to("_TZE284_c6wv4xyo", "TS0601")
+    .applies_to("_TZE204_o3x45p96", "TS0601")
+    .applies_to("_TZE200_4utwozi2", "TS0601")
+    .applies_to("_TZE200_ow09xlxm", "TS0601")
+    .tuya_number(
+        dp_id=47,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .add_to_registry()
+)
+
+
+# _TZE204_ogx8u5z6 counts the calibration in tenths of a degree, see
+# https://github.com/zigpy/zha-device-handlers/issues/4124
+# _TZE284_ogx8u5z6 is a variant of the same TRV (not confirmed on a device yet).
+(
+    avatto_trv_base.clone()
+    .applies_to("_TZE204_ogx8u5z6", "TS0601")
+    .applies_to("_TZE284_ogx8u5z6", "TS0601")
+    .tuya_number(
+        dp_id=47,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
     .add_to_registry()
 )
 
