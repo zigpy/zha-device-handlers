@@ -209,7 +209,9 @@ async def test_doubleswitch_state_report(zigpy_device_from_v2_quirk):
     ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_OFF = b"\tQ\x02\x006\x02\x01\x00\x01\x00"
 
-    switch_dev = zigpy_device_from_v2_quirk("_TZE200_nkjintbl", "TS0601")
+    switch_dev = zigpy_device_from_v2_quirk(
+        "_TZE200_nkjintbl", "TS0601", cluster_ids=_ts0601_switch_clusters()
+    )
 
     switch1_cluster = switch_dev.endpoints[1].on_off
     switch1_listener = ClusterListener(switch1_cluster)
@@ -279,6 +281,16 @@ LIGHT = zha.DeviceType.ON_OFF_LIGHT
 SWITCH = zha.DeviceType.ON_OFF_SWITCH
 
 
+def _ts0601_switch_clusters(
+    green_power_endpoint: bool = False,
+) -> dict[int, dict[int, ClusterType]]:
+    """Return the server clusters of a TS0601 multi-gang switch as it reports them."""
+    clusters = {1: {TuyaOnOffManufCluster.cluster_id: ClusterType.Server}}
+    if green_power_endpoint:
+        clusters[242] = {GreenPowerProxy.cluster_id: ClusterType.Client}
+    return clusters
+
+
 @pytest.mark.parametrize(
     "manufacturer, gangs, onoff_cls, manuf_cls, device_type, plug_feature",
     (
@@ -329,7 +341,7 @@ async def test_ts0601_multi_gang_switch(
     switch = zigpy_device_from_v2_quirk(
         manufacturer,
         "TS0601",
-        endpoint_ids=[1, 242] if green_power_endpoint else [1],
+        cluster_ids=_ts0601_switch_clusters(green_power_endpoint),
     )
     assert sorted(ep_id for ep_id in switch.endpoints if ep_id not in (0, 242)) == (
         list(range(1, gangs + 1))
@@ -371,20 +383,43 @@ async def test_ts0601_multi_gang_switch(
             assert listener.attribute_updates == []
 
 
-async def test_ts0601_multi_gang_switch_with_gang_endpoints(
-    zigpy_device_from_v2_quirk,
+@pytest.mark.parametrize(
+    "cluster_ids",
+    (
+        # an endpoint with an OnOff cluster per gang (zha snapshot: wktrysab)
+        {
+            ep_id: {
+                OnOff.cluster_id: ClusterType.Server,
+                **(
+                    {TuyaOnOffManufCluster.cluster_id: ClusterType.Server}
+                    if ep_id == 1
+                    else {}
+                ),
+            }
+            for ep_id in range(1, 9)
+        },
+        # one endpoint with an OnOff cluster of its own
+        {
+            1: {
+                OnOff.cluster_id: ClusterType.Server,
+                TuyaOnOffManufCluster.cluster_id: ClusterType.Server,
+            }
+        },
+        # one endpoint without the Tuya MCU cluster
+        {1: {OnOff.cluster_id: ClusterType.Server}},
+    ),
+)
+async def test_ts0601_multi_gang_switch_other_layouts(
+    zigpy_device_from_v2_quirk, cluster_ids
 ):
-    """Test that a unit reporting an endpoint per gang gets no quirk."""
+    """Test that a unit not reporting its gangs on one Tuya MCU endpoint is unquirked."""
 
     switch = zigpy_device_from_v2_quirk(
-        "_TZE200_wktrysab",
-        "TS0601",
-        cluster_ids={
-            ep_id: {OnOff.cluster_id: ClusterType.Server} for ep_id in range(1, 9)
-        },
+        "_TZE200_wktrysab", "TS0601", cluster_ids=cluster_ids
     )
     assert not hasattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
-    assert all(type(switch.endpoints[ep_id].on_off) is OnOff for ep_id in range(1, 9))
+    for ep_id in cluster_ids:
+        assert type(switch.endpoints[ep_id].on_off) is OnOff
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))

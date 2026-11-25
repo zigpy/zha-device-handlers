@@ -3,7 +3,15 @@
 from zha.quirks import TUYA_PLUG_MANUFACTURER
 import zigpy.device
 from zigpy.profiles import zgp, zha
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.builder import QuirkBuilder
 from zhaquirks.const import (
@@ -192,13 +200,20 @@ GREEN_POWER_ENDPOINT_ID = 242
 
 
 def _reports_one_endpoint(device: zigpy.device.Device) -> bool:
-    """Match a device that reports one endpoint for all its gangs.
+    """Match a device that reports all its gangs on one Tuya MCU endpoint.
 
-    The multi-gang switches below report all gangs on the Tuya MCU cluster of
-    endpoint 1 (plus a Green Power proxy endpoint on some models). Units that
-    report an endpoint per gang themselves are left alone.
+    The multi-gang switches below report one endpoint (plus a Green Power proxy
+    endpoint on some models), whose Tuya MCU cluster carries the DPs of all
+    gangs. Units that report an endpoint or an OnOff cluster of their own are
+    left alone.
     """
-    return set(device.endpoints) - {0, GREEN_POWER_ENDPOINT_ID} == {1}
+    if set(device.endpoints) - {0, GREEN_POWER_ENDPOINT_ID} != {1}:
+        return False
+    in_clusters = device.endpoints[1].in_clusters
+    return (
+        TuyaOnOffManufCluster.cluster_id in in_clusters
+        and OnOff.cluster_id not in in_clusters
+    )
 
 
 def _add_gangs(
