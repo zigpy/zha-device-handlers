@@ -20,8 +20,6 @@ QUIRK_METADATA = {
 }
 
 
-
-
 class SonoffCoverCalibrationStatus(t.enum8):
     """Cover calibration status."""
 
