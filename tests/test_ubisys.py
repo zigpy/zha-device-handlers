@@ -4,11 +4,11 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import AttributeWrittenEvent, ClusterType
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import Status
+from zigpy.zcl.foundation import Status, WriteAttributesStatusRecord
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -1310,19 +1310,25 @@ async def test_j1_config_sync_skips_failed_write(ubisys_j1):
     wc_cluster = ubisys_j1.endpoints[1].window_covering
     wc_listener = ClusterListener(wc_cluster)
 
-    wc_cluster._handle_config_attr_sync(
-        AttributeWrittenEvent(
-            device_ieee=str(ubisys_j1.ieee),
-            endpoint_id=1,
-            cluster_type=0,
-            cluster_id=WindowCovering.cluster_id,
-            attribute_name="window_covering_type_config",
-            attribute_id=0x0000,
-            manufacturer_code=0x10F2,
-            value=WindowCovering.WindowCoveringType.Shutter,
-            status=Status.UNSUPPORTED_ATTRIBUTE,
+    with mock.patch.object(
+        wc_cluster,
+        "write_attributes_raw",
+        mock.AsyncMock(
+            return_value=[
+                [
+                    WriteAttributesStatusRecord(
+                        status=Status.UNSUPPORTED_ATTRIBUTE,
+                        attrid=UbisysWindowCovering.AttributeDefs.window_covering_type_config.id,
+                    )
+                ]
+            ]
+        ),
+    ):
+        await wc_cluster.write_attributes(
+            {
+                UbisysWindowCovering.AttributeDefs.window_covering_type_config.name: WindowCovering.WindowCoveringType.Shutter
+            }
         )
-    )
 
     # Standard attr should NOT have been updated
     assert (

@@ -1,10 +1,11 @@
 """SONOFF SNZB-01M 4-button wireless switch quirk."""
 
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -68,7 +69,7 @@ class SonoffButtonCluster(CustomCluster):
                 self.listener_event(ZHA_SEND_EVENT, action, {})
 
 
-(
+snzb01m_quirk = (
     QuirkBuilder("SONOFF", "SNZB-01M")
     .replaces(SonoffButtonCluster, endpoint_id=1)
     .replaces(SonoffButtonCluster, endpoint_id=2)
@@ -83,5 +84,37 @@ class SonoffButtonCluster(CustomCluster):
             for command, trigger in TRIGGER_MAP.items()
         }
     )
-    .add_to_registry()
 )
+
+# Each button counts its presses, so its single press is a resolved gesture. The
+# long press is one event with no release, and whether it is sent at the hold
+# threshold or on release is not confirmed on hardware, so it is left out of the
+# button event entities for now.
+for ep, button in BUTTONS.items():
+    snzb01m_quirk.button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(TRIPLE_PRESS, button),
+                press_count=3,
+            ),
+        ],
+        cluster_id=SonoffButtonCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=ep,
+        unique_id_suffix=f"button_{ep}",
+        translation_key="button_numbered",
+        fallback_name=f"Button {ep}",
+        translation_placeholders={"number": str(ep)},
+    )
+
+snzb01m_quirk.add_to_registry()

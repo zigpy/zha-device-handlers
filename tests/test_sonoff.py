@@ -276,6 +276,25 @@ async def test_snzb01m_non_button_attribute_update(zigpy_device_from_v2_quirk):
     assert listener.zha_send_event.call_count == 0
 
 
+@pytest.mark.parametrize("model", ["ZBM5-1C-80/86", "ZBM5-1C-120"])
+async def test_zbm5_1c_registration(zigpy_device_from_v2_quirk, model):
+    """Test the 1-gang ZBM5 quirk, registered as a clone, applies to both models."""
+    device = zigpy_device_from_v2_quirk(
+        "SONOFF",
+        model,
+        cluster_ids={
+            1: {
+                SonoffCluster.cluster_id: ClusterType.Server,
+                OnOff.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    assert isinstance(device.endpoints[1].sonoff_cluster, SonoffCluster)
+    assert isinstance(device.endpoints[1].sonoff_input_config, SonoffInputConfigCluster)
+    assert OnOff.cluster_id in device.endpoints[1].out_clusters
+
+
 def _snzb06p_fc11_cluster(zigpy_device_from_v2_quirk):
     """Return the quirked 0xFC11 cluster of an SNZB-06P."""
     device = zigpy_device_from_v2_quirk(
