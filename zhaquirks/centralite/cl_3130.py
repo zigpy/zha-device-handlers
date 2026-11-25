@@ -1,6 +1,7 @@
 """Device handler for centralite 3130."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -13,13 +14,17 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
+    CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
+    COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -27,6 +32,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -34,6 +40,24 @@ from zhaquirks.const import (
 )
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.osram import OSRAM
+
+
+def _long_press_start_events(move_mode: int) -> tuple[ButtonEvent, ...]:
+    """Return the events of a held button, which is told apart by its direction.
+
+    The device may send either move variant, so the direction is matched, not the variant.
+    """
+    return tuple(
+        ButtonEvent(
+            event_type=ButtonEventType.LONG_PRESS_START,
+            event_data={
+                COMMAND: command,
+                CLUSTER_ID: LevelControl.cluster_id,
+                PARAMS: {"move_mode": move_mode},
+            },
+        )
+        for command in (COMMAND_MOVE_ON_OFF, COMMAND_MOVE)
+    )
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -99,3 +123,59 @@ class CentraLite3130(CustomDevice):
         (SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_MOVE_ON_OFF},
         (SHORT_PRESS, DIM_DOWN): {COMMAND: COMMAND_MOVE},
     }
+
+    # A short press is sent on release, as the same button sends a move when held,
+    # and the device stops the move when the button is released. Both buttons send
+    # the same stop, with or without on/off, so it belongs to the held button.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+                *_long_press_start_events(move_mode=0),
+                *(
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_END,
+                        event_data={
+                            COMMAND: command,
+                            CLUSTER_ID: LevelControl.cluster_id,
+                        },
+                        while_held=True,
+                    )
+                    for command in (COMMAND_STOP, COMMAND_STOP_ON_OFF)
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_up",
+            translation_key="up_button",
+            fallback_name="Up button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, TURN_OFF),
+                ),
+                *_long_press_start_events(move_mode=1),
+                *(
+                    ButtonEvent(
+                        event_type=ButtonEventType.LONG_PRESS_END,
+                        event_data={
+                            COMMAND: command,
+                            CLUSTER_ID: LevelControl.cluster_id,
+                        },
+                        while_held=True,
+                    )
+                    for command in (COMMAND_STOP, COMMAND_STOP_ON_OFF)
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_down",
+            translation_key="down_button",
+            fallback_name="Down button",
+        ),
+    )
