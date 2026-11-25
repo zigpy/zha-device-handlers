@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import DataTypeId
 from zigpy.zcl.helpers import UNMIGRATED_MANUFACTURER_CODE
 
-from tests.common import ClusterListener, attribute_cache_row
+from tests.common import ClusterListener, attribute_cache_row, deleted_rows
 import zhaquirks
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.tuya_rain import RAIN_INTENSITY
@@ -129,11 +129,7 @@ def test_rain_sensor_attributes_migrated(zigpy_device_from_v2_quirk, typed):
     assert values["todays_max_light_intensity"] == 2000
     assert rain_dev.store[RAIN_INTENSITY] == 300
 
-    migrated = {0xEF66, 0xEF67, 0xEF69}
-    assert {row.attr_id for row in result.migrated} == migrated
-    assert {
-        change.old.attr_id for change in result.changes if change.new is None
-    } == migrated
+    assert {row.attr_id for row in deleted_rows(result)} == {0xEF66, 0xEF67, 0xEF69}
 
     assert tuya_cluster.get("cleaning_reminder") == t.Bool.true
     assert tuya_cluster._attr_cache.get(0xEF07) == 5
@@ -149,7 +145,7 @@ def test_rain_sensor_attributes_not_migrated_without_quirk_load(
 
     result = rain_dev.load_attribute_cache(_rain_rows(rain_dev, typed=True))
 
-    assert not result.migrated
+    assert not deleted_rows(result)
     assert RAIN_INTENSITY not in rain_dev.store
     assert rain_dev.endpoints[1].tuya_manufacturer._attr_cache.get(0xEF69) == 300
 
@@ -167,7 +163,7 @@ def test_rain_sensor_stored_value_kept(zigpy_device_from_v2_quirk):
         _rain_rows(rain_dev, typed=True), migrate=True
     )
 
-    assert len(result.migrated) == 3
+    assert len(deleted_rows(result)) == 3
     assert rain_dev.store[RAIN_INTENSITY] == 42
     assert values.item("todays_max_light_intensity").version == 99
     assert values["average_light_intensity_20mins"] == 150
@@ -197,7 +193,7 @@ def test_rain_sensor_newer_attribute_wins(zigpy_device_from_v2_quirk):
     ]
     result = rain_dev.load_attribute_cache(rows, migrate=True)
 
-    assert len(result.migrated) == 3
+    assert len(deleted_rows(result)) == 3
     assert rain_dev.store[RAIN_INTENSITY] == 300
     assert rain_dev.store.last_updated(RAIN_INTENSITY) == datetime.fromtimestamp(
         stored_at.timestamp() + 60, UTC
@@ -229,7 +225,7 @@ def test_rain_sensor_duplicate_rows(zigpy_device_from_v2_quirk, newest_first):
 
     result = rain_dev.load_attribute_cache(rows, migrate=True)
 
-    assert len(result.migrated) == 2
+    assert len(deleted_rows(result)) == 2
     assert rain_dev.store[RAIN_INTENSITY] == 300
 
 
@@ -246,6 +242,6 @@ def test_rain_sensor_unstorable_value_dropped(zigpy_device_from_v2_quirk, caplog
 
     result = rain_dev.load_attribute_cache([row], migrate=True)
 
-    assert result.migrated == [row]
+    assert deleted_rows(result) == [row]
     assert RAIN_INTENSITY not in rain_dev.store
     assert "Cannot store nan of datapoint 105 as device value" in caplog.text

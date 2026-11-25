@@ -15,7 +15,12 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from tests.common import ClusterListener, attribute_cache_row, wait_for_zigpy_tasks
+from tests.common import (
+    ClusterListener,
+    attribute_cache_row,
+    deleted_rows,
+    wait_for_zigpy_tasks,
+)
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.device import CustomZigpyDevice
@@ -884,7 +889,7 @@ async def test_tuya_invented_attributes_migrated(device_mock, caplog):
 
     result = device.load_attribute_cache(rows, migrate=True)
 
-    assert [row.attr_id for row in result.migrated] == [0xEF01]
+    assert [row.attr_id for row in deleted_rows(result)] == [0xEF01]
     assert device.store.namespace(DEVICE_VALUES_NAMESPACE)["scaled"] == 2.5
     assert first not in device.store
     assert second not in device.store
@@ -892,9 +897,6 @@ async def test_tuya_invented_attributes_migrated(device_mock, caplog):
     assert "datapoint 2 maps to device values first, second" in caplog.text
     assert raw not in device.store
     assert cluster.get("raw_attr") == 9
-    assert [change.old for change in result.changes if change.new is None] == (
-        result.migrated
-    )
 
 
 @pytest.mark.parametrize(
@@ -934,7 +936,7 @@ async def test_tuya_migration_runs_stored_value_migration(
         [attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF04, 5)], migrate=True
     )
 
-    assert len(result.migrated) == 1
+    assert len(deleted_rows(result)) == 1
     assert device.store[value_def] == expected
 
 
@@ -998,6 +1000,6 @@ async def test_tuya_migration_store_error(device_mock, caplog):
         [attribute_cache_row(device, TUYA_CLUSTER_ID, 0xEF04, 5)], migrate=True
     )
 
-    assert len(result.migrated) == 1
+    assert len(deleted_rows(result)) == 1
     assert value_def not in device.store
     assert "Cannot store 5 of datapoint 4 as device value level" in caplog.text

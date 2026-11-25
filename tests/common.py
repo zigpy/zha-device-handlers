@@ -19,7 +19,7 @@ from zigpy.zcl import (
     ClusterType,
     foundation,
 )
-from zigpy.zcl.helpers import AttributeCacheRow
+from zigpy.zcl.helpers import AttributeCacheLoadResult, AttributeCacheRow
 
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
 ZCL_OCC_ATTR_RPT_OCC = b"\x18d\n\x00\x00\x18\x01"
@@ -96,6 +96,11 @@ def attribute_cache_row(
         data_type=data_type,
         last_updated=last_updated,
     )
+
+
+def deleted_rows(result: AttributeCacheLoadResult) -> list[AttributeCacheRow]:
+    """Return the rows a load deleted from the attribute table, such as migrated ones."""
+    return [change.old for change in result.changes if change.new is None]
 
 
 class ButtonEventRecorder:

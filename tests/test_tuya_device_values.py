@@ -17,7 +17,7 @@ from zha.zigbee.store import device_value
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from tests.common import attribute_cache_row, wait_for_zigpy_tasks
+from tests.common import attribute_cache_row, deleted_rows, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
@@ -701,7 +701,7 @@ async def test_tuya_fingerbot_attributes_migrated(zigpy_device_from_v2_quirk, ty
     ]
 
     result = device.load_attribute_cache(rows, migrate=True)
-    assert len(result.migrated) == len(rows)
+    assert len(deleted_rows(result)) == len(rows)
 
     stored = {key: device.store.get(values[key]) for key in old_attributes}
     assert stored == {
