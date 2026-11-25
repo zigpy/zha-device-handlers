@@ -186,6 +186,31 @@ self.listener_event(ZHA_SEND_EVENT, COMMAND_SINGLE, {})
 .device_automation_triggers({(SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 1}})
 ```
 
+**Button Event Entities:**
+```python
+# One event entity per physical button, firing standard button event types
+.button_event(
+    events=[
+        ButtonEvent(event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)),
+        ButtonEvent(event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, DIM_UP)),
+        ButtonEvent(event_type=ButtonEventType.LONG_PRESS_END, trigger=(LONG_RELEASE, DIM_UP)),
+    ],
+    cluster_id=OnOff.cluster_id,       # Required: a cluster the entity is attached to
+    cluster_type=ClusterType.Client,   # Required: no default
+    endpoint_id=1,                     # Optional: default 1
+    unique_id_suffix="button_on",      # Required
+    translation_key="on_button",
+    fallback_name="On button",
+)
+```
+Each `ButtonEvent` fires its event type for the `zha_event`s matching the data of a device automation trigger the quirk defines (`trigger=`), or `event_data=` matched like trigger data (keys `command`, `cluster_id`, `endpoint_id`, `args`, `params`). For a `zha_event`, the first matching event of an entity fires. Registration fails when an event can never fire because an earlier event of the entity covers it, or when the events of two entities can match the same `zha_event` (only `while_held` events may share data). Match a command's arguments the same way (`args` or `params`) in all entities of a quirk, since the check can't tell that the two forms describe the same arguments. The event type has to be a `ButtonEventType`, and the types follow home-assistant/architecture#1502:
+- `press_start` / `press_end`: the button went down / was released after a press that wasn't long. Only declare them if the device reports them for every press.
+- `single_press`: the device concluded that exactly one press happened. `multi_press` with `press_count=N` (at least 2) for double, triple, ... presses, only together with `single_press`.
+- `long_press_start`: the hold threshold was reached (`repeats=True` if the device repeats it while held, so it fires once per hold). `long_press_end`: released after a long press (`while_held=True` if the device sends a release that doesn't tell the button or a short press apart: it then only matches after a `long_press_start` of this entity, ahead of the entity's other events).
+- Map each event by what the device reports. Don't add timers or derive events, and keep other device-specific events out of the entity.
+
+The entity is only attached to `cluster_id`, it fires for the `zha_event`s of any cluster. `.prevent_default_entity_creation()` also removes quirk entities it matches, so attach the entity to a cluster the quirk doesn't prevent entities on.
+
 **Preventing Default Entity Creation:**
 Hide entities that ZHA would create by default. Without `cluster_type`, `cluster_id` matches server and client clusters.
 ```python

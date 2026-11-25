@@ -36,6 +36,7 @@ from zhaquirks.builder import QuirkBuilder
     .applies_to("AltManufacturer", "Model")  # Additional models
     .replaces(CustomClusterClass)             # Replace standard cluster
     .device_automation_triggers({...})        # Button/action mappings
+    .button_event(events=[...], ...)          # Event entity per button
     .switch(attribute_name=..., fallback_name=...)  # HA entity
     .add_to_registry()
 )
