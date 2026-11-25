@@ -26,6 +26,7 @@ from zha.application.platforms.sensor.device_class import (
     SensorStateClass,
 )
 from zha.application.platforms.text.const import MAX_LENGTH_STATE_STATE, TextMode
+from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import ClusterType
 
 # pylint: disable=too-many-instance-attributes
@@ -58,6 +59,12 @@ class EntityMetadata:
     )
     fallback_name: str = attrs.field(validator=attrs.validators.instance_of(str))
     primary: bool | None = attrs.field(default=None)
+    # The child device the entity belongs to, `None` for the main device. By default
+    # it belongs to the child device defined for its endpoint, if any.
+    child_device_id: str | None | UndefinedType = attrs.field(
+        default=UNDEFINED,
+        validator=attrs.validators.instance_of((str, type(None), UndefinedType)),
+    )
 
     def __attrs_post_init__(self) -> None:
         """Validate the entity metadata."""
@@ -317,7 +324,10 @@ class ButtonEvent:
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ButtonEventMetadata(EntityMetadata):
-    """Metadata for an exposed button event entity."""
+    """Metadata for an exposed button event entity.
+
+    v1 quirks expose these in their `button_event_entities` class attribute.
+    """
 
     entity_platform: EntityPlatform = attrs.field(default=EntityPlatform.EVENT)
     entity_type: EntityType = attrs.field(default=EntityType.STANDARD)
@@ -644,6 +654,26 @@ class ChangedEntityMetadata:
     new_entity_category: EntityType | None = attrs.field(default=None)
     new_entity_registry_enabled_default: bool | None = attrs.field(default=None)
     new_fallback_name: str | None = attrs.field(default=None)
+    # `None` moves the entity to the main device, so `UNDEFINED` means no change
+    new_child_device_id: str | None | UndefinedType = attrs.field(
+        default=UNDEFINED,
+        validator=attrs.validators.instance_of((str, type(None), UndefinedType)),
+    )
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ChildDeviceMetadata:
+    """Metadata for a child device: a logical part of the device, e.g. a gang."""
+
+    id: str = attrs.field(
+        validator=[attrs.validators.instance_of(str), attrs.validators.min_len(1)]
+    )
+    endpoint_ids: frozenset[int] = attrs.field(factory=frozenset, converter=frozenset)
+    translation_key: str | None = attrs.field(default=None)
+    translation_placeholders: frozendict[str, str] = attrs.field(
+        factory=frozendict, converter=frozendict
+    )
+    fallback_name: str = attrs.field(validator=attrs.validators.instance_of(str))
 
 
 def recursive_freeze(obj: Any) -> Any:
@@ -679,3 +709,5 @@ class QuirkDefinition:
         attrs.field(factory=frozendict, converter=recursive_freeze)
     )
     skip_configuration: bool = attrs.field(default=False)
+    # `None` leaves child devices to ZHA, an empty tuple disables them
+    child_devices: tuple[ChildDeviceMetadata, ...] | None = attrs.field(default=None)

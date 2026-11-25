@@ -8,6 +8,7 @@ import json
 import keyword
 from pathlib import Path
 import pkgutil
+import sys
 from unittest import mock
 
 import pytest
@@ -496,6 +497,109 @@ def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
     assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
 
 
+CUSTOM_V1_QUIRK = '''
+"""Custom v1 quirk."""
+
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Basic, OnOff
+
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.legacy import CustomDevice
+
+ENDPOINT = {
+    PROFILE_ID: zha.PROFILE_ID,
+    DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+    INPUT_CLUSTERS: [Basic.cluster_id],
+    OUTPUT_CLUSTERS: [OnOff.cluster_id],
+}
+
+
+class __NAME__(CustomDevice):
+    """Custom remote."""
+
+    signature = {MODELS_INFO: [__MODEL_INFO__], ENDPOINTS: {1: ENDPOINT}}
+    replacement = {ENDPOINTS: {1: ENDPOINT}}
+'''
+
+
+def test_custom_quirk_registration_error(tmp_path: Path, caplog) -> None:
+    """Ensure a custom quirk that fails to register is skipped."""
+
+    custom_quirks = tmp_path / "custom_zha_quirks"
+    custom_quirks.mkdir()
+
+    # ZHA's registry rejects an entry without a manufacturer and a model
+    (custom_quirks / "bad_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "BadRemote").replace(
+            "__MODEL_INFO__", "(None, None)"
+        )
+    )
+    # The registry rejects the second model after indexing the first one
+    (custom_quirks / "mixed_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "MixedRemote").replace(
+            "__MODEL_INFO__", '("custom", "MixedRemote"), (None, None)'
+        )
+    )
+    (custom_quirks / "good_remote.py").write_text(
+        CUSTOM_V1_QUIRK.replace("__NAME__", "GoodRemote").replace(
+            "__MODEL_INFO__", '("custom", "GoodRemote")'
+        )
+    )
+
+    try:
+        caplog.clear()
+        zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+
+        assert "Failed to register custom quirk" in caplog.text
+        assert "must specify a manufacturer and/or model" in caplog.text
+
+        labels = {entry.source.label for entry in zhaquirks.ZHA_DEVICE_REGISTRY}
+        assert "GoodRemote" in labels
+        assert "BadRemote" not in labels
+        assert "MixedRemote" not in labels
+    finally:
+        # Purge the custom quirks again, so they don't leak into other tests. A failed
+        # drain leaves its quirks queued, which would make the setup below raise too
+        zhaquirks.PENDING_LEGACY_QUIRKS.clear()
+        for path in custom_quirks.glob("*.py"):
+            path.unlink()
+        zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+        sys.modules.pop("good_remote", None)
+        sys.modules.pop("bad_remote", None)
+        sys.modules.pop("mixed_remote", None)
+
+
+def test_register_pending_quirks_error_handling(
+    monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    """Ensure only the custom quirk drain swallows registration failures."""
+
+    def fail(cls: type) -> None:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(zhaquirks, "_legacy_quirk_to_registry_entry", fail)
+
+    class Dummy:
+        pass
+
+    monkeypatch.setattr(zhaquirks, "PENDING_LEGACY_QUIRKS", [Dummy])
+
+    # A built-in quirk failing to register is a bug in this repo and must stay loud
+    with pytest.raises(ValueError, match="boom"):
+        zhaquirks._register_pending_quirks()
+
+    zhaquirks._register_pending_quirks(swallow_errors=True)
+    assert "Failed to register custom quirk" in caplog.text
+    assert not zhaquirks.PENDING_LEGACY_QUIRKS
+
+
 def test_custom_quirk_loading(
     zigpy_device_from_quirk: CustomDevice, tmp_path: Path
 ) -> None:
@@ -902,7 +1006,9 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
             # remove random AnalogInput input cluster (Aqara remote + temp sensor):
             zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01,
+            zhaquirks.xiaomi.aqara.remote_b186acn01.Remote86SW1,
             zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01,
+            zhaquirks.xiaomi.aqara.remote_b286acn01.Remote86SW2,
             zhaquirks.xiaomi.mija.sensor_ht.Weather,
             # remove Time input cluster (Aqara switch):
             zhaquirks.xiaomi.aqara.switch_t1.SwitchT1Alt2,

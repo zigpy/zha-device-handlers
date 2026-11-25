@@ -1,13 +1,15 @@
 """Module for Legrand wireless switches (Radiant, NLD, NLT, NLW)."""
 
-from zigpy.zcl.clusters.general import BinaryInput
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import BinaryInput, LevelControl, OnOff
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
+    CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
     COMMAND_OFF,
@@ -43,6 +45,63 @@ from zhaquirks.legrand import LEGRAND, LegrandPowerConfigurationCluster
             },
             (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP},
         }
+    )
+    # Each half of the rocker is a button. The Z2M debug log in
+    # Koenkk/zigbee2mqtt#32608 shows no on/off before a hold's move, so on/off is
+    # sent once a press is known to be short, at release. A hold sends move and the
+    # release after it a stop shared by both halves. The move is matched by its mode
+    # only, as that device sends a different rate than the triggers expect.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(SHORT_PRESS, TURN_ON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    PARAMS: {"move_mode": 0},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(SHORT_PRESS, TURN_OFF),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    PARAMS: {"move_mode": 1},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
     )
     .add_to_registry()
 )
@@ -130,6 +189,124 @@ from zhaquirks.legrand import LEGRAND, LegrandPowerConfigurationCluster
             },
             (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 2},
         }
+    )
+    # Each half of each rocker is a button, see the single remote switch. The
+    # off triggers do not match the endpoint, so the off presses are matched here.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(TURN_ON, BUTTON_1),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                    PARAMS: {"move_mode": 0},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON_1),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=1,
+        unique_id_suffix="button_1_on",
+        translation_key="button_numbered_on",
+        fallback_name="On button 1",
+        translation_placeholders={"number": "1"},
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_OFF, ENDPOINT_ID: 1},
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 1,
+                    PARAMS: {"move_mode": 1},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON_1),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=1,
+        unique_id_suffix="button_1_off",
+        translation_key="button_numbered_off",
+        fallback_name="Off button 1",
+        translation_placeholders={"number": "1"},
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(TURN_ON, BUTTON_2),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 2,
+                    PARAMS: {"move_mode": 0},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON_2),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+        unique_id_suffix="button_2_on",
+        translation_key="button_numbered_on",
+        fallback_name="On button 2",
+        translation_placeholders={"number": "2"},
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_OFF, ENDPOINT_ID: 2},
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                event_data={
+                    COMMAND: COMMAND_MOVE,
+                    CLUSTER_ID: LevelControl.cluster_id,
+                    ENDPOINT_ID: 2,
+                    PARAMS: {"move_mode": 1},
+                },
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, BUTTON_2),
+                while_held=True,
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+        unique_id_suffix="button_2_off",
+        translation_key="button_numbered_off",
+        fallback_name="Off button 2",
+        translation_placeholders={"number": "2"},
     )
     .add_to_registry()
 )

@@ -28,6 +28,7 @@ from zha.application.platforms import (
     text,
 )
 from zha.application.platforms.event.const import ATTR_PRESS_COUNT
+from zigpy.typing import UNDEFINED
 from zigpy.zcl import ClusterType, ReportingConfig
 
 from zhaquirks.builder.metadata import (
@@ -72,7 +73,7 @@ def quirk_unique_id_base(device: ZigbeeDevice, endpoint: Endpoint) -> str:
 
 def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     """Return the keyword arguments common to every quirk entity."""
-    return {
+    kwargs: dict[str, Any] = {
         # The entity classes' support checks are written for ZHA's discovery
         "force_create": True,
         "fallback_name": entity_metadata.fallback_name,
@@ -83,6 +84,11 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
         "primary": entity_metadata.primary,
         "initially_disabled": entity_metadata.initially_disabled,
     }
+
+    if entity_metadata.child_device_id is not UNDEFINED:
+        kwargs["child_device_id"] = entity_metadata.child_device_id
+
+    return kwargs
 
 
 def _button_event_matches(

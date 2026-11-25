@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -18,6 +19,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import LevelControlWithMoveDirection
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ALT_SHORT_PRESS,
     BUTTON,
@@ -65,6 +67,82 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBExternalSwitchTypeCluster,
+    smart_remote_button_events,
+)
+
+# The buttons of the 4-button dimmer switch in command (dimmer) mode. On and off
+# are sent once per press of any length, while dim up and down send a step for a
+# short press, a move when held, and the same stop for either button when released,
+# which `LevelControlWithMoveDirection` turns into a release of the button whose
+# move started the hold.
+DIMMER_SWITCH_BUTTON_EVENTS = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_on",
+        translation_key="on_button",
+        fallback_name="On button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, TURN_OFF),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_off",
+        translation_key="off_button",
+        fallback_name="Off button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, DIM_UP)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+                while_held=True,
+            ),
+        ],
+        cluster_id=LevelControl.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_dim_up",
+        translation_key="dim_up_button",
+        fallback_name="Dim up button",
+    ),
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, DIM_DOWN)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_DOWN),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_DOWN),
+                while_held=True,
+            ),
+        ],
+        cluster_id=LevelControl.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button_dim_down",
+        translation_key="dim_down_button",
+        fallback_name="Dim down button",
+    ),
 )
 
 
@@ -187,6 +265,13 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             CLUSTER_ID: 6,
         },
     }
+
+    # Only the presses of the event (scene) mode: in command mode, the knob toggles
+    # for every press without resolving single and double presses. The hold is left
+    # out, as when it is reported is not confirmed on this device.
+    button_event_entities = smart_remote_button_events(
+        replacement, buttons=1, hold=False
+    )
 
 
 class TuyaSmartRemote004FDMS(EnchantedDevice):
@@ -328,6 +413,14 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
         (DOUBLE_PRESS, BUTTON_4): {ENDPOINT_ID: 4, COMMAND: DOUBLE_PRESS},
     }
 
+    # The numbered buttons fire in event (scene) mode, the named ones in command mode.
+    # The hold of the numbered buttons is left out, as when it is reported is not
+    # confirmed on this device.
+    button_event_entities = (
+        *smart_remote_button_events(replacement, buttons=4, hold=False),
+        *DIMMER_SWITCH_BUTTON_EVENTS,
+    )
+
 
 class TuyaSmartRemote004FSK(EnchantedDevice):
     """Tuya Smart (Single) Knob device."""
@@ -410,6 +503,13 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+    # Only the presses of the event (scene) mode, which the button resolves into
+    # single and double presses. Its hold and the command mode are left out: when the
+    # hold is reported is not confirmed on this device.
+    button_event_entities = smart_remote_button_events(
+        replacement, buttons=1, hold=False
+    )
 
 
 class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
