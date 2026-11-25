@@ -565,7 +565,9 @@ def test_custom_quirk_registration_error(tmp_path: Path, caplog) -> None:
         assert "BadRemote" not in labels
         assert "MixedRemote" not in labels
     finally:
-        # Purge the custom quirks again, so they don't leak into other tests
+        # Purge the custom quirks again, so they don't leak into other tests. A failed
+        # drain leaves its quirks queued, which would make the setup below raise too
+        zhaquirks.PENDING_LEGACY_QUIRKS.clear()
         for path in custom_quirks.glob("*.py"):
             path.unlink()
         zhaquirks.setup(custom_quirks_path=str(custom_quirks))
