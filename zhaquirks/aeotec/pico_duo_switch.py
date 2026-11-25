@@ -17,6 +17,24 @@ from zhaquirks.builder import QuirkBuilder
     # Relays are on endpoints 1 and 2, external switch inputs are on endpoints 3 and 4
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=3)
     .replaces(AeotecSwitchTypeConfigCluster, endpoint_id=4)
+    # S1 controls relay 1 and S2 controls relay 2, so each child device takes the
+    # relay's endpoint and its input's endpoint. ZHA's automatic split would only take
+    # the relay endpoints and leave the input settings on the main device; the ids and
+    # names match the child devices it would create.
+    .child_device(
+        "1",
+        endpoint_ids=[1, 3],
+        translation_key="channel",
+        translation_placeholders={"index": "1"},
+        fallback_name="Channel 1",
+    )
+    .child_device(
+        "2",
+        endpoint_ids=[2, 4],
+        translation_key="channel",
+        translation_placeholders={"index": "2"},
+        fallback_name="Channel 2",
+    )
     .replaces_entity(
         DeviceTemperature,
         WholeDegreeDeviceTemperature,
