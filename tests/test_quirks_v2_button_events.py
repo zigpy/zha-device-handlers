@@ -732,6 +732,7 @@ def _device_snapshot(recorder: ButtonEventRecorder) -> dict[str, Any]:
         "entities": {
             (platform, unique_id): (
                 type(entity),
+                entity.primary,
                 entity.translation_key,
                 entity.translation_placeholders,
                 entity.fallback_name,
