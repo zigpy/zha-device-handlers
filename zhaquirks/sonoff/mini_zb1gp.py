@@ -868,8 +868,7 @@ common_quirk = (
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         reporting_config=energy_reporting,
         unique_id_suffix="1794-summation_delivered",
-        translation_key="total_energy",
-        fallback_name="Total energy",
+        fallback_name="Energy",
     )
     .sensor(
         SonoffMiniZb1gpCluster.AttributeDefs.total_output_energy.name,

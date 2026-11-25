@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
+from zhaquirks.builder import SensorDeviceClass
 from zhaquirks.sonoff.mini_zb1gp import (
     EXTERNAL_SWITCH,
     EXTERNAL_TRIGGER_AUTOMATION_MAP,
@@ -1101,7 +1102,15 @@ def test_mini_zb1gp_replacement_sensor_unique_id_suffixes(zigpy_device_from_v2_q
     assert suffixes["Power"] == "2820-active_power"
     assert suffixes["Current"] == "2820-rms_current"
     assert suffixes["Voltage"] == "2820-rms_voltage"
-    assert suffixes["Total energy"] == "1794-summation_delivered"
+    assert suffixes["Energy"] == "1794-summation_delivered"
+
+    energy_metadata = next(
+        metadata
+        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        if metadata.resolved_unique_id_suffix == "1794-summation_delivered"
+    )
+    assert energy_metadata.translation_key is None
+    assert energy_metadata.device_class == SensorDeviceClass.ENERGY
 
     power_metadata = next(
         metadata
@@ -1143,7 +1152,8 @@ def test_mini_zb1gp_optional_entities(zigpy_device_from_v2_quirk):
 
     for metadata_by_name in metadata_by_model.values():
         assert all(
-            metadata.translation_key is not None and metadata.fallback_name is not None
+            (metadata.translation_key is not None or metadata.device_class is not None)
+            and metadata.fallback_name is not None
             for metadata in metadata_by_name.values()
         )
         for name in (
