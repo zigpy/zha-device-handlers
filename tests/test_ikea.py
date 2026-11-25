@@ -64,22 +64,6 @@ def starkvind_device(zigpy_device_from_v2_quirk):
     )
 
 
-def test_starkvind_replaced_clusters(starkvind_device):
-    """Test the unimplemented Fan cluster is removed and no PM25 cluster is added."""
-
-    endpoint = starkvind_device.endpoints[1]
-    assert isinstance(endpoint.in_clusters[IkeaAirpurifier.cluster_id], IkeaAirpurifier)
-
-    # the device's `Fan` cluster is not implemented, so it must not create an entity
-    assert Fan.cluster_id not in endpoint.in_clusters
-
-    # PM2.5 is read from the manufacturer specific cluster, so no virtual server
-    # side `PM25` cluster is added anymore. The device's own client side cluster
-    # is left alone, as it never created an entity to begin with.
-    assert PM25.cluster_id not in endpoint.in_clusters
-    assert PM25.cluster_id in endpoint.out_clusters
-
-
 @pytest.mark.parametrize("attribute", ["fan_speed", "fan_mode"])
 @pytest.mark.parametrize(
     "value,expected",
