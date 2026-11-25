@@ -2,6 +2,7 @@
 
 import pathlib
 import sys
+from typing import Any
 
 import pytest
 from zha.application import EntityPlatform, EntityType, Platform
@@ -15,7 +16,8 @@ import zigpy.device
 import zigpy.profiles.zha
 import zigpy.types as t
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.common import ButtonEventRecorder
 from tests.test_quirks import ALL_QUIRK_CLASSES
@@ -47,6 +49,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     TURN_OFF,
     TURN_ON,
 )
@@ -709,6 +712,98 @@ async def test_v1_button_event_entities(zigpy_device: zigpy.device.Device) -> No
         ("button_on", "long_press_start"),
         ("button_on", "long_press_end"),
     ]
+
+
+def _device_snapshot(recorder: ButtonEventRecorder) -> dict[str, Any]:
+    """Return what ZHA exposes of a device, apart from its button event entities."""
+    zha_device = recorder.zha_device
+    primary = zha_device._primary_entity
+    return {
+        "quirk_applied": zha_device.quirk_applied,
+        "quirk_class": zha_device.quirk_class,
+        "manufacturer": zha_device.manufacturer,
+        "model": zha_device.model,
+        "exposes_features": zha_device.exposes_features,
+        "skip_configuration": zha_device.skip_configuration,
+        "device_automation_triggers": zha_device.device_automation_triggers,
+        "device_alerts": list(zha_device.device_alerts),
+        "primary_entity": None if primary is None else primary.unique_id,
+        "entities": {
+            (platform, unique_id): (
+                type(entity),
+                entity.translation_key,
+                entity.device_class,
+                entity.entity_category,
+                entity.entity_registry_enabled_default,
+            )
+            for (platform, unique_id), entity in zha_device._platform_entities.items()
+            if not isinstance(entity, ZhaEventButton)
+        },
+    }
+
+
+async def test_v1_button_event_entities_change_nothing_else(
+    MockAppController,
+) -> None:
+    """Test that button event entities leave the rest of a v1 quirk's device as is.
+
+    A v1 quirk with button event entities gets a `QuirkV2Device` instead of ZHA's
+    plain device. Its empty definition must not change anything else ZHA derives
+    from the quirk.
+    """
+
+    def build_quirk(**attributes: Any) -> type[CustomDevice]:
+        quirk = v1_remote_quirk(
+            quirk_id="remote_feature",
+            device_automation_triggers=TRIGGERS,
+            **attributes,
+        )
+        for config in (quirk.signature, quirk.replacement):
+            config[ENDPOINTS][1][INPUT_CLUSTERS].extend(
+                [PowerConfiguration.cluster_id, TemperatureMeasurement.cluster_id]
+            )
+        quirk.replacement[SKIP_CONFIGURATION] = True
+        return quirk
+
+    async def build_device(quirk: type[CustomDevice]) -> ButtonEventRecorder:
+        device = zigpy.device.Device(
+            MockAppController, t.EUI64.convert("01:02:03:04:05:06:07:08"), 0x1234
+        )
+        device.manufacturer = "manufacturer"
+        device.model = "remote"
+        endpoint = device.add_endpoint(1)
+        endpoint.profile_id = zigpy.profiles.zha.PROFILE_ID
+        endpoint.device_type = zigpy.profiles.zha.DeviceType.NON_COLOR_CONTROLLER
+        endpoint.add_input_cluster(Basic.cluster_id)
+        endpoint.add_input_cluster(PowerConfiguration.cluster_id)
+        endpoint.add_input_cluster(TemperatureMeasurement.cluster_id)
+        endpoint.add_output_cluster(OnOff.cluster_id)
+        endpoint.add_output_cluster(LevelControl.cluster_id)
+
+        registry = DeviceRegistry()
+        registry.register(_legacy_quirk_to_registry_entry(quirk))
+        quirked = registry.resolve(device)
+        assert isinstance(quirked, quirk)
+        return await ButtonEventRecorder.create(quirked)
+
+    plain = await build_device(build_quirk())
+    with_entities = await build_device(
+        build_quirk(button_event_entities=V1_BUTTON_EVENT_ENTITIES)
+    )
+
+    assert not isinstance(plain.zha_device, QuirkV2Device)
+    assert isinstance(with_entities.zha_device, QuirkV2Device)
+    assert not plain.entities
+    assert list(with_entities.entities) == ["button_on"]
+
+    snapshot = _device_snapshot(plain)
+    # Make sure the comparison covers what the quirk sets
+    assert snapshot["exposes_features"] == {"remote_feature"}
+    assert snapshot["skip_configuration"]
+    assert snapshot["primary_entity"] == "01:02:03:04:05:06:07:08-1-1026"
+    assert (Platform.SENSOR, "01:02:03:04:05:06:07:08-1-1") in snapshot["entities"]
+
+    assert _device_snapshot(with_entities) == snapshot
 
 
 def test_v1_without_button_event_entities() -> None:
