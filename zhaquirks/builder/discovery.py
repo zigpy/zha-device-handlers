@@ -25,6 +25,7 @@ from zha.application.platforms import (
     select,
     sensor,
     switch,
+    text,
 )
 from zha.application.platforms.event.const import ATTR_PRESS_COUNT
 from zigpy.typing import UNDEFINED
@@ -36,6 +37,7 @@ from zhaquirks.builder.metadata import (
     EntityMetadata,
     NumberMetadata,
     SwitchMetadata,
+    TextMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
     ZCLEnumMetadata,
@@ -59,6 +61,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
     (Platform.SELECT, ZCLEnumMetadata): select.ZCLEnumSelectEntity,
     (Platform.NUMBER, NumberMetadata): number.NumberConfigurationEntity,
     (Platform.SWITCH, SwitchMetadata): switch.ConfigurableAttributeSwitch,
+    (Platform.TEXT, TextMetadata): text.TextConfigurationEntity,
     (Platform.EVENT, ButtonEventMetadata): event.ZhaEventButton,
 }
 
@@ -157,6 +160,14 @@ def _platform_kwargs(
             "force_inverted": entity_metadata.force_inverted,
             "off_value": entity_metadata.off_value,
             "on_value": entity_metadata.on_value,
+        }
+    if isinstance(entity_metadata, TextMetadata):
+        return {
+            "attribute_name": entity_metadata.attribute_name,
+            "min_length": entity_metadata.min_length,
+            "max_length": entity_metadata.max_length,
+            "pattern": entity_metadata.pattern,
+            "mode": entity_metadata.mode,
         }
     if isinstance(entity_metadata, BinarySensorMetadata):
         return {

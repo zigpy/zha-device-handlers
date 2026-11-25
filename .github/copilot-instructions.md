@@ -233,6 +233,23 @@ If the underlying attribute is an integer representing a fractional unit (e.g., 
 `min_value`/`max_value` are HA-side values (after the multiplier), not raw attribute values. Confirm the device's raw value range and pick HA-side limits accordingly.
 
 ```python
+# Text (writable string attribute)
+.text(
+    attribute_name="button_name",
+    cluster_id=CustomCluster.cluster_id,
+    cluster_type=ClusterType.Server,  # Optional: default Server
+    min_length=0,                     # Optional: minimum length in characters
+    max_length=10,                    # Optional: maximum length in characters (default 255)
+    pattern=r"^[A-Za-z0-9 ]*$",       # Optional: regex the value has to match
+    mode=TextMode.TEXT,               # Optional: TextMode.PASSWORD masks the input
+    translation_key="button_name",
+    fallback_name="Button name",
+)
+```
+
+The attribute can be a ZCL character string or raw bytes (`t.LVBytes`); raw bytes are decoded from and encoded to UTF-8. Anchor `pattern` with `^…$`: like Home Assistant, ZHA only checks that the start of the value matches. The length limits count characters, while ZCL limits strings in bytes, so leave headroom for non-ASCII text. `TextMode.PASSWORD` only masks the input: a written value is still cached, stored and shown as the entity state.
+
+```python
 
 # Enum as SELECT (dropdown, default) - user can change value
 .enum(
@@ -686,6 +703,7 @@ from zhaquirks.builder import (  # Unit constants
 from zhaquirks.builder import BinarySensorDeviceClass
 from zhaquirks.builder import NumberDeviceClass
 from zhaquirks.builder import SensorDeviceClass, SensorStateClass
+from zhaquirks.builder import TextMode
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 # Cluster types

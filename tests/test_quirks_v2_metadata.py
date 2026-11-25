@@ -9,9 +9,10 @@ from zha.application.platforms.sensor.device_class import (
 from zha.quirks import DeviceRegistry
 from zha.units import UnitOfTime
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import Basic, OnOff
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import QuirkBuilder, TextMode
+from zhaquirks.builder.discovery import _generic_kwargs
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
     ChangedEntityMetadata,
@@ -21,6 +22,7 @@ from zhaquirks.builder.metadata import (
     ExposesFeatureMetadata,
     NumberMetadata,
     SwitchMetadata,
+    TextMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
     ZCLEnumMetadata,
@@ -168,6 +170,117 @@ def test_quirks_v2_number():
     assert number_metadata.unit == "s"
     assert number_metadata.mode is None
     assert number_metadata.multiplier is None
+
+
+def test_quirks_v2_text():
+    """Test adding a quirk that defines a text entity to the registry."""
+    registry = DeviceRegistry()
+
+    entry = (
+        QuirkBuilder("manufacturer", "model")
+        .text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            max_length=16,
+            pattern=r"^[A-Za-z ]*$",
+            mode="password",
+            translation_key="location",
+            fallback_name="Location",
+        )
+        .add_to_registry(registry)
+    )
+
+    (text_metadata,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert isinstance(text_metadata, TextMetadata)
+    assert text_metadata.entity_type == EntityType.CONFIG
+    assert text_metadata.entity_platform == EntityPlatform.TEXT
+    assert text_metadata.cluster_id == Basic.cluster_id
+    assert text_metadata.endpoint_id == 1
+    assert text_metadata.cluster_type == ClusterType.Server
+    assert text_metadata.attribute_name == Basic.AttributeDefs.location_desc.name
+    assert text_metadata.min_length is None
+    assert text_metadata.max_length == 16
+    assert text_metadata.pattern == r"^[A-Za-z ]*$"
+    assert text_metadata.mode is TextMode.PASSWORD
+    assert text_metadata.resolved_unique_id_suffix == "location_desc"
+
+
+def test_quirks_v2_text_child_device():
+    """Test a text entity can be assigned to a child device explicitly."""
+    entry = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_id=2, fallback_name="A")
+        .text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            translation_key="location",
+            fallback_name="Location",
+            child_device_id="a",
+        )
+        .add_to_registry(DeviceRegistry())
+    )
+
+    (text_metadata,) = entry.zha_device_factory.quirk_definition.entity_metadata
+    assert text_metadata.child_device_id == "a"
+    assert _generic_kwargs(text_metadata)["child_device_id"] == "a"
+
+
+@pytest.mark.parametrize(
+    ("min_length", "max_length"),
+    [(None, 0), (None, 256), (-1, None), (5, 4), (256, None)],
+)
+def test_quirks_v2_text_invalid_lengths(min_length, max_length):
+    """Test that impossible length limits are rejected."""
+    with pytest.raises(ValueError, match="_length must be between"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            min_length=min_length,
+            max_length=max_length,
+            translation_key="location",
+            fallback_name="Location",
+        )
+
+
+@pytest.mark.parametrize(
+    ("min_length", "max_length"),
+    [(None, 1.5), (True, None), (None, "16")],
+)
+def test_quirks_v2_text_length_types(min_length, max_length):
+    """Test that length limits must be ints."""
+    with pytest.raises(TypeError, match="_length must be an int"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            min_length=min_length,
+            max_length=max_length,
+            translation_key="location",
+            fallback_name="Location",
+        )
+
+
+def test_quirks_v2_text_invalid_pattern():
+    """Test that a pattern that isn't a valid regex is rejected."""
+    with pytest.raises(ValueError, match="pattern is not a valid regex"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            pattern="[",
+            translation_key="location",
+            fallback_name="Location",
+        )
+
+
+def test_quirks_v2_text_invalid_mode():
+    """Test that an unknown mode is rejected."""
+    with pytest.raises(ValueError, match="is not a valid TextMode"):
+        QuirkBuilder("manufacturer", "model").text(
+            Basic.AttributeDefs.location_desc.name,
+            Basic.cluster_id,
+            mode="secret",
+            translation_key="location",
+            fallback_name="Location",
+        )
 
 
 def test_quirks_v2_binary_sensor():
