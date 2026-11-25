@@ -125,3 +125,14 @@ class PhilipsROM001(CustomDevice):
     device_automation_triggers = (
         PhilipsRom001RemoteCluster.generate_device_automation_triggers()
     )
+
+    button_event_entities = PhilipsRom001RemoteCluster.generate_button_event_entities(
+        endpoint_id=1,
+        names={
+            1: {
+                "unique_id_suffix": "button",
+                "translation_key": "button",
+                "fallback_name": "Button",
+            }
+        },
+    )
