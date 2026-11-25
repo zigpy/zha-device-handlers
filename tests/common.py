@@ -6,7 +6,11 @@ import asyncio
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from zha.application.platforms.event import EntityEventTriggeredEvent, ZhaEventButton
+from zha.application.platforms.event import (
+    EntityEventTriggeredEvent,
+    ZhaEventButton,
+    ZhaEventRotary,
+)
 from zha.application.platforms.light import Light
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
@@ -70,21 +74,21 @@ async def wait_for_zigpy_tasks() -> None:
     await asyncio.gather(*tasks)
 
 
-class ButtonEventRecorder:
-    """Create the ZHA device of a quirked device and record its button events.
+class EventRecorder:
+    """Create the ZHA device of a quirked device and record its button and rotary events.
 
-    Create it with `await ButtonEventRecorder.create(device)`. Entities are keyed by
+    Create it with `await EventRecorder.create(device)`. Entities are keyed by
     their unique ID suffix.
     """
 
     def __init__(self, zha_device: ZigbeeDevice) -> None:
-        """Start recording the button events of a ZHA device's entities."""
+        """Start recording the events of a ZHA device's button and rotary entities."""
         self.zha_device = zha_device
-        self.entities: dict[str, ZhaEventButton] = {}
+        self.entities: dict[str, ZhaEventButton | ZhaEventRotary] = {}
         self.events: list[tuple[str, str, dict[str, Any]]] = []
 
         for entity in zha_device.platform_entities.values():
-            if not isinstance(entity, ZhaEventButton):
+            if not isinstance(entity, ZhaEventButton | ZhaEventRotary):
                 continue
 
             suffix = entity.unique_id.removeprefix(f"{entity.endpoint.unique_id}-")
@@ -102,7 +106,7 @@ class ButtonEventRecorder:
             )
 
     @classmethod
-    async def create(cls, zigpy_device: zigpy.device.Device) -> ButtonEventRecorder:
+    async def create(cls, zigpy_device: zigpy.device.Device) -> EventRecorder:
         """Create the ZHA device and add its entities like ZHA does, then record."""
         # Entities start background tasks, such as polling, through the gateway,
         # which is mocked here: don't run them
@@ -119,7 +123,7 @@ class ButtonEventRecorder:
         return cls(zha_device)
 
     def event_types(self) -> dict[str, list[str]]:
-        """Return the event types of each button event entity."""
+        """Return the event types of each event entity."""
         return {suffix: entity.event_types for suffix, entity in self.entities.items()}
 
     def pop(self) -> list[tuple[str, str] | tuple[str, str, dict[str, Any]]]:
