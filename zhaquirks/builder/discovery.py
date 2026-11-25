@@ -142,6 +142,8 @@ def _platform_kwargs(
     if isinstance(entity_metadata, NumberMetadata):
         return {
             "attribute_name": entity_metadata.attribute_name,
+            "attribute_converter": entity_metadata.attribute_converter,
+            "value_converter": entity_metadata.value_converter,
             "min_value": entity_metadata.min,
             "max_value": entity_metadata.max,
             "step": entity_metadata.step,
