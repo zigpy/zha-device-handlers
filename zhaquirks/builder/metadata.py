@@ -9,7 +9,7 @@ classes take plain keyword arguments and know nothing about it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from enum import Enum
 from typing import Any
 
@@ -158,6 +158,43 @@ class ZCLCommandButtonMetadata(EntityMetadata):
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
+# The `zha_event` data keys a button event can match: ZHA sends these for a cluster
+# command and for a quirk's `zha_send_event`. Its `unique_id` is left out: it holds
+# the device's IEEE address, so a quirk can't match it.
+ZHA_EVENT_DATA_KEYS = frozenset(
+    {"command", "cluster_id", "endpoint_id", "args", "params"}
+)
+
+
+def _validate_zha_event_data(event_data: Any, source: object) -> None:
+    """Validate that event data can match a `zha_event`."""
+    if not isinstance(event_data, Mapping):
+        raise TypeError(
+            f"Event data is a mapping of zha_event keys, not {event_data!r}: {source}"
+        )
+
+    if unknown := set(event_data) - ZHA_EVENT_DATA_KEYS:
+        raise ValueError(
+            f"Event data has keys a zha_event does not have"
+            f" ({', '.join(sorted(map(repr, unknown)))}), so it never matches: {source}"
+        )
+
+    if any(_has_empty_mapping(value) for value in event_data.values()):
+        raise ValueError(
+            f"Event data with an empty mapping matches any mapping in its place: {source}"
+        )
+
+
+def _has_empty_mapping(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return not value or any(map(_has_empty_mapping, value.values()))
+
+    if isinstance(value, list | tuple):
+        return any(map(_has_empty_mapping, value))
+
+    return False
+
+
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ButtonEvent:
     """An event type a button event entity fires, and the `zha_event` firing it.
@@ -201,8 +238,11 @@ class ButtonEvent:
                 f"A trigger is a (type, subtype) pair of strings: {self.trigger!r}"
             )
 
-        if self.event_data is not None and not self.event_data:
-            raise ValueError(f"Empty event data matches every zha_event: {self}")
+        if self.event_data is not None:
+            _validate_zha_event_data(self.event_data, self)
+
+            if not self.event_data:
+                raise ValueError(f"Empty event data matches every zha_event: {self}")
 
         if (self.event_type == ButtonEventType.MULTI_PRESS) != (
             self.press_count is not None
@@ -301,6 +341,123 @@ def validate_button_event_triggers(
                 " device automation trigger without data, which matches every"
                 " zha_event"
             )
+
+        _validate_zha_event_data(
+            device_automation_triggers[event.trigger],
+            f"trigger {event.trigger} of {entity_metadata.unique_id_suffix!r}",
+        )
+
+
+def _is_sequence(value: Any) -> bool:
+    return isinstance(value, list | tuple)
+
+
+def _event_data_covers(expected: Mapping[str, Any], other: Mapping[str, Any]) -> bool:
+    """Return whether every `zha_event` matching `other` also matches `expected`.
+
+    This follows ZHA's matching of button event data: every expected key with an
+    equal value, nested mappings as a subset, sequences item by item.
+    """
+    return all(
+        key in other and _event_value_covers(value, other[key])
+        for key, value in expected.items()
+    )
+
+
+def _event_value_covers(expected: Any, other: Any) -> bool:
+    if isinstance(expected, Mapping):
+        return isinstance(other, Mapping) and _event_data_covers(expected, other)
+
+    if _is_sequence(expected) and _is_sequence(other):
+        return len(expected) == len(other) and all(
+            map(_event_value_covers, expected, other)
+        )
+
+    return bool(expected == other)
+
+
+def _event_data_overlap(first: Mapping[str, Any], second: Mapping[str, Any]) -> bool:
+    """Return whether a `zha_event` can match both event data."""
+    return all(
+        _event_value_overlap(first[key], second[key])
+        for key in first.keys() & second.keys()
+    )
+
+
+def _event_value_overlap(first: Any, second: Any) -> bool:
+    if isinstance(first, Mapping) and isinstance(second, Mapping):
+        return _event_data_overlap(first, second)
+
+    if _is_sequence(first) and _is_sequence(second):
+        return len(first) == len(second) and all(
+            map(_event_value_overlap, first, second)
+        )
+
+    if isinstance(first, Mapping) or isinstance(second, Mapping):
+        return False
+
+    return bool(first == second)
+
+
+def validate_button_event_matches(
+    entities: Iterable[EntityMetadata],
+    device_automation_triggers: Mapping[tuple[str, str], Any],
+) -> None:
+    """Validate that one `zha_event` fires at most one button event of a quirk.
+
+    An entity fires its first match for a `zha_event`, trying the matches while held
+    first, so a match an earlier one covers never fires. Each entity fires its own
+    match, so the matches of two entities must not overlap, or one press would fire
+    both buttons. Only matches while held may overlap across entities: they fire
+    for the held button only.
+    """
+    matches: list[tuple[str, ButtonEvent, Mapping[str, Any]]] = []
+
+    for entity_metadata in entities:
+        if not isinstance(entity_metadata, ButtonEventMetadata):
+            continue
+
+        # Entities on different endpoints may share a suffix
+        suffix = (
+            f"{entity_metadata.unique_id_suffix!r}"
+            f" (endpoint {entity_metadata.endpoint_id})"
+        )
+        entity_matches = []
+        for event in entity_metadata.events:
+            if event.trigger is None:
+                assert event.event_data is not None
+                entity_matches.append((suffix, event, event.event_data))
+            elif event.trigger in device_automation_triggers:
+                entity_matches.append(
+                    (suffix, event, device_automation_triggers[event.trigger])
+                )
+
+        # ZHA tries the matches while held first, keeping the order otherwise
+        entity_matches.sort(key=lambda match: not match[1].while_held)
+        for index, (_, earlier, earlier_data) in enumerate(entity_matches):
+            for _, later, later_data in entity_matches[index + 1 :]:
+                if _event_data_covers(earlier_data, later_data) and (
+                    later.while_held or not earlier.while_held
+                ):
+                    raise ValueError(
+                        f"Button event {later} of {suffix} never fires: {earlier}"
+                        " matches every zha_event it matches"
+                    )
+
+        matches.extend(entity_matches)
+
+    for index, (suffix, event, data) in enumerate(matches):
+        for other_suffix, other, other_data in matches[index + 1 :]:
+            if (
+                other_suffix != suffix
+                and not (event.while_held and other.while_held)
+                and _event_data_overlap(data, other_data)
+            ):
+                raise ValueError(
+                    f"Button events {event} of {suffix} and {other} of"
+                    f" {other_suffix} can match the same zha_event, which would"
+                    " fire both"
+                )
 
 
 def validate_button_event_entities(entities: Iterable[EntityMetadata]) -> None:

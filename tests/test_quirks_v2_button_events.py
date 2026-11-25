@@ -569,3 +569,337 @@ def test_button_event_frozen() -> None:
         "params": {"a": (3,)},
     }
     assert hash(event)
+
+
+@pytest.mark.parametrize("event_data", [[COMMAND_ON], COMMAND_ON, 1])
+def test_button_event_event_data_type(event_data) -> None:
+    """Test that button event data has to be a mapping."""
+    with pytest.raises(TypeError, match="is a mapping of zha_event keys"):
+        ButtonEvent(event_type=ButtonEventType.PRESS_END, event_data=event_data)
+
+
+@pytest.mark.parametrize(
+    "event_data",
+    [
+        {COMMAND: COMMAND_ON, "params": {}},
+        {COMMAND: COMMAND_ON, "params": {"a": {}}},
+        {COMMAND: COMMAND_ON, "args": [{}]},
+    ],
+)
+def test_button_event_event_data_empty_mapping(event_data) -> None:
+    """Test that button event data cannot hold a mapping matching any value."""
+    with pytest.raises(ValueError, match="empty mapping matches any mapping"):
+        ButtonEvent(event_type=ButtonEventType.PRESS_END, event_data=event_data)
+
+
+def test_button_event_event_data_unknown_key() -> None:
+    """Test that button event data can only use the keys of a `zha_event`."""
+    with pytest.raises(ValueError, match=r"does not have \('endpoint'\)"):
+        ButtonEvent(
+            event_type=ButtonEventType.PRESS_END,
+            event_data={COMMAND: COMMAND_ON, "endpoint": 1},
+        )
+
+
+async def test_button_event_trigger_unknown_key() -> None:
+    """Test that a button event cannot use a trigger with keys no zha_event has."""
+    builder = (
+        QuirkBuilder("manufacturer", "remote")
+        .device_automation_triggers({(SHORT_PRESS, TURN_ON): {"cmd": COMMAND_ON}})
+        .button_event(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                )
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        )
+    )
+
+    with pytest.raises(ValueError, match=r"does not have \('cmd'\)"):
+        builder.add_to_registry(DeviceRegistry())
+
+
+def button_quirk(
+    *buttons: tuple[str, list[ButtonEvent]], endpoint_ids: tuple[int, ...] = ()
+) -> QuirkBuilder:
+    """Return a quirk for the remote with the given button event entities."""
+    builder = QuirkBuilder("manufacturer", "remote").device_automation_triggers(
+        {**TRIGGERS, (SHORT_PRESS, "args"): {COMMAND: COMMAND_ON, "args": [1]}}
+    )
+    for index, (suffix, events) in enumerate(buttons):
+        builder.button_event(
+            events=events,
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            endpoint_id=endpoint_ids[index] if endpoint_ids else 1,
+            unique_id_suffix=suffix,
+            translation_key="button",
+            fallback_name="Button",
+        )
+    return builder
+
+
+HOLD = ButtonEvent(
+    event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, DIM_UP)
+)
+
+
+@pytest.mark.parametrize(
+    "events",
+    [
+        # The same trigger twice
+        [
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+        ],
+        # Event data matching every zha_event the trigger matches, and more
+        [
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, event_data={COMMAND: COMMAND_ON}
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+        ],
+        # Event data without params covers the same command with params
+        [
+            HOLD,
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={COMMAND: COMMAND_MOVE_ON_OFF},
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_MOVE_ON_OFF, "params": {"move_mode": 0}},
+            ),
+        ],
+        # Trigger data keeps lists, which cover the same items in a tuple
+        [
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, "args")
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                event_data={COMMAND: COMMAND_ON, "args": (1,), CLUSTER_ID: 6},
+            ),
+        ],
+        # Two matches while held, the broader one first
+        [
+            HOLD,
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                event_data={COMMAND: COMMAND_STOP},
+                while_held=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+                while_held=True,
+            ),
+        ],
+    ],
+)
+def test_button_event_never_fires(events: list[ButtonEvent]) -> None:
+    """Test that a button event an earlier one of its entity covers is rejected."""
+    with pytest.raises(ValueError, match="never fires"):
+        button_quirk(("button", events)).add_to_registry(DeviceRegistry())
+
+
+def test_button_event_while_held_first() -> None:
+    """Test that a match while held does not hide the same data otherwise."""
+    button_quirk(
+        (
+            "button",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    trigger=(LONG_RELEASE, DIM_UP),
+                ),
+                HOLD,
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, DIM_UP),
+                    while_held=True,
+                ),
+            ],
+        )
+    ).add_to_registry(DeviceRegistry())
+
+    # Two matches while held, the narrower one first
+    button_quirk(
+        (
+            "button",
+            [
+                HOLD,
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, DIM_UP),
+                    while_held=True,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    event_data={COMMAND: COMMAND_STOP},
+                    while_held=True,
+                ),
+            ],
+        )
+    ).add_to_registry(DeviceRegistry())
+
+    # A more specific match before a less specific one still fires
+    button_quirk(
+        (
+            "button",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: COMMAND_ON},
+                ),
+            ],
+        )
+    ).add_to_registry(DeviceRegistry())
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        (
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)
+            ),
+        ),
+        # Neither covers the other, but an `on` from endpoint 1 matches both
+        (
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_ON, CLUSTER_ID: 6},
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                event_data={COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
+            ),
+        ),
+        # Only one of them matches while held
+        (
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END, event_data={COMMAND: COMMAND_STOP}
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+                while_held=True,
+            ),
+        ),
+    ],
+)
+def test_button_event_shared_between_entities(
+    first: ButtonEvent, second: ButtonEvent
+) -> None:
+    """Test that the events of two entities cannot match the same `zha_event`."""
+    second_events = [second] if not second.while_held else [HOLD, second]
+    quirk = button_quirk(("button_1", [first]), ("button_2", second_events))
+
+    with pytest.raises(ValueError, match="can match the same zha_event"):
+        quirk.add_to_registry(DeviceRegistry())
+
+
+def test_button_event_shared_between_endpoints() -> None:
+    """Test that entities with the same suffix on two endpoints cannot share data."""
+    press = ButtonEvent(
+        event_type=ButtonEventType.PRESS_END, event_data={COMMAND: COMMAND_ON}
+    )
+    quirk = button_quirk(("button", [press]), ("button", [press]), endpoint_ids=(1, 2))
+
+    with pytest.raises(
+        ValueError, match=r"'button' \(endpoint 1\) and .* \(endpoint 2\) can match"
+    ):
+        quirk.add_to_registry(DeviceRegistry())
+
+
+def test_button_event_distinct_between_entities() -> None:
+    """Test that entities may share releases while held, and distinct data."""
+    release = ButtonEvent(
+        event_type=ButtonEventType.LONG_PRESS_END,
+        event_data={COMMAND: COMMAND_STOP},
+        while_held=True,
+    )
+    button_quirk(
+        (
+            "button_up",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    event_data={
+                        COMMAND: COMMAND_MOVE_ON_OFF,
+                        "params": {"move_mode": 0},
+                    },
+                ),
+                release,
+            ],
+        ),
+        (
+            "button_down",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_START,
+                    event_data={
+                        COMMAND: COMMAND_MOVE_ON_OFF,
+                        "params": {"move_mode": 1},
+                    },
+                ),
+                release,
+            ],
+        ),
+        (
+            "button_on",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: COMMAND_ON, "args": (1,)},
+                )
+            ],
+        ),
+        (
+            "button_off",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: COMMAND_ON, "args": (1, 2)},
+                )
+            ],
+        ),
+        (
+            "button_toggle",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: "toggle", "params": {"a": 1}},
+                )
+            ],
+        ),
+        (
+            "button_toggle_2",
+            [
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: "toggle", "params": 1},
+                )
+            ],
+        ),
+    ).add_to_registry(DeviceRegistry())
