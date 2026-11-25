@@ -233,11 +233,10 @@ def test_green_power_quirk_entities(zigpy_gpd):
     assert button_1.event_types == ["press"]
     assert button_1.device_class == EventDeviceClass.BUTTON
     assert button_1.fallback_name == "Button 1"
-    # ZHA elects the primary entity when the entities are added to the device
-    assert button_1._attr_primary is True
+    assert button_1.primary
     assert button_2.unique_id == f"{zigpy_gpd.ieee}-button_2"
     assert button_2.event_types == ["toggle"]
-    assert button_2._attr_primary is None
+    assert not button_2.primary
 
     events: list[EntityEventTriggeredEvent] = []
     for entity in entities:
