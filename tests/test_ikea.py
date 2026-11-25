@@ -469,7 +469,8 @@ def styrbar_receive(device, cluster_id: int, data: bytes) -> None:
             cluster_id=cluster_id,
             src_ep=1,
             dst_ep=1,
-            tsn=data[1] if data[0] == 0x01 else data[3],
+            # A manufacturer specific frame carries the manufacturer code before the TSN
+            tsn=data[3] if data[0] & 0x04 else data[1],
             data=t.SerializableBytes(data),
         )
     )
@@ -596,3 +597,36 @@ async def test_styrbar_drops_copies_of_stray_on(zigpy_device_from_v2_quirk):
         )
 
     assert on_off_listener.cluster_commands == []
+
+
+@pytest.mark.parametrize(
+    ("frame", "default_rsp_sent"),
+    [
+        # The stray `on` asks for a default response, which the remote still gets
+        (STRAY_ON, True),
+        # The same `on` with its default response disabled gets none
+        (b"\x11\x02\x01", False),
+    ],
+    ids=["requested", "disabled"],
+)
+async def test_styrbar_stray_on_default_response(
+    zigpy_device_from_v2_quirk, frame, default_rsp_sent
+):
+    """Test that a dropped `on` gets a default response only when it asks for one."""
+    device = styrbar_device(zigpy_device_from_v2_quirk)
+    on_off = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    on_off_listener = ClusterListener(on_off)
+
+    styrbar_receive(device, Scenes.cluster_id, ARROW_HOLD_START)
+    with mock.patch.object(on_off, "send_default_rsp") as send_default_rsp:
+        styrbar_receive(device, OnOff.cluster_id, frame)
+
+    assert on_off_listener.cluster_commands == []
+    if default_rsp_sent:
+        send_default_rsp.assert_called_once()
+        hdr, status = send_default_rsp.call_args.args
+        assert hdr.tsn == frame[1]
+        assert hdr.command_id == OnOff.ServerCommandDefs.on.id
+        assert status == foundation.Status.SUCCESS
+    else:
+        send_default_rsp.assert_not_called()
