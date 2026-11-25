@@ -1,8 +1,10 @@
 """Collection of Tuya Valve devices e.g. water valves, gas valve etc."""
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.builder import (
@@ -228,6 +230,26 @@ def giex_string_to_dt(v: str) -> datetime | None:
         return dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
 
 
+def giex_string_to_iso(v: str) -> str | None:
+    """Convert a Giex time string to an ISO 8601 timestamp for the attribute cache.
+
+    The cache holds a string, not a `datetime`: zigpy's database stores a `datetime` as
+    a string and restores that string after a restart.
+    """
+    dt = giex_string_to_dt(v)
+    return None if dt is None else dt.isoformat()
+
+
+def giex_iso_to_dt(v: Any) -> datetime | None:
+    """Convert a cached ISO 8601 timestamp to a datetime for a timestamp sensor."""
+    try:
+        dt = datetime.fromisoformat(v)
+    except (TypeError, ValueError):
+        return None  # e.g. an integer timestamp cached by older quirk versions
+
+    return dt if dt.tzinfo is not None else None
+
+
 gx02_base_quirk = (
     TuyaQuirkBuilder()
     .tuya_battery(dp_id=108, battery_type=BatterySize.AA, battery_qty=4)
@@ -274,20 +296,34 @@ gx02_base_quirk = (
         translation_key="irrigation_duration",
         fallback_name="Irrigation duration",
     )
-    .tuya_sensor(
+    .tuya_dp_attribute(
         dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
-        converter=giex_string_to_dt,
+        converter=giex_string_to_iso,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .sensor(
+        attribute_name="irrigation_start_time",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_converter=giex_iso_to_dt,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation start time",
     )
-    .tuya_sensor(
+    .tuya_dp_attribute(
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
-        converter=giex_string_to_dt,
+        converter=giex_string_to_iso,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .sensor(
+        attribute_name="irrigation_end_time",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_converter=giex_iso_to_dt,
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation end time",

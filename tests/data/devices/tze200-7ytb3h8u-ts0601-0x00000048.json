@@ -1,0 +1,634 @@
+{
+  "version": 3,
+  "ieee": "ab:cd:ef:12:a1:d9:6c:74",
+  "nwk": "0xBAE5",
+  "manufacturer": "_TZE200_7ytb3h8u",
+  "model": "TS0601",
+  "friendly_manufacturer": "_TZE200_7ytb3h8u",
+  "friendly_model": "TS0601",
+  "name": "_TZE200_7ytb3h8u TS0601",
+  "quirk_applied": true,
+  "quirk_class": "zhaquirks.tuya.builder:(_TZE200_a7sghmms / TS0601)",
+  "exposes_features": [],
+  "manufacturer_code": 4417,
+  "power_source": "Battery or Unknown",
+  "lqi": null,
+  "rssi": null,
+  "last_seen": "2025-12-11T01:25:33.716090+00:00",
+  "available": true,
+  "device_type": "EndDevice",
+  "active_coordinator": false,
+  "node_descriptor": {
+    "logical_type": "EndDevice",
+    "complex_descriptor_available": false,
+    "user_descriptor_available": false,
+    "reserved": 0,
+    "aps_flags": 0,
+    "frequency_band": 8,
+    "mac_capability_flags": 128,
+    "manufacturer_code": 4417,
+    "maximum_buffer_size": 66,
+    "maximum_incoming_transfer_size": 66,
+    "server_mask": 10752,
+    "maximum_outgoing_transfer_size": 66,
+    "descriptor_capability_field": 0
+  },
+  "endpoints": {
+    "1": {
+      "profile_id": 260,
+      "device_type": {
+        "name": "ON_OFF_SWITCH",
+        "id": 0
+      },
+      "in_clusters": [
+        {
+          "cluster_id": "0x0000",
+          "endpoint_attribute": "basic",
+          "attributes": [
+            {
+              "id": "0x0001",
+              "name": "app_version",
+              "zcl_type": "uint8",
+              "value": 72
+            },
+            {
+              "id": "0x0004",
+              "name": "manufacturer",
+              "zcl_type": "string",
+              "value": "_TZE200_7ytb3h8u"
+            },
+            {
+              "id": "0x0005",
+              "name": "model",
+              "zcl_type": "string",
+              "value": "TS0601"
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0001",
+          "endpoint_attribute": "power",
+          "attributes": [
+            {
+              "id": "0x0021",
+              "name": "battery_percentage_remaining",
+              "zcl_type": "uint8",
+              "value": 400
+            },
+            {
+              "id": "0x0033",
+              "name": "battery_quantity",
+              "zcl_type": "uint8",
+              "value": 4
+            },
+            {
+              "id": "0x0034",
+              "name": "battery_rated_voltage",
+              "zcl_type": "uint8",
+              "value": 15
+            },
+            {
+              "id": "0x0031",
+              "name": "battery_size",
+              "zcl_type": "enum8",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0004",
+          "endpoint_attribute": "groups",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0005",
+          "endpoint_attribute": "scenes",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0006",
+          "endpoint_attribute": "on_off",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "on_off",
+              "zcl_type": "bool",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cluster_id": "0x0702",
+          "endpoint_attribute": "smartenergy_metering",
+          "attributes": [
+            {
+              "id": "0x0000",
+              "name": "current_summ_delivered",
+              "zcl_type": "uint48",
+              "value": 0
+            },
+            {
+              "id": "0x0400",
+              "name": "instantaneous_demand",
+              "zcl_type": "int24",
+              "unsupported": true
+            },
+            {
+              "id": "0x0306",
+              "name": "metering_device_type",
+              "zcl_type": "map8",
+              "value": 2
+            },
+            {
+              "id": "0x0300",
+              "name": "unit_of_measure",
+              "zcl_type": "enum8",
+              "value": 7
+            }
+          ]
+        },
+        {
+          "cluster_id": "0xef00",
+          "endpoint_attribute": "tuya_manufacturer",
+          "attributes": [
+            {
+              "id": "0xef67",
+              "name": "irrigation_cycles",
+              "zcl_type": "uint8",
+              "value": 0
+            },
+            {
+              "id": "0xef72",
+              "name": "irrigation_duration",
+              "zcl_type": "uint32",
+              "value": "00:00:00,0"
+            },
+            {
+              "id": "0xef66",
+              "name": "irrigation_end_time",
+              "zcl_type": "string",
+              "value": "05:36:38"
+            },
+            {
+              "id": "0xef69",
+              "name": "irrigation_interval",
+              "zcl_type": "uint32",
+              "value": 0
+            },
+            {
+              "id": "0xef01",
+              "name": "irrigation_mode",
+              "zcl_type": "bool",
+              "value": 0
+            },
+            {
+              "id": "0xef65",
+              "name": "irrigation_start_time",
+              "zcl_type": "string",
+              "value": "05:36:38"
+            },
+            {
+              "id": "0xef68",
+              "name": "irrigation_target",
+              "zcl_type": "uint32",
+              "value": 0
+            },
+            {
+              "id": "0xef00",
+              "name": "mcu_version",
+              "zcl_type": "uint48",
+              "value": "1.0.0"
+            }
+          ]
+        }
+      ],
+      "out_clusters": [
+        {
+          "cluster_id": "0x000a",
+          "endpoint_attribute": "time",
+          "attributes": []
+        },
+        {
+          "cluster_id": "0x0019",
+          "endpoint_attribute": "ota",
+          "attributes": [
+            {
+              "id": "0x0002",
+              "name": "current_file_version",
+              "zcl_type": "uint32",
+              "value": 72
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "original_signature": {
+    "manufacturer": "_TZE200_7ytb3h8u",
+    "model": "TS0601",
+    "node_desc": {
+      "logical_type": 2,
+      "complex_descriptor_available": 0,
+      "user_descriptor_available": 0,
+      "reserved": 0,
+      "aps_flags": 0,
+      "frequency_band": 8,
+      "mac_capability_flags": 128,
+      "manufacturer_code": 4417,
+      "maximum_buffer_size": 66,
+      "maximum_incoming_transfer_size": 66,
+      "server_mask": 10752,
+      "maximum_outgoing_transfer_size": 66,
+      "descriptor_capability_field": 0
+    },
+    "endpoints": {
+      "1": {
+        "profile_id": "0x0104",
+        "device_type": "0x0000",
+        "input_clusters": [
+          "0x0000",
+          "0x0001",
+          "0x0004",
+          "0x0005",
+          "0x0006",
+          "0x0702",
+          "0xef00"
+        ],
+        "output_clusters": [
+          "0x000a",
+          "0x0019"
+        ]
+      }
+    }
+  },
+  "zha_lib_entities": {
+    "number": [
+      {
+        "fallback_name": "Irrigation cycles",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_cycles",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "irrigation_cycles",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 0,
+        "mode": "auto",
+        "native_max_value": 100,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": null
+      },
+      {
+        "fallback_name": "Irrigation interval",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_interval",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "irrigation_interval",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 0,
+        "mode": "auto",
+        "native_max_value": 43200,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": "s"
+      },
+      {
+        "fallback_name": "Irrigation target",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_target",
+        "migrate_unique_ids": [],
+        "platform": "number",
+        "class_name": "NumberConfigurationEntity",
+        "translation_key": "irrigation_target",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 0,
+        "mode": "auto",
+        "native_max_value": 43200,
+        "native_min_value": 0,
+        "native_step": 1,
+        "native_unit_of_measurement": null
+      }
+    ],
+    "select": [
+      {
+        "fallback_name": "Irrigation mode",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_mode",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "ZCLEnumSelectEntity",
+        "translation_key": "irrigation_mode",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_option": "Duration",
+        "enum": "GiexIrrigationMode",
+        "options": [
+          "Duration",
+          "Capacity"
+        ]
+      },
+      {
+        "fallback_name": "Weather delay",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-weather_delay",
+        "migrate_unique_ids": [],
+        "platform": "select",
+        "class_name": "ZCLEnumSelectEntity",
+        "translation_key": "weather_delay",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "current_option": null,
+        "enum": "GiexIrrigationWeatherDelay",
+        "options": [
+          "NoDelay",
+          "TwentyFourHourDelay",
+          "FortyEightHourDelay",
+          "SeventyTwoHourDelay"
+        ]
+      }
+    ],
+    "sensor": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-0-lqi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "LQISensor",
+        "translation_key": "lqi",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-0-rssi",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "RSSISensor",
+        "translation_key": "rssi",
+        "translation_placeholders": null,
+        "device_class": "signal_strength",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": false,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": null,
+        "available": true,
+        "group_id": null,
+        "native_value": null,
+        "suggested_display_precision": null,
+        "unit": "dBm"
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-1",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Battery",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "battery",
+        "state_class": "measurement",
+        "entity_category": "diagnostic",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "battery_quantity",
+          "battery_size",
+          "battery_voltage"
+        ],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 200.0,
+        "suggested_display_precision": 0,
+        "unit": "%",
+        "battery_size": "AA",
+        "battery_quantity": 4,
+        "battery_voltage": null
+      },
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-1794-summation_delivered",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "SmartEnergySummation",
+        "translation_key": "summation_delivered",
+        "translation_placeholders": null,
+        "device_class": "volume",
+        "state_class": "total_increasing",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [
+          "device_type",
+          "status",
+          "zcl_unit_of_measurement"
+        ],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": 0.0,
+        "suggested_display_precision": 3,
+        "unit": "L",
+        "device_type": "Water Metering",
+        "status": null,
+        "zcl_unit_of_measurement": 7
+      },
+      {
+        "fallback_name": "Irrigation duration",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_duration",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "irrigation_duration",
+        "translation_placeholders": null,
+        "device_class": "duration",
+        "state_class": "measurement",
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "00:00:00,0",
+        "suggested_display_precision": null,
+        "unit": "s"
+      },
+      {
+        "fallback_name": "Irrigation end time",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_end_time",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "irrigation_end_time",
+        "translation_placeholders": null,
+        "device_class": "timestamp",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "05:36:38",
+        "suggested_display_precision": null,
+        "unit": null
+      },
+      {
+        "fallback_name": "Irrigation start time",
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-irrigation_start_time",
+        "migrate_unique_ids": [],
+        "platform": "sensor",
+        "class_name": "Sensor",
+        "translation_key": "irrigation_start_time",
+        "translation_placeholders": null,
+        "device_class": "timestamp",
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "native_value": "05:36:38",
+        "suggested_display_precision": null,
+        "unit": null
+      }
+    ],
+    "switch": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-6",
+        "migrate_unique_ids": [],
+        "platform": "switch",
+        "class_name": "Switch",
+        "translation_key": "switch",
+        "translation_placeholders": null,
+        "device_class": null,
+        "state_class": null,
+        "entity_category": null,
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": true,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "is_on": 0
+      }
+    ],
+    "update": [
+      {
+        "fallback_name": null,
+        "unique_id": "ab:cd:ef:12:a1:d9:6c:74-1-25-firmware_update",
+        "migrate_unique_ids": [],
+        "platform": "update",
+        "class_name": "FirmwareUpdateEntity",
+        "translation_key": null,
+        "translation_placeholders": null,
+        "device_class": "firmware",
+        "state_class": null,
+        "entity_category": "config",
+        "entity_registry_enabled_default": true,
+        "enabled": true,
+        "primary": false,
+        "extra_state_attribute_names": [],
+        "device_ieee": "ab:cd:ef:12:a1:d9:6c:74",
+        "endpoint_id": 1,
+        "available": true,
+        "group_id": null,
+        "installed_version": "0x00000048",
+        "in_progress": false,
+        "update_percentage": null,
+        "latest_version": null,
+        "release_summary": null,
+        "release_notes": null,
+        "release_url": null,
+        "supported_features": 23
+      }
+    ]
+  },
+  "neighbors": [],
+  "routes": []
+}
