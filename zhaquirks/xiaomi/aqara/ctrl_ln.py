@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -20,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import EventableCluster
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -56,6 +58,44 @@ from zhaquirks.xiaomi import (
 ATTRIBUTE_PRESENT_VALUE = "present_value"
 
 
+def _button_event_entity(
+    button: str, endpoint_id: int, number: int | None
+) -> ButtonEventMetadata:
+    """Return the button event entity of a numbered button, or of both together.
+
+    The switch counts the presses itself.
+    """
+    return ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS, trigger=(SHORT_PRESS, button)
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, button),
+                press_count=2,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=endpoint_id,
+        **(
+            {
+                "unique_id_suffix": "button_both",
+                "translation_key": "both_buttons",
+                "fallback_name": "Both buttons",
+            }
+            if number is None
+            else {
+                "unique_id_suffix": f"button_{number}",
+                "translation_key": "button_numbered",
+                "translation_placeholders": {"number": str(number)},
+                "fallback_name": f"Button {number}",
+            }
+        ),
+    )
+
+
 class CtrlLn(XiaomiCustomDevice):
     """Aqara double key switch device."""
 
@@ -79,7 +119,7 @@ class CtrlLn(XiaomiCustomDevice):
         """WallSwitchMultistateInputCluster: fire events corresponding to press type."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1"), (LUMI, "lumi.ctrl_ln2.aq1")],
+        MODELS_INFO: [(LUMI, "lumi.ctrl_ln2.aq1")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -234,3 +274,25 @@ class CtrlLn(XiaomiCustomDevice):
             ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 2},
         },
     }
+
+    # The switch counts the presses itself. It reports pressing both rockers as
+    # button 3.
+    button_event_entities = (
+        _button_event_entity(BUTTON_1, 5, 1),
+        _button_event_entity(BUTTON_2, 6, 2),
+        _button_event_entity(BUTTON_3, 7, None),
+    )
+
+
+class CtrlLn1(CtrlLn):
+    """Aqara single key switch device.
+
+    It only has button 1, so it gets no entities for button 2 or both buttons.
+    """
+
+    signature = {
+        **CtrlLn.signature,
+        MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1")],
+    }
+
+    button_event_entities = (_button_event_entity(BUTTON_1, 5, 1),)
