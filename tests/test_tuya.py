@@ -7,11 +7,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zha.quirks import DEVICE_REGISTRY
+from zha.quirks import (
+    DEVICE_REGISTRY,
+    QUIRK_REGISTRY_ENTRY_ATTR,
+    TUYA_PLUG_MANUFACTURER,
+)
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
     LevelControl,
@@ -26,7 +30,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks import LevelControlWithMoveDirection
-from zhaquirks.builder.metadata import EntityFilter
+from zhaquirks.builder.metadata import EntityFilter, ExposesFeatureMetadata
 from zhaquirks.const import (
     COMMAND,
     COMMAND_MOVE_DOWN_RELEASE,
@@ -58,6 +62,12 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
+)
+from zhaquirks.tuya.mcu import (
+    MoesSwitchManufCluster,
+    TuyaOnOff,
+    TuyaOnOffManufCluster,
+    TuyaOnOffNM,
 )
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts000f
@@ -192,15 +202,14 @@ async def test_ts0021_remote(
     )
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
-async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
+async def test_doubleswitch_state_report(zigpy_device_from_v2_quirk):
     """Test tuya double switch."""
 
     ZCL_TUYA_SWITCH_COMMAND_03 = b"\tQ\x03\x006\x01\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_OFF = b"\tQ\x02\x006\x02\x01\x00\x01\x00"
 
-    switch_dev = zigpy_device_from_quirk(quirk)
+    switch_dev = zigpy_device_from_v2_quirk("_TZE200_nkjintbl", "TS0601")
 
     switch1_cluster = switch_dev.endpoints[1].on_off
     switch1_listener = ClusterListener(switch1_cluster)
@@ -264,6 +273,118 @@ async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
     # no switch attribute updated (TUYA_SET_TIME command)
     assert len(switch1_listener.attribute_updates) == 2
     assert len(switch2_listener.attribute_updates) == 2
+
+
+LIGHT = zha.DeviceType.ON_OFF_LIGHT
+SWITCH = zha.DeviceType.ON_OFF_SWITCH
+
+
+@pytest.mark.parametrize(
+    "manufacturer, gangs, onoff_cls, manuf_cls, device_type, plug_feature",
+    (
+        ("_TZE200_g1ib5ldv", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_wunufsil", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_nkjintbl", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE204_wvovwe9h", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_7deq70b8", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_nh9m9emk", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE204_nh9m9emk", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_wvovwe9h", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE200_tz32mtza", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_vhy3iakz", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_2hf7x9n3", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_go3tvswy", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE204_2imwyigp", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_kyfqmmyl", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE200_aqnazj70", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_1ozguk6x", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_k6jhsr0q", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
+        ("_TZE200_1n2kyphz", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE200_mexisfik", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE204_58of2pfn", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE200_leaqthqq", 5, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
+        ("_TZE200_jwsjbxjs", 5, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
+        ("_TZE200_9mahtqtg", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
+        ("_TZE200_wnp4d4va", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
+        ("_TZE200_emxxanvi", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
+        ("_TZE200_wktrysab", 8, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
+        ("_TZE204_wktrysab", 8, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
+        ("_TZE204_dqolcpcp", 12, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
+        ("_TZE204_vmcgja59", 16, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
+    ),
+)
+@pytest.mark.parametrize("green_power_endpoint", (False, True))
+async def test_ts0601_multi_gang_switch(
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+    gangs,
+    onoff_cls,
+    manuf_cls,
+    device_type,
+    plug_feature,
+    green_power_endpoint,
+):
+    """Test that each gang of a multi-gang switch gets its own endpoint."""
+
+    switch = zigpy_device_from_v2_quirk(
+        manufacturer,
+        "TS0601",
+        endpoint_ids=[1, 242] if green_power_endpoint else [1],
+    )
+    assert sorted(ep_id for ep_id in switch.endpoints if ep_id not in (0, 242)) == (
+        list(range(1, gangs + 1))
+    )
+    assert (242 in switch.endpoints) is green_power_endpoint
+
+    tuya_cluster = switch.endpoints[1].tuya_manufacturer
+    assert type(tuya_cluster) is manuf_cls
+
+    for ep_id in range(1, gangs + 1):
+        endpoint = switch.endpoints[ep_id]
+        assert endpoint.profile_id == zha.PROFILE_ID
+        assert endpoint.device_type == device_type
+        assert type(endpoint.on_off) is onoff_cls
+
+    entry = getattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
+    assert entry.source.file.endswith("ts0601_switch.py")
+    assert (
+        ExposesFeatureMetadata(feature=TUYA_PLUG_MANUFACTURER)
+        in entry.zha_device_factory.quirk_definition.exposes_features
+    ) is plug_feature
+
+    # the on/off DP of the last gang updates only its own endpoint
+    onoff_dp = gangs if gangs <= 6 else 0x64 + gangs - 6
+    listeners = {
+        ep_id: ClusterListener(switch.endpoints[ep_id].on_off)
+        for ep_id in range(1, gangs + 1)
+    }
+
+    hdr, data = tuya_cluster.deserialize(
+        b"\x09\x01\x02\x00\x01" + bytes([onoff_dp]) + b"\x01\x00\x01\x01"
+    )
+    assert tuya_cluster.handle_get_data(data.data) == foundation.Status.SUCCESS
+
+    for ep_id, listener in listeners.items():
+        if ep_id == gangs:
+            assert listener.attribute_updates == [(OnOff.AttributeDefs.on_off.id, True)]
+        else:
+            assert listener.attribute_updates == []
+
+
+async def test_ts0601_multi_gang_switch_with_gang_endpoints(
+    zigpy_device_from_v2_quirk,
+):
+    """Test that a unit reporting an endpoint per gang gets no quirk."""
+
+    switch = zigpy_device_from_v2_quirk(
+        "_TZE200_wktrysab",
+        "TS0601",
+        cluster_ids={
+            ep_id: {OnOff.cluster_id: ClusterType.Server} for ep_id in range(1, 9)
+        },
+    )
+    assert not hasattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
+    assert all(type(switch.endpoints[ep_id].on_off) is OnOff for ep_id in range(1, 9))
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
