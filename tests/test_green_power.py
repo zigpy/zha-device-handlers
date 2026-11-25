@@ -225,6 +225,9 @@ def test_green_power_quirk_entities(zigpy_gpd):
     entities = list(zha_device.discover_entities())
     assert len(entities) == 2
 
+    # ZHA elects the primary entity when it adds the device's entities
+    zha_device._compute_primary_entities(entities)
+
     button_1, button_2 = entities
     assert button_1.unique_id == f"{zigpy_gpd.ieee}-button_1"
     assert button_1.event_types == ["press"]

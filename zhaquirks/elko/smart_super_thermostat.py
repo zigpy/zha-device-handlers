@@ -85,10 +85,13 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         unknown_8: Final = ZCLAttributeDef(id=UNKNOWN_8, type=t.uint8_t)
         unknown_9: Final = ZCLAttributeDef(id=UNKNOWN_9, type=t.uint8_t)
 
-    def __init__(self, *args, **kwargs):
-        """Init Elko thermostat."""
-        super().__init__(*args, **kwargs)
-        self.active_sensor = None
+    def _floor_sensor_selected(self) -> bool:
+        """Return whether the floor sensor is the selected temperature sensor.
+
+        Read from the attribute cache, which is restored when Home Assistant
+        restarts, so the selection is known before the device reports it again.
+        """
+        return self.get(self.AttributeDefs.active_sensor.name) == ActiveSensor.FLOOR
 
     async def write_attributes(
         self,
@@ -118,20 +121,12 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
             )
         elif attrid == CHILD_LOCK:
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
-        elif attrid == ACTIVE_SENSOR:
-            self.active_sensor = value
         elif attrid == LOCAL_TEMP:
-            if (
-                self.active_sensor is not None
-                and self.active_sensor == self.Sensor.FLOOR
-            ):
+            if self._floor_sensor_selected():
                 # Ignore the air sensor reading if the floor sensor is selected
                 return
         elif attrid == FLOOR_SENSOR_TEMPERATURE:
-            if (
-                self.active_sensor is not None
-                and self.active_sensor == self.Sensor.FLOOR
-            ):
+            if self._floor_sensor_selected():
                 attrid = LOCAL_TEMP
         elif attrid == POWER_CONSUMPTION:
             if value is not None and value >= 0:

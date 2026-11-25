@@ -1,6 +1,8 @@
 """Quirks v2 builder-mechanics tests migrated from zigpy."""
 
+from collections import UserDict
 import logging
+from types import MappingProxyType
 from typing import Any
 from unittest.mock import AsyncMock, sentinel
 
@@ -815,6 +817,10 @@ async def test_quirks_v2_also_applies_to(device_mock):
         (True, True),
         (3.14, 3.14),
         (frozendict({"a": 1}), frozendict({"a": 1})),
+        (
+            MappingProxyType({"a": UserDict({"b": [1]})}),
+            frozendict({"a": frozendict({"b": (1,)})}),
+        ),
         ((1, 2, 3), (1, 2, 3)),
         ((1, [2], {3: 4}), (1, (2,), frozendict({3: 4}))),
         (

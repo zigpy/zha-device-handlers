@@ -9,9 +9,10 @@ model (matching zigbee2mqtt's TH-S04D converter,
 https://github.com/Koenkk/zigbee-herdsman-converters/pull/10787).
 """
 
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import MultistateInput
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.const import COMMAND, DOUBLE_PRESS, LONG_PRESS, LONG_RELEASE, SHORT_PRESS
 from zhaquirks.xiaomi import (
     AQARA,
@@ -82,6 +83,99 @@ class W100PowerConfiguration(XiaomiPowerConfiguration):
             (LONG_PRESS, MINUS_BUTTON): {COMMAND: COMMAND_3_HOLD},
             (LONG_RELEASE, MINUS_BUTTON): {COMMAND: COMMAND_3_RELEASE},
         }
+    )
+    # Each button reports on its own endpoint. It counts its presses itself, reports a
+    # hold at the hold threshold and the release after it (Zigbee2MQTT TH-S04D: hold 0,
+    # single 1, double 2, release 255). Whether the hold is repeated while the button
+    # stays down is not confirmed, so repeats are allowed, and the release only ends a
+    # hold seen, in case it also follows other presses. Nothing is sent while the
+    # device is in thermostat mode.
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, PLUS_BUTTON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, PLUS_BUTTON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, PLUS_BUTTON),
+                repeats=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, PLUS_BUTTON),
+                while_held=True,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        unique_id_suffix="button_plus",
+        translation_key="plus_button",
+        fallback_name="Plus button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, CENTER_BUTTON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, CENTER_BUTTON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, CENTER_BUTTON),
+                repeats=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, CENTER_BUTTON),
+                while_held=True,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=2,
+        unique_id_suffix="button_center",
+        translation_key="center_button",
+        fallback_name="Center button",
+    )
+    .button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, MINUS_BUTTON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, MINUS_BUTTON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, MINUS_BUTTON),
+                repeats=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, MINUS_BUTTON),
+                while_held=True,
+            ),
+        ],
+        cluster_id=MultistateInput.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=3,
+        unique_id_suffix="button_minus",
+        translation_key="minus_button",
+        fallback_name="Minus button",
     )
     .add_to_registry()
 )

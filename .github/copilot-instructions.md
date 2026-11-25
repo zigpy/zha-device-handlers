@@ -55,6 +55,7 @@ from zhaquirks.builder import QuirkBuilder
     .applies_to("AltManufacturer", "Model")  # Additional models
     .replaces(CustomClusterClass)             # Replace standard cluster
     .device_automation_triggers({...})        # Button/action mappings
+    .button_event(events=[...], ...)          # Event entity per button
     .switch(attribute_name=..., fallback_name=...)  # HA entity
     .add_to_registry()
 )
@@ -333,6 +334,33 @@ If you have access to a checkout of the ZHA library, you can find existing uniqu
 ```
 The trigger tuple `(action, subtype)` appears in the HA UI. The dict value must uniquely match the `zha_event` fired by the device.
 
+**Button Event Entities:**
+```python
+# One event entity per physical button, firing standard button event types
+.button_event(
+    events=[
+        ButtonEvent(event_type=ButtonEventType.PRESS_END, trigger=(SHORT_PRESS, TURN_ON)),
+        ButtonEvent(event_type=ButtonEventType.LONG_PRESS_START, trigger=(LONG_PRESS, DIM_UP)),
+        ButtonEvent(event_type=ButtonEventType.LONG_PRESS_END, trigger=(LONG_RELEASE, DIM_UP)),
+    ],
+    cluster_id=OnOff.cluster_id,       # Required: a cluster the entity is attached to
+    cluster_type=ClusterType.Client,   # Required: no default
+    endpoint_id=1,                     # Optional: default 1
+    unique_id_suffix="button_on",      # Required
+    translation_key="on_button",
+    fallback_name="On button",
+)
+```
+Each `ButtonEvent` fires its event type for the `zha_event`s matching the data of a device automation trigger the quirk defines (`trigger=`), or `event_data=` matched like trigger data (keys `command`, `cluster_id`, `endpoint_id`, `args`, `params`). For a `zha_event`, the first matching event of an entity fires. Registration fails when an event can never fire because an earlier event of the entity covers it, or when the events of two entities can match the same `zha_event` (only `while_held` events may share data). Match a command's arguments the same way (`args` or `params`) in all entities of a quirk, since the check can't tell that the two forms describe the same arguments. The event type has to be a `ButtonEventType`, and the types follow home-assistant/architecture#1502:
+- `press_start` / `press_end`: the button went down / was released after a press that wasn't long. Only declare them if the device reports them for every press.
+- `single_press`: the device concluded that exactly one press happened. `multi_press` with `press_count=N` (at least 2) for double, triple, ... presses, only together with `single_press`.
+- `long_press_start`: the hold threshold was reached (`repeats=True` if the device repeats it while held, so it fires once per hold). `long_press_end`: released after a long press (`while_held=True` if the device sends a release that doesn't tell the button or a short press apart: it then only matches after a `long_press_start` of this entity, ahead of the entity's other events).
+- Map each event by what the device reports. Don't add timers or derive events, and keep other device-specific events out of the entity.
+
+The entity is only attached to `cluster_id`, it fires for the `zha_event`s of any cluster. `.prevent_default_entity_creation()` also removes quirk entities it matches, so attach the entity to a cluster the quirk doesn't prevent entities on.
+
+v1 quirks (`CustomDevice` subclasses) expose the same entities in a `button_event_entities` class attribute: a tuple of `ButtonEventMetadata(events=[...], cluster_id=..., cluster_type=..., unique_id_suffix=..., translation_key=..., fallback_name=...)`, taking the same arguments as `.button_event()`. Their `trigger=` keys refer to the class's `device_automation_triggers`.
+
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA
 - `.zigpy_device_class(cls)` - Replace the zigpy device with a `BaseCustomDevice` subclass (e.g., for special request handling)
@@ -380,7 +408,7 @@ Modify properties of entities ZHA creates by default:
     new_entity_category=EntityType.DIAGNOSTIC,
 )
 ```
-Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_translation_placeholders`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_entity_registry_enabled_default`, `new_fallback_name`. Here `cluster_type` defaults to `ClusterType.Server` when `cluster_id` is set.
+Available `new_*` parameters: `new_primary`, `new_unique_id`, `new_translation_key`, `new_translation_placeholders`, `new_device_class`, `new_state_class`, `new_entity_category`, `new_entity_registry_enabled_default`, `new_fallback_name`, `new_child_device_id`. Here `cluster_type` defaults to `ClusterType.Server` when `cluster_id` is set.
 
 **Custom Entity Classes:**
 Use the builder entity methods when an entity maps to one attribute. When it needs logic they can't express, subclass an appropriate entity type:
@@ -435,6 +463,24 @@ class DetachRelaySwitch(ConfigurableAttributeSwitch):
 ```
 
 Removing entities: `.removes_entity(EntityFilter(...))` with any of `entity_cls` (exact type), `platform`, `endpoint_id`, `cluster_id`, `cluster_type`, `unique_id_suffix`, `translation_key`, `device_class`, `function`.
+
+**Child Devices:**
+Expose logical parts of a device, e.g. the gangs of a wall switch, as child devices (sub-devices in HA). Entities on the endpoints of a child device belong to it, except entities of device-level clusters (Basic, Power Configuration, Identify, OTA, ...), which stay on the main device:
+```python
+.child_device("left", endpoint_id=1, translation_key="left", fallback_name="Left")
+.child_device("right", endpoint_id=2, translation_key="right", fallback_name="Right")
+
+# Assign a single entity explicitly, e.g. a Tuya data point entity on endpoint 1
+.tuya_switch(dp_id=102, attribute_name="child_lock_2", ..., child_device_id="right")
+
+# Keep a default entity of a child device's endpoint on the main device
+.change_entity_metadata(
+    endpoint_id=1,
+    cluster_id=Metering.cluster_id,
+    new_child_device_id=None,
+)
+```
+Defining child devices replaces the automatic split ZHA applies to allowlisted multi-channel devices; `.disable_child_devices()` turns that split off. The main device and each child device can have one primary entity; `add_to_registry()` checks this, including `change_entity_metadata` changes of the quirk's own entities (`new_child_device_id`, `new_primary`), skips entities `removes_entity` removes, and leaves an entity to ZHA when it can't tell whether such a change or removal applies to it (e.g. a `function` filter, or a `unique_id_suffix` filter after a `new_unique_id` change it can't place) or when a `new_primary=True` change promotes it on a quirk that leaves child devices to ZHA's automatic split. A new child device `translation_key` also needs a translation in Home Assistant, otherwise `fallback_name` is used.
 
 ### Tuya Devices (TuyaQuirkBuilder)
 
@@ -587,7 +633,7 @@ def test_my_device_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(MyDeviceQuirk, signature)
 ```
 
-**When tests are NOT needed:** Purely declarative v2 quirks that contain no custom logic do not require test coverage. This includes quirks that only use existing custom clusters (already tested elsewhere), `.device_automation_triggers()`, `.friendly_name()`, `.applies_to()`, `.skip_configuration()`, or other pure definitions. Example:
+**Test code, not definitions.** Only write tests for the custom code listed below. If a quirk has none, do not write a test for it. Do not write tests for entity creation, quirk matching, signatures, or other definitions. These tests are long and fragile, and we do not accept them. ZHA already covers definitions with snapshot tests of the device diagnostics JSON. Example of a quirk that must not have a test:
 
 ```python
 (
@@ -602,7 +648,7 @@ def test_my_device_signature(assert_signature_matches_quirk):
 )
 ```
 
-Tests **are** needed when a quirk introduces custom logic such as custom clusters with overridden methods (e.g., `handle_cluster_request`, `update_attribute`), `attribute_converter` lambdas, custom filter functions, or custom entity classes.
+Tests **are** needed for custom cluster methods (e.g., `handle_cluster_request`, `update_attribute`), custom filter functions, and custom entity classes. Test what that code does, not that the entities exist.
 
 **End-to-end tests:** if your quirk is complex, its high-level behavior should be tested. Use `tests/zha_helpers.py` with diagnostics for your device:
 ```python
@@ -697,4 +743,5 @@ def handle_cluster_request(self, hdr, args, *, dst_addressing=None):
 
 - Run `pre-commit run --all-files` before submitting
 - New quirks require device diagnostics data (download from HA device page → three dots → "Download diagnostics")
-- Tests should verify entity creation
+- Only add tests for custom code. Do not add tests for definitions. See **Testing**.
+- Do not open a Home Assistant Core PR to add translations for new `translation_key` values. Maintainers add them in the Core PR that bumps the `zha-quirks` package.
