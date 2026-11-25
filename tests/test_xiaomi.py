@@ -120,7 +120,6 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 from zhaquirks.xiaomi.aqara.sensor_switch_aq3 import (
-    AqaraSwitchOperationMode,
     AqaraT1MiniSwitchCluster,
     SwitchAQ3B2,
 )
@@ -3562,7 +3561,6 @@ async def test_aqara_t1_mini_switch_sets_event_mode(zigpy_device_from_quirk):
     assert hdr.direction == foundation.Direction.Client_to_Server
     # attribute 0x0009, type uint8, value 1 (event mode)
     assert data == b"\x09\x00\x20\x01"
-    assert AqaraSwitchOperationMode.Event == 0x01
 
 
 async def test_aqara_t1_mini_switch_event_mode_write_failure(zigpy_device_from_quirk):

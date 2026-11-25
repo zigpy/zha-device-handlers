@@ -3,7 +3,6 @@
 import logging
 from typing import Final
 
-from zigpy import types as t
 from zigpy.exceptions import ZigbeeException
 from zigpy.profiles import zha
 from zigpy.zcl import ClusterType
@@ -36,6 +35,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    AqaraSwitchOperationMode,
     BasicCluster,
     DeviceTemperatureCluster,
     XiaomiAqaraE1Cluster,
@@ -85,13 +85,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             # show something in the sensor in HA
             super()._update_attribute(0, action)
-
-
-class AqaraSwitchOperationMode(t.enum8):
-    """Operation mode of the Aqara T1 wireless mini switch."""
-
-    Command = 0x00  # sends OnOff commands (toggle / off)
-    Event = 0x01  # reports multistate input present_value (single / double / hold)
 
 
 class AqaraT1MiniSwitchCluster(XiaomiAqaraE1Cluster):
