@@ -75,3 +75,4 @@ When writing a PR or issue on a user's behalf:
 Skills live in `.claude/skills/` (also reachable as `.agents/skills/`). Tools that don't load skills automatically can read the `SKILL.md` directly.
 
 - `zha-quirks`: full `QuirkBuilder` / `TuyaQuirkBuilder` reference: entity options (number `multiplier`, enums, buttons, custom entity classes), unique ID rules and ZHA-native entity migration, custom clusters, legacy v1 quirks, testing fixtures, and known pitfalls.
+- `quirk-review`: checklist for reviewing a quirks PR, including what not to comment on.
