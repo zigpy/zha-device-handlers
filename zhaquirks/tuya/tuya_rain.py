@@ -1,6 +1,7 @@
 """Quirk for TS0207 rain sensors."""
 
 import zigpy.types as t
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.builder import (
@@ -11,9 +12,24 @@ from zhaquirks.builder import (
     SensorStateClass,
     UnitOfElectricPotential,
 )
+from zhaquirks.clusters import CustomCluster
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+
+
+class TuyaRainPowerConfiguration(CustomCluster, PowerConfiguration):
+    """Power configuration for rain sensors.
+
+    The battery level is reported over ZCL, so this is a real cluster that ZHA can
+    bind, configure reporting on and read. Tuya DP 4 is still mapped onto it.
+    """
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.Other,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 30,
+    }
 
 
 class TuyaIasZone(IasZone, TuyaLocalCluster):
@@ -27,9 +43,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
 (
     TuyaQuirkBuilder("_TZ3210_tgvtvdoc", "TS0207")
     .applies_to("_TZ3210_p68kms0l", "TS0207")
-    .tuya_battery(
-        dp_id=4, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
-    )
+    .tuya_battery(dp_id=4, power_cfg=TuyaRainPowerConfiguration)
     .tuya_illuminance(dp_id=101)
     .tuya_sensor(
         dp_id=102,
@@ -89,6 +103,5 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         fallback_name="Rain intensity",
     )
     .adds(TuyaIasZone)
-    .skip_configuration()
     .add_to_registry()
 )
