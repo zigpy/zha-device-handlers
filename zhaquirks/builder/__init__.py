@@ -19,10 +19,11 @@ from zha.units import *  # noqa: F401, F403
 
 from zhaquirks.builder.builder import QuirkBuilder
 from zhaquirks.builder.green_power import GreenPowerQuirkBuilder
-from zhaquirks.builder.metadata import EntityFilter, ReportingConfig
+from zhaquirks.builder.metadata import ButtonEvent, EntityFilter, ReportingConfig
 
 __all__ = [
     "BinarySensorDeviceClass",
+    "ButtonEvent",
     "ButtonEventType",
     "EntityFilter",
     "EntityPlatform",
