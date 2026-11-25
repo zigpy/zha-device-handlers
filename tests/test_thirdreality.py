@@ -187,9 +187,9 @@ async def test_third_reality_button_event_entity(zigpy_device_from_v2_quirk):
 
     assert recorder.event_types() == {"button": GESTURES}
 
-    # Single, double, hold and release; a release without a hold and 42, which is
-    # no press type, fire nothing
-    for value in (1, 255, 2, 0, 255, 255, 42):
+    # Single, double, a hold repeated while held and its release; a release without
+    # a hold and 42, which is no press type, fire nothing
+    for value in (1, 255, 2, 0, 0, 255, 255, 42):
         report_present_value(device, 1, value)
 
     assert recorder.pop() == [

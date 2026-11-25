@@ -95,9 +95,9 @@ for ep, button in BUTTONS.items():
         cluster_type=ClusterType.Server,
         endpoint_id=ep,
         unique_id_suffix=f"button_{ep}",
-        translation_key="numbered_button",
+        translation_key="button_numbered",
         fallback_name=f"Button {ep}",
-        translation_placeholders={"button_number": str(ep)},
+        translation_placeholders={"number": str(ep)},
     )
 
 three_button_quirk.add_to_registry()

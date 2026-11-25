@@ -153,14 +153,16 @@ def _button_event(
     """Add the button event entity of a gang's button and return the builder.
 
     The button reports each press as a single toggle, with no hold or multi press.
+    Whether the toggle is sent when the button goes down or when it is released is not
+    confirmed on hardware, so it is a `single_press`, which holds either way.
     """
     naming: dict[str, Any]
     if numbered:
         naming = {
             "unique_id_suffix": f"button_{endpoint_id}",
-            "translation_key": "numbered_button",
+            "translation_key": "button_numbered",
             "fallback_name": f"Button {endpoint_id}",
-            "translation_placeholders": {"button_number": str(endpoint_id)},
+            "translation_placeholders": {"number": str(endpoint_id)},
         }
     else:
         naming = {

@@ -74,8 +74,10 @@ class ThirdRealityButtonCluster(CustomCluster):
         }
     )
     # The button counts its presses, so its single press is a resolved gesture. It
-    # reports the hold at the threshold. Its release is only taken as the end of
-    # a hold seen, in case it also follows other presses.
+    # reports the hold at the threshold. Whether it repeats the hold while the button
+    # stays down is not confirmed on hardware, so a repeated hold only fires once. Its
+    # release is only taken as the end of a hold seen, in case it also follows other
+    # presses.
     .button_event(
         events=[
             ButtonEvent(
@@ -90,6 +92,7 @@ class ThirdRealityButtonCluster(CustomCluster):
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_START,
                 trigger=(LONG_PRESS, LONG_PRESS),
+                repeats=True,
             ),
             ButtonEvent(
                 event_type=ButtonEventType.LONG_PRESS_END,

@@ -87,7 +87,9 @@ snzb01m_quirk = (
 )
 
 # Each button counts its presses, so its single press is a resolved gesture. The
-# long press is one event with no release, classified as sent on release.
+# long press is one event with no release, classified as sent on release, as deCONZ
+# labels it. Not confirmed on hardware: if the device sends it at the hold threshold
+# instead, as the SNZB-01 family does, it is a `long_press_start`.
 for ep, button in BUTTONS.items():
     snzb01m_quirk.button_event(
         events=[
@@ -114,9 +116,9 @@ for ep, button in BUTTONS.items():
         cluster_type=ClusterType.Server,
         endpoint_id=ep,
         unique_id_suffix=f"button_{ep}",
-        translation_key="numbered_button",
+        translation_key="button_numbered",
         fallback_name=f"Button {ep}",
-        translation_placeholders={"button_number": str(ep)},
+        translation_placeholders={"number": str(ep)},
     )
 
 snzb01m_quirk.add_to_registry()
