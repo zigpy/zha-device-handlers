@@ -15,6 +15,7 @@ from typing import Any
 from zha.quirks import (
     DEVICE_REGISTRY as ZHA_DEVICE_REGISTRY,
     DeviceMatch,
+    DeviceRegistry,
     ModelInfo,
     QuirkRegistryEntry,
     QuirkSource,
@@ -642,13 +643,17 @@ def _register_pending_quirks(*, swallow_errors: bool = False) -> None:
     """
 
     for cls in PENDING_LEGACY_QUIRKS:
-        if not swallow_errors:
-            ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
-            continue
-
         try:
-            ZHA_DEVICE_REGISTRY.register(_legacy_quirk_to_registry_entry(cls))
+            entry = _legacy_quirk_to_registry_entry(cls)
+            if swallow_errors:
+                # `register` can index some of an entry's models before it rejects
+                # another one, so try it on an empty registry first: a skipped
+                # quirk must not stay registered for part of its models
+                DeviceRegistry().register(entry)
+            ZHA_DEVICE_REGISTRY.register(entry)
         except Exception:
+            if not swallow_errors:
+                raise
             _LOGGER.exception("Failed to register custom quirk %r", cls)
 
     PENDING_LEGACY_QUIRKS.clear()
