@@ -7,8 +7,11 @@ from zha.application import Platform
 from zha.application.platforms import EntityCategory
 from zha.quirks import DEVICE_REGISTRY
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import ClusterType, ReportingConfig, foundation
+from zigpy.zcl.clusters.general import (
+    DeviceTemperature as DeviceTemperatureCluster,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
@@ -284,3 +287,22 @@ async def test_frient_smart_plug_device_temperature():
         assert type(entity) is WholeDegreeDeviceTemperature
         assert entity.native_value == 32
         assert entity.entity_category == EntityCategory.DIAGNOSTIC
+
+
+async def test_frient_smart_plug_device_temperature_reporting():
+    """Test that the device temperature reports a change of one whole degree."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, "frient-a-s-splzb-141-0x00020009.json", DEVICE_REGISTRY
+        )
+        cluster = device.device.endpoints[2].device_temperature
+
+        cluster.configure_reporting_multiple.assert_awaited_once_with(
+            {
+                DeviceTemperatureCluster.AttributeDefs.current_temperature: (
+                    ReportingConfig(
+                        min_interval=30, max_interval=900, reportable_change=1
+                    )
+                )
+            }
+        )
