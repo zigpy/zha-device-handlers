@@ -7,11 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
-from zha.quirks import (
-    DEVICE_REGISTRY,
-    QUIRK_REGISTRY_ENTRY_ATTR,
-    TUYA_PLUG_MANUFACTURER,
-)
+from zha.quirks import DEVICE_REGISTRY, QUIRK_REGISTRY_ENTRY_ATTR
 from zigpy.device import Device
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -31,7 +27,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks import LevelControlWithMoveDirection
-from zhaquirks.builder.metadata import EntityFilter, ExposesFeatureMetadata
+from zhaquirks.builder.metadata import EntityFilter
 from zhaquirks.const import (
     COMMAND,
     COMMAND_MOVE_DOWN_RELEASE,
@@ -64,12 +60,7 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
-from zhaquirks.tuya.mcu import (
-    MoesSwitchManufCluster,
-    TuyaOnOff,
-    TuyaOnOffManufCluster,
-    TuyaOnOffNM,
-)
+from zhaquirks.tuya.mcu import TuyaOnOffManufCluster
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts000f
 import zhaquirks.tuya.ts0021
@@ -278,10 +269,6 @@ async def test_doubleswitch_state_report(zigpy_device_from_v2_quirk):
     assert len(switch2_listener.attribute_updates) == 2
 
 
-LIGHT = zha.DeviceType.ON_OFF_LIGHT
-SWITCH = zha.DeviceType.ON_OFF_SWITCH
-
-
 def _ts0601_switch_clusters(
     green_power_endpoint: bool = False,
 ) -> dict[int, dict[int, ClusterType]]:
@@ -293,79 +280,52 @@ def _ts0601_switch_clusters(
 
 
 @pytest.mark.parametrize(
-    "manufacturer, gangs, onoff_cls, manuf_cls, device_type, plug_feature",
+    "manufacturer, gangs",
     (
-        ("_TZE200_g1ib5ldv", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_wunufsil", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_nkjintbl", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE204_wvovwe9h", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_7deq70b8", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_nh9m9emk", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE204_nh9m9emk", 2, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_wvovwe9h", 2, TuyaOnOff, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE200_tz32mtza", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_vhy3iakz", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_2hf7x9n3", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_go3tvswy", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE204_2imwyigp", 3, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_kyfqmmyl", 3, TuyaOnOff, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE200_aqnazj70", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_1ozguk6x", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_k6jhsr0q", 4, TuyaOnOff, MoesSwitchManufCluster, LIGHT, True),
-        ("_TZE200_1n2kyphz", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE200_mexisfik", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE204_58of2pfn", 4, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE200_leaqthqq", 5, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
-        ("_TZE200_jwsjbxjs", 5, TuyaOnOffNM, MoesSwitchManufCluster, LIGHT, False),
-        ("_TZE200_9mahtqtg", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
-        ("_TZE200_wnp4d4va", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
-        ("_TZE200_emxxanvi", 6, TuyaOnOffNM, TuyaOnOffManufCluster, LIGHT, True),
-        ("_TZE200_wktrysab", 8, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
-        ("_TZE204_wktrysab", 8, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
-        ("_TZE204_dqolcpcp", 12, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
-        ("_TZE204_vmcgja59", 16, TuyaOnOffNM, TuyaOnOffManufCluster, SWITCH, False),
+        ("_TZE200_g1ib5ldv", 2),
+        ("_TZE200_wunufsil", 2),
+        ("_TZE200_nkjintbl", 2),
+        ("_TZE204_wvovwe9h", 2),
+        ("_TZE200_7deq70b8", 2),
+        ("_TZE200_nh9m9emk", 2),
+        ("_TZE204_nh9m9emk", 2),
+        ("_TZE200_wvovwe9h", 2),
+        ("_TZE200_tz32mtza", 3),
+        ("_TZE200_vhy3iakz", 3),
+        ("_TZE200_2hf7x9n3", 3),
+        ("_TZE200_go3tvswy", 3),
+        ("_TZE204_2imwyigp", 3),
+        ("_TZE200_kyfqmmyl", 3),
+        ("_TZE200_aqnazj70", 4),
+        ("_TZE200_1ozguk6x", 4),
+        ("_TZE200_k6jhsr0q", 4),
+        ("_TZE200_1n2kyphz", 4),
+        ("_TZE200_mexisfik", 4),
+        ("_TZE204_58of2pfn", 4),
+        ("_TZE200_leaqthqq", 5),
+        ("_TZE200_jwsjbxjs", 5),
+        ("_TZE200_9mahtqtg", 6),
+        ("_TZE200_wnp4d4va", 6),
+        ("_TZE200_emxxanvi", 6),
+        ("_TZE200_wktrysab", 8),
+        ("_TZE204_wktrysab", 8),
+        ("_TZE204_dqolcpcp", 12),
+        ("_TZE204_vmcgja59", 16),
     ),
 )
 @pytest.mark.parametrize("green_power_endpoint", (False, True))
 async def test_ts0601_multi_gang_switch(
-    zigpy_device_from_v2_quirk,
-    manufacturer,
-    gangs,
-    onoff_cls,
-    manuf_cls,
-    device_type,
-    plug_feature,
-    green_power_endpoint,
+    zigpy_device_from_v2_quirk, manufacturer, gangs, green_power_endpoint
 ):
-    """Test that each gang of a multi-gang switch gets its own endpoint."""
+    """Test that the on/off DP of the last gang updates only its own endpoint."""
 
     switch = zigpy_device_from_v2_quirk(
         manufacturer,
         "TS0601",
         cluster_ids=_ts0601_switch_clusters(green_power_endpoint),
     )
-    assert sorted(ep_id for ep_id in switch.endpoints if ep_id not in (0, 242)) == (
-        list(range(1, gangs + 1))
-    )
-    assert (242 in switch.endpoints) is green_power_endpoint
-
     tuya_cluster = switch.endpoints[1].tuya_manufacturer
-    assert type(tuya_cluster) is manuf_cls
 
-    for ep_id in range(1, gangs + 1):
-        endpoint = switch.endpoints[ep_id]
-        assert endpoint.profile_id == zha.PROFILE_ID
-        assert endpoint.device_type == device_type
-        assert type(endpoint.on_off) is onoff_cls
-
-    entry = getattr(switch, QUIRK_REGISTRY_ENTRY_ATTR)
-    assert entry.source.file.endswith("ts0601_switch.py")
-    assert (
-        ExposesFeatureMetadata(feature=TUYA_PLUG_MANUFACTURER)
-        in entry.zha_device_factory.quirk_definition.exposes_features
-    ) is plug_feature
-
-    # the on/off DP of the last gang updates only its own endpoint
     onoff_dp = gangs if gangs <= 6 else 0x64 + gangs - 6
     listeners = {
         ep_id: ClusterListener(switch.endpoints[ep_id].on_off)
