@@ -49,6 +49,7 @@ from zhaquirks.philips import (
     Button,
     ButtonPressQueue,
     PhilipsRemoteCluster,
+    PhilipsRwlRemoteCluster,
     PressType,
 )
 from zhaquirks.philips.rdm002 import PhilipsRDM002
@@ -395,9 +396,31 @@ def test_PhilipsRemoteCluster_short_press(
     for q in cluster.button_press_queue.values():
         q.fire()
 
-    assert listener.zha_send_event.call_count == 2
+    assert listener.zha_send_event.call_count == 4
 
     calls = [
+        # The press and release as the device reports them
+        mock.call(
+            f"{button}_initial_press",
+            {
+                "button": button,
+                "press_type": "initial_press",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 0, 0, 0],
+            },
+        ),
+        mock.call(
+            f"{button}_press_release",
+            {
+                "button": button,
+                "press_type": "press_release",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 2, 0, 0],
+            },
+        ),
+        # The press and release sent once the multi-press window has passed
         mock.call(
             f"{button}_{events[0]}",
             {
@@ -489,7 +512,12 @@ def test_PhilipsRemoteCluster_multi_press(
     for q in cluster.button_press_queue.values():
         q.fire()
 
-    assert listener.zha_send_event.call_count == 1
+    # An initial press and a press release for every press, then the multi-press
+    assert listener.zha_send_event.call_count == 2 * count + 1
+    assert [c.args[0] for c in listener.zha_send_event.call_args_list[:-1]] == [
+        f"{button}_initial_press",
+        f"{button}_press_release",
+    ] * count
     args_button_id = count + 2
     listener.zha_send_event.assert_has_calls(
         [
@@ -605,9 +633,20 @@ def test_PhilipsRemoteCluster_long_press(
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 3, 0, count * 40 + 10])
     cluster.button_press_queue.fire()
 
-    assert listener.zha_send_event.call_count == count + 1
+    assert listener.zha_send_event.call_count == count + 2
 
-    calls = []
+    calls = [
+        mock.call(
+            f"{button}_initial_press",
+            {
+                "button": button,
+                "press_type": "initial_press",
+                "command_id": None,
+                "duration": 0,
+                "args": [1, 0, 0, 0, 0],
+            },
+        )
+    ]
     for i in range(0, count):
         calls.append(
             mock.call(
@@ -779,7 +818,16 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
                     b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
                 ],
             ),
-            ["left_press", "left_short_release", "right_press", "right_short_release"],
+            [
+                "left_initial_press",
+                "left_press_release",
+                "right_initial_press",
+                "right_press_release",
+                "left_press",
+                "left_short_release",
+                "right_press",
+                "right_short_release",
+            ],
         ),
     ),
 )
@@ -797,17 +845,15 @@ def test_PhilipsRemoteCluster_multi_button_press(
     remote_listener = mock.MagicMock()
     remote_cluster.add_listener(remote_listener)
 
-    expected_event_count = 0
     for button in button_events:
         for eventData in button:
             hdr, args = remote_cluster.deserialize(eventData)
             remote_cluster.handle_message(hdr, args)
-            expected_event_count += 1
 
     for q in remote_cluster.button_press_queue.values():
         q.fire()
 
-    assert remote_listener.zha_send_event.call_count == expected_event_count
+    assert remote_listener.zha_send_event.call_count == len(expected_actions)
 
     for i, expected_action in enumerate(expected_actions):
         assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
@@ -873,8 +919,9 @@ async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     )
     device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
 
-    # we emit those from PhilipsRdm002RemoteCluster. One hold, one long_press_release event.
-    assert listener.zha_send_event.call_count == 2
+    # we emit those from PhilipsRdm002RemoteCluster. One initial press, one hold, one
+    # long_press_release event.
+    assert listener.zha_send_event.call_count == 3
 
     # one for each frame received, except for the one we balckhole, so 4 - 1
     assert listener.cluster_command.call_count == 3
@@ -945,6 +992,43 @@ def test_rom001_signature(assert_signature_matches_quirk, manufacturer, model):
         },
     }
     assert_signature_matches_quirk(PhilipsROM001, signature)
+
+
+def test_PhilipsRemoteCluster_native_press_types_when_mapped(zigpy_device_from_quirk):
+    """Test that the native press events are also sent for mapped press types."""
+
+    class MappedPressCluster(PhilipsRwlRemoteCluster):
+        PRESS_TYPES = {
+            **PhilipsRwlRemoteCluster.PRESS_TYPES,
+            0: PressType(SHORT_PRESS, "press"),
+        }
+
+    device = zigpy_device_from_quirk(PhilipsRWLFirstGen)
+    cluster = MappedPressCluster(device.endpoints[2])
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
+
+    cluster.handle_cluster_request(ZCLHeader(), [1, 0, 0, 0, 0])
+    cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
+    for q in cluster.button_press_queue.values():
+        q.fire()
+
+    assert [c.args[0] for c in listener.zha_send_event.call_args_list] == [
+        "on_initial_press",
+        "on_press",
+        "on_press_release",
+        "on_press",
+        "on_short_release",
+    ]
+    assert listener.zha_send_event.call_args_list[0].args[1]["press_type"] == (
+        "initial_press"
+    )
+    assert listener.zha_send_event.call_args_list[2].args[1]["press_type"] == (
+        "press_release"
+    )
 
 
 @pytest.mark.parametrize(

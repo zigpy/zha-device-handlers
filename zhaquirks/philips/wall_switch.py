@@ -87,6 +87,26 @@ class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
     ]
 
 
+# The switch inputs the module is wired to
+WALL_SWITCH_BUTTON_EVENT_ENTITIES = (
+    PhilipsWallSwitchRemoteCluster.generate_button_event_entities(
+        endpoint_id=1,
+        names={
+            1: {
+                "unique_id_suffix": "button_left",
+                "translation_key": "left_button",
+                "fallback_name": "Left button",
+            },
+            2: {
+                "unique_id_suffix": "button_right",
+                "translation_key": "right_button",
+                "fallback_name": "Right button",
+            },
+        },
+    )
+)
+
+
 class PhilipsWallSwitch(CustomDevice):
     """Philips RDM001 or RDM004 device using old firmware."""
 
@@ -148,6 +168,8 @@ class PhilipsWallSwitch(CustomDevice):
         PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
     )
 
+    button_event_entities = WALL_SWITCH_BUTTON_EVENT_ENTITIES
+
 
 class PhilipsWallSwitchNewFirmware(CustomDevice):
     """Philips RDM001 or RDM004 device using new firmware."""
@@ -207,3 +229,5 @@ class PhilipsWallSwitchNewFirmware(CustomDevice):
     device_automation_triggers = (
         PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
     )
+
+    button_event_entities = WALL_SWITCH_BUTTON_EVENT_ENTITIES

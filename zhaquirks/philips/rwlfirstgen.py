@@ -24,6 +24,7 @@ from zhaquirks.const import (
 from zhaquirks.legacy import CustomDevice
 from zhaquirks.philips import (
     PHILIPS,
+    RWL_BUTTON_NAMES,
     SIGNIFY,
     PhilipsBasicCluster,
     PhilipsRwlRemoteCluster,
@@ -109,6 +110,10 @@ class PhilipsRWLFirstGen(CustomDevice):
         PhilipsRwlRemoteCluster.generate_device_automation_triggers()
     )
 
+    button_event_entities = PhilipsRwlRemoteCluster.generate_button_event_entities(
+        endpoint_id=2, names=RWL_BUTTON_NAMES
+    )
+
 
 class PhilipsRWLFirstGen2(CustomDevice):
     """Philips older RWL020 and RWL021 devices."""
@@ -183,4 +188,8 @@ class PhilipsRWLFirstGen2(CustomDevice):
 
     device_automation_triggers = (
         PhilipsRwlRemoteCluster.generate_device_automation_triggers()
+    )
+
+    button_event_entities = PhilipsRwlRemoteCluster.generate_button_event_entities(
+        endpoint_id=2, names=RWL_BUTTON_NAMES
     )
