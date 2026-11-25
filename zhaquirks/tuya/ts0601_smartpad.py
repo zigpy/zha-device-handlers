@@ -76,12 +76,28 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("_TZE28C1000000_zpvusbtv", "TS0601")
     .filter(is_smartpad_ts0601)
+    # Each relay is a child device. Both are data points on endpoint 1, so their
+    # switches are assigned to the child devices one by one.
+    .child_device(
+        "1",
+        translation_key="channel",
+        translation_placeholders={"index": "1"},
+        fallback_name="Channel 1",
+    )
+    .child_device(
+        "2",
+        translation_key="channel",
+        translation_placeholders={"index": "2"},
+        fallback_name="Channel 2",
+    )
     .tuya_switch(
         1,
         "relay_1",
         entity_type=EntityType.STANDARD,
         translation_key="smartpad_channel_1",
         fallback_name="Channel 1",
+        child_device_id="1",
+        primary=True,
     )
     .tuya_switch(
         2,
@@ -89,6 +105,8 @@ class SmartPadTuyaCluster(TuyaMCUCluster):
         entity_type=EntityType.STANDARD,
         translation_key="smartpad_channel_2",
         fallback_name="Channel 2",
+        child_device_id="2",
+        primary=True,
     )
     .tuya_enum(
         103,
