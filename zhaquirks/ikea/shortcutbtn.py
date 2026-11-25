@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI shortcut button."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -15,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -39,6 +41,37 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 from zhaquirks.legacy import CustomDevice
+
+# Since firmware 2.3.080 the button sends on for a single press, after waiting
+# for a second one, and off for a double press
+SHORTCUT_BUTTON_EVENT_ENTITIES = (
+    ButtonEventMetadata(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.SINGLE_PRESS,
+                trigger=(SHORT_PRESS, TURN_ON),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.MULTI_PRESS,
+                trigger=(DOUBLE_PRESS, TURN_ON),
+                press_count=2,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, DIM_UP),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, DIM_UP),
+            ),
+        ],
+        cluster_id=OnOff.cluster_id,
+        cluster_type=ClusterType.Client,
+        unique_id_suffix="button",
+        translation_key="button",
+        fallback_name="Button",
+    ),
+)
 
 
 class IkeaTradfriShortcutBtn(CustomDevice):
@@ -117,6 +150,8 @@ class IkeaTradfriShortcutBtn(CustomDevice):
         },
     }
 
+    button_event_entities = SHORTCUT_BUTTON_EVENT_ENTITIES
+
 
 class IkeaTradfriShortcutBtn2(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI shortcut button with IKEA cluster."""
@@ -192,3 +227,5 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
             ENDPOINT_ID: 1,
         },
     }
+
+    button_event_entities = SHORTCUT_BUTTON_EVENT_ENTITIES

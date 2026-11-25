@@ -18,10 +18,11 @@ from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
-from zhaquirks.builder import EntityFilter, QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, EntityFilter, QuirkBuilder
 from zhaquirks.builder.device import QuirkV2Device
 from zhaquirks.builder.discovery import _generic_kwargs
 from zhaquirks.builder.metadata import ChildDeviceMetadata, QuirkDefinition
+from zhaquirks.const import COMMAND, COMMAND_ON
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -483,6 +484,32 @@ def test_entity_child_device_kwargs() -> None:
     assert "child_device_id" not in _generic_kwargs(entity_metadata[0])
     assert _generic_kwargs(entity_metadata[1])["child_device_id"] is None
     assert _generic_kwargs(entity_metadata[2])["child_device_id"] == "a"
+
+
+def test_button_event_child_device_kwargs() -> None:
+    """Test a button event entity can be assigned to a child device explicitly."""
+    entity_metadata = (
+        QuirkBuilder("manufacturer", "model")
+        .child_device("a", endpoint_id=2, fallback_name="A")
+        .button_event(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_END,
+                    event_data={COMMAND: COMMAND_ON},
+                )
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+            child_device_id="a",
+        )
+        .add_to_registry(DeviceRegistry())
+        .zha_device_factory.quirk_definition.entity_metadata
+    )
+
+    assert _generic_kwargs(entity_metadata[0])["child_device_id"] == "a"
 
 
 def test_quirk_v2_device_child_devices() -> None:

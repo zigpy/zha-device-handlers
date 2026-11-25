@@ -165,3 +165,17 @@ class PhilipsRDM002(CustomDevice):
     device_automation_triggers = (
         PhilipsRdm002RemoteCluster.generate_device_automation_triggers(DIAL_TRIGGERS)
     )
+
+    # Only the four buttons: the dial's rotation stays a device trigger
+    button_event_entities = PhilipsRdm002RemoteCluster.generate_button_event_entities(
+        endpoint_id=1,
+        names={
+            number: {
+                "unique_id_suffix": f"button_{number}",
+                "translation_key": "button_numbered",
+                "translation_placeholders": {"number": str(number)},
+                "fallback_name": f"Button {number}",
+            }
+            for number in PhilipsRdm002RemoteCluster.BUTTONS
+        },
+    )

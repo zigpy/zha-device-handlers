@@ -3,10 +3,10 @@
 from typing import Any, Final
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.foundation import BaseCommandDefs
 
-from zhaquirks.builder import QuirkBuilder
+from zhaquirks.builder import ButtonEvent, ButtonEventType, QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
@@ -105,7 +105,17 @@ class NamronPrivateRemoteCluster(CustomCluster):
         )
 
 
-(
+# Rocker of each button, and whether the button is its top or bottom half
+ROCKER_BUTTONS = {
+    BUTTON_1: ("1", "top"),
+    BUTTON_2: ("1", "bottom"),
+    BUTTON_3: ("2", "top"),
+    BUTTON_4: ("2", "bottom"),
+    BUTTON_5: ("3", "top"),
+    BUTTON_6: ("3", "bottom"),
+}
+
+namron_remote = (
     # OnOff/LevelControl output clusters on all endpoints are unused in
     # normal (hub-connected) operation; they only apply when binding the
     # remote directly to a light via Namron's own app.
@@ -122,5 +132,36 @@ class NamronPrivateRemoteCluster(CustomCluster):
             for button in (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, BUTTON_6)
         }
     )
-    .add_to_registry()
 )
+
+# A short tap sends only a press, once the button is released. A hold sends a hold at
+# the threshold and a release after it, without a press. Whether the hold is repeated
+# while the button stays down is not confirmed, so repeats are allowed. The release
+# names the button, so it ends the hold without `while_held`.
+for button, (rocker, position) in ROCKER_BUTTONS.items():
+    namron_remote.button_event(
+        events=[
+            ButtonEvent(
+                event_type=ButtonEventType.PRESS_END,
+                trigger=(SHORT_PRESS, button),
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_START,
+                trigger=(LONG_PRESS, button),
+                repeats=True,
+            ),
+            ButtonEvent(
+                event_type=ButtonEventType.LONG_PRESS_END,
+                trigger=(LONG_RELEASE, button),
+            ),
+        ],
+        cluster_id=NamronPrivateRemoteCluster.cluster_id,
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        unique_id_suffix=button,
+        translation_key=f"rocker_{position}",
+        translation_placeholders={"rocker": rocker},
+        fallback_name=f"Rocker {rocker} {position}",
+    )
+
+namron_remote.add_to_registry()

@@ -1,10 +1,11 @@
 """Linxura button device."""
 
 from zigpy.profiles import zha
-from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent, ClusterType
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     BUTTON,
@@ -119,3 +120,30 @@ class LinxuraButton(CustomDevice):
         for press_type in (SHORT_PRESS, DOUBLE_PRESS, LONG_PRESS)
         for button in (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4)
     }
+
+    # Each button tells single from double presses. The hold is left out, as when it
+    # is sent is not confirmed.
+    button_event_entities = tuple(
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, button),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, button),
+                    press_count=2,
+                ),
+            ],
+            cluster_id=IasZone.cluster_id,
+            cluster_type=ClusterType.Server,
+            unique_id_suffix=button,
+            translation_key="button_numbered",
+            translation_placeholders={"number": str(number)},
+            fallback_name=f"Button {number}",
+        )
+        for number, button in enumerate(
+            (BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4), start=1
+        )
+    )
