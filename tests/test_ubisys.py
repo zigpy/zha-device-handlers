@@ -538,10 +538,10 @@ async def test_d1_input_mode_1_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Input 1 with new mode, input 2 with default Toggle
+        # Input 1 with new mode, input 2 with its factory default Dimmer_single
         expected_actions = _build_d1_expected_actions(
             0, 2, mode
-        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Toggle)
+        ) + _build_d1_expected_actions(1, 3, DimmerInputMode.Dimmer_single)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected
 
@@ -573,9 +573,9 @@ async def test_d1_input_mode_2_write(ubisys_d1, mode):
         sent_data = endpoint_232.request.call_args.kwargs["data"]
         tsn = sent_data[1]
 
-        # Input 1 with default Toggle, input 2 with new mode
+        # Input 1 with its factory default Dimmer_single, input 2 with new mode
         expected_actions = _build_d1_expected_actions(
-            0, 2, DimmerInputMode.Toggle
+            0, 2, DimmerInputMode.Dimmer_single
         ) + _build_d1_expected_actions(1, 3, mode)
         expected = _build_expected_frame(expected_actions, tsn=tsn)
         assert sent_data == expected

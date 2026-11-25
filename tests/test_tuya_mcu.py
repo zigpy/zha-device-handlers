@@ -38,9 +38,6 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
 
 
 @pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-@pytest.mark.parametrize(
     "frame, zcl_tsn, mcu_tsn",
     (
         (
@@ -116,11 +113,11 @@ ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
     ),
 )
 async def test_tuya_connection_status(
-    zigpy_device_from_quirk, quirk, frame, zcl_tsn, mcu_tsn
+    zigpy_device_from_v2_quirk, frame, zcl_tsn, mcu_tsn
 ):
     """Test TUYA_MCU_CONNECTION_STATUS messages."""
 
-    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
@@ -150,13 +147,10 @@ async def test_tuya_connection_status(
         )
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_tuya_connection_status_rsp_frame(zigpy_device_from_quirk, quirk):
+async def test_tuya_connection_status_rsp_frame(zigpy_device_from_v2_quirk):
     """Test the TUYA_MCU_CONNECTION_STATUS reply echoes the sequence number and has no manufacturer code or default response."""
 
-    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
     tuya_device.node_desc = NodeDescriptor(manufacturer_code=0x1141)
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
 
@@ -181,13 +175,10 @@ async def test_tuya_connection_status_rsp_frame(zigpy_device_from_quirk, quirk):
     assert rsp_data == b"\x2f\x02\x01"
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_tuya_version(zigpy_device_from_quirk, quirk):
+async def test_tuya_version(zigpy_device_from_v2_quirk):
     """Test TUYA_MCU_VERSION_RSP messages."""
 
-    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
@@ -221,13 +212,10 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
 
 
 @time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
+async def test_tuya_mcu_set_time(zigpy_device_from_v2_quirk):
     """Test set_time requests (0x24) messages for MCU devices."""
 
-    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
@@ -249,13 +237,10 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
         )
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
-)
-async def test_tuya_methods(zigpy_device_from_quirk, quirk):
+async def test_tuya_methods(zigpy_device_from_v2_quirk):
     """Test TUYA_MCU_VERSION_RSP messages."""
 
-    tuya_device = zigpy_device_from_quirk(quirk)
+    tuya_device = zigpy_device_from_v2_quirk("_TZE200_e3oitdyu", "TS0601")
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     dimmer2_cluster = tuya_device.endpoints[2].level

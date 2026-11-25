@@ -23,7 +23,12 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TRIPLE_PRESS,
 )
-from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
+from zhaquirks.xiaomi import (
+    LUMI,
+    AqaraSwitchOperationMode,
+    XiaomiAqaraE1Cluster,
+    XiaomiPowerConfiguration,
+)
 from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_1_DOUBLE,
     COMMAND_1_HOLD,
@@ -48,13 +53,6 @@ class AqaraSwitchClickMode(types.enum8):
 
     Single = 0x01  # Low latency (50ms) but only sends single click events.
     Multiple = 0x02  # (default) Slightly higher latency but supports single/double/triple click and long press.
-
-
-class AqaraSwitchOperationMode(types.enum8):
-    """Aqara switch operation mode attribute values."""
-
-    Command = 0x00
-    Event = 0x01
 
 
 class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):

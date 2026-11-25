@@ -1,6 +1,9 @@
 """Ubisys Switching Actuator S1 quirk."""
 
+from typing import Any
+
 from zha.quirks import SE_POLL_SUMMATION
+import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
@@ -27,20 +30,33 @@ class UbisysElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     }
 
 
+class UbisysS1InputConfigCluster(UbisysInputConfigCluster):
+    """Input configuration for the S1 with its factory defaults.
+
+    The S1's factory configuration (ubisys S1 technical reference, InputActions)
+    is for a rocker switch: toggle when the input is pressed and when released.
+    """
+
+    _DEFAULT_VALUES: dict[int, Any] = {
+        UbisysInputConfigCluster.AttributeDefs.input_mode.id: InputMode.Toggle_switch,
+        UbisysInputConfigCluster.AttributeDefs.detached.id: t.Bool.false,
+    }
+
+
 (
     QuirkBuilder(manufacturer="ubisys", model="S1 (5501)")
     .replaces(UbisysCluster, endpoint_id=232)
-    .adds(UbisysInputConfigCluster)
+    .adds(UbisysS1InputConfigCluster)
     .enum(
-        attribute_name=UbisysInputConfigCluster.AttributeDefs.input_mode.name,
+        attribute_name=UbisysS1InputConfigCluster.AttributeDefs.input_mode.name,
         enum_class=InputMode,
-        cluster_id=UbisysInputConfigCluster.cluster_id,
+        cluster_id=UbisysS1InputConfigCluster.cluster_id,
         translation_key="input_mode",
         fallback_name="Input mode",
     )
     .switch(
-        attribute_name=UbisysInputConfigCluster.AttributeDefs.detached.name,
-        cluster_id=UbisysInputConfigCluster.cluster_id,
+        attribute_name=UbisysS1InputConfigCluster.AttributeDefs.detached.name,
+        cluster_id=UbisysS1InputConfigCluster.cluster_id,
         translation_key="detached",
         fallback_name="Detached mode",
     )
