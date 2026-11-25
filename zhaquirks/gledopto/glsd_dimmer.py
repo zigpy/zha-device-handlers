@@ -10,9 +10,11 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import NoReplyMixin
+from zhaquirks.builder import QuirkBuilder
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -76,3 +78,14 @@ class GledoptoGlSdDimmer(CustomDevice):
             },
         },
     }
+
+
+# The GL-SD-001P and GL-SD-301P are brightness-only triac dimmers that still announce
+# the Color cluster (color_capabilities 0, but a cached color_temperature). Remove it
+# so ZHA doesn't show color temperature controls.
+(
+    QuirkBuilder("GLEDOPTO", "GL-SD-001P")
+    .applies_to("GLEDOPTO", "GL-SD-301P")
+    .removes(Color.cluster_id, endpoint_id=11)
+    .add_to_registry()
+)
