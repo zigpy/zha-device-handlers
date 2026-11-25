@@ -1,14 +1,19 @@
 """Tests for Tuya gas quirks."""
 
 import pytest
+from zha.application.platforms.binary_sensor import DeviceValueBinarySensor
 from zha.quirks import DEVICE_REGISTRY
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, attribute_cache_row
 import zhaquirks
+from zhaquirks.builder import BinarySensorDeviceClass, EntityType
 import zhaquirks.tuya
+from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_gas import LIFECYCLE
 
 ZCL_TUYA_GAS_PRESENT_ENUM = b"\tL\x01\x00\x05\x01\x04\x00\x01\x00"  # DP 1, enum, gas
 
@@ -133,15 +138,97 @@ async def test_nous_e9_lifecycle_inverted(
     status = tuya_cluster.handle_get_data(data.data)
     assert status == foundation.Status.SUCCESS
 
-    # The attribute keeps the device's own value.
-    assert tuya_cluster.get("lifecycle") == lifecycle
+    # The device value keeps the device's own value, not an attribute
+    assert "lifecycle" not in tuya_cluster.attributes_by_name
+    assert quirked_device.store[LIFECYCLE] is lifecycle
 
     entry = DEVICE_REGISTRY.match_entry(quirked_device)
     entities = {
-        metadata.resolved_unique_id_suffix: metadata
-        for metadata in entry.zha_device_factory.quirk_definition.entity_metadata
+        added.kwargs["unique_id_suffix"]: added
+        for added in entry.zha_device_factory.quirk_definition.added_entities
     }
-    converter = entities["lifecycle"].attribute_converter
-    assert converter(tuya_cluster.get("lifecycle")) is problem
-    # After a restart the attribute cache holds a plain int.
-    assert converter(int(lifecycle)) is problem
+    assert entities["1-lifecycle"].entity_cls is DeviceValueBinarySensor
+    converter = entities["1-lifecycle"].kwargs["value_converter"]
+    assert converter(quirked_device.store[LIFECYCLE]) is problem
+
+
+def test_nous_e9_device_values(zigpy_device_from_v2_quirk):
+    """NOUS E9 keeps its binary sensors as device values with unchanged entities."""
+    quirked_device = zigpy_device_from_v2_quirk("_TZE204_qvxrkeif", "TS0601")
+    definition = DEVICE_REGISTRY.match_entry(
+        quirked_device
+    ).zha_device_factory.quirk_definition
+
+    assert [
+        m.attribute_name
+        for m in definition.entity_metadata
+        if m.cluster_id == TUYA_CLUSTER_ID
+    ] == []
+    assert {
+        (
+            added.entity_cls,
+            added.kwargs["unique_id_suffix"],
+            added.kwargs["entity_type"],
+            added.kwargs["device_class"],
+            added.kwargs["translation_key"],
+        )
+        for added in definition.added_entities
+    } == {
+        (
+            DeviceValueBinarySensor,
+            "1-preheat",
+            EntityType.DIAGNOSTIC,
+            None,
+            "preheat",
+        ),
+        (
+            DeviceValueBinarySensor,
+            "1-fault_alarm",
+            EntityType.DIAGNOSTIC,
+            BinarySensorDeviceClass.PROBLEM,
+            "fault_alarm",
+        ),
+        (
+            DeviceValueBinarySensor,
+            "1-lifecycle",
+            EntityType.DIAGNOSTIC,
+            BinarySensorDeviceClass.PROBLEM,
+            "lifecycle",
+        ),
+    }
+
+
+@pytest.mark.parametrize("typed", [True, False])
+def test_nous_e9_attributes_migrated(zigpy_device_from_v2_quirk, typed):
+    """NOUS E9's old attributes move into its device values, read as before."""
+    quirked_device = zigpy_device_from_v2_quirk("_TZE204_qvxrkeif", "TS0601")
+    values = quirked_device.store.namespace(LIFECYCLE.namespace)
+
+    # The invented attributes the quirk had: ID and value
+    old_attributes = {
+        "preheat": (0xEF0A, t.Bool.false),
+        "fault_alarm": (0xEF0B, t.Bool.true),
+        "lifecycle": (0xEF0C, t.Bool.false),
+    }
+    rows = [
+        attribute_cache_row(
+            quirked_device,
+            TUYA_CLUSTER_ID,
+            attr_id,
+            value.serialize() if typed else int(value),
+            foundation.DataTypeId.bool_ if typed else None,
+            manufacturer_code=quirked_device.manufacturer_id,
+        )
+        for attr_id, value in old_attributes.values()
+    ]
+
+    result = quirked_device.load_attribute_cache(rows, migrate=True)
+    assert len(result.migrated) == len(rows)
+
+    assert {key: values[key] for key in old_attributes} == {
+        "preheat": 0,
+        "fault_alarm": 1,
+        "lifecycle": 0,
+    }
+    # A sensor at the end of its service life is still shown as a problem
+    assert quirked_device.store[LIFECYCLE] is False
