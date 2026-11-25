@@ -282,10 +282,16 @@ class MoesManufCluster(TuyaManufClusterAttributes):
             id=MOES_AWAY_DAYS_ATTR, type=t.uint32_t, is_manufacturer_specific=True
         )
         workday_schedule: Final = ZCLAttributeDef(
-            id=MOES_SCHEDULE_WORKDAY_ATTR, type=data144, is_manufacturer_specific=True
+            id=MOES_SCHEDULE_WORKDAY_ATTR,
+            type=data144,
+            zcl_type=foundation.DataTypeId.octstr,
+            is_manufacturer_specific=True,
         )
         weekend_schedule: Final = ZCLAttributeDef(
-            id=MOES_SCHEDULE_WEEKEND_ATTR, type=data144, is_manufacturer_specific=True
+            id=MOES_SCHEDULE_WEEKEND_ATTR,
+            type=data144,
+            zcl_type=foundation.DataTypeId.octstr,
+            is_manufacturer_specific=True,
         )
 
     DIRECT_MAPPED_ATTRS = {
@@ -1276,26 +1282,18 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
             id=0x4002, type=Preset, is_manufacturer_specific=True
         )
 
+    _CONSTANT_ATTRIBUTES = {
+        **TuyaThermostatCluster._CONSTANT_ATTRIBUTES,
+        Thermostat.AttributeDefs.min_heat_setpoint_limit.id: ZONNSMART_MIN_TEMPERATURE_VAL,
+        Thermostat.AttributeDefs.max_heat_setpoint_limit.id: ZONNSMART_MAX_TEMPERATURE_VAL,
+    }
+
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
             ZONNSMART_TARGET_TEMP_ATTR,
             lambda value: round(value / 10),
         ),
     }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.listener_event(
-            "temperature_change",
-            "min_heat_setpoint_limit",
-            ZONNSMART_MIN_TEMPERATURE_VAL,
-        )
-        self.endpoint.device.thermostat_bus.listener_event(
-            "temperature_change",
-            "max_heat_setpoint_limit",
-            ZONNSMART_MAX_TEMPERATURE_VAL,
-        )
 
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
