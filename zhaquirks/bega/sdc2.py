@@ -243,7 +243,7 @@ class BegaDaliBus(CustomCluster):
         )
 
     async def _poll_status(self) -> None:
-        """Read the bus attributes forever, fast while the bus is busy."""
+        """Read the bus attributes forever, fast while a scan is running."""
         fast = False
         while True:
             with contextlib.suppress(TimeoutError):
@@ -259,7 +259,7 @@ class BegaDaliBus(CustomCluster):
             else:
                 mode = result.get(self.AttributeDefs.bus_mode.name)
                 if mode is not None:  # keep the current pace after attribute errors
-                    fast = mode != DaliBusMode.Run
+                    fast = mode == DaliBusMode.Scan
                 if mode == DaliBusMode.Scan:
                     self._scan_seen = True
                 elif (
@@ -357,21 +357,24 @@ class Sdc2Color(CustomCluster, Color):
         tunable_white = options is not None and bool(
             options & DaliGearModeOptions.Colour_tc
         )
+        # A failed read of a value the gear supports is passed on, so that the
+        # cached value stays.
         for record in records:
             ok = record.status == foundation.Status.SUCCESS
             if record.attrid in (
                 Color.AttributeDefs.current_x.id,
                 Color.AttributeDefs.current_y.id,
-            ) and (not ok or no_xy_colour):
+            ) and (no_xy_colour or (not ok and options is None)):
                 # no gear or no colour support: neutral white instead of ZHA's blue
                 self._set_uint16(record, self.NEUTRAL_VALUES[record.attrid])
             elif record.attrid == Color.AttributeDefs.color_temperature.id and (
-                not ok
-                or not (
+                not (
                     COLOR_TEMP_RANGE_MIREDS[0]
                     <= record.value.value
                     <= COLOR_TEMP_RANGE_MIREDS[1]
                 )
+                if ok
+                else not tunable_white
             ):
                 # no gear, or colour temperature not initialised on the gear yet
                 self._set_uint16(record, self.NEUTRAL_VALUES[record.attrid])

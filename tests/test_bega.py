@@ -589,6 +589,20 @@ async def test_attribute_failure_keeps_scan_polling_fast(
     ]
 
 
+async def test_bus_error_is_polled_slowly(sdc2_device, fast_polling, monkeypatch):
+    """Only a running scan is polled fast; a bus error can last indefinitely."""
+    monkeypatch.setattr(BegaDaliBus, "POLL_SLOW_S", 5)
+    device = sdc2_device()
+    bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
+
+    read = mock.AsyncMock(return_value=({"bus_mode": DaliBusMode.Error}, {}))
+    with mock.patch.object(bus, "read_attributes", read):
+        bus._poll_wake.set()
+        await asyncio.sleep(0.1)  # ten polls at the fast cadence
+
+    assert read.call_count == 1
+
+
 async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_polling):
     """A reply to an older follow-up must not touch the state of a newer scan."""
     device = sdc2_device()
@@ -727,7 +741,10 @@ async def read_colour(
     answer: dict[str, int],
     status: foundation.Status = SUCCESS,
 ) -> dict[str, int]:
-    """Read the colour attributes of an endpoint from a simulated device."""
+    """Read the colour attributes of an endpoint from a simulated device.
+
+    Attributes whose read stays failed are missing in the result.
+    """
     endpoint = device.endpoints[endpoint_id]
     color = endpoint.in_clusters[Color.cluster_id]
     with contextlib.ExitStack() as stack:
@@ -746,8 +763,7 @@ async def read_colour(
                     mock.AsyncMock(return_value=gear_read_result(gear_options)),
                 )
             )
-        success, failure = await color.read_attributes(list(answer), allow_cache=False)
-    assert not failure
+        success, _ = await color.read_attributes(list(answer), allow_cache=False)
     return {name: int(value) for name, value in success.items()}
 
 
@@ -767,6 +783,10 @@ def colour(mode: Color.ColorMode, x: int, y: int, ct: int) -> dict[str, int]:
         (0x02, colour(CT, 0, 0, 300), SUCCESS, {COLOR_MODE: XY, **NEUTRAL_XY, COLOR_TEMPERATURE: 300}),
         # RGBW gear: untouched
         (0x0A, colour(XY, 30000, 31000, 300), SUCCESS, colour(XY, 30000, 31000, 300)),
+        # RGBW gear, the reads fail: no neutral white over the colour of the gear
+        (0x0A, colour(XY, 30000, 31000, 300), FAILURE, {COLOR_MODE: XY, COLOR_TEMPERATURE: NEUTRAL_CT}),
+        # tunable white gear, the reads fail: the same for its colour temperature
+        (0x12, colour(CT, 0, 0, 300), FAILURE, {COLOR_MODE: CT, **NEUTRAL_XY}),
         # tunable white gear: colour temperature mode, the colour temperature is kept
         (0x12, colour(XY, 0, 0, 300), SUCCESS, {COLOR_MODE: CT, **NEUTRAL_XY, COLOR_TEMPERATURE: 300}),
         # unknown capabilities (default response): trust the device
