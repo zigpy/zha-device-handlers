@@ -130,7 +130,6 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         MODELS_INFO: [
             (LUMI, "lumi.remote.b286acn01"),
             (LUMI, "lumi.remote.b286acn02"),
-            (LUMI, "lumi.sensor_86sw2"),
         ],
         ENDPOINTS: {
             1: {
@@ -252,8 +251,6 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         (LONG_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_HOLD, ENDPOINT_ID: 3},
     }
 
-    # lumi.sensor_86sw2 only reports presses as on/off attribute reports, which fire
-    # none of these
     button_event_entities = (
         _button_event_entity(BUTTON_1, 1, "button_left", "left_button", "Left button"),
         _button_event_entity(
@@ -263,3 +260,18 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             BOTH_BUTTONS, 3, "button_both", "both_buttons", "Both buttons"
         ),
     )
+
+
+class Remote86SW2(RemoteB286ACN01):
+    """Aqara wireless remote switch lumi.sensor_86sw2.
+
+    It reports presses only as on/off attribute reports, which none of the single
+    and double press triggers match, so it has no button event entities.
+    """
+
+    signature = {
+        **RemoteB286ACN01.signature,
+        MODELS_INFO: [(LUMI, "lumi.sensor_86sw2")],
+    }
+
+    button_event_entities = ()

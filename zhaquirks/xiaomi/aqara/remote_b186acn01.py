@@ -85,7 +85,6 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
         MODELS_INFO: [
             (LUMI, "lumi.remote.b186acn01"),
             (LUMI, "lumi.remote.b186acn02"),
-            (LUMI, "lumi.sensor_86sw1"),
         ],
         NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
@@ -201,8 +200,7 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
     }
 
     # The device counts the presses itself. When it reports a hold is not confirmed,
-    # so the hold stays a device trigger for now. lumi.sensor_86sw1 only reports
-    # presses as on/off attribute reports, which fire none of these.
+    # so the hold stays a device trigger for now.
     button_event_entities = (
         ButtonEventMetadata(
             events=[
@@ -224,3 +222,18 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
             fallback_name="Button",
         ),
     )
+
+
+class Remote86SW1(RemoteB186ACN01):
+    """Aqara wireless remote switch lumi.sensor_86sw1.
+
+    It reports presses only as on/off attribute reports, which none of the single
+    and double press triggers match, so it has no button event entity.
+    """
+
+    signature = {
+        **RemoteB186ACN01.signature,
+        MODELS_INFO: [(LUMI, "lumi.sensor_86sw1")],
+    }
+
+    button_event_entities = ()

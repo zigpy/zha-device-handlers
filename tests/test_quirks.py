@@ -1006,7 +1006,9 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
             # remove random AnalogInput input cluster (Aqara remote + temp sensor):
             zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01,
+            zhaquirks.xiaomi.aqara.remote_b186acn01.Remote86SW1,
             zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01,
+            zhaquirks.xiaomi.aqara.remote_b286acn01.Remote86SW2,
             zhaquirks.xiaomi.mija.sensor_ht.Weather,
             # remove Time input cluster (Aqara switch):
             zhaquirks.xiaomi.aqara.switch_t1.SwitchT1Alt2,
