@@ -8,7 +8,11 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from zha.application import EntityPlatform, Platform
+from zha.application.platforms.climate.const import HVACMode
+from zha.quirks import DEVICE_REGISTRY
 import zigpy.device
+from zigpy.exceptions import DeliveryError
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import (
@@ -43,6 +47,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Attribute, DataTypeId, TypeValue
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.const import (
     ATTR_ID,
@@ -118,6 +123,11 @@ import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl001
+from zhaquirks.xiaomi.aqara.sensor_ht_agl001 import (
+    ThermostatMode,
+    W100AqaraCluster,
+    build_frame,
+)
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
@@ -3483,3 +3493,809 @@ async def test_w100_ignores_zcl_battery_reports(zigpy_device_from_v2_quirk):
 
     assert len(task_mock.mock_calls) == 1
     task_mock.call_args.args[0].close()  # discard the un-awaited response coroutine
+
+
+W100_THERMOSTAT_IEEE = t.EUI64.convert("54:ef:44:10:01:3a:fe:d0")
+W100_HUB_IEEE = bytes.fromhex("54ef4480711a")
+W100_PMTSD_MARKER = bytes.fromhex("08000844")
+W100_SUBSCRIBE_TAIL = bytes.fromhex(
+    "08000844150a0109e7a9bae8b083e58a9f000000000001012a40"
+)
+W100_FRAME_ATTR = W100AqaraCluster.AttributeDefs.sensor_link.id
+W100_HA_STATE_ATTR = W100AqaraCluster.AttributeDefs.ha_thermostat_state.id
+W100_HA_STEP_ATTR = W100AqaraCluster.AttributeDefs.ha_setpoint_step.id
+W100_SENSOR_MODE_ATTR = W100AqaraCluster.AttributeDefs.sensor_mode.id
+
+
+@pytest.fixture
+def w100_thermostat(zigpy_device_from_v2_quirk):
+    """W100 virtual thermostat and Aqara cluster, with device writes and reads mocked."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara",
+        "lumi.sensor_ht.agl001",
+        endpoint_ids=[1, 2, 3],
+        ieee=W100_THERMOSTAT_IEEE,
+    )
+    opple = device.endpoints[1].opple_cluster
+    opple._write_attributes = mock.AsyncMock(
+        return_value=[
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+        ]
+    )
+    opple._read_attributes = mock.AsyncMock(return_value=[[]])
+    opple._frame_counter = 0x10  # the first frame uses 0x11
+    return device.endpoints[1].thermostat, opple
+
+
+def w100_written(opple, attrid: int) -> list[Any]:
+    """Return the values written to the device for an attribute."""
+    return [
+        record.value.value
+        for call in opple._write_attributes.mock_calls
+        for record in call.args[0]
+        if record.attrid == attrid
+    ]
+
+
+def w100_split_frame(frame: bytes) -> tuple[int, int, int, bytes]:
+    """Check the header of a 0xFFF2 frame, return (type, counter, action, payload)."""
+    frame = bytes(frame)
+    assert frame[:2] == b"\xaa\x71"
+    assert sum(frame[:6]) % 256 == 0  # header checksum
+    assert frame[7] == 0x41
+    payload = frame[9:]
+    assert frame[2] == len(payload) + 3
+    assert frame[8] == len(payload)
+    return frame[3], frame[4], frame[6], payload
+
+
+def w100_pmtsd(text: str) -> bytes:
+    """Return the payload of a PMTSD state frame."""
+    ascii_text = text.encode()
+    return (
+        b"\x00\x00"
+        + W100_HUB_IEEE
+        + W100_PMTSD_MARKER
+        + bytes([len(ascii_text)])
+        + ascii_text
+    )
+
+
+async def w100_receive_frame(opple, frame: bytes) -> None:
+    """Deliver a 0xFFF2 report from the device and wait for the quirk to answer."""
+    opple._update_attribute(W100_FRAME_ATTR, t.LVBytes(frame))
+    await asyncio.gather(*opple._background_tasks)
+
+
+def test_w100_thermostat_defaults(w100_thermostat):
+    """The virtual thermostat starts as a heating thermostat with sane defaults."""
+    thermostat, _ = w100_thermostat
+
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Heat
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+    assert thermostat.get("min_heat_setpoint_limit") == 500
+    assert thermostat.get("max_heat_setpoint_limit") == 3000
+    assert (
+        thermostat.get("ctrl_sequence_of_oper")
+        == Thermostat.ControlSequenceOfOperation.Heating_Only
+    )
+
+
+async def test_w100_thermostat_stays_off_the_air(w100_thermostat):
+    """The W100 has no Thermostat cluster: bind, reporting and reads stay local."""
+    thermostat, _ = w100_thermostat
+    device = thermostat.endpoint.device
+
+    with (
+        mock.patch.object(device, "request", mock.AsyncMock()) as zcl_request,
+        mock.patch.object(device.zdo, "request", mock.AsyncMock()) as zdo_request,
+    ):
+        await thermostat.bind()
+        await thermostat.configure_reporting("local_temperature", 30, 900, 25)
+        success, _ = await thermostat.read_attributes(
+            ["system_mode", "occupied_heating_setpoint"]
+        )
+
+    zcl_request.assert_not_called()
+    zdo_request.assert_not_called()
+    assert success == {
+        "system_mode": Thermostat.SystemMode.Heat,
+        "occupied_heating_setpoint": 2000,
+    }
+
+
+@pytest.mark.parametrize(
+    ("setpoint", "expected"),
+    [
+        (2000, "P0_M1_T20_S0_D0"),
+        (2149, "P0_M1_T21_S0_D0"),
+        # half a degree rounds up, like zigbee2mqtt (not Python's banker's rounding)
+        (2150, "P0_M1_T22_S0_D0"),
+        (2250, "P0_M1_T23_S0_D0"),
+    ],
+)
+async def test_w100_setpoint_is_sent_as_pmtsd(w100_thermostat, setpoint, expected):
+    """A setpoint write is sent to the device as a whole-degree PMTSD frame."""
+    thermostat, opple = w100_thermostat
+
+    await thermostat.write_attributes({"occupied_heating_setpoint": setpoint})
+
+    [frame] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(frame) == (0x44, 0x11, 0x05, w100_pmtsd(expected))
+    assert thermostat.get("occupied_heating_setpoint") == setpoint
+
+
+async def test_w100_turning_off_sends_p1(w100_thermostat):
+    """Off is sent as P1, keeping the heat mode and the setpoint."""
+    thermostat, opple = w100_thermostat
+
+    await thermostat.write_attributes({"system_mode": Thermostat.SystemMode.Off})
+
+    [frame] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(frame)[3] == w100_pmtsd("P1_M1_T20_S0_D0")
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Off
+
+
+async def test_w100_frame_counter_increments(w100_thermostat):
+    """The W100 expects an incrementing counter in every frame."""
+    thermostat, opple = w100_thermostat
+
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2100})
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2200})
+
+    counters = [
+        w100_split_frame(frame)[1] for frame in w100_written(opple, W100_FRAME_ATTR)
+    ]
+    assert counters == [0x11, 0x12]
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        Thermostat.SystemMode.Cool,
+        Thermostat.SystemMode.Auto,
+        Thermostat.SystemMode.Fan_only,
+    ],
+)
+async def test_w100_rejects_unsupported_modes(w100_thermostat, mode):
+    """Only Off and Heat are supported: nothing is sent or cached otherwise."""
+    thermostat, opple = w100_thermostat
+
+    with pytest.raises(ValueError, match="supports"):
+        await thermostat.write_attributes({"system_mode": mode})
+
+    assert not w100_written(opple, W100_FRAME_ATTR)
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Heat
+
+
+@pytest.mark.parametrize("setpoint", [499, 3001])
+async def test_w100_rejects_out_of_range_setpoints(w100_thermostat, setpoint):
+    """The setpoint must stay within 5-30 °C."""
+    thermostat, opple = w100_thermostat
+
+    with pytest.raises(ValueError, match="between"):
+        await thermostat.write_attributes({"occupied_heating_setpoint": setpoint})
+
+    assert not w100_written(opple, W100_FRAME_ATTR)
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+
+
+async def test_w100_rejected_write_is_not_cached(w100_thermostat):
+    """A write the device rejects must not leave the requested value cached."""
+    thermostat, opple = w100_thermostat
+    # a device names the attribute it rejected (a record without one is ignored)
+    opple._write_attributes.return_value = [
+        [
+            foundation.WriteAttributesStatusRecord(
+                foundation.Status.FAILURE, W100_FRAME_ATTR
+            )
+        ]
+    ]
+
+    with pytest.raises(DeliveryError):
+        await thermostat.write_attributes({"occupied_heating_setpoint": 2300})
+
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+
+
+async def test_w100_thermostat_mode_subscribes_and_unsubscribes(w100_thermostat):
+    """Turning the thermostat mode on links the panel to the thermostat, off unlinks."""
+    _, opple = w100_thermostat
+    device_ieee = bytes(W100_THERMOSTAT_IEEE.serialize()[::-1])  # big-endian
+
+    await opple.write_attributes({"thermostat_mode": ThermostatMode.On})
+
+    [frame] = w100_written(opple, W100_FRAME_ATTR)
+    frame_type, _, action, payload = w100_split_frame(frame)
+    assert (frame_type, action) == (0x44, 0x02)
+    assert payload[:2] == b"\x68\x91"
+    assert payload[4:13] == b"\x18" + device_ieee
+    assert payload[13:] == b"\x00\x00" + W100_HUB_IEEE + W100_SUBSCRIBE_TAIL
+    assert opple.get("thermostat_mode") == ThermostatMode.On
+
+    opple._write_attributes.reset_mock()
+    await opple.write_attributes({"thermostat_mode": ThermostatMode.Off})
+
+    [frame] = w100_written(opple, W100_FRAME_ATTR)
+    frame_type, _, action, payload = w100_split_frame(frame)
+    assert (frame_type, action) == (0x44, 0x04)
+    assert payload[4:13] == b"\x18" + device_ieee
+    assert payload[13:] == bytes(12)
+    assert opple.get("thermostat_mode") == ThermostatMode.Off
+
+
+@pytest.mark.parametrize(
+    ("sensor_mode", "expected"),
+    [
+        (0, ThermostatMode.Off),
+        (1, ThermostatMode.On),
+        (2, ThermostatMode.Off),  # bit 1 is the external display sensor
+        (3, ThermostatMode.On),
+    ],
+)
+def test_w100_thermostat_mode_follows_sensor_mode(
+    w100_thermostat, sensor_mode, expected
+):
+    """Bit 0 of 0xFCC0/0x0172 is the thermostat mode."""
+    _, opple = w100_thermostat
+
+    opple._update_attribute(W100_SENSOR_MODE_ATTR, sensor_mode)
+
+    assert opple.get("thermostat_mode") == expected
+
+
+async def test_w100_acknowledges_and_answers_a_pmtsd_request(w100_thermostat):
+    """A PMTSD request is acknowledged, then answered with the current state."""
+    thermostat, opple = w100_thermostat
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2300})
+    opple._write_attributes.reset_mock()
+
+    request = build_frame(
+        0x31, 0x05, b"\x00\x00" + W100_HUB_IEEE + W100_PMTSD_MARKER, frame_type=0x84
+    )
+    await w100_receive_frame(opple, request)
+
+    ack, state = w100_written(opple, W100_FRAME_ATTR)
+    # the acknowledgement reuses the counter of the frame it answers
+    assert w100_split_frame(ack) == (
+        0x24,
+        0x31,
+        0x05,
+        b"\x00\x00\x00" + W100_HUB_IEEE + b"\x00",
+    )
+    assert w100_split_frame(state)[0] == 0x44
+    assert w100_split_frame(state)[3] == w100_pmtsd("P0_M1_T23_S0_D0")
+
+
+@pytest.mark.parametrize(
+    ("update", "mode", "setpoint", "echo"),
+    [
+        ("T19", Thermostat.SystemMode.Heat, 1900, "P0_M1_T19_S0_D0"),
+        ("P1", Thermostat.SystemMode.Off, 2000, "P1_M1_T20_S0_D0"),
+        ("P0_T24", Thermostat.SystemMode.Heat, 2400, "P0_M1_T24_S0_D0"),
+        # out of range: clamped, and the clamped value is echoed back to the panel
+        ("T35", Thermostat.SystemMode.Heat, 3000, "P0_M1_T30_S0_D0"),
+        # cool/auto are not supported: the mode is reverted on the panel
+        ("M0", Thermostat.SystemMode.Heat, 2000, "P0_M1_T20_S0_D0"),
+        ("M2_T22", Thermostat.SystemMode.Heat, 2200, "P0_M1_T22_S0_D0"),
+        # malformed: ignored, but still answered so the panel does not block
+        ("Tx", Thermostat.SystemMode.Heat, 2000, "P0_M1_T20_S0_D0"),
+    ],
+)
+async def test_w100_device_changes_are_merged_and_echoed(
+    w100_thermostat, update, mode, setpoint, echo
+):
+    """The panel sends only what changed: merge it, then echo the whole state."""
+    thermostat, opple = w100_thermostat
+    ascii_update = update.encode()
+    frame = build_frame(
+        0x40,
+        0x05,
+        b"\x00\x00"
+        + W100_HUB_IEEE
+        + W100_PMTSD_MARKER
+        + bytes([len(ascii_update)])
+        + ascii_update,
+        frame_type=0x84,
+    )
+
+    await w100_receive_frame(opple, frame)
+
+    ack, state = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack)[:2] == (0x24, 0x40)
+    assert w100_split_frame(state)[3] == w100_pmtsd(echo)
+    assert thermostat.get("system_mode") == mode
+    assert thermostat.get("occupied_heating_setpoint") == setpoint
+
+
+async def test_w100_failed_acknowledgement_is_not_fatal(w100_thermostat):
+    """A failing write must not raise out of the report handler."""
+    _, opple = w100_thermostat
+    opple._write_attributes.side_effect = TimeoutError
+
+    request = build_frame(
+        0x31, 0x05, b"\x00\x00" + W100_HUB_IEEE + W100_PMTSD_MARKER, frame_type=0x84
+    )
+    await w100_receive_frame(opple, request)
+
+
+async def test_w100_ha_protocol_writes_only_the_changed_field(w100_thermostat):
+    """Firmware answering 0x0175 uses the TLV protocol, one tag per change."""
+    thermostat, opple = w100_thermostat
+    opple._update_attribute(W100_HA_STEP_ATTR, 50)
+
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2150})
+    await thermostat.write_attributes({"system_mode": Thermostat.SystemMode.Off})
+
+    assert not w100_written(opple, W100_FRAME_ATTR)
+    assert [bytes(v).hex() for v in w100_written(opple, W100_HA_STATE_ATTR)] == [
+        "02296608",  # setpoint tag only, 21.50 °C
+        "013000",  # mode tag only, Off
+    ]
+    assert thermostat.get("occupied_heating_setpoint") == 2150
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Off
+
+
+async def test_w100_ha_protocol_subscribes_with_state_and_limits(w100_thermostat):
+    """Turning the thermostat mode on writes the step, then state and setpoint limits."""
+    _, opple = w100_thermostat
+    opple._update_attribute(W100_HA_STEP_ATTR, 50)
+
+    await opple.write_attributes({"thermostat_mode": ThermostatMode.On})
+
+    assert w100_written(opple, W100_HA_STEP_ATTR) == [50]
+    [state] = w100_written(opple, W100_HA_STATE_ATTR)
+    assert bytes(state).hex() == (
+        "013004"  # mode: heat
+        "0229d007"  # setpoint: 20.00 °C
+        "033005"  # fan: auto
+        "0429f401"  # min heat: 5 °C
+        "0529b80b"  # max heat: 30 °C
+        "0629f401"  # min cool
+        "0729b80b"  # max cool
+    )
+
+    opple._write_attributes.reset_mock()
+    await opple.write_attributes({"thermostat_mode": ThermostatMode.Off})
+
+    assert [bytes(v).hex() for v in w100_written(opple, W100_HA_STATE_ATTR)] == [
+        "001000"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("report", "mode", "setpoint"),
+    [
+        ("0130040229d007", Thermostat.SystemMode.Heat, 2000),
+        ("0130000229f401", Thermostat.SystemMode.Off, 500),
+        # cool is not supported: the mode is kept, the setpoint still follows
+        ("01300302295a0a033005", Thermostat.SystemMode.Heat, 2650),
+    ],
+)
+def test_w100_ha_protocol_reports_update_the_thermostat(
+    w100_thermostat, report, mode, setpoint
+):
+    """A 0x0174 report from the panel is mirrored into the virtual thermostat."""
+    thermostat, opple = w100_thermostat
+
+    opple._update_attribute(W100_HA_STATE_ATTR, t.LVBytes(bytes.fromhex(report)))
+
+    assert thermostat.get("system_mode") == mode
+    assert thermostat.get("occupied_heating_setpoint") == setpoint
+
+
+def test_w100_local_temperature_follows_the_sensor(zigpy_device_from_v2_quirk):
+    """The panel's own measurement is the thermostat's local temperature."""
+    device = zigpy_device_from_v2_quirk(
+        "Aqara", "lumi.sensor_ht.agl001", endpoint_ids=[1, 2, 3]
+    )
+
+    device.endpoints[1].temperature._update_attribute(
+        TemperatureMeasurement.AttributeDefs.measured_value.id, 2150
+    )
+
+    assert device.endpoints[1].thermostat.get("local_temperature") == 2150
+
+
+def test_w100_keeps_only_the_climate_entity():
+    """ZHA's other Thermostat entities mean nothing for a virtual thermostat."""
+    entry = next(
+        entry
+        for entry in DEVICE_REGISTRY
+        if entry.source.module == "zhaquirks.xiaomi.aqara.sensor_ht_agl001"
+    )
+    quirk_definition = entry.zha_device_factory.quirk_definition
+
+    # every sensor and number of the Thermostat cluster goes, the climate entity stays
+    assert {
+        (f.endpoint_id, f.cluster_id, f.platform)
+        for f in quirk_definition.disabled_default_entities
+    } == {
+        (1, Thermostat.cluster_id, EntityPlatform.SENSOR),
+        (1, Thermostat.cluster_id, EntityPlatform.NUMBER),
+    }
+    assert [entity.attribute_name for entity in quirk_definition.entity_metadata] == [
+        "thermostat_mode"
+    ]
+
+
+# Frames captured from a W100 on firmware 0.0.0_1641
+W100_CAPTURED_ACK = bytes.fromhex("aa710d24ab0905410a00000054ef4480711a00")
+W100_CAPTURED_REQUEST = bytes.fromhex("aa710f84015106410f000054ef4480711a08000844")
+W100_CAPTURED_EVENT = bytes.fromhex("aa721184034c014111000054ef4480711a080008440000")
+
+
+async def test_w100_acknowledges_frames_by_type_not_by_header(w100_thermostat):
+    """The panel also sends 0x72 frames: they need an acknowledgement too."""
+    thermostat, opple = w100_thermostat
+
+    await w100_receive_frame(opple, W100_CAPTURED_EVENT)
+
+    [ack] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack) == (
+        0x24,
+        0x03,
+        0x05,
+        b"\x00\x00\x00" + W100_HUB_IEEE + b"\x00",
+    )
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Heat
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+
+
+async def test_w100_answers_the_request_a_real_panel_sent(w100_thermostat):
+    """The request the W100 sent after subscribing is acknowledged, then answered."""
+    _, opple = w100_thermostat
+
+    await w100_receive_frame(opple, W100_CAPTURED_REQUEST)
+
+    ack, state = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack)[:2] == (0x24, 0x01)
+    assert w100_split_frame(state)[3] == w100_pmtsd("P0_M1_T20_S0_D0")
+
+
+async def test_w100_does_not_acknowledge_acknowledgements(w100_thermostat):
+    """The panel's acknowledgement of our frames is not answered."""
+    _, opple = w100_thermostat
+
+    await w100_receive_frame(opple, W100_CAPTURED_ACK)
+
+    assert not w100_written(opple, W100_FRAME_ATTR)
+
+
+# A setpoint change the panel sent when "+" was pressed (20 -> 21 °C): "M1_T21"
+W100_CAPTURED_SETPOINT = bytes.fromhex(
+    "aa7217840d3c014117000054ef4480711a08000844064d315f54323100"
+)
+
+
+async def test_w100_follows_a_real_setpoint_change(w100_thermostat):
+    """The frame a real panel sent for a "+" press updates the setpoint and is echoed."""
+    thermostat, opple = w100_thermostat
+
+    await w100_receive_frame(opple, W100_CAPTURED_SETPOINT)
+
+    ack, state = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack)[:2] == (0x24, 0x0D)
+    assert w100_split_frame(state)[3] == w100_pmtsd("P0_M1_T21_S0_D0")
+    assert thermostat.get("occupied_heating_setpoint") == 2100
+
+
+async def test_w100_request_from_an_off_panel_turns_it_on(w100_thermostat):
+    """An off panel ignores an unsolicited power-on, so its request is answered "on"."""
+    thermostat, opple = w100_thermostat
+    await thermostat.write_attributes({"system_mode": Thermostat.SystemMode.Off})
+    opple._write_attributes.reset_mock()
+
+    await w100_receive_frame(opple, W100_CAPTURED_REQUEST)
+
+    _, state = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(state)[3] == w100_pmtsd("P0_M1_T20_S0_D0")
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Heat
+
+
+def test_w100_thermostat_mode_starts_from_the_cache():
+    """The panel reports every mode change, so the persisted value is trusted."""
+    entry = next(
+        entry
+        for entry in DEVICE_REGISTRY
+        if entry.source.module == "zhaquirks.xiaomi.aqara.sensor_ht_agl001"
+    )
+    [select] = entry.zha_device_factory.quirk_definition.entity_metadata
+
+    assert select.attribute_name == "thermostat_mode"
+    assert select.attribute_initialized_from_cache is True
+
+
+@pytest.mark.parametrize(
+    ("sensor_mode", "expected"),
+    [(1, ThermostatMode.On), (0, ThermostatMode.Off), (None, None)],
+)
+def test_w100_thermostat_mode_is_derived_from_the_restored_sensor_mode(
+    w100_thermostat, sensor_mode, expected
+):
+    """After a restart only sensor_mode is restored: the select is derived from it."""
+    _, opple = w100_thermostat
+    if sensor_mode is not None:
+        # restored from the database, not reported through _update_attribute
+        opple._attr_cache[W100_SENSOR_MODE_ATTR] = sensor_mode
+
+    assert opple.get("thermostat_mode") == expected
+
+
+W100_DIAGNOSTICS = "aqara-lumi-sensor-ht-agl001-0x00001029.json"
+W100_DIAGNOSTICS_IEEE = "54:ef:44:10:00:00:00:01"
+
+
+async def test_w100_entities_from_diagnostics():
+    """A real W100 gets a heating thermostat and a thermostat mode select, and no more."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, W100_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+
+        climate = device.get_platform_entity(
+            Platform.CLIMATE, unique_id=f"{W100_DIAGNOSTICS_IEEE}-1-513"
+        )
+        assert [str(mode) for mode in climate.hvac_modes] == ["off", "heat"]
+        assert str(climate.hvac_mode) == "heat"
+        assert climate.target_temperature == 24
+        assert climate.current_temperature == 20.71
+        assert (climate.min_temp, climate.max_temp) == (5, 30)
+
+        select = device.get_platform_entity(
+            Platform.SELECT,
+            unique_id=f"{W100_DIAGNOSTICS_IEEE}-1-thermostat_mode",
+        )
+        assert select.options == ["Off", "On"]
+        assert select.current_option == "On"
+
+        # ZHA's other Thermostat entities (HVAC action, PI demand, setpoint source and
+        # limits) mean nothing for a virtual thermostat, and the existing ones stay
+        assert {
+            (entity.PLATFORM, type(entity).__name__)
+            for entity in device.platform_entities.values()
+            if entity.PLATFORM != Platform.VIRTUAL
+        } == {
+            (Platform.BUTTON, "IdentifyButton"),
+            (Platform.CLIMATE, "Thermostat"),
+            (Platform.SELECT, "ZCLEnumSelectEntity"),
+            (Platform.SENSOR, "LQISensor"),
+            (Platform.SENSOR, "RSSISensor"),
+            (Platform.SENSOR, "Battery"),
+            (Platform.SENSOR, "Temperature"),
+            (Platform.SENSOR, "Humidity"),
+            (Platform.UPDATE, "FirmwareUpdateEntity"),
+        }
+
+
+async def test_w100_climate_entity_drives_the_panel():
+    """ZHA's climate entity reaches the panel as PMTSD frames through the quirk."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway, W100_DIAGNOSTICS, DEVICE_REGISTRY
+        )
+        climate = device.get_platform_entity(
+            Platform.CLIMATE, unique_id=f"{W100_DIAGNOSTICS_IEEE}-1-513"
+        )
+        endpoint = device.device.endpoints[1]
+
+        endpoint.request.reset_mock()
+        await climate.async_set_temperature(temperature=22)
+
+        assert climate.target_temperature == 22
+        [call] = endpoint.request.mock_calls
+        assert call.kwargs["cluster"] == W100AqaraCluster.cluster_id
+        assert call.kwargs["command_id"] == foundation.GeneralCommand.Write_Attributes
+        assert b"P0_M1_T22_S0_D0" in call.kwargs["data"]
+
+        endpoint.request.reset_mock()
+        await climate.async_set_hvac_mode(HVACMode.OFF)
+
+        assert str(climate.hvac_mode) == "off"
+        [call] = endpoint.request.mock_calls
+        assert b"P1_M1_T22_S0_D0" in call.kwargs["data"]
+
+
+def w100_read_answers(answers: dict[int, Any]) -> mock.AsyncMock:
+    """Return a device read mock that answers each attribute from `answers`.
+
+    An answer is a TypeValue for a successful read, or a Status for a failed one.
+    """
+
+    async def read(attributes, manufacturer=None, **kwargs):
+        records = []
+        for attr in attributes:
+            answer = answers[attr]
+            if isinstance(answer, foundation.Status):
+                records.append(foundation.ReadAttributeRecord(attr, answer))
+            else:
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr, foundation.Status.SUCCESS, answer
+                    )
+                )
+        return [records]
+
+    return mock.AsyncMock(side_effect=read)
+
+
+W100_SENSOR_MODE_ON = foundation.TypeValue(0x20, t.uint8_t(1))
+W100_SENSOR_MODE_OFF = foundation.TypeValue(0x20, t.uint8_t(0))
+W100_STEP_50 = foundation.TypeValue(0x21, t.uint16_t(50))
+
+
+async def test_w100_thermostat_keeps_other_attributes_local(w100_thermostat):
+    """Attributes other than mode and setpoint stay in the virtual cluster."""
+    thermostat, opple = w100_thermostat
+
+    await thermostat.write_attributes({"occupied_cooling_setpoint": 2600})
+
+    assert thermostat.get("occupied_cooling_setpoint") == 2600
+    assert not w100_written(opple, W100_FRAME_ATTR)
+    assert not w100_written(opple, W100_HA_STATE_ATTR)
+
+
+async def test_w100_thermostat_ignores_unknown_attributes(w100_thermostat):
+    """An attribute the Thermostat cluster does not define is passed on and ignored."""
+    thermostat, opple = w100_thermostat
+
+    results = await thermostat.write_attributes({0x7FFF: 1})
+
+    assert results == [
+        [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]
+    ]
+    assert not w100_written(opple, W100_FRAME_ATTR)
+
+
+@pytest.mark.parametrize(
+    ("report", "expected"),
+    [
+        ("0130040229d007033005", {"mode": 4, "setpoint": 2000, "fan": 5}),
+        # an unknown data type stops the decoding: the length of the rest is unknown
+        ("013003024205033005", {"mode": 3}),
+        # a truncated value is not decoded
+        ("013003022136", {"mode": 3}),
+        ("", {}),
+    ],
+)
+def test_w100_decodes_ha_state_reports(report, expected):
+    """Aqara's TLV reports decode up to the first unknown or truncated entry."""
+    assert W100AqaraCluster._decode_ha_state(bytes.fromhex(report)) == expected
+
+
+def test_w100_applies_what_a_truncated_ha_report_still_holds(w100_thermostat):
+    """The part of a damaged 0x0174 report that decoded is still applied."""
+    thermostat, opple = w100_thermostat
+    thermostat.update_attribute(
+        Thermostat.AttributeDefs.system_mode.id, Thermostat.SystemMode.Off
+    )
+
+    opple._update_attribute(
+        W100_HA_STATE_ATTR, t.LVBytes(bytes.fromhex("013004022137"))
+    )
+
+    assert thermostat.get("system_mode") == Thermostat.SystemMode.Heat
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+
+
+async def test_w100_ignores_a_marker_frame_that_is_not_pmtsd_text(w100_thermostat):
+    """The marker also appears in frames with UTF-8 text after it, like the subscribe tail."""
+    thermostat, opple = w100_thermostat
+    frame = build_frame(
+        0x31,
+        0x05,
+        b"\x00\x00" + W100_HUB_IEEE + W100_PMTSD_MARKER + b"\x03\xe7\xa9\xba",
+        frame_type=0x84,
+    )
+
+    await w100_receive_frame(opple, frame)
+
+    [ack] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack)[:2] == (0x24, 0x31)
+    assert thermostat.get("occupied_heating_setpoint") == 2000
+
+
+async def test_w100_ha_protocol_never_answers_with_pmtsd(w100_thermostat):
+    """Firmware speaking the attributes protocol is only acknowledged, not sent PMTSD."""
+    _, opple = w100_thermostat
+    opple._update_attribute(W100_HA_STEP_ATTR, 50)
+
+    await w100_receive_frame(opple, W100_CAPTURED_REQUEST)
+
+    [ack] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(ack)[:2] == (0x24, 0x01)
+
+
+async def test_w100_aqara_cluster_passes_other_writes_to_the_device(w100_thermostat):
+    """Only the thermostat mode is translated: other attributes are written as is."""
+    _, opple = w100_thermostat
+
+    await opple.write_attributes({"ha_setpoint_step": 50})
+
+    assert w100_written(opple, W100_HA_STEP_ATTR) == [50]
+    assert not w100_written(opple, W100_FRAME_ATTR)
+
+
+async def test_w100_thermostat_mode_read_falls_back_on_the_cache(w100_thermostat):
+    """A sleeping panel does not answer the refresh: the known value is returned."""
+    _, opple = w100_thermostat
+    opple._attr_cache[W100_SENSOR_MODE_ATTR] = 1
+    opple._read_attributes.side_effect = TimeoutError
+
+    success, failure = await opple.read_attributes(["thermostat_mode"])
+
+    assert success == {"thermostat_mode": ThermostatMode.On}
+    assert failure == {}
+
+
+async def test_w100_thermostat_mode_read_without_a_value_is_unsupported(
+    w100_thermostat,
+):
+    """Nothing is known about the thermostat mode before the panel has reported."""
+    _, opple = w100_thermostat
+
+    success, failure = await opple.read_attributes(["thermostat_mode"], only_cache=True)
+
+    assert success == {}
+    assert failure == {"thermostat_mode": foundation.Status.UNSUPPORTED_ATTRIBUTE}
+
+
+async def test_w100_read_mixes_the_local_mode_and_device_attributes(w100_thermostat):
+    """The mode is refreshed from the device, and other attributes are read from it."""
+    _, opple = w100_thermostat
+    opple._read_attributes = w100_read_answers(
+        {W100_SENSOR_MODE_ATTR: W100_SENSOR_MODE_ON, W100_HA_STEP_ATTR: W100_STEP_50}
+    )
+
+    success, failure = await opple.read_attributes(
+        ["thermostat_mode", "ha_setpoint_step"]
+    )
+
+    assert success == {"thermostat_mode": ThermostatMode.On, "ha_setpoint_step": 50}
+    assert failure == {}
+
+
+async def test_w100_probe_detects_the_ha_protocol(w100_thermostat):
+    """Firmware that answers 0x0175 is driven with the attributes, not PMTSD frames."""
+    thermostat, opple = w100_thermostat
+    opple._read_attributes = w100_read_answers(
+        {W100_HA_STEP_ATTR: W100_STEP_50, W100_SENSOR_MODE_ATTR: W100_SENSOR_MODE_OFF}
+    )
+
+    await opple.apply_custom_configuration()
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2150})
+
+    assert [bytes(v).hex() for v in w100_written(opple, W100_HA_STATE_ATTR)] == [
+        "02296608"
+    ]
+    assert not w100_written(opple, W100_FRAME_ATTR)
+
+
+async def test_w100_probe_keeps_pmtsd_when_0x0175_is_unsupported(w100_thermostat):
+    """Firmware without 0x0175 is the PMTSD one: setpoints go out as frames."""
+    thermostat, opple = w100_thermostat
+    opple._read_attributes = w100_read_answers(
+        {
+            W100_HA_STEP_ATTR: foundation.Status.UNSUPPORTED_ATTRIBUTE,
+            W100_SENSOR_MODE_ATTR: W100_SENSOR_MODE_OFF,
+        }
+    )
+
+    await opple.apply_custom_configuration()
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2150})
+
+    [frame] = w100_written(opple, W100_FRAME_ATTR)
+    assert w100_split_frame(frame)[3] == w100_pmtsd("P0_M1_T22_S0_D0")
+    assert not w100_written(opple, W100_HA_STATE_ATTR)
+
+
+async def test_w100_probe_survives_a_sleeping_panel(w100_thermostat):
+    """A panel that does not answer the probe is treated as PMTSD until the next one."""
+    thermostat, opple = w100_thermostat
+    opple._read_attributes.side_effect = TimeoutError
+
+    await opple.apply_custom_configuration()
+    await thermostat.write_attributes({"occupied_heating_setpoint": 2150})
+
+    assert len(w100_written(opple, W100_FRAME_ATTR)) == 1
+    assert not w100_written(opple, W100_HA_STATE_ATTR)
