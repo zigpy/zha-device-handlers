@@ -173,6 +173,20 @@ Adds a number entity.
 )
 ```
 
+#### tuya_text
+
+Adds a text entity for a string datapoint (Tuya type `0x03`), such as a label shown on a display. The length limits count characters, while the datapoint is limited in bytes (UTF-8) and by what the device accepts, so set `max_length` to the device's label size.
+
+```python
+.tuya_text(
+    dp_id=106,
+    attribute_name="switch_1_name",
+    max_length=12,
+    translation_key="switch_1_name",
+    fallback_name="Switch 1 name",
+)
+```
+
 #### tuya_binary_sensor
 
 Adds a binary sensor entity.
