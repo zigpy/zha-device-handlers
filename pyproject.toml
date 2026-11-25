@@ -11,7 +11,7 @@ authors = [{ name = "David F. Mulcahey", email = "david.mulcahey@icloud.com" }]
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
-dependencies = ["zigpy>=2.4.0", "zha>=2.4.0"]
+dependencies = ["zigpy>=2.4.0", "zha>=2.5.0"]
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*"]
@@ -36,6 +36,12 @@ dev = [
     "pytest-timeout",
     "ruff==0.15.17",        # Keep this in sync with .pre-commit-config.yaml
     "time-machine>=2,<3",
+]
+
+[tool.uv]
+# zha 2.5.0 isn't released yet: build against its dev commit until it is
+override-dependencies = [
+    "zha @ git+https://github.com/zigpy/zha@6ff7e8d392773a3033a3a57db512be454648bd99",
 ]
 
 [tool.setuptools-git-versioning]
