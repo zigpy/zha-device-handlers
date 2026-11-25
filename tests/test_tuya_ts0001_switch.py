@@ -36,7 +36,7 @@ EP1_CLUSTERS = {
 @pytest.mark.parametrize(
     "manufacturer,cluster_ids",
     [
-        # same layout as ts000x.Switch_1G_Metering's signature (zha snapshot: kqvb5akv)
+        # same layout as the ts000x 1 gang metering signature (zha snapshot: kqvb5akv)
         (
             "_TZ3000_kqvb5akv",
             {
