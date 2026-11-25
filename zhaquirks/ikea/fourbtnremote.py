@@ -110,9 +110,10 @@ from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
             },
         }
     )
-    # The remote also sends an `on` about 500 ms after an arrow hold is released,
-    # which fires a press of the on button like its device trigger:
-    # https://github.com/Koenkk/zigbee2mqtt/issues/13335
+    # The remote also sends an `on` at the start of every arrow long press, while the
+    # arrow is still held (https://github.com/Koenkk/zigbee2mqtt/issues/13335). Until
+    # the quirk drops it (zigpy/zha-device-handlers#5809), it fires a press of the on
+    # button, like the on button's device trigger.
     .button_event(
         events=[
             ButtonEvent(
