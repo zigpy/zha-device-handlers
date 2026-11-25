@@ -2,6 +2,10 @@
 
 from typing import Final
 
+from zha.application.helpers import write_attributes_safe
+from zha.application.platforms import AttrConfig, ClusterConfig
+from zha.application.platforms.number import NumberConfigurationEntity
+from zha.units import PERCENTAGE
 from zigpy import types as t
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -69,19 +73,53 @@ class SEMeteringCluster(CustomCluster, Metering):
         super()._update_attribute(attrid, value)
 
 
+class SEIndicatorLuminanceNumber(NumberConfigurationEntity):
+    """Indicator LED brightness in percent; the device stores 0 = 100% ... 5 = 0%."""
+
+    _attribute_name = (
+        SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level.name
+    )
+    _attr_native_min_value = 0
+    _attr_native_max_value = 100
+    _attr_native_step = 20
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _server_cluster_config = {
+        SEOutletConfiguration.cluster_id: ClusterConfig(
+            attributes={
+                SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level: (
+                    AttrConfig(read_on_startup=True)
+                ),
+            },
+        ),
+    }
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the brightness in percent."""
+        value = self._cluster.get(self._attribute_name)
+        if value is None:
+            return None
+        return 100 - 20 * value
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Write the brightness, converted to the device's 0-5 level."""
+        await write_attributes_safe(
+            self._cluster, {self._attribute_name: round((100 - value) / 20)}
+        )
+        self.maybe_emit_state_changed_event()
+
+
 (
     QuirkBuilder(SE_MANUF_NAME, "SOCKET/OUTLET/1")
     .applies_to(SE_MANUF_NAME, "SOCKET/OUTLET/2")
     .replaces(SEBasic, endpoint_id=6)
     .replaces(SEMeteringCluster, endpoint_id=6)
     .replaces(SEOutletConfiguration, endpoint_id=6)
-    .number(
-        attribute_name=SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level.name,
-        cluster_id=SEOutletConfiguration.cluster_id,
+    .adds_entity(
+        SEIndicatorLuminanceNumber,
         endpoint_id=6,
-        min_value=0,
-        max_value=5,
-        step=1,
+        cluster_id=SEOutletConfiguration.cluster_id,
+        unique_id_suffix=SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level.name,
         translation_key="indicator_luminance_level",
         fallback_name="Indicator luminance level",
     )

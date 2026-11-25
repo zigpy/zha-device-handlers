@@ -3,13 +3,20 @@
 from unittest import mock
 
 import pytest
+from zha.application import Platform
+from zha.quirks import DEVICE_REGISTRY
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+from tests.zha_helpers import join_device_from_diagnostics, zha_gateway
 import zhaquirks
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
+from zhaquirks.schneiderelectric.outlet import (
+    SEIndicatorLuminanceNumber,
+    SEOutletConfiguration,
+)
 from zhaquirks.schneiderelectric.thermostat import SEControlStatus, SEThermostat
 
 zhaquirks.setup()
@@ -134,3 +141,50 @@ async def test_thermostat_control_status_off(zigpy_device_from_v2_quirk, model):
     value = thermostat_cluster.get(control_status_attr_id)
     assert SEControlStatus(value) is SEControlStatus.Off
     assert SEControlStatus(value).name == "Off"
+
+
+async def test_outlet_indicator_luminance_percent():
+    """Test that the inverted 0-5 luminance level is exposed in percent."""
+    async with zha_gateway() as gateway:
+        device = await join_device_from_diagnostics(
+            gateway,
+            "schneider-electric-socket-outlet-1-0x030000ff.json",
+            DEVICE_REGISTRY,
+        )
+        entity = device.get_platform_entity(
+            Platform.NUMBER,
+            unique_id="ab:cd:ef:12:81:8a:da:20-6-se_indicator_luminance_level",
+        )
+        assert type(entity) is SEIndicatorLuminanceNumber
+
+        cluster = device.device.endpoints[6].in_clusters[
+            SEOutletConfiguration.cluster_id
+        ]
+        attr = SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level
+
+        # The device reports level 0, its brightest setting
+        assert entity.native_value == 100
+
+        cluster.update_attribute(attr.id, 3)
+        assert entity.native_value == 40
+
+        cluster.update_attribute(attr.id, 5)
+        assert entity.native_value == 0
+
+        def mock_write(attributes, manufacturer=None):
+            records = [
+                foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+                for _ in attributes
+            ]
+            return [records, []]
+
+        with mock.patch.object(
+            cluster, "_write_attributes", mock.AsyncMock(side_effect=mock_write)
+        ) as write_mock:
+            await entity.async_set_native_value(60)
+
+        assert write_mock.call_count == 1
+        assert write_mock.call_args[0][0][0].attrid == attr.id
+        assert write_mock.call_args[0][0][0].value.value == 2
+        assert cluster.get(attr.name) == 2
+        assert entity.native_value == 60
