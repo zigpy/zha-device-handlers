@@ -114,7 +114,7 @@ class ShellyRainCluster(CustomCluster):
         divisor=10,
         unit=DEGREE,
         device_class=SensorDeviceClass.WIND_DIRECTION,
-        state_class=SensorStateClass.MEASUREMENT,
+        state_class=SensorStateClass.MEASUREMENT_ANGLE,
         reporting_config=ReportingConfig(
             min_interval=10, max_interval=900, reportable_change=50
         ),
