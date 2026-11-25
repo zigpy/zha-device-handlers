@@ -603,7 +603,7 @@ class ChangedEntityMetadata:
 
 def recursive_freeze(obj: Any) -> Any:
     """Recursively convert mutable collections to immutable ones."""
-    if isinstance(obj, dict):
+    if isinstance(obj, Mapping):
         return frozendict({k: recursive_freeze(v) for k, v in obj.items()})
     if isinstance(obj, tuple | list | set):
         return tuple(recursive_freeze(v) for v in obj)
