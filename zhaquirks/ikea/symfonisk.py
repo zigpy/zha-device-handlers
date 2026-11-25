@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI SYMFONISK remote control."""
 
 from zigpy.profiles import zha
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -14,6 +15,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -140,6 +142,34 @@ class IkeaSYMFONISK1(CustomDevice):
             PARAMS: {"step_mode": 1},
         },
     }
+
+    # Pushing the controller toggles for a single press, steps up for a double and
+    # down for a triple press. Rotating it is not a button.
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.SINGLE_PRESS,
+                    trigger=(SHORT_PRESS, TURN_ON),
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(DOUBLE_PRESS, TURN_ON),
+                    press_count=2,
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.MULTI_PRESS,
+                    trigger=(TRIPLE_PRESS, TURN_ON),
+                    press_count=3,
+                ),
+            ],
+            cluster_id=OnOff.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button",
+            translation_key="button",
+            fallback_name="Button",
+        ),
+    )
 
 
 class IkeaSYMFONISK2(IkeaSYMFONISK1):

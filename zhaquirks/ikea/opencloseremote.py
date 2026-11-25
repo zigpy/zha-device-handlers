@@ -4,7 +4,7 @@ from typing import Any
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -19,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.builder import ButtonEvent, ButtonEventMetadata, ButtonEventType
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.const import (
     ARGS,
@@ -145,3 +146,40 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
         (SHORT_PRESS, CLOSE): {COMMAND: COMMAND_CLOSE, ARGS: []},
         (LONG_RELEASE, CLOSE): {COMMAND: COMMAND_STOP_CLOSING, ARGS: []},
     }
+
+    # A button sends up_open or down_close as soon as it is pressed, and a stop
+    # when released after holding it for more than 0.5 s
+    button_event_entities = (
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START, trigger=(SHORT_PRESS, OPEN)
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, OPEN),
+                ),
+            ],
+            cluster_id=WindowCovering.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_open",
+            translation_key="open_button",
+            fallback_name="Open button",
+        ),
+        ButtonEventMetadata(
+            events=[
+                ButtonEvent(
+                    event_type=ButtonEventType.PRESS_START, trigger=(SHORT_PRESS, CLOSE)
+                ),
+                ButtonEvent(
+                    event_type=ButtonEventType.LONG_PRESS_END,
+                    trigger=(LONG_RELEASE, CLOSE),
+                ),
+            ],
+            cluster_id=WindowCovering.cluster_id,
+            cluster_type=ClusterType.Client,
+            unique_id_suffix="button_close",
+            translation_key="close_button",
+            fallback_name="Close button",
+        ),
+    )
