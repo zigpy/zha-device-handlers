@@ -7,9 +7,9 @@ needed to commission the DALI bus from Home Assistant through the manufacturer
 specific cluster 0xFCDA on endpoint 1: buttons to set up and to extend the DALI
 system, the bus mode, the bus status flags and the number of active gears.
 
-The cluster attributes are not reportable, so the cluster polls them: slowly
-while the bus is in run mode, quickly while a scan is running (about 5 s per
-gear).
+The cluster attributes are not reportable, so the cluster polls them: quickly
+while the bus initialises or a scan is running (about 5 s per gear), slowly
+otherwise.
 
 A separately marked block cleans up the colour values Home Assistant reads from
 the lights (see `Sdc2Color`).
@@ -243,7 +243,7 @@ class BegaDaliBus(CustomCluster):
         )
 
     async def _poll_status(self) -> None:
-        """Read the bus attributes forever, fast while a scan is running."""
+        """Read the bus attributes forever, fast while the bus initialises or scans."""
         fast = False
         while True:
             with contextlib.suppress(TimeoutError):
@@ -259,7 +259,7 @@ class BegaDaliBus(CustomCluster):
             else:
                 mode = result.get(self.AttributeDefs.bus_mode.name)
                 if mode is not None:  # keep the current pace after attribute errors
-                    fast = mode == DaliBusMode.Scan
+                    fast = mode in (DaliBusMode.Init, DaliBusMode.Scan)
                 if mode == DaliBusMode.Scan:
                     self._scan_seen = True
                 elif (

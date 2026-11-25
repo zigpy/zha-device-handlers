@@ -589,18 +589,28 @@ async def test_attribute_failure_keeps_scan_polling_fast(
     ]
 
 
-async def test_bus_error_is_polled_slowly(sdc2_device, fast_polling, monkeypatch):
-    """Only a running scan is polled fast; a bus error can last indefinitely."""
+@pytest.mark.parametrize(
+    ("mode", "fast"),
+    [
+        (DaliBusMode.Init, True),
+        (DaliBusMode.Error, False),
+        (DaliBusMode.Critical_error, False),
+    ],
+)
+async def test_polling_pace_outside_a_scan(
+    sdc2_device, fast_polling, monkeypatch, mode, fast
+):
+    """The bus is also polled fast while it initialises; an error can last indefinitely."""
     monkeypatch.setattr(BegaDaliBus, "POLL_SLOW_S", 5)
     device = sdc2_device()
     bus = device.endpoints[BUS_ENDPOINT].bega_dali_bus
 
-    read = mock.AsyncMock(return_value=({"bus_mode": DaliBusMode.Error}, {}))
+    read = mock.AsyncMock(return_value=({"bus_mode": mode}, {}))
     with mock.patch.object(bus, "read_attributes", read):
         bus._poll_wake.set()
         await asyncio.sleep(0.1)  # ten polls at the fast cadence
 
-    assert read.call_count == 1
+    assert (read.call_count > 1) == fast
 
 
 async def test_delayed_follow_up_reply_keeps_newer_scan(sdc2_device, fast_polling):
