@@ -53,10 +53,13 @@ class SNZB03PMotionTimeout(SonoffPresenceSenorTimeout):
     QuirkBuilder("eWeLink", "SNZB-03P")
     # Add vendor illumination cluster
     .adds(SonoffIlluminationCluster)
-    # Prevent default IAS Zone entity creation
-    .prevent_default_entity_creation(
+    # Keep the IAS Zone motion entity for existing users, but disable it by
+    # default and make the Occupancy entity the primary one
+    .change_entity_metadata(
         endpoint_id=1,
         cluster_id=IasZone.cluster_id,
+        new_primary=False,
+        new_entity_registry_enabled_default=False,
     )
     # Replace native ZHA motion timeout entity, preserving its unique ID
     .replaces_entity(
