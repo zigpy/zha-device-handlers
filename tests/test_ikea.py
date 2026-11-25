@@ -481,11 +481,13 @@ def received_commands(listener: ClusterListener, command_id: int) -> list[int]:
     return [tsn for tsn, cmd_id, _ in listener.cluster_commands if cmd_id == command_id]
 
 
-# An arrow long press: Scenes `release` 0 (manufacturer specific), the stray `on`
-# and, once the hold is recognized, Scenes `hold` 3329 (left arrow)
+# An arrow long press: Scenes `release` 0 (manufacturer specific), the stray `on`,
+# Scenes `press` (2, 0) and, once the hold is recognized, Scenes `hold` 3329 (left
+# arrow)
 ARROW_HOLD_START = b"\x05\x7c\x11\x01\x09\x00\x00"
 STRAY_ON = b"\x01\x02\x01"
-ARROW_HOLD = b"\x05\x7c\x11\x03\x08\x01\x0d\x00"
+ARROW_HOLD_PRESS = b"\x05\x7c\x11\x03\x07\x02\x00\x00\x00"
+ARROW_HOLD = b"\x05\x7c\x11\x04\x08\x01\x0d\x00"
 # The release ending an arrow hold of 2 seconds
 ARROW_HOLD_END = b"\x05\x7c\x11\x05\x09\xd0\x07"
 # A short press of the left arrow
@@ -565,14 +567,17 @@ async def test_styrbar_arrow_hold_burst(zigpy_device_from_v2_quirk):
     for cluster_id, data in (
         (Scenes.cluster_id, ARROW_HOLD_START),
         (OnOff.cluster_id, STRAY_ON),
+        (Scenes.cluster_id, ARROW_HOLD_PRESS),
         (Scenes.cluster_id, ARROW_HOLD),
         (Scenes.cluster_id, ARROW_HOLD_END),
     ):
         styrbar_receive(device, cluster_id, data)
 
     assert on_off_listener.cluster_commands == []
+    press_id = StyrbarScenesCluster.ServerCommandDefs.press.id
     hold_id = StyrbarScenesCluster.ServerCommandDefs.hold.id
-    assert received_commands(scenes_listener, hold_id) == [3]
+    assert received_commands(scenes_listener, press_id) == [3]
+    assert received_commands(scenes_listener, hold_id) == [4]
 
 
 async def test_styrbar_drops_copies_of_stray_on(zigpy_device_from_v2_quirk):
