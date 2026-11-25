@@ -41,6 +41,7 @@ from zha.quirks import (
 )
 from zha.zigbee.device import ZigbeeDevice
 import zigpy.device
+import zigpy.endpoint
 import zigpy.profiles.zha
 from zigpy.typing import UNDEFINED, UndefinedType
 from zigpy.zcl import Cluster, ClusterType
@@ -263,6 +264,10 @@ class AddEndpoint:
         endpoint = device.add_endpoint(self.endpoint_id)
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
+        # The device never reports this endpoint, so the interview never initializes
+        # it. Mark it initialized, as v1 replacement endpoints are, or the device
+        # never counts as initialized and zigpy drops its ZCL frames.
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
 
         return device
 
@@ -294,6 +299,9 @@ class ReplaceEndpoint:
             endpoint = device.endpoints[self.endpoint_id]
         else:
             endpoint = device.add_endpoint(self.endpoint_id)
+            # see `AddEndpoint`: an endpoint the device doesn't report is never
+            # initialized by the interview
+            endpoint.status = zigpy.endpoint.Status.ZDO_INIT
         endpoint.profile_id = self.profile_id
         endpoint.device_type = self.device_type
 
