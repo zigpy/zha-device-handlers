@@ -4,11 +4,12 @@ from unittest import mock
 
 import pytest
 import zigpy.types as t
-from zigpy.zcl import AttributeUnsupportedEvent
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl import AttributeUnsupportedEvent, ClusterType
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.foundation import ReadAttributeRecord, Status
 
 import zhaquirks
+from zhaquirks.const import BUTTON_1, BUTTON_2, COMMAND, ENDPOINT_ID, TURN_OFF, TURN_ON
 from zhaquirks.legrand import LEGRAND
 
 zhaquirks.setup()
@@ -141,3 +142,58 @@ async def test_legrand_identify_command(zigpy_device_from_v2_quirk):
         assert request.call_args_list[1].kwargs["identify_time"] == IDENTIFY_TIME
         assert "effect_id" not in request.call_args_list[1].kwargs
         assert "effect_variant" not in request.call_args_list[1].kwargs
+
+
+@pytest.mark.parametrize(
+    ("endpoint_id", "frame", "command_name"),
+    [
+        (2, b"\x11\x1b\x00", "off"),
+        (2, b"\x11\x1c\x01", "on"),
+        (1, b"\x11\x1b\x00", "off"),
+        (1, b"\x11\x1c\x01", "on"),
+    ],
+)
+async def test_legrand_double_gangs_remote_switch_buttons(
+    zigpy_device_from_v2_quirk, endpoint_id, frame, command_name
+):
+    """Test Double gangs remote switch only emits On/Off commands per endpoint."""
+
+    device = zigpy_device_from_v2_quirk(
+        f" {LEGRAND}",
+        " Double gangs remote switch",
+        cluster_ids={
+            1: {OnOff.cluster_id: ClusterType.Client},
+            2: {OnOff.cluster_id: ClusterType.Client},
+        },
+    )
+    cluster = device.endpoints[endpoint_id].out_clusters[OnOff.cluster_id]
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=OnOff.cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(frame),
+        )
+    )
+
+    assert listener.cluster_command.call_count == 1
+    command_id = listener.cluster_command.call_args.args[1]
+    assert getattr(OnOff.ServerCommandDefs, command_name).id == command_id
+
+    triggers = device.device_automation_triggers
+    assert set(triggers) == {
+        (TURN_ON, BUTTON_1),
+        (TURN_OFF, BUTTON_1),
+        (TURN_ON, BUTTON_2),
+        (TURN_OFF, BUTTON_2),
+    }
+    button = BUTTON_1 if endpoint_id == 1 else BUTTON_2
+    trigger = TURN_ON if command_name == "on" else TURN_OFF
+    assert triggers[(trigger, button)] == {
+        COMMAND: command_name,
+        ENDPOINT_ID: endpoint_id,
+    }
