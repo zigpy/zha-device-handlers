@@ -399,6 +399,11 @@ async def test_ts0601_multi_gang_switch(
             }
             for ep_id in range(1, 9)
         },
+        # the Tuya MCU cluster on endpoint 1 and an endpoint per gang
+        {
+            1: {TuyaOnOffManufCluster.cluster_id: ClusterType.Server},
+            **{ep_id: {OnOff.cluster_id: ClusterType.Server} for ep_id in range(2, 9)},
+        },
         # one endpoint with an OnOff cluster of its own
         {
             1: {
