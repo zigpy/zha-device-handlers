@@ -67,13 +67,15 @@ DIAL_EVENTS = [
         event_type=RotaryEventType.ROTATION,
         trigger=(ROTATED, RIGHT),
         direction=RotaryDirection.CLOCKWISE,
-        event_attributes_from_data={"steps": ["params", "step_size"]},
+        # Level Control's step size isn't a count of detents: extra data
+        event_attributes_from_data={"step_size": ["params", "step_size"]},
     ),
     RotaryEvent(
         event_type=RotaryEventType.ROTATION,
         event_data=STEP_DOWN,
         direction=RotaryDirection.COUNTER_CLOCKWISE,
         event_attributes={"pressed": False},
+        # Stands in for a device reporting the detents it turned
         event_attributes_from_data={"steps": ("args", 1)},
     ),
     RotaryEvent(
@@ -202,7 +204,7 @@ async def test_rotary_event_entities(zigpy_device: zigpy.device.Device) -> None:
     send(quirked, OnOff.cluster_id, b"\x01\x07\x00")
 
     assert recorder.pop() == [
-        ("dial", "rotation", {"direction": "clockwise", "steps": 13}),
+        ("dial", "rotation", {"direction": "clockwise", "step_size": 13}),
         (
             "dial",
             "rotation",
@@ -396,6 +398,44 @@ def test_rotary_event_types() -> None:
             },
             "Invalid key True in the path of event data steps",
         ),
+        # A set has no order, so it is no path
+        (
+            {
+                "event_type": RotaryEventType.ROTATION,
+                "event_data": STEP_UP,
+                "direction": RotaryDirection.CLOCKWISE,
+                "event_attributes_from_data": {"steps": {"params", "step_size"}},
+            },
+            "needs a non-empty sequence of keys and indexes",
+        ),
+        # A path starts at a key a zha_event has
+        (
+            {
+                "event_type": RotaryEventType.ROTATION,
+                "event_data": STEP_UP,
+                "direction": RotaryDirection.CLOCKWISE,
+                "event_attributes_from_data": {"steps": ["parameters", "step_size"]},
+            },
+            "The path of steps starts at 'parameters', which a zha_event does not have",
+        ),
+        (
+            {
+                "event_type": RotaryEventType.ROTATION,
+                "event_data": STEP_UP,
+                "direction": RotaryDirection.CLOCKWISE,
+                "event_attributes_from_data": {"steps": [0]},
+            },
+            "The path of steps starts at 0, which a zha_event does not have",
+        ),
+        # A dial's push button is a button event entity of its own
+        (
+            {"event_type": "press_end", "event_data": STEP_UP},
+            "'press_end' is a button event type",
+        ),
+        (
+            {"event_type": ButtonEventType.SINGLE_PRESS, "event_data": STEP_UP},
+            "'single_press' is a button event type",
+        ),
     ],
 )
 def test_rotary_event_invalid(kwargs: dict, error: str) -> None:
@@ -410,7 +450,12 @@ def test_rotary_event_invalid(kwargs: dict, error: str) -> None:
 
 @pytest.mark.parametrize(
     "kwargs",
-    [{"event_attributes": [("steps", 1)]}, {"event_attributes_from_data": "steps"}],
+    [
+        {"event_attributes": [("steps", 1)]},
+        {"event_attributes_from_data": "steps"},
+        {"event_attributes": {1: 2}},
+        {"event_attributes_from_data": {1: ("args", 0)}},
+    ],
 )
 def test_rotary_event_data_type(kwargs: dict) -> None:
     """Test that the event data of a rotary event has to be given as mappings."""
@@ -638,7 +683,7 @@ async def test_v1_rotary_event_entities(zigpy_device: zigpy.device.Device) -> No
     send(quirked, OnOff.cluster_id, b"\x01\x03\x01")
 
     assert recorder.pop() == [
-        ("dial", "rotation", {"direction": "clockwise", "steps": 13}),
+        ("dial", "rotation", {"direction": "clockwise", "step_size": 13}),
         ("dial", "rotation_end", {"direction": "clockwise"}),
         ("button", "press_end"),
     ]
@@ -707,3 +752,26 @@ def test_v1_rotary_event_duplicate_entity() -> None:
 
     with pytest.raises(ValueError, match="'dial' on endpoint 1 is defined twice"):
         _legacy_quirk_to_registry_entry(quirk)
+
+
+def test_event_metadata_kinds() -> None:
+    """Test that each event entity takes only its own kind of events."""
+    kwargs = {
+        "cluster_id": LevelControl.cluster_id,
+        "cluster_type": ClusterType.Client,
+        "unique_id_suffix": "dial",
+        "translation_key": "dial",
+        "fallback_name": "Dial",
+    }
+
+    with pytest.raises(TypeError, match="A rotary event entity takes `RotaryEvent`s"):
+        RotaryEventMetadata(
+            events=[
+                rotation(),
+                ButtonEvent(event_type=ButtonEventType.PRESS_END, event_data=STOP),
+            ],
+            **kwargs,
+        )
+
+    with pytest.raises(TypeError, match="A button event entity takes `ButtonEvent`s"):
+        ButtonEventMetadata(events=[rotation()], **kwargs)

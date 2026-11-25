@@ -310,6 +310,22 @@ def _convert_rotary_direction(direction: Any) -> Any:
     return RotaryDirection(direction) if direction in RotaryDirection else direction
 
 
+def _convert_event_data_paths(paths: Any) -> Any:
+    """Return paths given as lists as tuples, leaving anything else to validation.
+
+    A set isn't frozen into a tuple: its order isn't defined, so it is no path.
+    """
+    if not isinstance(paths, Mapping):
+        return paths
+
+    return frozendict(
+        {
+            name: tuple(path) if isinstance(path, list | tuple) else path
+            for name, path in paths.items()
+        }
+    )
+
+
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class RotaryEvent:
     """An event type a rotary event entity fires, and the `zha_event` firing it.
@@ -339,7 +355,7 @@ class RotaryEvent:
         factory=frozendict, converter=recursive_freeze
     )
     event_attributes_from_data: frozendict[str, tuple[str | int, ...]] = attrs.field(
-        factory=frozendict, converter=recursive_freeze
+        factory=frozendict, converter=_convert_event_data_paths
     )
 
     def __attrs_post_init__(self) -> None:
@@ -347,8 +363,18 @@ class RotaryEvent:
         _validate_event_source(self.trigger, self.event_data, self)
 
         for name in ("event_attributes", "event_attributes_from_data"):
-            if not isinstance(getattr(self, name), Mapping):
+            value = getattr(self, name)
+            if not isinstance(value, Mapping) or not all(
+                isinstance(key, str) for key in value
+            ):
                 raise TypeError(f"{name} is a mapping of event data names: {self}")
+
+        # A dial's push button is a separate button event entity
+        if self.event_type in tuple(ButtonEventType):
+            raise ValueError(
+                f"'{self.event_type}' is a button event type, which belongs to a"
+                f" button event entity: {self}"
+            )
 
         # ZHA validates the rest when it creates the match. A trigger's data is only
         # known with the quirk, so validate the rest with the event's own data or a
@@ -363,6 +389,14 @@ class RotaryEvent:
             )
         except ValueError as exc:
             raise ValueError(f"{exc}: {self}") from exc
+
+        # Like event data, a path starts at a key a `zha_event` has
+        for name, path in self.event_attributes_from_data.items():
+            if path[0] not in ZHA_EVENT_DATA_KEYS:
+                raise ValueError(
+                    f"The path of {name} starts at {path[0]!r}, which a zha_event"
+                    f" does not have: {self}"
+                )
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
@@ -397,6 +431,9 @@ class ButtonEventMetadata(EventEntityMetadata[ButtonEvent]):
     def __attrs_post_init__(self) -> None:
         """Validate the button event metadata."""
         super().__attrs_post_init__()
+
+        if not all(isinstance(event, ButtonEvent) for event in self.events):
+            raise TypeError(f"A button event entity takes `ButtonEvent`s: {self}")
 
         event_types = {event.event_type for event in self.events}
         if (
@@ -438,6 +475,9 @@ class RotaryEventMetadata(EventEntityMetadata[RotaryEvent]):
     def __attrs_post_init__(self) -> None:
         """Validate the rotary event metadata."""
         super().__attrs_post_init__()
+
+        if not all(isinstance(event, RotaryEvent) for event in self.events):
+            raise TypeError(f"A rotary event entity takes `RotaryEvent`s: {self}")
 
         if not {RotaryEventType.ROTATION, RotaryEventType.ROTATION_START} & {
             event.event_type for event in self.events
