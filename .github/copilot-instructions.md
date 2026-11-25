@@ -56,6 +56,7 @@ from zhaquirks.builder import QuirkBuilder
     .replaces(CustomClusterClass)             # Replace standard cluster
     .device_automation_triggers({...})        # Button/action mappings
     .button_event(events=[...], ...)          # Event entity per button
+    .rotary_event(events=[...], ...)          # Event entity per dial or knob
     .switch(attribute_name=..., fallback_name=...)  # HA entity
     .add_to_registry()
 )
@@ -360,6 +361,41 @@ Each `ButtonEvent` fires its event type for the `zha_event`s matching the data o
 The entity is only attached to `cluster_id`, it fires for the `zha_event`s of any cluster. `.prevent_default_entity_creation()` also removes quirk entities it matches, so attach the entity to a cluster the quirk doesn't prevent entities on.
 
 v1 quirks (`CustomDevice` subclasses) expose the same entities in a `button_event_entities` class attribute: a tuple of `ButtonEventMetadata(events=[...], cluster_id=..., cluster_type=..., unique_id_suffix=..., translation_key=..., fallback_name=...)`, taking the same arguments as `.button_event()`. Their `trigger=` keys refer to the class's `device_automation_triggers`.
+
+**Rotary Event Entities:**
+```python
+# One event entity per dial, knob, ring or scroll wheel, firing standard rotary event types
+.rotary_event(
+    events=[
+        RotaryEvent(
+            event_type=RotaryEventType.ROTATION,
+            trigger=(ROTATED, RIGHT),
+            direction=RotaryDirection.CLOCKWISE,
+            event_attributes_from_data={"step_size": ["params", "step_size"]},
+        ),
+        RotaryEvent(
+            event_type=RotaryEventType.ROTATION,
+            trigger=(ROTATED, LEFT),
+            direction=RotaryDirection.COUNTER_CLOCKWISE,
+            event_attributes_from_data={"step_size": ["params", "step_size"]},
+        ),
+    ],
+    cluster_id=LevelControl.cluster_id,
+    cluster_type=ClusterType.Client,
+    unique_id_suffix="dial",           # Required, unique among all event entities of the quirk
+    translation_key="dial",            # Required: rotary entities have no device class
+    fallback_name="Dial",
+)
+```
+A `RotaryEvent` takes `trigger=` or `event_data=` like a `ButtonEvent`, and the same registration checks cover button and rotary entities together: the events of a dial and of its push button can't match the same `zha_event`. The types and rules follow zigpy/backlog#84:
+- `rotation`: the control turned, one event per report of movement. `rotation_start`: the device reported that a turn started, without reporting movement. `rotation_end`: the device reported that a turn stopped. An entity needs `rotation` or `rotation_start`; other event types are integration-specific.
+- `direction` (`RotaryDirection`) is a constant of each event, as devices report each direction with their own command or parameter. It is required on `rotation` and `rotation_start`; a `rotation_end` without one gets the direction of the turn it ends.
+- `steps` (detents crossed, a positive integer) and `degrees` (a positive number) are only allowed on `rotation`. Set event data as constants in `event_attributes`, or take it from the `zha_event` with `event_attributes_from_data` (the path of keys and list indexes to the value). `pressed=True` marks a rotation the device reports differently while its button is held. Other data is integration-specific, such as a native step size whose size depends on the speed (it isn't `steps`).
+- Map one native event to at most one standard event: a report with movement is `rotation`, even if it starts or ends a turn. Don't add timers or synthesize a `rotation_end`.
+- A dial's push button is a separate `.button_event()` entity.
+- Leave out events and data whose behaviour isn't confirmed by a debug log from the device.
+
+v1 quirks expose rotary event entities in a `rotary_event_entities` class attribute, a tuple of `RotaryEventMetadata(...)` taking the same arguments as `.rotary_event()`.
 
 **Other Methods:**
 - `.friendly_name(model="...", manufacturer="...")` - Override device name displayed in HA

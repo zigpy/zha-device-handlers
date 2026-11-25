@@ -30,7 +30,7 @@ from zhaquirks.device import BaseCustomDevice
 from zhaquirks.legacy.registry import LegacyDeviceRegistry
 
 if typing.TYPE_CHECKING:
-    from zhaquirks.builder.metadata import ButtonEventMetadata
+    from zhaquirks.builder.metadata import ButtonEventMetadata, RotaryEventMetadata
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +77,8 @@ class CustomDevice(BaseCustomDevice):
 
     # Button event entities exposed by the quirk, see `QuirkBuilder.button_event()`
     button_event_entities: tuple[ButtonEventMetadata, ...] = ()
+    # Rotary event entities exposed by the quirk, see `QuirkBuilder.rotary_event()`
+    rotary_event_entities: tuple[RotaryEventMetadata, ...] = ()
 
     def __init_subclass__(cls) -> None:
         """Register a quirk subclass that defines a signature."""

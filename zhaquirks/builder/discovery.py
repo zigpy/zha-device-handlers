@@ -9,7 +9,7 @@ driven by `QuirkV2Device`.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -32,9 +32,13 @@ from zigpy.zcl import ClusterType, ReportingConfig
 
 from zhaquirks.builder.metadata import (
     BinarySensorMetadata,
+    ButtonEvent,
     ButtonEventMetadata,
     EntityMetadata,
+    EventEntityMetadata,
     NumberMetadata,
+    RotaryEvent,
+    RotaryEventMetadata,
     SwitchMetadata,
     WriteAttributeButtonMetadata,
     ZCLCommandButtonMetadata,
@@ -60,6 +64,7 @@ QUIRKS_ENTITY_META_TO_ENTITY_CLASS: dict[
     (Platform.NUMBER, NumberMetadata): number.NumberConfigurationEntity,
     (Platform.SWITCH, SwitchMetadata): switch.ConfigurableAttributeSwitch,
     (Platform.EVENT, ButtonEventMetadata): event.ZhaEventButton,
+    (Platform.EVENT, RotaryEventMetadata): event.ZhaEventRotary,
 }
 
 
@@ -88,30 +93,37 @@ def _generic_kwargs(entity_metadata: EntityMetadata) -> dict[str, Any]:
     return kwargs
 
 
+def _event_data(
+    entity_metadata: EventEntityMetadata,
+    entity_event: ButtonEvent | RotaryEvent,
+    device: ZigbeeDevice,
+) -> Mapping[str, Any]:
+    """Return the `zha_event` data an event of an event entity matches."""
+    if entity_event.trigger is None:
+        assert entity_event.event_data is not None
+        return entity_event.event_data
+
+    triggers = device.device_automation_triggers
+    if entity_event.trigger not in triggers:
+        raise ValueError(
+            f"Device {device.ieee} has no device automation trigger"
+            f" {entity_event.trigger} for event entity"
+            f" {entity_metadata.unique_id_suffix!r}"
+        )
+    return triggers[entity_event.trigger]
+
+
 def _button_event_matches(
     entity_metadata: ButtonEventMetadata, device: ZigbeeDevice
 ) -> list[event.ZhaEventMatch]:
     """Return the `zha_event` matches of a button event entity."""
-    triggers = device.device_automation_triggers
     event_matches = []
 
     for button_event in entity_metadata.events:
-        if button_event.trigger is not None:
-            if button_event.trigger not in triggers:
-                raise ValueError(
-                    f"Device {device.ieee} has no device automation trigger"
-                    f" {button_event.trigger} for button event entity"
-                    f" {entity_metadata.unique_id_suffix!r}"
-                )
-            event_data = triggers[button_event.trigger]
-        else:
-            assert button_event.event_data is not None
-            event_data = button_event.event_data
-
         event_matches.append(
             event.ZhaEventMatch(
                 event_type=button_event.event_type,
-                event_data=event_data,
+                event_data=_event_data(entity_metadata, button_event, device),
                 event_attributes=(
                     {ATTR_PRESS_COUNT: button_event.press_count}
                     if button_event.press_count is not None
@@ -123,6 +135,22 @@ def _button_event_matches(
         )
 
     return event_matches
+
+
+def _rotary_event_matches(
+    entity_metadata: RotaryEventMetadata, device: ZigbeeDevice
+) -> list[event.ZhaEventRotaryMatch]:
+    """Return the `zha_event` matches of a rotary event entity."""
+    return [
+        event.ZhaEventRotaryMatch(
+            event_type=rotary_event.event_type,
+            event_data=_event_data(entity_metadata, rotary_event, device),
+            direction=rotary_event.direction,
+            event_attributes=rotary_event.event_attributes,
+            event_attributes_from_data=rotary_event.event_attributes_from_data,
+        )
+        for rotary_event in entity_metadata.events
+    ]
 
 
 def _platform_kwargs(
@@ -176,6 +204,8 @@ def _platform_kwargs(
         }
     if isinstance(entity_metadata, ButtonEventMetadata):
         return {"event_matches": _button_event_matches(entity_metadata, device)}
+    if isinstance(entity_metadata, RotaryEventMetadata):
+        return {"event_matches": _rotary_event_matches(entity_metadata, device)}
     if isinstance(entity_metadata, ZCLCommandButtonMetadata):
         return {
             "command_name": entity_metadata.command_name,

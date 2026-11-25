@@ -41,9 +41,9 @@ from zigpy.zdo import types as zdotypes
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.metadata import (
     QuirkDefinition,
-    validate_button_event_entities,
-    validate_button_event_matches,
-    validate_button_event_triggers,
+    validate_event_entities,
+    validate_event_matches,
+    validate_event_triggers,
 )
 from zhaquirks.clusters import CustomCluster
 from zhaquirks.legacy import (
@@ -617,20 +617,20 @@ def _legacy_quirk_to_registry_entry(cls: type[CustomDevice]) -> QuirkRegistryEnt
 
 
 def _legacy_zha_device_factory(cls: type[CustomDevice]) -> QuirkV2Factory | None:
-    """Return the ZHA device factory exposing a v1 quirk's button event entities.
+    """Return the ZHA device factory exposing a v1 quirk's event entities.
 
-    v1 quirks have no ZHA-level metadata otherwise, so a quirk without button event
-    entities keeps the plain ZHA device.
+    v1 quirks have no ZHA-level metadata otherwise, so a quirk without button or
+    rotary event entities keeps the plain ZHA device.
     """
-    entities = tuple(cls.button_event_entities)
+    entities = (*cls.button_event_entities, *cls.rotary_event_entities)
     if not entities:
         return None
 
     triggers = getattr(cls, "device_automation_triggers", {})
-    validate_button_event_entities(entities)
+    validate_event_entities(entities)
     for entity_metadata in entities:
-        validate_button_event_triggers(entity_metadata, triggers)
-    validate_button_event_matches(entities, triggers)
+        validate_event_triggers(entity_metadata, triggers)
+    validate_event_matches(entities, triggers)
 
     return QuirkV2Factory(QuirkV2Device, QuirkDefinition(entity_metadata=entities))
 

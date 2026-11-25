@@ -9,7 +9,7 @@ classes take plain keyword arguments and know nothing about it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from enum import Enum
 from typing import Any
 
@@ -18,7 +18,12 @@ from frozendict import frozendict
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
-from zha.application.platforms.event.const import ButtonEventType
+from zha.application.platforms.event import ZhaEventRotaryMatch
+from zha.application.platforms.event.const import (
+    ButtonEventType,
+    RotaryDirection,
+    RotaryEventType,
+)
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
@@ -165,7 +170,16 @@ class ZCLCommandButtonMetadata(EntityMetadata):
     kwargs: frozendict[str, Any] = attrs.field(factory=frozendict, converter=frozendict)
 
 
-# The `zha_event` data keys a button event can match: ZHA sends these for a cluster
+def recursive_freeze(obj: Any) -> Any:
+    """Recursively convert mutable collections to immutable ones."""
+    if isinstance(obj, Mapping):
+        return frozendict({k: recursive_freeze(v) for k, v in obj.items()})
+    if isinstance(obj, tuple | list | set):
+        return tuple(recursive_freeze(v) for v in obj)
+    return obj
+
+
+# The `zha_event` data keys an event can match: ZHA sends these for a cluster
 # command and for a quirk's `zha_send_event`. Its `unique_id` is left out: it holds
 # the device's IEEE address, so a quirk can't match it.
 ZHA_EVENT_DATA_KEYS = frozenset(
@@ -202,6 +216,36 @@ def _has_empty_mapping(value: Any) -> bool:
     return False
 
 
+def _convert_trigger(trigger: Any) -> Any:
+    """Return a device automation trigger key as a tuple, if it is a sequence."""
+    if isinstance(trigger, Iterable) and not isinstance(trigger, str):
+        return tuple(trigger)
+    return trigger
+
+
+def _validate_event_source(
+    trigger: tuple[str, str] | None,
+    event_data: Mapping[str, Any] | None,
+    source: ButtonEvent | RotaryEvent,
+) -> None:
+    """Validate the `zha_event` an event fires for: a trigger or event data."""
+    if (trigger is None) == (event_data is None):
+        raise ValueError(f"An event needs either a trigger or event data: {source}")
+
+    if trigger is not None and (
+        not isinstance(trigger, tuple)
+        or len(trigger) != 2
+        or not all(isinstance(part, str) for part in trigger)
+    ):
+        raise ValueError(f"A trigger is a (type, subtype) pair of strings: {trigger!r}")
+
+    if event_data is not None:
+        _validate_zha_event_data(event_data, source)
+
+        if not event_data:
+            raise ValueError(f"Empty event data matches every zha_event: {source}")
+
+
 @attrs.define(frozen=True, kw_only=True, repr=True)
 class ButtonEvent:
     """An event type a button event entity fires, and the `zha_event` firing it.
@@ -213,10 +257,7 @@ class ButtonEvent:
 
     event_type: ButtonEventType = attrs.field(converter=ButtonEventType)
     trigger: tuple[str, str] | None = attrs.field(
-        default=None,
-        converter=lambda t: (
-            tuple(t) if isinstance(t, Iterable) and not isinstance(t, str) else t
-        ),
+        default=None, converter=_convert_trigger
     )
     event_data: frozendict[str, Any] | None = attrs.field(
         default=None, converter=lambda d: None if d is None else recursive_freeze(d)
@@ -231,25 +272,7 @@ class ButtonEvent:
 
     def __attrs_post_init__(self) -> None:
         """Validate the button event."""
-        if (self.trigger is None) == (self.event_data is None):
-            raise ValueError(
-                f"A button event needs either a trigger or event data: {self}"
-            )
-
-        if self.trigger is not None and (
-            not isinstance(self.trigger, tuple)
-            or len(self.trigger) != 2
-            or not all(isinstance(part, str) for part in self.trigger)
-        ):
-            raise ValueError(
-                f"A trigger is a (type, subtype) pair of strings: {self.trigger!r}"
-            )
-
-        if self.event_data is not None:
-            _validate_zha_event_data(self.event_data, self)
-
-            if not self.event_data:
-                raise ValueError(f"Empty event data matches every zha_event: {self}")
+        _validate_event_source(self.trigger, self.event_data, self)
 
         if (self.event_type == ButtonEventType.MULTI_PRESS) != (
             self.press_count is not None
@@ -277,29 +300,144 @@ class ButtonEvent:
             raise ValueError(f"A multi press needs at least two presses: {self}")
 
 
-@attrs.define(frozen=True, kw_only=True, repr=True)
-class ButtonEventMetadata(EntityMetadata):
-    """Metadata for an exposed button event entity.
+def _convert_rotary_event_type(event_type: Any) -> Any:
+    """Return a standard rotary event type as a `RotaryEventType`."""
+    return RotaryEventType(event_type) if event_type in RotaryEventType else event_type
 
-    v1 quirks expose these in their `button_event_entities` class attribute.
+
+def _convert_rotary_direction(direction: Any) -> Any:
+    """Return a valid direction as a `RotaryDirection`."""
+    return RotaryDirection(direction) if direction in RotaryDirection else direction
+
+
+def _convert_event_data_paths(paths: Any) -> Any:
+    """Return paths given as lists as tuples, leaving anything else to validation.
+
+    A set isn't frozen into a tuple: its order isn't defined, so it is no path.
     """
+    if not isinstance(paths, Mapping):
+        return paths
+
+    return frozendict(
+        {
+            name: (
+                tuple(path)
+                if isinstance(path, Sequence) and not isinstance(path, str | bytes)
+                else path
+            )
+            for name, path in paths.items()
+        }
+    )
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class RotaryEvent:
+    """An event type a rotary event entity fires, and the `zha_event` firing it.
+
+    The `zha_event` is given like for a `ButtonEvent`. The event type is a
+    `RotaryEventType` or an integration-specific type. The direction is a constant
+    of the event, as devices report each direction with their own command or
+    parameter. Other event data is constant (`event_attributes`) or taken from the
+    `zha_event` (`event_attributes_from_data`, the path of keys and indexes to the
+    value). The rules are those of ZHA's `ZhaEventRotaryMatch`.
+    """
+
+    event_type: RotaryEventType | str = attrs.field(
+        converter=_convert_rotary_event_type
+    )
+    trigger: tuple[str, str] | None = attrs.field(
+        default=None, converter=_convert_trigger
+    )
+    event_data: frozendict[str, Any] | None = attrs.field(
+        default=None, converter=lambda d: None if d is None else recursive_freeze(d)
+    )
+    # Required for `rotation` and `rotation_start`
+    direction: RotaryDirection | None = attrs.field(
+        default=None, converter=_convert_rotary_direction
+    )
+    event_attributes: frozendict[str, Any] = attrs.field(
+        factory=frozendict, converter=recursive_freeze
+    )
+    event_attributes_from_data: frozendict[str, tuple[str | int, ...]] = attrs.field(
+        factory=frozendict, converter=_convert_event_data_paths
+    )
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the rotary event."""
+        _validate_event_source(self.trigger, self.event_data, self)
+
+        for name in ("event_attributes", "event_attributes_from_data"):
+            value = getattr(self, name)
+            if not isinstance(value, Mapping) or not all(
+                isinstance(key, str) for key in value
+            ):
+                raise TypeError(f"{name} is a mapping of event data names: {self}")
+
+        # A dial's push button is a separate button event entity
+        if self.event_type in tuple(ButtonEventType):
+            raise ValueError(
+                f"'{self.event_type}' is a button event type, which belongs to a"
+                f" button event entity: {self}"
+            )
+
+        # ZHA validates the rest when it creates the match. A trigger's data is only
+        # known with the quirk, so validate the rest with the event's own data or a
+        # stand-in for the trigger's
+        try:
+            ZhaEventRotaryMatch(
+                event_type=self.event_type,
+                event_data=self.event_data or {"command": "trigger"},
+                direction=self.direction,
+                event_attributes=self.event_attributes,
+                event_attributes_from_data=self.event_attributes_from_data,
+            )
+        except ValueError as exc:
+            raise ValueError(f"{exc}: {self}") from exc
+
+        # Like event data, a path starts at a key a `zha_event` has
+        for name, path in self.event_attributes_from_data.items():
+            if path[0] not in ZHA_EVENT_DATA_KEYS:
+                raise ValueError(
+                    f"The path of {name} starts at {path[0]!r}, which a zha_event"
+                    f" does not have: {self}"
+                )
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class EventEntityMetadata[EventT: (ButtonEvent, RotaryEvent)](EntityMetadata):
+    """Metadata for an exposed event entity firing events for `zha_event`s."""
 
     entity_platform: EntityPlatform = attrs.field(default=EntityPlatform.EVENT)
     entity_type: EntityType = attrs.field(default=EntityType.STANDARD)
-    # Required: most buttons are on client clusters, and there is no attribute or
+    # Required: most controls are on client clusters, and there is no attribute or
     # command name to derive a unique ID suffix from
     cluster_type: ClusterType = attrs.field(converter=ClusterType)
     unique_id_suffix: str = attrs.field(
         validator=[attrs.validators.instance_of(str), attrs.validators.min_len(1)]
     )
-    events: tuple[ButtonEvent, ...] = attrs.field(converter=tuple)
+    events: tuple[EventT, ...] = attrs.field(converter=tuple)
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the event entity metadata."""
+        super().__attrs_post_init__()
+
+        if not self.events:
+            raise ValueError(f"An event entity needs events: {self}")
+
+
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class ButtonEventMetadata(EventEntityMetadata[ButtonEvent]):
+    """Metadata for an exposed button event entity.
+
+    v1 quirks expose these in their `button_event_entities` class attribute.
+    """
 
     def __attrs_post_init__(self) -> None:
         """Validate the button event metadata."""
         super().__attrs_post_init__()
 
-        if not self.events:
-            raise ValueError(f"A button event entity needs events: {self}")
+        if not all(isinstance(event, ButtonEvent) for event in self.events):
+            raise TypeError(f"A button event entity takes `ButtonEvent`s: {self}")
 
         event_types = {event.event_type for event in self.events}
         if (
@@ -330,24 +468,48 @@ class ButtonEventMetadata(EntityMetadata):
             )
 
 
-def validate_button_event_triggers(
-    entity_metadata: ButtonEventMetadata,
-    device_automation_triggers: dict[tuple[str, str], Any],
+@attrs.define(frozen=True, kw_only=True, repr=True)
+class RotaryEventMetadata(EventEntityMetadata[RotaryEvent]):
+    """Metadata for an exposed rotary event entity.
+
+    Rotary event entities have no device class, so they need a translation key.
+    v1 quirks expose these in their `rotary_event_entities` class attribute.
+    """
+
+    def __attrs_post_init__(self) -> None:
+        """Validate the rotary event metadata."""
+        super().__attrs_post_init__()
+
+        if not all(isinstance(event, RotaryEvent) for event in self.events):
+            raise TypeError(f"A rotary event entity takes `RotaryEvent`s: {self}")
+
+        if not {RotaryEventType.ROTATION, RotaryEventType.ROTATION_START} & {
+            event.event_type for event in self.events
+        }:
+            raise ValueError(
+                f"A rotary event entity needs '{RotaryEventType.ROTATION}' or"
+                f" '{RotaryEventType.ROTATION_START}': {self}"
+            )
+
+
+def validate_event_triggers(
+    entity_metadata: EventEntityMetadata,
+    device_automation_triggers: Mapping[tuple[str, str], Any],
 ) -> None:
-    """Validate that a button event entity only uses triggers the quirk defines."""
+    """Validate that an event entity only uses triggers the quirk defines."""
     for event in entity_metadata.events:
         if event.trigger is None:
             continue
 
         if event.trigger not in device_automation_triggers:
             raise ValueError(
-                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                f"Event {event} of {entity_metadata.unique_id_suffix!r} uses a"
                 " device automation trigger the quirk does not define"
             )
 
         if not device_automation_triggers[event.trigger]:
             raise ValueError(
-                f"Button event {event} of {entity_metadata.unique_id_suffix!r} uses a"
+                f"Event {event} of {entity_metadata.unique_id_suffix!r} uses a"
                 " device automation trigger without data, which matches every"
                 " zha_event"
             )
@@ -365,8 +527,8 @@ def _is_sequence(value: Any) -> bool:
 def _event_data_covers(expected: Mapping[str, Any], other: Mapping[str, Any]) -> bool:
     """Return whether every `zha_event` matching `other` also matches `expected`.
 
-    This follows ZHA's matching of button event data: every expected key with an
-    equal value, nested mappings as a subset, sequences item by item.
+    This follows ZHA's matching of event data: every expected key with an equal
+    value, nested mappings as a subset, sequences item by item.
     """
     return all(
         key in other and _event_value_covers(value, other[key])
@@ -409,22 +571,28 @@ def _event_value_overlap(first: Any, second: Any) -> bool:
     return bool(first == second)
 
 
-def validate_button_event_matches(
+def _while_held(event: ButtonEvent | RotaryEvent) -> bool:
+    """Return whether an event only matches while its button is held."""
+    return isinstance(event, ButtonEvent) and event.while_held
+
+
+def validate_event_matches(
     entities: Iterable[EntityMetadata],
     device_automation_triggers: Mapping[tuple[str, str], Any],
 ) -> None:
-    """Validate that one `zha_event` fires at most one button event of a quirk.
+    """Validate that one `zha_event` fires at most one event of a quirk.
 
-    An entity fires its first match for a `zha_event`, trying the matches while held
-    first, so a match an earlier one covers never fires. Each entity fires its own
-    match, so the matches of two entities must not overlap, or one press would fire
-    both buttons. Only matches while held may overlap across entities: they fire
+    An entity fires its first match for a `zha_event`, a button event entity trying
+    the matches while held first, so a match an earlier one covers never fires.
+    Each entity fires its own match, so the matches of two entities must not
+    overlap, or one press or turn would fire both, as for a dial's push button and
+    its rotation. Only matches while held may overlap across entities: they fire
     for the held button only.
     """
-    matches: list[tuple[str, ButtonEvent, Mapping[str, Any]]] = []
+    matches: list[tuple[str, ButtonEvent | RotaryEvent, Mapping[str, Any]]] = []
 
     for entity_metadata in entities:
-        if not isinstance(entity_metadata, ButtonEventMetadata):
+        if not isinstance(entity_metadata, EventEntityMetadata):
             continue
 
         # Entities on different endpoints may share a suffix
@@ -443,14 +611,14 @@ def validate_button_event_matches(
                 )
 
         # ZHA tries the matches while held first, keeping the order otherwise
-        entity_matches.sort(key=lambda match: not match[1].while_held)
+        entity_matches.sort(key=lambda match: not _while_held(match[1]))
         for index, (_, earlier, earlier_data) in enumerate(entity_matches):
             for _, later, later_data in entity_matches[index + 1 :]:
                 if _event_data_covers(earlier_data, later_data) and (
-                    later.while_held or not earlier.while_held
+                    _while_held(later) or not _while_held(earlier)
                 ):
                     raise ValueError(
-                        f"Button event {later} of {suffix} never fires: {earlier}"
+                        f"Event {later} of {suffix} never fires: {earlier}"
                         " matches every zha_event it matches"
                     )
 
@@ -460,30 +628,36 @@ def validate_button_event_matches(
         for other_suffix, other, other_data in matches[index + 1 :]:
             if (
                 other_suffix != suffix
-                and not (event.while_held and other.while_held)
+                and not (_while_held(event) and _while_held(other))
                 and _event_data_overlap(data, other_data)
             ):
                 raise ValueError(
-                    f"Button events {event} of {suffix} and {other} of"
+                    f"Events {event} of {suffix} and {other} of"
                     f" {other_suffix} can match the same zha_event, which would"
                     " fire both"
                 )
 
 
-def validate_button_event_entities(entities: Iterable[EntityMetadata]) -> None:
-    """Validate that a quirk's button event entities have unique IDs."""
+def validate_event_entities(entities: Iterable[EntityMetadata]) -> None:
+    """Validate that a quirk's event entities, of any kind, have unique IDs."""
     seen: set[tuple[int, str]] = set()
 
     for entity_metadata in entities:
-        if not isinstance(entity_metadata, ButtonEventMetadata):
+        if not isinstance(entity_metadata, EventEntityMetadata):
             continue
 
         key = (entity_metadata.endpoint_id, entity_metadata.unique_id_suffix)
         if key in seen:
             raise ValueError(
-                f"Button event entity {key[1]!r} on endpoint {key[0]} is defined twice"
+                f"Event entity {key[1]!r} on endpoint {key[0]} is defined twice"
             )
         seen.add(key)
+
+
+# The names from before rotary event entities, which these cover as well
+validate_button_event_entities = validate_event_entities
+validate_button_event_matches = validate_event_matches
+validate_button_event_triggers = validate_event_triggers
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)
@@ -629,15 +803,6 @@ class ChildDeviceMetadata:
         factory=frozendict, converter=frozendict
     )
     fallback_name: str = attrs.field(validator=attrs.validators.instance_of(str))
-
-
-def recursive_freeze(obj: Any) -> Any:
-    """Recursively convert mutable collections to immutable ones."""
-    if isinstance(obj, Mapping):
-        return frozendict({k: recursive_freeze(v) for k, v in obj.items()})
-    if isinstance(obj, tuple | list | set):
-        return tuple(recursive_freeze(v) for v in obj)
-    return obj
 
 
 @attrs.define(frozen=True, kw_only=True, repr=True)

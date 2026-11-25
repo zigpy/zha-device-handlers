@@ -20,7 +20,7 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-from tests.common import ButtonEventRecorder
+from tests.common import EventRecorder
 from tests.test_quirks import ALL_QUIRK_CLASSES
 import zhaquirks
 from zhaquirks import _legacy_quirk_to_registry_entry
@@ -29,6 +29,7 @@ from zhaquirks.builder import (
     ButtonEventMetadata,
     ButtonEventType,
     QuirkBuilder,
+    RotaryEventMetadata,
 )
 from zhaquirks.builder.device import QuirkV2Device, QuirkV2Factory
 from zhaquirks.builder.discovery import QUIRKS_ENTITY_META_TO_ENTITY_CLASS
@@ -71,11 +72,10 @@ TRIGGERS = {
 }
 
 
-@pytest.fixture
-def zigpy_device(MockAppController) -> zigpy.device.Device:
+def remote_device(app: Any) -> zigpy.device.Device:
     """Return a two button remote."""
     device = zigpy.device.Device(
-        MockAppController, t.EUI64.convert("01:02:03:04:05:06:07:08"), 0x1234
+        app, t.EUI64.convert("01:02:03:04:05:06:07:08"), 0x1234
     )
     device.manufacturer = "manufacturer"
     device.model = "remote"
@@ -88,6 +88,12 @@ def zigpy_device(MockAppController) -> zigpy.device.Device:
     endpoint.add_output_cluster(LevelControl.cluster_id)
 
     return device
+
+
+@pytest.fixture
+def zigpy_device(MockAppController) -> zigpy.device.Device:
+    """Return a two button remote."""
+    return remote_device(MockAppController)
 
 
 def remote_quirk() -> QuirkBuilder:
@@ -180,7 +186,7 @@ async def test_button_event_entities(zigpy_device: zigpy.device.Device) -> None:
     remote_quirk().add_to_registry(registry)
     quirked = registry.resolve(zigpy_device)
 
-    recorder = await ButtonEventRecorder.create(quirked)
+    recorder = await EventRecorder.create(quirked)
     assert recorder.event_types() == {
         "button_on": ["press_end", "long_press_start", "long_press_end"],
         "button_off": ["press_end"],
@@ -232,7 +238,7 @@ async def test_button_event_multi_press(zigpy_device: zigpy.device.Device) -> No
         .add_to_registry(registry)
     )
 
-    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+    recorder = await EventRecorder.create(registry.resolve(zigpy_device))
 
     send(recorder.zha_device.device, OnOff.cluster_id, b"\x01\x01\x01")
     send(recorder.zha_device.device, OnOff.cluster_id, b"\x01\x02\x00")
@@ -274,7 +280,7 @@ async def test_button_event_hold(zigpy_device: zigpy.device.Device) -> None:
         .add_to_registry(registry)
     )
 
-    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+    recorder = await EventRecorder.create(registry.resolve(zigpy_device))
     device = recorder.zha_device.device
 
     # off, move_with_on_off(Up, 50) twice, off
@@ -313,7 +319,7 @@ async def test_button_event_missing_cluster(
         .add_to_registry(registry)
     )
 
-    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+    recorder = await EventRecorder.create(registry.resolve(zigpy_device))
 
     assert recorder.entities == {}
     assert "does not have a cluster with id: 6" in caplog.text
@@ -577,7 +583,7 @@ async def test_button_event_failing_entity(
 
     registry = DeviceRegistry()
     remote_quirk().add_to_registry(registry)
-    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+    recorder = await EventRecorder.create(registry.resolve(zigpy_device))
 
     assert list(recorder.entities) == ["button_off"]
     assert "failed to create entity" in caplog.text
@@ -595,7 +601,7 @@ async def test_button_event_trigger_missing_on_device(
     monkeypatch.setattr(
         QuirkV2Device, "device_automation_triggers", property(lambda self: {})
     )
-    recorder = await ButtonEventRecorder.create(registry.resolve(zigpy_device))
+    recorder = await EventRecorder.create(registry.resolve(zigpy_device))
 
     # The off button matches event data, the on button uses a trigger
     assert list(recorder.entities) == ["button_off"]
@@ -691,7 +697,7 @@ async def test_v1_button_event_entities(zigpy_device: zigpy.device.Device) -> No
     quirked = registry.resolve(zigpy_device)
     assert isinstance(quirked, quirk)
 
-    recorder = await ButtonEventRecorder.create(quirked)
+    recorder = await EventRecorder.create(quirked)
     assert isinstance(recorder.zha_device, QuirkV2Device)
     assert recorder.event_types() == {
         "button_on": ["press_end", "long_press_start", "long_press_end"]
@@ -715,7 +721,7 @@ async def test_v1_button_event_entities(zigpy_device: zigpy.device.Device) -> No
     ]
 
 
-def _device_snapshot(recorder: ButtonEventRecorder) -> dict[str, Any]:
+def _device_snapshot(recorder: EventRecorder) -> dict[str, Any]:
     """Return what ZHA exposes of a device, apart from its button event entities."""
     zha_device = recorder.zha_device
     primary = zha_device._primary_entity
@@ -772,7 +778,7 @@ async def test_v1_button_event_entities_change_nothing_else(
         quirk.replacement[SKIP_CONFIGURATION] = skip_configuration
         return quirk
 
-    async def build_device(quirk: type[CustomDevice]) -> ButtonEventRecorder:
+    async def build_device(quirk: type[CustomDevice]) -> EventRecorder:
         device = zigpy.device.Device(
             MockAppController, t.EUI64.convert("01:02:03:04:05:06:07:08"), 0x1234
         )
@@ -791,7 +797,7 @@ async def test_v1_button_event_entities_change_nothing_else(
         registry.register(_legacy_quirk_to_registry_entry(quirk))
         quirked = registry.resolve(device)
         assert isinstance(quirked, quirk)
-        return await ButtonEventRecorder.create(quirked)
+        return await EventRecorder.create(quirked)
 
     plain = await build_device(build_quirk())
     # Taken before the second device is built, which can't change it then
@@ -836,10 +842,23 @@ def _cluster_ids(clusters: list) -> set[int]:
 
 @pytest.mark.parametrize(
     "quirk",
-    [q for q in ALL_QUIRK_CLASSES if q.button_event_entities],
+    [
+        q
+        for q in ALL_QUIRK_CLASSES
+        if q.button_event_entities or q.rotary_event_entities
+    ],
 )
-def test_v1_button_event_entities_valid(quirk: type[CustomDevice]) -> None:
+def test_v1_event_entities_valid(quirk: type[CustomDevice]) -> None:
     """Test that v1 quirks register and their entities are attached to clusters."""
+    assert all(
+        isinstance(entity, ButtonEventMetadata)
+        for entity in quirk.button_event_entities
+    )
+    assert all(
+        isinstance(entity, RotaryEventMetadata)
+        for entity in quirk.rotary_event_entities
+    )
+
     # Registration validates the entities and raises for an invalid quirk
     _legacy_quirk_to_registry_entry(quirk)
     assert any(
@@ -848,7 +867,7 @@ def test_v1_button_event_entities_valid(quirk: type[CustomDevice]) -> None:
         for transform in entry.zigpy_transforms
     ), f"{quirk} is not registered"
 
-    for entity in quirk.button_event_entities:
+    for entity in (*quirk.button_event_entities, *quirk.rotary_event_entities):
         endpoint = quirk.replacement[ENDPOINTS][entity.endpoint_id]
         clusters = endpoint.get(
             OUTPUT_CLUSTERS
@@ -859,8 +878,8 @@ def test_v1_button_event_entities_valid(quirk: type[CustomDevice]) -> None:
         assert entity.cluster_id in _cluster_ids(clusters)
 
 
-def test_button_event_entities_unique() -> None:
-    """Test that the button event entities of every quirk have unique IDs."""
+def test_event_entities_unique() -> None:
+    """Test that the button and rotary event entities of every quirk have unique IDs."""
     for entry in ZHA_DEVICE_REGISTRY:
         factory = entry.zha_device_factory
         if not isinstance(factory, QuirkV2Factory):
@@ -869,9 +888,9 @@ def test_button_event_entities_unique() -> None:
         keys = [
             (entity.endpoint_id, entity.unique_id_suffix)
             for entity in factory.quirk_definition.entity_metadata
-            if isinstance(entity, ButtonEventMetadata)
+            if isinstance(entity, ButtonEventMetadata | RotaryEventMetadata)
         ]
-        assert len(keys) == len(set(keys)), f"Duplicate button events in {entry}"
+        assert len(keys) == len(set(keys)), f"Duplicate event entities in {entry}"
 
 
 def test_v1_button_event_shared_between_entities() -> None:

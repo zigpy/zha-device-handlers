@@ -9,7 +9,12 @@ backward compatibility with externally-maintained custom quirks.
 
 from zha.application import EntityPlatform, EntityType
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
-from zha.application.platforms.event.const import ButtonEventType, EventDeviceClass
+from zha.application.platforms.event.const import (
+    ButtonEventType,
+    EventDeviceClass,
+    RotaryDirection,
+    RotaryEventType,
+)
 from zha.application.platforms.number.device_class import NumberDeviceClass
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
@@ -24,6 +29,8 @@ from zhaquirks.builder.metadata import (
     ButtonEventMetadata,
     EntityFilter,
     ReportingConfig,
+    RotaryEvent,
+    RotaryEventMetadata,
 )
 
 __all__ = [
@@ -39,6 +46,10 @@ __all__ = [
     "NumberDeviceClass",
     "QuirkBuilder",
     "ReportingConfig",
+    "RotaryDirection",
+    "RotaryEvent",
+    "RotaryEventMetadata",
+    "RotaryEventType",
     "SensorDeviceClass",
     "SensorStateClass",
 ]
