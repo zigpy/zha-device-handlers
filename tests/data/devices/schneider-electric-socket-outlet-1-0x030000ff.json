@@ -720,7 +720,7 @@
         "unique_id": "ab:cd:ef:12:81:8a:da:20-6-se_local_control_mode",
         "migrate_unique_ids": [],
         "platform": "select",
-        "class_name": "ZCLEnumSelectEntity",
+        "class_name": "SELocalControlModeSelect",
         "translation_key": "local_control_mode",
         "translation_placeholders": null,
         "device_class": null,
