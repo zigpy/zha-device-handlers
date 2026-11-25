@@ -11,7 +11,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 
 > [!NOTE]
 > This README primarily documents v1 quirks and will be updated.\
-> For v2 quirks documentation (recommended for new quirks), see [copilot-instructions.md](/.github/copilot-instructions.md).
+> For v2 quirks documentation (recommended for new quirks), see the [`zha-quirks` reference](/.claude/skills/zha-quirks/SKILL.md) (written for AI agents, but readable by humans too).
 
 For supporting Tuya devices, see [using the TuyaQuirkBuilder](/tuya.md).
 
