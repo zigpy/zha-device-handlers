@@ -1,7 +1,7 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
 import time
-from typing import Any, Final
+from typing import Any, Final, cast
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -103,8 +103,11 @@ class StyrbarOnOffCluster(CustomCluster, OnOff):
 
     def _arrow_hold_started_recently(self) -> bool:
         """Return whether an arrow long press may have started within the window."""
-        scenes = self.endpoint.out_clusters.get(Scenes.cluster_id)
-        started = getattr(scenes, "arrow_hold_started", None)
+        # The quirk always puts StyrbarScenesCluster on this endpoint
+        scenes = cast(
+            StyrbarScenesCluster, self.endpoint.out_clusters[Scenes.cluster_id]
+        )
+        started = scenes.arrow_hold_started
         return started is not None and time.monotonic() - started <= STRAY_ON_WINDOW
 
 
