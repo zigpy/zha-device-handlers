@@ -1,6 +1,8 @@
 """Quirks v2 builder-mechanics tests migrated from zigpy."""
 
+from collections import UserDict
 import logging
+from types import MappingProxyType
 from typing import Any
 from unittest.mock import AsyncMock, sentinel
 
@@ -15,6 +17,7 @@ from zigpy.const import (
     SIG_MODELS_INFO,
 )
 from zigpy.device import Device
+import zigpy.endpoint
 from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -665,6 +668,33 @@ async def test_quirks_v2_endpoints(device_mock):
     assert quirked.endpoints[5].profile_id == 260
     assert quirked.endpoints[5].device_type == 255
 
+    # endpoints the device doesn't report are created initialized, so the
+    # quirked device counts as initialized and zigpy doesn't drop its frames
+    assert quirked.endpoints[4].status == zigpy.endpoint.Status.ZDO_INIT
+    assert quirked.endpoints[5].status == zigpy.endpoint.Status.ZDO_INIT
+
+
+async def test_quirks_v2_added_endpoints_initialized(device_mock):
+    """Test that a device stays initialized when a quirk adds endpoints."""
+    registry = DeviceRegistry()
+
+    device_mock.node_desc = NodeDescriptor()
+    for endpoint in device_mock.non_zdo_endpoints:
+        endpoint.status = zigpy.endpoint.Status.ZDO_INIT
+    assert device_mock.is_initialized
+
+    (
+        QuirkBuilder(device_mock.manufacturer, device_mock.model)
+        .adds_endpoint(2)
+        .replaces_endpoint(3)
+        .add_to_registry(registry)
+    )
+
+    quirked: CustomZigpyDevice = registry.resolve(device_mock)
+    assert isinstance(quirked, CustomZigpyDevice)
+    assert {2, 3} <= set(quirked.endpoints)
+    assert quirked.is_initialized
+
 
 async def test_quirks_v2_processing_order(device_mock):
     """Test quirks v2 metadata processing order."""
@@ -815,6 +845,10 @@ async def test_quirks_v2_also_applies_to(device_mock):
         (True, True),
         (3.14, 3.14),
         (frozendict({"a": 1}), frozendict({"a": 1})),
+        (
+            MappingProxyType({"a": UserDict({"b": [1]})}),
+            frozendict({"a": frozendict({"b": (1,)})}),
+        ),
         ((1, 2, 3), (1, 2, 3)),
         ((1, [2], {3: 4}), (1, (2,), frozendict({3: 4}))),
         (
