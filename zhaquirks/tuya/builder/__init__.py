@@ -8,6 +8,7 @@ import pathlib
 from typing import Any, Self
 
 from zha.quirks import QuirkRegistryEntry
+from zha.zigbee.store import device_value
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, UndefinedType
@@ -48,12 +49,18 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
+    DPToDeviceValueMapping,
     TuyaMCUCluster,
     TuyaOnOffNM,
     TuyaWindowCovering,
 )
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
+
+
+def _as_stored(value: Any) -> Any:
+    """Read a Tuya device value as stored: a JSON number, string or bool."""
+    return value
 
 
 BATTERY_VOLTAGES = {
@@ -216,7 +223,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Init the TuyaQuirkBuilder."""
         super().__init__(*args, **kwargs)
         self.tuya_data_point_handlers: dict[int, str] = {}
-        self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
+        self.tuya_dp_to_attribute: dict[
+            int, list[DPToAttributeMapping | DPToDeviceValueMapping]
+        ] = {}
         self.tuya_attributes_to_dp_converters: dict[int, Callable[[Any], Any]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         # quirk_file will point to the init call above if called from this QuirkBuilder,
@@ -651,7 +660,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_dp_multi(
         self,
         dp_id: int,
-        attribute_mapping: list[DPToAttributeMapping],
+        attribute_mapping: list[DPToAttributeMapping | DPToDeviceValueMapping],
         dp_handler: str = "_dp_2_attr_update",
         dp_converter: Callable[[Any], Any] | None = None,
     ) -> Self:  # fmt: skip
@@ -659,6 +668,26 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         if dp_id in self.tuya_dp_to_attribute:
             raise ValueError(f"DP {dp_id} is already mapped.")
+
+        mapped_values = {
+            (mapping.value.namespace, mapping.value.key)
+            for mappings in self.tuya_dp_to_attribute.values()
+            for mapping in mappings
+            if isinstance(mapping, DPToDeviceValueMapping)
+        }
+
+        for mapping in attribute_mapping:
+            if not isinstance(mapping, DPToDeviceValueMapping):
+                continue
+
+            value_id = (mapping.value.namespace, mapping.value.key)
+
+            if value_id in mapped_values:
+                raise ValueError(
+                    f"Device value {mapping.value.key!r} is already mapped"
+                )
+
+            mapped_values.add(value_id)
 
         self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
@@ -911,11 +940,49 @@ class TuyaQuirkBuilder(QuirkBuilder):
         *,
         translation_placeholders: dict[str, str] | None = None,
         child_device_id: str | None | UndefinedType = UNDEFINED,
+        as_device_value: bool = False,
     ) -> Self:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
+
+        With `as_device_value`, the datapoint is kept as a device value named
+        `attribute_name` in the device's store instead of an invented attribute on
+        the Tuya cluster. The sensor keeps the unique ID it has otherwise.
         """
+        if as_device_value:
+            if dp_converter is not None:
+                raise ValueError("A device value sensor is read-only: no dp_converter")
+
+            if fallback_name is None:
+                raise ValueError("A device value sensor needs a fallback_name")
+
+            if translation_key is None and device_class is None:
+                raise ValueError(
+                    "A device value sensor needs a translation_key or device_class"
+                )
+
+            # Kept as the converter returns it: `type` is the datapoint's wire type,
+            # which a converted value (a float, a signed value) need not fit
+            value = device_value(attribute_name, _as_stored)
+            self.tuya_dp_multi(
+                dp_id, [DPToDeviceValueMapping(value, converter=converter)]
+            )
+
+            return self.device_value_sensor(
+                value,
+                unique_id_suffix=f"{endpoint_id}-{attribute_name}",
+                divisor=divisor,
+                multiplier=multiplier,
+                entity_type=entity_type,
+                device_class=device_class,
+                state_class=state_class,
+                unit=unit,
+                initially_disabled=initially_disabled,
+                translation_key=translation_key,
+                translation_placeholders=translation_placeholders,
+                fallback_name=fallback_name,
+            )
 
         self.tuya_dp_attribute(
             dp_id=dp_id,
@@ -995,7 +1062,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
                 """Replacement Tuya Cluster."""
 
                 data_point_handlers: dict[int, str]
-                dp_to_attribute: dict[int, list[DPToAttributeMapping]]
+                dp_to_attribute: dict[
+                    int, list[DPToAttributeMapping | DPToDeviceValueMapping]
+                ]
 
                 class AttributeDefs(NewAttributeDefs):
                     """Attribute Definitions."""

@@ -22,6 +22,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
     DPToAttributeMapping as DpToAttributeMappingBase,
+    DPToDeviceValueMapping,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
     PowerOnState,
@@ -264,6 +265,9 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             if attr_to_dp_converter := self._attributes_to_dp_converters.get(dp):
                 args = []
                 for dp_attr in self._dp_to_attributes[dp]:
+                    if isinstance(dp_attr, DPToDeviceValueMapping):
+                        args.append(self.endpoint.device.store.get(dp_attr.value))
+                        continue
                     if dp_attr.attribute_name == data.cluster_attr:
                         args.append(val)
                         continue

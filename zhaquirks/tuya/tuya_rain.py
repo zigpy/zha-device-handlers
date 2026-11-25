@@ -1,5 +1,6 @@
 """Quirk for TS0207 rain sensors."""
 
+from zha.zigbee.store import device_value
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
@@ -11,9 +12,11 @@ from zhaquirks.builder import (
     SensorStateClass,
     UnitOfElectricPotential,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize, TuyaLocalCluster
+from zhaquirks.tuya import BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, DPToDeviceValueMapping
+
+RAIN_INTENSITY = device_value("rain_intensity", int)
 
 
 class TuyaIasZone(IasZone, TuyaLocalCluster):
@@ -41,6 +44,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="average_light_intensity_20mins",
         fallback_name="Average light intensity last 20 min",
+        as_device_value=True,
     )
     .tuya_sensor(
         dp_id=103,
@@ -52,6 +56,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="todays_max_light_intensity",
         fallback_name="Today's max light intensity",
+        as_device_value=True,
     )
     .tuya_binary_sensor(
         dp_id=104,
@@ -67,21 +72,12 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
                 attribute_name=TuyaIasZone.AttributeDefs.zone_status.name,
                 converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x > 100 else 0,
             ),
-            DPToAttributeMapping(
-                ep_attribute=TuyaMCUCluster.ep_attribute,
-                attribute_name="rain_intensity",
-            ),
+            DPToDeviceValueMapping(RAIN_INTENSITY),
         ],
     )
-    .tuya_attribute(
-        dp_id=105,
-        attribute_name="rain_intensity",
-        type=t.uint32_t,
-        is_manufacturer_specific=True,
-    )
-    .sensor(
-        "rain_intensity",
-        TUYA_CLUSTER_ID,
+    .device_value_sensor(
+        RAIN_INTENSITY,
+        unique_id_suffix="1-rain_intensity",
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.MILLIVOLT,

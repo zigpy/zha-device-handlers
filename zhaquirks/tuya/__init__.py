@@ -7,7 +7,7 @@ import dataclasses
 import datetime
 import enum
 import logging
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import zigpy.types as t
 from zigpy.typing import UNDEFINED, AddressingMode, UndefinedType
@@ -36,6 +36,9 @@ from zhaquirks.const import (
 )
 from zhaquirks.device import BaseCustomDevice
 from zhaquirks.legacy import CustomDevice
+
+if TYPE_CHECKING:
+    from zigpy.store import StoredValue
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -1639,6 +1642,36 @@ class DPToAttributeMapping:
         return [self]
 
 
+class DPToDeviceValueMapping:
+    """Container for a datapoint mapped to a device value in the device's store.
+
+    A device value is not a ZCL attribute, so there is no cluster, endpoint or
+    attribute to update. Datapoints used to be mapped to invented attributes on the
+    Tuya cluster for this.
+    """
+
+    ep_attribute: None = None
+    attribute_name: None = None
+    endpoint_id: None = None
+
+    def __init__(
+        self,
+        value: StoredValue[Any],
+        converter: Callable[[Any], Any] | None = None,
+    ) -> None:
+        """Init DPToDeviceValueMapping."""
+        self.value = value
+        self.converter = converter
+
+    def decompose_attributes(self) -> list[DPToDeviceValueMapping]:
+        """Return the mapping, which never maps to several values."""
+        return [self]
+
+    def __repr__(self) -> str:
+        """Return a representation of the mapping."""
+        return f"{type(self).__name__}(value={self.value!r})"
+
+
 @dataclasses.dataclass
 class AttributeWithMask:
     """Container for the attribute and its mask."""
@@ -1715,7 +1748,12 @@ class TuyaNewManufCluster(CustomCluster):
             id=TUYA_SET_TIME, schema={"data": t.data16}, manufacturer_code=None
         )
 
-    dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
+    dp_to_attribute: dict[
+        int,
+        DPToAttributeMapping
+        | DPToDeviceValueMapping
+        | list[DPToAttributeMapping | DPToDeviceValueMapping],
+    ] = {}
     data_point_handlers: dict[int, str] = {}
 
     def __init__(self, *args, **kwargs):
@@ -1724,7 +1762,9 @@ class TuyaNewManufCluster(CustomCluster):
 
         # Normalize dp_to_attribute: map each DP to a flat list of single attr mappings
         # This decomposes old tuple-based mappings
-        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {}
+        self._dp_to_attributes: dict[
+            int, list[DPToAttributeMapping | DPToDeviceValueMapping]
+        ] = {}
         for dp, mappings in self.dp_to_attribute.items():
             # Normalize to list (dp_to_attribute allows single mapping or list)
             if not isinstance(mappings, list):
@@ -1739,6 +1779,9 @@ class TuyaNewManufCluster(CustomCluster):
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
             for mapped_attr in dp_map:
+                if isinstance(mapped_attr, DPToDeviceValueMapping):
+                    continue
+
                 if mapped_attr.endpoint_id:
                     endpoint = self.endpoint.device.endpoints.get(
                         mapped_attr.endpoint_id
@@ -1852,6 +1895,22 @@ class TuyaNewManufCluster(CustomCluster):
 
         endpoint = self.endpoint
         for mapped_attr in dp_map:
+            if isinstance(mapped_attr, DPToDeviceValueMapping):
+                value = datapoint.data.payload
+                if mapped_attr.converter:
+                    value = mapped_attr.converter(value)
+
+                try:
+                    self.endpoint.device.store[mapped_attr.value] = value
+                except (TypeError, ValueError):
+                    # The other mappings of the datapoint still apply
+                    self.warning(
+                        "Cannot store %r for %s as a device value",
+                        value,
+                        mapped_attr.value.key,
+                    )
+                continue
+
             if mapped_attr.endpoint_id:
                 endpoint = self.endpoint.device.endpoints[mapped_attr.endpoint_id]
             cluster = getattr(endpoint, mapped_attr.ep_attribute)

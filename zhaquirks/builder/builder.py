@@ -10,7 +10,7 @@ import inspect
 import logging
 import pathlib
 from types import FrameType
-from typing import Any, Self, overload
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from frozendict import frozendict
 from zha.application import (  # noqa: F401
@@ -25,6 +25,7 @@ from zha.application import (  # noqa: F401
 from zha.application.platforms import PlatformEntity, ZclPlatformEntity
 from zha.application.platforms.binary_sensor.device_class import BinarySensorDeviceClass
 from zha.application.platforms.number.device_class import NumberDeviceClass
+from zha.application.platforms.sensor import DeviceValueSensor
 from zha.application.platforms.sensor.device_class import (
     SensorDeviceClass,
     SensorStateClass,
@@ -77,6 +78,9 @@ from zhaquirks.builder.metadata import (
     validate_button_event_triggers,
 )
 from zhaquirks.device import BaseCustomDevice, CustomZigpyDevice
+
+if TYPE_CHECKING:
+    from zigpy.store import StoredValue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1442,6 +1446,58 @@ class QuirkBuilder:
             )
         )
         return self
+
+    def device_value_sensor(
+        self,
+        value: StoredValue[Any],
+        *,
+        unique_id_suffix: str | None = None,
+        value_converter: Callable[[Any], Any] | None = None,
+        divisor: int = 1,
+        multiplier: int = 1,
+        suggested_display_precision: int | None = None,
+        entity_type: EntityType = EntityType.STANDARD,
+        device_class: SensorDeviceClass | None = None,
+        state_class: SensorStateClass | None = None,
+        unit: str | None = None,
+        initially_disabled: bool = False,
+        translation_key: str | None = None,
+        translation_placeholders: dict[str, str] | None = None,
+        fallback_name: str,
+        primary: bool | None = None,
+    ) -> Self:
+        """Add a sensor showing a device value.
+
+        A device value is state that is not a ZCL attribute, kept in the device's
+        store (`zha.zigbee.store.device_value` declares one). The quirk's cluster code
+        sets it, as Tuya datapoints mapped with `DPToDeviceValueMapping` do. The
+        entity is bound to the device, and its unique ID suffix defaults to the key.
+        """
+        if translation_key is None and device_class is None:
+            raise ValueError(
+                f"A device value sensor needs a translation_key or device_class: {value}"
+            )
+
+        return self.adds_entity(
+            DeviceValueSensor,
+            value=value,
+            value_converter=value_converter,
+            divisor=divisor,
+            multiplier=multiplier,
+            suggested_display_precision=suggested_display_precision,
+            entity_type=entity_type,
+            device_class=device_class,
+            state_class=state_class,
+            unit=unit,
+            initially_disabled=initially_disabled,
+            translation_key=translation_key,
+            translation_placeholders=translation_placeholders,
+            fallback_name=fallback_name,
+            primary=primary,
+            unique_id_suffix=(
+                unique_id_suffix if unique_id_suffix is not None else value.key
+            ),
+        )
 
     def replaces_entity(
         self,
