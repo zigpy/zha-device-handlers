@@ -1,5 +1,8 @@
 """Module for Elko quirks implementations."""
 
+from typing import Any
+
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
@@ -50,6 +53,36 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
             lockout = self.KeypadLockout.No_lockout
 
         self._update_attribute(self.attributes_by_name["keypad_lockout"].id, lockout)
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int | foundation.ZCLAttributeDef, Any],
+        **kwargs,
+    ) -> list[list[foundation.WriteAttributesStatusRecord]]:
+        """Write the keypad lockout to the thermostat's child lock attribute."""
+        lockout = None
+        local_attrs = {}
+        for record in self._write_attr_records(attributes):
+            if record.attrid == self.AttributeDefs.keypad_lockout.id:
+                lockout = record.value.value
+            else:
+                local_attrs[record.attrid] = record.value.value
+
+        if local_attrs:
+            await super().write_attributes(local_attrs, **kwargs)
+
+        if lockout is None:
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+        child_lock = lockout != self.KeypadLockout.No_lockout
+        result = await self.endpoint.thermostat.write_attributes(
+            {"child_lock": child_lock}
+        )
+        if all(record.status == foundation.Status.SUCCESS for record in result[0]):
+            # A successful write only updates the thermostat's attribute cache
+            self.child_lock_change(child_lock)
+
+        return result
 
 
 class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
